@@ -56,6 +56,22 @@ BEGIN
 END $$;
 
 -- ============================================
+-- 2.5 데이터베이스 함수 생성 (RLS 정책에서 사용되므로 먼저 생성)
+-- ============================================
+
+-- 2.5.1 관리자 확인 함수
+CREATE OR REPLACE FUNCTION is_admin_user()
+RETURNS BOOLEAN AS $$
+BEGIN
+    RETURN EXISTS (
+        SELECT 1 FROM users
+        WHERE id = auth.uid()
+        AND is_admin = TRUE
+    );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- ============================================
 -- 3. 테이블 생성
 -- ============================================
 -- 테이블은 IF NOT EXISTS를 사용하여 idempotent하게 생성
@@ -70,12 +86,27 @@ CREATE TABLE IF NOT EXISTS users (
     terms_agreed BOOLEAN DEFAULT FALSE, -- 이용약관 동의 여부
     privacy_agreed BOOLEAN DEFAULT FALSE, -- 개인정보처리방침 동의 여부
     consent_date TIMESTAMP WITH TIME ZONE, -- 동의 일시
+    is_admin BOOLEAN DEFAULT FALSE, -- 관리자 여부
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- is_admin 컬럼 추가 (기존 테이블이 있는 경우를 대비)
+DO $$ 
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'users' 
+        AND column_name = 'is_admin'
+    ) THEN
+        ALTER TABLE users 
+        ADD COLUMN is_admin BOOLEAN DEFAULT FALSE;
+    END IF;
+END $$;
+
 -- 인덱스
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+CREATE INDEX IF NOT EXISTS idx_users_is_admin ON users(is_admin) WHERE is_admin = TRUE;
 
 -- RLS (Row Level Security)
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
@@ -115,17 +146,128 @@ CREATE TABLE IF NOT EXISTS books (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- books 테이블에 메타데이터 컬럼 추가 (기존 테이블이 있는 경우를 대비)
+DO $$ 
+BEGIN
+    -- category 컬럼 추가
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'books' 
+        AND column_name = 'category'
+    ) THEN
+        ALTER TABLE books 
+        ADD COLUMN category VARCHAR(100);
+    END IF;
+
+    -- total_pages 컬럼 추가
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'books' 
+        AND column_name = 'total_pages'
+    ) THEN
+        ALTER TABLE books 
+        ADD COLUMN total_pages INTEGER;
+    END IF;
+
+    -- summary 컬럼 추가
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'books' 
+        AND column_name = 'summary'
+    ) THEN
+        ALTER TABLE books 
+        ADD COLUMN summary TEXT;
+    END IF;
+
+    -- description_summary 컬럼 추가
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'books' 
+        AND column_name = 'description_summary'
+    ) THEN
+        ALTER TABLE books 
+        ADD COLUMN description_summary VARCHAR(50);
+    END IF;
+
+    -- external_link 컬럼 추가
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'books' 
+        AND column_name = 'external_link'
+    ) THEN
+        ALTER TABLE books 
+        ADD COLUMN external_link TEXT;
+    END IF;
+END $$;
+
 -- 인덱스
 CREATE INDEX IF NOT EXISTS idx_books_isbn ON books(isbn) WHERE isbn IS NOT NULL; -- NULL이 아닌 ISBN만 인덱싱
 CREATE INDEX IF NOT EXISTS idx_books_title ON books(title);
 CREATE INDEX IF NOT EXISTS idx_books_author ON books(author);
+CREATE INDEX IF NOT EXISTS idx_books_category ON books(category) WHERE category IS NOT NULL; -- 분류별 필터링용
+CREATE INDEX IF NOT EXISTS idx_books_total_pages ON books(total_pages) WHERE total_pages IS NOT NULL; -- 페이지 수 범위 검색용
 CREATE INDEX IF NOT EXISTS idx_books_is_sample ON books(is_sample) WHERE is_sample = TRUE; -- 샘플 데이터 조회용 인덱스
 
 -- 전체 텍스트 검색 인덱스
 CREATE INDEX IF NOT EXISTS idx_books_title_fts ON books USING gin(to_tsvector('simple', title));
 CREATE INDEX IF NOT EXISTS idx_books_author_fts ON books USING gin(to_tsvector('simple', author));
 
--- 3.3 UserBooks (사용자-책 관계)
+-- 3.3 Bookshelves (서재)
+CREATE TABLE IF NOT EXISTS bookshelves (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    name VARCHAR(100) NOT NULL,
+    description TEXT,
+    is_main BOOLEAN DEFAULT FALSE,
+    "order" INTEGER DEFAULT 0,
+    is_public BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    CONSTRAINT bookshelves_order_check CHECK ("order" >= 0)
+);
+
+-- 인덱스
+CREATE INDEX IF NOT EXISTS idx_bookshelves_user_id ON bookshelves(user_id);
+CREATE INDEX IF NOT EXISTS idx_bookshelves_is_main ON bookshelves(is_main) WHERE is_main = TRUE;
+CREATE INDEX IF NOT EXISTS idx_bookshelves_order ON bookshelves(user_id, "order");
+
+-- UNIQUE 제약: 사용자당 메인 서재는 1개만 (부분 인덱스로 구현)
+CREATE UNIQUE INDEX IF NOT EXISTS idx_bookshelves_user_main_unique 
+ON bookshelves(user_id) 
+WHERE is_main = TRUE;
+
+-- RLS
+ALTER TABLE bookshelves ENABLE ROW LEVEL SECURITY;
+
+-- 기존 정책 삭제 후 재생성 (idempotent)
+DROP POLICY IF EXISTS "Users can view own bookshelves or public bookshelves" ON bookshelves;
+CREATE POLICY "Users can view own bookshelves or public bookshelves"
+    ON bookshelves FOR SELECT
+    USING (
+        auth.uid() = user_id 
+        OR is_public = TRUE
+    );
+
+DROP POLICY IF EXISTS "Users can insert own bookshelves" ON bookshelves;
+CREATE POLICY "Users can insert own bookshelves"
+    ON bookshelves FOR INSERT
+    WITH CHECK (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can update own bookshelves" ON bookshelves;
+CREATE POLICY "Users can update own bookshelves"
+    ON bookshelves FOR UPDATE
+    USING (auth.uid() = user_id)
+    WITH CHECK (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can delete own bookshelves" ON bookshelves;
+CREATE POLICY "Users can delete own bookshelves"
+    ON bookshelves FOR DELETE
+    USING (
+        auth.uid() = user_id 
+        AND is_main = FALSE
+    );
+
+-- 3.4 UserBooks (사용자-책 관계)
 CREATE TABLE IF NOT EXISTS user_books (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -138,10 +280,36 @@ CREATE TABLE IF NOT EXISTS user_books (
     UNIQUE(user_id, book_id)
 );
 
+-- user_books 테이블에 추가 컬럼 추가 (기존 테이블이 있는 경우를 대비)
+DO $$ 
+BEGIN
+    -- bookshelf_id 컬럼 추가
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'user_books' 
+        AND column_name = 'bookshelf_id'
+    ) THEN
+        ALTER TABLE user_books 
+        ADD COLUMN bookshelf_id UUID REFERENCES bookshelves(id) ON DELETE SET NULL;
+    END IF;
+
+    -- book_format 컬럼 추가
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'user_books' 
+        AND column_name = 'book_format'
+    ) THEN
+        ALTER TABLE user_books 
+        ADD COLUMN book_format VARCHAR(50);
+    END IF;
+END $$;
+
 -- 인덱스
 CREATE INDEX IF NOT EXISTS idx_user_books_user_id ON user_books(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_books_book_id ON user_books(book_id);
 CREATE INDEX IF NOT EXISTS idx_user_books_status ON user_books(status);
+CREATE INDEX IF NOT EXISTS idx_user_books_book_format ON user_books(book_format) WHERE book_format IS NOT NULL; -- 독서 매체별 필터링용
+CREATE INDEX IF NOT EXISTS idx_user_books_bookshelf_id ON user_books(bookshelf_id);
 
 -- RLS
 ALTER TABLE user_books ENABLE ROW LEVEL SECURITY;
@@ -168,7 +336,7 @@ CREATE POLICY "Users can delete own books"
     ON user_books FOR DELETE
     USING (auth.uid() = user_id);
 
--- 3.4 Notes (기록)
+-- 3.5 Notes (기록)
 CREATE TABLE IF NOT EXISTS notes (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -230,7 +398,7 @@ CREATE POLICY "Users can delete own notes"
     USING (auth.uid() = user_id);
 
 -- ============================================
--- 3.5 transcriptions (필사 OCR 데이터)
+-- 3.6 transcriptions (필사 OCR 데이터)
 -- ============================================
 
 -- OCR 처리 상태 ENUM 타입 생성
@@ -330,7 +498,7 @@ CREATE TRIGGER update_transcriptions_updated_at_trigger
     EXECUTE FUNCTION update_transcriptions_updated_at();
 
 -- ============================================
--- 3.6 groups (독서모임)
+-- 3.7 groups (독서모임)
 -- ============================================
 CREATE TABLE IF NOT EXISTS groups (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -373,7 +541,7 @@ CREATE POLICY "Leaders can delete groups"
     ON groups FOR DELETE
     USING (auth.uid() = leader_id);
 
--- 3.7 GroupMembers (모임 멤버)
+-- 3.8 GroupMembers (모임 멤버)
 CREATE TABLE IF NOT EXISTS group_members (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     group_id UUID NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
@@ -454,7 +622,7 @@ CREATE POLICY "Anyone can view public groups"
         -- getGroups 함수에서 group_members를 먼저 조회한 후 group_id로 groups 조회
     );
 
--- 3.8 GroupBooks (모임 책)
+-- 3.9 GroupBooks (모임 책)
 CREATE TABLE IF NOT EXISTS group_books (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     group_id UUID NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
@@ -521,7 +689,7 @@ CREATE POLICY "Leaders can remove group books"
         SELECT leader_id FROM groups WHERE id = group_books.group_id
     ));
 
--- 3.9 GroupNotes (모임 내 공유 기록)
+-- 3.10 GroupNotes (모임 내 공유 기록)
 CREATE TABLE IF NOT EXISTS group_notes (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     group_id UUID NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
@@ -581,7 +749,7 @@ CREATE POLICY "Note owners can unshare from groups"
         SELECT user_id FROM notes WHERE id = group_notes.note_id
     ));
 
--- 3.10 GroupSharedBooks (모임에 공유된 개인 서재)
+-- 3.11 GroupSharedBooks (모임에 공유된 개인 서재)
 CREATE TABLE IF NOT EXISTS group_shared_books (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     group_id UUID NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
@@ -656,6 +824,71 @@ CREATE POLICY "Users can unshare own books"
             AND user_id = auth.uid()
         )
     );
+
+-- ============================================
+-- 3.12 ocr_usage_stats (OCR 사용 통계)
+-- ============================================
+
+-- ocr_log_status ENUM 타입 생성
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'ocr_log_status') THEN
+        CREATE TYPE ocr_log_status AS ENUM ('success', 'failed');
+    END IF;
+END $$;
+
+-- ocr_usage_stats 테이블 생성
+CREATE TABLE IF NOT EXISTS ocr_usage_stats (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL UNIQUE REFERENCES auth.users(id) ON DELETE CASCADE,
+    success_count INTEGER NOT NULL DEFAULT 0,
+    failure_count INTEGER NOT NULL DEFAULT 0,
+    last_processed_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+-- 인덱스
+CREATE INDEX IF NOT EXISTS idx_ocr_usage_stats_user_id ON ocr_usage_stats(user_id);
+
+-- RLS
+ALTER TABLE ocr_usage_stats ENABLE ROW LEVEL SECURITY;
+
+-- RLS 정책 (관리자만 조회 가능)
+DROP POLICY IF EXISTS "Admins can view OCR usage stats" ON ocr_usage_stats;
+CREATE POLICY "Admins can view OCR usage stats"
+    ON ocr_usage_stats FOR SELECT
+    USING (is_admin_user());
+
+-- ============================================
+-- 3.13 ocr_logs (OCR 처리 상세 로그)
+-- ============================================
+
+-- ocr_logs 테이블 생성
+CREATE TABLE IF NOT EXISTS ocr_logs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    note_id UUID REFERENCES notes(id) ON DELETE SET NULL,
+    status ocr_log_status NOT NULL,
+    error_message TEXT,
+    processing_duration_ms INTEGER,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+-- 인덱스
+CREATE INDEX IF NOT EXISTS idx_ocr_logs_user_id ON ocr_logs(user_id);
+CREATE INDEX IF NOT EXISTS idx_ocr_logs_note_id ON ocr_logs(note_id);
+CREATE INDEX IF NOT EXISTS idx_ocr_logs_status ON ocr_logs(status);
+CREATE INDEX IF NOT EXISTS idx_ocr_logs_created_at ON ocr_logs(created_at DESC);
+
+-- RLS
+ALTER TABLE ocr_logs ENABLE ROW LEVEL SECURITY;
+
+-- RLS 정책 (관리자만 조회 가능)
+DROP POLICY IF EXISTS "Admins can view OCR logs" ON ocr_logs;
+CREATE POLICY "Admins can view OCR logs"
+    ON ocr_logs FOR SELECT
+    USING (is_admin_user());
 
 -- ============================================
 -- 4. 데이터베이스 함수 생성
@@ -751,6 +984,18 @@ CREATE TRIGGER update_notes_updated_at
 DROP TRIGGER IF EXISTS update_groups_updated_at ON groups;
 CREATE TRIGGER update_groups_updated_at
     BEFORE UPDATE ON groups
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_bookshelves_updated_at ON bookshelves;
+CREATE TRIGGER update_bookshelves_updated_at
+    BEFORE UPDATE ON bookshelves
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_ocr_usage_stats_updated_at ON ocr_usage_stats;
+CREATE TRIGGER update_ocr_usage_stats_updated_at
+    BEFORE UPDATE ON ocr_usage_stats
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();
 

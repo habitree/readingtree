@@ -325,20 +325,29 @@ export async function getCurrentUser() {
  * 
  * 규칙: 서버 중심 세션 관리
  * - 현재 로그인한 사용자가 관리자인지 확인
- * - 관리자는 cdhnaya@kakao.com 이메일 주소로만 지정
+ * - users 테이블의 is_admin 컬럼을 확인
  * 
  * @returns 관리자 여부 (true/false)
  */
 export async function isAdmin() {
   const user = await getCurrentUser();
   
-  if (!user || !user.email) {
+  if (!user) {
     return false;
   }
+
+  const supabase = await createServerSupabaseClient();
   
-  // 관리자 이메일 주소
-  const ADMIN_EMAIL = "cdhnaya@kakao.com";
-  
-  return user.email.toLowerCase() === ADMIN_EMAIL.toLowerCase();
+  const { data, error } = await supabase
+    .from("users")
+    .select("is_admin")
+    .eq("id", user.id)
+    .single();
+
+  if (error || !data) {
+    return false;
+  }
+
+  return data.is_admin === true;
 }
 

@@ -262,7 +262,7 @@ export async function getCurrentUserProfile() {
   // 프로필 조회
   let { data, error } = await supabase
     .from("users")
-    .select("id, name, avatar_url")
+    .select("id, name, avatar_url, is_admin")
     .eq("id", user.id)
     .single();
 
@@ -277,7 +277,7 @@ export async function getCurrentUserProfile() {
         name: defaultName,
         reading_goal: 12, // 기본값
       })
-      .select("id, name, avatar_url")
+      .select("id, name, avatar_url, is_admin")
       .single();
 
     if (insertError || !newProfile) {

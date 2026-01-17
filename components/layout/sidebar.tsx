@@ -17,6 +17,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/use-auth";
 import { BookshelfTree } from "./bookshelf-tree";
+import { getCurrentUserProfile } from "@/app/actions/profile";
+import { useEffect, useState } from "react";
 
 /**
  * 사이드바 네비게이션 아이템 타입
@@ -43,16 +45,6 @@ const sidebarItems: SidebarItem[] = [
   { icon: Trees, label: "관리자", href: "/admin", adminOnly: true },
 ];
 
-/**
- * 관리자 여부 확인
- */
-function isAdminUser(user: any): boolean {
-  if (!user || !user.email) {
-    return false;
-  }
-  const ADMIN_EMAIL = "cdhnaya@kakao.com";
-  return user.email.toLowerCase() === ADMIN_EMAIL.toLowerCase();
-}
 
 /**
  * 사이드바 컴포넌트
@@ -61,7 +53,29 @@ function isAdminUser(user: any): boolean {
 export function Sidebar() {
   const pathname = usePathname();
   const { user } = useAuth();
-  const isAdmin = isAdminUser(user);
+  const [userProfile, setUserProfile] = useState<{ is_admin?: boolean } | null>(null);
+
+  // 사용자 프로필 정보 가져오기 (is_admin 포함)
+  useEffect(() => {
+    if (user) {
+      getCurrentUserProfile()
+        .then((profile) => {
+          if (profile) {
+            setUserProfile(profile);
+          } else {
+            setUserProfile(null);
+          }
+        })
+        .catch((error) => {
+          console.error("프로필 조회 오류:", error);
+          setUserProfile(null);
+        });
+    } else {
+      setUserProfile(null);
+    }
+  }, [user]);
+
+  const isAdmin = userProfile?.is_admin === true;
 
   return (
     <aside

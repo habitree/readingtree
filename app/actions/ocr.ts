@@ -16,9 +16,14 @@ export async function getOcrUsageStats() {
     throw new Error("로그인이 필요합니다.");
   }
   
-  // 관리자 이메일 확인
-  const adminEmail = "cdhnaya@kakao.com";
-  if (user.email !== adminEmail) {
+  // 관리자 권한 확인
+  const { data: userProfile } = await supabase
+    .from("users")
+    .select("is_admin")
+    .eq("id", user.id)
+    .single();
+
+  if (!userProfile || !userProfile.is_admin) {
     throw new Error("관리자 권한이 필요합니다.");
   }
 
@@ -50,9 +55,14 @@ export async function getOcrLogs(limit: number = 100) {
     throw new Error("로그인이 필요합니다.");
   }
   
-  // 관리자 이메일 확인
-  const adminEmail = "cdhnaya@kakao.com";
-  if (user.email !== adminEmail) {
+  // 관리자 권한 확인
+  const { data: userProfile } = await supabase
+    .from("users")
+    .select("is_admin")
+    .eq("id", user.id)
+    .single();
+
+  if (!userProfile || !userProfile.is_admin) {
     throw new Error("관리자 권한이 필요합니다.");
   }
 

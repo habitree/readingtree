@@ -26,16 +26,6 @@ import { getImageUrl } from "@/lib/utils/image";
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 
-/**
- * 관리자 여부 확인
- */
-function isAdminUser(user: any): boolean {
-  if (!user || !user.email) {
-    return false;
-  }
-  const ADMIN_EMAIL = "cdhnaya@kakao.com";
-  return user.email.toLowerCase() === ADMIN_EMAIL.toLowerCase();
-}
 
 /**
  * 헤더 컴포넌트
@@ -44,7 +34,7 @@ function isAdminUser(user: any): boolean {
 export function Header() {
   const { user, isLoading } = useAuth();
   const pathname = usePathname();
-  const [userProfile, setUserProfile] = useState<{ id: string; name: string; avatar_url: string | null } | null>(null);
+  const [userProfile, setUserProfile] = useState<{ id: string; name: string; avatar_url: string | null; is_admin?: boolean } | null>(null);
   
   // 사용자 프로필 정보 가져오기
   // user가 변경되거나 프로필 페이지에서 다른 페이지로 이동할 때 갱신
@@ -86,7 +76,7 @@ export function Header() {
 
   const userName = userProfile?.name || user?.user_metadata?.name || user?.email?.split("@")[0] || "사용자";
   const userAvatar = userProfile?.avatar_url || null;
-  const isAdmin = isAdminUser(user);
+  const isAdmin = userProfile?.is_admin === true;
 
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
