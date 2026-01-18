@@ -306,11 +306,23 @@ BEGIN
     -- completed_dates 컬럼 추가
     IF NOT EXISTS (
         SELECT 1 FROM information_schema.columns 
-        WHERE table_name = 'user_books' 
+        WHERE table_schema = 'public'
+        AND table_name = 'user_books' 
         AND column_name = 'completed_dates'
     ) THEN
         ALTER TABLE user_books 
         ADD COLUMN completed_dates JSONB DEFAULT '[]'::jsonb;
+    END IF;
+
+    -- reading_reason 컬럼 추가
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_schema = 'public'
+        AND table_name = 'user_books' 
+        AND column_name = 'reading_reason'
+    ) THEN
+        ALTER TABLE user_books 
+        ADD COLUMN reading_reason VARCHAR(500);
     END IF;
 END $$;
 
