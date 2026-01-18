@@ -55,7 +55,9 @@ const nextConfig = {
         },
       ];
     }
-    // 프로덕션 환경에서는 strict CSP
+    // 프로덕션 환경 CSP
+    // Next.js Turbopack과 일부 라이브러리가 eval()을 사용할 수 있으므로 unsafe-eval 허용
+    // 보안상 위험이 있지만 Next.js 생태계에서 필요할 수 있음
     return [
       {
         source: '/:path*',
@@ -64,7 +66,7 @@ const nextConfig = {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' https://*.supabase.co https://*.kakao.com https://*.googleapis.com",
+              "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://*.supabase.co https://*.kakao.com https://*.googleapis.com",
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: https: blob:",
               "font-src 'self' data:",
