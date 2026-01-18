@@ -12,28 +12,23 @@ export async function createServerSupabaseClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-  // 빌드 타임이나 환경 변수가 없을 때 더미 클라이언트 반환
-  // 빌드 타임에는 실제 쿼리가 실행되지 않으므로 안전합니다.
-  if (!supabaseUrl || !supabaseAnonKey) {
-    const dummyUrl = supabaseUrl || "https://dummy.supabase.co";
-    const dummyKey = supabaseAnonKey || "dummy-key";
-    
-    // 빌드 타임에는 cookies() 호출이 실패할 수 있으므로 try-catch 처리
-    try {
-      const cookieStore = await cookies();
-      return createServerClient(dummyUrl, dummyKey, {
-        cookies: {
-          getAll() {
-            return cookieStore.getAll();
-          },
-          setAll() {
-            // 빌드 타임에는 쿠키 설정 무시
-          },
-        },
-      });
-    } catch {
-      // cookies() 호출 실패 시 (빌드 타임) 더미 클라이언트 반환
-      return createServerClient(dummyUrl, dummyKey, {
+  // 빌드 타임 체크: cookies() 호출이 실패하면 빌드 타임
+  let isBuildTime = false;
+  let cookieStore;
+  
+  try {
+    cookieStore = await cookies();
+  } catch {
+    // cookies() 호출 실패 시 빌드 타임으로 간주
+    isBuildTime = true;
+  }
+
+  // 빌드 타임에는 더미 클라이언트 반환 (빌드 오류 방지)
+  if (isBuildTime) {
+    return createServerClient(
+      supabaseUrl || "https://placeholder.supabase.co",
+      supabaseAnonKey || "placeholder-key",
+      {
         cookies: {
           getAll() {
             return [];
@@ -42,21 +37,35 @@ export async function createServerSupabaseClient() {
             // 빌드 타임에는 쿠키 설정 무시
           },
         },
-      });
-    }
+      }
+    );
   }
 
-  const cookieStore = await cookies();
+  // 런타임에는 환경 변수가 필수
+  if (!supabaseUrl || !supabaseAnonKey) {
+    const missingVars = [];
+    if (!supabaseUrl) missingVars.push("NEXT_PUBLIC_SUPABASE_URL");
+    if (!supabaseAnonKey) missingVars.push("NEXT_PUBLIC_SUPABASE_ANON_KEY");
+    
+    throw new Error(
+      `❌ Supabase 환경 변수가 설정되지 않았습니다.\n` +
+      `누락된 환경 변수: ${missingVars.join(", ")}\n` +
+      `Vercel Dashboard에서 환경 변수를 설정하고 재배포하세요.\n` +
+      `필요한 환경 변수:\n` +
+      `- NEXT_PUBLIC_SUPABASE_URL\n` +
+      `- NEXT_PUBLIC_SUPABASE_ANON_KEY`
+    );
+  }
 
   return createServerClient(supabaseUrl, supabaseAnonKey, {
     cookies: {
       getAll() {
-        return cookieStore.getAll();
+        return cookieStore!.getAll();
       },
       setAll(cookiesToSet) {
         try {
           cookiesToSet.forEach(({ name, value, options }) =>
-            cookieStore.set(name, value, options)
+            cookieStore!.set(name, value, options)
           );
         } catch {
           // The `setAll` method was called from a Server Component.

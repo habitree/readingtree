@@ -21,12 +21,24 @@ const fs = require('fs');
 const path = require('path');
 
 // 환경 변수 확인 (기존 변수명 또는 새 변수명 모두 지원)
-const OLD_SUPABASE_URL = process.env.OLD_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
-const OLD_SUPABASE_SERVICE_ROLE_KEY = process.env.OLD_SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
+// 기존 프로젝트: old_ 프리픽스 또는 OLD_ 프리픽스 우선
+// 새 프로젝트: NEW_ 프리픽스 우선, 없으면 표준 변수명 (Supabase2_rebuild)
+const OLD_SUPABASE_URL = 
+  process.env.OLD_SUPABASE_URL || 
+  process.env.old_NEXT_PUBLIC_SUPABASE_URL;
 
-// 새 프로젝트는 별도 변수명이 필요
-const NEW_SUPABASE_URL = process.env.NEW_SUPABASE_URL;
-const NEW_SUPABASE_SERVICE_ROLE_KEY = process.env.NEW_SUPABASE_SERVICE_ROLE_KEY;
+const OLD_SUPABASE_SERVICE_ROLE_KEY = 
+  process.env.OLD_SUPABASE_SERVICE_ROLE_KEY || 
+  process.env.old_SUPABASE_SERVICE_ROLE_KEY;
+
+// 새 프로젝트: NEW_ 프리픽스 우선, 없으면 표준 변수명 (현재 .env.local 구조)
+const NEW_SUPABASE_URL = 
+  process.env.NEW_SUPABASE_URL || 
+  process.env.NEXT_PUBLIC_SUPABASE_URL;
+
+const NEW_SUPABASE_SERVICE_ROLE_KEY = 
+  process.env.NEW_SUPABASE_SERVICE_ROLE_KEY || 
+  process.env.SUPABASE_SERVICE_ROLE_KEY;
 const BUCKET_NAME = process.env.BUCKET_NAME || 'images';
 
 if (!OLD_SUPABASE_URL || !OLD_SUPABASE_SERVICE_ROLE_KEY) {
@@ -34,18 +46,22 @@ if (!OLD_SUPABASE_URL || !OLD_SUPABASE_SERVICE_ROLE_KEY) {
   console.error('   .env.local에 다음 중 하나를 추가하세요:');
   console.error('   방법 1: OLD_SUPABASE_URL=https://xxx.supabase.co');
   console.error('           OLD_SUPABASE_SERVICE_ROLE_KEY=your_service_role_key');
-  console.error('   방법 2: NEXT_PUBLIC_SUPABASE_URL=https://xxx.supabase.co (기존 프로젝트)');
-  console.error('           SUPABASE_SERVICE_ROLE_KEY=your_service_role_key (기존 프로젝트)');
+  console.error('   방법 2: old_NEXT_PUBLIC_SUPABASE_URL=https://xxx.supabase.co');
+  console.error('           old_SUPABASE_SERVICE_ROLE_KEY=your_service_role_key');
+  console.error('');
+  console.error('   참고: # old Supabase 섹션에 old_ 프리픽스를 사용하세요.');
   process.exit(1);
 }
 
 if (!NEW_SUPABASE_URL || !NEW_SUPABASE_SERVICE_ROLE_KEY) {
   console.error('❌ 새 프로젝트 정보가 필요합니다.');
-  console.error('   .env.local에 다음을 추가하세요:');
-  console.error('   NEW_SUPABASE_URL=https://xxx.supabase.co');
-  console.error('   NEW_SUPABASE_SERVICE_ROLE_KEY=your_service_role_key');
+  console.error('   .env.local에 다음 중 하나를 추가하세요:');
+  console.error('   방법 1: NEW_SUPABASE_URL=https://xxx.supabase.co');
+  console.error('           NEW_SUPABASE_SERVICE_ROLE_KEY=your_service_role_key');
+  console.error('   방법 2: NEXT_PUBLIC_SUPABASE_URL=https://xxx.supabase.co (표준 변수명)');
+  console.error('           SUPABASE_SERVICE_ROLE_KEY=your_service_role_key (표준 변수명)');
   console.error('');
-  console.error('   참고: Supabase2_rebuild 블록의 값들을 사용하세요.');
+  console.error('   참고: # Supabase2_rebuild 섹션의 표준 변수명을 사용하세요.');
   process.exit(1);
 }
 
