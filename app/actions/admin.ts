@@ -236,10 +236,10 @@ export async function getOcrTotalStats() {
  * OCR 배치 처리
  * 이미지가 있지만 OCR 처리가 안 된 모든 기록을 일괄 처리
  * 관리자만 실행 가능
- * @param batchSize 한 번에 처리할 최대 기록 수 (기본값: 10)
+ * @param batchSize 한 번에 처리할 최대 기록 수 (기본값: 50)
  * @returns 처리 결과
  */
-export async function batchProcessOCR(batchSize: number = 10) {
+export async function batchProcessOCR(batchSize: number = 50) {
     await requireAdmin();
     
     const supabase = await createServerSupabaseClient();

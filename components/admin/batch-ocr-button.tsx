@@ -150,73 +150,85 @@ export function BatchOCRButton() {
     setShowProgress(true);
     
     // 초기 상태 설정
-    setCompletedCount(0);
-    setFailedCount(0);
-    setProgressItems([]);
+    let totalCompleted = 0;
+    let totalFailed = 0;
+    const allProcessedItems: OCRItem[] = [];
     processingNoteIdsRef.current.clear();
 
     try {
-      // 배치 처리 시작 전에 대기 중인 기록 조회
-      const pendingResult = await getPendingOCRCount();
-      const batchSize = Math.min(10, pendingResult.needingOCR);
-      
-      if (batchSize === 0) {
-        toast.info("OCR 처리가 필요한 기록이 없습니다.");
-        setIsProcessing(false);
-        setShowProgress(false);
-        setIsLoading(false);
-        return;
-      }
-
-      setTotalCount(batchSize);
-      
-      // 배치 처리 실행
-      const result = await batchProcessOCR(batchSize);
-      
-      // 결과를 OCRItem 형식으로 변환
-      const items: OCRItem[] = (result.items || []).map((item) => {
-        const status: OCRItem["status"] = item.success
-          ? "completed"
-          : item.error
-          ? "failed"
-          : "processing";
-
-        // 처리 중인 항목은 폴링 대상에 추가 (현재는 모든 항목이 완료/실패 상태)
-        // 하지만 transcription 상태가 아직 업데이트되지 않았을 수 있으므로 확인
-        if (status === "processing" || !item.success) {
-          // 실패한 항목도 transcription 상태를 확인해야 함
-          processingNoteIdsRef.current.add(item.noteId);
+      // 모든 대기 중인 기록을 처리할 때까지 반복
+      while (true) {
+        // 대기 중인 기록 조회
+        const pendingResult = await getPendingOCRCount();
+        
+        if (pendingResult.needingOCR === 0) {
+          // 더 이상 처리할 기록이 없으면 종료
+          break;
         }
 
-        return {
-          noteId: item.noteId,
-          status,
-          error: item.error,
-          duration: item.duration,
-        };
-      });
+        // 배치 크기 설정 (최대 50개)
+        const batchSize = Math.min(50, pendingResult.needingOCR);
+        setTotalCount(totalCompleted + totalFailed + batchSize);
+        
+        // 배치 처리 실행
+        const result = await batchProcessOCR(batchSize);
+        
+        // 결과를 OCRItem 형식으로 변환
+        const items: OCRItem[] = (result.items || []).map((item) => {
+          const status: OCRItem["status"] = item.success
+            ? "completed"
+            : item.error
+            ? "failed"
+            : "processing";
 
-      setProgressItems(items);
-      setCompletedCount(result.processedCount ?? 0);
-      setFailedCount(result.failedCount ?? 0);
+          // 실패한 항목은 무시하고 건너뛰기 (폴링 대상에 추가하지 않음)
+          if (status === "processing") {
+            processingNoteIdsRef.current.add(item.noteId);
+          }
 
-      // 모든 항목이 완료/실패된 경우에도 transcription 상태를 한 번 더 확인
-      // (서버에서 완료되었지만 DB 업데이트가 지연될 수 있음)
-      if (processingNoteIdsRef.current.size > 0) {
-        // 폴링이 계속 진행됨
-      } else {
-        setIsProcessing(false);
+          return {
+            noteId: item.noteId,
+            status,
+            error: item.error,
+            duration: item.duration,
+          };
+        });
+
+        // 전체 결과에 추가
+        allProcessedItems.push(...items);
+        totalCompleted += result.processedCount ?? 0;
+        totalFailed += result.failedCount ?? 0;
+
+        // 진행 상황 업데이트
+        setProgressItems([...allProcessedItems]);
+        setCompletedCount(totalCompleted);
+        setFailedCount(totalFailed);
+
+        // 실패한 항목은 무시하고 계속 진행
+        // 성공한 항목만 카운트에 반영
+        if (result.processedCount === 0 && result.failedCount > 0) {
+          // 모든 항목이 실패한 경우에만 경고 (하지만 계속 진행)
+          console.warn(`배치 처리 중 ${result.failedCount}개 항목 실패, 계속 진행합니다.`);
+        }
+
+        // 짧은 대기 후 다음 배치 처리 (서버 부하 방지)
+        await new Promise(resolve => setTimeout(resolve, 500));
       }
 
-      // 성공 메시지
-      if (result.failedCount === 0) {
-        toast.success(result.message);
-      } else {
-        toast.warning(result.message);
-      }
-
-      setPendingCount(null); // 카운트 초기화 (다시 확인 필요)
+      // 모든 배치 처리 완료
+      setIsProcessing(false);
       setIsLoading(false);
+
+      // 최종 결과 메시지
+      if (totalFailed === 0) {
+        toast.success(`모든 OCR 처리를 완료했습니다. (총 ${totalCompleted}개)`);
+      } else {
+        toast.warning(
+          `OCR 처리를 완료했습니다. 성공: ${totalCompleted}개, 실패: ${totalFailed}개 (실패 항목은 무시되었습니다)`
+        );
+      }
+
+      setPendingCount(null); // 카운트 초기화
     } catch (error) {
       console.error("OCR 배치 처리 오류:", error);
       setIsProcessing(false);
@@ -340,7 +352,9 @@ export function BatchOCRButton() {
                 이미지가 있지만 OCR 처리가 안 된 모든 기록을 일괄 처리합니다.
                 <br />
                 <span className="text-muted-foreground text-sm">
-                  한 번에 최대 10개씩 처리되며, 처리 시간이 소요될 수 있습니다.
+                  한 번에 최대 50개씩 처리되며, 대기 중인 모든 기록을 자동으로 처리합니다.
+                  <br />
+                  실패한 항목은 자동으로 건너뛰고 계속 진행됩니다.
                 </span>
                 {pendingCount !== null && (
                   <div className="mt-2 text-sm font-semibold text-primary">
