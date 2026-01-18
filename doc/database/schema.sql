@@ -302,6 +302,16 @@ BEGIN
         ALTER TABLE user_books 
         ADD COLUMN book_format VARCHAR(50);
     END IF;
+
+    -- completed_dates 컬럼 추가
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'user_books' 
+        AND column_name = 'completed_dates'
+    ) THEN
+        ALTER TABLE user_books 
+        ADD COLUMN completed_dates JSONB DEFAULT '[]'::jsonb;
+    END IF;
 END $$;
 
 -- 인덱스
@@ -310,6 +320,7 @@ CREATE INDEX IF NOT EXISTS idx_user_books_book_id ON user_books(book_id);
 CREATE INDEX IF NOT EXISTS idx_user_books_status ON user_books(status);
 CREATE INDEX IF NOT EXISTS idx_user_books_book_format ON user_books(book_format) WHERE book_format IS NOT NULL; -- 독서 매체별 필터링용
 CREATE INDEX IF NOT EXISTS idx_user_books_bookshelf_id ON user_books(bookshelf_id);
+CREATE INDEX IF NOT EXISTS idx_user_books_completed_dates ON user_books USING gin (completed_dates); -- JSONB 배열 검색 최적화
 
 -- RLS
 ALTER TABLE user_books ENABLE ROW LEVEL SECURITY;

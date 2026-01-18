@@ -29,7 +29,7 @@ Habitree Reading Hub는 독서를 좋아하는 사람들이 인상 깊었던 문
 
 1. 저장소 클론
 ```bash
-git clone https://github.com/habitree/readingtree4.0.git
+git clone https://github.com/habitree/readingtree.git
 cd readingtree_v4.0.0
 ```
 
