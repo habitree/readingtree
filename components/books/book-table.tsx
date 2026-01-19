@@ -28,7 +28,7 @@ import { BookStatusBadge } from "./book-status-badge";
 import { BookNotesPreview } from "./book-notes-preview";
 import { BookDeleteButton } from "./book-delete-button";
 import { getImageUrl, isValidImageUrl } from "@/lib/utils/image";
-import { BookOpen, FileText, Loader2, Users, BookOpen as BookOpenIcon, MoreVertical, Edit, ExternalLink, Trash2 } from "lucide-react";
+import { BookOpen, FileText, Loader2, Users, BookOpen as BookOpenIcon, Trash2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { updateBookStatus, getBookDescriptionSummary } from "@/app/actions/books";
@@ -368,7 +368,6 @@ export function BookTable({ books }: BookTableProps) {
                           )}
                         </div>
                       </Link>
-                      {/* 삭제 버튼 제거 (액션 메뉴에서 처리) */}
                     </div>
                   </td>
 
@@ -564,31 +563,34 @@ export function BookTable({ books }: BookTableProps) {
                         )}
                       </div>
                       
-                      {/* 기록 */}
-                      <Link href={`/books/${item.id}#book-info`} className="block">
-                        <Button variant="ghost" size="sm" className="w-full h-7 text-[11px] text-foreground hover:text-primary hover:bg-muted justify-center px-2.5">
-                          <FileText className="w-3 h-3 mr-1.5" aria-hidden="true" />
-                          기록
-                          {item.noteCount > 0 && (
-                            <span className="ml-1 text-muted-foreground">({item.noteCount})</span>
-                          )}
+                      {/* 기록 및 삭제 버튼을 한 줄에 배치 */}
+                      <div className="flex items-center gap-1.5">
+                        <Link href={`/books/${item.id}#book-info`} className="flex-1">
+                          <Button variant="ghost" size="sm" className="w-full h-7 text-[11px] text-foreground hover:text-primary hover:bg-muted justify-center px-2.5">
+                            <FileText className="w-3 h-3 mr-1.5" aria-hidden="true" />
+                            기록
+                            {item.noteCount > 0 && (
+                              <span className="ml-1 text-muted-foreground">({item.noteCount})</span>
+                            )}
+                          </Button>
+                        </Link>
+                        
+                        {/* 삭제 버튼 (작게) */}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10 flex-shrink-0"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteClick(item.id);
+                          }}
+                          disabled={deletingBookId === item.id}
+                          title="책 삭제"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                          <span className="sr-only">삭제</span>
                         </Button>
-                      </Link>
-                      
-                      {/* 삭제 버튼 (작게) */}
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-5 w-5 text-destructive hover:text-destructive hover:bg-destructive/10"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteClick(item.id);
-                        }}
-                        disabled={deletingBookId === item.id}
-                      >
-                        <Trash2 className="h-3 w-3" />
-                        <span className="sr-only">삭제</span>
-                      </Button>
+                      </div>
                     </div>
                   </td>
 

@@ -1,4 +1,4 @@
-import { getApiIntegrationInfo, getOcrMonthlyUsage, getOcrTotalStats } from "@/app/actions/admin";
+import { getApiIntegrationInfo, getOcrMonthlyUsage, getOcrTotalStats, testOcrConnection, getTranscriptionStats } from "@/app/actions/admin";
 import { ApiIntegrationInfo } from "@/components/admin/api-integration-info";
 import { Metadata } from "next";
 import { isAdmin } from "@/app/actions/auth";
@@ -12,25 +12,29 @@ export const metadata: Metadata = {
 export default async function ApiInfoPage() {
     // 관리자 권한 확인
     const admin = await isAdmin();
-    
+
     if (!admin) {
         // 관리자가 아닌 경우 홈으로 리다이렉트
         redirect("/");
     }
-    
+
     // API 연동 정보 및 OCR 사용량 조회
-    const [apiInfo, ocrMonthlyUsage, ocrTotalStats] = await Promise.all([
+    const [apiInfo, ocrMonthlyUsage, ocrTotalStats, ocrConnectionTest, transcriptionStats] = await Promise.all([
         getApiIntegrationInfo(),
         getOcrMonthlyUsage(),
         getOcrTotalStats(),
+        testOcrConnection(),
+        getTranscriptionStats(),
     ]);
 
     return (
         <div className="container py-8 max-w-7xl mx-auto">
-            <ApiIntegrationInfo 
+            <ApiIntegrationInfo
                 apiInfo={apiInfo}
                 ocrMonthlyUsage={ocrMonthlyUsage}
                 ocrTotalStats={ocrTotalStats}
+                ocrConnectionTest={ocrConnectionTest}
+                transcriptionStats={transcriptionStats}
             />
         </div>
     );

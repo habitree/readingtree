@@ -1,8 +1,10 @@
 "use server";
 
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { isAdmin } from "@/app/actions/auth";
 import { validateImageUrl } from "@/lib/utils/image-url-validation";
+import { GoogleAuth } from "google-auth-library";
 
 /**
  * 관리자 권한 확인 및 예외 발생
@@ -227,8 +229,194 @@ export async function getOcrTotalStats() {
         success: successCount || 0,
         failure: failureCount || 0,
         thisMonth: thisMonthCount || 0,
-        successRate: totalCount && totalCount > 0 
-            ? Math.round((successCount || 0) / totalCount * 100) 
+        successRate: totalCount && totalCount > 0
+            ? Math.round((successCount || 0) / totalCount * 100)
+            : 0,
+    };
+}
+
+/**
+ * OCR API 연결 상태 테스트
+ * 실제 OCR 서비스에 연결하여 상태를 확인
+ * @returns 연결 상태 정보
+ */
+export async function testOcrConnection() {
+    await requireAdmin();
+
+    const CLOUD_RUN_OCR_URL = process.env.CLOUD_RUN_OCR_URL ||
+        "https://extracttextfromimage-236647437750.us-central1.run.app";
+
+    const result = {
+        url: CLOUD_RUN_OCR_URL,
+        urlConfigured: !!process.env.CLOUD_RUN_OCR_URL,
+        tokenGeneration: {
+            success: false,
+            method: "unknown" as "dynamic" | "static" | "none",
+            message: "",
+        },
+        apiConnection: {
+            success: false,
+            statusCode: 0,
+            message: "",
+            latencyMs: 0,
+        },
+        overallStatus: "unknown" as "connected" | "token_error" | "api_error" | "unknown",
+    };
+
+    // 1. 토큰 생성 테스트
+    const serviceAccountKey = process.env.GOOGLE_SERVICE_ACCOUNT_KEY;
+    const staticToken = process.env.CLOUD_RUN_OCR_AUTH_TOKEN;
+
+    let authToken: string | null = null;
+
+    if (serviceAccountKey) {
+        result.tokenGeneration.method = "dynamic";
+        try {
+            const credentials = JSON.parse(serviceAccountKey);
+            const auth = new GoogleAuth({ credentials });
+            const idTokenClient = await auth.getIdTokenClient(CLOUD_RUN_OCR_URL);
+            authToken = await idTokenClient.idTokenProvider.fetchIdToken(CLOUD_RUN_OCR_URL);
+            result.tokenGeneration.success = true;
+            result.tokenGeneration.message = `동적 토큰 생성 성공 (길이: ${authToken.length})`;
+        } catch (error) {
+            result.tokenGeneration.success = false;
+            result.tokenGeneration.message = `동적 토큰 생성 실패: ${error instanceof Error ? error.message : "알 수 없는 오류"}`;
+            result.overallStatus = "token_error";
+            return result;
+        }
+    } else if (staticToken) {
+        result.tokenGeneration.method = "static";
+        result.tokenGeneration.success = true;
+        result.tokenGeneration.message = "정적 토큰 사용 중";
+        authToken = staticToken;
+    } else {
+        result.tokenGeneration.method = "none";
+        result.tokenGeneration.success = true;
+        result.tokenGeneration.message = "인증 없음 (공개 함수 가정)";
+    }
+
+    // 2. API 연결 테스트 (간단한 Health Check)
+    try {
+        const headers: Record<string, string> = {
+            "Content-Type": "application/json",
+        };
+
+        if (authToken) {
+            headers["Authorization"] = `Bearer ${authToken}`;
+        }
+
+        const startTime = Date.now();
+
+        // 아주 작은 테스트 이미지 (1x1 투명 PNG)
+        const testImage = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
+
+        const response = await fetch(CLOUD_RUN_OCR_URL, {
+            method: "POST",
+            headers,
+            body: JSON.stringify({
+                image: testImage,
+                mimeType: "image/png",
+            }),
+            signal: AbortSignal.timeout(30000),
+        });
+
+        result.apiConnection.latencyMs = Date.now() - startTime;
+        result.apiConnection.statusCode = response.status;
+
+        if (response.ok) {
+            result.apiConnection.success = true;
+            result.apiConnection.message = `연결 성공 (응답 시간: ${result.apiConnection.latencyMs}ms)`;
+            result.overallStatus = "connected";
+        } else {
+            // 403은 인증 문제, 400/500은 API 문제
+            const errorText = await response.text().catch(() => "");
+            result.apiConnection.success = false;
+            result.apiConnection.message = `API 오류: ${response.status} - ${errorText.substring(0, 100)}`;
+            result.overallStatus = response.status === 403 ? "token_error" : "api_error";
+        }
+    } catch (error) {
+        result.apiConnection.success = false;
+        result.apiConnection.message = `연결 실패: ${error instanceof Error ? error.message : "알 수 없는 오류"}`;
+        result.overallStatus = "api_error";
+    }
+
+    return result;
+}
+
+/**
+ * Transcription 통계 조회 (transcriptions 테이블 기반)
+ * @returns 전체 Transcription 처리 현황
+ */
+export async function getTranscriptionStats() {
+    await requireAdmin();
+
+    // 서비스 역할 키를 사용하여 모든 사용자의 기록에 접근 (RLS 우회)
+    const supabase = createAdminSupabaseClient();
+
+    // 이미지가 있는 notes 수 (photo, transcription 타입)
+    const { count: totalImageNotes } = await supabase
+        .from("notes")
+        .select("*", { count: "exact", head: true })
+        .not("image_url", "is", null)
+        .in("type", ["photo", "transcription"]);
+
+    // 전체 transcription 수
+    const { count: totalTranscriptions } = await supabase
+        .from("transcriptions")
+        .select("*", { count: "exact", head: true });
+
+    // 상태별 transcription 수
+    const { count: completedCount } = await supabase
+        .from("transcriptions")
+        .select("*", { count: "exact", head: true })
+        .eq("status", "completed");
+
+    const { count: processingCount } = await supabase
+        .from("transcriptions")
+        .select("*", { count: "exact", head: true })
+        .eq("status", "processing");
+
+    const { count: failedCount } = await supabase
+        .from("transcriptions")
+        .select("*", { count: "exact", head: true })
+        .eq("status", "failed");
+
+    // OCR 처리가 필요한 기록 수 계산
+    const { data: notesWithImages } = await supabase
+        .from("notes")
+        .select("id")
+        .not("image_url", "is", null)
+        .in("type", ["photo", "transcription"])
+        .limit(2000);
+
+    let needingOcrCount = 0;
+    if (notesWithImages && notesWithImages.length > 0) {
+        const noteIds = notesWithImages.map(n => n.id);
+        const { data: transcriptions } = await supabase
+            .from("transcriptions")
+            .select("note_id, status")
+            .in("note_id", noteIds);
+
+        const transcriptionMap = new Map<string, string>();
+        transcriptions?.forEach(t => {
+            transcriptionMap.set(t.note_id, t.status);
+        });
+
+        needingOcrCount = notesWithImages.filter(note => {
+            const status = transcriptionMap.get(note.id);
+            return !status || status === "failed";
+        }).length;
+    }
+
+    return {
+        totalImageNotes: totalImageNotes || 0,
+        totalTranscriptions: totalTranscriptions || 0,
+        completed: completedCount || 0,
+        processing: processingCount || 0,
+        failed: failedCount || 0,
+        needingOcr: needingOcrCount,
+        completionRate: (totalImageNotes && totalImageNotes > 0)
+            ? Math.round(((completedCount || 0) / totalImageNotes) * 100)
             : 0,
     };
 }
@@ -242,8 +430,9 @@ export async function getOcrTotalStats() {
  */
 export async function batchProcessOCR(batchSize: number = 50) {
     await requireAdmin();
-    
-    const supabase = await createServerSupabaseClient();
+
+    // 서비스 역할 키를 사용하여 RLS 우회 (모든 사용자의 기록에 접근 가능)
+    const supabase = createAdminSupabaseClient();
 
     // OCR 처리가 필요한 기록 조회
     // 1. image_url이 있는 기록
@@ -311,43 +500,94 @@ export async function batchProcessOCR(batchSize: number = 50) {
         };
     }
 
-    // OCR 처리 로직 직접 호출 (Server Action에서 직접 처리)
+    // OCR 처리 로직 직접 호출
     const { extractTextFromImage } = await import("@/lib/api/ocr");
-    const { createTranscriptionInitial, createOrUpdateTranscription, updateTranscriptionStatus } = await import("@/app/actions/notes");
     const { recordOcrSuccess, recordOcrFailure } = await import("@/app/actions/ocr");
-    const { validateImageUrl } = await import("@/lib/utils/image-url-validation");
-    
+
+    // 헬퍼 함수: Transcription 생성 또는 업데이트 (서비스 역할 키 사용, RLS 우회)
+    const createOrUpdateTranscriptionAdmin = async (noteId: string, extractedText: string) => {
+        const { data: existing } = await supabase
+            .from("transcriptions")
+            .select("id")
+            .eq("note_id", noteId)
+            .maybeSingle();
+
+        if (existing) {
+            const { error } = await supabase
+                .from("transcriptions")
+                .update({
+                    extracted_text: extractedText.trim(),
+                    status: "completed",
+                })
+                .eq("id", existing.id);
+            if (error) throw error;
+        } else {
+            const { error } = await supabase
+                .from("transcriptions")
+                .insert({
+                    note_id: noteId,
+                    extracted_text: extractedText.trim(),
+                    quote_content: null,
+                    memo_content: null,
+                    status: "completed",
+                });
+            if (error) throw error;
+        }
+    };
+
+    // 헬퍼 함수: Transcription 상태 업데이트 (서비스 역할 키 사용, RLS 우회)
+    const updateTranscriptionStatusAdmin = async (noteId: string, status: "processing" | "completed" | "failed") => {
+        // 기존 transcription이 있으면 업데이트, 없으면 생성
+        const { data: existing } = await supabase
+            .from("transcriptions")
+            .select("id")
+            .eq("note_id", noteId)
+            .maybeSingle();
+
+        if (existing) {
+            await supabase
+                .from("transcriptions")
+                .update({ status })
+                .eq("id", existing.id);
+        } else {
+            await supabase
+                .from("transcriptions")
+                .insert({
+                    note_id: noteId,
+                    status,
+                    extracted_text: null,
+                });
+        }
+    };
+
     // OCR 처리를 비동기로 실행 (Promise.allSettled 사용)
     const processPromises = notesToProcess.map(async (note) => {
         const startTime = Date.now();
         try {
             // 0. 이미지 URL 유효성 검증 (OCR 처리 전)
-            // 만료된 URL이나 접근 불가능한 이미지는 사전에 필터링하여 불필요한 OCR 처리 방지
             const validation = await validateImageUrl(note.image_url || "", 10000);
-            
+
             if (!validation.valid) {
-                // 이미지 URL이 유효하지 않으면 OCR 처리하지 않고 실패로 기록
                 const errorMessage = validation.error || "이미지 URL이 유효하지 않습니다.";
                 console.warn(`[OCR 배치 처리] 이미지 URL 유효성 검증 실패 - noteId: ${note.id}`, {
                     error: errorMessage,
                     status: validation.status,
-                    imageUrl: note.image_url?.substring(0, 100) + "...",
                 });
-                
-                // 실패 시 transcription 상태를 "failed"로 업데이트
+
+                // 실패 시 transcription 상태를 "failed"로 업데이트 (서비스 역할 키 사용)
                 try {
-                    await updateTranscriptionStatus(note.id, "failed");
+                    await updateTranscriptionStatusAdmin(note.id, "failed");
                 } catch (statusError) {
                     console.error(`Transcription 상태 업데이트 실패: noteId=${note.id}`, statusError);
                 }
-                
+
                 // 실패 통계 기록
                 try {
                     await recordOcrFailure(note.user_id, note.id, errorMessage, 0);
                 } catch (statsError) {
                     console.error(`OCR 실패 통계 기록 실패: noteId=${note.id}`, statsError);
                 }
-                
+
                 return {
                     noteId: note.id,
                     success: false,
@@ -355,32 +595,21 @@ export async function batchProcessOCR(batchSize: number = 50) {
                     duration: 0,
                 };
             }
-            
+
             // 1. OCR 처리 (이미지에서 텍스트 추출)
             const extractedText = await extractTextFromImage(note.image_url);
-            
-            // 2. Transcription 저장
-            await createOrUpdateTranscription(note.id, extractedText);
-            
-            // 3. 상태 확인 및 업데이트
-            const { data: transcription } = await supabase
-                .from("transcriptions")
-                .select("id, status")
-                .eq("note_id", note.id)
-                .maybeSingle();
-            
-            if (transcription && transcription.status !== "completed") {
-                await updateTranscriptionStatus(note.id, "completed");
-            }
-            
-            // 4. 성공 통계 기록
+
+            // 2. Transcription 저장 (서비스 역할 키 사용, RLS 우회)
+            await createOrUpdateTranscriptionAdmin(note.id, extractedText);
+
+            // 3. 성공 통계 기록
             const duration = Date.now() - startTime;
             try {
                 await recordOcrSuccess(note.user_id, note.id, duration);
             } catch (statsError) {
                 console.error(`OCR 통계 기록 실패 (계속 진행): noteId=${note.id}`, statsError);
             }
-            
+
             return {
                 noteId: note.id,
                 success: true,
@@ -406,9 +635,9 @@ export async function batchProcessOCR(batchSize: number = 50) {
                 imageUrl: note.image_url?.substring(0, 100) + "...",
             });
             
-            // 실패 시 transcription 상태를 "failed"로 업데이트
+            // 실패 시 transcription 상태를 "failed"로 업데이트 (서비스 역할 키 사용, RLS 우회)
             try {
-                await updateTranscriptionStatus(note.id, "failed");
+                await updateTranscriptionStatusAdmin(note.id, "failed");
             } catch (statusError) {
                 console.error(`Transcription 상태 업데이트 실패: noteId=${note.id}`, statusError);
             }
@@ -480,8 +709,9 @@ export async function batchProcessOCR(batchSize: number = 50) {
  */
 export async function getPendingOCRCount() {
     await requireAdmin();
-    
-    const supabase = await createServerSupabaseClient();
+
+    // 서비스 역할 키를 사용하여 모든 사용자의 기록에 접근 (RLS 우회)
+    const supabase = createAdminSupabaseClient();
 
     // OCR 처리가 필요한 기록 수 조회
     const { count, error } = await supabase

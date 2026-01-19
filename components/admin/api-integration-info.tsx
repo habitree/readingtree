@@ -48,7 +48,7 @@ interface ApiIntegrationInfoProps {
       features: string[];
       notes: string;
     };
-    
+
     // 검색
     naver: {
       provider: string;
@@ -60,7 +60,7 @@ interface ApiIntegrationInfoProps {
       features: string[];
       notes: string;
     };
-    
+
     // OCR
     cloudRunOcr: {
       provider: string;
@@ -80,13 +80,13 @@ interface ApiIntegrationInfoProps {
         pricingLink: string;
       };
     };
-    
+
     // 기타
     app: {
       appUrl: string;
       notes: string;
     };
-    
+
     // 권장 사항
     recommendations: Array<{
       type: string;
@@ -95,7 +95,7 @@ interface ApiIntegrationInfoProps {
       priority: string;
       category: string;
     }>;
-    
+
     // 요약
     summary: {
       totalApis: number;
@@ -120,10 +120,35 @@ interface ApiIntegrationInfoProps {
     thisMonth: number;
     successRate: number;
   };
+  ocrConnectionTest?: {
+    url: string;
+    urlConfigured: boolean;
+    tokenGeneration: {
+      success: boolean;
+      method: "dynamic" | "static" | "none" | "unknown";
+      message: string;
+    };
+    apiConnection: {
+      success: boolean;
+      statusCode: number;
+      message: string;
+      latencyMs: number;
+    };
+    overallStatus: "connected" | "token_error" | "api_error" | "unknown";
+  };
+  transcriptionStats?: {
+    totalImageNotes: number;
+    totalTranscriptions: number;
+    completed: number;
+    processing: number;
+    failed: number;
+    needingOcr: number;
+    completionRate: number;
+  };
 }
 
-export function ApiIntegrationInfo({ apiInfo, ocrMonthlyUsage, ocrTotalStats }: ApiIntegrationInfoProps) {
-  const { 
+export function ApiIntegrationInfo({ apiInfo, ocrMonthlyUsage, ocrTotalStats, ocrConnectionTest, transcriptionStats }: ApiIntegrationInfoProps) {
+  const {
     supabase, 
     kakaoSdk, 
     naver, 
@@ -527,14 +552,129 @@ export function ApiIntegrationInfo({ apiInfo, ocrMonthlyUsage, ocrTotalStats }: 
                   <div>
                     <span className="font-medium">유료 요금:</span> {cloudRunOcr.pricing.costPerRequest}
                   </div>
-                  <a 
-                    href={cloudRunOcr.pricing.pricingLink} 
-                    target="_blank" 
+                  <a
+                    href={cloudRunOcr.pricing.pricingLink}
+                    target="_blank"
                     rel="noopener noreferrer"
                     className="text-xs text-blue-500 hover:underline flex items-center gap-1 mt-2"
                   >
                     가격 책정 상세 보기 <ExternalLink className="h-3 w-3" />
                   </a>
+                </div>
+              </div>
+            )}
+
+            {/* OCR 실시간 연결 테스트 결과 */}
+            {ocrConnectionTest && (
+              <div className={cn(
+                "p-3 rounded-lg border",
+                ocrConnectionTest.overallStatus === "connected"
+                  ? "bg-green-500/10 border-green-500/30"
+                  : ocrConnectionTest.overallStatus === "token_error"
+                  ? "bg-yellow-500/10 border-yellow-500/30"
+                  : "bg-red-500/10 border-red-500/30"
+              )}>
+                <div className="font-medium mb-3 text-sm flex items-center gap-2">
+                  {ocrConnectionTest.overallStatus === "connected" ? (
+                    <CheckCircle2 className="h-4 w-4 text-green-600" />
+                  ) : ocrConnectionTest.overallStatus === "token_error" ? (
+                    <AlertTriangle className="h-4 w-4 text-yellow-600" />
+                  ) : (
+                    <XCircle className="h-4 w-4 text-red-600" />
+                  )}
+                  실시간 연결 테스트
+                  <Badge
+                    variant={ocrConnectionTest.overallStatus === "connected" ? "default" : "destructive"}
+                    className="text-xs"
+                  >
+                    {ocrConnectionTest.overallStatus === "connected"
+                      ? "연결됨"
+                      : ocrConnectionTest.overallStatus === "token_error"
+                      ? "토큰 오류"
+                      : "연결 실패"}
+                  </Badge>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                  <div>
+                    <div className="text-muted-foreground text-xs mb-1">토큰 생성</div>
+                    <div className="flex items-center gap-1">
+                      {ocrConnectionTest.tokenGeneration.success ? (
+                        <CheckCircle2 className="h-3 w-3 text-green-600" />
+                      ) : (
+                        <XCircle className="h-3 w-3 text-red-600" />
+                      )}
+                      <span className="text-xs">
+                        {ocrConnectionTest.tokenGeneration.method === "dynamic"
+                          ? "동적 토큰"
+                          : ocrConnectionTest.tokenGeneration.method === "static"
+                          ? "정적 토큰"
+                          : "인증 없음"}
+                      </span>
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-muted-foreground text-xs mb-1">API 연결</div>
+                    <div className="flex items-center gap-1">
+                      {ocrConnectionTest.apiConnection.success ? (
+                        <CheckCircle2 className="h-3 w-3 text-green-600" />
+                      ) : (
+                        <XCircle className="h-3 w-3 text-red-600" />
+                      )}
+                      <span className="text-xs">
+                        {ocrConnectionTest.apiConnection.success
+                          ? `${ocrConnectionTest.apiConnection.latencyMs}ms`
+                          : `오류 (${ocrConnectionTest.apiConnection.statusCode})`}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="col-span-2">
+                    <div className="text-muted-foreground text-xs mb-1">상세 메시지</div>
+                    <div className="text-xs font-mono bg-background/50 p-2 rounded">
+                      {ocrConnectionTest.apiConnection.message || ocrConnectionTest.tokenGeneration.message}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Transcription 처리 현황 */}
+            {transcriptionStats && (
+              <div className="p-3 bg-purple-500/10 rounded-lg border border-purple-500/20">
+                <div className="font-medium mb-3 text-sm flex items-center gap-2">
+                  <Zap className="h-4 w-4 text-purple-600" />
+                  OCR 처리 현황 (Transcription)
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                  <div>
+                    <div className="text-muted-foreground text-xs mb-1">전체 이미지 기록</div>
+                    <div className="text-lg font-bold">{transcriptionStats.totalImageNotes.toLocaleString()}</div>
+                  </div>
+                  <div>
+                    <div className="text-muted-foreground text-xs mb-1">처리 완료</div>
+                    <div className="text-lg font-bold text-green-600">{transcriptionStats.completed.toLocaleString()}</div>
+                  </div>
+                  <div>
+                    <div className="text-muted-foreground text-xs mb-1">처리 대기</div>
+                    <div className="text-lg font-bold text-yellow-600">{transcriptionStats.needingOcr.toLocaleString()}</div>
+                  </div>
+                  <div>
+                    <div className="text-muted-foreground text-xs mb-1">실패</div>
+                    <div className="text-lg font-bold text-red-600">{transcriptionStats.failed.toLocaleString()}</div>
+                  </div>
+                </div>
+                <div className="mt-3 pt-3 border-t border-purple-500/20">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">처리 완료율</span>
+                    <div className="flex items-center gap-2">
+                      <div className="w-24 h-2 bg-muted rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-purple-500 transition-all"
+                          style={{ width: `${transcriptionStats.completionRate}%` }}
+                        />
+                      </div>
+                      <span className="font-bold text-purple-600">{transcriptionStats.completionRate}%</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}

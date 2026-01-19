@@ -49,4 +49,9 @@ gen-lang-client-*.json
 *.tsbuildinfo
 next-env.d.ts
 
+# Windows special device files
+nul
+nul.*
+*.nul
+
 
