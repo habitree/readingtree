@@ -308,26 +308,26 @@ export function BookTable({ books }: BookTableProps) {
 
   return (
     <div className="rounded-lg border overflow-hidden">
-      <div className="overflow-x-auto overflow-y-visible">
-        <table className="w-full" style={{ minWidth: '1650px', tableLayout: 'auto' }}>
+      <div className="overflow-x-auto overflow-y-visible" style={{ position: 'relative' }}>
+        <table className="w-full border-collapse" style={{ minWidth: '100%', tableLayout: 'auto' }}>
           <thead className="bg-muted/50">
             <tr>
-              <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground w-16 sm:w-20 lg:w-24">
+              <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground" style={{ width: '120px', minWidth: '120px' }}>
                 표지
               </th>
-              <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground" style={{ width: '200px', minWidth: '200px' }}>
+              <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground" style={{ width: '250px', minWidth: '250px' }}>
                 제목
               </th>
-              <th className="hidden lg:table-cell px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground" style={{ width: '900px', minWidth: '900px' }}>
+              <th className="hidden lg:table-cell px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground" style={{ width: 'auto', minWidth: '300px' }}>
                 책소개
               </th>
-              <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground w-36 sm:w-40">
+              <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground" style={{ width: '180px', minWidth: '180px' }}>
                 상태/기록
               </th>
-              <th className="hidden lg:table-cell px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground w-52">
+              <th className="hidden lg:table-cell px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground" style={{ width: '200px', minWidth: '200px' }}>
                 책정보
               </th>
-              <th className="px-3 py-2.5 text-center text-xs font-semibold text-muted-foreground w-12">
+              <th className="px-3 py-2.5 text-center text-xs font-semibold text-muted-foreground" style={{ width: '80px', minWidth: '80px' }}>
                 액션
               </th>
             </tr>
@@ -351,7 +351,7 @@ export function BookTable({ books }: BookTableProps) {
                   className="hover:bg-muted/30 transition-colors"
                 >
                   {/* 표지 */}
-                  <td className="px-3 py-4 align-top">
+                  <td className="px-3 py-4 align-top" style={{ width: '120px', minWidth: '120px' }}>
                     <div className="relative w-16 h-24 sm:w-20 sm:h-32 lg:w-24 lg:h-36 mx-auto">
                       <Link href={`/books/${item.id}`} className="block relative w-full h-full">
                         <div className="relative w-full h-full rounded-md overflow-hidden bg-muted cursor-pointer hover:shadow-lg transition-all duration-300 shadow-md border border-black/5">
@@ -376,7 +376,7 @@ export function BookTable({ books }: BookTableProps) {
                   </td>
 
                   {/* 제목 */}
-                  <td className="px-3 py-4 align-top" style={{ width: '200px', minWidth: '200px' }}>
+                  <td className="px-3 py-4 align-top" style={{ width: '250px', minWidth: '250px' }}>
                     <div className="space-y-1.5">
                       <div className="space-y-0.5">
                         {(() => {
@@ -430,7 +430,7 @@ export function BookTable({ books }: BookTableProps) {
                   </td>
 
                   {/* 책소개 (PC 버전에서만 표시) */}
-                  <td className="hidden lg:table-cell px-3 py-4 align-top" style={{ width: '900px', minWidth: '900px', overflow: 'visible' }}>
+                  <td className="hidden lg:table-cell px-3 py-4 align-top" style={{ width: 'auto', minWidth: '300px', overflow: 'visible' }}>
                     <div 
                       className="text-xs text-foreground leading-relaxed pr-4"
                       style={{
@@ -469,7 +469,7 @@ export function BookTable({ books }: BookTableProps) {
                   </td>
 
                   {/* 상태/기록 그룹 */}
-                  <td className="px-3 py-4 align-top">
+                  <td className="px-3 py-4 align-top" style={{ width: '180px', minWidth: '180px' }}>
                     <div className="space-y-2">
                       {/* 상태 */}
                       <div>
@@ -494,7 +494,7 @@ export function BookTable({ books }: BookTableProps) {
                                 </span>
                               </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="start" className="w-[160px]">
+                            <DropdownMenuContent align="start" className="w-[160px]" style={{ zIndex: 100 }}>
                               <DropdownMenuLabel className="text-xs">읽기 상태</DropdownMenuLabel>
                               <DropdownMenuItem
                                 onClick={() => handleStatusChange(item.id, "not_started")}
@@ -581,7 +581,7 @@ export function BookTable({ books }: BookTableProps) {
                   </td>
 
                   {/* 책정보 (태블릿 이하에서 숨김) */}
-                  <td className="hidden lg:table-cell px-3 py-4 align-top">
+                  <td className="hidden lg:table-cell px-3 py-4 align-top" style={{ width: '200px', minWidth: '200px' }}>
                     <div className="space-y-1.5 text-xs">
                       {book.author && (
                         <div className="flex gap-2.5 items-start">
@@ -642,7 +642,7 @@ export function BookTable({ books }: BookTableProps) {
                   </td>
 
                   {/* 액션 메뉴 */}
-                  <td className="px-3 py-4 align-middle">
+                  <td className="px-3 py-4 align-middle" style={{ width: '80px', minWidth: '80px' }}>
                     <div className="flex justify-center">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -656,7 +656,7 @@ export function BookTable({ books }: BookTableProps) {
                             <span className="sr-only">액션 메뉴</span>
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-48">
+                        <DropdownMenuContent align="end" className="w-48" style={{ zIndex: 100 }}>
                           <DropdownMenuLabel className="text-xs">책 관리</DropdownMenuLabel>
                           <DropdownMenuItem asChild>
                             <Link href={`/books/${item.id}`}>

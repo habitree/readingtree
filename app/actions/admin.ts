@@ -2,6 +2,7 @@
 
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { isAdmin } from "@/app/actions/auth";
+import { validateImageUrl } from "@/lib/utils/image-url-validation";
 
 /**
  * 관리자 권한 확인 및 예외 발생
@@ -769,9 +770,304 @@ export async function getApiIntegrationInfo() {
             enabledApis,
             criticalApis: criticalApis.length,
             criticalEnabled: allCriticalEnabled,
-            status: allCriticalEnabled 
-                ? (enabledApis === allApis.length ? "완벽" : "정상") 
+            status: allCriticalEnabled
+                ? (enabledApis === allApis.length ? "완벽" : "정상")
                 : "설정 필요",
         },
+    };
+}
+
+/**
+ * 비정상 이미지 데이터 타입 정의
+ */
+export type InvalidImageReason =
+    | "empty_url"           // image_url이 null이거나 빈 문자열
+    | "invalid_url_format"  // URL 형식이 잘못됨
+    | "file_not_found"      // 실제 파일이 존재하지 않음 (404)
+    | "access_denied"       // 접근 거부 (403/401)
+    | "not_image"           // 이미지 파일이 아님
+    | "timeout"             // 타임아웃
+    | "other_error";        // 기타 오류
+
+export interface InvalidImageNote {
+    id: string;
+    user_id: string;
+    book_id: string;
+    type: string;
+    image_url: string | null;
+    created_at: string;
+    reason: InvalidImageReason;
+    error_message: string;
+}
+
+/**
+ * 비정상 이미지 데이터 조회
+ * 관리자만 실행 가능
+ * @param limit 조회할 최대 레코드 수 (기본값: 100)
+ * @param checkStorage Storage에 실제 파일 존재 여부 확인 (기본값: true)
+ * @returns 비정상 이미지 데이터 목록
+ */
+export async function getInvalidImageNotes(
+    limit: number = 100,
+    checkStorage: boolean = true
+): Promise<{
+    success: boolean;
+    data: InvalidImageNote[];
+    summary: {
+        total: number;
+        emptyUrl: number;
+        invalidFormat: number;
+        fileNotFound: number;
+        accessDenied: number;
+        notImage: number;
+        timeout: number;
+        otherError: number;
+    };
+    message: string;
+}> {
+    await requireAdmin();
+
+    const supabase = await createServerSupabaseClient();
+    const invalidNotes: InvalidImageNote[] = [];
+
+    // 1. type이 photo/transcription인 기록 조회
+    const { data: photoNotes, error: queryError } = await supabase
+        .from("notes")
+        .select("id, user_id, book_id, type, image_url, created_at")
+        .in("type", ["photo", "transcription"])
+        .order("created_at", { ascending: false })
+        .limit(limit);
+
+    if (queryError) {
+        console.error("비정상 이미지 데이터 조회 오류:", queryError);
+        throw new Error(`조회 실패: ${queryError.message}`);
+    }
+
+    if (!photoNotes || photoNotes.length === 0) {
+        return {
+            success: true,
+            data: [],
+            summary: {
+                total: 0,
+                emptyUrl: 0,
+                invalidFormat: 0,
+                fileNotFound: 0,
+                accessDenied: 0,
+                notImage: 0,
+                timeout: 0,
+                otherError: 0,
+            },
+            message: "photo/transcription 타입의 기록이 없습니다.",
+        };
+    }
+
+    // 2. 각 기록에 대해 이미지 URL 검증
+    for (const note of photoNotes) {
+        // 2-1. image_url이 없는 경우
+        if (!note.image_url || note.image_url.trim() === "") {
+            invalidNotes.push({
+                ...note,
+                reason: "empty_url",
+                error_message: "이미지 URL이 비어있습니다.",
+            });
+            continue;
+        }
+
+        // 2-2. URL 형식 검증
+        try {
+            new URL(note.image_url);
+        } catch {
+            invalidNotes.push({
+                ...note,
+                reason: "invalid_url_format",
+                error_message: "유효하지 않은 URL 형식입니다.",
+            });
+            continue;
+        }
+
+        // 2-3. Storage에 실제 파일 존재 여부 확인 (선택적)
+        if (checkStorage) {
+            const validation = await validateImageUrl(note.image_url, 10000);
+
+            if (!validation.valid) {
+                let reason: InvalidImageReason = "other_error";
+
+                if (validation.status === 404) {
+                    reason = "file_not_found";
+                } else if (validation.status === 403 || validation.status === 401) {
+                    reason = "access_denied";
+                } else if (validation.error?.includes("이미지 파일이 아닙니다")) {
+                    reason = "not_image";
+                } else if (validation.error?.includes("타임아웃")) {
+                    reason = "timeout";
+                }
+
+                invalidNotes.push({
+                    ...note,
+                    reason,
+                    error_message: validation.error || "알 수 없는 오류",
+                });
+            }
+        }
+    }
+
+    // 3. 요약 통계 계산
+    const summary = {
+        total: invalidNotes.length,
+        emptyUrl: invalidNotes.filter(n => n.reason === "empty_url").length,
+        invalidFormat: invalidNotes.filter(n => n.reason === "invalid_url_format").length,
+        fileNotFound: invalidNotes.filter(n => n.reason === "file_not_found").length,
+        accessDenied: invalidNotes.filter(n => n.reason === "access_denied").length,
+        notImage: invalidNotes.filter(n => n.reason === "not_image").length,
+        timeout: invalidNotes.filter(n => n.reason === "timeout").length,
+        otherError: invalidNotes.filter(n => n.reason === "other_error").length,
+    };
+
+    return {
+        success: true,
+        data: invalidNotes,
+        summary,
+        message: `${photoNotes.length}개의 기록 중 ${invalidNotes.length}개의 비정상 데이터를 발견했습니다.`,
+    };
+}
+
+/**
+ * 비정상 이미지 데이터 삭제
+ * 관리자만 실행 가능
+ * @param noteIds 삭제할 기록 ID 배열 (비어있으면 모든 비정상 데이터 삭제)
+ * @param deleteStorage Storage에서 파일도 삭제할지 여부 (기본값: true)
+ * @returns 삭제 결과
+ */
+export async function cleanupInvalidImageNotes(
+    noteIds?: string[],
+    deleteStorage: boolean = true
+): Promise<{
+    success: boolean;
+    deletedCount: number;
+    failedCount: number;
+    details: Array<{
+        noteId: string;
+        success: boolean;
+        error?: string;
+    }>;
+    message: string;
+}> {
+    await requireAdmin();
+
+    const supabase = await createServerSupabaseClient();
+
+    // noteIds가 없으면 비정상 데이터 조회
+    let targetNoteIds = noteIds;
+    if (!targetNoteIds || targetNoteIds.length === 0) {
+        const invalidResult = await getInvalidImageNotes(500, true);
+        targetNoteIds = invalidResult.data.map(n => n.id);
+    }
+
+    if (targetNoteIds.length === 0) {
+        return {
+            success: true,
+            deletedCount: 0,
+            failedCount: 0,
+            details: [],
+            message: "삭제할 비정상 데이터가 없습니다.",
+        };
+    }
+
+    const details: Array<{
+        noteId: string;
+        success: boolean;
+        error?: string;
+    }> = [];
+
+    // 각 기록 삭제
+    for (const noteId of targetNoteIds) {
+        try {
+            // 기록 조회 (Storage 삭제용)
+            const { data: note, error: fetchError } = await supabase
+                .from("notes")
+                .select("id, image_url")
+                .eq("id", noteId)
+                .maybeSingle();
+
+            if (fetchError) {
+                details.push({
+                    noteId,
+                    success: false,
+                    error: `조회 실패: ${fetchError.message}`,
+                });
+                continue;
+            }
+
+            if (!note) {
+                details.push({
+                    noteId,
+                    success: false,
+                    error: "기록을 찾을 수 없습니다.",
+                });
+                continue;
+            }
+
+            // Storage에서 파일 삭제 (선택적)
+            if (deleteStorage && note.image_url) {
+                try {
+                    const url = new URL(note.image_url);
+                    const pathParts = url.pathname.split("/storage/v1/object/public/");
+
+                    if (pathParts.length === 2) {
+                        const fullPath = pathParts[1];
+                        const pathSegments = fullPath.split("/");
+
+                        if (pathSegments.length >= 2) {
+                            const bucket = pathSegments[0];
+                            const filePath = pathSegments.slice(1).join("/");
+
+                            await supabase.storage
+                                .from(bucket)
+                                .remove([filePath]);
+                        }
+                    }
+                } catch (storageError) {
+                    // Storage 삭제 실패해도 기록은 삭제 진행
+                    console.warn(`Storage 파일 삭제 실패 (계속 진행): ${noteId}`, storageError);
+                }
+            }
+
+            // 데이터베이스에서 기록 삭제
+            const { error: deleteError } = await supabase
+                .from("notes")
+                .delete()
+                .eq("id", noteId);
+
+            if (deleteError) {
+                details.push({
+                    noteId,
+                    success: false,
+                    error: `삭제 실패: ${deleteError.message}`,
+                });
+                continue;
+            }
+
+            details.push({
+                noteId,
+                success: true,
+            });
+        } catch (error) {
+            details.push({
+                noteId,
+                success: false,
+                error: error instanceof Error ? error.message : "알 수 없는 오류",
+            });
+        }
+    }
+
+    const deletedCount = details.filter(d => d.success).length;
+    const failedCount = details.filter(d => !d.success).length;
+
+    return {
+        success: true,
+        deletedCount,
+        failedCount,
+        details,
+        message: `${deletedCount}개의 기록을 삭제했습니다. ${failedCount}개 실패.`,
     };
 }
