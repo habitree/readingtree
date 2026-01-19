@@ -11,11 +11,24 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { deleteBook } from "@/app/actions/books";
 import { BookStatusBadge } from "./book-status-badge";
 import { BookNotesPreview } from "./book-notes-preview";
 import { BookDeleteButton } from "./book-delete-button";
 import { getImageUrl, isValidImageUrl } from "@/lib/utils/image";
-import { BookOpen, FileText, Loader2, Users, BookOpen as BookOpenIcon } from "lucide-react";
+import { BookOpen, FileText, Loader2, Users, BookOpen as BookOpenIcon, MoreVertical, Edit, ExternalLink, Trash2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { updateBookStatus, getBookDescriptionSummary } from "@/app/actions/books";
@@ -73,6 +86,9 @@ export function BookTable({ books }: BookTableProps) {
   const [updatingBookshelf, setUpdatingBookshelf] = useState<Record<string, boolean>>({});
   const [bookDescriptions, setBookDescriptions] = useState<Record<string, string>>({});
   const [loadingDescriptions, setLoadingDescriptions] = useState<Record<string, boolean>>({});
+  const [deletingBookId, setDeletingBookId] = useState<string | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState<Record<string, boolean>>({});
+  const [confirmDeleteTitle, setConfirmDeleteTitle] = useState<Record<string, string>>({});
 
   // 서재 목록 로드
   useEffect(() => {
@@ -238,6 +254,49 @@ export function BookTable({ books }: BookTableProps) {
     }
   };
 
+  const handleDeleteClick = (userBookId: string) => {
+    setDeleteDialogOpen((prev) => ({ ...prev, [userBookId]: true }));
+    setConfirmDeleteTitle((prev) => ({ ...prev, [userBookId]: "" }));
+  };
+
+  const handleDeleteConfirm = async (userBookId: string, bookTitle: string) => {
+    if (confirmDeleteTitle[userBookId]?.trim() !== bookTitle.trim()) {
+      toast.error("책 제목이 일치하지 않습니다. 정확히 입력해주세요.");
+      return;
+    }
+
+    setDeletingBookId(userBookId);
+    try {
+      await deleteBook(userBookId);
+      toast.success("책이 삭제되었습니다.");
+      setDeleteDialogOpen((prev) => ({ ...prev, [userBookId]: false }));
+      setConfirmDeleteTitle((prev) => {
+        const next = { ...prev };
+        delete next[userBookId];
+        return next;
+      });
+      router.push("/books");
+    } catch (error) {
+      console.error("책 삭제 오류:", error);
+      toast.error(
+        error instanceof Error ? error.message : "책 삭제에 실패했습니다."
+      );
+    } finally {
+      setDeletingBookId(null);
+    }
+  };
+
+  const handleDeleteDialogClose = (userBookId: string, open: boolean) => {
+    setDeleteDialogOpen((prev) => ({ ...prev, [userBookId]: open }));
+    if (!open) {
+      setConfirmDeleteTitle((prev) => {
+        const next = { ...prev };
+        delete next[userBookId];
+        return next;
+      });
+    }
+  };
+
   // books가 없거나 유효하지 않은 경우 처리
   if (!books || books.length === 0) {
     return (
@@ -250,7 +309,7 @@ export function BookTable({ books }: BookTableProps) {
   return (
     <div className="rounded-lg border overflow-hidden">
       <div className="overflow-x-auto overflow-y-visible">
-        <table className="w-full" style={{ minWidth: '1600px', tableLayout: 'auto' }}>
+        <table className="w-full" style={{ minWidth: '1650px', tableLayout: 'auto' }}>
           <thead className="bg-muted/50">
             <tr>
               <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground w-16 sm:w-20 lg:w-24">
@@ -267,6 +326,9 @@ export function BookTable({ books }: BookTableProps) {
               </th>
               <th className="hidden lg:table-cell px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground w-52">
                 책정보
+              </th>
+              <th className="px-3 py-2.5 text-center text-xs font-semibold text-muted-foreground w-12">
+                액션
               </th>
             </tr>
           </thead>
@@ -309,15 +371,7 @@ export function BookTable({ books }: BookTableProps) {
                           )}
                         </div>
                       </Link>
-                      {/* 삭제 버튼 - 표지 상단 우측 */}
-                      <div className="absolute -top-1 -right-1 z-10">
-                        <BookDeleteButton
-                          userBookId={item.id}
-                          bookTitle={book.title}
-                          variant="icon"
-                          size="icon"
-                        />
-                      </div>
+                      {/* 삭제 버튼 제거 (액션 메뉴에서 처리) */}
                     </div>
                   </td>
 
@@ -586,6 +640,51 @@ export function BookTable({ books }: BookTableProps) {
                       })()}
                     </div>
                   </td>
+
+                  {/* 액션 메뉴 */}
+                  <td className="px-3 py-4 align-middle">
+                    <div className="flex justify-center">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <MoreVertical className="h-4 w-4" />
+                            <span className="sr-only">액션 메뉴</span>
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-48">
+                          <DropdownMenuLabel className="text-xs">책 관리</DropdownMenuLabel>
+                          <DropdownMenuItem asChild>
+                            <Link href={`/books/${item.id}`}>
+                              <ExternalLink className="mr-2 h-4 w-4" />
+                              상세보기
+                            </Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem asChild>
+                            <Link href={`/books/${item.id}#book-info`}>
+                              <Edit className="mr-2 h-4 w-4" />
+                              책 정보 수정
+                            </Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteClick(item.id);
+                            }}
+                            className="text-destructive focus:text-destructive"
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            삭제
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </td>
                 </tr>
               );
             })}
@@ -593,6 +692,72 @@ export function BookTable({ books }: BookTableProps) {
         </table>
       </div>
 
+      {/* 삭제 확인 다이얼로그들 */}
+      {books.map((item) => {
+        if (!item || !item.books) return null;
+        const book = item.books;
+        return (
+          <AlertDialog
+            key={`delete-${item.id}`}
+            open={deleteDialogOpen[item.id] || false}
+            onOpenChange={(open) => handleDeleteDialogClose(item.id, open)}
+          >
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>책 삭제 확인</AlertDialogTitle>
+                <AlertDialogDescription className="space-y-4">
+                  <p>
+                    정말로 이 책을 삭제하시겠습니까?
+                    <br />
+                    이 책의 모든 기록도 함께 삭제되며, 이 작업은 되돌릴 수 없습니다.
+                  </p>
+                  <div className="space-y-2 pt-2">
+                    <Label htmlFor={`confirm-title-${item.id}`} className="text-sm font-medium">
+                      삭제를 확인하려면 책 제목을 정확히 입력하세요:
+                    </Label>
+                    <p className="text-sm font-semibold text-foreground bg-muted p-2 rounded">
+                      {book.title}
+                    </p>
+                    <Input
+                      id={`confirm-title-${item.id}`}
+                      value={confirmDeleteTitle[item.id] || ""}
+                      onChange={(e) =>
+                        setConfirmDeleteTitle((prev) => ({
+                          ...prev,
+                          [item.id]: e.target.value,
+                        }))
+                      }
+                      placeholder="책 제목 입력"
+                      disabled={deletingBookId === item.id}
+                      className="mt-2"
+                    />
+                  </div>
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel disabled={deletingBookId === item.id}>취소</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => handleDeleteConfirm(item.id, book.title)}
+                  disabled={
+                    deletingBookId === item.id ||
+                    (confirmDeleteTitle[item.id]?.trim() || "") !== book.title.trim()
+                  }
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  {deletingBookId === item.id ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      삭제 중...
+                    </>
+                  ) : (
+                    "삭제"
+                  )}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        );
+      })}
     </div>
   );
 }
