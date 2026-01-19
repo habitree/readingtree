@@ -315,7 +315,7 @@ export function BookTable({ books }: BookTableProps) {
               <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground" style={{ width: '120px', minWidth: '120px' }}>
                 표지
               </th>
-              <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground" style={{ width: '250px', minWidth: '250px' }}>
+              <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground" style={{ width: '320px', minWidth: '320px' }}>
                 제목
               </th>
               <th className="hidden lg:table-cell px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground" style={{ width: 'auto', minWidth: '300px' }}>
@@ -326,9 +326,6 @@ export function BookTable({ books }: BookTableProps) {
               </th>
               <th className="hidden lg:table-cell px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground" style={{ width: '200px', minWidth: '200px' }}>
                 책정보
-              </th>
-              <th className="px-3 py-2.5 text-center text-xs font-semibold text-muted-foreground" style={{ width: '80px', minWidth: '80px' }}>
-                액션
               </th>
             </tr>
           </thead>
@@ -376,7 +373,7 @@ export function BookTable({ books }: BookTableProps) {
                   </td>
 
                   {/* 제목 */}
-                  <td className="px-3 py-4 align-top" style={{ width: '250px', minWidth: '250px' }}>
+                  <td className="px-3 py-4 align-top" style={{ width: '320px', minWidth: '320px' }}>
                     <div className="space-y-1.5">
                       <div className="space-y-0.5">
                         {(() => {
@@ -577,6 +574,21 @@ export function BookTable({ books }: BookTableProps) {
                           )}
                         </Button>
                       </Link>
+                      
+                      {/* 삭제 버튼 (작게) */}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-5 w-5 text-destructive hover:text-destructive hover:bg-destructive/10"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteClick(item.id);
+                        }}
+                        disabled={deletingBookId === item.id}
+                      >
+                        <Trash2 className="h-3 w-3" />
+                        <span className="sr-only">삭제</span>
+                      </Button>
                     </div>
                   </td>
 
@@ -641,50 +653,6 @@ export function BookTable({ books }: BookTableProps) {
                     </div>
                   </td>
 
-                  {/* 액션 메뉴 */}
-                  <td className="px-3 py-4 align-middle" style={{ width: '80px', minWidth: '80px' }}>
-                    <div className="flex justify-center">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <MoreVertical className="h-4 w-4" />
-                            <span className="sr-only">액션 메뉴</span>
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-48" style={{ zIndex: 100 }}>
-                          <DropdownMenuLabel className="text-xs">책 관리</DropdownMenuLabel>
-                          <DropdownMenuItem asChild>
-                            <Link href={`/books/${item.id}`}>
-                              <ExternalLink className="mr-2 h-4 w-4" />
-                              상세보기
-                            </Link>
-                          </DropdownMenuItem>
-                          <DropdownMenuItem asChild>
-                            <Link href={`/books/${item.id}#book-info`}>
-                              <Edit className="mr-2 h-4 w-4" />
-                              책 정보 수정
-                            </Link>
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteClick(item.id);
-                            }}
-                            className="text-destructive focus:text-destructive"
-                          >
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            삭제
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  </td>
                 </tr>
               );
             })}
