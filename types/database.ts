@@ -442,6 +442,78 @@ export interface Database {
           updated_at?: string;
         };
       };
+      // AI 시스템 설정 테이블
+      ai_settings: {
+        Row: {
+          id: string;
+          provider: "openai" | "google" | "anthropic";
+          model_id: string;
+          system_prompt_template: string;
+          welcome_message: string;
+          context_settings: Json;
+          generation_settings: Json;
+          memory_settings: Json;
+          is_active: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          provider: "openai" | "google" | "anthropic";
+          model_id: string;
+          system_prompt_template: string;
+          welcome_message: string;
+          context_settings?: Json;
+          generation_settings?: Json;
+          memory_settings?: Json;
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          provider?: "openai" | "google" | "anthropic";
+          model_id?: string;
+          system_prompt_template?: string;
+          welcome_message?: string;
+          context_settings?: Json;
+          generation_settings?: Json;
+          memory_settings?: Json;
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      // 사용자 AI 메모리 테이블
+      user_ai_memories: {
+        Row: {
+          id: string;
+          user_id: string;
+          memory_type: string;
+          content: string;
+          metadata: Json | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          memory_type: string;
+          content: string;
+          metadata?: Json | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          memory_type?: string;
+          content?: string;
+          metadata?: Json | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
     };
   };
 }

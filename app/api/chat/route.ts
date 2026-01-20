@@ -1,20 +1,213 @@
 /**
  * AI 챗봇 API Route (스트리밍 SSE)
+ *
+ * 다중 AI 모델 지원:
+ * - OpenAI (GPT-4o, GPT-4o-mini, GPT-4 Turbo, GPT-3.5 Turbo)
+ * - Google (Gemini 1.5 Flash, Gemini 1.5 Pro, Gemini 2.0 Flash)
+ * - Anthropic (Claude 3.5 Sonnet, Claude 3 Opus, Claude 3 Haiku)
  */
 
 import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
-import { generateSystemPrompt } from "@/lib/api/chat-prompts";
-import type { ChatContext, ChatMessage } from "@/types/chat";
+import { generateDynamicSystemPrompt } from "@/lib/api/chat-prompts";
+import { getAISettingsForChat } from "@/app/actions/ai-settings";
+import type { ChatContext } from "@/types/chat";
+import type { AIProvider } from "@/types/ai-settings";
 
-// Gemini API 클라이언트
-function getGeminiClient() {
-  const apiKey = process.env.GEMINI_API_KEY;
+// OpenAI API 호출
+async function callOpenAI(
+  modelId: string,
+  systemPrompt: string,
+  chatHistory: { role: string; content: string }[],
+  message: string,
+  settings: { temperature: number; maxOutputTokens: number }
+): Promise<ReadableStream> {
+  const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
-    throw new Error("GEMINI_API_KEY 환경 변수가 설정되지 않았습니다.");
+    throw new Error("OPENAI_API_KEY 환경 변수가 설정되지 않았습니다.");
   }
-  return new GoogleGenerativeAI(apiKey);
+
+  const messages = [
+    { role: "system", content: systemPrompt },
+    ...chatHistory.map((msg) => ({
+      role: msg.role === "assistant" ? "assistant" : "user",
+      content: msg.content,
+    })),
+    { role: "user", content: message },
+  ];
+
+  const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model: modelId,
+      messages,
+      max_tokens: settings.maxOutputTokens,
+      temperature: settings.temperature,
+      stream: true,
+    }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error?.message || "OpenAI API 오류");
+  }
+
+  return response.body!;
+}
+
+// Anthropic API 호출
+async function callAnthropic(
+  modelId: string,
+  systemPrompt: string,
+  chatHistory: { role: string; content: string }[],
+  message: string,
+  settings: { temperature: number; maxOutputTokens: number }
+): Promise<ReadableStream> {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) {
+    throw new Error("ANTHROPIC_API_KEY 환경 변수가 설정되지 않았습니다.");
+  }
+
+  const messages = [
+    ...chatHistory.map((msg) => ({
+      role: msg.role === "assistant" ? "assistant" : "user",
+      content: msg.content,
+    })),
+    { role: "user", content: message },
+  ];
+
+  const response = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": apiKey,
+      "anthropic-version": "2023-06-01",
+    },
+    body: JSON.stringify({
+      model: modelId,
+      system: systemPrompt,
+      messages,
+      max_tokens: settings.maxOutputTokens,
+      temperature: settings.temperature,
+      stream: true,
+    }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error?.message || "Anthropic API 오류");
+  }
+
+  return response.body!;
+}
+
+// OpenAI 스트림 파서
+function parseOpenAIStream(
+  stream: ReadableStream,
+  onContent: (text: string) => void,
+  onDone: () => void,
+  onError: (error: string) => void
+): ReadableStream {
+  const reader = stream.getReader();
+  const decoder = new TextDecoder();
+
+  return new ReadableStream({
+    async start(controller) {
+      let buffer = "";
+
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split("\n");
+          buffer = lines.pop() || "";
+
+          for (const line of lines) {
+            if (line.startsWith("data: ")) {
+              const data = line.slice(6);
+              if (data === "[DONE]") {
+                onDone();
+                continue;
+              }
+
+              try {
+                const parsed = JSON.parse(data);
+                const content = parsed.choices?.[0]?.delta?.content;
+                if (content) {
+                  onContent(content);
+                }
+              } catch (e) {
+                // 파싱 오류 무시
+              }
+            }
+          }
+        }
+        controller.close();
+      } catch (error) {
+        onError(error instanceof Error ? error.message : "스트림 오류");
+        controller.close();
+      }
+    },
+  });
+}
+
+// Anthropic 스트림 파서
+function parseAnthropicStream(
+  stream: ReadableStream,
+  onContent: (text: string) => void,
+  onDone: () => void,
+  onError: (error: string) => void
+): ReadableStream {
+  const reader = stream.getReader();
+  const decoder = new TextDecoder();
+
+  return new ReadableStream({
+    async start(controller) {
+      let buffer = "";
+
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split("\n");
+          buffer = lines.pop() || "";
+
+          for (const line of lines) {
+            if (line.startsWith("data: ")) {
+              const data = line.slice(6);
+
+              try {
+                const parsed = JSON.parse(data);
+                if (parsed.type === "content_block_delta") {
+                  const text = parsed.delta?.text;
+                  if (text) {
+                    onContent(text);
+                  }
+                } else if (parsed.type === "message_stop") {
+                  onDone();
+                }
+              } catch (e) {
+                // 파싱 오류 무시
+              }
+            }
+          }
+        }
+        controller.close();
+      } catch (error) {
+        onError(error instanceof Error ? error.message : "스트림 오류");
+        controller.close();
+      }
+    },
+  });
 }
 
 export async function POST(request: NextRequest) {
@@ -62,13 +255,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 이전 메시지 조회 (컨텍스트용, 최근 10개)
+    // AI 설정 조회
+    const aiSettings = await getAISettingsForChat();
+
+    // 이전 메시지 조회 (컨텍스트용)
     const { data: previousMessages } = await supabase
       .from("chat_messages")
       .select("role, content")
       .eq("session_id", sessionId)
       .order("created_at", { ascending: false })
-      .limit(10);
+      .limit(aiSettings.contextSettings.maxHistoryMessages);
 
     // 사용자 메시지 저장
     const { data: userMessage, error: userMessageError } = await supabase
@@ -85,19 +281,19 @@ export async function POST(request: NextRequest) {
       console.error("사용자 메시지 저장 실패:", userMessageError);
     }
 
-    // 시스템 프롬프트 생성
-    const systemPrompt = generateSystemPrompt(context || {});
-
-    // Gemini API 호출 (스트리밍)
-    const genAI = getGeminiClient();
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    // 시스템 프롬프트 생성 (동적)
+    const systemPrompt = generateDynamicSystemPrompt(
+      aiSettings.systemPromptTemplate,
+      context || {},
+      aiSettings.contextSettings
+    );
 
     // 대화 기록 구성
     const chatHistory = (previousMessages || [])
       .reverse()
       .map((msg: any) => ({
-        role: msg.role === "assistant" ? "model" : "user",
-        parts: [{ text: msg.content }],
+        role: msg.role,
+        content: msg.content,
       }));
 
     // 스트리밍 응답 생성
@@ -106,27 +302,97 @@ export async function POST(request: NextRequest) {
 
     const stream = new ReadableStream({
       async start(controller) {
+        const sendData = (data: any) => {
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
+        };
+
         try {
-          const chat = model.startChat({
-            history: chatHistory,
-            systemInstruction: systemPrompt,
-            generationConfig: {
-              maxOutputTokens: 2048,
-              temperature: 0.7,
-            },
-          });
+          const { provider, modelId, generationSettings } = aiSettings;
 
-          const result = await chat.sendMessageStream(message);
-
-          for await (const chunk of result.stream) {
-            const chunkText = chunk.text();
-            if (chunkText) {
-              fullResponse += chunkText;
-
-              // SSE 형식으로 전송
-              const data = JSON.stringify({ type: "content", content: chunkText });
-              controller.enqueue(encoder.encode(`data: ${data}\n\n`));
+          if (provider === "google") {
+            // Google Gemini 처리
+            const apiKey = process.env.GEMINI_API_KEY;
+            if (!apiKey) {
+              throw new Error("GEMINI_API_KEY 환경 변수가 설정되지 않았습니다.");
             }
+
+            const genAI = new GoogleGenerativeAI(apiKey);
+            const model = genAI.getGenerativeModel({ model: modelId });
+
+            const geminiHistory = chatHistory.map((msg: any) => ({
+              role: msg.role === "assistant" ? "model" : "user",
+              parts: [{ text: msg.content }],
+            }));
+
+            const chat = model.startChat({
+              history: geminiHistory,
+              systemInstruction: systemPrompt,
+              generationConfig: {
+                maxOutputTokens: generationSettings.maxOutputTokens,
+                temperature: generationSettings.temperature,
+                topP: generationSettings.topP,
+              },
+            });
+
+            const result = await chat.sendMessageStream(message);
+
+            for await (const chunk of result.stream) {
+              const chunkText = chunk.text();
+              if (chunkText) {
+                fullResponse += chunkText;
+                sendData({ type: "content", content: chunkText });
+              }
+            }
+          } else if (provider === "openai") {
+            // OpenAI 처리
+            const openaiStream = await callOpenAI(
+              modelId,
+              systemPrompt,
+              chatHistory,
+              message,
+              {
+                temperature: generationSettings.temperature,
+                maxOutputTokens: generationSettings.maxOutputTokens,
+              }
+            );
+
+            await parseOpenAIStream(
+              openaiStream,
+              (text) => {
+                fullResponse += text;
+                sendData({ type: "content", content: text });
+              },
+              () => {},
+              (error) => {
+                throw new Error(error);
+              }
+            );
+          } else if (provider === "anthropic") {
+            // Anthropic 처리
+            const anthropicStream = await callAnthropic(
+              modelId,
+              systemPrompt,
+              chatHistory,
+              message,
+              {
+                temperature: generationSettings.temperature,
+                maxOutputTokens: generationSettings.maxOutputTokens,
+              }
+            );
+
+            await parseAnthropicStream(
+              anthropicStream,
+              (text) => {
+                fullResponse += text;
+                sendData({ type: "content", content: text });
+              },
+              () => {},
+              (error) => {
+                throw new Error(error);
+              }
+            );
+          } else {
+            throw new Error(`지원하지 않는 AI 제공자: ${provider}`);
           }
 
           // AI 응답 저장
@@ -164,19 +430,17 @@ export async function POST(request: NextRequest) {
             .eq("id", sessionId);
 
           // 완료 신호
-          const doneData = JSON.stringify({
+          sendData({
             type: "done",
             messageId: assistantMessage?.id,
           });
-          controller.enqueue(encoder.encode(`data: ${doneData}\n\n`));
           controller.close();
         } catch (error) {
           console.error("스트리밍 오류:", error);
-          const errorData = JSON.stringify({
+          sendData({
             type: "error",
             error: error instanceof Error ? error.message : "알 수 없는 오류가 발생했습니다.",
           });
-          controller.enqueue(encoder.encode(`data: ${errorData}\n\n`));
           controller.close();
         }
       },

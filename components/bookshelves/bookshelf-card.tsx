@@ -8,9 +8,10 @@ import { BookOpen, Library } from "lucide-react";
 
 interface BookshelfCardProps {
   bookshelf: BookshelfWithStats;
+  isGuest?: boolean;
 }
 
-export function BookshelfCard({ bookshelf }: BookshelfCardProps) {
+export function BookshelfCard({ bookshelf, isGuest = false }: BookshelfCardProps) {
   const isMain = bookshelf.is_main;
 
   return (

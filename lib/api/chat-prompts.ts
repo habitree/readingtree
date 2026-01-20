@@ -1,11 +1,147 @@
 /**
  * AI 챗봇 프롬프트 정의
+ *
+ * 관리자 설정에 따라 동적으로 프롬프트를 생성합니다.
  */
 
 import type { ChatContext } from "@/types/chat";
+import type { ContextSettings } from "@/types/ai-settings";
 
 /**
- * 시스템 프롬프트 생성
+ * 동적 시스템 프롬프트 생성 (관리자 설정 기반)
+ */
+export function generateDynamicSystemPrompt(
+  template: string,
+  context: ChatContext,
+  contextSettings: ContextSettings
+): string {
+  let prompt = template;
+
+  // 페르소나 정보 추가
+  if (contextSettings.includePersona && context.persona) {
+    prompt += generatePersonaSection(context);
+  }
+
+  // 최근 읽은 책 정보 추가
+  if (contextSettings.includeRecentBooks && context.recentBooks && context.recentBooks.length > 0) {
+    prompt += generateRecentBooksSection(context, contextSettings.maxRecentBooks);
+  }
+
+  // 최근 기록 정보 추가
+  if (contextSettings.includeRecentNotes && context.recentNotes && context.recentNotes.length > 0) {
+    prompt += generateRecentNotesSection(context, contextSettings.maxRecentNotes);
+  }
+
+  // 독서 목표 정보 추가
+  if (contextSettings.includeReadingGoal && context.readingGoal) {
+    prompt += generateReadingGoalSection(context);
+  }
+
+  prompt += `\n\n위 정보를 바탕으로 사용자에게 맞춤형 응답을 제공하세요.`;
+
+  return prompt;
+}
+
+/**
+ * 페르소나 섹션 생성
+ */
+function generatePersonaSection(context: ChatContext): string {
+  let section = `\n\n## 사용자 페르소나`;
+
+  if (context.persona?.persona_summary) {
+    section += `\n${context.persona.persona_summary}`;
+  }
+
+  if (context.persona?.reading_pace) {
+    const paceLabels: Record<string, string> = {
+      fast: "빠른 독서가 (책을 빠르게 읽는 편)",
+      steady: "꾸준한 독서가 (일정한 속도로 읽는 편)",
+      slow: "음미하는 독서가 (천천히 깊이 읽는 편)",
+    };
+    section += `\n- 독서 속도: ${paceLabels[context.persona.reading_pace] || context.persona.reading_pace}`;
+  }
+
+  if (context.persona?.note_style) {
+    const styleLabels: Record<string, string> = {
+      "quote-focused": "인용구 수집가 (좋은 문구를 기록하는 것을 좋아함)",
+      "reflection-focused": "사색적 기록가 (자신의 생각을 많이 기록함)",
+      "visual": "시각적 기록가 (사진/이미지로 기록하는 것을 좋아함)",
+      "balanced": "균형잡힌 기록가 (다양한 방식으로 기록함)",
+    };
+    section += `\n- 기록 스타일: ${styleLabels[context.persona.note_style] || context.persona.note_style}`;
+  }
+
+  if (context.persona?.activity_pattern) {
+    const patternLabels: Record<string, string> = {
+      morning: "아침형 (오전에 주로 독서)",
+      afternoon: "낮형 (오후에 주로 독서)",
+      evening: "저녁형 (저녁에 주로 독서)",
+      night: "밤형 (밤에 주로 독서)",
+    };
+    section += `\n- 활동 시간: ${patternLabels[context.persona.activity_pattern] || context.persona.activity_pattern}`;
+  }
+
+  if (context.persona?.category_preferences && context.persona.category_preferences.length > 0) {
+    const topCategories = context.persona.category_preferences.slice(0, 3);
+    const categoryStr = topCategories.map((c: any) => c.category).join(", ");
+    section += `\n- 선호 장르: ${categoryStr}`;
+  }
+
+  return section;
+}
+
+/**
+ * 최근 읽은 책 섹션 생성
+ */
+function generateRecentBooksSection(context: ChatContext, maxBooks: number): string {
+  let section = `\n\n## 최근 읽은 책`;
+  const books = context.recentBooks?.slice(0, maxBooks) || [];
+
+  books.forEach((book, index) => {
+    const status = book.status === "completed" ? "완독" : "읽는 중";
+    section += `\n${index + 1}. 「${book.title}」 - ${book.author || "저자 미상"} (${status})`;
+  });
+
+  return section;
+}
+
+/**
+ * 최근 기록 섹션 생성
+ */
+function generateRecentNotesSection(context: ChatContext, maxNotes: number): string {
+  let section = `\n\n## 최근 기록 (일부)`;
+  const typeLabels: Record<string, string> = {
+    quote: "인용구",
+    memo: "메모",
+    photo: "사진",
+    transcription: "필사",
+  };
+
+  const notes = context.recentNotes?.slice(0, maxNotes) || [];
+  notes.forEach((note) => {
+    const type = typeLabels[note.type] || note.type;
+    const content = note.content
+      ? (note.content.length > 50 ? note.content.substring(0, 50) + "..." : note.content)
+      : "(내용 없음)";
+    section += `\n- [${type}] 「${note.book_title}」: ${content}`;
+  });
+
+  return section;
+}
+
+/**
+ * 독서 목표 섹션 생성
+ */
+function generateReadingGoalSection(context: ChatContext): string {
+  let section = `\n\n## 올해 독서 목표`;
+  section += `\n- 목표: ${context.readingGoal?.goal}권`;
+  section += `\n- 완독: ${context.readingGoal?.completed}권`;
+  section += `\n- 진행률: ${context.readingGoal?.progress}%`;
+  return section;
+}
+
+/**
+ * 기존 시스템 프롬프트 생성 (하위 호환성)
  */
 export function generateSystemPrompt(context: ChatContext): string {
   let prompt = `당신은 "독서친구"라는 이름의 친근하고 지적인 AI 독서 도우미입니다.

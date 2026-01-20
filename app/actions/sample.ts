@@ -3,12 +3,14 @@
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import type { ReadingStatus } from "@/types/book";
 import type { BookWithNotes, BookStats } from "@/app/actions/books";
+import type { BookshelfWithStats } from "@/types/bookshelf";
+import type { NoteWithBook } from "@/types/note";
 
 /**
  * 관리자(샘플 사용자) ID를 동적으로 조회
  * is_admin = TRUE인 첫 번째 사용자를 샘플 사용자로 사용
  */
-async function getSampleUserId(): Promise<string> {
+export async function getSampleUserId(): Promise<string> {
   // 환경 변수가 설정되어 있으면 우선 사용
   const envSampleUserId = process.env.NEXT_PUBLIC_SAMPLE_USER_ID;
   if (envSampleUserId) {
@@ -276,4 +278,372 @@ export async function getSampleBooksWithNotes(
     books: sortedBooks,
     stats,
   };
+}
+
+/**
+ * 샘플 사용자의 책 상세 조회
+ * Admin Client를 사용하여 RLS 우회
+ */
+export async function getSampleBookDetail(userBookId: string) {
+  const sampleUserId = await getSampleUserId();
+  const supabase = createAdminSupabaseClient();
+
+  const { data, error } = await supabase
+    .from("user_books")
+    .select(
+      `
+      *,
+      completed_dates,
+      books (
+        id,
+        isbn,
+        title,
+        author,
+        publisher,
+        published_date,
+        cover_image_url,
+        description_summary,
+        summary
+      )
+    `
+    )
+    .eq("id", userBookId)
+    .eq("user_id", sampleUserId)
+    .single();
+
+  if (error || !data) {
+    throw new Error("샘플 책을 찾을 수 없습니다.");
+  }
+
+  return data;
+}
+
+/**
+ * 샘플 사용자의 서재 목록 조회 (통계 포함)
+ */
+export async function getSampleBookshelves(): Promise<BookshelfWithStats[]> {
+  const sampleUserId = await getSampleUserId();
+  const supabase = createAdminSupabaseClient();
+
+  // 모든 서재 조회
+  const { data: bookshelves, error } = await supabase
+    .from("bookshelves")
+    .select("*")
+    .eq("user_id", sampleUserId)
+    .order("order", { ascending: true });
+
+  if (error) {
+    throw new Error(`샘플 서재 목록 조회 실패: ${error.message}`);
+  }
+
+  if (!bookshelves || bookshelves.length === 0) {
+    return [];
+  }
+
+  // 각 서재의 통계 계산
+  const bookshelvesWithStats: BookshelfWithStats[] = await Promise.all(
+    bookshelves.map(async (bookshelf) => {
+      const { data: userBooks } = await supabase
+        .from("user_books")
+        .select("status")
+        .eq("bookshelf_id", bookshelf.id);
+
+      const statusCounts = {
+        reading: 0,
+        completed: 0,
+        paused: 0,
+        not_started: 0,
+        rereading: 0,
+      };
+
+      if (userBooks) {
+        userBooks.forEach((ub) => {
+          if (ub.status in statusCounts) {
+            statusCounts[ub.status as keyof typeof statusCounts]++;
+          }
+        });
+      }
+
+      return {
+        ...bookshelf,
+        book_count: userBooks?.length || 0,
+        reading_count: statusCounts.reading,
+        completed_count: statusCounts.completed,
+        paused_count: statusCounts.paused,
+        not_started_count: statusCounts.not_started,
+        rereading_count: statusCounts.rereading,
+      };
+    })
+  );
+
+  // 메인 서재를 맨 앞으로 정렬
+  return bookshelvesWithStats.sort((a, b) => {
+    if (a.is_main) return -1;
+    if (b.is_main) return 1;
+    return a.order - b.order;
+  });
+}
+
+/**
+ * 샘플 사용자의 특정 서재 조회 (통계 포함)
+ */
+export async function getSampleBookshelfWithStats(bookshelfId: string): Promise<BookshelfWithStats | null> {
+  const sampleUserId = await getSampleUserId();
+  const supabase = createAdminSupabaseClient();
+
+  // 서재 조회
+  const { data: bookshelf, error } = await supabase
+    .from("bookshelves")
+    .select("*")
+    .eq("id", bookshelfId)
+    .eq("user_id", sampleUserId)
+    .single();
+
+  if (error || !bookshelf) {
+    return null;
+  }
+
+  // 서재의 책 목록 조회
+  const { data: userBooks } = await supabase
+    .from("user_books")
+    .select("status")
+    .eq("bookshelf_id", bookshelfId);
+
+  const statusCounts = {
+    reading: 0,
+    completed: 0,
+    paused: 0,
+    not_started: 0,
+    rereading: 0,
+  };
+
+  if (userBooks) {
+    userBooks.forEach((ub) => {
+      if (ub.status in statusCounts) {
+        statusCounts[ub.status as keyof typeof statusCounts]++;
+      }
+    });
+  }
+
+  return {
+    ...bookshelf,
+    book_count: userBooks?.length || 0,
+    reading_count: statusCounts.reading,
+    completed_count: statusCounts.completed,
+    paused_count: statusCounts.paused,
+    not_started_count: statusCounts.not_started,
+    rereading_count: statusCounts.rereading,
+  };
+}
+
+/**
+ * 샘플 서재의 책 목록 조회 + 통계
+ */
+export async function getSampleBookshelfBooks(
+  bookshelfId: string,
+  status?: ReadingStatus,
+  query?: string
+): Promise<{
+  books: BookWithNotes[];
+  stats: BookStats;
+}> {
+  const sampleUserId = await getSampleUserId();
+  const supabase = createAdminSupabaseClient();
+
+  // 상태별 통계 조회
+  const { data: allUserBooks } = await supabase
+    .from("user_books")
+    .select("status")
+    .eq("user_id", sampleUserId)
+    .eq("bookshelf_id", bookshelfId);
+
+  const stats: BookStats = {
+    total: allUserBooks?.length || 0,
+    reading: allUserBooks?.filter((ub) => ub.status === "reading").length || 0,
+    completed: allUserBooks?.filter((ub) => ub.status === "completed").length || 0,
+    paused: allUserBooks?.filter((ub) => ub.status === "paused").length || 0,
+    not_started: allUserBooks?.filter((ub) => ub.status === "not_started").length || 0,
+    rereading: allUserBooks?.filter((ub) => ub.status === "rereading").length || 0,
+  };
+
+  // 책 목록 조회
+  let booksQuery = supabase
+    .from("user_books")
+    .select(
+      `
+      id,
+      status,
+      completed_at,
+      completed_dates,
+      started_at,
+      reading_reason,
+      bookshelf_id,
+      created_at,
+      books (
+        id,
+        title,
+        author,
+        publisher,
+        isbn,
+        published_date,
+        cover_image_url,
+        description_summary,
+        summary,
+        created_at,
+        updated_at
+      )
+    `
+    )
+    .eq("user_id", sampleUserId)
+    .eq("bookshelf_id", bookshelfId)
+    .order("created_at", { ascending: false });
+
+  // 상태 필터 적용
+  if (status) {
+    booksQuery = booksQuery.eq("status", status);
+  }
+
+  // 검색어 필터 적용
+  if (query && query.trim()) {
+    const sanitizedQuery = query.trim();
+    const { data: matchingBooks } = await supabase
+      .from("books")
+      .select("id")
+      .or(
+        `title.ilike.%${sanitizedQuery}%,author.ilike.%${sanitizedQuery}%,isbn.ilike.%${sanitizedQuery}%`
+      );
+
+    const matchingBookIds = matchingBooks?.map((b) => b.id) || [];
+
+    if (matchingBookIds.length > 0) {
+      booksQuery = booksQuery.in("book_id", matchingBookIds);
+    } else {
+      return { books: [], stats };
+    }
+  }
+
+  const { data: userBooks, error } = await booksQuery;
+
+  if (error) {
+    throw new Error(`샘플 서재 책 목록 조회 실패: ${error.message}`);
+  }
+
+  if (!userBooks || userBooks.length === 0) {
+    return { books: [], stats };
+  }
+
+  // 결과 매핑
+  const books = userBooks.map((userBook: any) => ({
+    id: userBook.id,
+    status: userBook.status as ReadingStatus,
+    reading_reason: userBook.reading_reason || null,
+    completed_at: userBook.completed_at || null,
+    completed_dates: userBook.completed_dates || null,
+    started_at: userBook.started_at || null,
+    books: {
+      id: userBook.books?.id || "",
+      title: userBook.books?.title || "제목 없음",
+      author: userBook.books?.author || null,
+      publisher: userBook.books?.publisher || null,
+      isbn: userBook.books?.isbn || null,
+      published_date: userBook.books?.published_date || null,
+      cover_image_url: userBook.books?.cover_image_url || null,
+      description_summary: userBook.books?.description_summary || null,
+      summary: userBook.books?.summary || null,
+      created_at: userBook.books?.created_at,
+      updated_at: userBook.books?.updated_at,
+    },
+    noteCount: 0,
+    groupBooks: [],
+    created_at: userBook.created_at,
+  }));
+
+  return { books, stats };
+}
+
+/**
+ * 샘플 사용자의 특정 책 노트 목록 조회
+ * userBookId(샘플 사용자의 user_books.id)를 받아서 해당 책의 노트 반환
+ */
+export async function getSampleNotes(userBookId: string): Promise<NoteWithBook[]> {
+  const sampleUserId = await getSampleUserId();
+  const supabase = createAdminSupabaseClient();
+
+  // userBookId로 book_id(books.id) 조회
+  const { data: userBook, error: userBookError } = await supabase
+    .from("user_books")
+    .select("book_id")
+    .eq("id", userBookId)
+    .eq("user_id", sampleUserId)
+    .single();
+
+  if (userBookError || !userBook) {
+    return [];
+  }
+
+  // 샘플 사용자의 해당 책 노트 조회
+  const { data: notes, error: notesError } = await supabase
+    .from("notes")
+    .select(`
+      *,
+      books (
+        id,
+        title,
+        author,
+        cover_image_url
+      )
+    `)
+    .eq("user_id", sampleUserId)
+    .eq("book_id", userBook.book_id)
+    .order("created_at", { ascending: false });
+
+  if (notesError || !notes) {
+    return [];
+  }
+
+  // NoteWithBook 형태로 변환
+  return notes.map((note: any) => {
+    const book = Array.isArray(note.books) ? note.books[0] : note.books;
+    const { books, ...restNote } = note;
+    return {
+      ...restNote,
+      book: book || undefined,
+    };
+  }) as NoteWithBook[];
+}
+
+/**
+ * 샘플 사용자의 전체 노트 목록 조회 (기록 페이지용)
+ */
+export async function getSampleAllNotes(): Promise<NoteWithBook[]> {
+  const sampleUserId = await getSampleUserId();
+  const supabase = createAdminSupabaseClient();
+
+  const { data: notes, error } = await supabase
+    .from("notes")
+    .select(`
+      *,
+      books (
+        id,
+        title,
+        author,
+        cover_image_url
+      )
+    `)
+    .eq("user_id", sampleUserId)
+    .order("created_at", { ascending: false })
+    .limit(100);
+
+  if (error || !notes) {
+    return [];
+  }
+
+  return notes.map((note: any) => {
+    const book = Array.isArray(note.books) ? note.books[0] : note.books;
+    const { books, ...restNote } = note;
+    return {
+      ...restNote,
+      book: book || undefined,
+    };
+  }) as NoteWithBook[];
 }

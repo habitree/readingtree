@@ -3,16 +3,21 @@ import { Metadata, Viewport } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import { BookStatusBadge } from "@/components/books/book-status-badge";
 import { getBookDetail, updateBookStatus } from "@/app/actions/books";
+import { getSampleBookDetail } from "@/app/actions/sample";
+import { getCurrentUser } from "@/app/actions/auth";
 import { getImageUrl } from "@/lib/utils/image";
 import { formatDate } from "@/lib/utils/date";
 import { BookStatusSelector } from "@/components/books/book-status-selector";
 import { BookDeleteButton } from "@/components/books/book-delete-button";
 import { BookInfoEditor } from "@/components/books/book-info-editor";
-import { PenTool } from "lucide-react";
+import { PenTool, LogIn } from "lucide-react";
 import type { ReadingStatus } from "@/types/book";
 import { NotesList } from "@/components/notes/notes-list";
+import { SampleNotesList } from "@/components/notes/sample-notes-list";
 import { isValidUUID } from "@/lib/utils/validation";
 import { sanitizeErrorForLogging } from "@/lib/utils/validation";
 import { BookScrollHandler } from "@/components/books/book-scroll-handler";
@@ -47,11 +52,31 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
     notFound();
   }
 
+  // 현재 사용자 확인
+  const user = await getCurrentUser();
+  const isGuest = !user;
+
   let bookDetail;
+  let isSample = false;
+
   try {
-    console.log("BookDetailPage: 책 상세 조회 시도", { bookId });
-    bookDetail = await getBookDetail(bookId);
-    console.log("BookDetailPage: 책 상세 조회 성공", { bookId, hasBook: !!bookDetail });
+    console.log("BookDetailPage: 책 상세 조회 시도", { bookId, isGuest });
+
+    if (isGuest) {
+      // 비로그인 사용자: 샘플(관리자) 데이터 조회
+      try {
+        bookDetail = await getSampleBookDetail(bookId);
+        isSample = true;
+      } catch {
+        // 샘플 데이터에서 찾지 못하면 404
+        notFound();
+      }
+    } else {
+      // 로그인 사용자: 본인 데이터 조회
+      bookDetail = await getBookDetail(bookId);
+    }
+
+    console.log("BookDetailPage: 책 상세 조회 성공", { bookId, hasBook: !!bookDetail, isSample });
   } catch (error) {
     const safeError = sanitizeErrorForLogging(error);
     console.error("책 상세 조회 오류:", {
@@ -69,6 +94,29 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
   return (
     <div className="space-y-6">
       <BookScrollHandler />
+
+      {/* 게스트 사용자 안내 */}
+      {isGuest && (
+        <Card className="border-primary/20 bg-primary/5">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between flex-wrap gap-3">
+              <div className="flex items-center gap-3">
+                <Badge variant="secondary">샘플 데이터</Badge>
+                <p className="text-sm text-muted-foreground">
+                  현재 샘플 책 정보를 보고 계십니다. 로그인하여 나만의 서재를 만들어보세요!
+                </p>
+              </div>
+              <Button asChild size="sm">
+                <Link href="/login">
+                  <LogIn className="mr-2 h-4 w-4" />
+                  로그인
+                </Link>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <div id="book-info" className="flex flex-col sm:flex-row gap-6 scroll-mt-4">
         {/* 책 표지 */}
         <div className="relative w-48 h-64 shrink-0 overflow-hidden rounded-lg bg-muted mx-auto sm:mx-0">
@@ -87,7 +135,7 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
         <div className="flex-1 space-y-4 text-center sm:text-left">
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
-              <BookTitle 
+              <BookTitle
                 title={book.title}
                 mainTitleClassName="text-2xl sm:text-3xl"
                 subtitleClassName="text-lg sm:text-xl text-muted-foreground mt-1"
@@ -108,27 +156,30 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
           <div className="p-4 rounded-lg bg-muted/50 border-l-4 border-l-primary">
             <div className="flex items-start justify-between gap-2 mb-1">
               <p className="text-sm font-medium text-muted-foreground">읽는 이유</p>
-              <BookInfoEditor
-                userBookId={userBook.id}
-                currentReadingReason={userBook.reading_reason}
-                currentStartedAt={userBook.started_at}
-                currentCompletedDates={
-                  (userBook as any).completed_dates && Array.isArray((userBook as any).completed_dates)
-                    ? (userBook as any).completed_dates
-                    : (userBook as any).completed_dates && typeof (userBook as any).completed_dates === 'string'
-                    ? JSON.parse((userBook as any).completed_dates)
-                    : userBook.completed_at
-                    ? [userBook.completed_at]
-                    : null
-                }
-                currentBookshelfId={(userBook as any).bookshelf_id || null}
-              />
+              {/* 로그인 사용자만 편집 가능 */}
+              {!isGuest && (
+                <BookInfoEditor
+                  userBookId={userBook.id}
+                  currentReadingReason={userBook.reading_reason}
+                  currentStartedAt={userBook.started_at}
+                  currentCompletedDates={
+                    (userBook as any).completed_dates && Array.isArray((userBook as any).completed_dates)
+                      ? (userBook as any).completed_dates
+                      : (userBook as any).completed_dates && typeof (userBook as any).completed_dates === 'string'
+                      ? JSON.parse((userBook as any).completed_dates)
+                      : userBook.completed_at
+                      ? [userBook.completed_at]
+                      : null
+                  }
+                  currentBookshelfId={(userBook as any).bookshelf_id || null}
+                />
+              )}
             </div>
             {userBook.reading_reason ? (
               <p className="text-sm italic">"{userBook.reading_reason}"</p>
             ) : (
               <p className="text-sm text-muted-foreground italic">
-                읽는 이유를 등록해보세요.
+                {isGuest ? "읽는 이유가 등록되지 않았습니다." : "읽는 이유를 등록해보세요."}
               </p>
             )}
           </div>
@@ -152,7 +203,7 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
                   <span>{formatDate(userBook.started_at)}</span>
                 ) : (
                   <span className="text-muted-foreground text-sm">
-                    시작일을 등록해보세요.
+                    {isGuest ? "미등록" : "시작일을 등록해보세요."}
                   </span>
                 )}
               </div>
@@ -185,7 +236,7 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
                       </span>
                     ) : (
                       <span className="text-muted-foreground text-sm">
-                        완독일을 등록해보세요.
+                        {isGuest ? "미등록" : "완독일을 등록해보세요."}
                       </span>
                     )}
                   </div>
@@ -194,19 +245,20 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
             </div>
           </div>
 
-          <div className="flex gap-2 flex-wrap justify-center sm:justify-start">
-            <BookStatusSelector
-              currentStatus={userBook.status as ReadingStatus}
-              userBookId={userBook.id}
-              currentBookshelfId={(userBook as any).bookshelf_id || null}
-            />
-            {!bookId.startsWith("sample-") && (
+          {/* 로그인 사용자만 상태 변경 및 삭제 가능 */}
+          {!isGuest && (
+            <div className="flex gap-2 flex-wrap justify-center sm:justify-start">
+              <BookStatusSelector
+                currentStatus={userBook.status as ReadingStatus}
+                userBookId={userBook.id}
+                currentBookshelfId={(userBook as any).bookshelf_id || null}
+              />
               <BookDeleteButton
                 userBookId={userBook.id}
                 bookTitle={book.title}
               />
-            )}
-          </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -214,14 +266,27 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
       <div className="border-t pt-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-2xl font-semibold tracking-tight">기록</h2>
-          <Button asChild>
-            <Link href={`/notes/new?bookId=${userBook.id}`}>
-              <PenTool className="mr-2 h-4 w-4" />
-              기록 작성
-            </Link>
-          </Button>
+          {isGuest ? (
+            <Button asChild variant="outline">
+              <Link href="/login">
+                <LogIn className="mr-2 h-4 w-4" />
+                로그인하고 기록 작성
+              </Link>
+            </Button>
+          ) : (
+            <Button asChild>
+              <Link href={`/notes/new?bookId=${userBook.id}`}>
+                <PenTool className="mr-2 h-4 w-4" />
+                기록 작성
+              </Link>
+            </Button>
+          )}
         </div>
-        <NotesList bookId={userBook.id} />
+        {isGuest ? (
+          <SampleNotesList bookId={userBook.id} />
+        ) : (
+          <NotesList bookId={userBook.id} />
+        )}
       </div>
     </div>
   );

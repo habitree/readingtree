@@ -6,7 +6,7 @@ import { BookSearchInput } from "@/components/books/book-search-input";
 import { ViewModeToggle } from "@/components/books/view-mode-toggle";
 import { StatusFilter } from "@/components/books/status-filter";
 import { getUserBooksWithNotes } from "@/app/actions/books";
-import { getSampleBooksWithNotes } from "@/app/actions/sample";
+import { getSampleBooksWithNotes, getSampleBookshelfBooks } from "@/app/actions/sample";
 import type { ReadingStatus } from "@/types/book";
 
 interface BookshelfPageContentProps {
@@ -84,8 +84,13 @@ async function BookshelfStats({
   isGuest?: boolean;
 }) {
   try {
-    if (isGuest) {
+    if (isGuest || !user) {
       // 게스트 사용자: 샘플 데이터 통계
+      if (bookshelfId) {
+        // 특정 서재의 샘플 통계
+        const { stats } = await getSampleBookshelfBooks(bookshelfId, status, query);
+        return <BookStatsCards stats={stats} />;
+      }
       const { stats } = await getSampleBooksWithNotes(status, query);
       return <BookStatsCards stats={stats} />;
     }
@@ -135,11 +140,17 @@ async function BooksListGrid({
     if (!user) {
       // 게스트 사용자: 관리자(샘플) 데이터 조회
       try {
-        const { books: sampleBooks } = await getSampleBooksWithNotes(status, query);
-        booksData = sampleBooks || [];
+        if (bookshelfId) {
+          // 특정 서재의 샘플 책 목록
+          const { books: sampleBooks } = await getSampleBookshelfBooks(bookshelfId, status, query);
+          booksData = sampleBooks || [];
+        } else {
+          const { books: sampleBooks } = await getSampleBooksWithNotes(status, query);
+          booksData = sampleBooks || [];
+        }
         isSample = true;
       } catch (error) {
-        console.error("BooksListGrid: getSampleBooksWithNotes 오류:", error);
+        console.error("BooksListGrid: getSampleBooks 오류:", error);
         booksData = [];
       }
     } else {

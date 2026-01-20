@@ -7,9 +7,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 interface BookshelfListProps {
   bookshelves: BookshelfWithStats[];
   isLoading?: boolean;
+  isGuest?: boolean;
 }
 
-export function BookshelfList({ bookshelves, isLoading }: BookshelfListProps) {
+export function BookshelfList({ bookshelves, isLoading, isGuest = false }: BookshelfListProps) {
   if (isLoading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -23,7 +24,9 @@ export function BookshelfList({ bookshelves, isLoading }: BookshelfListProps) {
   if (bookshelves.length === 0) {
     return (
       <div className="text-center py-12">
-        <p className="text-muted-foreground">서재가 없습니다. 새 서재를 만들어보세요.</p>
+        <p className="text-muted-foreground">
+          {isGuest ? "샘플 서재가 없습니다." : "서재가 없습니다. 새 서재를 만들어보세요."}
+        </p>
       </div>
     );
   }
@@ -31,7 +34,7 @@ export function BookshelfList({ bookshelves, isLoading }: BookshelfListProps) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {bookshelves.map((bookshelf) => (
-        <BookshelfCard key={bookshelf.id} bookshelf={bookshelf} />
+        <BookshelfCard key={bookshelf.id} bookshelf={bookshelf} isGuest={isGuest} />
       ))}
     </div>
   );

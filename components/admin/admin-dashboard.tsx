@@ -3,7 +3,7 @@
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { AdminStatsCard } from "./admin-stats-card";
 import { BatchOCRButton } from "./batch-ocr-button";
-import { Users, BookOpen, FileText, LayoutGrid, Clock, UserPlus, Settings, Zap, TrendingUp, ScanLine, CheckCircle2, XCircle } from "lucide-react";
+import { Users, BookOpen, FileText, LayoutGrid, Clock, UserPlus, Settings, Zap, TrendingUp, ScanLine, CheckCircle2, XCircle, Bot } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { formatDistanceToNow } from "date-fns";
@@ -43,7 +43,14 @@ export async function AdminDashboard({ stats, growth, activity, ocrMonthlyUsage,
                 </div>
                 <div className="flex items-center gap-2 flex-wrap">
                     <BatchOCRButton />
-                    <Link 
+                    <Link
+                        href="/admin/ai-settings"
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium text-sm"
+                    >
+                        <Bot className="h-4 w-4" />
+                        AI 설정
+                    </Link>
+                    <Link
                         href="/admin/api-info"
                         className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors font-medium text-sm"
                     >
