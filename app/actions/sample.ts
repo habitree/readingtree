@@ -4,22 +4,44 @@ import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import type { ReadingStatus } from "@/types/book";
 import type { BookWithNotes, BookStats } from "@/app/actions/books";
 
-const SAMPLE_USER_ID = process.env.NEXT_PUBLIC_SAMPLE_USER_ID;
+/**
+ * 관리자(샘플 사용자) ID를 동적으로 조회
+ * is_admin = TRUE인 첫 번째 사용자를 샘플 사용자로 사용
+ */
+async function getSampleUserId(): Promise<string> {
+  // 환경 변수가 설정되어 있으면 우선 사용
+  const envSampleUserId = process.env.NEXT_PUBLIC_SAMPLE_USER_ID;
+  if (envSampleUserId) {
+    return envSampleUserId;
+  }
+
+  // 환경 변수가 없으면 is_admin = TRUE인 사용자 조회
+  const supabase = createAdminSupabaseClient();
+  const { data, error } = await supabase
+    .from("users")
+    .select("id")
+    .eq("is_admin", true)
+    .limit(1)
+    .maybeSingle();
+
+  if (error || !data) {
+    throw new Error("샘플 사용자(관리자)를 찾을 수 없습니다.");
+  }
+
+  return data.id;
+}
 
 /**
  * 샘플 사용자의 메인 서재 조회
  */
 export async function getSampleMainBookshelf() {
-  if (!SAMPLE_USER_ID) {
-    throw new Error("샘플 사용자 ID가 설정되지 않았습니다.");
-  }
-
+  const sampleUserId = await getSampleUserId();
   const supabase = createAdminSupabaseClient();
 
   const { data, error } = await supabase
     .from("bookshelves")
     .select("*")
-    .eq("user_id", SAMPLE_USER_ID)
+    .eq("user_id", sampleUserId)
     .eq("is_main", true)
     .maybeSingle();
 
@@ -33,6 +55,7 @@ export async function getSampleMainBookshelf() {
 /**
  * 샘플 사용자의 책 목록 + 통계 조회
  * Admin Client를 사용하여 RLS 우회 (비로그인 사용자 대응)
+ * 관리자(is_admin = TRUE)의 공개 데이터를 샘플로 표시
  */
 export async function getSampleBooksWithNotes(
   status?: ReadingStatus,
@@ -41,17 +64,14 @@ export async function getSampleBooksWithNotes(
   books: BookWithNotes[];
   stats: BookStats;
 }> {
-  if (!SAMPLE_USER_ID) {
-    throw new Error("샘플 사용자 ID가 설정되지 않았습니다.");
-  }
-
+  const sampleUserId = await getSampleUserId();
   const supabase = createAdminSupabaseClient();
 
   // 상태별 통계 조회
   const { data: allUserBooks } = await supabase
     .from("user_books")
     .select("status")
-    .eq("user_id", SAMPLE_USER_ID);
+    .eq("user_id", sampleUserId);
 
   const stats: BookStats = {
     total: allUserBooks?.length || 0,
@@ -90,7 +110,7 @@ export async function getSampleBooksWithNotes(
       )
     `
     )
-    .eq("user_id", SAMPLE_USER_ID)
+    .eq("user_id", sampleUserId)
     .order("created_at", { ascending: false });
 
   // 상태 필터 적용
@@ -146,7 +166,7 @@ export async function getSampleBooksWithNotes(
     const { data: allNotes } = await supabase
       .from("notes")
       .select("id, type, content, created_at, book_id")
-      .eq("user_id", SAMPLE_USER_ID)
+      .eq("user_id", sampleUserId)
       .in("book_id", bookIds)
       .order("created_at", { ascending: false });
     notesData = allNotes || [];

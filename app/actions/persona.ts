@@ -3,6 +3,7 @@
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/app/actions/auth";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { revalidatePath } from "next/cache";
 import type { Database } from "@/types/database";
 import type {
   UserPersona,
@@ -392,6 +393,9 @@ export async function analyzeAndSavePersona(): Promise<UserPersona | null> {
     }
     result = data;
   }
+
+  // 페이지 캐시 무효화
+  revalidatePath("/persona");
 
   return result as UserPersona;
 }

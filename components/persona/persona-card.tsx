@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -37,15 +38,23 @@ export function PersonaCard({
   onRefresh,
 }: PersonaCardProps) {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const router = useRouter();
 
   const handleAnalyze = async () => {
     setIsAnalyzing(true);
     try {
       await analyzeAndSavePersona();
       toast.success("페르소나 분석이 완료되었습니다!");
+      // 서버 컴포넌트 새로고침
+      router.refresh();
       onRefresh?.();
     } catch (error) {
-      toast.error("분석에 실패했습니다. 다시 시도해주세요.");
+      console.error("페르소나 분석 오류:", error);
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "분석에 실패했습니다. 다시 시도해주세요."
+      );
     } finally {
       setIsAnalyzing(false);
     }
