@@ -22,7 +22,7 @@ import { createNote } from "@/app/actions/notes";
 import { toast } from "sonner";
 import { Loader2, Upload, X, PenTool, Camera } from "lucide-react";
 import Image from "next/image";
-import { getImageUrl } from "@/lib/utils/image";
+import { getImageUrl, isValidImageUrl } from "@/lib/utils/image";
 import { validateImageSize, validateImageType } from "@/lib/utils/image";
 import { TagInput } from "./tag-input";
 import { TextPreviewDialog } from "./text-preview-dialog";
@@ -145,15 +145,56 @@ export function NoteFormNew({ bookId }: NoteFormNewProps) {
         }
 
         const data = await response.json();
+        
+        // 디버깅: 업로드 응답 확인
+        console.log("[이미지 업로드] 응답 데이터:", {
+          url: data.url,
+          hasUrl: !!data.url,
+          urlType: typeof data.url,
+          urlLength: data.url?.length,
+        });
+        
+        if (!data.url) {
+          console.error("[이미지 업로드] URL이 응답에 없습니다:", data);
+          toast.error(`${file.name} 업로드는 성공했지만 URL을 받지 못했습니다.`);
+          continue;
+        }
+        
         newImages.push(data.url);
         setUploadProgress((prev) => ({ ...prev, [i]: 100 }));
+        console.log("[이미지 업로드] 성공:", {
+          fileName: file.name,
+          url: data.url.substring(0, 100) + "...",
+          index: i,
+        });
       } catch (error) {
         console.error("이미지 업로드 오류:", error);
         toast.error(`${file.name} 업로드에 실패했습니다.`);
       }
     }
 
-    setImages((prev) => [...prev, ...newImages]);
+    // 디버깅: 업로드 완료 후 상태 확인
+    console.log("[이미지 업로드] 완료:", {
+      newImagesCount: newImages.length,
+      newImages: newImages.map(url => url.substring(0, 50) + "..."),
+      currentImagesCount: images.length,
+    });
+
+    if (newImages.length > 0) {
+      setImages((prev) => {
+        const updated = [...prev, ...newImages];
+        console.log("[이미지 업로드] 상태 업데이트:", {
+          prevCount: prev.length,
+          newCount: newImages.length,
+          updatedCount: updated.length,
+        });
+        return updated;
+      });
+      toast.success(`${newImages.length}개의 이미지가 업로드되었습니다.`);
+    } else {
+      console.warn("[이미지 업로드] 업로드된 이미지가 없습니다.");
+    }
+    
     setUploading(false);
     setUploadProgress({});
     setValue("uploadType", type);
@@ -520,35 +561,65 @@ export function NoteFormNew({ bookId }: NoteFormNewProps) {
         {/* 업로드된 이미지 표시 */}
         {images.length > 0 && (
           <div className="space-y-2">
-            <Label>업로드된 이미지</Label>
+            <Label>업로드된 이미지 ({images.length}개)</Label>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              {images.map((url, index) => (
-                <div key={index} className="relative group">
-                  <div className="relative aspect-[3/4] w-full overflow-hidden rounded-lg bg-muted">
-                    <Image
-                      src={getImageUrl(url)}
-                      alt={`업로드된 이미지 ${index + 1}`}
-                      fill
-                      className="object-cover"
-                      sizes="(max-width: 768px) 50vw, 33vw"
-                    />
-                  </div>
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    size="icon"
-                    className="absolute top-1.5 right-1.5 h-5 w-5 p-0 opacity-0 group-hover:opacity-100 transition-opacity shadow-md hover:shadow-lg"
-                    onClick={() => removeImage(index)}
-                  >
-                    <X className="h-2.5 w-2.5" />
-                  </Button>
-                  {uploadProgress[index] !== undefined && (
-                    <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-xs p-1 text-center">
-                      {uploadProgress[index]}%
+              {images.map((url, index) => {
+                const imageUrl = getImageUrl(url);
+                console.log("[이미지 표시] 렌더링:", {
+                  index,
+                  originalUrl: url?.substring(0, 50) + "...",
+                  processedUrl: imageUrl?.substring(0, 50) + "...",
+                  isValid: isValidImageUrl(url),
+                });
+                
+                return (
+                  <div key={`${url}-${index}`} className="relative group">
+                    <div className="relative aspect-[3/4] w-full overflow-hidden rounded-lg bg-muted">
+                      {isValidImageUrl(url) ? (
+                        <Image
+                          src={imageUrl}
+                          alt={`업로드된 이미지 ${index + 1}`}
+                          fill
+                          className="object-cover"
+                          sizes="(max-width: 768px) 50vw, 33vw"
+                          unoptimized={true}
+                          onError={(e) => {
+                            console.error("[이미지 표시] 로드 실패:", {
+                              url: imageUrl.substring(0, 100),
+                              index,
+                            });
+                            toast.error(`이미지 ${index + 1} 로드에 실패했습니다.`);
+                          }}
+                          onLoad={() => {
+                            console.log("[이미지 표시] 로드 성공:", {
+                              url: imageUrl.substring(0, 50) + "...",
+                              index,
+                            });
+                          }}
+                        />
+                      ) : (
+                        <div className="absolute inset-0 flex items-center justify-center bg-muted text-muted-foreground text-xs">
+                          이미지 로드 실패
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
-              ))}
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="icon"
+                      className="absolute top-1.5 right-1.5 h-5 w-5 p-0 opacity-0 group-hover:opacity-100 transition-opacity shadow-md hover:shadow-lg z-10"
+                      onClick={() => removeImage(index)}
+                    >
+                      <X className="h-2.5 w-2.5" />
+                    </Button>
+                    {uploadProgress[index] !== undefined && uploadProgress[index] < 100 && (
+                      <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-xs p-1 text-center">
+                        {uploadProgress[index]}%
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
             {currentUploadType && (
               <p className="text-xs text-muted-foreground">

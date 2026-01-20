@@ -4,7 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { getImageUrl, getProxiedImageUrl } from "@/lib/utils/image";
+import { getImageUrl, getProxiedImageUrl, isValidImageUrl } from "@/lib/utils/image";
 import { parseNoteContentFields, getNoteTypeLabel } from "@/lib/utils/note";
 import type { NoteWithBook } from "@/types/note";
 import { Quote, BookOpen, Calendar, ChevronDown, ChevronUp, Trees } from "lucide-react";
@@ -108,9 +108,19 @@ export function ShareNoteCard({ note, className, isPublicView = false, hideActio
     const { quote, memo } = parseNoteContentFields(note.content);
     const hasQuote = quote && quote.trim().length > 0;
     const hasMemo = memo && memo.trim().length > 0;
-    const hasImage = !!note.image_url;
+    const hasImage = !!note.image_url && isValidImageUrl(note.image_url);
     const typeLabel = getNoteTypeLabel(note.type, hasImage);
     const formattedDate = formatDate(note.created_at);
+    
+    // 디버깅: 이미지 URL 확인
+    if (note.image_url) {
+        console.log("[ShareNoteCard] 이미지 URL 확인:", {
+            originalUrl: note.image_url,
+            isValid: isValidImageUrl(note.image_url),
+            processedUrl: getImageUrl(note.image_url),
+            hasImage,
+        });
+    }
 
     // 공통 푸터 (Habitree 로고) - 한 줄로 표시
     const FooterLogo = () => (
@@ -203,14 +213,37 @@ export function ShareNoteCard({ note, className, isPublicView = false, hideActio
                                     {hideActions ? (
                                         // 캡처 시
                                         <div className="relative w-full flex-1 min-h-[350px] rounded-xl overflow-hidden shadow-sm bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
-                                            <Image
-                                                src={getImageUrl(note.image_url!)}
-                                                alt="Captured Moment"
-                                                fill
-                                                className="object-contain" // 비율 유지하며 전체 표시
-                                                sizes="(max-width: 768px) 100vw, 400px"
-                                                priority={true}
-                                            />
+                                            {isValidImageUrl(note.image_url!) ? (
+                                                <Image
+                                                    src={getImageUrl(note.image_url!)}
+                                                    alt="Captured Moment"
+                                                    fill
+                                                    className="object-contain" // 비율 유지하며 전체 표시
+                                                    sizes="(max-width: 768px) 100vw, 400px"
+                                                    priority={true}
+                                                    unoptimized={true}
+                                                    onError={(e) => {
+                                                        console.error("[ShareNoteCard] 이미지 로드 실패:", {
+                                                            url: getImageUrl(note.image_url!),
+                                                            originalUrl: note.image_url,
+                                                        });
+                                                    }}
+                                                    onLoad={() => {
+                                                        console.log("[ShareNoteCard] 이미지 로드 성공:", {
+                                                            url: getImageUrl(note.image_url!).substring(0, 100) + "...",
+                                                        });
+                                                    }}
+                                                />
+                                            ) : (
+                                                <div className="absolute inset-0 flex items-center justify-center bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400">
+                                                    <div className="text-center">
+                                                        <p className="text-sm font-medium">이미지를 불러올 수 없습니다</p>
+                                                        <p className="text-xs mt-1 text-slate-400 dark:text-slate-500">
+                                                            {note.image_url?.substring(0, 50)}...
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            )}
                                             {showTimestamp && (
                                                 <div className="absolute bottom-3 left-3 z-20">
                                                     <p className="text-[11px] font-bold text-white drop-shadow-md bg-black/20 backdrop-blur-sm px-2 py-0.5 rounded-full">
@@ -223,14 +256,37 @@ export function ShareNoteCard({ note, className, isPublicView = false, hideActio
                                         // 일반 화면
                                         <ImageLightbox src={note.image_url!} alt="Captured Moment">
                                             <div className="relative w-full flex-1 min-h-[350px] rounded-xl overflow-hidden shadow-sm bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 group cursor-zoom-in">
-                                                <Image
-                                                    src={getImageUrl(note.image_url!)}
-                                                    alt="Captured Moment"
-                                                    fill
-                                                    className="object-contain transition-transform duration-500 group-hover:scale-105"
-                                                    sizes="(max-width: 768px) 100vw, 400px"
-                                                    priority={true}
-                                                />
+                                                {isValidImageUrl(note.image_url!) ? (
+                                                    <Image
+                                                        src={getImageUrl(note.image_url!)}
+                                                        alt="Captured Moment"
+                                                        fill
+                                                        className="object-contain transition-transform duration-500 group-hover:scale-105"
+                                                        sizes="(max-width: 768px) 100vw, 400px"
+                                                        priority={true}
+                                                        unoptimized={true}
+                                                        onError={(e) => {
+                                                            console.error("[ShareNoteCard] 이미지 로드 실패:", {
+                                                                url: getImageUrl(note.image_url!),
+                                                                originalUrl: note.image_url,
+                                                            });
+                                                        }}
+                                                        onLoad={() => {
+                                                            console.log("[ShareNoteCard] 이미지 로드 성공:", {
+                                                                url: getImageUrl(note.image_url!).substring(0, 100) + "...",
+                                                            });
+                                                        }}
+                                                    />
+                                                ) : (
+                                                    <div className="absolute inset-0 flex items-center justify-center bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400">
+                                                        <div className="text-center">
+                                                            <p className="text-sm font-medium">이미지를 불러올 수 없습니다</p>
+                                                            <p className="text-xs mt-1 text-slate-400 dark:text-slate-500">
+                                                                {note.image_url?.substring(0, 50)}...
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                )}
                                                 {showTimestamp && (
                                                     <div className="absolute bottom-3 left-3 z-20">
                                                         <p className="text-[11px] font-bold text-white drop-shadow-md bg-black/20 backdrop-blur-sm px-2 py-0.5 rounded-full">

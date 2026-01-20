@@ -330,6 +330,7 @@ export function NoteEditForm({ note }: NoteEditFormProps) {
                         fill
                         className="object-cover"
                         sizes="(max-width: 768px) 50vw, 33vw"
+                        unoptimized={true}
                       />
                       <Button
                         type="button"
