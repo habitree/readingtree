@@ -599,6 +599,104 @@ CREATE TYPE ocr_log_status AS ENUM ('success', 'failed');
 
 ---
 
+### 4.9 chat_sessions (AI 채팅 세션)
+
+**목적**: AI 독서 도우미와의 채팅 세션을 관리합니다.
+
+**소유 구조**: 개인 (각 사용자는 자신의 채팅 세션만 소유)
+
+**주요 컬럼**:
+- `id` (UUID, PK): 기본 키
+- `user_id` (UUID, NOT NULL): 사용자 ID (`auth.users(id)` 참조)
+- `title` (VARCHAR(200)): 세션 제목 (첫 메시지 기반 자동 생성)
+- `last_message_at` (TIMESTAMP WITH TIME ZONE): 마지막 메시지 시간
+- `message_count` (INTEGER, DEFAULT 0): 메시지 수
+- `created_at`, `updated_at` (TIMESTAMP WITH TIME ZONE): 생성/수정 시간
+
+**관계 정의**:
+- `user_id` → `auth.users(id)` (ON DELETE CASCADE)
+- `id` ← `chat_messages(session_id)` (ON DELETE CASCADE)
+
+**인덱스**:
+- `idx_chat_sessions_user_id`: 사용자별 세션 조회용
+- `idx_chat_sessions_last_message_at`: 최신 세션 정렬용 (DESC)
+
+**RLS 정책 요약**:
+- **SELECT**: 자신의 세션만 조회 가능 (`auth.uid() = user_id`)
+- **INSERT**: 자신의 세션만 생성 가능 (`auth.uid() = user_id`)
+- **UPDATE**: 자신의 세션만 수정 가능 (`auth.uid() = user_id`)
+- **DELETE**: 자신의 세션만 삭제 가능 (`auth.uid() = user_id`)
+
+---
+
+### 4.10 chat_messages (AI 채팅 메시지)
+
+**목적**: AI 독서 도우미와의 대화 메시지를 저장합니다.
+
+**소유 구조**: 개인 (세션 소유자만 접근 가능)
+
+**주요 컬럼**:
+- `id` (UUID, PK): 기본 키
+- `session_id` (UUID, NOT NULL): 세션 ID (`chat_sessions(id)` 참조)
+- `role` (VARCHAR(20), NOT NULL): 메시지 역할 ('user', 'assistant', 'system')
+- `content` (TEXT, NOT NULL): 메시지 내용
+- `context_books` (UUID[]): 참조된 책 ID 배열
+- `context_notes` (UUID[]): 참조된 기록 ID 배열
+- `created_at` (TIMESTAMP WITH TIME ZONE): 생성 시간
+
+**관계 정의**:
+- `session_id` → `chat_sessions(id)` (ON DELETE CASCADE)
+
+**인덱스**:
+- `idx_chat_messages_session_id`: 세션별 메시지 조회용
+- `idx_chat_messages_created_at`: 시간순 정렬용
+
+**RLS 정책 요약**:
+- **SELECT**: 자신의 세션에 속한 메시지만 조회 가능
+- **INSERT**: 자신의 세션에만 메시지 생성 가능
+- **UPDATE**: 자신의 세션에 속한 메시지만 수정 가능
+- **DELETE**: 자신의 세션에 속한 메시지만 삭제 가능
+
+---
+
+### 4.11 user_personas (사용자 페르소나)
+
+**목적**: 사용자의 독서 성향 분석 결과를 저장합니다. AI 챗봇이 개인화된 응답을 제공하는 데 사용됩니다.
+
+**소유 구조**: 개인 (각 사용자는 하나의 페르소나만 소유)
+
+**주요 컬럼**:
+- `id` (UUID, PK): 기본 키
+- `user_id` (UUID, NOT NULL, UNIQUE): 사용자 ID (`auth.users(id)` 참조)
+- `reading_pace` (VARCHAR(20)): 독서 속도 ('fast', 'steady', 'slow')
+- `note_style` (VARCHAR(30)): 기록 스타일 ('quote-focused', 'reflection-focused', 'visual', 'balanced')
+- `activity_pattern` (VARCHAR(20)): 활동 패턴 ('morning', 'afternoon', 'evening', 'night')
+- `group_engagement` (VARCHAR(20)): 그룹 참여 스타일 ('leader', 'active', 'observer', 'solo')
+- `reading_stats` (JSONB): 상세 독서 통계
+- `category_preferences` (JSONB): 카테고리 선호도 배열
+- `persona_summary` (TEXT): AI 생성 페르소나 요약
+- `last_analyzed_at` (TIMESTAMP WITH TIME ZONE): 마지막 분석 시간
+- `created_at`, `updated_at` (TIMESTAMP WITH TIME ZONE): 생성/수정 시간
+
+**관계 정의**:
+- `user_id` → `auth.users(id)` (ON DELETE CASCADE)
+
+**인덱스**:
+- `idx_user_personas_user_id`: 사용자별 페르소나 조회용
+- `idx_user_personas_last_analyzed_at`: 분석 시간 기준 조회용
+
+**RLS 정책 요약**:
+- **SELECT**: 자신의 페르소나만 조회 가능 (`auth.uid() = user_id`)
+- **INSERT**: 자신의 페르소나만 생성 가능 (`auth.uid() = user_id`)
+- **UPDATE**: 자신의 페르소나만 수정 가능 (`auth.uid() = user_id`)
+- **DELETE**: 자신의 페르소나만 삭제 가능 (`auth.uid() = user_id`)
+
+**특수 기능**:
+- 24시간 캐싱: `last_analyzed_at`을 기준으로 24시간 경과 시 재분석
+- 사용자당 1개의 페르소나만 존재 (UNIQUE 제약)
+
+---
+
 ## 5. 관계 요약
 
 ### 5.1 주요 관계 다이어그램
@@ -637,6 +735,9 @@ group_shared_books ←→ user_books (N:M)
 10. **users ↔ ocr_usage_stats**: 1:1 관계, 한 사용자는 하나의 OCR 통계만 가짐
 11. **users ↔ ocr_logs**: 1:N 관계, 한 사용자는 여러 OCR 로그를 가짐
 12. **notes ↔ ocr_logs**: 1:N 관계, 한 기록은 여러 OCR 로그를 가질 수 있음 (NULL 허용)
+13. **users ↔ chat_sessions**: 1:N 관계, 한 사용자는 여러 채팅 세션을 가질 수 있음
+14. **chat_sessions ↔ chat_messages**: 1:N 관계, 한 세션은 여러 메시지를 가짐
+15. **users ↔ user_personas**: 1:1 관계, 한 사용자는 하나의 페르소나만 가짐
 
 ### 5.3 CASCADE 규칙
 
@@ -836,6 +937,32 @@ RLS 정책은 데이터베이스 레벨에서 접근 제어를 강제하므로, 
 - **마이그레이션 파일**:
   - `migration-202501031200__ocr__add_usage_stats_and_logs.sql`
 - **목적**: OCR 처리 횟수를 기록하여 유료화 정책 수립 및 사용량 제한을 위한 데이터 수집
+
+### 2026-01-20 (AI 독서 도우미 기능 추가)
+
+- **변경 내용**: AI 챗봇 및 페르소나 기능 추가
+  - `chat_sessions` 테이블 생성: AI 채팅 세션 관리
+    - `id`, `user_id`, `title`, `last_message_at`, `message_count`
+  - `chat_messages` 테이블 생성: 채팅 메시지 저장
+    - `id`, `session_id`, `role`, `content`, `context_books`, `context_notes`
+  - `user_personas` 테이블 생성: 사용자 독서 페르소나 저장
+    - `id`, `user_id`, `reading_pace`, `note_style`, `activity_pattern`, `group_engagement`
+    - `reading_stats`, `category_preferences`, `persona_summary`, `last_analyzed_at`
+  - `books` 테이블에 AI 메타데이터 컬럼 추가:
+    - `table_of_contents`: 목차
+    - `full_description`: 상세 설명
+    - `keywords`: AI 키워드 배열
+    - `author_info`: 저자 정보
+- **영향받는 테이블**:
+  - `chat_sessions` (신규)
+  - `chat_messages` (신규)
+  - `user_personas` (신규)
+  - `books` (수정: AI 메타데이터 컬럼 추가)
+- **마이그레이션 파일**:
+  - `migration-202601201000__ai_chat__create_tables.sql`
+  - `migration-202601201010__user_personas__create_table.sql`
+  - `migration-202601201020__books__add_ai_metadata_columns.sql`
+- **목적**: 사용자의 독서 기록을 분석하여 개인화된 AI 독서 도우미 제공
 
 ### 향후 변경 사항
 

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Library, Search, User, Clock } from "lucide-react";
+import { Home, Library, Search, User, Bot } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 import { Button } from "@/components/ui/button";
 
@@ -22,7 +22,7 @@ interface MobileNavItem {
 const mobileNavItems: MobileNavItem[] = [
   { icon: Home, label: "홈", href: "/" },
   { icon: Library, label: "서재", href: "/books" },
-  { icon: Clock, label: "타임라인", href: "/timeline" },
+  { icon: Bot, label: "AI", href: "/chat" },
   { icon: Search, label: "검색", href: "/search" },
   { icon: User, label: "프로필", href: "/profile" },
 ];

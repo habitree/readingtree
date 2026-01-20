@@ -56,6 +56,11 @@ export interface Database {
           description_summary: string | null;
           external_link: string | null;
           is_sample: boolean | null;
+          // AI 메타데이터 컬럼
+          table_of_contents: string | null;
+          full_description: string | null;
+          keywords: string[] | null;
+          author_info: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -73,6 +78,11 @@ export interface Database {
           description_summary?: string | null;
           external_link?: string | null;
           is_sample?: boolean | null;
+          // AI 메타데이터 컬럼
+          table_of_contents?: string | null;
+          full_description?: string | null;
+          keywords?: string[] | null;
+          author_info?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -90,6 +100,11 @@ export interface Database {
           description_summary?: string | null;
           external_link?: string | null;
           is_sample?: boolean | null;
+          // AI 메타데이터 컬럼
+          table_of_contents?: string | null;
+          full_description?: string | null;
+          keywords?: string[] | null;
+          author_info?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -322,6 +337,109 @@ export interface Database {
           error_message?: string | null;
           processing_duration_ms?: number | null;
           created_at?: string;
+        };
+      };
+      // AI 독서 도우미 테이블
+      chat_sessions: {
+        Row: {
+          id: string;
+          user_id: string;
+          title: string | null;
+          last_message_at: string;
+          message_count: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          title?: string | null;
+          last_message_at?: string;
+          message_count?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          title?: string | null;
+          last_message_at?: string;
+          message_count?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      chat_messages: {
+        Row: {
+          id: string;
+          session_id: string;
+          role: "user" | "assistant" | "system";
+          content: string;
+          context_books: string[] | null;
+          context_notes: string[] | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          session_id: string;
+          role: "user" | "assistant" | "system";
+          content: string;
+          context_books?: string[] | null;
+          context_notes?: string[] | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          session_id?: string;
+          role?: "user" | "assistant" | "system";
+          content?: string;
+          context_books?: string[] | null;
+          context_notes?: string[] | null;
+          created_at?: string;
+        };
+      };
+      user_personas: {
+        Row: {
+          id: string;
+          user_id: string;
+          reading_pace: string | null;
+          note_style: string | null;
+          activity_pattern: string | null;
+          group_engagement: string | null;
+          reading_stats: Json;
+          category_preferences: Json;
+          persona_summary: string | null;
+          last_analyzed_at: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          reading_pace?: string | null;
+          note_style?: string | null;
+          activity_pattern?: string | null;
+          group_engagement?: string | null;
+          reading_stats?: Json;
+          category_preferences?: Json;
+          persona_summary?: string | null;
+          last_analyzed_at?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          reading_pace?: string | null;
+          note_style?: string | null;
+          activity_pattern?: string | null;
+          group_engagement?: string | null;
+          reading_stats?: Json;
+          category_preferences?: Json;
+          persona_summary?: string | null;
+          last_analyzed_at?: string;
+          created_at?: string;
+          updated_at?: string;
         };
       };
     };
