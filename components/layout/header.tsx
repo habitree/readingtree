@@ -175,9 +175,14 @@ export function Header() {
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              <Button asChild variant="default">
-                <Link href="/login">로그인</Link>
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button asChild variant="outline" size="sm">
+                  <Link href="/sample">샘플보기</Link>
+                </Button>
+                <Button asChild variant="default" size="sm">
+                  <Link href="/login">로그인</Link>
+                </Button>
+              </div>
             )}
           </TooltipProvider>
         </div>

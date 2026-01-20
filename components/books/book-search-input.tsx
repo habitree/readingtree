@@ -8,13 +8,14 @@ import { Loader2 } from "lucide-react";
 
 interface BookSearchInputProps {
   className?: string;
+  basePath?: string;
 }
 
 /**
  * 책 검색 입력 컴포넌트
  * 책 제목, 저자, ISBN으로 검색
  */
-export function BookSearchInput({ className }: BookSearchInputProps) {
+export function BookSearchInput({ className, basePath: propBasePath }: BookSearchInputProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const pathname = usePathname();
@@ -22,8 +23,8 @@ export function BookSearchInput({ className }: BookSearchInputProps) {
   const [isSearching, setIsSearching] = useState(false);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // 현재 경로에 따라 기본 경로 결정 (서재 개별 페이지인지 확인)
-  const basePath = pathname?.startsWith("/bookshelves/") ? pathname : "/books";
+  // 현재 경로에 따라 기본 경로 결정 (서재 개별 페이지, 샘플 페이지인지 확인)
+  const basePath = propBasePath || (pathname?.startsWith("/bookshelves/") ? pathname : pathname?.startsWith("/sample") ? "/sample" : "/books");
 
   // URL 파라미터 변경 시 검색어 업데이트
   useEffect(() => {

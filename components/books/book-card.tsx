@@ -19,18 +19,20 @@ interface BookCardProps {
   userBookId: string;
   status: ReadingStatus;
   groupBooks?: BookWithNotes["groupBooks"];
+  isSample?: boolean;
 }
 
 /**
  * 책 카드 컴포넌트
  * 책 목록에서 사용되는 카드 형태의 책 정보 표시
  */
-export function BookCard({ book, userBookId, status, groupBooks }: BookCardProps) {
+export function BookCard({ book, userBookId, status, groupBooks, isSample: isSampleProp = false }: BookCardProps) {
   const [imageError, setImageError] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
   const MAX_RETRIES = 2; // 최대 2번 재시도
   const hasValidImage = isValidImageUrl(book.cover_image_url) && book.cover_image_url && !imageError;
-  const isSample = userBookId?.startsWith("sample-") || false;
+  // isSample은 prop으로 전달되거나 userBookId가 sample-로 시작하는 경우
+  const isSample = isSampleProp || userBookId?.startsWith("sample-") || false;
   
   // userBookId 검증
   if (!userBookId || typeof userBookId !== 'string' || userBookId.trim() === '') {

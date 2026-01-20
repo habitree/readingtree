@@ -26,13 +26,14 @@ interface BookListProps {
     }>;
   }>;
   isLoading?: boolean;
+  isSample?: boolean;
 }
 
 /**
  * 책 목록 컴포넌트
  * 그리드 형태로 책 카드들을 표시
  */
-export function BookList({ books, isLoading }: BookListProps) {
+export function BookList({ books, isLoading, isSample = false }: BookListProps) {
   if (isLoading) {
     return (
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
@@ -87,6 +88,7 @@ export function BookList({ books, isLoading }: BookListProps) {
             userBookId={userBook.id}
             status={userBook.status}
             groupBooks={userBook.groupBooks}
+            isSample={isSample}
           />
         );
       })}

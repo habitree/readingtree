@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Library, Search, User, Bot } from "lucide-react";
+import { Home, Library, Search, User, Bot, Eye } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/use-auth";
 
 /**
  * 모바일 네비게이션 아이템 타입
@@ -16,10 +17,9 @@ interface MobileNavItem {
 }
 
 /**
- * 모바일 네비게이션 아이템 목록
- * 주요 5개 메뉴 표시 (사용자 요청에 따른 핵심 메뉴 확장)
+ * 로그인 사용자용 모바일 네비게이션 아이템 목록
  */
-const mobileNavItems: MobileNavItem[] = [
+const loggedInNavItems: MobileNavItem[] = [
   { icon: Home, label: "홈", href: "/" },
   { icon: Library, label: "서재", href: "/books" },
   { icon: Bot, label: "AI", href: "/chat" },
@@ -28,11 +28,25 @@ const mobileNavItems: MobileNavItem[] = [
 ];
 
 /**
+ * 비로그인 사용자용 모바일 네비게이션 아이템 목록
+ */
+const guestNavItems: MobileNavItem[] = [
+  { icon: Home, label: "홈", href: "/" },
+  { icon: Eye, label: "샘플", href: "/sample" },
+  { icon: Search, label: "검색", href: "/search" },
+  { icon: User, label: "로그인", href: "/login" },
+];
+
+/**
  * 모바일 하단 네비게이션 컴포넌트
  * 모바일에서만 표시되는 하단 고정 네비게이션
  */
 export function MobileNav() {
   const pathname = usePathname();
+  const { user, isLoading } = useAuth();
+
+  // 로그인 상태에 따라 다른 네비게이션 아이템 사용
+  const mobileNavItems = user ? loggedInNavItems : guestNavItems;
 
   return (
     <nav
