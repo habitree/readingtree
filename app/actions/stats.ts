@@ -312,7 +312,7 @@ export async function getReadingStats(user?: User | null) {
     }
 
     // 책별 기록 수 집계
-    const bookCounts = new Map<string, { count: number; book: any }>();
+    const bookCounts = new Map<string, { count: number; book: any; userBookId: string }>();
     if (topBooksData) {
       topBooksData.forEach((note) => {
         const bookId = note.book_id;
@@ -323,7 +323,7 @@ export async function getReadingStats(user?: User | null) {
           if (existing) {
             existing.count++;
           } else {
-            bookCounts.set(bookId, { count: 1, book: { ...book, id: `sample-${userBookId}` } });
+            bookCounts.set(bookId, { count: 1, book: { ...book }, userBookId });
           }
         }
       });
@@ -333,12 +333,12 @@ export async function getReadingStats(user?: User | null) {
       .sort((a, b) => b.count - a.count)
       .slice(0, 5)
       .map((item) => ({
-        book: item.book,
+        book: { ...item.book, id: item.userBookId },
         noteCount: item.count,
       }));
 
     // 최근 기록한 책 (중복 제거, 최신순)
-    const recentBooksMap = new Map<string, { book: any; latestDate: string }>();
+    const recentBooksMap = new Map<string, { book: any; latestDate: string; userBookId: string; bookId: string }>();
     if (recentBooksData) {
       recentBooksData.forEach((note) => {
         const bookId = note.book_id;
@@ -349,8 +349,10 @@ export async function getReadingStats(user?: User | null) {
 
           if (!existing || new Date(note.created_at) > new Date(existing.latestDate)) {
             recentBooksMap.set(bookId, {
-              book: { ...book, id: `sample-${userBookId}` },
+              book: { ...book },
               latestDate: note.created_at,
+              userBookId,
+              bookId,
             });
           }
         }
@@ -361,8 +363,8 @@ export async function getReadingStats(user?: User | null) {
       .sort((a, b) => new Date(b.latestDate).getTime() - new Date(a.latestDate).getTime())
       .slice(0, 5)
       .map((item) => ({
-        book: item.book,
-        noteCount: bookCounts.get(item.book.id.replace("sample-", ""))?.count || 1,
+        book: { ...item.book, id: item.userBookId },
+        noteCount: bookCounts.get(item.bookId)?.count || 1,
       }));
 
     return {

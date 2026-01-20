@@ -9,8 +9,7 @@ import { BookDeleteButton } from "./book-delete-button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { getImageUrl, isValidImageUrl } from "@/lib/utils/image";
-import { BookOpen, LogIn, Users } from "lucide-react";
-import { toast } from "sonner";
+import { BookOpen, Users } from "lucide-react";
 import type { BookWithUserBook, ReadingStatus } from "@/types/book";
 import type { BookWithNotes } from "@/app/actions/books";
 
@@ -54,39 +53,24 @@ export function BookCard({ book, userBookId, status, groupBooks, isSample: isSam
   };
 
   const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
-    if (isSample) {
-      e.preventDefault();
-      // 샘플 데이터는 상세 페이지 접근 불가 안내
-      toast.info("샘플 데이터는 상세 페이지를 볼 수 없습니다", {
-        description: "로그인하여 나만의 서재를 만들어보세요!",
-        action: {
-          label: "로그인",
-          onClick: () => window.location.href = "/login",
-        },
-        duration: 5000,
-      });
-      return;
-    }
-
     // 디버깅: 클릭 시 userBookId 확인
     console.log("BookCard: 책 클릭", {
       userBookId,
       bookTitle: book.title,
       href: `/books/${userBookId}`,
+      isSample,
     });
   };
 
   return (
     <div className="relative group">
-      <Link 
-        href={isSample ? "/books" : `/books/${userBookId}`} 
+      <Link
+        href={`/books/${userBookId}`}
         onClick={handleClick}
-        aria-label={isSample ? `${book.title} (샘플 데이터 - 클릭 시 로그인 안내)` : `${book.title} 상세 보기`}
+        aria-label={`${book.title} 상세 보기`}
       >
-        <Card 
-          className={`hover:shadow-lg transition-shadow h-full ${isSample ? 'cursor-not-allowed opacity-90' : 'cursor-pointer'}`}
-          role={isSample ? "button" : undefined}
-          aria-disabled={isSample}
+        <Card
+          className="hover:shadow-lg transition-shadow h-full cursor-pointer"
         >
           <CardContent className="p-0">
             <div className="relative aspect-[3/4] w-full overflow-hidden rounded-t-lg bg-muted" role="img" aria-label={`${book.title} 표지`}>
