@@ -50,7 +50,7 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   // 게스트 접근 가능한 경로 (읽기 전용)
-  const guestAccessiblePaths = ["/", "/books", "/notes", "/timeline", "/groups", "/search"];
+  const guestAccessiblePaths = ["/", "/books", "/notes", "/timeline", "/groups", "/search", "/persona", "/sample"];
   const isGuestAccessiblePath = guestAccessiblePaths.some((path) => {
     // 루트 경로는 정확히 일치해야 함
     if (path === "/") {
