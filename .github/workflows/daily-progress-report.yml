@@ -1,0 +1,36 @@
+name: Daily Progress Report
+
+on:
+  schedule:
+    # 매일 00:00 UTC 실행 (한국 시간 오전 9시)
+    - cron: "0 0 * * *"
+  workflow_dispatch: {}
+
+jobs:
+  daily-progress:
+    name: Generate Daily Progress Report
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Daily Progress Report script
+        run: node scripts/daily-progress-report.js
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          DAILY_PROGRESS_LINEAR_TEAM: ${{ secrets.DAILY_PROGRESS_LINEAR_TEAM || 'Readtree' }}
+          DAILY_PROGRESS_LINEAR_PROJECT: ${{ secrets.DAILY_PROGRESS_LINEAR_PROJECT || 'AI Features' }}
+
