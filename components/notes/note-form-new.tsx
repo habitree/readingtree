@@ -70,6 +70,7 @@ export function NoteFormNew({ bookId }: NoteFormNewProps) {
   const transcriptionInputRef = useRef<HTMLInputElement>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
   const isSubmittingRef = useRef<boolean>(false); // 중복 제출 방지 플래그
+  const isUploadingRef = useRef<boolean>(false); // 이미지 업로드 중복 방지 플래그
 
   const form = useForm<NoteFormValues>({
     resolver: zodResolver(noteFormSchema),
@@ -94,6 +95,13 @@ export function NoteFormNew({ bookId }: NoteFormNewProps) {
   const handleImageUpload = async (files: FileList | null, type: "photo" | "transcription") => {
     if (!files || files.length === 0) return;
 
+    // 중복 업로드 방지: ref로 즉시 체크 (React 상태 업데이트 지연 방지)
+    if (isUploadingRef.current) {
+      console.warn("[이미지 업로드] 중복 호출 방지: 이미 업로드 중입니다.");
+      return;
+    }
+    isUploadingRef.current = true;
+
     const fileArray = Array.from(files);
     const validFiles = fileArray.filter(
       (file) => validateImageType(file) && validateImageSize(file)
@@ -101,6 +109,10 @@ export function NoteFormNew({ bookId }: NoteFormNewProps) {
 
     if (validFiles.length === 0) {
       toast.error("유효한 이미지 파일을 선택해주세요. (최대 5MB)");
+      isUploadingRef.current = false;
+      // input value 초기화
+      if (transcriptionInputRef.current) transcriptionInputRef.current.value = "";
+      if (photoInputRef.current) photoInputRef.current.value = "";
       return;
     }
 
@@ -198,6 +210,17 @@ export function NoteFormNew({ bookId }: NoteFormNewProps) {
     setUploading(false);
     setUploadProgress({});
     setValue("uploadType", type);
+
+    // 업로드 완료 후 플래그 초기화
+    isUploadingRef.current = false;
+
+    // input value 초기화 (동일 파일 재선택 가능하도록 + 중복 이벤트 방지)
+    if (transcriptionInputRef.current) {
+      transcriptionInputRef.current.value = "";
+    }
+    if (photoInputRef.current) {
+      photoInputRef.current.value = "";
+    }
   };
 
   const handleTranscriptionClick = () => {
@@ -503,18 +526,26 @@ export function NoteFormNew({ bookId }: NoteFormNewProps) {
         <div className="space-y-2">
           <Label>이미지 등록 (선택)</Label>
           <div className="flex gap-2">
-            <label htmlFor="transcription-input" className="flex-1 cursor-pointer">
+            <label
+              htmlFor="transcription-input"
+              className="flex-1 cursor-pointer"
+              style={{ touchAction: "manipulation" }}
+            >
               <div
-                className={`inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2 w-full ${uploading ? "opacity-50 cursor-not-allowed" : ""
+                className={`inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2 w-full ${uploading || isUploadingRef.current ? "opacity-50 cursor-not-allowed pointer-events-none" : ""
                   }`}
               >
                 <PenTool className="mr-2 h-4 w-4" />
                 필사등록
               </div>
             </label>
-            <label htmlFor="photo-input" className="flex-1 cursor-pointer">
+            <label
+              htmlFor="photo-input"
+              className="flex-1 cursor-pointer"
+              style={{ touchAction: "manipulation" }}
+            >
               <div
-                className={`inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2 w-full ${uploading ? "opacity-50 cursor-not-allowed" : ""
+                className={`inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2 w-full ${uploading || isUploadingRef.current ? "opacity-50 cursor-not-allowed pointer-events-none" : ""
                   }`}
               >
                 <Camera className="mr-2 h-4 w-4" />
