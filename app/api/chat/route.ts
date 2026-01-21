@@ -106,108 +106,96 @@ async function callAnthropic(
   return response.body!;
 }
 
-// OpenAI 스트림 파서
-function parseOpenAIStream(
+// OpenAI 스트림 파서 (Promise 반환으로 수정)
+async function parseOpenAIStream(
   stream: ReadableStream,
   onContent: (text: string) => void,
   onDone: () => void,
   onError: (error: string) => void
-): ReadableStream {
+): Promise<void> {
   const reader = stream.getReader();
   const decoder = new TextDecoder();
+  let buffer = "";
 
-  return new ReadableStream({
-    async start(controller) {
-      let buffer = "";
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
 
-      try {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n");
+      buffer = lines.pop() || "";
 
-          buffer += decoder.decode(value, { stream: true });
-          const lines = buffer.split("\n");
-          buffer = lines.pop() || "";
+      for (const line of lines) {
+        if (line.startsWith("data: ")) {
+          const data = line.slice(6);
+          if (data === "[DONE]") {
+            onDone();
+            continue;
+          }
 
-          for (const line of lines) {
-            if (line.startsWith("data: ")) {
-              const data = line.slice(6);
-              if (data === "[DONE]") {
-                onDone();
-                continue;
-              }
-
-              try {
-                const parsed = JSON.parse(data);
-                const content = parsed.choices?.[0]?.delta?.content;
-                if (content) {
-                  onContent(content);
-                }
-              } catch (e) {
-                // 파싱 오류 무시
-              }
+          try {
+            const parsed = JSON.parse(data);
+            const content = parsed.choices?.[0]?.delta?.content;
+            if (content) {
+              onContent(content);
             }
+          } catch (e) {
+            // 파싱 오류 무시
           }
         }
-        controller.close();
-      } catch (error) {
-        onError(error instanceof Error ? error.message : "스트림 오류");
-        controller.close();
       }
-    },
-  });
+    }
+    onDone();
+  } catch (error) {
+    onError(error instanceof Error ? error.message : "스트림 오류");
+  }
 }
 
-// Anthropic 스트림 파서
-function parseAnthropicStream(
+// Anthropic 스트림 파서 (Promise 반환으로 수정)
+async function parseAnthropicStream(
   stream: ReadableStream,
   onContent: (text: string) => void,
   onDone: () => void,
   onError: (error: string) => void
-): ReadableStream {
+): Promise<void> {
   const reader = stream.getReader();
   const decoder = new TextDecoder();
+  let buffer = "";
 
-  return new ReadableStream({
-    async start(controller) {
-      let buffer = "";
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
 
-      try {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n");
+      buffer = lines.pop() || "";
 
-          buffer += decoder.decode(value, { stream: true });
-          const lines = buffer.split("\n");
-          buffer = lines.pop() || "";
+      for (const line of lines) {
+        if (line.startsWith("data: ")) {
+          const data = line.slice(6);
 
-          for (const line of lines) {
-            if (line.startsWith("data: ")) {
-              const data = line.slice(6);
-
-              try {
-                const parsed = JSON.parse(data);
-                if (parsed.type === "content_block_delta") {
-                  const text = parsed.delta?.text;
-                  if (text) {
-                    onContent(text);
-                  }
-                } else if (parsed.type === "message_stop") {
-                  onDone();
-                }
-              } catch (e) {
-                // 파싱 오류 무시
+          try {
+            const parsed = JSON.parse(data);
+            if (parsed.type === "content_block_delta") {
+              const text = parsed.delta?.text;
+              if (text) {
+                onContent(text);
               }
+            } else if (parsed.type === "message_stop") {
+              onDone();
             }
+          } catch (e) {
+            // 파싱 오류 무시
           }
         }
-        controller.close();
-      } catch (error) {
-        onError(error instanceof Error ? error.message : "스트림 오류");
-        controller.close();
       }
-    },
-  });
+    }
+    onDone();
+  } catch (error) {
+    onError(error instanceof Error ? error.message : "스트림 오류");
+  }
 }
 
 export async function POST(request: NextRequest) {
