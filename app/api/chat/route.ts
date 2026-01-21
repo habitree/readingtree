@@ -314,7 +314,10 @@ export async function POST(request: NextRequest) {
 
             const chat = model.startChat({
               history: geminiHistory,
-              systemInstruction: systemPrompt,
+              systemInstruction: {
+                role: "user",
+                parts: [{ text: systemPrompt }],
+              },
               generationConfig: {
                 maxOutputTokens: generationSettings.maxOutputTokens,
                 temperature: generationSettings.temperature,
