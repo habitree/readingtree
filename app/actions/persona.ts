@@ -294,7 +294,7 @@ async function generatePersonaSummary(
   analysisResult: PersonaAnalysisResult
 ): Promise<string> {
   const genAI = getGeminiClient();
-  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+  const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
   const prompt = `다음 독서 성향 분석 결과를 바탕으로 사용자를 설명하는 짧은 문장을 작성해주세요.
 2-3문장으로 간결하게, 친근한 어투로 작성해주세요.

@@ -22,9 +22,9 @@ export const AI_MODELS: Record<AIProvider, { id: string; name: string; descripti
     { id: "gpt-3.5-turbo", name: "GPT-3.5 Turbo", description: "빠른 응답 속도, 간단한 작업에 적합" },
   ],
   google: [
-    { id: "gemini-1.5-flash", name: "Gemini 1.5 Flash", description: "빠른 응답, 비용 효율적 (현재 기본값)" },
+    { id: "gemini-2.0-flash", name: "Gemini 2.0 Flash", description: "빠른 응답, 비용 효율적 (현재 기본값)" },
     { id: "gemini-1.5-pro", name: "Gemini 1.5 Pro", description: "고급 추론, 긴 컨텍스트 지원" },
-    { id: "gemini-2.0-flash-exp", name: "Gemini 2.0 Flash (Exp)", description: "최신 실험적 모델, 향상된 성능" },
+    { id: "gemini-2.0-flash-thinking-exp-01-21", name: "Gemini 2.0 Flash Thinking", description: "향상된 추론 능력" },
   ],
   anthropic: [
     { id: "claude-3-5-sonnet-latest", name: "Claude 3.5 Sonnet", description: "균형 잡힌 성능과 속도" },
@@ -36,7 +36,7 @@ export const AI_MODELS: Record<AIProvider, { id: string; name: string; descripti
 // 제공자별 기본 모델
 export const DEFAULT_MODELS: Record<AIProvider, string> = {
   openai: "gpt-4o-mini",
-  google: "gemini-1.5-flash",
+  google: "gemini-2.0-flash",
   anthropic: "claude-3-5-sonnet-latest",
 };
 
@@ -121,7 +121,7 @@ export interface AISettings {
 // 기본 설정값
 export const DEFAULT_AI_SETTINGS: Omit<AISettings, "id" | "createdAt" | "updatedAt"> = {
   provider: "google",
-  modelId: "gemini-1.5-flash",
+  modelId: "gemini-2.0-flash",
 
   systemPromptTemplate: `당신은 "독서친구"라는 이름의 친근하고 지적인 AI 독서 도우미입니다.
 사용자의 독서 여정을 함께하며 책 추천, 독서 조언, 기록 분석을 도와줍니다.
