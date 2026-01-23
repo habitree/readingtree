@@ -189,7 +189,7 @@ CREATE TYPE ocr_log_status AS ENUM ('success', 'failed');
 - `category` (VARCHAR(100)): 도서 분류 (소설, 자기계발, 인문 등)
 - `total_pages` (INTEGER): 도서의 전체 페이지 수
 - `summary` (TEXT): 출판사 제공 또는 사용자가 기록한 책 소개
-- `description_summary` (VARCHAR(50)): Naver API에서 가져온 책소개를 Gemini API로 요약한 20자 내외 텍스트
+- `description_summary` (VARCHAR(80)): Naver API에서 가져온 책소개를 Gemini API로 요약한 50~70자 이내의 완결된 평서문
 - `external_link` (TEXT): 네이버 링크 (도서 검색 및 구매 페이지 연결용 URL)
 - `is_sample` (BOOLEAN, DEFAULT FALSE): 샘플 데이터 플래그 (게스트 사용자용)
 - `created_at`, `updated_at` (TIMESTAMP WITH TIME ZONE): 생성/수정 시간

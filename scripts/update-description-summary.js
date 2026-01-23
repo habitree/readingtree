@@ -1,9 +1,11 @@
 #!/usr/bin/env node
 /**
  * description_summary 데이터 업데이트 스크립트
- * 
- * 새로운 프롬프트 기준(25~35자 이내, 완결된 평서문 2~3문장)으로
+ *
+ * 새로운 프롬프트 기준(50~70자 이내, 완결된 평서문 2~3문장)으로
  * 기존 description_summary 데이터를 재생성합니다.
+ *
+ * UI 기준: 책소개 컬럼 최소 300px, 12px 텍스트로 2~3줄 표시
  */
 
 const fs = require('fs');
@@ -81,7 +83,7 @@ if (OPENAI_API_KEY) {
 }
 
 /**
- * 책소개를 25~35자 이내의 완결된 평서문 2~3문장으로 요약
+ * 책소개를 50~70자 이내의 완결된 평서문 2~3문장으로 요약
  * @param {string} description 원본 책소개 텍스트
  * @returns {Promise<string>} 요약된 텍스트
  */
@@ -91,21 +93,21 @@ async function summarizeBookDescription(description) {
   }
 
   // 이미 짧은 경우 그대로 반환
-  if (description.length <= 35) {
+  if (description.length <= 70) {
     return description.trim();
   }
 
   const prompt = `다음 책소개를 다음 조건에 정확히 맞게 요약해주세요:
 
 필수 조건:
-1. 정확히 25자 이상 35자 이하의 한국어 문장으로 작성
+1. 정확히 50자 이상 70자 이하의 한국어 문장으로 작성
 2. 반드시 완전한 문장으로 끝나야 합니다. 문장이 중간에 끊기거나 미완성되면 안 됩니다
 3. 문장 끝에 마침표(.)를 포함하여 의미가 완결되도록 작성
 4. 평서문 형식으로 작성 (의문문, 감탄문 사용 금지)
 5. 따옴표(" '), 백틱(\`), 별표(*), 줄바꿈, 이모지, 특수기호 사용 절대 금지
 6. 요약 텍스트만 반환하고 다른 설명이나 주석은 포함하지 마세요
 
-중요: 문장이 35자를 초과하면 안 되며, 반드시 완전한 의미를 가진 문장으로 끝나야 합니다.
+중요: 문장이 70자를 초과하면 안 되며, 반드시 완전한 의미를 가진 문장으로 끝나야 합니다.
 
 책소개:
 ${description}`;
@@ -146,18 +148,17 @@ ${description}`;
         }
       } catch (gptError) {
         console.error('[GPT] 책소개 요약 실패:', gptError.message);
-        // GPT도 실패하면 원본 텍스트를 35자로 자르기
-        return description.substring(0, 35).trim();
+        // GPT도 실패하면 원본 텍스트를 70자로 자르고 문장 완결 처리
+        return truncateToCompleteSentence(description, 70);
       }
     } else {
-      // GPT API가 설정되지 않았으면 원본 텍스트를 35자로 자르기
-      return description.substring(0, 35).trim();
+      // GPT API가 설정되지 않았으면 원본 텍스트를 70자로 자르고 문장 완결 처리
+      return truncateToCompleteSentence(description, 70);
     }
   }
 
   // summary가 있으면 후처리 진행
   if (summary) {
-
     // 특수문자 제거 (따옴표, 백틱, *, 줄바꿈, 이모지 등)
     summary = summary
       .replace(/["'`*]/g, "") // 따옴표, 백틱, * 제거
@@ -165,77 +166,74 @@ ${description}`;
       .replace(/\s+/g, " ") // 연속된 공백을 하나로
       .trim();
 
-    // 35자 초과 시 자르기 (문장이 끊기지 않도록 완전한 문장으로)
-    if (summary.length > 35) {
-      // 25~35자 범위 내에서 마지막 문장 부호(., !, ?) 찾기
-      const searchRange = summary.substring(0, 35);
-      const lastPeriod = searchRange.lastIndexOf(".");
-      const lastExclamation = searchRange.lastIndexOf("!");
-      const lastQuestion = searchRange.lastIndexOf("?");
-      const lastPunctuation = Math.max(lastPeriod, lastExclamation, lastQuestion);
-      
-      if (lastPunctuation >= 24) {
-        // 문장 부호가 24자 이상 위치에 있으면 그 위치에서 자르기
-        summary = summary.substring(0, lastPunctuation + 1);
-      } else {
-        // 문장 부호가 없거나 너무 앞에 있으면 35자에서 자르고 마침표 추가
-        // 단, 이미 문장이 완결된 것처럼 보이면 그대로 사용
-        const truncated = summary.substring(0, 35).trim();
-        // 마지막 문자가 문장 부호가 아니면 마침표 추가
-        if (!truncated.match(/[.!?]$/)) {
-          summary = truncated + ".";
-        } else {
-          summary = truncated;
-        }
-      }
+    // 70자 초과 시 자르기 (문장이 끊기지 않도록 완전한 문장으로)
+    if (summary.length > 70) {
+      summary = truncateToCompleteSentence(summary, 70);
     }
 
-    // 25자 미만이면 원본에서 적절히 자르고 마침표 추가
-    if (summary.length < 25) {
-      // 원본에서 30자까지 가져와서 공백이나 문장 부호 앞에서 자르기
-      let truncated = description.substring(0, 30).trim();
-      
-      // 마지막 공백 위치 찾기 (25자 이상이 되도록)
-      const lastSpace = truncated.lastIndexOf(" ");
-      if (lastSpace >= 24 && lastSpace < 30) {
-        truncated = truncated.substring(0, lastSpace).trim();
-      }
-      
-      // 마지막 문자가 문장 부호가 아니면 마침표 추가
-      if (!truncated.match(/[.!?]$/)) {
-        truncated = truncated + ".";
-      }
-      
-      // 여전히 25자 미만이면 원본에서 더 가져오기
-      if (truncated.length < 25 && description.length > truncated.length) {
-        const needed = 25 - truncated.length;
-        const additional = description.substring(truncated.length - 1, truncated.length - 1 + needed).trim();
-        truncated = (truncated.slice(0, -1) + additional).trim();
-        
-        // 35자 초과하지 않도록 조정
-        if (truncated.length > 35) {
-          const lastSpace2 = truncated.lastIndexOf(" ", 35);
-          if (lastSpace2 >= 24) {
-            truncated = truncated.substring(0, lastSpace2).trim();
-          } else {
-            truncated = truncated.substring(0, 35).trim();
-          }
-        }
-        
-        // 마지막 문자가 문장 부호가 아니면 마침표 추가
-        if (!truncated.match(/[.!?]$/)) {
-          truncated = truncated + ".";
-        }
-      }
-      
-      return truncated;
+    // 50자 미만이면 원본에서 적절히 자르고 완결된 문장으로 처리
+    if (summary.length < 50) {
+      return truncateToCompleteSentence(description, 70, 50);
     }
 
     return summary;
   }
 
-  // summary가 없으면 원본 텍스트를 35자로 자르기
-  return description.substring(0, 35).trim();
+  // summary가 없으면 원본 텍스트를 70자로 자르고 문장 완결 처리
+  return truncateToCompleteSentence(description, 70);
+}
+
+/**
+ * 텍스트를 지정된 길이 이내로 자르되, 문장이 완결되도록 처리
+ * @param {string} text 원본 텍스트
+ * @param {number} maxLength 최대 길이
+ * @param {number} minLength 최소 길이 (옵션, 기본값 50)
+ * @returns {string} 완결된 문장으로 처리된 텍스트
+ */
+function truncateToCompleteSentence(text, maxLength, minLength = 50) {
+  if (!text || text.trim().length === 0) {
+    return "";
+  }
+
+  const trimmedText = text.trim();
+
+  // 이미 maxLength 이하면 그대로 반환 (문장 부호 확인)
+  if (trimmedText.length <= maxLength) {
+    // 마지막 문자가 문장 부호가 아니면 마침표 추가
+    if (!trimmedText.match(/[.!?]$/)) {
+      return trimmedText + ".";
+    }
+    return trimmedText;
+  }
+
+  // maxLength 범위 내에서 마지막 문장 부호(., !, ?) 찾기
+  const searchRange = trimmedText.substring(0, maxLength);
+  const lastPeriod = searchRange.lastIndexOf(".");
+  const lastExclamation = searchRange.lastIndexOf("!");
+  const lastQuestion = searchRange.lastIndexOf("?");
+  const lastPunctuation = Math.max(lastPeriod, lastExclamation, lastQuestion);
+
+  // minLength 이상에서 문장 부호를 찾으면 그 위치에서 자르기
+  if (lastPunctuation >= minLength - 1) {
+    return trimmedText.substring(0, lastPunctuation + 1);
+  }
+
+  // 문장 부호가 없거나 너무 앞에 있으면, 공백 기준으로 자르고 마침표 추가
+  const lastSpace = searchRange.lastIndexOf(" ");
+  if (lastSpace >= minLength - 5) {
+    const truncated = trimmedText.substring(0, lastSpace).trim();
+    if (!truncated.match(/[.!?]$/)) {
+      return truncated + ".";
+    }
+    return truncated;
+  }
+
+  // 공백도 적절한 위치에 없으면 maxLength에서 자르고 마침표 추가
+  const truncated = trimmedText.substring(0, maxLength).trim();
+  if (!truncated.match(/[.!?]$/)) {
+    return truncated + ".";
+  }
+  return truncated;
 }
 
 /**

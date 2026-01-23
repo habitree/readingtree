@@ -179,14 +179,14 @@ BEGIN
         ADD COLUMN summary TEXT;
     END IF;
 
-    -- description_summary 컬럼 추가
+    -- description_summary 컬럼 추가 (50~70자 완결된 문장 저장)
     IF NOT EXISTS (
-        SELECT 1 FROM information_schema.columns 
-        WHERE table_name = 'books' 
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'books'
         AND column_name = 'description_summary'
     ) THEN
-        ALTER TABLE books 
-        ADD COLUMN description_summary VARCHAR(50);
+        ALTER TABLE books
+        ADD COLUMN description_summary VARCHAR(80);
     END IF;
 
     -- external_link 컬럼 추가
