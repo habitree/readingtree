@@ -237,25 +237,31 @@ export function ChatInterface({ userId, userAvatar, userName }: ChatInterfacePro
   };
 
   return (
-    <div className="relative flex h-[calc(100vh-4rem)] overflow-hidden">
+    <div className="relative flex h-[calc(100vh-8rem)] overflow-hidden md:h-[calc(100vh-4rem)]">
       {/* 모바일 오버레이 */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 z-30 bg-black/50 md:hidden"
+          className="absolute inset-0 z-30 bg-black/50 md:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
       {/* 사이드바 */}
       <div
-        className={`fixed inset-y-0 left-0 z-40 transform transition-transform duration-200 ease-in-out md:relative md:translate-x-0 ${
+        className={`absolute inset-y-0 left-0 z-40 transform transition-transform duration-200 ease-in-out md:relative md:translate-x-0 ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
         <ChatSidebar
           sessions={sessions}
           currentSessionId={currentSession?.id || null}
-          onNewSession={handleNewSession}
+          onNewSession={() => {
+            handleNewSession();
+            // 모바일에서 새 세션 생성 시 사이드바 닫기
+            if (window.innerWidth < 768) {
+              setSidebarOpen(false);
+            }
+          }}
           onSelectSession={(sessionId) => {
             handleSelectSession(sessionId);
             // 모바일에서 세션 선택 시 사이드바 닫기
@@ -264,6 +270,7 @@ export function ChatInterface({ userId, userAvatar, userName }: ChatInterfacePro
             }
           }}
           onDeleteSession={handleDeleteSession}
+          onClose={() => setSidebarOpen(false)}
         />
       </div>
 

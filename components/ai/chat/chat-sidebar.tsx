@@ -10,6 +10,7 @@ import {
   MoreHorizontal,
   ChevronLeft,
   ChevronRight,
+  X,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -38,6 +39,7 @@ interface ChatSidebarProps {
   onDeleteSession: (sessionId: string) => void;
   isCollapsed?: boolean;
   onToggleCollapse?: () => void;
+  onClose?: () => void;
 }
 
 export function ChatSidebar({
@@ -48,6 +50,7 @@ export function ChatSidebar({
   onDeleteSession,
   isCollapsed = false,
   onToggleCollapse,
+  onClose,
 }: ChatSidebarProps) {
   const [deleteSessionId, setDeleteSessionId] = useState<string | null>(null);
 
@@ -60,7 +63,7 @@ export function ChatSidebar({
 
   if (isCollapsed) {
     return (
-      <div className="flex h-full w-12 flex-col items-center border-r bg-muted/30 py-4">
+      <div className="flex h-full w-12 flex-col items-center border-r bg-background py-4">
         <Button
           variant="ghost"
           size="icon"
@@ -83,7 +86,7 @@ export function ChatSidebar({
 
   return (
     <>
-      <div className="flex h-full w-64 flex-col border-r bg-muted/30">
+      <div className="flex h-full w-64 flex-col border-r bg-background">
         {/* 헤더 */}
         <div className="flex items-center justify-between border-b p-4">
           <h2 className="font-semibold">대화 목록</h2>
@@ -92,8 +95,13 @@ export function ChatSidebar({
               <Plus className="h-5 w-5" />
             </Button>
             {onToggleCollapse && (
-              <Button variant="ghost" size="icon" onClick={onToggleCollapse}>
+              <Button variant="ghost" size="icon" onClick={onToggleCollapse} className="hidden md:flex">
                 <ChevronLeft className="h-5 w-5" />
+              </Button>
+            )}
+            {onClose && (
+              <Button variant="ghost" size="icon" onClick={onClose} className="md:hidden">
+                <X className="h-5 w-5" />
               </Button>
             )}
           </div>
