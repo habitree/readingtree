@@ -30,9 +30,22 @@ export function ChatInterface({ userId, userAvatar, userName }: ChatInterfacePro
   const [messages, setMessages] = useState<ChatMessageType[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [streamingContent, setStreamingContent] = useState("");
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [context, setContext] = useState<ChatContext>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // 화면 크기에 따라 사이드바 상태 초기화
+  useEffect(() => {
+    const handleResize = () => {
+      // md breakpoint (768px) 이상에서만 사이드바 기본 열림
+      if (window.innerWidth >= 768) {
+        setSidebarOpen(true);
+      }
+    };
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   // 세션 목록 로드
   const loadSessions = useCallback(async () => {
@@ -224,20 +237,18 @@ export function ChatInterface({ userId, userAvatar, userName }: ChatInterfacePro
   };
 
   return (
-    <div className="flex h-[calc(100vh-4rem)] overflow-hidden">
-      {/* 모바일 메뉴 버튼 */}
-      <Button
-        variant="ghost"
-        size="icon"
-        className="absolute left-4 top-20 z-50 md:hidden"
-        onClick={() => setSidebarOpen(!sidebarOpen)}
-      >
-        {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-      </Button>
+    <div className="relative flex h-[calc(100vh-4rem)] overflow-hidden">
+      {/* 모바일 오버레이 */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 z-30 bg-black/50 md:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
 
       {/* 사이드바 */}
       <div
-        className={`absolute inset-y-0 left-0 z-40 transform transition-transform md:relative md:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-40 transform transition-transform duration-200 ease-in-out md:relative md:translate-x-0 ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
@@ -245,13 +256,34 @@ export function ChatInterface({ userId, userAvatar, userName }: ChatInterfacePro
           sessions={sessions}
           currentSessionId={currentSession?.id || null}
           onNewSession={handleNewSession}
-          onSelectSession={handleSelectSession}
+          onSelectSession={(sessionId) => {
+            handleSelectSession(sessionId);
+            // 모바일에서 세션 선택 시 사이드바 닫기
+            if (window.innerWidth < 768) {
+              setSidebarOpen(false);
+            }
+          }}
           onDeleteSession={handleDeleteSession}
         />
       </div>
 
       {/* 메인 채팅 영역 */}
       <div className="flex flex-1 flex-col">
+        {/* 모바일 헤더 */}
+        <div className="flex items-center gap-2 border-b p-3 md:hidden">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="shrink-0"
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+          >
+            {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </Button>
+          <span className="truncate text-sm font-medium">
+            {currentSession?.title || "독서친구"}
+          </span>
+        </div>
+
         {currentSession || messages.length > 0 ? (
           <>
             {/* 메시지 목록 */}
@@ -275,33 +307,33 @@ export function ChatInterface({ userId, userAvatar, userName }: ChatInterfacePro
           </>
         ) : (
           /* 시작 화면 */
-          <div className="flex flex-1 flex-col items-center justify-center p-8">
-            <div className="mb-8 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-              <Bot className="h-8 w-8 text-primary" />
-            </div>
-            <h2 className="mb-2 text-2xl font-bold">독서친구</h2>
-            <p className="mb-8 max-w-md text-center text-muted-foreground">
-              {WELCOME_MESSAGE}
-            </p>
+          <div className="flex flex-1 flex-col">
+            <div className="flex flex-1 flex-col items-center justify-center p-4 sm:p-8">
+              <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 sm:mb-8 sm:h-16 sm:w-16">
+                <Bot className="h-7 w-7 text-primary sm:h-8 sm:w-8" />
+              </div>
+              <h2 className="mb-2 text-xl font-bold sm:text-2xl">독서친구</h2>
+              <p className="mb-6 max-w-md text-center text-sm text-muted-foreground sm:mb-8 sm:text-base">
+                {WELCOME_MESSAGE}
+              </p>
 
-            {/* 예시 질문 */}
-            <div className="grid max-w-lg gap-2 sm:grid-cols-2">
-              {EXAMPLE_QUESTIONS.map((question, index) => (
-                <Button
-                  key={index}
-                  variant="outline"
-                  className="h-auto whitespace-normal py-3 text-left"
-                  onClick={() => handleExampleClick(question)}
-                >
-                  {question}
-                </Button>
-              ))}
+              {/* 예시 질문 */}
+              <div className="grid w-full max-w-lg gap-2 sm:grid-cols-2">
+                {EXAMPLE_QUESTIONS.map((question, index) => (
+                  <Button
+                    key={index}
+                    variant="outline"
+                    className="h-auto whitespace-normal px-3 py-2.5 text-left text-sm sm:px-4 sm:py-3"
+                    onClick={() => handleExampleClick(question)}
+                  >
+                    {question}
+                  </Button>
+                ))}
+              </div>
             </div>
 
-            {/* 모바일에서 입력 영역 */}
-            <div className="mt-8 w-full max-w-lg md:hidden">
-              <ChatInput onSend={handleSendMessage} disabled={isLoading} />
-            </div>
+            {/* 입력 영역 - 모든 화면에서 하단 고정 */}
+            <ChatInput onSend={handleSendMessage} disabled={isLoading} />
           </div>
         )}
       </div>
