@@ -234,7 +234,7 @@ export function SimpleShareDialog({ note }: SimpleShareDialogProps) {
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
         link.href = url;
-        link.download = `habitree-card-${note.id}.png`;
+        link.download = `readtree-card-${note.id}.png`;
         link.click();
         URL.revokeObjectURL(url);
         toast.success("카드 이미지가 다운로드되었습니다!");
@@ -316,7 +316,7 @@ export function SimpleShareDialog({ note }: SimpleShareDialogProps) {
         // 클립보드 복사 실패 시 다운로드로 fallback
         if (!clipboardSuccess) {
           try {
-            const filename = `habitree-image-${note.id}-${Date.now()}.png`;
+            const filename = `readtree-image-${note.id}-${Date.now()}.png`;
             downloadImage(finalBlob, filename);
             setPhotoCopied(true);
             const isMobileDevice = isMobile();
@@ -354,7 +354,7 @@ export function SimpleShareDialog({ note }: SimpleShareDialogProps) {
           <DialogHeader className="p-6 sm:p-8 pb-4">
             <DialogTitle className="text-xl sm:text-2xl font-black italic tracking-tighter text-forest-600">Share Your Insight</DialogTitle>
             <DialogDescription className="text-sm font-bold text-slate-400">
-              세련된 Habitree 리딩 카드로 당신의 독서 순간을 공유해보세요.
+              세련된 ReadTree 리딩 카드로 당신의 독서 순간을 공유해보세요.
             </DialogDescription>
           </DialogHeader>
 
@@ -467,7 +467,7 @@ export function SimpleShareDialog({ note }: SimpleShareDialogProps) {
 
           <div className="p-6 bg-slate-50 dark:bg-slate-900/50 border-t border-slate-100 dark:border-slate-800 text-center">
             <p className="text-[11px] font-black text-slate-300 uppercase tracking-[0.3em]">
-              Habitree Reading Hub System v4.0
+              ReadTree System v4.0
             </p>
           </div>
         </div>

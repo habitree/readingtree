@@ -6,7 +6,7 @@ import { isValidUUID } from "@/lib/utils/validation";
 import { sanitizeErrorForLogging } from "@/lib/utils/validation";
 
 export const metadata: Metadata = {
-  title: "기록 수정 | Habitree Reading Hub",
+  title: "기록 수정 | ReadTree",
   description: "기록을 수정하세요",
 };
 

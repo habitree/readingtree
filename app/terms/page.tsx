@@ -6,7 +6,7 @@ import { ArrowLeft } from "lucide-react";
 
 /**
  * 이용약관 페이지
- * Habitree Reading Hub 서비스 이용약관
+ * ReadTree 서비스 이용약관
  */
 export default function TermsPage() {
   return (
@@ -31,7 +31,7 @@ export default function TermsPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <p>
-              본 약관은 Habitree Reading Hub(이하 "서비스" 또는 "회사")가 제공하는 독서 기록 관리 서비스(이하 "서비스")의 이용과 관련하여 회사와 이용자 간의 권리, 의무 및 책임사항, 기타 필요한 사항을 규정함을 목적으로 합니다.
+              본 약관은 ReadTree(이하 "서비스" 또는 "회사")가 제공하는 독서 기록 관리 서비스(이하 "서비스")의 이용과 관련하여 회사와 이용자 간의 권리, 의무 및 책임사항, 기타 필요한 사항을 규정함을 목적으로 합니다.
             </p>
           </CardContent>
         </Card>

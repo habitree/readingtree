@@ -11,7 +11,7 @@ import { getCurrentUser } from "@/app/actions/auth";
 import type { NoteType } from "@/types/note";
 
 export const metadata: Metadata = {
-  title: "기록 목록 | Habitree Reading Hub",
+  title: "기록 목록 | ReadTree",
   description: "내가 작성한 모든 기록을 확인하세요",
 };
 

@@ -49,11 +49,11 @@ export function LoginForm() {
       // redirect()가 성공하면 여기까지 도달하지 않음
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      
+
       if (errorMessage.includes("NEXT_REDIRECT") || errorMessage.includes("redirect")) {
         return;
       }
-      
+
       console.error("이메일 로그인 오류:", error);
       setIsLoading(null);
       toast.error(
@@ -68,7 +68,7 @@ export function LoginForm() {
     <Card className="w-full max-w-md mx-auto">
       <CardHeader className="space-y-1">
         <CardTitle className="text-2xl font-bold text-center">
-          Habitree Reading Hub
+          ReadTree
         </CardTitle>
         <CardDescription className="text-center">
           독서 기록을 관리하고 공유하세요

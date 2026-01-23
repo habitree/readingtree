@@ -69,7 +69,7 @@ export async function generateMetadata({
           },
         ]
         : [],
-      siteName: "ReadingTree",
+      siteName: "ReadTree",
       locale: "ko_KR",
     },
     twitter: {
@@ -151,7 +151,7 @@ export default async function ShareNotePage({
         <div className="mt-16 text-center space-y-6">
           <div className="space-y-2">
             <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100 italic tracking-tight">
-              Habitree Reading Hub
+              ReadTree
             </h2>
             <p className="text-slate-500 dark:text-slate-400 text-sm max-w-md mx-auto leading-relaxed">
               당신의 독서 여정을 한 그루의 나무처럼 심고 가꾸어 보세요.<br />

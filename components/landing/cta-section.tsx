@@ -28,7 +28,7 @@ export function CtaSection() {
                 </div>
 
                 <p className="text-sm text-charcoal-400 mt-8 font-serif">
-                    * 가입 즉시 해비트리의 모든 기능을 활용하실 수 있습니다.
+                    * 가입 즉시 ReadTree의 모든 기능을 활용하실 수 있습니다.
                 </p>
             </div>
         </section>

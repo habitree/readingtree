@@ -111,7 +111,7 @@ export function ShareNoteCard({ note, className, isPublicView = false, hideActio
     const hasImage = !!note.image_url && isValidImageUrl(note.image_url);
     const typeLabel = getNoteTypeLabel(note.type, hasImage);
     const formattedDate = formatDate(note.created_at);
-    
+
     // 디버깅: 이미지 URL 확인
     if (note.image_url) {
         console.log("[ShareNoteCard] 이미지 URL 확인:", {
@@ -131,7 +131,7 @@ export function ShareNoteCard({ note, className, isPublicView = false, hideActio
             <div className="flex flex-col justify-center gap-0 overflow-visible h-8">
                 <div className="block h-[18px] leading-[18px] overflow-visible">
                     <span className="text-sm font-black tracking-tight text-slate-900 dark:text-slate-100 italic">
-                        Habitree
+                        ReadTree
                     </span>
                 </div>
                 <div className="block h-[12px] leading-[12px] overflow-visible">

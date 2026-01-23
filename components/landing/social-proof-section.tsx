@@ -52,11 +52,11 @@ export function SocialProofSection() {
                 <div className="text-center mb-20 max-w-3xl mx-auto">
                     <span className="text-forest-600 font-bold tracking-wider uppercase text-sm mb-4 block">Use Cases</span>
                     <h2 className="text-4xl md:text-5xl font-bold tracking-tight mb-6 font-serif text-charcoal-900 break-keep">
-                        Habitree와 함께<br />
+                        ReadTree와 함께<br />
                         당신의 독서가 변화합니다
                     </h2>
                     <p className="text-xl text-charcoal-600 font-serif leading-relaxed">
-                        기록의 번거로움은 줄이고, 독서의 가치는 높이는<br className="hidden md:block" /> 해비트리만의 사용 시나리오를 만나보세요.
+                        기록의 번거로움은 줄이고, 독서의 가치는 높이는<br className="hidden md:block" /> ReadTree만의 사용 시나리오를 만나보세요.
                     </p>
                 </div>
 
@@ -89,17 +89,17 @@ export function SocialProofSection() {
                                 <MessageSquarePlus className="w-6 h-6" />
                             </div>
                             <h3 className="text-2xl font-bold font-serif mb-4">
-                                발전하는 해비트리,<br />의견을 들려주세요
+                                발전하는 ReadTree,<br />의견을 들려주세요
                             </h3>
                             <p className="text-charcoal-300 mb-8 break-keep text-sm leading-relaxed font-sans">
-                                해비트리는 사용자 여러분의 제안을 바탕으로<br />
+                                ReadTree는 사용자 여러분의 제안을 바탕으로<br />
                                 매일 더 나은 독서 파트너가 되어가고 있습니다.<br />
                                 필요한 기능이 있다면 언제든 알려주세요.
                             </p>
 
                             <div className="mt-auto">
                                 <Link
-                                    href="mailto:contact@habitree.com?subject=해비트리%20기능%20제안"
+                                    href="mailto:contact@readtree.com?subject=ReadTree%20기능%20제안"
                                     className="inline-flex items-center justify-center w-full bg-paper-50 text-charcoal-900 h-14 rounded-2xl font-bold hover:bg-forest-100 transition-colors gap-2"
                                 >
                                     기능 요청하기

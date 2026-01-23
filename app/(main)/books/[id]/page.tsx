@@ -166,10 +166,10 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
                     (userBook as any).completed_dates && Array.isArray((userBook as any).completed_dates)
                       ? (userBook as any).completed_dates
                       : (userBook as any).completed_dates && typeof (userBook as any).completed_dates === 'string'
-                      ? JSON.parse((userBook as any).completed_dates)
-                      : userBook.completed_at
-                      ? [userBook.completed_at]
-                      : null
+                        ? JSON.parse((userBook as any).completed_dates)
+                        : userBook.completed_at
+                          ? [userBook.completed_at]
+                          : null
                   }
                   currentBookshelfId={(userBook as any).bookshelf_id || null}
                 />
@@ -302,14 +302,14 @@ export async function generateMetadata({
   // params.id 검증
   if (!bookId || typeof bookId !== 'string') {
     return {
-      title: "책 상세 | Habitree Reading Hub",
+      title: "책 상세 | ReadTree",
     };
   }
 
   // UUID 검증 (샘플 데이터는 메타데이터 생성하지 않음)
   if (!bookId.startsWith("sample-") && !isValidUUID(bookId)) {
     return {
-      title: "책 상세 | Habitree Reading Hub",
+      title: "책 상세 | ReadTree",
     };
   }
 
@@ -318,12 +318,12 @@ export async function generateMetadata({
     const book = bookDetail.books as any;
 
     return {
-      title: `${book.title} | Habitree Reading Hub`,
+      title: `${book.title} | ReadTree`,
       description: `${book.author ? `${book.author} 저` : ""} ${book.title}`,
     };
   } catch {
     return {
-      title: "책 상세 | Habitree Reading Hub",
+      title: "책 상세 | ReadTree",
     };
   }
 }

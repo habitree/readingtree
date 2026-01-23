@@ -2,7 +2,7 @@ import { LoginForm } from "@/components/auth/login-form";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "로그인 | Habitree Reading Hub",
+  title: "로그인 | ReadTree",
   description: "카카오톡 또는 구글 계정으로 로그인하세요",
 };
 

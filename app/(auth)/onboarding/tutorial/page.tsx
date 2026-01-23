@@ -70,7 +70,7 @@ export default function TutorialPage() {
             <X className="h-4 w-4" />
           </Button>
           <CardTitle className="text-2xl font-bold text-center">
-            Habitree Reading Hub 사용법
+            ReadTree 사용법
           </CardTitle>
           <CardDescription className="text-center">
             주요 기능을 간단히 소개합니다

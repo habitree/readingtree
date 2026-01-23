@@ -6,21 +6,21 @@ import Link from "next/link";
 import { cn } from "@/lib/utils/cn";
 
 const customerFaqData = [
-    { q: "Readtree 독서플랫폼은 무엇인가요?", a: "Readtree 독서플랫폼은 책을 읽으며 남긴 필사, 사진, 메모, 인상 깊은 문장을 자동으로 정리하고 다시 찾게 해주는 책 전용 기록·공유 플랫폼입니다." },
-    { q: "왜 Readtree 독서플랫폼이 필요한가요? 기존 앱으로도 기록 가능한데요?", a: "기록은 어디서나 가능하지만 기존 앱은 기록이 흩어지고 다시 찾기 어려우며 책 단위로 정리되지 않습니다. Readtree 독서플랫폼은 책 하나를 위한 전용 저장소로 기록을 자동으로 한 곳에 정리해줍니다." },
+    { q: "ReadTree는 무엇인가요?", a: "ReadTree는 책을 읽으며 남긴 필사, 사진, 메모, 인상 깊은 문장을 자동으로 정리하고 다시 찾게 해주는 책 전용 기록·공유 플랫폼입니다." },
+    { q: "왜 ReadTree가 필요한가요? 기존 앱으로도 기록 가능한데요?", a: "기록은 어디서나 가능하지만 기존 앱은 기록이 흩어지고 다시 찾기 어려우며 책 단위로 정리되지 않습니다. ReadTree는 책 하나를 위한 전용 저장소로 기록을 자동으로 한 곳에 정리해줍니다." },
     { q: "기록은 어떻게 자동 정리되나요?", a: "필사 입력, 사진 업로드, 텍스트 캡처, 메모 작성 등 모든 활동이 해당 책의 노트로 자동 연결되어 정리됩니다." },
-    { q: "인상 깊었던 문장을 다시 찾을 수 있나요?", a: "네. Readtree 독서플랫폼은 기록을 문장 단위로 저장하며 책 제목, 날짜, 주제, 필사 유형 등으로 빠르게 검색할 수 있습니다." },
+    { q: "인상 깊었던 문장을 다시 찾을 수 있나요?", a: "네. ReadTree는 기록을 문장 단위로 저장하며 책 제목, 날짜, 주제, 필사 유형 등으로 빠르게 검색할 수 있습니다." },
     { q: "다른 사람의 필사나 생각도 볼 수 있나요?", a: "네, 원할 경우 공개된 필사·메모를 다른 사용자도 볼 수 있습니다. 기본값은 비공개이며 사용자 선택에 따라 공개 여부를 결정합니다." },
     { q: "독서모임 기능이 있나요?", a: "있습니다. 읽는 책 리스트 공유, 구성원 필사/메모 공유, 진행 현황 표시, 모임 활동 요약 등을 제공하여 모임 운영자에게 특히 유용합니다." },
     { q: "SNS나 블로그에 쉽게 공유할 수 있나요?", a: "네. 필사, 문장, 메모를 카드뉴스 형태로 자동 생성하여 인스타그램, 카카오톡, 블로그 등에 바로 공유할 수 있습니다." },
     { q: "내 기록은 어떻게 보호되나요?", a: "모든 기록은 암호화된 DB에 저장되며 기본 비공개 상태입니다. 공개 여부는 완전 비공개, 그룹 공개, 전체 공개 중에서 선택할 수 있습니다." },
     { q: "가격은 어떻게 되나요?", a: "초기 MVP는 무료입니다. 추후 구독 모델에는 고급 필사 검색, 장기 독서 리포트, 회고·성장 분석 등의 기능이 포함될 수 있습니다." },
-    { q: "책 대여/판매/선물 기능도 있나요?", a: "초기에는 제공되지 않습니다. 하지만 Readtree 독서플랫폼 내에서 신뢰 네트워크가 형성되면 2차 단계 BM으로 확장될 예정입니다." }
+    { q: "책 대여/판매/선물 기능도 있나요?", a: "초기에는 제공되지 않습니다. 하지만 ReadTree 내에서 신뢰 네트워크가 형성되면 2차 단계 BM으로 확장될 예정입니다." }
 ];
 
 const stakeholderFaqData = [
     { q: "이 문제는 해결할 가치가 있는 문제인가?", a: "그렇다. 독자들은 오랫동안 '기록을 다시 찾지 못하는 문제'를 반복 경험해왔습니다. 이는 실질적·감정적 Pain Point이며 현재 어떤 도구도 책 전용 정리·검색 경험을 제공하지 못하고 있습니다." },
-    { q: "경쟁 서비스와의 차별점은 무엇인가?", a: "노션은 템플릿 제작이 어렵고, 기존 서점 앱은 기능이 단편적입니다. Readtree 독서플랫폼은 '책 기반 DB + 자동 정리 + 검색 + 공유 + 커뮤니티'가 결합된 독보적인 솔루션입니다." },
+    { q: "경쟁 서비스와의 차별점은 무엇인가?", a: "노션은 템플릿 제작이 어렵고, 기존 서점 앱은 기능이 단편적입니다. ReadTree는 '책 기반 DB + 자동 정리 + 검색 + 공유 + 커뮤니티'가 결합된 독보적인 솔루션입니다." },
     { q: "고객에게 WOW 경험을 주는 핵심 기능은?", a: "기록 자동 정리(Zero-Effort Logging), 문장 재발견(Search & Recall), 독서 타임라인 시각화, 그리고 즉시 공유(One-Tap Sharing) 기능입니다." },
     { q: "초기 성공 지표(Metrics)은 무엇인가?", a: "활성 사용자 수(WAU), 기록 재사용률(검색), 필사·메모 작성수, 타임라인 조회 빈도, 공유 횟수 등이 있습니다." },
     { q: "기술적으로 구현 가능하나요?", a: "네. React, Firebase(Auth, Firestore), 이미지 OCR 등을 활용하여 서버리스 기반으로 MVP를 충분히 구현할 수 있습니다." },
@@ -40,7 +40,7 @@ export default function AboutPage() {
                         Official Press Kit
                     </span>
                     <h1 className="text-4xl md:text-6xl font-serif font-bold mb-6 tracking-tight">
-                        Readtree by Habitree
+                        ReadTree by Habitree
                     </h1>
                     <p className="text-xl text-paper-200 max-w-2xl mx-auto font-serif italic">
                         &quot;독서 기록이 사라지지 않는 시대, 2026년 1월 여러분을 찾아갑니다.&quot;
@@ -68,7 +68,7 @@ export default function AboutPage() {
                         </h2>
 
                         <div className="text-xl text-charcoal-600 font-medium leading-relaxed mb-12 font-serif bg-forest-50/30 p-6 rounded-2xl border-l-4 border-forest-500">
-                            2026년 1월, Readtree 독서플랫폼이 출시됩니다. 독서를 좋아하는 사람들이 인상 깊었던 문장을 다시 찾고, 흩어진 기록을 한 곳에서 관리하며, 쉽게 공유할 수 있게 해주는 책 전용 플랫폼입니다.
+                            2026년 1월, ReadTree가 출시됩니다. 독서를 좋아하는 사람들이 인상 깊었던 문장을 다시 찾고, 흩어진 기록을 한 곳에서 관리하며, 쉽게 공유할 수 있게 해주는 책 전용 플랫폼입니다.
                         </div>
 
                         <div className="space-y-12 text-lg text-charcoal-700 leading-relaxed">
@@ -109,7 +109,7 @@ export default function AboutPage() {
                                     <div className="absolute top-0 left-0 w-2 h-full bg-forest-500" />
                                     <Quote className="absolute top-6 right-8 w-16 h-16 text-paper-50 opacity-10 group-hover:scale-110 transition-transform" />
                                     <p className="text-xl md:text-2xl font-serif italic leading-relaxed relative z-10 break-keep">
-                                        &quot;우리는 독서를 좋아하는 사람으로서, 좋은 문장을 찾아도 나중에 다시 찾지 못하는 답답함을 직접 경험했습니다. Readtree 독서플랫폼은 이런 경험을 바탕으로 만들어졌습니다. 독서를 통해 얻은 지식과 감동을 잃지 않고, 계속해서 성장할 수 있도록 돕는 것이 우리의 목표입니다.&quot;
+                                        &quot;우리는 독서를 좋아하는 사람으로서, 좋은 문장을 찾아도 나중에 다시 찾지 못하는 답답함을 직접 경험했습니다. ReadTree는 이런 경험을 바탕으로 만들어졌습니다. 독서를 통해 얻은 지식과 감동을 잃지 않고, 계속해서 성장할 수 있도록 돕는 것이 우리의 목표입니다.&quot;
                                     </p>
                                 </blockquote>
                             </section>
@@ -128,7 +128,7 @@ export default function AboutPage() {
                                             </div>
                                         </div>
                                         <p className="text-charcoal-700 font-serif leading-relaxed italic">
-                                            &quot;Readtree를 사용하니 모든 기록이 책별로 정리되고, 검색도 쉬워서 독서 습관이 더 좋아졌습니다. 특히 공유 기능이 편리해서 자주 활용하게 되네요.&quot;
+                                            &quot;ReadTree를 사용하니 모든 기록이 책별로 정리되고, 검색도 쉬워서 독서 습관이 더 좋아졌습니다. 특히 공유 기능이 편리해서 자주 활용하게 되네요.&quot;
                                         </p>
                                     </div>
                                     <div className="bg-paper-100 p-8 rounded-3xl border border-paper-200 hover:shadow-lg transition-shadow">
@@ -155,7 +155,7 @@ export default function AboutPage() {
                 <section className="space-y-12">
                     <div className="text-center">
                         <h2 className="text-4xl font-bold text-charcoal-900 mb-4 font-serif">자주 묻는 질문 (FAQ)</h2>
-                        <p className="text-xl text-charcoal-500 font-serif italic">Readtree 독서플랫폼 서비스에 대해 궁금한 점을 확인하세요.</p>
+                        <p className="text-xl text-charcoal-500 font-serif italic">ReadTree 서비스에 대해 궁금한 점을 확인하세요.</p>
                     </div>
 
                     <div className="space-y-12">
@@ -208,7 +208,7 @@ export default function AboutPage() {
                         </Link>
                     </div>
                     <p className="text-sm text-charcoal-400 font-mono">
-                        © 2026 Readtree by Habitree. All rights reserved.
+                        © 2026 ReadTree by Habitree. All rights reserved.
                     </p>
                 </div>
             </footer>

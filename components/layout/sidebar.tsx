@@ -93,7 +93,7 @@ export function Sidebar() {
           aria-label="홈으로 이동"
         >
           <Trees className="w-8 h-8 text-forest-600" />
-          <h1 className="text-xl font-bold">Habitree</h1>
+          <h1 className="text-xl font-bold">ReadTree</h1>
         </Link>
         <nav className="flex-1 px-3 space-y-1" aria-label="메인 메뉴">
           {sidebarItems
@@ -134,7 +134,7 @@ export function Sidebar() {
                 </Link>
               );
             })}
-          
+
           {/* 서재 트리 (로그인 사용자만) */}
           {user && <BookshelfTree />}
         </nav>

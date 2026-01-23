@@ -18,12 +18,12 @@ export async function generateMetadata({
 
   if (!bookshelf) {
     return {
-      title: "서재를 찾을 수 없습니다 | Habitree Reading Hub",
+      title: "서재를 찾을 수 없습니다 | ReadTree",
     };
   }
 
   return {
-    title: `${bookshelf.name} 설정 | Habitree Reading Hub`,
+    title: `${bookshelf.name} 설정 | ReadTree`,
     description: `서재 "${bookshelf.name}" 설정`,
   };
 }

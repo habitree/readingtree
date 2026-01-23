@@ -5,7 +5,7 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { isValidUUID } from "@/lib/utils/validation";
 
 export const metadata: Metadata = {
-  title: "기록 작성 | Habitree Reading Hub",
+  title: "기록 작성 | ReadTree",
   description: "새로운 기록을 작성하세요",
 };
 

@@ -2,7 +2,7 @@ import { BookSearch } from "@/components/books/book-search";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "책 검색 | Habitree Reading Hub",
+  title: "책 검색 | ReadTree",
   description: "네이버 검색 API를 통해 책을 검색하고 추가하세요",
 };
 

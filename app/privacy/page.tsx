@@ -6,7 +6,7 @@ import { ArrowLeft } from "lucide-react";
 
 /**
  * 개인정보처리방침 페이지
- * Habitree Reading Hub 개인정보처리방침
+ * ReadTree 개인정보처리방침
  */
 export default function PrivacyPage() {
   return (

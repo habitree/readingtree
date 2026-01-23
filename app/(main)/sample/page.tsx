@@ -7,7 +7,7 @@ import { SampleBookshelfContent } from "@/components/books/sample-bookshelf-cont
 import type { ReadingStatus } from "@/types/book";
 
 export const metadata: Metadata = {
-  title: "샘플 서재 | Habitree Reading Hub",
+  title: "샘플 서재 | ReadTree",
   description: "AI 서재 기능을 미리 체험해보세요",
 };
 

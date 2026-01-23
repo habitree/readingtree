@@ -12,7 +12,7 @@ import Link from "next/link";
 import type { BookshelfWithStats } from "@/types/bookshelf";
 
 export const metadata: Metadata = {
-  title: "서재 관리 | Habitree Reading Hub",
+  title: "서재 관리 | ReadTree",
   description: "내 서재를 관리하세요",
 };
 

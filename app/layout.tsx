@@ -12,7 +12,7 @@ const notoSerifKr = Noto_Serif_KR({
 });
 
 export const metadata: Metadata = {
-  title: "Habitree Reading Hub",
+  title: "ReadTree",
   description: "독서 기록 및 공유 플랫폼",
   manifest: "/manifest.json",
   icons: {
@@ -28,7 +28,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Habitree",
+    title: "ReadTree",
   },
   formatDetection: {
     telephone: false,

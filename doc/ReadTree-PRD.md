@@ -1,16 +1,16 @@
-# Habitree Reading Hub - Product Requirements Document (PRD)
+﻿# ReadTree - Product Requirements Document (PRD)
 
 **버전:** 1.0  
 **작성일:** 2025년 12월  
 **최종 수정일:** 2025년 12월  
-**제품명:** Habitree Reading Hub
+**제품명:** ReadTree
 
 ---
 
 ## 1. 개요 (Executive Summary)
 
 ### 1.1 제품 비전
-Habitree Reading Hub는 독서를 좋아하는 사람들이 인상 깊었던 문장을 다시 찾고, 흩어진 기록을 한 곳에서 관리하며, 쉽게 공유할 수 있게 해주는 책 전용 기록·공유 플랫폼입니다.
+ReadTree는 독서를 좋아하는 사람들이 인상 깊었던 문장을 다시 찾고, 흩어진 기록을 한 곳에서 관리하며, 쉽게 공유할 수 있게 해주는 책 전용 기록·공유 플랫폼입니다.
 
 ### 1.2 핵심 가치 제안
 **"기록을 다시 찾고, 정리하고, 공유할 수 있는 경험 제공"**

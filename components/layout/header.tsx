@@ -35,7 +35,7 @@ export function Header() {
   const { user, isLoading } = useAuth();
   const pathname = usePathname();
   const [userProfile, setUserProfile] = useState<{ id: string; name: string; avatar_url: string | null; is_admin?: boolean } | null>(null);
-  
+
   // 사용자 프로필 정보 가져오기
   // user가 변경되거나 프로필 페이지에서 다른 페이지로 이동할 때 갱신
   useEffect(() => {
@@ -84,7 +84,7 @@ export function Header() {
         {/* 로고 - 모바일에서만 표시, 아이콘만 표시하여 공간 절약 */}
         <Link href="/" className="lg:hidden flex items-center gap-1.5 sm:gap-2 font-bold text-sm sm:text-base">
           <Trees className="w-5 h-5 sm:w-6 sm:h-6 text-forest-600 shrink-0" />
-          <span className="truncate max-w-[120px] sm:max-w-none">Habitree</span>
+          <span className="truncate max-w-[120px] sm:max-w-none">ReadTree</span>
         </Link>
 
         {/* 우측 메뉴 */}
@@ -93,10 +93,10 @@ export function Header() {
             {/* 새로운 소식 (보도자료) */}
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="relative h-8 w-8 sm:h-10 sm:w-10" 
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="relative h-8 w-8 sm:h-10 sm:w-10"
                   asChild
                   aria-label="새로운 소식"
                 >
@@ -116,14 +116,14 @@ export function Header() {
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <DropdownMenuTrigger asChild>
-                      <Button 
-                        variant="ghost" 
+                      <Button
+                        variant="ghost"
                         className="relative h-8 w-8 sm:h-10 sm:w-10 rounded-full p-0"
                         aria-label="프로필"
                       >
                         <Avatar className="h-8 w-8 sm:h-10 sm:w-10 border-2 border-background">
-                          <AvatarImage 
-                            src={getImageUrl(userAvatar)} 
+                          <AvatarImage
+                            src={getImageUrl(userAvatar)}
                             alt={userName}
                             className="object-cover"
                           />

@@ -1,6 +1,6 @@
 {
-  "name": "Habitree Reading Hub",
-  "short_name": "Habitree",
+  "name": "ReadTree",
+  "short_name": "ReadTree",
   "description": "독서 기록 및 공유 플랫폼",
   "start_url": "/",
   "display": "standalone",
@@ -20,7 +20,11 @@
       "type": "image/x-icon"
     }
   ],
-  "categories": ["books", "education", "productivity"],
+  "categories": [
+    "books",
+    "education",
+    "productivity"
+  ],
   "lang": "ko",
   "dir": "ltr"
 }

@@ -48,7 +48,7 @@ export function HeroSection() {
                     </div>
 
                     <div className="pt-8 flex items-center gap-4 text-sm text-charcoal-500 font-serif italic">
-                        <p>당신의 모든 페이지가 독서 자산이 되는 곳, 해비트리 리딩 허브</p>
+                        <p>당신의 모든 페이지가 독서 자산이 되는 곳, ReadTree</p>
                     </div>
                 </div>
 

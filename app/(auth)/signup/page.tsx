@@ -2,7 +2,7 @@ import { SignupForm } from "@/components/auth/signup-form";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "회원가입 | Habitree Reading Hub",
+  title: "회원가입 | ReadTree",
   description: "카카오, 구글 또는 이메일로 회원가입하세요",
 };
 

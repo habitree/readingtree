@@ -1,10 +1,10 @@
-# Habitree Reading Hub
+﻿# ReadTree
 
 독서 기록 및 공유 플랫폼
 
 ## 프로젝트 개요
 
-Habitree Reading Hub는 독서를 좋아하는 사람들이 인상 깊었던 문장을 다시 찾고, 흩어진 기록을 한 곳에서 관리하며, 쉽게 공유할 수 있게 해주는 책 전용 기록·공유 플랫폼입니다.
+ReadTree는 독서를 좋아하는 사람들이 인상 깊었던 문장을 다시 찾고, 흩어진 기록을 한 곳에서 관리하며, 쉽게 공유할 수 있게 해주는 책 전용 기록·공유 플랫폼입니다.
 
 ## 기술 스택
 
@@ -140,7 +140,7 @@ const supabase = await createServerSupabaseClient();
 
 - [프로젝트 설정 가이드](./doc/tasks/front/01-task-project-setup-plan.md)
 - [소프트웨어 디자인 문서](./doc/software_design.md)
-- [PRD 문서](./doc/Habitree-Reading-Hub-PRD.md)
+- [PRD 문서](./doc/ReadTree-PRD.md)
 
 ## 라이선스
 

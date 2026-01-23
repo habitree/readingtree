@@ -66,11 +66,11 @@ export function SignupForm() {
       // redirect()가 성공하면 여기까지 도달하지 않음
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      
+
       if (errorMessage.includes("NEXT_REDIRECT") || errorMessage.includes("redirect")) {
         return;
       }
-      
+
       console.error("카카오 회원가입 오류:", error);
       setIsLoading(null);
       toast.error(
@@ -88,11 +88,11 @@ export function SignupForm() {
       // redirect()가 성공하면 여기까지 도달하지 않음
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      
+
       if (errorMessage.includes("NEXT_REDIRECT") || errorMessage.includes("redirect")) {
         return;
       }
-      
+
       console.error("구글 회원가입 오류:", error);
       setIsLoading(null);
       toast.error(
@@ -108,7 +108,7 @@ export function SignupForm() {
     try {
       setIsLoading("email");
       const result = await signUpWithEmail(data.email, data.password, data.name);
-      
+
       if (result.success) {
         setEmailSignupSuccess(true);
         toast.success(result.message);
@@ -163,7 +163,7 @@ export function SignupForm() {
     <Card className="w-full max-w-md mx-auto">
       <CardHeader className="space-y-1">
         <CardTitle className="text-2xl font-bold text-center">
-          Habitree Reading Hub
+          ReadTree
         </CardTitle>
         <CardDescription className="text-center">
           회원가입하고 독서 기록을 시작하세요
