@@ -73,6 +73,43 @@ async function fetchFromNLSeoji(isbn: string): Promise<number | null> {
   }
 }
 
+// 알라딘 API
+async function fetchFromAladin(isbn: string): Promise<number | null> {
+  const ttbKey = process.env.ALADIN_TTB_KEY;
+  if (!ttbKey) return null;
+
+  const normalized = normalizeIsbn(isbn);
+  const itemIdType = normalized.length === 13 ? "ISBN13" : "ISBN";
+
+  const url = new URL("http://www.aladin.co.kr/ttb/api/ItemLookUp.aspx");
+  url.searchParams.append("ttbkey", ttbKey);
+  url.searchParams.append("itemIdType", itemIdType);
+  url.searchParams.append("ItemId", normalized);
+  url.searchParams.append("output", "js");
+  url.searchParams.append("Version", "20131101");
+  url.searchParams.append("OptResult", "packing");
+
+  try {
+    const response = await fetch(url.toString());
+    if (!response.ok) return null;
+
+    const data = await response.json();
+
+    if (data.item && data.item.length > 0) {
+      const item = data.item[0];
+      if (item.subInfo?.itemPage) {
+        const pageCount = item.subInfo.itemPage;
+        if (isValidPageCount(pageCount)) {
+          return pageCount;
+        }
+      }
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 // Google Books API
 async function fetchFromGoogleBooks(isbn: string): Promise<number | null> {
   const url = new URL("https://www.googleapis.com/books/v1/volumes");
@@ -106,13 +143,19 @@ async function fetchBookPageCount(isbn: string): Promise<{
   // 1. 국립중앙도서관 시도
   const nlResult = await fetchFromNLSeoji(normalized);
   if (nlResult !== null) {
-    return { pageCount: nlResult, source: "nl_seoji" };
+    return { pageCount: nlResult, source: "도서관" };
   }
 
-  // 2. Google Books 시도
+  // 2. 알라딘 시도
+  const aladinResult = await fetchFromAladin(normalized);
+  if (aladinResult !== null) {
+    return { pageCount: aladinResult, source: "알라딘" };
+  }
+
+  // 3. Google Books 시도
   const googleResult = await fetchFromGoogleBooks(normalized);
   if (googleResult !== null) {
-    return { pageCount: googleResult, source: "google_books" };
+    return { pageCount: googleResult, source: "Google" };
   }
 
   return { pageCount: null, source: null };
@@ -173,8 +216,7 @@ async function main() {
         console.log(`❌ DB 오류`);
         failCount++;
       } else {
-        const sourceLabel = result.source === "nl_seoji" ? "도서관" : "Google";
-        console.log(`✅ ${result.pageCount}p (${sourceLabel})`);
+        console.log(`✅ ${result.pageCount}p (${result.source})`);
         successCount++;
       }
     } else {
