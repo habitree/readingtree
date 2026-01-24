@@ -746,6 +746,7 @@ export async function getUserBooksWithNotes(
       started_at,
       reading_reason,
       bookshelf_id,
+      current_page,
       created_at,
       books (
         id,
@@ -757,6 +758,7 @@ export async function getUserBooksWithNotes(
         cover_image_url,
         description_summary,
         summary,
+        total_pages,
         created_at,
         updated_at
       )
@@ -949,6 +951,8 @@ export async function getUserBooksWithNotes(
       completed_at: userBook.completed_at || null,
       completed_dates: userBook.completed_dates || null,
       started_at: userBook.started_at || null,
+      current_page: userBook.current_page || 0,
+      bookshelf_id: userBook.bookshelf_id || null,
       books: {
         id: userBook.books.id || "",
         title: userBook.books.title || "제목 없음",
@@ -959,6 +963,7 @@ export async function getUserBooksWithNotes(
         cover_image_url: userBook.books.cover_image_url || null,
         description_summary: userBook.books.description_summary || null,
         summary: userBook.books.summary || null,
+        total_pages: userBook.books.total_pages || null,
         created_at: userBook.books.created_at,
         updated_at: userBook.books.updated_at,
       },
@@ -1086,6 +1091,7 @@ export async function getBookDetail(userBookId: string, user?: User | null) {
       `
       *,
       completed_dates,
+      current_page,
       books (
         id,
         isbn,
@@ -1093,7 +1099,8 @@ export async function getBookDetail(userBookId: string, user?: User | null) {
         author,
         publisher,
         published_date,
-        cover_image_url
+        cover_image_url,
+        total_pages
       )
     `
     )
