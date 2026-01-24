@@ -1,7 +1,38 @@
 # ReadTree v4.0.0 고도화 의사결정 가이드
 
 > **작성일:** 2026-01-24
+> **최종 수정:** 2026-01-24
 > **목적:** 6개 전문가 분석 문서의 핵심 아이디어를 취합하여 의사결정 지원
+
+---
+
+## 🎯 작업 진행 현황
+
+### ✅ 완료된 작업
+
+| 작업 | Phase | 상태 | 완료일 | 비고 |
+|------|-------|------|--------|------|
+| 복합 인덱스 추가 | Phase 1 | ✅ 완료 | 2026-01-24 | 16개 인덱스 생성 |
+| Recharts 동적 임포트 | Phase 1 | ✅ 완료 | - | 이미 구현됨 |
+| AVIF 이미지 설정 | Phase 1 | ✅ 완료 | 2026-01-24 | next.config.js 수정 |
+| 파일 업로드 검증 강화 | Phase 1 | ✅ 완료 | 2026-01-24 | 시그니처 검증 추가 |
+| 읽기 진행률 기능 | Phase 1 | ✅ 완료 | 2026-01-24 | DB 마이그레이션 필요 |
+| CSP 보안 헤더 | Phase 2 | ✅ 완료 | 2026-01-24 | 7개 보안 헤더 추가 |
+
+### ❌ 제외된 작업
+
+| 작업 | 제외 사유 |
+|------|-----------|
+| Upstash Redis 캐싱 | 사용자 결정에 의해 제외 |
+
+### 📋 다음 진행 예정 (Phase 2 남은 작업)
+
+| 작업 | 난이도 | 예상 효과 |
+|------|--------|-----------|
+| Streaming SSR 대시보드 | 중간 | TTFB 1.2s→0.5s |
+| Forest 다크모드 | 중간 | 브랜드 정체성 강화 |
+| 프로그레시브 온보딩 | 중간 | 완료율 40%→70% |
+| 배지/업적 시스템 | 중간 | D30 리텐션 40% |
 
 ---
 
@@ -127,35 +158,35 @@
 
 ## 4. Phase별 작업 정리
 
-### Phase 1: Quick Wins (1-2주) - 즉시 시작 권장
+### Phase 1: Quick Wins (1-2주) - ✅ 대부분 완료
 
-| # | 작업 | 분야 | 난이도 | 수정 파일 |
-|---|------|------|--------|-----------|
-| 1 | 복합 인덱스 추가 | 백엔드 | 낮음 | `migration-001_indexes.sql` |
-| 2 | Recharts 동적 임포트 | 성능 | 낮음 | `components/charts/*` |
-| 3 | AVIF 이미지 설정 | 성능 | 낮음 | `next.config.js` |
-| 4 | Header useEffect 통합 | 성능 | 낮음 | `components/layout/header.tsx` |
-| 5 | 읽기 진행률 기능 | 비즈니스 | 낮음 | `user_books` 테이블 + UI |
-| 6 | 파일 업로드 검증 | 보안 | 낮음 | `lib/security/file-validation.ts` |
-| 7 | Sentry 에러 트래킹 | 백엔드 | 낮음 | `sentry.*.config.ts` |
+| # | 작업 | 분야 | 난이도 | 상태 | 수정 파일 |
+|---|------|------|--------|------|-----------|
+| 1 | 복합 인덱스 추가 | 백엔드 | 낮음 | ✅ | `migration-202601241000__indexes.sql` |
+| 2 | Recharts 동적 임포트 | 성능 | 낮음 | ✅ | 이미 구현됨 |
+| 3 | AVIF 이미지 설정 | 성능 | 낮음 | ✅ | `next.config.js` |
+| 4 | Header useEffect 통합 | 성능 | 낮음 | ⏳ | `components/layout/header.tsx` |
+| 5 | 읽기 진행률 기능 | 비즈니스 | 낮음 | ✅ | `user_books` + `reading-progress.tsx` |
+| 6 | 파일 업로드 검증 | 보안 | 낮음 | ✅ | `lib/security/file-validation.ts` |
+| 7 | Sentry 에러 트래킹 | 백엔드 | 낮음 | ⏳ | `sentry.*.config.ts` |
 
-**예상 결과:** Lighthouse +15점, 쿼리 성능 +50%, 초기 로딩 -30%
+**결과:** Phase 1 핵심 작업 5/7 완료 (71%)
 
 ---
 
-### Phase 2: Core Improvements (2-4주) - 핵심 개선
+### Phase 2: Core Improvements (2-4주) - 🚧 진행 중
 
-| # | 작업 | 분야 | 난이도 | 수정 파일 |
-|---|------|------|--------|-----------|
-| 1 | @supabase/ssr 마이그레이션 | 보안 | 낮음 | `lib/supabase/*` |
-| 2 | CSP 보안 헤더 | 보안 | 중간 | `next.config.js` |
-| 3 | Upstash Redis 캐싱/Rate Limit | 백엔드+보안 | 중간 | `lib/redis.ts`, `middleware.ts` |
-| 4 | Streaming SSR 대시보드 | 성능 | 중간 | `app/(main)/page.tsx` |
-| 5 | Forest 다크모드 | UI/UX | 중간 | `app/globals.css` |
-| 6 | 프로그레시브 온보딩 | UI/UX | 중간 | `components/onboarding/*` |
-| 7 | 배지/업적 시스템 기본 | 비즈니스 | 중간 | `migration-005_achievements.sql` |
+| # | 작업 | 분야 | 난이도 | 상태 | 수정 파일 |
+|---|------|------|--------|------|-----------|
+| 1 | @supabase/ssr 마이그레이션 | 보안 | 낮음 | ⏳ | `lib/supabase/*` |
+| 2 | CSP 보안 헤더 | 보안 | 중간 | ✅ | `next.config.js` |
+| 3 | Upstash Redis 캐싱/Rate Limit | 백엔드+보안 | 중간 | ❌ | 제외됨 |
+| 4 | Streaming SSR 대시보드 | 성능 | 중간 | ⏳ | `app/(main)/page.tsx` |
+| 5 | Forest 다크모드 | UI/UX | 중간 | ⏳ | `app/globals.css` |
+| 6 | 프로그레시브 온보딩 | UI/UX | 중간 | ⏳ | `components/onboarding/*` |
+| 7 | 배지/업적 시스템 기본 | 비즈니스 | 중간 | ⏳ | `migration-005_achievements.sql` |
 
-**예상 결과:** 보안 점수 A+, 사용자 이탈률 -40%, API 응답시간 -50%
+**결과:** Phase 2 진행 중 - 1/6 완료 (Redis 제외)
 
 ---
 
@@ -217,16 +248,21 @@
 
 ## 6. 의사결정 체크리스트
 
-### 즉시 실행 권장 (Phase 1)
-- [ ] 복합 인덱스 - 개발 리소스 최소, 효과 큼
-- [ ] Recharts 동적 임포트 - 번들 크기 즉시 개선
-- [ ] AVIF 이미지 - next.config.js만 수정
-- [ ] 읽기 진행률 - 사용자 요청 많은 기능
+### Phase 1 (대부분 완료)
+- [x] 복합 인덱스 - 16개 인덱스 생성 완료
+- [x] Recharts 동적 임포트 - 이미 구현되어 있었음
+- [x] AVIF 이미지 - next.config.js 수정 완료
+- [x] 읽기 진행률 - DB 마이그레이션 + UI 컴포넌트 완료
+- [x] 파일 업로드 검증 - 시그니처 검증 추가 완료
+- [x] CSP 보안 헤더 - 7개 보안 헤더 추가 완료
+- [ ] Header useEffect 통합 - 미진행
+- [ ] Sentry 에러 트래킹 - 미진행
 
-### 우선순위 결정 필요 (Phase 2-3)
-- [ ] Redis 캐싱 vs Inngest 큐 - 어느 것이 더 급한가?
+### 다음 진행 예정 (Phase 2)
+- [ ] Streaming SSR 대시보드 - 체감 속도 향상
+- [ ] Forest 다크모드 - 브랜드 정체성
 - [ ] 온보딩 vs 배지 시스템 - 신규 사용자 vs 기존 사용자?
-- [ ] 시맨틱 검색 vs AI 리포트 - OpenAI 비용 고려
+- [ ] @supabase/ssr 마이그레이션 - 최신 인증 라이브러리
 
 ### 비즈니스 결정 필요 (Phase 4)
 - [ ] Pro 구독 가격 정책 - ₩4,900 적정한가?
@@ -321,4 +357,26 @@ Month 4+:   Phase 4 수익화 준비
 
 ---
 
-**다음 단계:** Phase 1 Quick Wins 중 우선 착수할 항목 선택
+**다음 단계:** Phase 2 남은 작업 중 우선 착수할 항목 선택
+- Streaming SSR 대시보드
+- Forest 다크모드
+- 프로그레시브 온보딩
+- 배지/업적 시스템
+
+---
+
+## 📁 생성된 파일 목록
+
+### 마이그레이션 파일 (Supabase 대시보드에서 실행 필요)
+- `doc/database/migration-202601241000__indexes__add_composite_indexes.sql`
+- `doc/database/migration-202601241100__user_books__add_current_page.sql`
+
+### 코드 파일
+- `lib/security/file-validation.ts` - 파일 업로드 보안 검증
+- `components/books/reading-progress.tsx` - 읽기 진행률 UI 컴포넌트
+
+### 수정된 파일
+- `next.config.js` - AVIF 이미지 + CSP 보안 헤더
+- `app/api/upload/route.ts` - 파일 검증 적용
+- `app/actions/books.ts` - updateBookProgress 액션 추가
+- `types/database.ts` - current_page 타입 추가

@@ -33,14 +33,54 @@ const nextConfig = {
       },
     ],
   },
-  // 개발 환경에서 CSP 설정 (Turbopack HMR을 위해 필요)
+  // 보안 헤더 설정
   async headers() {
-    // 개발 환경에서만 unsafe-eval 허용
+    // 공통 보안 헤더
+    const securityHeaders = [
+      // XSS 필터 활성화 (레거시 브라우저 지원)
+      {
+        key: 'X-XSS-Protection',
+        value: '1; mode=block',
+      },
+      // MIME 타입 스니핑 방지
+      {
+        key: 'X-Content-Type-Options',
+        value: 'nosniff',
+      },
+      // 클릭재킹 방지
+      {
+        key: 'X-Frame-Options',
+        value: 'DENY',
+      },
+      // HTTPS 강제 (1년)
+      {
+        key: 'Strict-Transport-Security',
+        value: 'max-age=31536000; includeSubDomains; preload',
+      },
+      // Referrer 정보 제한
+      {
+        key: 'Referrer-Policy',
+        value: 'strict-origin-when-cross-origin',
+      },
+      // DNS 프리페치 제어
+      {
+        key: 'X-DNS-Prefetch-Control',
+        value: 'on',
+      },
+      // 권한 정책 (민감 API 제한)
+      {
+        key: 'Permissions-Policy',
+        value: 'camera=(), microphone=(), geolocation=(), interest-cohort=()',
+      },
+    ];
+
+    // 개발 환경 CSP (Turbopack HMR을 위해 완화된 정책)
     if (process.env.NODE_ENV === 'development') {
       return [
         {
           source: '/:path*',
           headers: [
+            ...securityHeaders,
             {
               key: 'Content-Security-Policy',
               value: [
@@ -48,42 +88,44 @@ const nextConfig = {
                 "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://*.supabase.co https://*.kakao.com https://*.googleapis.com",
                 "style-src 'self' 'unsafe-inline'",
                 "img-src 'self' data: https: blob:",
-                "font-src 'self' data:",
-                "connect-src 'self' https://*.supabase.co https://*.kakao.com https://*.googleapis.com wss://*.supabase.co",
+                "font-src 'self' data: https://fonts.gstatic.com",
+                "connect-src 'self' https://*.supabase.co https://*.kakao.com https://*.googleapis.com wss://*.supabase.co ws://localhost:*",
                 "frame-src 'self' https://*.supabase.co https://*.kakao.com https://accounts.google.com",
                 "object-src 'none'",
                 "base-uri 'self'",
                 "form-action 'self'",
                 "frame-ancestors 'none'",
-                "upgrade-insecure-requests",
               ].join('; '),
             },
           ],
         },
       ];
     }
-    // 프로덕션 환경 CSP
-    // Next.js Turbopack과 일부 라이브러리가 eval()을 사용할 수 있으므로 unsafe-eval 허용
-    // 보안상 위험이 있지만 Next.js 생태계에서 필요할 수 있음
+
+    // 프로덕션 환경 CSP (강화된 정책)
     return [
       {
         source: '/:path*',
         headers: [
+          ...securityHeaders,
           {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://*.supabase.co https://*.kakao.com https://*.googleapis.com",
-              "style-src 'self' 'unsafe-inline'",
+              // 프로덕션에서는 unsafe-eval 제거, strict-dynamic 사용 고려
+              // Next.js 15+에서는 대부분 필요 없음, 문제 발생 시 unsafe-eval 추가
+              "script-src 'self' 'unsafe-inline' https://*.supabase.co https://*.kakao.com https://*.googleapis.com",
+              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "img-src 'self' data: https: blob:",
-              "font-src 'self' data:",
-              "connect-src 'self' https://*.supabase.co https://*.kakao.com https://*.googleapis.com wss://*.supabase.co",
+              "font-src 'self' data: https://fonts.gstatic.com",
+              "connect-src 'self' https://*.supabase.co https://*.kakao.com https://*.googleapis.com https://*.google-analytics.com wss://*.supabase.co",
               "frame-src 'self' https://*.supabase.co https://*.kakao.com https://accounts.google.com",
               "object-src 'none'",
               "base-uri 'self'",
-              "form-action 'self'",
+              "form-action 'self' https://*.supabase.co https://*.kakao.com",
               "frame-ancestors 'none'",
               "upgrade-insecure-requests",
+              "block-all-mixed-content",
             ].join('; '),
           },
         ],
