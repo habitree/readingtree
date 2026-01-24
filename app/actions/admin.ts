@@ -896,7 +896,74 @@ export async function getApiIntegrationInfo() {
         },
     };
     
-    // ========== 4. 기타 설정 ==========
+    // ========== 4. 도서 페이지 수 조회 API ==========
+    const nlSeojiKey = process.env.NL_SEOJI_CERT_KEY;
+    const aladinKey = process.env.ALADIN_TTB_KEY;
+    const googleBooksKey = process.env.GOOGLE_BOOKS_API_KEY;
+
+    const nlSeojiInfo = {
+        provider: "국립중앙도서관 ISBN서지정보 API",
+        enabled: !!nlSeojiKey,
+        configured: !!nlSeojiKey,
+        keyStatus: nlSeojiKey
+            ? `설정됨 (${nlSeojiKey.substring(0, 15)}...)`
+            : "미설정",
+        apiReference: "https://www.nl.go.kr/NL/contents/N31101030500.do",
+        features: [
+            "한국 도서 공식 서지정보",
+            "ISBN 기반 도서 검색",
+            "페이지 수, 발행일 등 상세 정보",
+            "높은 정확도 (한국 도서 86%+)",
+        ],
+        notes: "한국 도서 페이지 수 조회 1순위",
+        priority: 1,
+    };
+
+    const aladinInfo = {
+        provider: "알라딘 Open API",
+        enabled: !!aladinKey,
+        configured: !!aladinKey,
+        keyStatus: aladinKey
+            ? `설정됨 (${aladinKey.substring(0, 15)}...)`
+            : "미설정",
+        apiReference: "https://docs.aladin.co.kr/",
+        features: [
+            "한국 최대 온라인 서점 데이터",
+            "ISBN 기반 도서 검색",
+            "페이지 수, 가격, 평점 정보",
+            "국립중앙도서관 미등록 도서 보완",
+        ],
+        notes: "한국 도서 페이지 수 조회 2순위 (폴백)",
+        priority: 2,
+    };
+
+    const googleBooksInfo = {
+        provider: "Google Books API",
+        enabled: true, // 키 없이도 작동
+        configured: !!googleBooksKey,
+        keyStatus: googleBooksKey
+            ? `설정됨 (${googleBooksKey.substring(0, 15)}...)`
+            : "미설정 (키 없이 작동)",
+        apiReference: "https://developers.google.com/books",
+        features: [
+            "전 세계 도서 데이터베이스",
+            "ISBN 기반 도서 검색",
+            "해외 도서 페이지 수 조회",
+            "키 없이 일일 ~1,000회 무료",
+        ],
+        notes: "해외 도서 및 최종 폴백 (3순위)",
+        priority: 3,
+    };
+
+    // 페이지 수 API 요약
+    const pageCountApiSummary = {
+        totalApis: 3,
+        enabledApis: [nlSeojiInfo.enabled, aladinInfo.enabled, googleBooksInfo.enabled].filter(Boolean).length,
+        configuredApis: [nlSeojiInfo.configured, aladinInfo.configured, googleBooksInfo.configured].filter(Boolean).length,
+        fallbackChain: "국립중앙도서관 → 알라딘 → Google Books",
+    };
+
+    // ========== 5. 기타 설정 ==========
     const appInfo = {
         appUrl: appUrl || "미설정",
         notes: "앱 기본 URL (OAuth 리다이렉트 등에 사용)",
@@ -961,6 +1028,33 @@ export async function getApiIntegrationInfo() {
             category: "OCR",
         });
     }
+
+    // 페이지 수 조회 API 관련
+    if (nlSeojiInfo.enabled && aladinInfo.enabled) {
+        recommendations.push({
+            type: "success",
+            message: "도서 페이지 수 API가 모두 설정되었습니다!",
+            action: `폴백 체인: ${pageCountApiSummary.fallbackChain}`,
+            priority: "정상",
+            category: "페이지수",
+        });
+    } else if (nlSeojiInfo.enabled || aladinInfo.enabled) {
+        recommendations.push({
+            type: "info",
+            message: `도서 페이지 수 API 일부 설정됨 (${pageCountApiSummary.enabledApis}/3)`,
+            action: "국립중앙도서관(NL_SEOJI_CERT_KEY)과 알라딘(ALADIN_TTB_KEY) 설정을 권장합니다.",
+            priority: "보통",
+            category: "페이지수",
+        });
+    } else {
+        recommendations.push({
+            type: "warning",
+            message: "도서 페이지 수 조회 API가 설정되지 않았습니다.",
+            action: "NL_SEOJI_CERT_KEY, ALADIN_TTB_KEY 환경 변수를 설정하세요. Google Books는 키 없이 작동합니다.",
+            priority: "보통",
+            category: "페이지수",
+        });
+    }
     
     // ========== 요약 통계 ==========
     const allApis = [
@@ -968,6 +1062,9 @@ export async function getApiIntegrationInfo() {
         { name: "Kakao SDK", enabled: kakaoSdkInfo.enabled },
         { name: "Naver Search", enabled: naverInfo.enabled },
         { name: "Cloud Run OCR", enabled: cloudRunOcrInfo.enabled },
+        { name: "국립중앙도서관", enabled: nlSeojiInfo.enabled },
+        { name: "알라딘", enabled: aladinInfo.enabled },
+        { name: "Google Books", enabled: googleBooksInfo.enabled },
     ];
     
     const enabledApis = allApis.filter(api => api.enabled).length;
@@ -981,19 +1078,27 @@ export async function getApiIntegrationInfo() {
         // 인증
         supabase: supabaseInfo,
         kakaoSdk: kakaoSdkInfo,
-        
+
         // 검색
         naver: naverInfo,
-        
+
         // OCR
         cloudRunOcr: cloudRunOcrInfo,
-        
+
+        // 페이지 수 조회 API
+        pageCountApis: {
+            nlSeoji: nlSeojiInfo,
+            aladin: aladinInfo,
+            googleBooks: googleBooksInfo,
+            summary: pageCountApiSummary,
+        },
+
         // 기타
         app: appInfo,
-        
+
         // 권장 사항
         recommendations,
-        
+
         // 요약
         summary: {
             totalApis: allApis.length,

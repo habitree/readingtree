@@ -3,18 +3,20 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { 
-  CheckCircle2, 
-  XCircle, 
-  AlertTriangle, 
-  Info, 
-  Zap, 
+import {
+  CheckCircle2,
+  XCircle,
+  AlertTriangle,
+  Info,
+  Zap,
   Shield,
   Settings,
   Search,
   Key,
   Globe,
-  ExternalLink
+  ExternalLink,
+  BookOpen,
+  Library
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -87,6 +89,46 @@ interface ApiIntegrationInfoProps {
       notes: string;
     };
 
+    // 페이지 수 조회 API
+    pageCountApis: {
+      nlSeoji: {
+        provider: string;
+        enabled: boolean;
+        configured: boolean;
+        keyStatus: string;
+        apiReference: string;
+        features: string[];
+        notes: string;
+        priority: number;
+      };
+      aladin: {
+        provider: string;
+        enabled: boolean;
+        configured: boolean;
+        keyStatus: string;
+        apiReference: string;
+        features: string[];
+        notes: string;
+        priority: number;
+      };
+      googleBooks: {
+        provider: string;
+        enabled: boolean;
+        configured: boolean;
+        keyStatus: string;
+        apiReference: string;
+        features: string[];
+        notes: string;
+        priority: number;
+      };
+      summary: {
+        totalApis: number;
+        enabledApis: number;
+        configuredApis: number;
+        fallbackChain: string;
+      };
+    };
+
     // 권장 사항
     recommendations: Array<{
       type: string;
@@ -149,13 +191,14 @@ interface ApiIntegrationInfoProps {
 
 export function ApiIntegrationInfo({ apiInfo, ocrMonthlyUsage, ocrTotalStats, ocrConnectionTest, transcriptionStats }: ApiIntegrationInfoProps) {
   const {
-    supabase, 
-    kakaoSdk, 
-    naver, 
+    supabase,
+    kakaoSdk,
+    naver,
     cloudRunOcr,
-    app, 
-    recommendations, 
-    summary 
+    pageCountApis,
+    app,
+    recommendations,
+    summary
   } = apiInfo;
 
   // 카테고리별 권장 사항 분류
@@ -163,6 +206,7 @@ export function ApiIntegrationInfo({ apiInfo, ocrMonthlyUsage, ocrTotalStats, oc
     인증: recommendations.filter(r => r.category === "인증"),
     검색: recommendations.filter(r => r.category === "검색"),
     OCR: recommendations.filter(r => r.category === "OCR"),
+    페이지수: recommendations.filter(r => r.category === "페이지수"),
   };
 
   return (
@@ -750,7 +794,197 @@ export function ApiIntegrationInfo({ apiInfo, ocrMonthlyUsage, ocrTotalStats, oc
         </Card>
       </div>
 
-      {/* ========== 4. 기타 설정 ========== */}
+      {/* ========== 4. 도서 페이지 수 조회 API ========== */}
+      <div className="space-y-4">
+        <h2 className="text-2xl font-bold flex items-center gap-2">
+          <BookOpen className="h-6 w-6" />
+          도서 페이지 수 조회 API
+        </h2>
+
+        {/* 요약 카드 */}
+        <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border-blue-200 dark:border-blue-800">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Info className="h-5 w-5 text-blue-600" />
+              API 폴백 체인
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center gap-2 text-sm">
+                <span className="font-medium">조회 순서:</span>
+                <code className="bg-white dark:bg-gray-900 px-2 py-1 rounded text-xs border">
+                  {pageCountApis.summary.fallbackChain}
+                </code>
+              </div>
+              <div className="flex gap-4 text-sm">
+                <div>
+                  <span className="text-muted-foreground">설정된 API:</span>{" "}
+                  <span className="font-bold text-green-600">{pageCountApis.summary.enabledApis}</span>
+                  <span className="text-muted-foreground">/{pageCountApis.summary.totalApis}</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">구성 완료:</span>{" "}
+                  <span className="font-bold">{pageCountApis.summary.configuredApis}</span>
+                  <span className="text-muted-foreground">/{pageCountApis.summary.totalApis}</span>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* 국립중앙도서관 API */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <Library className={cn("h-5 w-5", pageCountApis.nlSeoji.enabled ? "text-green-500" : "text-red-500")} />
+                  {pageCountApis.nlSeoji.provider}
+                  <Badge variant="outline" className="text-xs">1순위</Badge>
+                </CardTitle>
+                <CardDescription className="mt-2">
+                  {pageCountApis.nlSeoji.notes}
+                </CardDescription>
+              </div>
+              <Badge variant={pageCountApis.nlSeoji.enabled ? "default" : "destructive"}>
+                {pageCountApis.nlSeoji.enabled ? "활성화됨" : "비활성화됨"}
+              </Badge>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="text-sm">
+              <div className="font-medium text-muted-foreground mb-1">인증 키 상태</div>
+              <div className="font-mono text-xs">{pageCountApis.nlSeoji.keyStatus}</div>
+            </div>
+
+            <div>
+              <div className="font-medium mb-2">주요 기능</div>
+              <ul className="space-y-1 text-sm">
+                {pageCountApis.nlSeoji.features.map((feature, index) => (
+                  <li key={index} className="flex items-start gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-green-600 flex-shrink-0 mt-0.5" />
+                    <span>{feature}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="pt-2 border-t">
+              <a
+                href={pageCountApis.nlSeoji.apiReference}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm text-blue-500 hover:underline flex items-center gap-1"
+              >
+                공식 문서 보기 <ExternalLink className="h-3 w-3" />
+              </a>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* 알라딘 API */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <BookOpen className={cn("h-5 w-5", pageCountApis.aladin.enabled ? "text-green-500" : "text-muted-foreground")} />
+                  {pageCountApis.aladin.provider}
+                  <Badge variant="outline" className="text-xs">2순위</Badge>
+                </CardTitle>
+                <CardDescription className="mt-2">
+                  {pageCountApis.aladin.notes}
+                </CardDescription>
+              </div>
+              <Badge variant={pageCountApis.aladin.enabled ? "default" : "secondary"}>
+                {pageCountApis.aladin.enabled ? "활성화됨" : "비활성화됨"}
+              </Badge>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="text-sm">
+              <div className="font-medium text-muted-foreground mb-1">인증 키 상태</div>
+              <div className="font-mono text-xs">{pageCountApis.aladin.keyStatus}</div>
+            </div>
+
+            <div>
+              <div className="font-medium mb-2">주요 기능</div>
+              <ul className="space-y-1 text-sm">
+                {pageCountApis.aladin.features.map((feature, index) => (
+                  <li key={index} className="flex items-start gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-green-600 flex-shrink-0 mt-0.5" />
+                    <span>{feature}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="pt-2 border-t">
+              <a
+                href={pageCountApis.aladin.apiReference}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm text-blue-500 hover:underline flex items-center gap-1"
+              >
+                공식 문서 보기 <ExternalLink className="h-3 w-3" />
+              </a>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Google Books API */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <Globe className={cn("h-5 w-5", pageCountApis.googleBooks.enabled ? "text-green-500" : "text-muted-foreground")} />
+                  {pageCountApis.googleBooks.provider}
+                  <Badge variant="outline" className="text-xs">3순위</Badge>
+                </CardTitle>
+                <CardDescription className="mt-2">
+                  {pageCountApis.googleBooks.notes}
+                </CardDescription>
+              </div>
+              <Badge variant={pageCountApis.googleBooks.enabled ? "default" : "secondary"}>
+                {pageCountApis.googleBooks.configured ? "키 설정됨" : "키 없이 작동"}
+              </Badge>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="text-sm">
+              <div className="font-medium text-muted-foreground mb-1">API 키 상태</div>
+              <div className="font-mono text-xs">{pageCountApis.googleBooks.keyStatus}</div>
+            </div>
+
+            <div>
+              <div className="font-medium mb-2">주요 기능</div>
+              <ul className="space-y-1 text-sm">
+                {pageCountApis.googleBooks.features.map((feature, index) => (
+                  <li key={index} className="flex items-start gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-green-600 flex-shrink-0 mt-0.5" />
+                    <span>{feature}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="pt-2 border-t">
+              <a
+                href={pageCountApis.googleBooks.apiReference}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm text-blue-500 hover:underline flex items-center gap-1"
+              >
+                공식 문서 보기 <ExternalLink className="h-3 w-3" />
+              </a>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* ========== 5. 기타 설정 ========== */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
