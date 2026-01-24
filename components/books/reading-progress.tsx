@@ -5,16 +5,20 @@ import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { BookOpen, Check, Loader2 } from "lucide-react";
+import { BookOpen, Check, Loader2, Settings2 } from "lucide-react";
 import { updateBookProgress } from "@/app/actions/books";
 import { toast } from "sonner";
+import { TotalPagesEditor } from "./total-pages-editor";
 
 interface ReadingProgressProps {
   userBookId: string;
+  bookId?: string;
+  isbn?: string | null;
   currentPage: number;
   totalPages: number | null | undefined;
   status: string;
   onUpdate?: (newPage: number) => void;
+  onTotalPagesUpdate?: (newTotalPages: number | null) => void;
 }
 
 /**
@@ -22,15 +26,25 @@ interface ReadingProgressProps {
  */
 export function ReadingProgress({
   userBookId,
+  bookId,
+  isbn,
   currentPage: initialPage,
-  totalPages,
+  totalPages: initialTotalPages,
   status,
   onUpdate,
+  onTotalPagesUpdate,
 }: ReadingProgressProps) {
   const [currentPage, setCurrentPage] = useState(initialPage || 0);
+  const [totalPages, setTotalPages] = useState(initialTotalPages);
   const [inputValue, setInputValue] = useState(String(initialPage || 0));
   const [isEditing, setIsEditing] = useState(false);
   const [isPending, startTransition] = useTransition();
+
+  // 총 페이지 수 업데이트 핸들러
+  const handleTotalPagesUpdate = (newTotalPages: number | null) => {
+    setTotalPages(newTotalPages);
+    onTotalPagesUpdate?.(newTotalPages);
+  };
 
   // 진행률 계산 (totalPages가 없으면 표시 불가)
   const progressPercent = totalPages && totalPages > 0
@@ -97,9 +111,19 @@ export function ReadingProgress({
       {displayPercent !== null ? (
         <Progress value={displayPercent} className="h-2" />
       ) : (
-        <p className="text-xs text-muted-foreground">
-          총 페이지 수가 설정되지 않았습니다.
-        </p>
+        <div className="flex items-center gap-2">
+          <p className="text-xs text-muted-foreground flex-1">
+            총 페이지 수가 설정되지 않았습니다.
+          </p>
+          {bookId && (
+            <TotalPagesEditor
+              bookId={bookId}
+              isbn={isbn}
+              totalPages={totalPages}
+              onUpdate={handleTotalPagesUpdate}
+            />
+          )}
+        </div>
       )}
 
       {isEditing ? (
@@ -141,8 +165,20 @@ export function ReadingProgress({
         <div className="flex items-center gap-2">
           <span className="text-sm">
             {currentPage}
-            {totalPages && <span className="text-muted-foreground"> / {totalPages} 페이지</span>}
+            {totalPages ? (
+              <span className="text-muted-foreground"> / {totalPages} 페이지</span>
+            ) : (
+              <span className="text-muted-foreground"> 페이지</span>
+            )}
           </span>
+          {bookId && (
+            <TotalPagesEditor
+              bookId={bookId}
+              isbn={isbn}
+              totalPages={totalPages}
+              onUpdate={handleTotalPagesUpdate}
+            />
+          )}
           <div className="flex-1" />
           <Button
             size="sm"

@@ -158,6 +158,8 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
             <div className="p-4 rounded-lg bg-muted/30 border">
               <ReadingProgress
                 userBookId={userBook.id}
+                bookId={book.id}
+                isbn={book.isbn}
                 currentPage={(userBook as any).current_page || 0}
                 totalPages={book.total_pages}
                 status={userBook.status as string}

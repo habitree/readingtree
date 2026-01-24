@@ -3,6 +3,7 @@
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { searchBooks, transformNaverBookItem } from "@/lib/api/naver";
+import { fetchBookPageCount } from "@/lib/api/book-page-count";
 import type { ReadingStatus } from "@/types/book";
 import { isValidUUID, sanitizeErrorForLogging } from "@/lib/utils/validation";
 import type { User } from "@supabase/supabase-js";
@@ -102,7 +103,20 @@ export async function addBook(
       // 기존 책 재사용
       bookId = existingBook.id;
     } else {
-      // 새 책 생성
+      // 새 책 생성 - 페이지 수 자동 조회
+      let totalPages: number | null = null;
+
+      // ISBN이 있으면 페이지 수 조회 시도 (비동기, 실패해도 책 추가는 진행)
+      try {
+        const pageCountResult = await fetchBookPageCount(bookData.isbn);
+        if (pageCountResult.pageCount) {
+          totalPages = pageCountResult.pageCount;
+          console.log(`[addBook] 페이지 수 조회 성공: ${bookData.isbn} -> ${totalPages}p (출처: ${pageCountResult.source})`);
+        }
+      } catch (error) {
+        console.warn(`[addBook] 페이지 수 조회 실패 (무시하고 진행):`, error);
+      }
+
       const { data: newBook, error: insertError } = await supabase
         .from("books")
         .insert({
@@ -112,6 +126,7 @@ export async function addBook(
           publisher: bookData.publisher,
           published_date: bookData.published_date,
           cover_image_url: bookData.cover_image_url,
+          total_pages: totalPages,
         })
         .select("id")
         .single();
@@ -123,7 +138,7 @@ export async function addBook(
       bookId = newBook.id;
     }
   } else {
-    // ISBN이 없으면 새 책 생성123
+    // ISBN이 없으면 새 책 생성
     const { data: newBook, error: insertError } = await supabase
       .from("books")
       .insert({
@@ -241,7 +256,20 @@ export async function ensureBook(bookData: AddBookInput): Promise<{ bookId: stri
       // 기존 책 재사용
       bookId = existingBook.id;
     } else {
-      // 새 책 생성
+      // 새 책 생성 - 페이지 수 자동 조회
+      let totalPages: number | null = null;
+
+      // ISBN이 있으면 페이지 수 조회 시도 (비동기, 실패해도 책 추가는 진행)
+      try {
+        const pageCountResult = await fetchBookPageCount(bookData.isbn);
+        if (pageCountResult.pageCount) {
+          totalPages = pageCountResult.pageCount;
+          console.log(`[ensureBook] 페이지 수 조회 성공: ${bookData.isbn} -> ${totalPages}p (출처: ${pageCountResult.source})`);
+        }
+      } catch (error) {
+        console.warn(`[ensureBook] 페이지 수 조회 실패 (무시하고 진행):`, error);
+      }
+
       const { data: newBook, error: insertError } = await supabase
         .from("books")
         .insert({
@@ -251,6 +279,7 @@ export async function ensureBook(bookData: AddBookInput): Promise<{ bookId: stri
           publisher: bookData.publisher,
           published_date: bookData.published_date,
           cover_image_url: bookData.cover_image_url,
+          total_pages: totalPages,
         })
         .select("id")
         .single();
@@ -1312,5 +1341,233 @@ export async function updateBookProgress(
   revalidatePath("/");
 
   return { success: true };
+}
+
+/**
+ * 특정 책의 페이지 수 조회 및 업데이트
+ * @param bookId Books 테이블의 ID
+ * @param isbn 책의 ISBN (선택적, 없으면 DB에서 조회)
+ */
+export async function refreshBookPageCount(
+  bookId: string,
+  isbn?: string | null
+): Promise<{ success: boolean; pageCount: number | null; source: string | null; error?: string }> {
+  const supabase = await createServerSupabaseClient();
+
+  // UUID 검증
+  if (!isValidUUID(bookId)) {
+    return { success: false, pageCount: null, source: null, error: "유효하지 않은 책 ID입니다." };
+  }
+
+  // ISBN이 없으면 DB에서 조회
+  let targetIsbn = isbn;
+  if (!targetIsbn) {
+    const { data: book, error: bookError } = await supabase
+      .from("books")
+      .select("isbn")
+      .eq("id", bookId)
+      .single();
+
+    if (bookError || !book) {
+      return { success: false, pageCount: null, source: null, error: "책을 찾을 수 없습니다." };
+    }
+
+    targetIsbn = book.isbn;
+  }
+
+  if (!targetIsbn) {
+    return { success: false, pageCount: null, source: null, error: "ISBN이 없어 페이지 수를 조회할 수 없습니다." };
+  }
+
+  // 페이지 수 조회
+  try {
+    const pageCountResult = await fetchBookPageCount(targetIsbn);
+
+    if (pageCountResult.pageCount) {
+      // DB 업데이트
+      const { error: updateError } = await supabase
+        .from("books")
+        .update({ total_pages: pageCountResult.pageCount })
+        .eq("id", bookId);
+
+      if (updateError) {
+        return { success: false, pageCount: null, source: null, error: `업데이트 실패: ${updateError.message}` };
+      }
+
+      revalidatePath("/books");
+      revalidatePath(`/books/${bookId}`);
+
+      return {
+        success: true,
+        pageCount: pageCountResult.pageCount,
+        source: pageCountResult.source,
+      };
+    }
+
+    return { success: false, pageCount: null, source: null, error: pageCountResult.error || "페이지 수를 찾을 수 없습니다." };
+  } catch (error) {
+    return { success: false, pageCount: null, source: null, error: "페이지 수 조회 중 오류가 발생했습니다." };
+  }
+}
+
+/**
+ * 페이지 수 수동 업데이트
+ * @param bookId Books 테이블의 ID
+ * @param totalPages 전체 페이지 수
+ */
+export async function updateBookTotalPages(
+  bookId: string,
+  totalPages: number
+): Promise<{ success: boolean; error?: string }> {
+  const supabase = await createServerSupabaseClient();
+
+  // 현재 사용자 확인
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    return { success: false, error: "로그인이 필요합니다." };
+  }
+
+  // UUID 검증
+  if (!isValidUUID(bookId)) {
+    return { success: false, error: "유효하지 않은 책 ID입니다." };
+  }
+
+  // 페이지 수 유효성 검사
+  if (totalPages < 1 || totalPages > 10000) {
+    return { success: false, error: "페이지 수는 1~10,000 사이여야 합니다." };
+  }
+
+  // 사용자가 이 책을 소유하고 있는지 확인
+  const { data: userBook } = await supabase
+    .from("user_books")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("book_id", bookId)
+    .maybeSingle();
+
+  if (!userBook) {
+    return { success: false, error: "권한이 없습니다." };
+  }
+
+  // 페이지 수 업데이트
+  const { error: updateError } = await supabase
+    .from("books")
+    .update({ total_pages: totalPages })
+    .eq("id", bookId);
+
+  if (updateError) {
+    return { success: false, error: `업데이트 실패: ${updateError.message}` };
+  }
+
+  revalidatePath("/books");
+  revalidatePath(`/books/${bookId}`);
+  revalidatePath("/");
+
+  return { success: true };
+}
+
+/**
+ * 페이지 수가 없는 책 목록 조회 (일괄 업데이트용)
+ * @param limit 조회할 최대 개수 (기본값: 50)
+ */
+export async function getBooksWithoutPageCount(
+  limit: number = 50
+): Promise<{ books: Array<{ id: string; isbn: string; title: string }> }> {
+  const supabase = await createServerSupabaseClient();
+
+  const { data: books, error } = await supabase
+    .from("books")
+    .select("id, isbn, title")
+    .is("total_pages", null)
+    .not("isbn", "is", null)
+    .limit(limit);
+
+  if (error) {
+    throw new Error(`조회 실패: ${error.message}`);
+  }
+
+  return { books: books || [] };
+}
+
+/**
+ * 페이지 수가 없는 책들의 페이지 수 일괄 업데이트
+ * @param limit 업데이트할 최대 개수 (기본값: 20)
+ */
+export async function batchUpdatePageCounts(
+  limit: number = 20
+): Promise<{ updated: number; failed: number; results: Array<{ isbn: string; success: boolean; pageCount?: number; source?: string; error?: string }> }> {
+  const supabase = await createServerSupabaseClient();
+
+  // 현재 사용자 확인 (관리자 기능으로 제한 가능)
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    throw new Error("로그인이 필요합니다.");
+  }
+
+  // 페이지 수가 없는 책 조회
+  const { data: books, error: selectError } = await supabase
+    .from("books")
+    .select("id, isbn, title")
+    .is("total_pages", null)
+    .not("isbn", "is", null)
+    .limit(limit);
+
+  if (selectError || !books) {
+    throw new Error(`조회 실패: ${selectError?.message || "알 수 없는 오류"}`);
+  }
+
+  const results: Array<{ isbn: string; success: boolean; pageCount?: number; source?: string; error?: string }> = [];
+  let updated = 0;
+  let failed = 0;
+
+  // 순차적으로 처리 (API Rate Limit 방지)
+  for (const book of books) {
+    if (!book.isbn) continue;
+
+    try {
+      const pageCountResult = await fetchBookPageCount(book.isbn);
+
+      if (pageCountResult.pageCount) {
+        const { error: updateError } = await supabase
+          .from("books")
+          .update({ total_pages: pageCountResult.pageCount })
+          .eq("id", book.id);
+
+        if (updateError) {
+          results.push({ isbn: book.isbn, success: false, error: updateError.message });
+          failed++;
+        } else {
+          results.push({
+            isbn: book.isbn,
+            success: true,
+            pageCount: pageCountResult.pageCount,
+            source: pageCountResult.source || undefined,
+          });
+          updated++;
+        }
+      } else {
+        results.push({ isbn: book.isbn, success: false, error: pageCountResult.error });
+        failed++;
+      }
+
+      // Rate limiting: 각 요청 사이에 딜레이
+      await new Promise(resolve => setTimeout(resolve, 300));
+    } catch (error) {
+      results.push({ isbn: book.isbn, success: false, error: "조회 중 오류 발생" });
+      failed++;
+    }
+  }
+
+  revalidatePath("/books");
+
+  return { updated, failed, results };
 }
 
