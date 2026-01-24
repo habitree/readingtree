@@ -17,6 +17,10 @@ import {
   ChevronDown,
   ChevronUp,
   ImageIcon,
+  Quote,
+  MessageSquare,
+  CheckCircle2,
+  Sparkles,
 } from "lucide-react";
 import Image from "next/image";
 import { getImageUrl, isValidImageUrl } from "@/lib/utils/image";
@@ -278,74 +282,109 @@ export function MobileNoteForm({
     }
   };
 
+  // 입력 완료 상태 체크
+  const hasContent = quoteContent.trim().length > 0 || memoContent.trim().length > 0 || images.length > 0;
+
   return (
     <div className="flex flex-col h-full">
       <div className="flex-1 overflow-y-auto space-y-4 px-1">
-        {/* 인상깊은 구절 */}
-        <div className="space-y-2">
-          <Label htmlFor="quoteContent" className="text-sm font-medium">
-            인상깊은 구절
-          </Label>
+        {/* 인상깊은 구절 - 개선된 모바일 UI */}
+        <div className="space-y-2 p-3 rounded-xl bg-gradient-to-br from-blue-50/80 to-indigo-50/50 dark:from-blue-950/30 dark:to-indigo-950/20 border border-blue-100/50 dark:border-blue-900/30">
+          <div className="flex items-center justify-between">
+            <Label htmlFor="quoteContent" className="text-sm font-semibold flex items-center gap-2 text-blue-700 dark:text-blue-300">
+              <Quote className="w-4 h-4" />
+              인상깊은 구절
+              {quoteContent.length > 0 && (
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+              )}
+            </Label>
+            <span className="text-xs text-muted-foreground">{quoteContent.length}/5000</span>
+          </div>
           <Textarea
             id="quoteContent"
             value={quoteContent}
             onChange={(e) => setQuoteContent(e.target.value)}
-            placeholder="책에서 인상깊은 구절을 입력하세요"
+            placeholder="책에서 인상깊었던 문장을 기록하세요"
             rows={3}
-            className="resize-none text-base"
+            className="resize-none text-base bg-white/80 dark:bg-slate-900/50 border-blue-200/50 dark:border-blue-800/30"
             maxLength={5000}
           />
         </div>
 
-        {/* 내 생각 */}
-        <div className="space-y-2">
-          <Label htmlFor="memoContent" className="text-sm font-medium">
-            내 생각
-          </Label>
+        {/* 내 생각 - 개선된 모바일 UI */}
+        <div className="space-y-2 p-3 rounded-xl bg-gradient-to-br from-amber-50/80 to-orange-50/50 dark:from-amber-950/30 dark:to-orange-950/20 border border-amber-100/50 dark:border-amber-900/30">
+          <div className="flex items-center justify-between">
+            <Label htmlFor="memoContent" className="text-sm font-semibold flex items-center gap-2 text-amber-700 dark:text-amber-300">
+              <MessageSquare className="w-4 h-4" />
+              내 생각
+              {memoContent.length > 0 && (
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+              )}
+            </Label>
+            <span className="text-xs text-muted-foreground">{memoContent.length}/10000</span>
+          </div>
           <Textarea
             id="memoContent"
             value={memoContent}
             onChange={(e) => setMemoContent(e.target.value)}
-            placeholder="책에 대한 나의 생각을 적어보세요"
+            placeholder="이 구절에 대한 생각, 느낌, 깨달음을 적어보세요"
             rows={4}
-            className="resize-none text-base"
+            className="resize-none text-base bg-white/80 dark:bg-slate-900/50 border-amber-200/50 dark:border-amber-800/30"
             maxLength={10000}
           />
         </div>
 
-        {/* 이미지 업로드 버튼 */}
-        <div className="space-y-2">
-          <Label className="text-sm font-medium">이미지 등록</Label>
-          <div className="flex gap-2">
-            <Button
+        {/* 이미지 업로드 버튼 - 개선된 모바일 UI */}
+        <div className="space-y-3">
+          <Label className="text-sm font-semibold flex items-center gap-2">
+            <Camera className="w-4 h-4 text-slate-500" />
+            이미지 등록
+            {images.length > 0 && (
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+            )}
+          </Label>
+          <div className="grid grid-cols-2 gap-2">
+            <button
               type="button"
-              variant="outline"
-              className="flex-1 h-12"
               disabled={uploading}
               onClick={() => {
                 setUploadType("transcription");
                 fileInputRef.current?.click();
               }}
+              className={cn(
+                "flex flex-col items-center justify-center gap-1.5 p-4 rounded-xl border-2 border-dashed transition-all active:scale-[0.98]",
+                "border-purple-200 dark:border-purple-800 bg-purple-50/50 dark:bg-purple-950/20",
+                "active:border-purple-400 active:bg-purple-100/50",
+                uploading && "opacity-50 pointer-events-none"
+              )}
             >
-              <PenTool className="mr-2 h-4 w-4" />
-              필사등록
-            </Button>
-            <Button
+              <div className="w-9 h-9 rounded-full bg-purple-100 dark:bg-purple-900/50 flex items-center justify-center">
+                <PenTool className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+              </div>
+              <span className="text-xs font-medium text-purple-700 dark:text-purple-300">필사등록</span>
+            </button>
+            <button
               type="button"
-              variant="outline"
-              className="flex-1 h-12"
               disabled={uploading}
               onClick={() => {
                 setUploadType("photo");
                 fileInputRef.current?.click();
               }}
+              className={cn(
+                "flex flex-col items-center justify-center gap-1.5 p-4 rounded-xl border-2 border-dashed transition-all active:scale-[0.98]",
+                "border-emerald-200 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-950/20",
+                "active:border-emerald-400 active:bg-emerald-100/50",
+                uploading && "opacity-50 pointer-events-none"
+              )}
             >
-              <Camera className="mr-2 h-4 w-4" />
-              이미지등록
-            </Button>
+              <div className="w-9 h-9 rounded-full bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center">
+                <Camera className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+              </div>
+              <span className="text-xs font-medium text-emerald-700 dark:text-emerald-300">이미지등록</span>
+            </button>
           </div>
-          <p className="text-xs text-muted-foreground">
-            필사등록 시 이미지에서 텍스트를 자동으로 추출합니다.
+          <p className="text-xs text-muted-foreground text-center">
+            필사 이미지는 자동으로 텍스트를 추출해요
           </p>
           <input
             ref={fileInputRef}
@@ -459,39 +498,62 @@ export function MobileNoteForm({
           </div>
         )}
 
-        {/* 공개 설정 */}
-        <div className="flex items-center justify-between py-3">
-          <div className="flex items-center gap-2">
+        {/* 공개 설정 - 개선된 모바일 UI */}
+        <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border">
+          <div className="flex items-center gap-2.5">
             <Switch
               id="isPublic"
               checked={!isPublic}
               onCheckedChange={(checked) => setIsPublic(!checked)}
             />
-            <Label htmlFor="isPublic" className="text-sm font-medium cursor-pointer">
-              {isPublic ? "공개" : "비공개"}
-            </Label>
+            <div>
+              <Label htmlFor="isPublic" className="text-sm font-medium cursor-pointer">
+                {isPublic ? "공개" : "비공개"}
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                {isPublic ? "다른 사용자가 볼 수 있어요" : "나만 볼 수 있어요"}
+              </p>
+            </div>
           </div>
-          <span className="text-xs text-muted-foreground">
-            {isPublic ? "다른 사용자가 볼 수 있음" : "나만 볼 수 있음"}
-          </span>
+          <div className={cn(
+            "px-2 py-0.5 rounded-full text-xs font-medium",
+            isPublic
+              ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
+              : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400"
+          )}>
+            {isPublic ? "공개" : "비공개"}
+          </div>
         </div>
       </div>
 
-      {/* 하단 버튼 */}
-      <div className="pt-4 pb-2 space-y-2 border-t mt-4">
+      {/* 하단 버튼 - 개선된 모바일 UI */}
+      <div className="pt-4 pb-2 space-y-2.5 border-t mt-4 bg-gradient-to-t from-background to-transparent">
+        {!hasContent && (
+          <p className="text-center text-xs text-muted-foreground pb-1">
+            구절, 생각, 이미지 중 하나 이상 입력해주세요
+          </p>
+        )}
         <Button
           type="button"
           onClick={handleSubmit}
-          disabled={isSubmitting || uploading}
-          className="w-full h-12 text-base"
+          disabled={isSubmitting || uploading || !hasContent}
+          className="w-full h-12 text-base font-semibold shadow-lg"
         >
           {isSubmitting ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               저장 중...
             </>
+          ) : uploading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              업로드 중...
+            </>
           ) : (
-            "저장하기"
+            <>
+              <CheckCircle2 className="mr-2 h-4 w-4" />
+              저장하기
+            </>
           )}
         </Button>
         <Button
