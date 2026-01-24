@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import sharp from "sharp";
-import { validateImageSize, validateImageType } from "@/lib/utils/image";
 import { isValidUUID, sanitizeErrorMessage, sanitizeErrorForLogging } from "@/lib/utils/validation";
 import { checkRateLimit } from "@/lib/middleware/rate-limit";
+import {
+  validateUploadFile,
+  generateSafeFileName,
+  getFileExtension,
+} from "@/lib/security/file-validation";
 
 /**
  * 이미지 업로드 API
@@ -67,10 +71,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 파일 형식 검증
-    if (!validateImageType(file)) {
+    // 종합 파일 검증 (MIME, 시그니처, 파일명, 크기)
+    const validationResult = await validateUploadFile(file, { maxSizeMB: 10 });
+    if (!validationResult.isValid) {
       return NextResponse.json(
-        { error: "지원하지 않는 파일 형식입니다. (jpg, png, webp, heic만 지원)" },
+        { error: validationResult.error || "파일 검증에 실패했습니다." },
         { status: 400 }
       );
     }
@@ -101,11 +106,12 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 파일 확장자 추출 (압축된 경우 jpg로 통일)
-    const fileExt = fileToUpload.type === "image/jpeg" ? "jpg" : fileToUpload.name.split(".").pop() || "jpg";
-    const timestamp = Date.now();
-    const random = Math.random().toString(36).substring(2, 9);
-    const fileName = `${timestamp}-${random}.${fileExt}`;
+    // 안전한 파일명 생성 (타임스탬프 + 랜덤 + 확장자)
+    const fileExt = getFileExtension(
+      fileToUpload.name,
+      validationResult.detectedMimeType || fileToUpload.type
+    );
+    const fileName = generateSafeFileName(fileExt);
 
     // 업로드 경로: ${type}s/${userId}/${fileName}
     const filePath = `${type}s/${user.id}/${fileName}`;

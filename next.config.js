@@ -3,6 +3,13 @@ const nextConfig = {
   // Next.js 16에서는 Turbopack이 기본적으로 활성화되어 있음
   // experimental.turbo는 더 이상 지원되지 않음
   images: {
+    // AVIF 우선, WebP 폴백 (이미지 용량 50% 감소)
+    formats: ['image/avif', 'image/webp'],
+    // 이미지 캐싱 최적화 (31일)
+    minimumCacheTTL: 2678400,
+    // 디바이스 사이즈 최적화
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
     remotePatterns: [
       {
         protocol: 'https',
