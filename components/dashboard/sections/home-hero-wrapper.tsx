@@ -2,7 +2,7 @@ import { getCurrentUser } from "@/app/actions/auth";
 import { getPersonaDashboardData } from "@/app/actions/persona";
 import { getReadingStats } from "@/app/actions/stats";
 import { HomeHeroSection } from "./home-hero-section";
-import { createClient } from "@/lib/supabase/server";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 /**
  * 홈 히어로 섹션 서버 래퍼
@@ -52,7 +52,7 @@ export async function HomeHeroWrapper() {
  */
 async function getStreakAndTodayData(userId: string): Promise<{ streak: number; todayNotes: number }> {
   try {
-    const supabase = await createClient();
+    const supabase = await createServerSupabaseClient();
 
     // 최근 30일간의 기록 날짜 조회
     const thirtyDaysAgo = new Date();
