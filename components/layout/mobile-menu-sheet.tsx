@@ -11,10 +11,6 @@ import {
   Trees,
   Moon,
   Sun,
-  Library,
-  BookOpen,
-  ChevronRight,
-  ChevronDown,
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import {
@@ -27,12 +23,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
-import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils/cn";
 import { useAuth } from "@/hooks/use-auth";
-import { getBookshelves } from "@/app/actions/bookshelves";
 import { getCurrentUserProfile } from "@/app/actions/profile";
-import type { Bookshelf } from "@/types/bookshelf";
 
 interface MobileMenuSheetProps {
   open: boolean;
@@ -41,7 +34,8 @@ interface MobileMenuSheetProps {
 
 /**
  * 모바일 더보기 메뉴 (바텀시트)
- * 프로필, 서재 트리, 타임라인, 독서모임, 페르소나, 관리자, 테마 토글 포함
+ * 프로필, 타임라인, 독서모임, 페르소나, 관리자, 테마 토글 포함
+ * 외부 터치로 닫힘
  */
 export function MobileMenuSheet({ open, onOpenChange }: MobileMenuSheetProps) {
   const pathname = usePathname();
@@ -51,9 +45,6 @@ export function MobileMenuSheet({ open, onOpenChange }: MobileMenuSheetProps) {
   const [userProfile, setUserProfile] = useState<{ is_admin?: boolean } | null>(
     null
   );
-  const [bookshelves, setBookshelves] = useState<Bookshelf[]>([]);
-  const [isLoadingBookshelves, setIsLoadingBookshelves] = useState(true);
-  const [isBookshelfExpanded, setIsBookshelfExpanded] = useState(true);
 
   // 테마 관련 hydration mismatch 방지
   useEffect(() => {
@@ -76,23 +67,6 @@ export function MobileMenuSheet({ open, onOpenChange }: MobileMenuSheetProps) {
     }
   }, [user]);
 
-  // 서재 목록 가져오기
-  useEffect(() => {
-    if (user && open) {
-      setIsLoadingBookshelves(true);
-      getBookshelves()
-        .then((data) => {
-          setBookshelves(data);
-        })
-        .catch((error) => {
-          console.error("서재 목록 조회 오류:", error);
-        })
-        .finally(() => {
-          setIsLoadingBookshelves(false);
-        });
-    }
-  }, [user, open]);
-
   const isAdmin = userProfile?.is_admin === true;
   const isDarkMode = theme === "dark";
 
@@ -105,35 +79,23 @@ export function MobileMenuSheet({ open, onOpenChange }: MobileMenuSheetProps) {
     onOpenChange(false);
   };
 
-  // 메인 서재와 서브 서재 분리
-  const mainBookshelf = bookshelves.find((b) => b.is_main);
-  const subBookshelves = bookshelves.filter((b) => !b.is_main);
-
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="bottom"
-        className="h-[85vh] rounded-t-2xl px-0 pb-safe-area-inset-bottom"
-        swipeToClose
+        className="h-auto max-h-[50vh] rounded-t-3xl px-0 pb-safe-area-inset-bottom"
         hideCloseButton
       >
-        {/* 드래그 핸들 영역 - 탭/스와이프로 닫기 */}
-        <SheetClose asChild>
-          <button
-            className="w-full flex flex-col items-center pt-3 pb-4 cursor-pointer active:bg-muted/50 transition-colors touch-manipulation"
-            aria-label="메뉴 닫기"
-          >
-            {/* 드래그 인디케이터 */}
-            <div className="w-12 h-1.5 bg-muted-foreground/30 rounded-full mb-1" />
-            <span className="text-xs text-muted-foreground mt-1">아래로 스와이프하여 닫기</span>
-          </button>
-        </SheetClose>
+        {/* 드래그 인디케이터 */}
+        <div className="w-full flex justify-center pt-3 pb-2">
+          <div className="w-10 h-1 bg-muted-foreground/20 rounded-full" />
+        </div>
 
         <SheetHeader className="sr-only">
           <SheetTitle>메뉴</SheetTitle>
         </SheetHeader>
 
-        <div className="overflow-y-auto h-full pb-20 space-y-1 px-4">
+        <div className="space-y-1 px-4 pb-6">
           {/* 프로필 */}
           {user && (
             <SheetClose asChild>
@@ -152,94 +114,7 @@ export function MobileMenuSheet({ open, onOpenChange }: MobileMenuSheetProps) {
             </SheetClose>
           )}
 
-          <Separator className="my-3" />
-
-          {/* 서재 트리 (로그인 사용자만) */}
-          {user && (
-            <div className="space-y-1">
-              {/* 메인 서재 */}
-              {isLoadingBookshelves ? (
-                <div className="space-y-2">
-                  <Skeleton className="h-12 w-full" />
-                  <Skeleton className="h-10 w-full ml-4" />
-                  <Skeleton className="h-10 w-full ml-4" />
-                </div>
-              ) : (
-                <>
-                  {mainBookshelf && (
-                    <SheetClose asChild>
-                      <Link href="/books" onClick={handleMenuClick}>
-                        <Button
-                          variant={pathname === "/books" ? "secondary" : "ghost"}
-                          className={cn(
-                            "w-full justify-start gap-3 h-12",
-                            pathname === "/books" && "bg-secondary font-medium"
-                          )}
-                        >
-                          <Library className="h-5 w-5" />
-                          <span>{mainBookshelf.name}</span>
-                        </Button>
-                      </Link>
-                    </SheetClose>
-                  )}
-
-                  {/* 서브 서재 목록 */}
-                  {subBookshelves.length > 0 && (
-                    <div className="ml-2">
-                      <Button
-                        variant="ghost"
-                        className="w-full justify-start gap-2 h-10 text-sm text-muted-foreground hover:text-foreground"
-                        onClick={() =>
-                          setIsBookshelfExpanded(!isBookshelfExpanded)
-                        }
-                      >
-                        {isBookshelfExpanded ? (
-                          <ChevronDown className="h-4 w-4" />
-                        ) : (
-                          <ChevronRight className="h-4 w-4" />
-                        )}
-                        <span>서재 ({subBookshelves.length})</span>
-                      </Button>
-                      {isBookshelfExpanded && (
-                        <div className="ml-4 space-y-1">
-                          {subBookshelves.map((bookshelf) => {
-                            const isActive =
-                              pathname === `/bookshelves/${bookshelf.id}` ||
-                              pathname.startsWith(
-                                `/bookshelves/${bookshelf.id}/`
-                              );
-                            return (
-                              <SheetClose asChild key={bookshelf.id}>
-                                <Link
-                                  href={`/bookshelves/${bookshelf.id}`}
-                                  onClick={handleMenuClick}
-                                >
-                                  <Button
-                                    variant={isActive ? "secondary" : "ghost"}
-                                    className={cn(
-                                      "w-full justify-start gap-2 h-10 text-sm",
-                                      isActive && "bg-secondary font-medium"
-                                    )}
-                                  >
-                                    <BookOpen className="h-4 w-4" />
-                                    <span className="truncate">
-                                      {bookshelf.name}
-                                    </span>
-                                  </Button>
-                                </Link>
-                              </SheetClose>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </>
-              )}
-
-              <Separator className="my-3" />
-            </div>
-          )}
+          <Separator className="my-2" />
 
           {/* 타임라인, 독서모임, 페르소나 (로그인 사용자만) */}
           {user && (
