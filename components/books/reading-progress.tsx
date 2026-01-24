@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useRef, useCallback } from "react";
 import { Progress } from "@/components/ui/progress";
+import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { BookOpen, Check, Loader2, Settings2, Flame, Target, Trophy, Sparkles, TrendingUp } from "lucide-react";
+import { BookOpen, Check, Loader2, Settings2, Flame, Target, Trophy, Sparkles, TrendingUp, GripHorizontal } from "lucide-react";
 import { updateBookProgress } from "@/app/actions/books";
 import { toast } from "sonner";
 import { TotalPagesEditor } from "./total-pages-editor";
@@ -39,7 +40,10 @@ export function ReadingProgress({
   const [totalPages, setTotalPages] = useState(initialTotalPages);
   const [inputValue, setInputValue] = useState(String(initialPage || 0));
   const [isEditing, setIsEditing] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragValue, setDragValue] = useState(initialPage || 0);
   const [isPending, startTransition] = useTransition();
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // 총 페이지 수 업데이트 핸들러
   const handleTotalPagesUpdate = (newTotalPages: number | null) => {
@@ -52,8 +56,50 @@ export function ReadingProgress({
     ? Math.min(Math.round((currentPage / totalPages) * 100), 100)
     : null;
 
+  // 드래그 중일 때의 퍼센트
+  const dragPercent = totalPages && totalPages > 0
+    ? Math.min(Math.round((dragValue / totalPages) * 100), 100)
+    : null;
+
   // 완독 상태면 100%로 표시
-  const displayPercent = status === "completed" ? 100 : progressPercent;
+  const displayPercent = status === "completed" ? 100 : (isDragging ? dragPercent : progressPercent);
+
+  // 슬라이더 값 변경 핸들러 (드래그 중)
+  const handleSliderChange = useCallback((value: number[]) => {
+    if (!totalPages) return;
+    const newPage = Math.round((value[0] / 100) * totalPages);
+    setDragValue(newPage);
+    setIsDragging(true);
+  }, [totalPages]);
+
+  // 슬라이더 드래그 종료 핸들러
+  const handleSliderCommit = useCallback((value: number[]) => {
+    if (!totalPages) return;
+    const newPage = Math.round((value[0] / 100) * totalPages);
+
+    // 이전 타이머 취소
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+
+    setIsDragging(false);
+
+    // 값이 변경되지 않았으면 저장하지 않음
+    if (newPage === currentPage) return;
+
+    startTransition(async () => {
+      try {
+        await updateBookProgress(userBookId, newPage);
+        setCurrentPage(newPage);
+        setInputValue(String(newPage));
+        onUpdate?.(newPage);
+        toast.success(`${newPage}페이지로 업데이트됨`);
+      } catch (error) {
+        toast.error("진행률 업데이트에 실패했습니다.");
+        setDragValue(currentPage);
+      }
+    });
+  }, [totalPages, currentPage, userBookId, onUpdate]);
 
   const handleSave = () => {
     const newPage = parseInt(inputValue, 10);
@@ -67,6 +113,7 @@ export function ReadingProgress({
       try {
         await updateBookProgress(userBookId, newPage);
         setCurrentPage(newPage);
+        setDragValue(newPage);
         setIsEditing(false);
         onUpdate?.(newPage);
         toast.success("진행률이 업데이트되었습니다.");
@@ -78,6 +125,7 @@ export function ReadingProgress({
 
   const handleCancel = () => {
     setInputValue(String(currentPage));
+    setDragValue(currentPage);
     setIsEditing(false);
   };
 
@@ -152,27 +200,85 @@ export function ReadingProgress({
         )}
       </div>
 
-      {/* 진행률 바 */}
-      {displayPercent !== null ? (
+      {/* 진행률 슬라이더 - 드래그 가능 */}
+      {displayPercent !== null && totalPages ? (
         <div className="space-y-2">
-          <div className="relative">
-            <Progress
-              value={displayPercent}
+          {/* 드래그 가능한 슬라이더 */}
+          <div className="relative group">
+            <Slider
+              value={[isDragging ? (dragPercent || 0) : displayPercent]}
+              onValueChange={handleSliderChange}
+              onValueCommit={handleSliderCommit}
+              max={100}
+              step={1}
+              disabled={isPending}
               className={cn(
-                "h-2.5 transition-all",
-                displayPercent >= 75 ? "[&>div]:bg-emerald-500" :
-                displayPercent >= 50 ? "[&>div]:bg-amber-500" :
-                displayPercent >= 25 ? "[&>div]:bg-indigo-500" :
-                "[&>div]:bg-blue-500"
+                "w-full cursor-grab active:cursor-grabbing",
+                isPending && "opacity-50 pointer-events-none"
+              )}
+              trackClassName="h-3 bg-slate-200 dark:bg-slate-700"
+              rangeClassName={cn(
+                "transition-colors",
+                displayPercent >= 75
+                  ? "bg-gradient-to-r from-emerald-400 to-emerald-600"
+                  : displayPercent >= 50
+                    ? "bg-gradient-to-r from-amber-400 to-amber-600"
+                    : displayPercent >= 25
+                      ? "bg-gradient-to-r from-indigo-400 to-indigo-600"
+                      : "bg-gradient-to-r from-blue-400 to-blue-600"
+              )}
+              thumbClassName={cn(
+                "h-6 w-6 shadow-lg transition-all hover:scale-110 active:scale-95",
+                displayPercent >= 75
+                  ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-950"
+                  : displayPercent >= 50
+                    ? "border-amber-500 bg-amber-50 dark:bg-amber-950"
+                    : displayPercent >= 25
+                      ? "border-indigo-500 bg-indigo-50 dark:bg-indigo-950"
+                      : "border-blue-500 bg-blue-50 dark:bg-blue-950"
               )}
             />
-            {/* 마일스톤 마커 */}
-            <div className="absolute top-1/2 left-1/4 -translate-y-1/2 w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-600" />
-            <div className="absolute top-1/2 left-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-slate-300 dark:bg-slate-600" />
-            <div className="absolute top-1/2 left-3/4 -translate-y-1/2 w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-600" />
+
+            {/* 마일스톤 마커 - 슬라이더 위에 오버레이 */}
+            <div className="absolute top-1/2 left-1/4 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-white/60 dark:bg-slate-400/60 pointer-events-none z-10 shadow-sm" />
+            <div className="absolute top-1/2 left-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-white/70 dark:bg-slate-400/70 pointer-events-none z-10 shadow-sm" />
+            <div className="absolute top-1/2 left-3/4 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-white/60 dark:bg-slate-400/60 pointer-events-none z-10 shadow-sm" />
+
+            {/* 드래그 힌트 - 처음 표시 시 */}
+            <div className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-[10px] text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
+              <GripHorizontal className="w-3 h-3" />
+              드래그하여 조절
+            </div>
           </div>
 
+          {/* 드래그 중 페이지 미리보기 */}
+          {isDragging && (
+            <div className="flex items-center justify-center gap-2 py-1 px-3 rounded-full bg-primary/10 text-primary text-sm font-medium animate-in fade-in duration-150">
+              <span>{dragValue}페이지</span>
+              <span className="text-xs text-muted-foreground">({dragPercent}%)</span>
+            </div>
+          )}
+
           {/* 동기부여 메시지 */}
+          {motivation && !isDragging && (
+            <div className={cn("flex items-center gap-1.5 text-xs", motivation.color)}>
+              <MotivationIcon className="h-3.5 w-3.5" />
+              <span className="font-medium">{motivation.message}</span>
+            </div>
+          )}
+        </div>
+      ) : displayPercent !== null ? (
+        <div className="space-y-2">
+          <Progress
+            value={displayPercent}
+            className={cn(
+              "h-2.5 transition-all",
+              displayPercent >= 75 ? "[&>div]:bg-emerald-500" :
+              displayPercent >= 50 ? "[&>div]:bg-amber-500" :
+              displayPercent >= 25 ? "[&>div]:bg-indigo-500" :
+              "[&>div]:bg-blue-500"
+            )}
+          />
           {motivation && (
             <div className={cn("flex items-center gap-1.5 text-xs", motivation.color)}>
               <MotivationIcon className="h-3.5 w-3.5" />
