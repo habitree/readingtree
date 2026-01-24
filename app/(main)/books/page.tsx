@@ -8,6 +8,7 @@ import Link from "next/link";
 import { getUserBooksWithNotes } from "@/app/actions/books";
 import { getCurrentUser } from "@/app/actions/auth";
 import { BookshelfPageContent } from "@/components/books/bookshelf-page-content";
+import { MobileBookshelfSelector } from "@/components/books/mobile-bookshelf-selector";
 import type { ReadingStatus } from "@/types/book";
 
 export const metadata: Metadata = {
@@ -73,25 +74,29 @@ export default async function BooksPage({ searchParams }: BooksPageProps) {
         )}
 
         <div className="flex items-center justify-between flex-wrap gap-3">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
-              {isGuest ? "서재 둘러보기" : "내 서재"}
-            </h1>
-            <p className="text-sm sm:text-base text-muted-foreground">
-              {isGuest
-                ? "샘플 책 목록을 확인해보세요"
-                : "내가 읽고 있는 책들을 관리하세요"}
-            </p>
+          <div className="flex items-center gap-3">
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
+                {isGuest ? "서재 둘러보기" : "내 서재"}
+              </h1>
+              <p className="text-sm sm:text-base text-muted-foreground hidden sm:block">
+                {isGuest
+                  ? "샘플 책 목록을 확인해보세요"
+                  : "내가 읽고 있는 책들을 관리하세요"}
+              </p>
+            </div>
+            {/* 모바일 서재 선택기 (로그인 사용자만) */}
+            {!isGuest && <MobileBookshelfSelector />}
           </div>
           {!isGuest && (
             <div className="flex items-center gap-2">
-              <Button variant="outline" asChild>
+              <Button variant="outline" asChild className="hidden sm:inline-flex">
                 <Link href="/bookshelves">서재 관리</Link>
               </Button>
-              <Button asChild>
+              <Button asChild size="sm" className="sm:size-default">
                 <Link href="/books/search">
-                  <Plus className="mr-2 h-4 w-4" />
-                  책 추가
+                  <Plus className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">책 추가</span>
                 </Link>
               </Button>
             </div>

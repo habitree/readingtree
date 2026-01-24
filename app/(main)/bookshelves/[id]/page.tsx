@@ -4,6 +4,7 @@ import { getBookshelfWithStats } from "@/app/actions/bookshelves";
 import { getSampleBookshelfWithStats } from "@/app/actions/sample";
 import { getCurrentUser } from "@/app/actions/auth";
 import { BookshelfPageContent } from "@/components/books/bookshelf-page-content";
+import { MobileBookshelfSelector } from "@/components/books/mobile-bookshelf-selector";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -101,34 +102,36 @@ export default async function BookshelfDetailPage({
         {/* 헤더 */}
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" asChild>
-              <Link href="/bookshelves">
+            <Button variant="ghost" size="icon" asChild className="hidden sm:inline-flex">
+              <Link href="/books">
                 <ArrowLeft className="h-4 w-4" />
               </Link>
             </Button>
             <div>
-              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight">
                 {bookshelf.name}
               </h1>
-              <p className="text-sm sm:text-base text-muted-foreground">
+              <p className="text-sm text-muted-foreground hidden sm:block">
                 {bookshelf.description || (isGuest ? "샘플 서재입니다" : "내가 읽고 있는 책들을 관리하세요")}
               </p>
             </div>
+            {/* 모바일 서재 선택기 (로그인 사용자만) */}
+            {!isGuest && <MobileBookshelfSelector currentBookshelfId={bookshelfId} />}
           </div>
           {!isGuest && (
             <div className="flex items-center gap-2">
               {!bookshelf.is_main && (
-                <Button variant="outline" asChild>
+                <Button variant="outline" asChild className="hidden sm:inline-flex">
                   <Link href={`/bookshelves/${bookshelfId}/edit`}>
                     <Settings className="mr-2 h-4 w-4" />
                     서재 설정
                   </Link>
                 </Button>
               )}
-              <Button asChild>
+              <Button asChild size="sm" className="sm:size-default">
                 <Link href="/books/search">
-                  <Plus className="mr-2 h-4 w-4" />
-                  책 추가
+                  <Plus className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">책 추가</span>
                 </Link>
               </Button>
             </div>

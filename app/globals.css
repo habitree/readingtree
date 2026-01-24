@@ -222,6 +222,13 @@
     padding-top: env(safe-area-inset-top);
   }
 
+  /* iOS Safari 자동 확대 방지 - input 요소 최소 16px */
+  input,
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+
   /* 모바일 스크롤 최적화 */
   @media (max-width: 768px) {
     html {
@@ -231,7 +238,7 @@
       /* 모바일에서 폰트 크기 최소값 보장 */
       font-size: 14px;
     }
-    
+
     body {
       overscroll-behavior-y: contain;
       /* 모바일 초기 로딩 시 가로 스크롤 방지 */
@@ -241,6 +248,22 @@
       /* 모바일에서 기본 폰트 크기 조정 */
       font-size: 14px;
       line-height: 1.6;
+    }
+
+    /* 모바일에서 input 자동 확대 방지 (iOS Safari) */
+    input,
+    textarea,
+    select,
+    input[type="text"],
+    input[type="email"],
+    input[type="password"],
+    input[type="search"],
+    input[type="number"],
+    input[type="tel"],
+    input[type="url"] {
+      font-size: 16px !important;
+      /* 확대 방지를 위한 추가 설정 */
+      -webkit-text-size-adjust: 100%;
     }
 
     /* 모바일에서 제목 크기 조정 */
@@ -298,6 +321,25 @@
       display: block;
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
+    }
+  }
+
+  /* 채팅 인터페이스 모바일 최적화 */
+  @media (max-width: 768px) {
+    /* 모바일 키보드가 열렸을 때 레이아웃 안정화 */
+    .chat-container {
+      /* dvh 사용으로 동적 뷰포트 높이 대응 */
+      height: 100dvh;
+      /* 키보드 나타날 때 부드러운 전환 */
+      transition: height 0.3s ease;
+    }
+
+    /* 채팅 입력창이 키보드에 가리지 않도록 */
+    .chat-input-container {
+      position: sticky;
+      bottom: 0;
+      /* iOS 키보드 위에 고정 */
+      padding-bottom: env(safe-area-inset-bottom);
     }
   }
 }

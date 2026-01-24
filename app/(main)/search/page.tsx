@@ -167,36 +167,39 @@ export default function SearchPage() {
         </p>
       </div>
 
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-        {/* 검색 입력 */}
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            type="search"
-            placeholder="검색어"
-            value={query}
-            onChange={(e) => handleQueryChange(e.target.value)}
-            className="pl-10"
-          />
-          {isLoading && (
-            <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-            </div>
-          )}
-        </div>
-
-        {/* 모바일 필터 토글 버튼 */}
-        <Button
-          variant="outline"
-          className="lg:hidden flex items-center justify-between w-full sm:w-auto"
-          onClick={() => setIsFilterOpen(!isFilterOpen)}
-        >
-          <div className="flex items-center gap-2">
-            <Filter className="h-4 w-4" />
-            <span>필터</span>
+      {/* 검색바 - 모바일에서 상단 고정 */}
+      <div className="sticky top-12 sm:top-14 z-30 -mx-2 sm:-mx-4 px-2 sm:px-4 py-3 bg-background/95 backdrop-blur-sm border-b lg:relative lg:top-0 lg:mx-0 lg:px-0 lg:py-0 lg:bg-transparent lg:backdrop-blur-none lg:border-b-0">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          {/* 검색 입력 */}
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              type="search"
+              placeholder="검색어"
+              value={query}
+              onChange={(e) => handleQueryChange(e.target.value)}
+              className="pl-10"
+            />
+            {isLoading && (
+              <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+              </div>
+            )}
           </div>
-          {isFilterOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-        </Button>
+
+          {/* 모바일 필터 토글 버튼 */}
+          <Button
+            variant="outline"
+            className="lg:hidden flex items-center justify-between w-full sm:w-auto"
+            onClick={() => setIsFilterOpen(!isFilterOpen)}
+          >
+            <div className="flex items-center gap-2">
+              <Filter className="h-4 w-4" />
+              <span>필터</span>
+            </div>
+            {isFilterOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+          </Button>
+        </div>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-4">

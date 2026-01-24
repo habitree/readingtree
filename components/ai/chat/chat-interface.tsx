@@ -237,7 +237,7 @@ export function ChatInterface({ userId, userAvatar, userName }: ChatInterfacePro
   };
 
   return (
-    <div className="relative flex h-[calc(100vh-8rem)] overflow-hidden md:h-[calc(100vh-4rem)]">
+    <div className="relative flex h-[calc(100dvh-8rem)] overflow-hidden md:h-[calc(100dvh-4rem)]">
       {/* 모바일 오버레이 */}
       {sidebarOpen && (
         <div
@@ -294,7 +294,7 @@ export function ChatInterface({ userId, userAvatar, userName }: ChatInterfacePro
         {currentSession || messages.length > 0 ? (
           <>
             {/* 메시지 목록 */}
-            <div className="flex-1 overflow-y-auto">
+            <div className="flex-1 overflow-y-auto overscroll-contain">
               {messages.map((message) => (
                 <ChatMessage
                   key={message.id}
@@ -306,11 +306,14 @@ export function ChatInterface({ userId, userAvatar, userName }: ChatInterfacePro
               {streamingContent && (
                 <StreamingMessage content={streamingContent} isLoading={true} />
               )}
-              <div ref={messagesEndRef} />
+              {/* 스크롤 타겟 - 키보드 높이만큼 여백 추가 */}
+              <div ref={messagesEndRef} className="h-2" />
             </div>
 
-            {/* 입력 영역 */}
-            <ChatInput onSend={handleSendMessage} disabled={isLoading} />
+            {/* 입력 영역 - 하단 고정 */}
+            <div className="sticky bottom-0 left-0 right-0">
+              <ChatInput onSend={handleSendMessage} disabled={isLoading} />
+            </div>
           </>
         ) : (
           /* 시작 화면 */
@@ -339,8 +342,10 @@ export function ChatInterface({ userId, userAvatar, userName }: ChatInterfacePro
               </div>
             </div>
 
-            {/* 입력 영역 - 모든 화면에서 하단 고정 */}
-            <ChatInput onSend={handleSendMessage} disabled={isLoading} />
+            {/* 입력 영역 - 하단 고정 */}
+            <div className="sticky bottom-0 left-0 right-0">
+              <ChatInput onSend={handleSendMessage} disabled={isLoading} />
+            </div>
           </div>
         )}
       </div>
