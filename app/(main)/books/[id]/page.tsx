@@ -14,6 +14,7 @@ import { formatDate } from "@/lib/utils/date";
 import { BookStatusSelector } from "@/components/books/book-status-selector";
 import { BookDeleteButton } from "@/components/books/book-delete-button";
 import { BookInfoEditor } from "@/components/books/book-info-editor";
+import { ReadingProgress } from "@/components/books/reading-progress";
 import { PenTool, LogIn } from "lucide-react";
 import type { ReadingStatus } from "@/types/book";
 import { NotesList } from "@/components/notes/notes-list";
@@ -151,6 +152,18 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
           <div className="flex items-center justify-center sm:justify-start gap-2">
             <BookStatusBadge status={userBook.status as ReadingStatus} />
           </div>
+
+          {/* 읽기 진행률 - 로그인 사용자만 표시 */}
+          {!isGuest && (
+            <div className="p-4 rounded-lg bg-muted/30 border">
+              <ReadingProgress
+                userBookId={userBook.id}
+                currentPage={(userBook as any).current_page || 0}
+                totalPages={book.total_pages}
+                status={userBook.status as string}
+              />
+            </div>
+          )}
 
           {/* 읽는 이유 */}
           <div className="p-4 rounded-lg bg-muted/50 border-l-4 border-l-primary">
