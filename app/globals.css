@@ -98,6 +98,42 @@
     --chart-4: 150 45% 45%; /* 에메랄드 그린 */
     --chart-5: 45 60% 50%; /* 황금색 */
   }
+
+  .forest-dark {
+    /* Forest Dark Theme - 깊은 숲 밤 테마 */
+    --background: 130 25% 8%;
+    --foreground: 130 15% 90%;
+    --card: 130 20% 10%;
+    --card-foreground: 130 15% 90%;
+    --popover: 130 20% 10%;
+    --popover-foreground: 130 15% 90%;
+    /* Primary: 밝은 Forest Green - 다크모드에서 잘 보이는 녹색 */
+    --primary: 130 45% 50%;
+    --primary-foreground: 130 25% 8%;
+    /* Secondary: 어두운 Forest Green */
+    --secondary: 130 20% 16%;
+    --secondary-foreground: 130 20% 85%;
+    /* Muted: 매우 어두운 Forest Green */
+    --muted: 130 15% 14%;
+    --muted-foreground: 130 15% 60%;
+    /* Accent: 따뜻한 황금색 - 다크모드에서 포인트 */
+    --accent: 40 60% 45%;
+    --accent-foreground: 130 25% 8%;
+    /* Destructive: 부드러운 빨강 */
+    --destructive: 0 55% 45%;
+    --destructive-foreground: 130 15% 95%;
+    /* Border & Input */
+    --border: 130 15% 18%;
+    --input: 130 15% 14%;
+    /* Ring */
+    --ring: 130 45% 50%;
+    /* Chart colors: 다크모드 최적화 */
+    --chart-1: 130 55% 45%; /* Forest Green */
+    --chart-2: 40 65% 50%; /* 황금색 */
+    --chart-3: 25 60% 45%; /* 오렌지/갈색 */
+    --chart-4: 160 50% 40%; /* 에메랄드 그린 */
+    --chart-5: 50 55% 45%; /* 밝은 황금색 */
+  }
 }
 
 @layer base {

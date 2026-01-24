@@ -1,17 +1,18 @@
 "use client";
 
 import * as React from "react";
-import { Moon, Sun, Trees } from "lucide-react";
+import { Moon, Sun, Trees, TreePine } from "lucide-react";
 import { useTheme } from "next-themes";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 
-type Theme = "light" | "dark" | "forest";
+type Theme = "light" | "dark" | "forest" | "forest-dark";
 
 export function ThemeSelector() {
   const { theme, setTheme } = useTheme();
@@ -32,19 +33,14 @@ export function ThemeSelector() {
 
   const currentTheme = (theme || "light") as Theme;
 
-  const themeIcons = {
-    light: Sun,
-    dark: Moon,
-    forest: Trees,
+  const themeConfig: Record<Theme, { icon: typeof Sun; label: string }> = {
+    light: { icon: Sun, label: "낮 테마" },
+    dark: { icon: Moon, label: "밤 테마" },
+    forest: { icon: Trees, label: "숲 (밝음)" },
+    "forest-dark": { icon: TreePine, label: "숲 (어둠)" },
   };
 
-  const themeLabels = {
-    light: "낮 테마",
-    dark: "밤 테마",
-    forest: "숲 테마",
-  };
-
-  const CurrentIcon = themeIcons[currentTheme];
+  const CurrentIcon = themeConfig[currentTheme]?.icon || Sun;
 
   return (
     <DropdownMenu>
@@ -54,20 +50,30 @@ export function ThemeSelector() {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
+        {/* 기본 테마 */}
         <DropdownMenuItem onClick={() => setTheme("light")}>
           <Sun className="mr-2 h-4 w-4" />
           <span>낮 테마</span>
-          {currentTheme === "light" && <span className="ml-auto">✓</span>}
+          {currentTheme === "light" && <span className="ml-auto text-primary">✓</span>}
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => setTheme("dark")}>
           <Moon className="mr-2 h-4 w-4" />
           <span>밤 테마</span>
-          {currentTheme === "dark" && <span className="ml-auto">✓</span>}
+          {currentTheme === "dark" && <span className="ml-auto text-primary">✓</span>}
         </DropdownMenuItem>
+
+        <DropdownMenuSeparator />
+
+        {/* Forest 테마 */}
         <DropdownMenuItem onClick={() => setTheme("forest")}>
-          <Trees className="mr-2 h-4 w-4" />
-          <span>숲 테마</span>
-          {currentTheme === "forest" && <span className="ml-auto">✓</span>}
+          <Trees className="mr-2 h-4 w-4 text-green-600" />
+          <span>숲 (밝음)</span>
+          {currentTheme === "forest" && <span className="ml-auto text-primary">✓</span>}
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setTheme("forest-dark")}>
+          <TreePine className="mr-2 h-4 w-4 text-green-700" />
+          <span>숲 (어둠)</span>
+          {currentTheme === "forest-dark" && <span className="ml-auto text-primary">✓</span>}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
