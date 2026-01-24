@@ -165,57 +165,90 @@ export function SimpleShareDialog({ note }: SimpleShareDialogProps) {
 
       console.log(`[카드 복사] 모든 이미지 로드 완료`);
 
-      // Step 2: 렌더링 안정화 대기 (1000ms로 증가 - 레이아웃 및 폰트 안착)
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      // Step 2: 렌더링 안정화 대기 (모바일은 추가 대기 시간 필요)
+      const isMobileDevice = isMobile();
+      const stabilizationTime = isMobileDevice ? 1500 : 1000;
+      console.log(`[카드 복사] 렌더링 안정화 대기 (${stabilizationTime}ms)...`);
+      await new Promise((resolve) => setTimeout(resolve, stabilizationTime));
+
+      // 모바일: 추가 RAF 사이클 대기 (렌더링 완료 보장)
+      if (isMobileDevice) {
+        await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      }
 
       // Step 3: html2canvas로 캡처
-      // [최적화] PC: 2048px 출력 (scale 2.133), 모바일: 1440px 출력 (scale 1.5)
+      // [v4.1 업데이트] PC와 모바일 동일한 스케일 적용 - 2048px 출력으로 통일
+      // 이로써 모바일에서도 PC와 동일한 품질/비율의 이미지 생성
       const CARD_WIDTH = 960;
-      const TARGET_WIDTH_PC = 2048;
-      const TARGET_WIDTH_MOBILE = 1440;
-      const isMobileDevice = isMobile();
-      const targetWidth = isMobileDevice ? TARGET_WIDTH_MOBILE : TARGET_WIDTH_PC;
-      const calculatedScale = targetWidth / CARD_WIDTH; // PC: 2.133, 모바일: 1.5
+      const TARGET_WIDTH = 2048; // PC/모바일 동일하게 2048px 출력
+      const calculatedScale = TARGET_WIDTH / CARD_WIDTH; // 2.133 고정
 
-      console.log(`[카드 복사] html2canvas 시작 (${isMobileDevice ? '모바일' : 'PC'} 모드 - Scale: ${calculatedScale.toFixed(3)}, 출력 너비: ${targetWidth}px)...`);
+      console.log(`[카드 복사] html2canvas 시작 (${isMobileDevice ? '모바일' : 'PC'} 모드 - Scale: ${calculatedScale.toFixed(3)}, 출력 너비: ${TARGET_WIDTH}px)...`);
       const html2canvasModule = await import("html2canvas");
       const html2canvas = html2canvasModule.default as any;
 
+      // 모바일에서 메모리 이슈 방지를 위한 렌더링 최적화
       const canvas = await html2canvas(targetElement, {
         scale: calculatedScale,
         useCORS: true,
         allowTaint: false,
         backgroundColor: "#ffffff",
-        logging: true,
-        imageTimeout: 15000, // 무한 대기 방지 (15초 타임아웃)
+        logging: !isMobileDevice, // 모바일에서는 로깅 비활성화 (성능)
+        imageTimeout: isMobileDevice ? 20000 : 15000, // 모바일은 타임아웃 여유 있게
         windowWidth: CARD_WIDTH, // 실제 카드 너비와 일치
+        windowHeight: targetElement.scrollHeight, // 실제 높이 반영
         scrollX: 0,
         scrollY: 0,
+        x: 0,
+        y: 0,
+        width: CARD_WIDTH,
+        height: targetElement.scrollHeight,
         foreignObjectRendering: false, // 호환성 위해 false 유지
-        onclone: (clonedDoc: Document) => {
-          // 클론된 문서에서 추가적인 캡처 최적화가 필요하다면 여기서 수행
-          console.log("[카드 복사] 클론 생성 완료");
+        removeContainer: true, // 메모리 정리
+        onclone: (clonedDoc: Document, clonedElement: HTMLElement) => {
+          // 클론된 요소에 명시적 스타일 적용 (모바일 렌더링 일관성 보장)
+          clonedElement.style.width = `${CARD_WIDTH}px`;
+          clonedElement.style.transform = 'none';
+          clonedElement.style.position = 'relative';
+          clonedElement.style.left = '0';
+          clonedElement.style.top = '0';
+
+          // 모든 이미지에 crossOrigin 속성 확인
+          const images = clonedElement.querySelectorAll('img');
+          images.forEach((img) => {
+            if (!img.crossOrigin) {
+              img.crossOrigin = 'anonymous';
+            }
+          });
+
+          console.log("[카드 복사] 클론 생성 완료 - 높이:", clonedElement.scrollHeight);
         }
       });
 
       console.log("[카드 복사] 캔버스 생성 완료:", canvas.width, "x", canvas.height);
 
-      // Step 4: Canvas를 Blob으로 변환
-      console.log("[카드 복사] Blob 변환 시작...");
+      // Step 4: Canvas를 Blob으로 변환 (품질 최적화)
+      console.log("[카드 복사] Blob 변환 시작... 캔버스 크기:", canvas.width, "x", canvas.height);
+
+      // PNG는 무손실이므로 quality 파라미터 불필요, 더 안정적인 변환
       const blob = await new Promise<Blob>((resolve, reject) => {
-        canvas.toBlob(
-          (blob: Blob | null) => {
-            if (blob) {
-              console.log("[카드 복사] Blob 변환 성공:", blob.size, "bytes");
-              resolve(blob);
-            } else {
-              console.error("[카드 복사] Blob 변환 실패");
-              reject(new Error("이미지 변환 실패"));
-            }
-          },
-          "image/png",
-          0.95
-        );
+        try {
+          canvas.toBlob(
+            (blob: Blob | null) => {
+              if (blob && blob.size > 0) {
+                console.log("[카드 복사] Blob 변환 성공:", (blob.size / 1024 / 1024).toFixed(2), "MB");
+                resolve(blob);
+              } else {
+                console.error("[카드 복사] Blob 변환 실패 - 빈 Blob");
+                reject(new Error("이미지 변환 실패: 빈 이미지"));
+              }
+            },
+            "image/png"
+          );
+        } catch (blobError) {
+          console.error("[카드 복사] Blob 변환 예외:", blobError);
+          reject(blobError);
+        }
       });
 
       // Step 5: 클립보드에 복사 (모바일 호환성 개선)
@@ -454,13 +487,33 @@ export function SimpleShareDialog({ note }: SimpleShareDialogProps) {
               </div>
             </div>
 
-            {/* [NEW] 캡처용 Hidden Card (항상 가로 모드 Force, 화면 밖 배치) - 화면 왜곡 방지를 위해 fixed 및 style 조정 */}
-            {/* [최적화] 높이 유연 조정 - 최소 높이 620px (960 / 1.55 비율), 콘텐츠에 따라 자동 증가 */}
-            <div style={{ position: "fixed", left: "200vw", top: "0", pointerEvents: "none", zIndex: "-50" }}>
+            {/* [v4.1] 캡처용 Hidden Card - PC/모바일 동일 렌더링 보장 */}
+            {/* 명시적 인라인 스타일로 모바일에서도 PC와 동일한 레이아웃 강제 */}
+            <div
+              style={{
+                position: "fixed",
+                left: "-9999px", // 화면 밖 배치 (200vw보다 안정적)
+                top: "0",
+                pointerEvents: "none",
+                zIndex: -50,
+              }}
+              aria-hidden="true"
+            >
               <div
                 ref={captureRef}
-                className="rounded-3xl overflow-hidden shadow-2xl bg-white w-[960px] transform-gpu"
-                style={{ minHeight: "620px" }} // 비율 1.55:1 유지, 콘텐츠 넘침 시 자동 확장
+                style={{
+                  width: "960px",
+                  minWidth: "960px",
+                  maxWidth: "960px",
+                  minHeight: "620px",
+                  backgroundColor: "#ffffff",
+                  borderRadius: "24px",
+                  overflow: "hidden",
+                  boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
+                  transform: "translateZ(0)", // GPU 가속 강제
+                  WebkitFontSmoothing: "antialiased",
+                  MozOsxFontSmoothing: "grayscale",
+                }}
               >
                 {/* fixedHorizontal=true로 가로 강제, hideActions=true로 버튼 숨김 */}
                 <ShareNoteCard note={note} hideActions={true} showTimestamp={false} user={user} fixedHorizontal={true} />
