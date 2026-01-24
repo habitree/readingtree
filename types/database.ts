@@ -121,6 +121,7 @@ export interface Database {
           completed_dates?: any; // JSONB 배열
           reading_reason: string | null;
           book_format: string | null;
+          current_page: number; // 현재 읽은 페이지 (진행률 추적)
           created_at: string;
           updated_at: string;
         };
@@ -135,6 +136,7 @@ export interface Database {
           completed_dates?: any; // JSONB 배열
           reading_reason?: string | null;
           book_format?: string | null;
+          current_page?: number; // 현재 읽은 페이지 (진행률 추적)
           created_at?: string;
           updated_at?: string;
         };
@@ -149,6 +151,7 @@ export interface Database {
           completed_dates?: any; // JSONB 배열
           reading_reason?: string | null;
           book_format?: string | null;
+          current_page?: number; // 현재 읽은 페이지 (진행률 추적)
           created_at?: string;
           updated_at?: string;
         };

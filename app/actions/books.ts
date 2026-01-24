@@ -618,6 +618,7 @@ export interface BookWithNotes {
   completed_dates?: any; // JSONB 배열
   started_at?: string;
   bookshelf_id?: string | null;
+  current_page?: number; // 현재 읽은 페이지
   books: {
     id: string;
     title: string;
@@ -628,6 +629,7 @@ export interface BookWithNotes {
     cover_image_url: string | null;
     description_summary: string | null;
     summary: string | null;
+    total_pages?: number | null; // 전체 페이지 수 (진행률 계산용)
     created_at?: string;
     updated_at?: string;
   };
@@ -1235,6 +1237,72 @@ export async function deleteBook(userBookId: string, user?: User | null) {
   revalidatePath("/books");
   revalidatePath("/");
   revalidatePath(`/books/${userBookId}`);
+
+  return { success: true };
+}
+
+/**
+ * 읽기 진행률 업데이트
+ * @param userBookId UserBooks 테이블의 ID
+ * @param currentPage 현재 읽은 페이지
+ * @param user 선택적 사용자 정보 (전달되지 않으면 자동 조회)
+ */
+export async function updateBookProgress(
+  userBookId: string,
+  currentPage: number,
+  user?: User | null
+) {
+  const supabase = await createServerSupabaseClient();
+
+  // 현재 사용자 확인
+  let currentUser = user;
+  if (!currentUser) {
+    const {
+      data: { user: fetchedUser },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !fetchedUser) {
+      throw new Error("로그인이 필요합니다.");
+    }
+    currentUser = fetchedUser;
+  }
+
+  // UUID 검증
+  if (!isValidUUID(userBookId)) {
+    throw new Error("유효하지 않은 책 ID입니다.");
+  }
+
+  // 페이지 수 검증
+  if (currentPage < 0) {
+    throw new Error("페이지 수는 0 이상이어야 합니다.");
+  }
+
+  // 사용자의 책인지 확인
+  const { data: userBook } = await supabase
+    .from("user_books")
+    .select("id")
+    .eq("id", userBookId)
+    .eq("user_id", currentUser.id)
+    .single();
+
+  if (!userBook) {
+    throw new Error("권한이 없습니다.");
+  }
+
+  // 진행률 업데이트
+  const { error } = await supabase
+    .from("user_books")
+    .update({ current_page: currentPage })
+    .eq("id", userBookId);
+
+  if (error) {
+    throw new Error(`진행률 업데이트 실패: ${error.message}`);
+  }
+
+  revalidatePath("/books");
+  revalidatePath(`/books/${userBookId}`);
+  revalidatePath("/");
 
   return { success: true };
 }
