@@ -124,38 +124,41 @@ export function RelatedBooksManager({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="gap-2">
+        <Button variant="outline" size="sm" className="gap-1.5 h-8 px-2.5 sm:px-3">
           <BookOpen className="w-4 h-4" />
-          연결된 책 {currentRelatedBookIds && currentRelatedBookIds.length > 0 && (
-            <Badge variant="secondary" className="ml-1">
+          <span className="hidden sm:inline">연결된 책</span>
+          {currentRelatedBookIds && currentRelatedBookIds.length > 0 && (
+            <Badge variant="secondary" className="ml-0.5 h-5 min-w-5 px-1.5 text-xs">
               {currentRelatedBookIds.length}
             </Badge>
           )}
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>연결된 책 관리</DialogTitle>
-          <DialogDescription>
-            이 기록과 관련된 다른 책을 선택할 수 있습니다. 주 책은 자동으로 제외됩니다.
+      <DialogContent className="w-[calc(100vw-2rem)] max-w-2xl max-h-[85vh] sm:max-h-[80vh] overflow-hidden flex flex-col p-0">
+        <DialogHeader className="px-4 pt-4 pb-2 sm:px-6 sm:pt-6">
+          <DialogTitle className="text-base sm:text-lg">연결된 책 관리</DialogTitle>
+          <DialogDescription className="text-xs sm:text-sm">
+            이 기록과 관련된 다른 책을 선택하세요.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="flex-1 overflow-y-auto px-4 pb-4 sm:px-6 sm:pb-6 space-y-3 sm:space-y-4">
           {/* 선택된 책 목록 */}
           {selectedBooks.length > 0 && (
             <div className="space-y-2">
-              <h4 className="text-sm font-medium">선택된 책 ({selectedBooks.length}개)</h4>
-              <div className="flex flex-wrap gap-2">
+              <h4 className="text-xs sm:text-sm font-medium text-muted-foreground">
+                선택됨 ({selectedBooks.length})
+              </h4>
+              <div className="flex flex-wrap gap-1.5 sm:gap-2">
                 {selectedBooks.map((book) => (
                   <div
                     key={book.id}
-                    className="inline-flex items-center gap-1 bg-primary text-primary-foreground rounded-full pl-3 pr-1 py-1 text-sm"
+                    className="inline-flex items-center gap-1 bg-primary text-primary-foreground rounded-full pl-2.5 pr-1 py-0.5 sm:pl-3 sm:py-1 text-xs sm:text-sm"
                   >
-                    <span className="truncate max-w-[180px]">{book.books.title}</span>
+                    <span className="truncate max-w-[120px] sm:max-w-[180px]">{book.books.title}</span>
                     <button
                       onClick={() => handleToggleBook(book.id)}
-                      className="ml-1 h-5 w-5 rounded-full flex items-center justify-center text-primary-foreground/70 hover:bg-destructive hover:text-destructive-foreground transition-colors"
+                      className="ml-0.5 h-5 w-5 rounded-full flex items-center justify-center text-primary-foreground/70 hover:bg-destructive hover:text-destructive-foreground transition-colors"
                       aria-label={`${book.books.title} 제거`}
                     >
                       <X className="w-3 h-3" />
@@ -168,56 +171,56 @@ export function RelatedBooksManager({
 
           {/* 사용 가능한 책 목록 */}
           <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <h4 className="text-sm font-medium">책 선택</h4>
+            <div className="flex items-center justify-between gap-2">
+              <h4 className="text-xs sm:text-sm font-medium text-muted-foreground shrink-0">책 선택</h4>
               {availableBooks.length > 0 && (
-                <span className="text-xs text-muted-foreground">
-                  전체 {availableBooks.length}개 중 {filteredBooks.length}개 표시
+                <span className="text-[10px] sm:text-xs text-muted-foreground truncate">
+                  {filteredBooks.length}/{availableBooks.length}
                 </span>
               )}
             </div>
-            
+
             {/* 검색 입력 필드 */}
             {availableBooks.length > 0 && (
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Search className="absolute left-2.5 sm:left-3 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground" />
                 <Input
                   type="search"
-                  placeholder="책 제목 또는 저자로 검색..."
+                  placeholder="검색..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10"
+                  className="pl-8 sm:pl-10 h-9 text-sm"
                 />
               </div>
             )}
 
             {isLoadingBooks ? (
               <div className="flex items-center justify-center py-8">
-                <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                <Loader2 className="w-5 h-5 sm:w-6 sm:h-6 animate-spin text-muted-foreground" />
               </div>
             ) : availableBooks.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-8">
+              <p className="text-xs sm:text-sm text-muted-foreground text-center py-8">
                 연결할 수 있는 다른 책이 없습니다.
               </p>
             ) : filteredBooks.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-8">
+              <p className="text-xs sm:text-sm text-muted-foreground text-center py-8">
                 검색 결과가 없습니다.
               </p>
             ) : (
-              <div className="space-y-2 max-h-[300px] overflow-y-auto">
+              <div className="space-y-1.5 sm:space-y-2 max-h-[40vh] sm:max-h-[300px] overflow-y-auto -mx-1 px-1">
                 {filteredBooks.map((book) => {
                   const isSelected = selectedBookIds.includes(book.id);
                   return (
                     <div
                       key={book.id}
-                      className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                      className={`flex items-center gap-2.5 sm:gap-3 p-2 sm:p-3 rounded-lg border cursor-pointer transition-colors active:scale-[0.98] ${
                         isSelected
                           ? "bg-primary/10 border-primary"
-                          : "hover:bg-muted"
+                          : "hover:bg-muted active:bg-muted"
                       }`}
                       onClick={() => handleToggleBook(book.id)}
                     >
-                      <div className="relative w-12 h-16 shrink-0 overflow-hidden rounded bg-muted">
+                      <div className="relative w-10 h-14 sm:w-12 sm:h-16 shrink-0 overflow-hidden rounded bg-muted">
                         <Image
                           src={getImageUrl(book.books.cover_image_url)}
                           alt={book.books.title}
@@ -227,17 +230,19 @@ export function RelatedBooksManager({
                         />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium truncate">{book.books.title}</p>
+                        <p className="text-sm sm:font-medium truncate">{book.books.title}</p>
                         {book.books.author && (
-                          <p className="text-sm text-muted-foreground truncate">
+                          <p className="text-xs text-muted-foreground truncate">
                             {book.books.author}
                           </p>
                         )}
                       </div>
                       {isSelected && (
-                        <Badge variant="default" className="shrink-0">
-                          선택됨
-                        </Badge>
+                        <div className="shrink-0 w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-primary flex items-center justify-center">
+                          <svg className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-primary-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
                       )}
                     </div>
                   );
@@ -245,31 +250,34 @@ export function RelatedBooksManager({
               </div>
             )}
           </div>
+        </div>
 
-          {/* 액션 버튼 */}
-          <div className="flex gap-2 pt-4 border-t">
-            <Button
-              variant="outline"
-              onClick={() => setOpen(false)}
-              disabled={isUpdating}
-            >
-              취소
-            </Button>
-            <Button
-              onClick={handleSave}
-              disabled={isUpdating}
-              className="flex-1"
-            >
-              {isUpdating ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  저장 중...
-                </>
-              ) : (
-                "저장"
-              )}
-            </Button>
-          </div>
+        {/* 액션 버튼 - 하단 고정 */}
+        <div className="flex gap-2 p-4 sm:p-6 pt-3 sm:pt-4 border-t bg-background shrink-0">
+          <Button
+            variant="outline"
+            onClick={() => setOpen(false)}
+            disabled={isUpdating}
+            size="sm"
+            className="h-9 sm:h-10"
+          >
+            취소
+          </Button>
+          <Button
+            onClick={handleSave}
+            disabled={isUpdating}
+            size="sm"
+            className="flex-1 h-9 sm:h-10"
+          >
+            {isUpdating ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                저장 중...
+              </>
+            ) : (
+              `저장${selectedBookIds.length > 0 ? ` (${selectedBookIds.length})` : ""}`
+            )}
+          </Button>
         </div>
       </DialogContent>
     </Dialog>
@@ -335,15 +343,22 @@ export function RelatedBooksDisplay({
 
   return (
     <div className="space-y-2">
-      <h4 className="text-sm font-medium">연결된 책</h4>
-      <div className="flex flex-wrap gap-2">
+      <h4 className="text-xs sm:text-sm font-medium text-muted-foreground flex items-center gap-1.5">
+        <BookOpen className="w-3.5 h-3.5" />
+        연결된 책
+        <Badge variant="secondary" className="ml-1 h-4 min-w-4 px-1 text-[10px]">
+          {relatedBooks.length}
+        </Badge>
+      </h4>
+      {/* 모바일: 가로 스크롤, 데스크탑: 래핑 */}
+      <div className="flex gap-2 overflow-x-auto pb-1 sm:flex-wrap sm:overflow-visible scrollbar-hide -mx-1 px-1">
         {relatedBooks.map((book) => (
           <Link
             key={book.id}
             href={`/books/${book.id}`}
-            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md border bg-card hover:bg-accent transition-colors"
+            className="inline-flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg border bg-card hover:bg-accent active:scale-[0.98] transition-all shrink-0"
           >
-            <div className="relative w-8 h-10 shrink-0 overflow-hidden rounded bg-muted">
+            <div className="relative w-6 h-8 sm:w-8 sm:h-10 shrink-0 overflow-hidden rounded bg-muted">
               <Image
                 src={getImageUrl(book.books.cover_image_url)}
                 alt={book.books.title}
@@ -352,7 +367,7 @@ export function RelatedBooksDisplay({
                 sizes="32px"
               />
             </div>
-            <span className="text-sm font-medium truncate max-w-[150px]">
+            <span className="text-xs sm:text-sm font-medium truncate max-w-[100px] sm:max-w-[150px]">
               {book.books.title}
             </span>
           </Link>

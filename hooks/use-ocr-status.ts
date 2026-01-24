@@ -16,6 +16,9 @@ interface UseOCRStatusOptions {
  * OCR 처리 상태를 확인하는 훅
  * 주기적으로 기록을 확인하여 OCR 결과가 있는지 체크
  * 10분 이상 processing 상태인 경우 자동으로 failed로 변경
+ *
+ * 중요: onComplete는 processing → completed 전환 시에만 호출됨
+ * (이미 완료된 상태에서 마운트 시에는 호출되지 않음)
  */
 export function useOCRStatus({
   noteId,
@@ -26,6 +29,8 @@ export function useOCRStatus({
   const [status, setStatus] = useState<OCRStatus>(null);
   const pollCountRef = useRef(0);
   const onCompleteRef = useRef(onComplete);
+  const isFirstCheckRef = useRef(true); // 첫 번째 확인인지 추적
+  const wasProcessingRef = useRef(false); // processing 상태였는지 추적
   const maxPolls = 20; // 최대 20회 (약 1분)
   const TIMEOUT_MINUTES = 10; // 10분 타임아웃
   const TIMEOUT_MS = TIMEOUT_MINUTES * 60 * 1000; // 10분을 밀리초로 변환
@@ -44,19 +49,23 @@ export function useOCRStatus({
     let intervalId: NodeJS.Timeout | null = null;
     let isMounted = true;
     pollCountRef.current = 0;
+    isFirstCheckRef.current = true;
+    wasProcessingRef.current = false;
 
     const checkOCRStatus = async () => {
       if (!isMounted) return;
 
       try {
         const transcription = await getTranscription(noteId);
-        
+
         if (!transcription) {
           // transcription이 없으면 처리 중
+          wasProcessingRef.current = true; // processing 상태 기록
           if (pollCountRef.current === 0 && isMounted) {
             setStatus("processing");
           }
           pollCountRef.current++;
+          isFirstCheckRef.current = false;
 
           // 최대 폴링 횟수 초과 시 실패로 처리
           if (pollCountRef.current >= maxPolls && isMounted) {
@@ -75,10 +84,13 @@ export function useOCRStatus({
             if (intervalId) {
               clearInterval(intervalId);
             }
-            if (onCompleteRef.current) {
+            // 첫 확인 시 이미 완료된 상태이면 onComplete 호출하지 않음
+            // processing 상태를 거친 경우에만 onComplete 호출
+            if (!isFirstCheckRef.current && wasProcessingRef.current && onCompleteRef.current) {
               onCompleteRef.current();
             }
           }
+          isFirstCheckRef.current = false;
         } else if (transcription.status === "failed") {
           if (isMounted) {
             setStatus("failed");
@@ -88,6 +100,9 @@ export function useOCRStatus({
           }
         } else {
           // processing 상태
+          wasProcessingRef.current = true; // processing 상태 기록
+          isFirstCheckRef.current = false;
+
           // 10분 이상 지속된 경우 자동으로 failed로 변경
           if (transcription.created_at) {
             const createdAt = new Date(transcription.created_at).getTime();
@@ -97,7 +112,7 @@ export function useOCRStatus({
             if (elapsed >= TIMEOUT_MS) {
               // 10분 이상 지속된 경우 failed로 변경
               console.warn(`[useOCRStatus] OCR 처리 타임아웃: noteId=${noteId}, 경과시간=${Math.round(elapsed / 1000)}초`);
-              
+
               try {
                 await updateTranscriptionStatus(noteId, "failed");
                 console.log(`[useOCRStatus] OCR 상태를 'failed'로 업데이트 완료: noteId=${noteId}`);
