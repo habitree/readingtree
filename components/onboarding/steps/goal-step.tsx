@@ -34,11 +34,11 @@ export function GoalStep({ onNext, onBack, isLoading }: GoalStepProps) {
 
   // 목표에 따른 동기부여 메시지
   const getMotivationMessage = () => {
-    if (goal <= 6) return "한 달에 한 권 정도의 여유로운 독서";
-    if (goal <= 12) return "한 달에 한 권, 꾸준한 독서 습관";
-    if (goal <= 24) return "한 달에 두 권, 열정적인 독서가";
-    if (goal <= 52) return "일주일에 한 권, 다독가의 길";
-    return "일주일에 두 권 이상, 독서 마스터!";
+    if (goal <= 6) return "월 0.5권";
+    if (goal <= 12) return "월 1권";
+    if (goal <= 24) return "월 2권";
+    if (goal <= 52) return "주 1권";
+    return "주 2권+";
   };
 
   return (
@@ -49,10 +49,7 @@ export function GoalStep({ onNext, onBack, isLoading }: GoalStepProps) {
           <Target className="w-8 h-8 text-primary" />
         </div>
         <div>
-          <h2 className="text-xl font-bold">독서 목표 설정</h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            올해 읽고 싶은 책의 수를 설정해주세요
-          </p>
+          <h2 className="text-xl font-bold">목표</h2>
         </div>
       </div>
 

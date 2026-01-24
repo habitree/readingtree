@@ -423,7 +423,7 @@ export function NoteFormNew({ bookId }: NoteFormNewProps) {
       if (createdCount > 1) {
         toast.success(`${createdCount}개의 기록이 저장되었습니다.`);
       } else {
-        toast.success("기록이 저장되었습니다.");
+        toast.success("저장됨");
       }
 
       router.push(`/books/${bookId}`);
@@ -462,7 +462,7 @@ export function NoteFormNew({ bookId }: NoteFormNewProps) {
               <FormLabel>제목 <span className="text-muted-foreground text-xs font-normal">(선택)</span></FormLabel>
               <FormControl>
                 <Input
-                  placeholder="기록에 제목을 붙여보세요."
+                  placeholder="제목"
                   {...field}
                   value={field.value || ""}
                 />
@@ -488,7 +488,7 @@ export function NoteFormNew({ bookId }: NoteFormNewProps) {
             id="quoteContent"
             value={quoteContent}
             onValueChange={(value) => setValue("quoteContent", value)}
-            placeholder="인상 깊었던 문장을 입력하세요."
+            placeholder="인용구"
             rows={4}
             className="resize-none max-w-2xl"
           />
@@ -513,7 +513,7 @@ export function NoteFormNew({ bookId }: NoteFormNewProps) {
             id="memoContent"
             value={memoContent}
             onValueChange={(value) => setValue("memoContent", value)}
-            placeholder="생각이나 감상을 입력하세요."
+            placeholder="메모"
             rows={6}
             className="resize-none max-w-2xl"
           />

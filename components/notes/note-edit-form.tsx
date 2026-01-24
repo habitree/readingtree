@@ -191,7 +191,7 @@ export function NoteEditForm({ note }: NoteEditFormProps) {
         is_public: data.isPublic,
       });
 
-      toast.success("기록이 수정되었습니다.");
+      toast.success("저장됨");
       router.push(`/notes/${note.id}`);
     } catch (error) {
       console.error("기록 수정 오류:", error);

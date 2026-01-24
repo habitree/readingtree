@@ -29,9 +29,9 @@ export default function Error({
           <div className="flex justify-center mb-4">
             <AlertCircle className="h-16 w-16 text-destructive" />
           </div>
-          <CardTitle className="text-2xl">문제가 발생했습니다</CardTitle>
+          <CardTitle className="text-2xl">오류</CardTitle>
           <CardDescription>
-            예상치 못한 오류가 발생했습니다. 아래 옵션을 시도해보세요.
+            다시 시도해 주세요
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">

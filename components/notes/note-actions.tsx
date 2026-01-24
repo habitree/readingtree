@@ -34,7 +34,7 @@ export function NoteActions({ noteId }: NoteActionsProps) {
     setIsDeleting(true);
     try {
       await deleteNote(noteId);
-      toast.success("기록이 삭제되었습니다.");
+      toast.success("삭제됨");
       // router.push만 사용 (Next.js App Router가 자동으로 서버 컴포넌트를 다시 렌더링)
       router.push("/notes");
     } catch (error) {

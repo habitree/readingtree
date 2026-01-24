@@ -17,11 +17,11 @@ export async function NotesList({ bookId }: NotesListProps) {
   if (notes.length === 0) {
     return (
       <div className="text-center py-12 space-y-4">
-        <p className="text-muted-foreground">아직 기록이 없습니다.</p>
+        <p className="text-muted-foreground">기록 없음</p>
         <Button asChild variant="outline" size="sm">
           <Link href={`/notes/new?bookId=${bookId}`}>
             <PenTool className="mr-2 h-4 w-4" />
-            첫 기록 작성하기
+            기록 추가
           </Link>
         </Button>
       </div>

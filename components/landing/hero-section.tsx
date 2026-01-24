@@ -28,7 +28,7 @@ export function HeroSection() {
                     </h1>
 
                     <p className="text-xl md:text-2xl text-charcoal-600 leading-relaxed max-w-lg break-keep font-serif">
-                        읽고 사라지는 독서를 구조화합니다.
+                        독서를 구조화합니다.
                     </p>
 
                     <div className="flex flex-col sm:flex-row gap-4 pt-4 w-full sm:w-auto">
@@ -36,7 +36,7 @@ export function HeroSection() {
                             href="/books"
                             className="inline-flex items-center justify-center h-14 px-8 rounded-xl bg-charcoal-900 text-paper-50 text-lg font-medium shadow-xl hover:bg-charcoal-800 hover:translate-y-[-2px] transition-all duration-300"
                         >
-                            내 서재 만들기
+                            서재 만들기
                             <ArrowRight className="ml-2 h-5 w-5" />
                         </Link>
                         <Link
@@ -48,7 +48,7 @@ export function HeroSection() {
                     </div>
 
                     <div className="pt-8 flex items-center gap-4 text-sm text-charcoal-500 font-serif italic">
-                        <p>당신의 모든 페이지가 독서 자산이 되는 곳, ReadTree</p>
+                        <p>모든 페이지가 자산이 되는 곳</p>
                     </div>
                 </div>
 

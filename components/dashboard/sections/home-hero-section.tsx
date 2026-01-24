@@ -41,54 +41,45 @@ function getGreeting(): { text: string; emoji: string } {
   const hour = new Date().getHours();
 
   if (hour >= 5 && hour < 12) {
-    return { text: "좋은 아침이에요", emoji: "☀️" };
+    return { text: "아침", emoji: "☀️" };
   } else if (hour >= 12 && hour < 17) {
-    return { text: "오늘 하루도 힘내세요", emoji: "📖" };
+    return { text: "오후", emoji: "📖" };
   } else if (hour >= 17 && hour < 21) {
-    return { text: "오늘 하루 수고했어요", emoji: "🌅" };
+    return { text: "저녁", emoji: "🌅" };
   } else {
-    return { text: "편안한 밤 되세요", emoji: "🌙" };
+    return { text: "밤", emoji: "🌙" };
   }
 }
 
 /**
- * 동기부여 메시지 생성 (심리학적 접근)
+ * 동기부여 메시지 생성 (미니멀 버전)
  */
 function getMotivationalMessage(
   persona: UserPersona | null,
   streak: number,
   weeklyNotes: number
 ): string {
-  // 스트릭이 있는 경우 - 연속성 강조 (행동 지속성 심리)
-  if (streak >= 7) {
-    return `${streak}일 연속 기록 중! 대단한 습관이에요 🔥`;
-  } else if (streak >= 3) {
-    return `${streak}일 연속 기록! 이대로 쭉 가보자 💪`;
+  // 스트릭이 있는 경우 - 숫자만 강조
+  if (streak >= 3) {
+    return `${streak}일째`;
   }
 
-  // 이번 주 기록 기반 (성취감 심리)
-  if (weeklyNotes >= 10) {
-    return "이번 주 정말 열심히 기록하고 있어요!";
-  } else if (weeklyNotes >= 5) {
-    return "좋은 페이스예요, 이대로 계속해봐요!";
+  // 이번 주 기록 기반
+  if (weeklyNotes >= 5) {
+    return `이번 주 ${weeklyNotes}개`;
   }
 
   // 페르소나 기반 맞춤 메시지
   if (persona?.note_style === "quote-focused") {
-    return "오늘도 인상 깊은 문장을 발견해볼까요?";
+    return "오늘의 한 줄";
   } else if (persona?.note_style === "reflection-focused") {
-    return "오늘의 생각을 기록으로 남겨보세요";
+    return "오늘의 기록";
   } else if (persona?.note_style === "visual") {
-    return "책 속 한 장면을 사진으로 담아보세요";
+    return "오늘의 한 장면";
   }
 
   // 기본 메시지
-  const defaultMessages = [
-    "독서의 흔적을 남겨보세요",
-    "오늘도 한 줄의 기록이 내일을 바꿔요",
-    "당신의 독서 여정을 응원해요",
-  ];
-  return defaultMessages[Math.floor(Math.random() * defaultMessages.length)];
+  return "기록은 남아요";
 }
 
 /**

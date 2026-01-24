@@ -14,29 +14,29 @@ interface TutorialStepProps {
 const tutorialSlides = [
   {
     icon: Library,
-    title: "책 추가하기",
-    description: "네이버 검색 API로 책을 검색하고\n내 서재에 추가할 수 있습니다.",
+    title: "책 추가",
+    description: "검색으로 책 추가",
     color: "text-blue-600",
     bgColor: "bg-blue-100",
   },
   {
     icon: PenTool,
-    title: "기록 작성하기",
-    description: "인상 깊은 문장을 필사하거나\n사진을 찍어 기록으로 저장할 수 있습니다.",
+    title: "기록 작성",
+    description: "문장, 사진을 기록",
     color: "text-amber-600",
     bgColor: "bg-amber-100",
   },
   {
     icon: Search,
-    title: "기록 검색하기",
-    description: "저장한 모든 문장을 검색하여\n언제든 다시 찾아볼 수 있습니다.",
+    title: "기록 검색",
+    description: "저장한 기록을 검색",
     color: "text-emerald-600",
     bgColor: "bg-emerald-100",
   },
   {
     icon: Share2,
-    title: "기록 공유하기",
-    description: "인상 깊은 문장을 카드뉴스로 만들어\nSNS에 공유할 수 있습니다.",
+    title: "기록 공유",
+    description: "카드뉴스로 공유",
     color: "text-purple-600",
     bgColor: "bg-purple-100",
   },
@@ -77,10 +77,7 @@ export function TutorialStep({ onComplete, onBack, isLoading }: TutorialStepProp
           <Sparkles className="w-8 h-8 text-primary" />
         </div>
         <div>
-          <h2 className="text-xl font-bold">ReadTree 사용법</h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            주요 기능을 간단히 소개합니다
-          </p>
+          <h2 className="text-xl font-bold">사용법</h2>
         </div>
       </div>
 

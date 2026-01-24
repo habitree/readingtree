@@ -57,15 +57,15 @@ export function BookList({ books, isLoading, isSample = false }: BookListProps) 
           </div>
         </div>
         <div className="space-y-2">
-          <h3 className="text-lg font-semibold">등록된 책이 없습니다</h3>
+          <h3 className="text-lg font-semibold">책 없음</h3>
           <p className="text-sm text-muted-foreground max-w-md mx-auto">
-            첫 번째 책을 추가하고 독서 여정을 시작해보세요!
+            책을 추가하세요
           </p>
         </div>
         <Button asChild className="mt-4">
           <Link href="/books/search">
             <Plus className="mr-2 h-4 w-4" />
-            책 추가하기
+            추가
           </Link>
         </Button>
       </div>

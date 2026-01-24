@@ -20,8 +20,7 @@ export async function TopBooksSection() {
             <TrendingUp className="h-5 w-5 text-primary" />
           </div>
           <div className="flex-1 min-w-0">
-            <CardTitle className="mb-2">가장 많이 기록한 책</CardTitle>
-            <CardDescription>기록 수가 많은 책 Top 5</CardDescription>
+            <CardTitle className="mb-2">기록 Top 5</CardTitle>
           </div>
         </div>
       </CardHeader>
@@ -57,7 +56,7 @@ export async function TopBooksSection() {
         ) : (
           <div className="text-center py-8">
             <p className="text-sm text-muted-foreground leading-relaxed">
-              기록한 책이 없습니다. 책을 추가하고 기록을 작성해보세요.
+              기록 없음
             </p>
           </div>
         )}

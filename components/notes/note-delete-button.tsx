@@ -35,7 +35,7 @@ export function NoteDeleteButton({ noteId }: NoteDeleteButtonProps) {
     setIsDeleting(true);
     try {
       await deleteNote(noteId);
-      toast.success("기록이 삭제되었습니다.");
+      toast.success("삭제됨");
       setIsOpen(false);
       router.push("/notes");
     } catch (error) {

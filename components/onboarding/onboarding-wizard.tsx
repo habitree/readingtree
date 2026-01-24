@@ -83,7 +83,7 @@ export function OnboardingWizard({ initialStep = 0 }: OnboardingWizardProps) {
     if (typeof window !== "undefined") {
       localStorage.setItem("onboarding_tutorial_completed", "true");
     }
-    toast.success("환영합니다! ReadTree와 함께 독서를 시작해보세요.");
+    toast.success("준비 완료");
     router.push("/");
   }, [router]);
 

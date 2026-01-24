@@ -40,7 +40,7 @@ export function CreateBookshelfDialog() {
         name: name.trim(),
         description: description.trim() || null,
       });
-      toast.success("서재가 생성되었습니다.");
+      toast.success("생성됨");
       setOpen(false);
       setName("");
       setDescription("");

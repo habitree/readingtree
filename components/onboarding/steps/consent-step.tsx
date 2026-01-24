@@ -40,10 +40,7 @@ export function ConsentStep({ onNext, isLoading }: ConsentStepProps) {
           <Shield className="w-8 h-8 text-primary" />
         </div>
         <div>
-          <h2 className="text-xl font-bold">서비스 이용 동의</h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            안전한 서비스 이용을 위해 약관에 동의해주세요
-          </p>
+          <h2 className="text-xl font-bold">동의</h2>
         </div>
       </div>
 
@@ -61,7 +58,7 @@ export function ConsentStep({ onNext, isLoading }: ConsentStepProps) {
               disabled={isLoading}
               className="h-5 w-5"
             />
-            <span className="font-medium">전체 동의하기</span>
+            <span className="font-medium">전체 동의</span>
           </div>
         </div>
 
@@ -139,7 +136,7 @@ export function ConsentStep({ onNext, isLoading }: ConsentStepProps) {
         className="w-full"
         size="lg"
       >
-        {isLoading ? "처리 중..." : "동의하고 계속하기"}
+        {isLoading ? "처리 중..." : "다음"}
       </Button>
 
       <p className="text-xs text-muted-foreground text-center">

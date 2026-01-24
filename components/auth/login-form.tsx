@@ -70,9 +70,6 @@ export function LoginForm() {
         <CardTitle className="text-2xl font-bold text-center">
           ReadTree
         </CardTitle>
-        <CardDescription className="text-center">
-          독서 기록을 관리하고 공유하세요
-        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         {/* 소셜 로그인 버튼 */}
@@ -140,7 +137,7 @@ export function LoginForm() {
 
         <div className="text-center">
           <p className="text-sm text-muted-foreground">
-            계정이 없으신가요?{" "}
+            계정이 없나요?{" "}
             <Link href="/signup" className="text-primary hover:underline font-medium">
               회원가입
             </Link>

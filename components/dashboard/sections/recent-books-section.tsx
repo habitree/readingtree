@@ -19,8 +19,7 @@ export async function RecentBooksSection() {
             <BookOpen className="h-5 w-5 text-primary" />
           </div>
           <div className="flex-1 min-w-0">
-            <CardTitle className="mb-2">최근 기록한 책</CardTitle>
-            <CardDescription>가장 최근에 기록을 남긴 책들입니다.</CardDescription>
+            <CardTitle className="mb-2">최근 기록</CardTitle>
           </div>
         </div>
       </CardHeader>
@@ -61,7 +60,7 @@ export async function RecentBooksSection() {
         ) : (
           <div className="text-center py-10">
             <p className="text-sm text-muted-foreground leading-relaxed">
-              기록한 책이 없습니다. 책을 추가하고 첫 기록을 남겨보세요!
+              기록 없음
             </p>
           </div>
         )}

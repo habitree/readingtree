@@ -242,7 +242,7 @@ export function BookTable({ books }: BookTableProps) {
     setUpdatingBookshelf((prev) => ({ ...prev, [userBookId]: true }));
     try {
       await moveBookToBookshelf(userBookId, bookshelfId);
-      toast.success("서재가 변경되었습니다.");
+      toast.success("저장됨");
       router.refresh();
     } catch (error) {
       console.error("서재 변경 오류:", error);

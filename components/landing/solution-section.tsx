@@ -7,7 +7,7 @@ export function SolutionSection() {
                 <div className="text-center mb-20 max-w-2xl mx-auto">
                     <span className="text-forest-600 font-bold tracking-wider uppercase text-sm mb-4 block">Process</span>
                     <h2 className="text-4xl md:text-5xl font-serif font-bold mb-6 break-keep">
-                        가장 완벽한 독서 기록 시스템
+                        독서 기록 시스템
                     </h2>
                     <p className="text-xl text-charcoal-600 leading-relaxed break-keep font-serif">
                         흩어진 문장들을 모으는 일이 더 이상 번거롭지 않습니다.
@@ -26,7 +26,7 @@ export function SolutionSection() {
                                 </div>
                                 <h3 className="text-2xl font-bold mb-3">AI 텍스트 추출</h3>
                                 <p className="text-charcoal-500 text-lg max-w-md break-keep">
-                                    책 페이지를 찍기만 하세요. AI가 99.8%의 정확도로 문장을 인식하고 디지털 텍스트로 변환합니다.
+                                    찍으면 텍스트로
                                 </p>
                             </div>
 
@@ -58,7 +58,7 @@ export function SolutionSection() {
                             </div>
                             <h3 className="text-2xl font-bold mb-3">자동 페이지 정렬</h3>
                             <p className="text-charcoal-400 text-lg leading-relaxed break-keep">
-                                여러 장을 뒤죽박죽 찍어도 걱정 마세요. 페이지 번호를 인식해 책의 흐름대로 자동 정렬됩니다.
+                                순서대로 정렬
                             </p>
                         </div>
 

@@ -22,7 +22,6 @@ export async function RecentNotesSection() {
           </div>
           <div className="flex-1 min-w-0">
             <CardTitle className="mb-2">최근 기록</CardTitle>
-            <CardDescription>최근 작성한 기록 5개</CardDescription>
           </div>
         </div>
       </CardHeader>
@@ -32,7 +31,7 @@ export async function RecentNotesSection() {
         ) : (
           <div className="text-center py-8">
             <p className="text-sm text-muted-foreground leading-relaxed">
-              기록이 없습니다. 첫 번째 기록을 작성해보세요.
+              기록 없음
             </p>
           </div>
         )}

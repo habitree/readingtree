@@ -200,7 +200,7 @@ function NoteDeleteButtonWithCallback({
       const { deleteNote } = await import("@/app/actions/notes");
       await deleteNote(noteId);
       const { toast } = await import("sonner");
-      toast.success("기록이 삭제되었습니다.");
+      toast.success("삭제됨");
       setIsOpen(false);
       if (onDelete) {
         onDelete();

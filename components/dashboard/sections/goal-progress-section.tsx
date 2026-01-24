@@ -24,7 +24,7 @@ export async function GoalProgressSection() {
               <Target className="h-5 w-5 text-primary" />
             </div>
             <div className="flex-1 min-w-0">
-              <CardTitle className="mb-2">올해 독서 목표</CardTitle>
+              <CardTitle className="mb-2">목표</CardTitle>
               <CardDescription className="text-base">
                 {progress ? (
                   <>
@@ -35,7 +35,7 @@ export async function GoalProgressSection() {
                     {isGuest && <span className="ml-2 text-xs text-muted-foreground">(샘플)</span>}
                   </>
                 ) : (
-                  "목표를 설정해주세요"
+                  "목표 없음"
                 )}
               </CardDescription>
             </div>
@@ -69,7 +69,7 @@ export async function GoalProgressSection() {
             </p>
             {!isGuest && (
               <Button asChild variant="outline" fullWidth className="max-w-xs">
-                <Link href="/profile">목표 설정하기</Link>
+                <Link href="/profile">설정</Link>
               </Button>
             )}
           </div>

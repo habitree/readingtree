@@ -47,7 +47,7 @@ export function BookshelfEditForm({ bookshelf }: BookshelfEditFormProps) {
         name: name.trim(),
         description: description.trim() || null,
       });
-      toast.success("서재 정보가 수정되었습니다.");
+      toast.success("저장됨");
       router.push(`/bookshelves/${bookshelf.id}`);
       router.refresh();
     } catch (error) {
@@ -64,7 +64,7 @@ export function BookshelfEditForm({ bookshelf }: BookshelfEditFormProps) {
     setIsDeleting(true);
     try {
       await deleteBookshelf(bookshelf.id);
-      toast.success("서재가 삭제되었습니다.");
+      toast.success("삭제됨");
       router.push("/bookshelves");
       router.refresh();
     } catch (error) {

@@ -70,7 +70,7 @@ export function SharedBooksManager({ groupId }: SharedBooksManagerProps) {
     try {
       setIsSharing(true);
       await shareUserBookToGroup(groupId, userBookId);
-      toast.success("서재가 공유되었습니다.");
+      toast.success("공유됨");
       loadData();
     } catch (error) {
       toast.error(
