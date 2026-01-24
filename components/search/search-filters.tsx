@@ -261,17 +261,17 @@ export function SearchFilters({ onBooksLoaded }: SearchFiltersProps) {
         </div>
         {bookId && selectedBookTitle && (
           <div className="flex items-center gap-2">
-            <Badge variant="secondary" className="flex items-center gap-1">
-              {selectedBookTitle}
+            <div className="inline-flex items-center gap-1 bg-secondary text-secondary-foreground rounded-full pl-3 pr-1 py-1 text-sm">
+              <span className="truncate max-w-[150px]">{selectedBookTitle}</span>
               <button
                 type="button"
                 onClick={() => clearFilter("bookId")}
-                className="ml-1 rounded-full hover:bg-destructive/20 p-0.5 transition-colors"
+                className="ml-1 h-5 w-5 rounded-full flex items-center justify-center text-muted-foreground hover:bg-destructive hover:text-destructive-foreground transition-colors"
                 aria-label="책 필터 제거"
               >
                 <X className="h-3 w-3" />
               </button>
-            </Badge>
+            </div>
           </div>
         )}
       </div>
@@ -383,24 +383,23 @@ export function SearchFilters({ onBooksLoaded }: SearchFiltersProps) {
                 <p className="text-xs text-muted-foreground">선택된 태그:</p>
                 <div className="flex flex-wrap gap-1">
                   {selectedTags.map((tag, index) => (
-                    <Badge
+                    <div
                       key={index}
-                      variant="secondary"
-                      className="pr-1 flex items-center gap-1"
+                      className="inline-flex items-center gap-1 bg-secondary text-secondary-foreground rounded-full pl-3 pr-1 py-1 text-sm"
                     >
-                      <span>{tag}</span>
+                      <span className="truncate max-w-[100px]">{tag}</span>
                       <button
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
                           toggleTag(tag);
                         }}
-                        className="ml-1 rounded-full hover:bg-destructive/20 p-0.5 transition-colors"
+                        className="ml-1 h-5 w-5 rounded-full flex items-center justify-center text-muted-foreground hover:bg-destructive hover:text-destructive-foreground transition-colors"
                         aria-label={`${tag} 태그 제거`}
                       >
                         <X className="h-3 w-3" />
                       </button>
-                    </Badge>
+                    </div>
                   ))}
                 </div>
                 <Button

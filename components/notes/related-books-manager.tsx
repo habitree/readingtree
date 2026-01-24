@@ -148,19 +148,19 @@ export function RelatedBooksManager({
               <h4 className="text-sm font-medium">선택된 책 ({selectedBooks.length}개)</h4>
               <div className="flex flex-wrap gap-2">
                 {selectedBooks.map((book) => (
-                  <Badge
+                  <div
                     key={book.id}
-                    variant="default"
-                    className="flex items-center gap-1 pr-1"
+                    className="inline-flex items-center gap-1 bg-primary text-primary-foreground rounded-full pl-3 pr-1 py-1 text-sm"
                   >
-                    <span className="truncate max-w-[200px]">{book.books.title}</span>
+                    <span className="truncate max-w-[180px]">{book.books.title}</span>
                     <button
                       onClick={() => handleToggleBook(book.id)}
-                      className="ml-1 hover:bg-destructive/20 rounded-full p-0.5"
+                      className="ml-1 h-5 w-5 rounded-full flex items-center justify-center text-primary-foreground/70 hover:bg-destructive hover:text-destructive-foreground transition-colors"
+                      aria-label={`${book.books.title} 제거`}
                     >
                       <X className="w-3 h-3" />
                     </button>
-                  </Badge>
+                  </div>
                 ))}
               </div>
             </div>

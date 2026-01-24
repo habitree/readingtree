@@ -491,18 +491,17 @@ export function TagInput({ value, onChange, placeholder = "태그 입력", label
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <p className="text-xs text-muted-foreground">
-              입력된 태그: 
+              입력된 태그:
               <span className={`ml-1 font-semibold ${currentTags.length >= 10 ? "text-destructive" : "text-foreground"}`}>
                 {currentTags.length}/10
               </span>
             </p>
           </div>
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap gap-2">
             {currentTags.map((tag, index) => (
-              <Badge 
-                key={index} 
-                variant="secondary"
-                className="px-3 py-1 text-sm h-7 flex items-center gap-1 pr-1"
+              <div
+                key={index}
+                className="group inline-flex items-center gap-1 bg-secondary text-secondary-foreground rounded-full pl-3 pr-1 py-1 text-sm"
               >
                 <span className="truncate max-w-[120px]">{tag}</span>
                 <button
@@ -511,13 +510,13 @@ export function TagInput({ value, onChange, placeholder = "태그 입력", label
                     e.stopPropagation();
                     handleTagRemove(tag);
                   }}
-                  className="ml-0.5 h-3 w-3 rounded-full bg-destructive/80 text-destructive-foreground hover:bg-destructive flex items-center justify-center transition-colors shrink-0"
+                  className="ml-1 h-5 w-5 rounded-full flex items-center justify-center text-muted-foreground hover:bg-destructive hover:text-destructive-foreground transition-colors shrink-0"
                   aria-label={`${tag} 태그 제거`}
                   title="태그 제거"
                 >
-                  <X className="h-2 w-2" />
+                  <X className="h-3 w-3" />
                 </button>
-              </Badge>
+              </div>
             ))}
           </div>
           {currentTags.length >= 10 && (

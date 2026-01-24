@@ -53,38 +53,45 @@ export function ViewModeToggle({ className }: ViewModeToggleProps) {
   };
 
   return (
-    <div className={cn("flex items-center gap-1", className)}>
-      <Button
-        variant={currentView === "grid" ? "default" : "outline"}
-        size="icon"
-        className="h-9 w-9"
+    <div className={cn("inline-flex items-center rounded-full bg-muted p-0.5", className)}>
+      <button
+        type="button"
         onClick={() => handleViewChange("grid")}
         disabled={isPending}
         aria-label="그리드 보기"
+        className={cn(
+          "inline-flex items-center justify-center rounded-full h-7 w-7 transition-all",
+          currentView === "grid"
+            ? "bg-background text-foreground shadow-sm"
+            : "text-muted-foreground hover:text-foreground"
+        )}
       >
         {isPending && currentView !== "grid" ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
+          <Loader2 className="h-3.5 w-3.5 animate-spin" />
         ) : (
-          <Grid3x3 className="h-4 w-4" />
+          <Grid3x3 className="h-3.5 w-3.5" />
         )}
-      </Button>
-      {/* 모바일에서는 리스트 아이콘, 데스크톱에서는 테이블 아이콘 */}
-      <Button
-        variant={currentView === "table" ? "default" : "outline"}
-        size="icon"
-        className="h-9 w-9"
+      </button>
+      <button
+        type="button"
         onClick={() => handleViewChange("table")}
         disabled={isPending}
         aria-label={isMobile ? "리스트 보기" : "테이블 보기"}
+        className={cn(
+          "inline-flex items-center justify-center rounded-full h-7 w-7 transition-all",
+          currentView === "table"
+            ? "bg-background text-foreground shadow-sm"
+            : "text-muted-foreground hover:text-foreground"
+        )}
       >
         {isPending && currentView !== "table" ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
+          <Loader2 className="h-3.5 w-3.5 animate-spin" />
         ) : isMobile ? (
-          <List className="h-4 w-4" />
+          <List className="h-3.5 w-3.5" />
         ) : (
-          <Table2 className="h-4 w-4" />
+          <Table2 className="h-3.5 w-3.5" />
         )}
-      </Button>
+      </button>
     </div>
   );
 }
