@@ -39,12 +39,14 @@ export function BookshelfPageContent({
       </Suspense>
 
       {/* 필터 및 검색 - 모바일에서 상단 고정 */}
-      <div className="sticky top-12 sm:top-14 z-30 -mx-2 sm:-mx-4 px-2 sm:px-4 py-3 bg-background/95 backdrop-blur-sm border-b lg:relative lg:top-0 lg:mx-0 lg:px-0 lg:py-0 lg:bg-transparent lg:backdrop-blur-none lg:border-b-0">
-        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-stretch sm:items-center">
-          <div className="flex-1 w-full sm:w-auto">
+      <div className="sticky top-12 sm:top-14 z-30 -mx-2 sm:-mx-4 px-2 sm:px-4 py-2 bg-background/95 backdrop-blur-sm border-b lg:relative lg:top-0 lg:mx-0 lg:px-0 lg:py-0 lg:bg-transparent lg:backdrop-blur-none lg:border-b-0">
+        <div className="flex items-center gap-2">
+          {/* 검색 입력 */}
+          <div className="flex-1 min-w-0">
             <BookSearchInput />
           </div>
-          <div className="flex items-center gap-2 sm:gap-4">
+          {/* 필터 및 뷰 토글 */}
+          <div className="flex items-center gap-1 shrink-0">
             <StatusFilter currentStatus={status} />
             {!isGuest && <ViewModeToggle />}
           </div>

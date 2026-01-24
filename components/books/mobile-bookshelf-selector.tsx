@@ -81,16 +81,17 @@ export function MobileBookshelfSelector({
   };
 
   return (
-    <div className="lg:hidden">
+    <div className="lg:hidden shrink-0">
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
             variant="outline"
-            className="h-10 px-3 gap-2 font-medium"
+            size="sm"
+            className="h-9 px-2 gap-1 text-xs font-medium"
           >
-            <Library className="h-4 w-4" />
-            <span className="max-w-[150px] truncate">{selectedLabel}</span>
-            <ChevronDown className="h-4 w-4 opacity-50" />
+            <Library className="h-3.5 w-3.5" />
+            <span className="max-w-[80px] truncate hidden xs:inline">{selectedLabel}</span>
+            <ChevronDown className="h-3.5 w-3.5 opacity-50" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="w-56">

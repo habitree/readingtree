@@ -275,75 +275,90 @@ export function ChatInterface({ userId, userAvatar, userName }: ChatInterfacePro
       </div>
 
       {/* 메인 채팅 영역 */}
-      <div className="flex flex-1 flex-col">
-        {/* 모바일 헤더 */}
-        <div className="flex items-center gap-2 border-b p-3 md:hidden">
+      <div className="flex flex-1 flex-col min-h-0">
+        {/* 모바일 헤더 - 상단 고정 */}
+        <div className="sticky top-0 z-20 flex items-center gap-2 border-b bg-background/95 backdrop-blur-sm p-3 md:hidden">
           <Button
             variant="ghost"
             size="icon"
-            className="shrink-0"
+            className="shrink-0 h-9 w-9"
             onClick={() => setSidebarOpen(!sidebarOpen)}
           >
             {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </Button>
-          <span className="truncate text-sm font-medium">
-            {currentSession?.title || "독서친구"}
-          </span>
+          <div className="flex-1 min-w-0">
+            <span className="block truncate text-sm font-medium">
+              {currentSession?.title || "독서친구"}
+            </span>
+          </div>
+          {/* 새 대화 버튼 */}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="shrink-0 h-9 text-xs px-2"
+            onClick={handleNewSession}
+          >
+            새 대화
+          </Button>
         </div>
 
         {currentSession || messages.length > 0 ? (
           <>
-            {/* 메시지 목록 */}
-            <div className="flex-1 overflow-y-auto overscroll-contain">
-              {messages.map((message) => (
-                <ChatMessage
-                  key={message.id}
-                  message={message}
-                  userAvatar={userAvatar}
-                  userName={userName}
-                />
-              ))}
-              {streamingContent && (
-                <StreamingMessage content={streamingContent} isLoading={true} />
-              )}
-              {/* 스크롤 타겟 - 키보드 높이만큼 여백 추가 */}
-              <div ref={messagesEndRef} className="h-2" />
+            {/* 메시지 목록 - 스크롤 영역 */}
+            <div className="flex-1 overflow-y-auto overscroll-contain scroll-smooth">
+              <div className="min-h-full">
+                {messages.map((message) => (
+                  <ChatMessage
+                    key={message.id}
+                    message={message}
+                    userAvatar={userAvatar}
+                    userName={userName}
+                  />
+                ))}
+                {streamingContent && (
+                  <StreamingMessage content={streamingContent} isLoading={true} />
+                )}
+                {/* 스크롤 타겟 - 입력창 높이만큼 여백 */}
+                <div ref={messagesEndRef} className="h-4" />
+              </div>
             </div>
 
             {/* 입력 영역 - 하단 고정 */}
-            <div className="sticky bottom-0 left-0 right-0">
+            <div className="shrink-0 border-t bg-background">
               <ChatInput onSend={handleSendMessage} disabled={isLoading} />
             </div>
           </>
         ) : (
           /* 시작 화면 */
-          <div className="flex flex-1 flex-col">
-            <div className="flex flex-1 flex-col items-center justify-center p-4 sm:p-8">
-              <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 sm:mb-8 sm:h-16 sm:w-16">
-                <Bot className="h-7 w-7 text-primary sm:h-8 sm:w-8" />
-              </div>
-              <h2 className="mb-2 text-xl font-bold sm:text-2xl">독서친구</h2>
-              <p className="mb-6 max-w-md text-center text-sm text-muted-foreground sm:mb-8 sm:text-base">
-                {WELCOME_MESSAGE}
-              </p>
+          <div className="flex flex-1 flex-col min-h-0">
+            <div className="flex-1 overflow-y-auto">
+              <div className="flex flex-col items-center justify-center min-h-full p-4 sm:p-8">
+                <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 sm:mb-8 sm:h-16 sm:w-16">
+                  <Bot className="h-7 w-7 text-primary sm:h-8 sm:w-8" />
+                </div>
+                <h2 className="mb-2 text-xl font-bold sm:text-2xl">독서친구</h2>
+                <p className="mb-6 max-w-md text-center text-sm text-muted-foreground sm:mb-8 sm:text-base">
+                  {WELCOME_MESSAGE}
+                </p>
 
-              {/* 예시 질문 */}
-              <div className="grid w-full max-w-lg gap-2 sm:grid-cols-2">
-                {EXAMPLE_QUESTIONS.map((question, index) => (
-                  <Button
-                    key={index}
-                    variant="outline"
-                    className="h-auto whitespace-normal px-3 py-2.5 text-left text-sm sm:px-4 sm:py-3"
-                    onClick={() => handleExampleClick(question)}
-                  >
-                    {question}
-                  </Button>
-                ))}
+                {/* 예시 질문 */}
+                <div className="grid w-full max-w-lg gap-2 sm:grid-cols-2 px-2">
+                  {EXAMPLE_QUESTIONS.map((question, index) => (
+                    <Button
+                      key={index}
+                      variant="outline"
+                      className="h-auto whitespace-normal px-3 py-2.5 text-left text-sm sm:px-4 sm:py-3"
+                      onClick={() => handleExampleClick(question)}
+                    >
+                      {question}
+                    </Button>
+                  ))}
+                </div>
               </div>
             </div>
 
             {/* 입력 영역 - 하단 고정 */}
-            <div className="sticky bottom-0 left-0 right-0">
+            <div className="shrink-0 border-t bg-background">
               <ChatInput onSend={handleSendMessage} disabled={isLoading} />
             </div>
           </div>

@@ -53,10 +53,11 @@ export function ViewModeToggle({ className }: ViewModeToggleProps) {
   };
 
   return (
-    <div className={cn("flex items-center gap-2", className)}>
+    <div className={cn("flex items-center gap-1", className)}>
       <Button
         variant={currentView === "grid" ? "default" : "outline"}
-        size="sm"
+        size="icon"
+        className="h-9 w-9"
         onClick={() => handleViewChange("grid")}
         disabled={isPending}
         aria-label="그리드 보기"
@@ -70,7 +71,8 @@ export function ViewModeToggle({ className }: ViewModeToggleProps) {
       {/* 모바일에서는 리스트 아이콘, 데스크톱에서는 테이블 아이콘 */}
       <Button
         variant={currentView === "table" ? "default" : "outline"}
-        size="sm"
+        size="icon"
+        className="h-9 w-9"
         onClick={() => handleViewChange("table")}
         disabled={isPending}
         aria-label={isMobile ? "리스트 보기" : "테이블 보기"}

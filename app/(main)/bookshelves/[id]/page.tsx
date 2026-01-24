@@ -100,18 +100,18 @@ export default async function BookshelfDetailPage({
         )}
 
         {/* 헤더 */}
-        <div className="flex items-center justify-between flex-wrap gap-3">
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" asChild className="hidden sm:inline-flex">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <Button variant="ghost" size="icon" asChild className="hidden sm:inline-flex shrink-0 h-9 w-9">
               <Link href="/books">
                 <ArrowLeft className="h-4 w-4" />
               </Link>
             </Button>
-            <div>
-              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight">
+            <div className="min-w-0">
+              <h1 className="text-lg sm:text-xl lg:text-2xl font-bold tracking-tight truncate">
                 {bookshelf.name}
               </h1>
-              <p className="text-sm text-muted-foreground hidden sm:block">
+              <p className="text-xs sm:text-sm text-muted-foreground hidden sm:block truncate">
                 {bookshelf.description || (isGuest ? "샘플 서재입니다" : "내가 읽고 있는 책들을 관리하세요")}
               </p>
             </div>
@@ -119,19 +119,19 @@ export default async function BookshelfDetailPage({
             {!isGuest && <MobileBookshelfSelector currentBookshelfId={bookshelfId} />}
           </div>
           {!isGuest && (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 shrink-0">
               {!bookshelf.is_main && (
-                <Button variant="outline" asChild className="hidden sm:inline-flex">
+                <Button variant="outline" size="icon" asChild className="hidden sm:inline-flex h-9 w-9 sm:w-auto sm:px-3">
                   <Link href={`/bookshelves/${bookshelfId}/edit`}>
-                    <Settings className="mr-2 h-4 w-4" />
-                    서재 설정
+                    <Settings className="h-4 w-4 sm:mr-1" />
+                    <span className="hidden sm:inline">설정</span>
                   </Link>
                 </Button>
               )}
-              <Button asChild size="sm" className="sm:size-default">
+              <Button asChild size="icon" className="h-9 w-9 sm:h-10 sm:w-auto sm:px-4">
                 <Link href="/books/search">
-                  <Plus className="h-4 w-4 sm:mr-2" />
-                  <span className="hidden sm:inline">책 추가</span>
+                  <Plus className="h-4 w-4 sm:mr-1" />
+                  <span className="hidden sm:inline">추가</span>
                 </Link>
               </Button>
             </div>

@@ -66,16 +66,16 @@ export function BookSearchInput({ className, basePath: propBasePath }: BookSearc
 
   return (
     <div className={`relative ${className}`}>
-      <Search 
-        className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" 
+      <Search
+        className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground"
         aria-hidden="true"
       />
       <Input
         type="search"
-        placeholder="책 제목, 저자, ISBN으로 검색"
+        placeholder="검색"
         value={query}
         onChange={(e) => handleQueryChange(e.target.value)}
-        className="pl-10 pr-10 min-h-[44px]"
+        className="pl-9 pr-9 h-9 text-sm"
         aria-label="책 검색"
       />
       {isSearching && (

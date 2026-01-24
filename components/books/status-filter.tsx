@@ -41,8 +41,8 @@ export function StatusFilter({ currentStatus, basePath: propBasePath }: StatusFi
       value={currentStatus || "all"}
       onValueChange={handleStatusChange}
     >
-      <SelectTrigger className="w-[180px]">
-        <SelectValue placeholder="상태 필터" />
+      <SelectTrigger className="w-[120px] sm:w-[150px] h-9 text-sm">
+        <SelectValue placeholder="상태" />
       </SelectTrigger>
       <SelectContent>
         <SelectItem value="all">전체</SelectItem>

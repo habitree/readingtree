@@ -113,14 +113,27 @@ export function MobileMenuSheet({ open, onOpenChange }: MobileMenuSheetProps) {
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="bottom"
-        className="h-[85vh] rounded-t-2xl px-4 pb-safe-area-inset-bottom"
+        className="h-[85vh] rounded-t-2xl px-0 pb-safe-area-inset-bottom"
+        swipeToClose
+        hideCloseButton
       >
-        <SheetHeader className="pb-2">
-          <div className="mx-auto w-12 h-1.5 bg-muted rounded-full mb-2" />
-          <SheetTitle className="sr-only">메뉴</SheetTitle>
+        {/* 드래그 핸들 영역 - 탭/스와이프로 닫기 */}
+        <SheetClose asChild>
+          <button
+            className="w-full flex flex-col items-center pt-3 pb-4 cursor-pointer active:bg-muted/50 transition-colors touch-manipulation"
+            aria-label="메뉴 닫기"
+          >
+            {/* 드래그 인디케이터 */}
+            <div className="w-12 h-1.5 bg-muted-foreground/30 rounded-full mb-1" />
+            <span className="text-xs text-muted-foreground mt-1">아래로 스와이프하여 닫기</span>
+          </button>
+        </SheetClose>
+
+        <SheetHeader className="sr-only">
+          <SheetTitle>메뉴</SheetTitle>
         </SheetHeader>
 
-        <div className="overflow-y-auto h-full pb-20 space-y-1">
+        <div className="overflow-y-auto h-full pb-20 space-y-1 px-4">
           {/* 프로필 */}
           {user && (
             <SheetClose asChild>

@@ -73,13 +73,13 @@ export default async function BooksPage({ searchParams }: BooksPageProps) {
           </Card>
         )}
 
-        <div className="flex items-center justify-between flex-wrap gap-3">
-          <div className="flex items-center gap-3">
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="min-w-0">
+              <h1 className="text-lg sm:text-2xl lg:text-3xl font-bold tracking-tight truncate">
                 {isGuest ? "서재 둘러보기" : "내 서재"}
               </h1>
-              <p className="text-sm sm:text-base text-muted-foreground hidden sm:block">
+              <p className="text-xs sm:text-sm text-muted-foreground hidden sm:block">
                 {isGuest
                   ? "샘플 책 목록을 확인해보세요"
                   : "내가 읽고 있는 책들을 관리하세요"}
@@ -89,14 +89,14 @@ export default async function BooksPage({ searchParams }: BooksPageProps) {
             {!isGuest && <MobileBookshelfSelector />}
           </div>
           {!isGuest && (
-            <div className="flex items-center gap-2">
-              <Button variant="outline" asChild className="hidden sm:inline-flex">
+            <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+              <Button variant="outline" size="sm" asChild className="hidden sm:inline-flex">
                 <Link href="/bookshelves">서재 관리</Link>
               </Button>
-              <Button asChild size="sm" className="sm:size-default">
+              <Button asChild size="icon" className="h-9 w-9 sm:h-10 sm:w-auto sm:px-4">
                 <Link href="/books/search">
-                  <Plus className="h-4 w-4 sm:mr-2" />
-                  <span className="hidden sm:inline">책 추가</span>
+                  <Plus className="h-4 w-4 sm:mr-1" />
+                  <span className="hidden sm:inline">추가</span>
                 </Link>
               </Button>
             </div>
