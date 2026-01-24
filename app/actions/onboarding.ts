@@ -2,6 +2,8 @@
 
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import type { UIStyleKey } from "@/types/style";
+import { STYLE_KEYS } from "@/types/style";
 
 /**
  * 독서 목표 설정
@@ -152,5 +154,78 @@ export async function checkConsentComplete() {
     isComplete,
     needsConsent: !isComplete,
   };
+}
+
+/**
+ * UI 스타일 설정
+ * @param style UI 스타일 키 (minimal, warm, professional, poetic)
+ */
+export async function setUIStyle(style: UIStyleKey) {
+  // 유효성 검사
+  if (!STYLE_KEYS.includes(style)) {
+    throw new Error("유효하지 않은 스타일입니다.");
+  }
+
+  const supabase = await createServerSupabaseClient();
+
+  // 현재 사용자 확인
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    throw new Error("로그인이 필요합니다.");
+  }
+
+  // Users 테이블 업데이트
+  const { error } = await supabase
+    .from("users")
+    .update({ ui_style: style })
+    .eq("id", user.id);
+
+  if (error) {
+    throw new Error(`스타일 설정 실패: ${error.message}`);
+  }
+
+  revalidatePath("/");
+  revalidatePath("/profile");
+  revalidatePath("/dashboard");
+
+  return { success: true };
+}
+
+/**
+ * 사용자의 UI 스타일 조회
+ */
+export async function getUserUIStyle(): Promise<UIStyleKey> {
+  const supabase = await createServerSupabaseClient();
+
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    return "minimal"; // 기본값
+  }
+
+  const { data: profile, error } = await supabase
+    .from("users")
+    .select("ui_style")
+    .eq("id", user.id)
+    .single();
+
+  if (error || !profile) {
+    return "minimal"; // 기본값
+  }
+
+  // 유효한 스타일인지 확인
+  const style = profile.ui_style as UIStyleKey;
+  if (STYLE_KEYS.includes(style)) {
+    return style;
+  }
+
+  return "minimal"; // 기본값
 }
 

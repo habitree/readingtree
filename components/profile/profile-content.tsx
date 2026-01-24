@@ -1,5 +1,7 @@
 import { getProfile } from "@/app/actions/profile";
+import { getUserUIStyle } from "@/app/actions/onboarding";
 import { ProfileForm } from "./profile-form";
+import { StyleSelector } from "@/components/settings/style-selector";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -14,8 +16,12 @@ import { sanitizeErrorForLogging } from "@/lib/utils/validation";
  */
 export async function ProfileContent() {
   let user;
+  let uiStyle: "minimal" | "warm" | "professional" | "poetic" = "minimal";
   try {
-    user = await getProfile();
+    [user, uiStyle] = await Promise.all([
+      getProfile(),
+      getUserUIStyle(),
+    ]);
   } catch (error) {
     const safeError = sanitizeErrorForLogging(error);
     console.error("프로필 조회 오류:", safeError);
@@ -86,6 +92,9 @@ export async function ProfileContent() {
 
       {/* 프로필 수정 폼 */}
       <ProfileForm user={user} />
+
+      {/* UI 스타일 선택 */}
+      <StyleSelector currentStyle={uiStyle} />
     </div>
   );
 }

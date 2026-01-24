@@ -4,20 +4,22 @@ import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { ProgressIndicator } from "./progress-indicator";
-import { ConsentStep, GoalStep, TutorialStep } from "./steps";
-import { agreeToTerms, setReadingGoal } from "@/app/actions/onboarding";
+import { ConsentStep, StyleStep, GoalStep, TutorialStep } from "./steps";
+import { agreeToTerms, setUIStyle, setReadingGoal } from "@/app/actions/onboarding";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import type { UIStyleKey } from "@/types/style";
 
 interface OnboardingData {
   termsAgreed: boolean;
   privacyAgreed: boolean;
+  style: UIStyleKey;
   goal: number;
 }
 
 interface OnboardingWizardProps {
   /**
-   * 시작 스텝 (0: 약관 동의, 1: 목표 설정, 2: 튜토리얼)
+   * 시작 스텝 (0: 약관 동의, 1: 스타일 선택, 2: 목표 설정, 3: 튜토리얼)
    * 이미 완료된 단계가 있으면 해당 단계부터 시작
    */
   initialStep?: number;
@@ -25,6 +27,7 @@ interface OnboardingWizardProps {
 
 const STEPS = [
   { id: "consent", title: "약관 동의" },
+  { id: "style", title: "스타일" },
   { id: "goal", title: "목표 설정" },
   { id: "tutorial", title: "사용법" },
 ];
@@ -58,6 +61,25 @@ export function OnboardingWizard({ initialStep = 0 }: OnboardingWizardProps) {
     []
   );
 
+  // 스타일 선택 처리
+  const handleStyleNext = useCallback(
+    async (styleData: { style: UIStyleKey }) => {
+      setIsLoading(true);
+      try {
+        await setUIStyle(styleData.style);
+        setData((prev) => ({ ...prev, ...styleData }));
+        setCurrentStep(2);
+      } catch (error) {
+        toast.error(
+          error instanceof Error ? error.message : "스타일 설정에 실패했습니다."
+        );
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    []
+  );
+
   // 목표 설정 처리
   const handleGoalNext = useCallback(
     async (goalData: { goal: number }) => {
@@ -65,7 +87,7 @@ export function OnboardingWizard({ initialStep = 0 }: OnboardingWizardProps) {
       try {
         await setReadingGoal(goalData.goal);
         setData((prev) => ({ ...prev, ...goalData }));
-        setCurrentStep(2);
+        setCurrentStep(3);
       } catch (error) {
         toast.error(
           error instanceof Error ? error.message : "목표 설정에 실패했습니다."
@@ -111,13 +133,20 @@ export function OnboardingWizard({ initialStep = 0 }: OnboardingWizardProps) {
                 <ConsentStep onNext={handleConsentNext} isLoading={isLoading} />
               )}
               {currentStep === 1 && (
+                <StyleStep
+                  onNext={handleStyleNext}
+                  onBack={handleBack}
+                  isLoading={isLoading}
+                />
+              )}
+              {currentStep === 2 && (
                 <GoalStep
                   onNext={handleGoalNext}
                   onBack={handleBack}
                   isLoading={isLoading}
                 />
               )}
-              {currentStep === 2 && (
+              {currentStep === 3 && (
                 <TutorialStep
                   onComplete={handleComplete}
                   onBack={handleBack}

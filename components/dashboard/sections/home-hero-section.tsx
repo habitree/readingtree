@@ -25,6 +25,8 @@ import {
   ReadingPaceLabels,
   NoteStyleLabels,
 } from "@/types/persona";
+import type { UIStyleKey } from "@/types/style";
+import { useStyle } from "@/hooks/use-style";
 
 interface HomeHeroSectionProps {
   userName?: string | null;
@@ -32,55 +34,11 @@ interface HomeHeroSectionProps {
   streak?: number; // 연속 기록 일수
   todayGoalProgress?: number; // 오늘 목표 달성률 (0-100)
   weeklyNotes?: number; // 이번 주 기록 수
+  uiStyle?: UIStyleKey; // UI 스타일
 }
 
-/**
- * 시간대별 인사말 생성
- */
-function getGreeting(): { text: string; emoji: string } {
-  const hour = new Date().getHours();
-
-  if (hour >= 5 && hour < 12) {
-    return { text: "아침", emoji: "☀️" };
-  } else if (hour >= 12 && hour < 17) {
-    return { text: "오후", emoji: "📖" };
-  } else if (hour >= 17 && hour < 21) {
-    return { text: "저녁", emoji: "🌅" };
-  } else {
-    return { text: "밤", emoji: "🌙" };
-  }
-}
-
-/**
- * 동기부여 메시지 생성 (미니멀 버전)
- */
-function getMotivationalMessage(
-  persona: UserPersona | null,
-  streak: number,
-  weeklyNotes: number
-): string {
-  // 스트릭이 있는 경우 - 숫자만 강조
-  if (streak >= 3) {
-    return `${streak}일째`;
-  }
-
-  // 이번 주 기록 기반
-  if (weeklyNotes >= 5) {
-    return `이번 주 ${weeklyNotes}개`;
-  }
-
-  // 페르소나 기반 맞춤 메시지
-  if (persona?.note_style === "quote-focused") {
-    return "오늘의 한 줄";
-  } else if (persona?.note_style === "reflection-focused") {
-    return "오늘의 기록";
-  } else if (persona?.note_style === "visual") {
-    return "오늘의 한 장면";
-  }
-
-  // 기본 메시지
-  return "기록은 남아요";
-}
+// 기존 getGreeting과 getMotivationalMessage 함수 제거됨
+// useStyle 훅에서 스타일별 메시지 제공
 
 /**
  * 홈 히어로 섹션 - 개인화된 인사 + 페르소나 인사이트
@@ -91,9 +49,10 @@ export function HomeHeroSection({
   streak = 0,
   todayGoalProgress = 0,
   weeklyNotes = 0,
+  uiStyle = "minimal",
 }: HomeHeroSectionProps) {
   const [mounted, setMounted] = useState(false);
-  const greeting = getGreeting();
+  const { greeting, getStreakMessage, getMotivationalMessage } = useStyle({ userStyle: uiStyle });
   const stats = persona?.reading_stats as ReadingStats | null;
 
   useEffect(() => {
@@ -101,10 +60,35 @@ export function HomeHeroSection({
   }, []);
 
   // 서버 사이드에서는 기본 인사말
-  const displayGreeting = mounted ? greeting : { text: "안녕하세요", emoji: "👋" };
-  const motivationalMessage = mounted
-    ? getMotivationalMessage(persona, streak, weeklyNotes)
-    : "독서의 흔적을 남겨보세요";
+  const displayGreeting = mounted ? greeting : { text: "안녕하세요", emoji: "" };
+
+  // 동기부여 메시지 생성
+  const getContextualMessage = () => {
+    // 스트릭이 있는 경우
+    if (streak >= 3) {
+      return getStreakMessage(streak);
+    }
+
+    // 이번 주 기록 기반
+    if (weeklyNotes >= 5) {
+      // 스타일에 따른 메시지는 기본 동기부여 메시지 사용
+      return getMotivationalMessage("default");
+    }
+
+    // 페르소나 기반 맞춤 메시지
+    if (persona?.note_style === "quote-focused") {
+      return getMotivationalMessage("quoteFocused");
+    } else if (persona?.note_style === "reflection-focused") {
+      return getMotivationalMessage("reflectionFocused");
+    } else if (persona?.note_style === "visual") {
+      return getMotivationalMessage("visualFocused");
+    }
+
+    // 기본 메시지
+    return getMotivationalMessage("default");
+  };
+
+  const motivationalMessage = mounted ? getContextualMessage() : "독서의 흔적을 남겨보세요";
 
   // 기록 유형 분포 계산
   const noteDistribution = stats?.noteTypeDistribution;

@@ -1,6 +1,7 @@
 import { getCurrentUser } from "@/app/actions/auth";
 import { getPersonaDashboardData } from "@/app/actions/persona";
 import { getReadingStats } from "@/app/actions/stats";
+import { getUserUIStyle } from "@/app/actions/onboarding";
 import { HomeHeroSection } from "./home-hero-section";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
@@ -20,15 +21,17 @@ export async function HomeHeroWrapper() {
         streak={0}
         todayGoalProgress={0}
         weeklyNotes={0}
+        uiStyle="minimal"
       />
     );
   }
 
   // 병렬로 데이터 조회
-  const [personaData, readingStats, streakAndTodayData] = await Promise.all([
+  const [personaData, readingStats, streakAndTodayData, uiStyle] = await Promise.all([
     getPersonaDashboardData().catch(() => null),
     getReadingStats(user).catch(() => null),
     getStreakAndTodayData(user.id).catch(() => ({ streak: 0, todayNotes: 0 })),
+    getUserUIStyle().catch(() => "minimal" as const),
   ]);
 
   // 오늘 목표 달성률 계산 (간단한 예: 목표 1개 기록 기준)
@@ -43,6 +46,7 @@ export async function HomeHeroWrapper() {
       streak={streakAndTodayData.streak}
       todayGoalProgress={todayGoalProgress}
       weeklyNotes={readingStats?.thisWeek?.notes ?? 0}
+      uiStyle={uiStyle}
     />
   );
 }

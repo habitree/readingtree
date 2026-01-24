@@ -22,6 +22,7 @@ export interface Database {
           terms_agreed: boolean; // 이용약관 동의 여부
           privacy_agreed: boolean; // 개인정보처리방침 동의 여부
           consent_date: string | null; // 약관 동의 일시
+          ui_style: "minimal" | "warm" | "professional" | "poetic"; // UI 스타일
           created_at: string;
           updated_at: string;
         };
@@ -34,6 +35,7 @@ export interface Database {
           terms_agreed?: boolean;
           privacy_agreed?: boolean;
           consent_date?: string | null;
+          ui_style?: "minimal" | "warm" | "professional" | "poetic";
           created_at?: string;
           updated_at?: string;
         };
@@ -46,6 +48,7 @@ export interface Database {
           terms_agreed?: boolean;
           privacy_agreed?: boolean;
           consent_date?: string | null;
+          ui_style?: "minimal" | "warm" | "professional" | "poetic";
           created_at?: string;
           updated_at?: string;
         };
