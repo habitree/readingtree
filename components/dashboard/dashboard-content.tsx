@@ -15,6 +15,8 @@ import {
   MonthlyStatsSection,
   RecentNotesSection,
   TopBooksSection,
+  HomeHeroWrapper,
+  MobileQuickActions,
 } from "./sections";
 
 // 스켈레톤 컴포넌트
@@ -25,6 +27,7 @@ import {
   MonthlyStatsSkeleton,
   RecentNotesSkeleton,
   TopBooksSkeleton,
+  HomeHeroSkeleton,
 } from "./skeletons";
 
 /**
@@ -110,15 +113,25 @@ export default async function DashboardContent() {
           <GuestBanner />
         </Suspense>
 
+        {/* 홈 히어로 섹션 - 개인화 인사 + 페르소나 인사이트 */}
+        <Suspense fallback={<HomeHeroSkeleton />}>
+          <HomeHeroWrapper />
+        </Suspense>
+
+        {/* 모바일 퀵 액션 버튼 */}
+        <MobileQuickActions />
+
         {/* 목표 진행률 - 스트리밍 */}
         <Suspense fallback={<GoalProgressSkeleton />}>
           <GoalProgressSection />
         </Suspense>
 
-        {/* 통계 카드 - 스트리밍 */}
-        <Suspense fallback={<StatsCardsSkeleton />}>
-          <StatsCardsSection />
-        </Suspense>
+        {/* 통계 카드 - 스트리밍 (모바일에서 히어로 섹션에 이미 일부 표시되므로 숨김) */}
+        <div className="hidden sm:block">
+          <Suspense fallback={<StatsCardsSkeleton />}>
+            <StatsCardsSection />
+          </Suspense>
+        </div>
 
         {/* 최근 기록한 책 - 스트리밍 */}
         <Suspense fallback={<RecentBooksSkeleton />}>
