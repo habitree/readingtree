@@ -3,7 +3,7 @@
 import { useState, useTransition, useEffect } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Grid3x3, Table2, Loader2 } from "lucide-react";
+import { Grid3x3, Table2, Loader2, List } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type ViewMode = "grid" | "table";
@@ -67,17 +67,18 @@ export function ViewModeToggle({ className }: ViewModeToggleProps) {
           <Grid3x3 className="h-4 w-4" />
         )}
       </Button>
-      {/* 모바일에서는 테이블 버튼 숨김 (lg 이상에서만 표시) */}
+      {/* 모바일에서는 리스트 아이콘, 데스크톱에서는 테이블 아이콘 */}
       <Button
         variant={currentView === "table" ? "default" : "outline"}
         size="sm"
         onClick={() => handleViewChange("table")}
         disabled={isPending}
-        aria-label="테이블 보기"
-        className="hidden lg:flex"
+        aria-label={isMobile ? "리스트 보기" : "테이블 보기"}
       >
         {isPending && currentView !== "table" ? (
           <Loader2 className="h-4 w-4 animate-spin" />
+        ) : isMobile ? (
+          <List className="h-4 w-4" />
         ) : (
           <Table2 className="h-4 w-4" />
         )}

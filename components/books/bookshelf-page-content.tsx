@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { BookList } from "@/components/books/book-list";
 import { BookTable } from "@/components/books/book-table";
+import { BookListView } from "@/components/books/book-list-view";
 import { BookStatsCards } from "@/components/books/book-stats-cards";
 import { BookSearchInput } from "@/components/books/book-search-input";
 import { ViewModeToggle } from "@/components/books/view-mode-toggle";
@@ -48,14 +49,14 @@ export function BookshelfPageContent({
         </div>
       </div>
 
-      {/* 책 목록 (그리드 또는 테이블) */}
-      {/* 모바일에서는 항상 그리드 뷰, 데스크톱에서만 테이블 뷰 선택 가능 */}
+      {/* 책 목록 (그리드 또는 테이블/리스트) */}
+      {/* 모바일에서는 리스트 뷰, 데스크톱에서는 테이블 뷰 */}
       <Suspense fallback={<BookList books={[]} isLoading />}>
         {view === "table" && !isGuest ? (
           <>
-            {/* 테이블 뷰: 모바일에서는 그리드 뷰, 데스크톱에서만 테이블 뷰 */}
+            {/* 테이블 뷰: 모바일에서는 리스트 뷰, 데스크톱에서는 테이블 뷰 */}
             <div className="lg:hidden">
-              <BooksListGrid status={status} query={query} user={user} bookshelfId={bookshelfId} />
+              <BooksListViewContent status={status} query={query} user={user} bookshelfId={bookshelfId} />
             </div>
             <div className="hidden lg:block">
               <BooksTableContent status={status} query={query} user={user} bookshelfId={bookshelfId} />
@@ -188,5 +189,47 @@ async function BooksListGrid({
   } catch (error) {
     console.error("BooksListGrid 렌더링 오류:", error);
     return <BookList books={[]} />;
+  }
+}
+
+/**
+ * 모바일용 리스트 뷰 (테이블 뷰의 모바일 대체)
+ */
+async function BooksListViewContent({
+  status,
+  query,
+  user,
+  bookshelfId,
+}: {
+  status?: ReadingStatus;
+  query?: string;
+  user?: any;
+  bookshelfId?: string;
+}) {
+  try {
+    const { books: booksData } = await getUserBooksWithNotes(status, query, user, bookshelfId);
+
+    // BookListView 컴포넌트가 기대하는 형태로 변환
+    const books = (booksData || [])
+      .filter((item) => item.books && item.books.id)
+      .map((item) => ({
+        id: item.id,
+        status: item.status,
+        books: {
+          id: item.books.id,
+          title: item.books.title,
+          author: item.books.author,
+          publisher: item.books.publisher,
+          isbn: item.books.isbn,
+          cover_image_url: item.books.cover_image_url,
+          published_date: item.books.published_date || null,
+        },
+        groupBooks: item.groupBooks || [],
+      }));
+
+    return <BookListView books={books} />;
+  } catch (error) {
+    console.error("BooksListViewContent 오류:", error);
+    return <BookListView books={[]} />;
   }
 }
