@@ -18,6 +18,9 @@
 | 파일 업로드 검증 강화 | Phase 1 | ✅ 완료 | 2026-01-24 | 시그니처 검증 추가 |
 | 읽기 진행률 기능 | Phase 1 | ✅ 완료 | 2026-01-24 | DB 마이그레이션 필요 |
 | CSP 보안 헤더 | Phase 2 | ✅ 완료 | 2026-01-24 | 7개 보안 헤더 추가 |
+| Streaming SSR 대시보드 | Phase 2 | ✅ 완료 | 2026-01-24 | Suspense 기반 점진적 로딩 |
+| Forest 다크모드 | Phase 2 | ✅ 완료 | 2026-01-24 | 4개 테마 지원 |
+| 프로그레시브 온보딩 | Phase 2 | ✅ 완료 | 2026-01-24 | 3단계 통합 위저드 |
 
 ### ❌ 제외된 작업
 
@@ -29,9 +32,6 @@
 
 | 작업 | 난이도 | 예상 효과 |
 |------|--------|-----------|
-| Streaming SSR 대시보드 | 중간 | TTFB 1.2s→0.5s |
-| Forest 다크모드 | 중간 | 브랜드 정체성 강화 |
-| 프로그레시브 온보딩 | 중간 | 완료율 40%→70% |
 | 배지/업적 시스템 | 중간 | D30 리텐션 40% |
 
 ---
@@ -181,12 +181,12 @@
 | 1 | @supabase/ssr 마이그레이션 | 보안 | 낮음 | ⏳ | `lib/supabase/*` |
 | 2 | CSP 보안 헤더 | 보안 | 중간 | ✅ | `next.config.js` |
 | 3 | Upstash Redis 캐싱/Rate Limit | 백엔드+보안 | 중간 | ❌ | 제외됨 |
-| 4 | Streaming SSR 대시보드 | 성능 | 중간 | ⏳ | `app/(main)/page.tsx` |
-| 5 | Forest 다크모드 | UI/UX | 중간 | ⏳ | `app/globals.css` |
-| 6 | 프로그레시브 온보딩 | UI/UX | 중간 | ⏳ | `components/onboarding/*` |
+| 4 | Streaming SSR 대시보드 | 성능 | 중간 | ✅ | `app/(main)/page.tsx` |
+| 5 | Forest 다크모드 | UI/UX | 중간 | ✅ | `app/globals.css` |
+| 6 | 프로그레시브 온보딩 | UI/UX | 중간 | ✅ | `components/onboarding/*` |
 | 7 | 배지/업적 시스템 기본 | 비즈니스 | 중간 | ⏳ | `migration-005_achievements.sql` |
 
-**결과:** Phase 2 진행 중 - 1/6 완료 (Redis 제외)
+**결과:** Phase 2 진행 중 - 4/6 완료 (Redis 제외)
 
 ---
 
@@ -259,9 +259,10 @@
 - [ ] Sentry 에러 트래킹 - 미진행
 
 ### 다음 진행 예정 (Phase 2)
-- [ ] Streaming SSR 대시보드 - 체감 속도 향상
-- [ ] Forest 다크모드 - 브랜드 정체성
-- [ ] 온보딩 vs 배지 시스템 - 신규 사용자 vs 기존 사용자?
+- [x] Streaming SSR 대시보드 - 체감 속도 향상 ✅
+- [x] Forest 다크모드 - 브랜드 정체성 ✅
+- [x] 프로그레시브 온보딩 - 신규 사용자 경험 ✅
+- [ ] 배지/업적 시스템 - 기존 사용자 리텐션
 - [ ] @supabase/ssr 마이그레이션 - 최신 인증 라이브러리
 
 ### 비즈니스 결정 필요 (Phase 4)
@@ -374,9 +375,19 @@ Month 4+:   Phase 4 수익화 준비
 ### 코드 파일
 - `lib/security/file-validation.ts` - 파일 업로드 보안 검증
 - `components/books/reading-progress.tsx` - 읽기 진행률 UI 컴포넌트
+- `components/dashboard/skeletons.tsx` - 대시보드 스켈레톤 UI
+- `components/dashboard/sections/*.tsx` - 대시보드 스트리밍 섹션 (6개)
+- `components/onboarding/progress-indicator.tsx` - 온보딩 진행률 표시
+- `components/onboarding/onboarding-wizard.tsx` - 통합 온보딩 위저드
+- `components/onboarding/steps/*.tsx` - 온보딩 스텝 컴포넌트 (3개)
 
 ### 수정된 파일
 - `next.config.js` - AVIF 이미지 + CSP 보안 헤더
 - `app/api/upload/route.ts` - 파일 검증 적용
 - `app/actions/books.ts` - updateBookProgress 액션 추가
 - `types/database.ts` - current_page 타입 추가
+- `app/globals.css` - Forest 다크모드 추가
+- `components/theme/theme-selector.tsx` - 4개 테마 선택 지원
+- `app/layout.tsx` - ThemeProvider 적용
+- `components/dashboard/dashboard-content.tsx` - Suspense 기반 스트리밍
+- `app/(auth)/onboarding/*.tsx` - 프로그레시브 온보딩 위저드로 리다이렉트
