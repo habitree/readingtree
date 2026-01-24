@@ -203,19 +203,22 @@ export function NoteEditForm({ note }: NoteEditFormProps) {
 
   return (
     <Form {...form}>
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 sm:space-y-6">
         {/* 제목 입력 */}
         <FormField
           control={form.control}
           name="title"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>제목 <span className="text-muted-foreground text-xs font-normal">(선택)</span></FormLabel>
+              <FormLabel className="text-sm">
+                제목 <span className="text-muted-foreground text-xs font-normal">(선택)</span>
+              </FormLabel>
               <FormControl>
                 <Input
                   placeholder="기록에 제목을 붙여보세요."
                   {...field}
                   value={field.value || ""}
+                  className="h-10 sm:h-11"
                 />
               </FormControl>
               <FormMessage />
@@ -229,14 +232,14 @@ export function NoteEditForm({ note }: NoteEditFormProps) {
           name="quoteContent"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>인상깊은 구절</FormLabel>
+              <FormLabel className="text-sm">인상깊은 구절</FormLabel>
               <FormControl>
                 <BookMentionTextarea
                   placeholder="인상 깊었던 문장을 입력하세요."
                   value={field.value || ""}
                   onValueChange={field.onChange}
-                  rows={4}
-                  className="resize-none max-w-2xl"
+                  rows={3}
+                  className="resize-none text-sm sm:text-base"
                 />
               </FormControl>
               <FormMessage />
@@ -250,14 +253,14 @@ export function NoteEditForm({ note }: NoteEditFormProps) {
           name="memoContent"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>내 생각</FormLabel>
+              <FormLabel className="text-sm">내 생각</FormLabel>
               <FormControl>
                 <BookMentionTextarea
                   placeholder="생각이나 감상을 입력하세요."
                   value={field.value || ""}
                   onValueChange={field.onChange}
-                  rows={6}
-                  className="resize-none max-w-2xl"
+                  rows={4}
+                  className="resize-none text-sm sm:text-base"
                 />
               </FormControl>
               <FormMessage />
@@ -267,15 +270,15 @@ export function NoteEditForm({ note }: NoteEditFormProps) {
 
         {/* 업로드 타입 선택 */}
         <div className="space-y-2">
-          <Label>업로드 타입 (선택)</Label>
+          <Label className="text-sm">업로드 타입 (선택)</Label>
           <Select
             value={uploadType || undefined}
             onValueChange={(value) =>
               setValue("uploadType", value as "photo" | "transcription")
             }
           >
-            <SelectTrigger>
-              <SelectValue placeholder="업로드 타입 선택 (사진 또는 필사)" />
+            <SelectTrigger className="h-10 sm:h-11">
+              <SelectValue placeholder="사진 또는 필사 선택" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="photo">사진</SelectItem>
@@ -291,9 +294,9 @@ export function NoteEditForm({ note }: NoteEditFormProps) {
                 setValue("uploadType", undefined);
                 setImages([]);
               }}
-              className="text-xs"
+              className="text-xs h-7"
             >
-              업로드 타입 취소
+              타입 취소
             </Button>
           )}
         </div>
@@ -301,8 +304,8 @@ export function NoteEditForm({ note }: NoteEditFormProps) {
         {/* 이미지 업로드 */}
         {uploadType && (
           <div className="space-y-2">
-            <Label>이미지 업로드</Label>
-            <div className="flex flex-col gap-4">
+            <Label className="text-sm">이미지 업로드</Label>
+            <div className="flex flex-col gap-3">
               <input
                 ref={fileInputRef}
                 type="file"
@@ -315,13 +318,14 @@ export function NoteEditForm({ note }: NoteEditFormProps) {
                 variant="outline"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={uploading}
+                className="h-10 sm:h-11"
               >
                 <Upload className="mr-2 h-4 w-4" />
                 {uploading ? "업로드 중..." : images.length > 0 ? "이미지 변경" : "이미지 선택"}
               </Button>
 
               {images.length > 0 && (
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-2 gap-3">
                   {images.map((imageUrl, index) => (
                     <div key={index} className="relative aspect-[3/4] rounded-lg overflow-hidden border">
                       <Image
@@ -336,10 +340,10 @@ export function NoteEditForm({ note }: NoteEditFormProps) {
                         type="button"
                         variant="destructive"
                         size="icon"
-                        className="absolute top-1.5 right-1.5 h-5 w-5 p-0 shadow-md hover:shadow-lg"
+                        className="absolute top-1.5 right-1.5 h-6 w-6 p-0 shadow-md"
                         onClick={() => removeImage(index)}
                       >
-                        <X className="h-2.5 w-2.5" />
+                        <X className="h-3 w-3" />
                       </Button>
                     </div>
                   ))}
@@ -355,21 +359,17 @@ export function NoteEditForm({ note }: NoteEditFormProps) {
           name="pageNumber"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>
+              <FormLabel className="text-sm">
                 페이지 번호 <span className="text-muted-foreground text-xs font-normal">(선택)</span>
               </FormLabel>
               <FormControl>
-                <Textarea
-                  placeholder="예: 123 또는 10-20 또는 10, 15, 20"
+                <Input
+                  placeholder="예: 123, 10-20"
                   {...field}
                   value={field.value || ""}
-                  rows={2}
-                  className="resize-none"
+                  className="h-10 sm:h-11"
                 />
               </FormControl>
-              <p className="text-xs text-muted-foreground">
-                페이지 번호, 페이지 범위, 또는 여러 페이지를 입력할 수 있습니다.
-              </p>
               <FormMessage />
             </FormItem>
           )}
@@ -382,12 +382,11 @@ export function NoteEditForm({ note }: NoteEditFormProps) {
         />
 
         {/* 연결된 책 관리 */}
-        <div className="space-y-3">
-          <div className="space-y-2">
-            <Label>연결된 책 <span className="text-muted-foreground text-xs font-normal">(선택)</span></Label>
-            <p className="text-xs text-muted-foreground">
-              이 기록과 관련된 다른 책을 선택할 수 있습니다. 주 책은 자동으로 제외됩니다.
-            </p>
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <Label className="text-sm">
+              연결된 책 <span className="text-muted-foreground text-xs font-normal">(선택)</span>
+            </Label>
             <RelatedBooksManager
               noteId={note.id}
               currentRelatedBookIds={relatedBookIds}
@@ -395,59 +394,54 @@ export function NoteEditForm({ note }: NoteEditFormProps) {
               onUpdate={(updatedIds) => setRelatedBookIds(updatedIds)}
             />
           </div>
-          
+
           {/* 연결된 책 표지 이미지 미리보기 */}
           {relatedBookIds && relatedBookIds.length > 0 && (
-            <RelatedBooksPreview
-              relatedBookIds={relatedBookIds}
-            />
+            <RelatedBooksPreview relatedBookIds={relatedBookIds} />
           )}
         </div>
 
         {/* 공개 설정 */}
-        <div className="flex items-center gap-2 sm:gap-3">
-          <div className="flex items-center gap-2">
-            <Switch
-              id="isPublic"
-              checked={isPublic}
-              onCheckedChange={(checked) => setValue("isPublic", checked)}
-            />
-            <Label htmlFor="isPublic" className="text-sm font-medium">
-              공개
+        <div className="flex items-center justify-between py-2 px-3 bg-muted/50 rounded-lg">
+          <div className="space-y-0.5">
+            <Label htmlFor="isPublic" className="text-sm font-medium cursor-pointer">
+              공개 설정
             </Label>
+            <p className="text-[10px] sm:text-xs text-muted-foreground">
+              {isPublic ? "다른 사용자도 볼 수 있습니다" : "나만 볼 수 있습니다"}
+            </p>
           </div>
-          <p className="text-xs text-muted-foreground hidden sm:block">
-            {isPublic 
-              ? "다른 사용자도 이 기록을 볼 수 있습니다." 
-              : "이 기록은 나만 볼 수 있습니다."}
-          </p>
+          <Switch
+            id="isPublic"
+            checked={isPublic}
+            onCheckedChange={(checked) => setValue("isPublic", checked)}
+          />
         </div>
 
-        {/* 제출 버튼 */}
-        <div className="flex flex-col gap-2 pt-4">
-          <Button
-            type="submit"
-            disabled={isSubmitting}
-            fullWidth
-            size="lg"
-          >
-            {isSubmitting ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                수정 중...
-              </>
-            ) : (
-              "수정"
-            )}
-          </Button>
+        {/* 제출 버튼 - 하단 고정 스타일 */}
+        <div className="flex gap-2 pt-4 sticky bottom-0 bg-background pb-4 -mx-1 px-1">
           <Button
             type="button"
             variant="outline"
             onClick={() => router.back()}
             disabled={isSubmitting}
-            fullWidth
+            className="flex-1 h-11"
           >
             취소
+          </Button>
+          <Button
+            type="submit"
+            disabled={isSubmitting}
+            className="flex-[2] h-11"
+          >
+            {isSubmitting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                저장 중...
+              </>
+            ) : (
+              "저장"
+            )}
           </Button>
         </div>
       </form>

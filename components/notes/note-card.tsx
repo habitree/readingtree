@@ -62,7 +62,7 @@ export function NoteCard({ note, showDeleteButton = false, onDelete }: NoteCardP
   };
 
   const cardContent = (
-    <Link 
+    <Link
       href={`/notes/${note.id}`}
       className="block h-full"
       onClick={(e) => {
@@ -74,84 +74,98 @@ export function NoteCard({ note, showDeleteButton = false, onDelete }: NoteCardP
         }
       }}
     >
-      <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full relative group">
-        <CardContent className="p-4">
-          <div className="flex gap-4">
-            {/* UX 원칙 05: 깊이감 부여를 위한 이미지 레이어링 */}
+      <Card className="hover:shadow-lg active:shadow-md active:scale-[0.99] transition-all cursor-pointer h-full relative group">
+        <CardContent className="p-3 sm:p-4">
+          <div className="flex gap-3 sm:gap-4">
             {/* 이미지 또는 책 표지 */}
             {note.image_url ? (
-              <div className="relative w-20 h-28 sm:w-24 sm:h-32 shrink-0 overflow-hidden rounded bg-muted">
+              <div className="relative w-16 h-22 sm:w-20 sm:h-28 shrink-0 overflow-hidden rounded-lg bg-muted shadow-sm">
                 <Image
                   src={getImageUrl(note.image_url)}
                   alt={note.type}
                   fill
                   className="object-cover"
-                  sizes="(max-width: 640px) 80px, 96px"
+                  sizes="(max-width: 640px) 64px, 80px"
                 />
               </div>
             ) : note.book?.cover_image_url ? (
-              <div className="relative w-20 h-28 sm:w-24 sm:h-32 shrink-0 overflow-hidden rounded bg-muted">
+              <div className="relative w-16 h-22 sm:w-20 sm:h-28 shrink-0 overflow-hidden rounded-lg bg-muted shadow-sm">
                 <Image
                   src={getImageUrl(note.book.cover_image_url)}
                   alt={note.book.title || "Book cover"}
                   fill
                   className="object-cover"
-                  sizes="(max-width: 640px) 80px, 96px"
+                  sizes="(max-width: 640px) 64px, 80px"
                 />
               </div>
             ) : (
-              <div className="w-20 h-28 sm:w-24 sm:h-32 shrink-0 flex items-center justify-center rounded bg-muted">
-                <Icon className="h-6 w-6 sm:h-8 sm:w-8 text-muted-foreground" />
+              <div className="w-16 h-22 sm:w-20 sm:h-28 shrink-0 flex items-center justify-center rounded-lg bg-muted">
+                <Icon className="h-5 w-5 sm:h-6 sm:w-6 text-muted-foreground" />
               </div>
             )}
 
             {/* 내용 */}
-            <div className="flex-1 min-w-0 space-y-2">
-              <div className="flex items-start justify-between gap-2 flex-wrap">
-                <div className="flex items-center gap-2">
-                  <Badge variant="secondary">{typeLabel}</Badge>
-                  {note.title && (
-                    <h3 className="text-sm font-bold line-clamp-1">
-                      <BookLinkRenderer text={note.title} />
-                    </h3>
-                  )}
-                </div>
-                <OCRStatusBadge status={ocrStatus} />
+            <div className="flex-1 min-w-0 space-y-1.5 sm:space-y-2">
+              {/* 상단: 타입 배지 + 제목 */}
+              <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                <Badge variant="secondary" className="text-[10px] sm:text-xs h-5 sm:h-6 px-1.5 sm:px-2">
+                  {typeLabel}
+                </Badge>
+                {note.title && (
+                  <h3 className="text-xs sm:text-sm font-semibold line-clamp-1 flex-1 min-w-0">
+                    <BookLinkRenderer text={note.title} />
+                  </h3>
+                )}
+                <OCRStatusBadge status={ocrStatus} className="shrink-0" />
               </div>
 
-              <NoteContentViewer
-                content={note.content}
-                pageNumber={parsePageNumber(note.page_number)}
-                maxLength={100}
-              />
+              {/* 내용 미리보기 */}
+              <div className="text-xs sm:text-sm">
+                <NoteContentViewer
+                  content={note.content}
+                  pageNumber={parsePageNumber(note.page_number)}
+                  maxLength={80}
+                />
+              </div>
 
+              {/* 책 제목 */}
               {note.book && (
-                <p className="text-xs text-muted-foreground line-clamp-1">
+                <p className="text-[10px] sm:text-xs text-muted-foreground line-clamp-1">
                   {note.book.title}
                 </p>
               )}
 
-              {note.tags && note.tags.length > 0 && (
-                <div className="flex flex-wrap gap-1">
-                  {note.tags.slice(0, 3).map((tag, index) => (
-                    <Badge key={index} variant="outline" className="text-xs">
-                      {tag}
-                    </Badge>
-                  ))}
-                </div>
-              )}
-
-              <p className="text-xs text-muted-foreground">
-                {formatSmartDate(note.created_at)}
-              </p>
+              {/* 하단: 태그 + 날짜 */}
+              <div className="flex items-center justify-between gap-2 pt-0.5">
+                {note.tags && note.tags.length > 0 ? (
+                  <div className="flex items-center gap-1 flex-1 min-w-0 overflow-hidden">
+                    {note.tags.slice(0, 2).map((tag, index) => (
+                      <Badge key={index} variant="outline" className="text-[10px] h-4 px-1.5 shrink-0">
+                        {tag}
+                      </Badge>
+                    ))}
+                    {note.tags.length > 2 && (
+                      <span className="text-[10px] text-muted-foreground shrink-0">
+                        +{note.tags.length - 2}
+                      </span>
+                    )}
+                  </div>
+                ) : (
+                  <div className="flex-1" />
+                )}
+                <p className="text-[10px] sm:text-xs text-muted-foreground shrink-0">
+                  {formatSmartDate(note.created_at)}
+                </p>
+              </div>
             </div>
           </div>
         </CardContent>
-        {/* 삭제 버튼 (우측 상단) */}
+
+        {/* 삭제 버튼 - 모바일에서도 보임 (반투명) */}
         {showDeleteButton && (
-          <div 
+          <div
             data-delete-button
-            className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-20"
+            className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 opacity-60 sm:opacity-0 group-hover:opacity-100 transition-opacity z-20"
             onClick={(e) => {
               e.stopPropagation();
               e.preventDefault();

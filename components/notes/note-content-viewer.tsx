@@ -65,47 +65,47 @@ export function NoteContentViewer({
   const displayText = displayParts.join("\n");
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-1.5">
       {displayText && (
-        <p className="text-sm whitespace-pre-line line-clamp-3">
+        <p className="text-xs sm:text-sm text-muted-foreground whitespace-pre-line line-clamp-2 sm:line-clamp-3">
           <BookLinkRenderer text={displayText} />
         </p>
       )}
       {isLong && (
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button variant="ghost" size="sm" className="h-8 text-xs">
+            <Button variant="ghost" size="sm" className="h-6 sm:h-7 px-2 text-[10px] sm:text-xs text-primary">
               <Eye className="mr-1 h-3 w-3" />
-              전체 보기
+              더보기
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>기록 내용</DialogTitle>
-              <DialogDescription>전체 내용을 확인하세요</DialogDescription>
+          <DialogContent className="w-[calc(100vw-2rem)] max-w-2xl max-h-[85vh] sm:max-h-[80vh] overflow-y-auto p-4 sm:p-6">
+            <DialogHeader className="pb-2">
+              <DialogTitle className="text-base sm:text-lg">기록 내용</DialogTitle>
+              <DialogDescription className="text-xs sm:text-sm">전체 내용</DialogDescription>
             </DialogHeader>
-            <div className="space-y-4 pt-4">
+            <div className="space-y-4 pt-2">
               {hasQuote && (
-                <div>
-                  <h4 className="text-sm font-semibold mb-2">인상깊은 구절</h4>
-                  <p className="text-sm whitespace-pre-wrap bg-muted/50 p-3 rounded-md">
+                <div className="space-y-1.5">
+                  <h4 className="text-xs sm:text-sm font-semibold text-primary">인상깊은 구절</h4>
+                  <p className="text-xs sm:text-sm whitespace-pre-wrap bg-primary/5 p-3 sm:p-4 rounded-lg border-l-2 border-primary">
                     <BookLinkRenderer text={quote} />
                   </p>
                 </div>
               )}
               {hasMemo && (
-                <div>
-                  <h4 className="text-sm font-semibold mb-2">내 생각</h4>
-                  <p className="text-sm whitespace-pre-wrap bg-muted/50 p-3 rounded-md">
+                <div className="space-y-1.5">
+                  <h4 className="text-xs sm:text-sm font-semibold text-muted-foreground">내 생각</h4>
+                  <p className="text-xs sm:text-sm whitespace-pre-wrap bg-muted/50 p-3 sm:p-4 rounded-lg">
                     <BookLinkRenderer text={memo} />
                   </p>
                 </div>
               )}
               {pageNumber && (
-                <div>
-                  <h4 className="text-sm font-semibold mb-2">페이지 번호</h4>
-                  <p className="text-sm bg-muted/50 p-3 rounded-md">
-                    {pageNumber}
+                <div className="space-y-1.5">
+                  <h4 className="text-xs sm:text-sm font-semibold text-muted-foreground">페이지</h4>
+                  <p className="text-xs sm:text-sm bg-muted/50 p-3 rounded-lg inline-block">
+                    p. {pageNumber}
                   </p>
                 </div>
               )}
