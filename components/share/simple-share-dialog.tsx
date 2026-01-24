@@ -218,26 +218,39 @@ export function SimpleShareDialog({ note }: SimpleShareDialogProps) {
         );
       });
 
-      // Step 5: 클립보드에 복사
+      // Step 5: 클립보드에 복사 (모바일 호환성 개선)
       console.log("[카드 복사] 클립보드 복사 시도...");
-      if (navigator.clipboard && ClipboardItem) {
-        await navigator.clipboard.write([
-          new ClipboardItem({
-            "image/png": blob,
-          }),
-        ]);
-        console.log("[카드 복사] 클립보드 복사 성공!");
-        toast.success("카드가 클립보드에 복사되었습니다!");
-      } else {
-        // Fallback: Blob URL로 다운로드
-        console.log("[카드 복사] 클립보드 미지원, 다운로드로 전환");
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = `readtree-card-${note.id}.png`;
-        link.click();
-        URL.revokeObjectURL(url);
-        toast.success("카드 이미지가 다운로드되었습니다!");
+
+      // copyImageToClipboard 유틸리티 사용 (모바일 호환성 처리 포함)
+      const clipboardSuccess = await copyImageToClipboard(blob, {
+        onSuccess: () => {
+          console.log("[카드 복사] 클립보드 복사 성공!");
+          setCardCopied(true);
+          toast.success("카드가 클립보드에 복사되었습니다!");
+          setTimeout(() => {
+            setCardCopied(false);
+          }, 2000);
+        },
+        onError: (error) => {
+          console.log("[카드 복사] 클립보드 복사 실패, 다운로드로 fallback:", error);
+        }
+      });
+
+      // 클립보드 복사 실패 시 다운로드로 fallback
+      if (!clipboardSuccess) {
+        console.log("[카드 복사] 다운로드로 전환");
+        const filename = `readtree-card-${note.id}-${Date.now()}.png`;
+        downloadImage(blob, filename);
+        setCardCopied(true);
+        const isMobileDevice = isMobile();
+        toast.success(
+          isMobileDevice
+            ? "카드 이미지가 다운로드되었습니다. 갤러리에서 확인하세요."
+            : "카드 이미지가 다운로드되었습니다."
+        );
+        setTimeout(() => {
+          setCardCopied(false);
+        }, 2000);
       }
     } catch (error) {
       console.error("카드 복사 오류:", error);
