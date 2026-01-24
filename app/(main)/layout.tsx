@@ -3,6 +3,7 @@ import { Sidebar } from "@/components/layout/sidebar";
 import { MobileNav } from "@/components/layout/mobile-nav";
 import { Footer } from "@/components/layout/footer";
 import { ErrorBoundary } from "@/components/error-boundary";
+import { MobileNoteSheetProvider } from "@/components/notes/mobile-note-sheet";
 
 /**
  * 메인 레이아웃
@@ -30,6 +31,7 @@ export default function MainLayout({
           </main>
         </div>
         <MobileNav />
+        <MobileNoteSheetProvider />
       </div>
     </ErrorBoundary>
   );
