@@ -54,20 +54,45 @@ export function QuickBookSelector({ onSelect, excludeUserBookIds = [] }: QuickBo
     );
   }, [books, searchQuery, excludeSet]);
 
-  // 최근 읽은 책 (읽는 중 상태) - 최대 6권 (제외 목록 적용)
-  const recentBooks = useMemo(() => {
+  // 최근 기록한 책 - 최대 6권 (제외 목록 적용)
+  // 정렬 기준: latestNote가 있는 책을 최근 기록 날짜 순으로 정렬
+  const recentNoteBooks = useMemo(() => {
     return books
-      .filter((book) => !excludeSet.has(book.id) && (book.status === "reading" || book.status === "rereading"))
+      .filter((book) => !excludeSet.has(book.id) && book.latestNote)
+      .sort((a, b) => {
+        const aDate = new Date(a.latestNote?.created_at || 0).getTime();
+        const bDate = new Date(b.latestNote?.created_at || 0).getTime();
+        return bDate - aDate; // 최근 기록 순
+      })
       .slice(0, 6);
   }, [books, excludeSet]);
 
-  // 나머지 책 목록
+  // 읽는 중인 책 (reading, rereading) - 최근 기록 책 제외, 최대 6권
+  const readingBooks = useMemo(() => {
+    const recentNoteIds = new Set(recentNoteBooks.map((b) => b.id));
+    return books
+      .filter(
+        (book) =>
+          !excludeSet.has(book.id) &&
+          !recentNoteIds.has(book.id) &&
+          (book.status === "reading" || book.status === "rereading")
+      )
+      .slice(0, 6);
+  }, [books, recentNoteBooks, excludeSet]);
+
+  // 나머지 책 목록 (최근 기록 책과 읽는 중 책 제외)
   const otherBooks = useMemo(() => {
     if (searchQuery.trim()) return filteredBooks;
 
-    const recentIds = new Set(recentBooks.map((b) => b.id));
-    return books.filter((book) => !recentIds.has(book.id));
-  }, [books, recentBooks, filteredBooks, searchQuery]);
+    const recentNoteIds = new Set(recentNoteBooks.map((b) => b.id));
+    const readingIds = new Set(readingBooks.map((b) => b.id));
+    return books.filter(
+      (book) =>
+        !excludeSet.has(book.id) &&
+        !recentNoteIds.has(book.id) &&
+        !readingIds.has(book.id)
+    );
+  }, [books, recentNoteBooks, readingBooks, filteredBooks, searchQuery, excludeSet]);
 
   const handleBookSelect = (book: BookWithNotes) => {
     onSelect(book);
@@ -107,14 +132,33 @@ export function QuickBookSelector({ onSelect, excludeUserBookIds = [] }: QuickBo
       </div>
 
       <div className="flex-1 overflow-y-auto space-y-4">
-        {/* 검색 중이 아닐 때만 최근 읽은 책 표시 */}
-        {!searchQuery.trim() && recentBooks.length > 0 && (
+        {/* 검색 중이 아닐 때만 최근 기록한 책 표시 */}
+        {!searchQuery.trim() && recentNoteBooks.length > 0 && (
+          <div>
+            <h4 className="text-sm font-medium text-muted-foreground mb-2">
+              최근 기록한 책
+            </h4>
+            <div className="grid grid-cols-3 gap-2">
+              {recentNoteBooks.map((book) => (
+                <BookCard
+                  key={book.id}
+                  book={book}
+                  variant="compact"
+                  onSelect={() => handleBookSelect(book)}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* 검색 중이 아닐 때만 읽는 중인 책 표시 */}
+        {!searchQuery.trim() && readingBooks.length > 0 && (
           <div>
             <h4 className="text-sm font-medium text-muted-foreground mb-2">
               읽는 중인 책
             </h4>
             <div className="grid grid-cols-3 gap-2">
-              {recentBooks.map((book) => (
+              {readingBooks.map((book) => (
                 <BookCard
                   key={book.id}
                   book={book}
@@ -128,7 +172,7 @@ export function QuickBookSelector({ onSelect, excludeUserBookIds = [] }: QuickBo
 
         {/* 전체 책 목록 */}
         <div>
-          {!searchQuery.trim() && recentBooks.length > 0 && (
+          {!searchQuery.trim() && (recentNoteBooks.length > 0 || readingBooks.length > 0) && (
             <h4 className="text-sm font-medium text-muted-foreground mb-2">
               내 서재
             </h4>
