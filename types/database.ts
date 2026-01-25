@@ -526,6 +526,197 @@ export interface Database {
           updated_at?: string;
         };
       };
+      // 포인트 시스템 테이블
+      user_points: {
+        Row: {
+          id: string;
+          user_id: string;
+          total_points: number;
+          lifetime_points: number;
+          current_level: number;
+          streak_bonus_multiplier: number;
+          last_activity_date: string | null;
+          current_streak: number;
+          longest_streak: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          total_points?: number;
+          lifetime_points?: number;
+          current_level?: number;
+          streak_bonus_multiplier?: number;
+          last_activity_date?: string | null;
+          current_streak?: number;
+          longest_streak?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          total_points?: number;
+          lifetime_points?: number;
+          current_level?: number;
+          streak_bonus_multiplier?: number;
+          last_activity_date?: string | null;
+          current_streak?: number;
+          longest_streak?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      point_transactions: {
+        Row: {
+          id: string;
+          user_id: string;
+          action_type: string;
+          points: number;
+          multiplier: number;
+          final_points: number;
+          description: string | null;
+          reference_id: string | null;
+          reference_type: string | null;
+          balance_after: number;
+          metadata: Json | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          action_type: string;
+          points: number;
+          multiplier?: number;
+          final_points: number;
+          description?: string | null;
+          reference_id?: string | null;
+          reference_type?: string | null;
+          balance_after: number;
+          metadata?: Json | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          action_type?: string;
+          points?: number;
+          multiplier?: number;
+          final_points?: number;
+          description?: string | null;
+          reference_id?: string | null;
+          reference_type?: string | null;
+          balance_after?: number;
+          metadata?: Json | null;
+          created_at?: string;
+        };
+      };
+      point_action_configs: {
+        Row: {
+          id: string;
+          action_type: string;
+          base_points: number;
+          description: string;
+          category: string;
+          is_repeatable: boolean;
+          daily_limit: number | null;
+          is_active: boolean;
+          icon: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          action_type: string;
+          base_points: number;
+          description: string;
+          category: string;
+          is_repeatable?: boolean;
+          daily_limit?: number | null;
+          is_active?: boolean;
+          icon?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          action_type?: string;
+          base_points?: number;
+          description?: string;
+          category?: string;
+          is_repeatable?: boolean;
+          daily_limit?: number | null;
+          is_active?: boolean;
+          icon?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      point_levels: {
+        Row: {
+          id: string;
+          level: number;
+          required_points: number;
+          title: string;
+          description: string | null;
+          badge_icon: string | null;
+          streak_bonus: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          level: number;
+          required_points: number;
+          title: string;
+          description?: string | null;
+          badge_icon?: string | null;
+          streak_bonus?: number;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          level?: number;
+          required_points?: number;
+          title?: string;
+          description?: string | null;
+          badge_icon?: string | null;
+          streak_bonus?: number;
+          created_at?: string;
+        };
+      };
+      daily_missions: {
+        Row: {
+          id: string;
+          user_id: string;
+          date: string;
+          mission_type: "first_read" | "note" | "streak" | "time_goal";
+          status: "pending" | "completed";
+          points_earned: number;
+          completed_at: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          date: string;
+          mission_type: "first_read" | "note" | "streak" | "time_goal";
+          status?: "pending" | "completed";
+          points_earned?: number;
+          completed_at?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          date?: string;
+          mission_type?: "first_read" | "note" | "streak" | "time_goal";
+          status?: "pending" | "completed";
+          points_earned?: number;
+          completed_at?: string | null;
+          created_at?: string;
+        };
+      };
     };
   };
 }

@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -13,6 +15,8 @@ import {
   Target,
   Sparkles,
   Gift,
+  ChevronRight,
+  Flame,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import confetti from "canvas-confetti";
@@ -28,6 +32,7 @@ export interface Mission {
     current: number;
     target: number;
   };
+  action_url?: string;
 }
 
 interface DailyMissionsProps {
@@ -39,20 +44,29 @@ const missionIcons: Record<Mission["type"], React.ElementType> = {
   first_read: BookOpen,
   note: PenLine,
   time_goal: Clock,
-  streak: Target,
+  streak: Flame,
 };
 
 const missionColors: Record<Mission["type"], string> = {
   first_read: "text-blue-500",
   note: "text-green-500",
   time_goal: "text-orange-500",
-  streak: "text-purple-500",
+  streak: "text-orange-500",
+};
+
+// 미션 타입별 기본 URL
+const missionUrls: Record<Mission["type"], string> = {
+  first_read: "/books",
+  note: "/notes/new",
+  time_goal: "/books",
+  streak: "/notes/new",
 };
 
 /**
  * 오늘의 미션 컴포넌트
  */
 export function DailyMissions({ missions, onMissionComplete }: DailyMissionsProps) {
+  const router = useRouter();
   const [celebratingMission, setCelebratingMission] = useState<string | null>(null);
   const completedCount = missions.filter((m) => m.status === "completed").length;
   const totalCount = missions.length;
@@ -88,6 +102,16 @@ export function DailyMissions({ missions, onMissionComplete }: DailyMissionsProp
       });
     }
   }, [allCompleted, totalCount]);
+
+  // 미션 클릭 핸들러
+  const handleMissionClick = (mission: Mission) => {
+    if (mission.status === "completed") {
+      return; // 완료된 미션은 클릭 무시
+    }
+
+    const url = mission.action_url || missionUrls[mission.type];
+    router.push(url);
+  };
 
   if (missions.length === 0) {
     return null;
@@ -150,9 +174,12 @@ export function DailyMissions({ missions, onMissionComplete }: DailyMissionsProp
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.3, delay: index * 0.1 }}
+                  onClick={() => handleMissionClick(mission)}
                   className={cn(
-                    "px-4 py-3 flex items-center gap-3 transition-colors",
-                    isCompleted && "bg-green-50/50 dark:bg-green-950/20"
+                    "px-4 py-3 flex items-center gap-3 transition-all",
+                    isCompleted
+                      ? "bg-green-50/50 dark:bg-green-950/20"
+                      : "hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer active:scale-[0.99]"
                   )}
                 >
                   {/* 상태 아이콘 */}
@@ -203,12 +230,17 @@ export function DailyMissions({ missions, onMissionComplete }: DailyMissionsProp
                     )}
                   </div>
 
-                  {/* 보상 */}
-                  <div className="shrink-0 flex items-center gap-1">
-                    <Gift className="h-3.5 w-3.5 text-amber-500" />
-                    <span className="text-xs font-medium text-amber-600 dark:text-amber-400">
-                      {mission.reward}
-                    </span>
+                  {/* 보상 및 액션 */}
+                  <div className="shrink-0 flex items-center gap-2">
+                    <div className="flex items-center gap-1">
+                      <Gift className="h-3.5 w-3.5 text-amber-500" />
+                      <span className="text-xs font-medium text-amber-600 dark:text-amber-400">
+                        {mission.reward}
+                      </span>
+                    </div>
+                    {!isCompleted && (
+                      <ChevronRight className="h-4 w-4 text-slate-400" />
+                    )}
                   </div>
                 </motion.div>
               );
@@ -228,7 +260,7 @@ export function DailyMissions({ missions, onMissionComplete }: DailyMissionsProp
               <div className="flex items-center justify-center gap-2 text-green-700 dark:text-green-300">
                 <Sparkles className="h-4 w-4" />
                 <span className="text-sm font-medium">
-                  오늘의 미션을 모두 완료했어요!
+                  오늘의 미션을 모두 완료했어요! +30 보너스
                 </span>
               </div>
             </motion.div>
