@@ -1,5 +1,6 @@
 import { getProfile } from "@/app/actions/profile";
 import { ProfileForm } from "./profile-form";
+import { DeleteAccountSection } from "./delete-account-section";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -86,6 +87,9 @@ export async function ProfileContent() {
 
       {/* 프로필 수정 폼 */}
       <ProfileForm user={user} />
+
+      {/* 계정 삭제 섹션 */}
+      <DeleteAccountSection />
     </div>
   );
 }
