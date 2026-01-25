@@ -209,26 +209,23 @@ export function ShareNoteCard({ note, className, isPublicView = false, hideActio
                                 // [Case A] 이미지 있음: 사진을 꽉 차게 보여줌 (비율 개선)
                                 <div className="flex flex-col h-full w-full">
                                     {hideActions ? (
-                                        // 캡처 시
+                                        // 캡처 시: html2canvas 호환을 위해 일반 img 태그 사용
                                         <div className="relative w-full flex-1 min-h-[350px] rounded-xl overflow-hidden shadow-sm bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
                                             {isValidImageUrl(note.image_url!) ? (
-                                                <Image
-                                                    src={getImageUrl(note.image_url!)}
+                                                <img
+                                                    src={getProxiedImageUrl(note.image_url!)}
                                                     alt="Captured Moment"
-                                                    fill
-                                                    className="object-contain" // 비율 유지하며 전체 표시
-                                                    sizes="(max-width: 768px) 100vw, 400px"
-                                                    priority={true}
-                                                    unoptimized={true}
+                                                    className="absolute inset-0 w-full h-full object-contain"
+                                                    crossOrigin="anonymous"
                                                     onError={(e) => {
-                                                        console.error("[ShareNoteCard] 이미지 로드 실패:", {
-                                                            url: getImageUrl(note.image_url!),
+                                                        console.error("[ShareNoteCard] 캡처용 이미지 로드 실패:", {
+                                                            url: getProxiedImageUrl(note.image_url!),
                                                             originalUrl: note.image_url,
                                                         });
                                                     }}
                                                     onLoad={() => {
-                                                        console.log("[ShareNoteCard] 이미지 로드 성공:", {
-                                                            url: getImageUrl(note.image_url!).substring(0, 100) + "...",
+                                                        console.log("[ShareNoteCard] 캡처용 이미지 로드 성공:", {
+                                                            url: getProxiedImageUrl(note.image_url!).substring(0, 100) + "...",
                                                         });
                                                     }}
                                                 />
