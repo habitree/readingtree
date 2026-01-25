@@ -1,11 +1,9 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { createNote } from "@/app/actions/notes";
 import { toast } from "sonner";
@@ -50,8 +48,6 @@ export function MobileNoteForm({
   onSaved,
   onCancel,
 }: MobileNoteFormProps) {
-  const router = useRouter();
-
   // 폼 상태
   const [quoteContent, setQuoteContent] = useState("");
   const [memoContent, setMemoContent] = useState("");
@@ -289,24 +285,23 @@ export function MobileNoteForm({
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex-1 overflow-y-auto space-y-4 px-1">
-        {/* 인상깊은 구절 - 포커스 시 확대 */}
+      <div className="flex-1 overflow-y-auto space-y-3 px-0.5">
+        {/* 인상깊은 구절 - 컴팩트 */}
         <div className={cn(
-          "space-y-2 p-3 rounded-xl border transition-all duration-300",
-          "bg-gradient-to-br from-blue-50/80 to-indigo-50/50 dark:from-blue-950/30 dark:to-indigo-950/20",
+          "space-y-1.5 p-2.5 rounded-lg border transition-all duration-300",
+          "bg-blue-50/50 dark:bg-blue-950/20",
           quoteFocused
-            ? "border-blue-400 dark:border-blue-600 shadow-lg shadow-blue-100 dark:shadow-blue-900/20"
+            ? "border-blue-400 dark:border-blue-600"
             : "border-blue-100/50 dark:border-blue-900/30"
         )}>
           <div className="flex items-center justify-between">
-            <Label htmlFor="quoteContent" className="text-sm font-semibold flex items-center gap-2 text-blue-700 dark:text-blue-300">
-              <Quote className="w-4 h-4" />
-              인상깊은 구절
+            <Label htmlFor="quoteContent" className="text-xs font-medium flex items-center gap-1.5 text-blue-700 dark:text-blue-300">
+              <Quote className="w-3.5 h-3.5" />
+              구절
               {quoteContent.length > 0 && (
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                <CheckCircle2 className="w-3 h-3 text-emerald-500" />
               )}
             </Label>
-            <span className="text-xs text-muted-foreground">{quoteContent.length}/5000</span>
           </div>
           <Textarea
             id="quoteContent"
@@ -314,33 +309,32 @@ export function MobileNoteForm({
             onChange={(e) => setQuoteContent(e.target.value)}
             onFocus={() => setQuoteFocused(true)}
             onBlur={() => setQuoteFocused(false)}
-            placeholder="책에서 인상깊었던 문장을 기록하세요"
-            rows={quoteFocused ? 6 : 3}
+            placeholder="인상깊은 문장"
+            rows={quoteFocused ? 5 : 2}
             className={cn(
-              "resize-none text-base bg-white/80 dark:bg-slate-900/50 border-blue-200/50 dark:border-blue-800/30",
+              "resize-none text-sm bg-white/80 dark:bg-slate-900/50 border-blue-200/50 dark:border-blue-800/30",
               "transition-all duration-300"
             )}
             maxLength={5000}
           />
         </div>
 
-        {/* 내 생각 - 포커스 시 확대 */}
+        {/* 내 생각 - 컴팩트 */}
         <div className={cn(
-          "space-y-2 p-3 rounded-xl border transition-all duration-300",
-          "bg-gradient-to-br from-amber-50/80 to-orange-50/50 dark:from-amber-950/30 dark:to-orange-950/20",
+          "space-y-1.5 p-2.5 rounded-lg border transition-all duration-300",
+          "bg-amber-50/50 dark:bg-amber-950/20",
           memoFocused
-            ? "border-amber-400 dark:border-amber-600 shadow-lg shadow-amber-100 dark:shadow-amber-900/20"
+            ? "border-amber-400 dark:border-amber-600"
             : "border-amber-100/50 dark:border-amber-900/30"
         )}>
           <div className="flex items-center justify-between">
-            <Label htmlFor="memoContent" className="text-sm font-semibold flex items-center gap-2 text-amber-700 dark:text-amber-300">
-              <MessageSquare className="w-4 h-4" />
-              내 생각
+            <Label htmlFor="memoContent" className="text-xs font-medium flex items-center gap-1.5 text-amber-700 dark:text-amber-300">
+              <MessageSquare className="w-3.5 h-3.5" />
+              생각
               {memoContent.length > 0 && (
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                <CheckCircle2 className="w-3 h-3 text-emerald-500" />
               )}
             </Label>
-            <span className="text-xs text-muted-foreground">{memoContent.length}/10000</span>
           </div>
           <Textarea
             id="memoContent"
@@ -348,58 +342,55 @@ export function MobileNoteForm({
             onChange={(e) => setMemoContent(e.target.value)}
             onFocus={() => setMemoFocused(true)}
             onBlur={() => setMemoFocused(false)}
-            placeholder="이 구절에 대한 생각, 느낌, 깨달음을 적어보세요"
-            rows={memoFocused ? 8 : 4}
+            placeholder="느낀 점, 깨달음"
+            rows={memoFocused ? 6 : 3}
             className={cn(
-              "resize-none text-base bg-white/80 dark:bg-slate-900/50 border-amber-200/50 dark:border-amber-800/30",
+              "resize-none text-sm bg-white/80 dark:bg-slate-900/50 border-amber-200/50 dark:border-amber-800/30",
               "transition-all duration-300"
             )}
             maxLength={10000}
           />
         </div>
 
-        {/* 페이지 번호 & 태그 - 항상 표시, 컴팩트 레이아웃 */}
-        <div className="grid grid-cols-2 gap-3">
-          {/* 페이지 번호 */}
-          <div className="space-y-1.5">
-            <Label htmlFor="pageNumbers" className="text-xs font-medium flex items-center gap-1.5 text-slate-600 dark:text-slate-400">
-              <BookOpen className="w-3.5 h-3.5" />
+        {/* 페이지 번호 & 태그 - 컴팩트 */}
+        <div className="grid grid-cols-2 gap-2">
+          <div className="space-y-1">
+            <Label htmlFor="pageNumbers" className="text-xs text-slate-500 flex items-center gap-1">
+              <BookOpen className="w-3 h-3" />
               페이지
             </Label>
             <Input
               id="pageNumbers"
               value={pageNumbers}
               onChange={(e) => setPageNumbers(e.target.value)}
-              placeholder="42, 100-105"
-              className="h-9 text-sm"
+              placeholder="42"
+              className="h-8 text-xs"
             />
           </div>
-
-          {/* 태그 */}
-          <div className="space-y-1.5">
-            <Label htmlFor="tags" className="text-xs font-medium flex items-center gap-1.5 text-slate-600 dark:text-slate-400">
-              <Tag className="w-3.5 h-3.5" />
+          <div className="space-y-1">
+            <Label htmlFor="tags" className="text-xs text-slate-500 flex items-center gap-1">
+              <Tag className="w-3 h-3" />
               태그
             </Label>
             <Input
               id="tags"
               value={tags}
               onChange={(e) => setTags(e.target.value)}
-              placeholder="명언, 인생"
-              className="h-9 text-sm"
+              placeholder="명언"
+              className="h-8 text-xs"
             />
           </div>
         </div>
 
-        {/* 이미지 업로드 버튼 */}
-        <div className="space-y-3">
-          <Label className="text-sm font-semibold flex items-center gap-2">
-            <Camera className="w-4 h-4 text-slate-500" />
-            이미지 등록
+        {/* 이미지 업로드 버튼 - 컴팩트 */}
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <Camera className="w-3.5 h-3.5 text-slate-500" />
+            <Label className="text-xs font-medium">이미지</Label>
             {images.length > 0 && (
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+              <CheckCircle2 className="w-3 h-3 text-emerald-500" />
             )}
-          </Label>
+          </div>
           <div className="grid grid-cols-2 gap-2">
             <button
               type="button"
@@ -409,16 +400,14 @@ export function MobileNoteForm({
                 fileInputRef.current?.click();
               }}
               className={cn(
-                "flex flex-col items-center justify-center gap-1.5 p-4 rounded-xl border-2 border-dashed transition-all active:scale-[0.98]",
+                "flex items-center justify-center gap-2 p-2.5 rounded-lg border-2 border-dashed transition-all active:scale-[0.98]",
                 "border-purple-200 dark:border-purple-800 bg-purple-50/50 dark:bg-purple-950/20",
                 "active:border-purple-400 active:bg-purple-100/50",
                 uploading && "opacity-50 pointer-events-none"
               )}
             >
-              <div className="w-9 h-9 rounded-full bg-purple-100 dark:bg-purple-900/50 flex items-center justify-center">
-                <PenTool className="h-4 w-4 text-purple-600 dark:text-purple-400" />
-              </div>
-              <span className="text-xs font-medium text-purple-700 dark:text-purple-300">필사등록</span>
+              <PenTool className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+              <span className="text-xs font-medium text-purple-700 dark:text-purple-300">필사</span>
             </button>
             <button
               type="button"
@@ -428,21 +417,16 @@ export function MobileNoteForm({
                 fileInputRef.current?.click();
               }}
               className={cn(
-                "flex flex-col items-center justify-center gap-1.5 p-4 rounded-xl border-2 border-dashed transition-all active:scale-[0.98]",
+                "flex items-center justify-center gap-2 p-2.5 rounded-lg border-2 border-dashed transition-all active:scale-[0.98]",
                 "border-emerald-200 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-950/20",
                 "active:border-emerald-400 active:bg-emerald-100/50",
                 uploading && "opacity-50 pointer-events-none"
               )}
             >
-              <div className="w-9 h-9 rounded-full bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center">
-                <Camera className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-              </div>
-              <span className="text-xs font-medium text-emerald-700 dark:text-emerald-300">이미지등록</span>
+              <Camera className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+              <span className="text-xs font-medium text-emerald-700 dark:text-emerald-300">사진</span>
             </button>
           </div>
-          <p className="text-xs text-muted-foreground text-center">
-            필사 이미지는 자동으로 텍스트를 추출해요
-          </p>
           <input
             ref={fileInputRef}
             type="file"
@@ -505,13 +489,13 @@ export function MobileNoteForm({
           </div>
         )}
 
-        {/* 공개 설정 - 더 간결하게 */}
-        <div className="flex items-center justify-between py-2">
+        {/* 공개 설정 - 간결 */}
+        <div className="flex items-center gap-2 py-1">
           <button
             type="button"
             onClick={() => setIsPublic(!isPublic)}
             className={cn(
-              "flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-all",
+              "flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-all",
               isPublic
                 ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
                 : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400"
@@ -519,49 +503,41 @@ export function MobileNoteForm({
           >
             {isPublic ? (
               <>
-                <Globe className="w-3.5 h-3.5" />
+                <Globe className="w-3 h-3" />
                 공개
               </>
             ) : (
               <>
-                <Lock className="w-3.5 h-3.5" />
+                <Lock className="w-3 h-3" />
                 비공개
               </>
             )}
           </button>
-          <span className="text-xs text-muted-foreground">
-            {isPublic ? "다른 사용자가 볼 수 있어요" : "나만 볼 수 있어요"}
-          </span>
         </div>
       </div>
 
-      {/* 하단 버튼 */}
-      <div className="pt-4 pb-2 space-y-2.5 border-t mt-4 bg-gradient-to-t from-background to-transparent">
-        {!hasContent && (
-          <p className="text-center text-xs text-muted-foreground pb-1">
-            구절, 생각, 이미지 중 하나 이상 입력해주세요
-          </p>
-        )}
+      {/* 하단 버튼 - 컴팩트 */}
+      <div className="pt-3 pb-1 space-y-2 border-t mt-3">
         <Button
           type="button"
           onClick={handleSubmit}
           disabled={isSubmitting || uploading || !hasContent}
-          className="w-full h-12 text-base font-semibold shadow-lg"
+          className="w-full h-10 font-medium"
         >
           {isSubmitting ? (
             <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              저장 중...
+              <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+              저장 중
             </>
           ) : uploading ? (
             <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              업로드 중...
+              <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+              업로드 중
             </>
           ) : (
             <>
-              <CheckCircle2 className="mr-2 h-4 w-4" />
-              저장하기
+              <CheckCircle2 className="mr-1.5 h-4 w-4" />
+              저장
             </>
           )}
         </Button>
@@ -570,7 +546,7 @@ export function MobileNoteForm({
           variant="ghost"
           onClick={onCancel}
           disabled={isSubmitting || uploading}
-          className="w-full h-10"
+          className="w-full h-8 text-sm"
         >
           취소
         </Button>

@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -134,20 +133,16 @@ export function RelatedBooksEditor({ userBookId }: RelatedBooksEditorProps) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm">
-          <Link2 className="mr-2 h-4 w-4" />
-          관리
+        <Button variant="ghost" size="icon" className="h-7 w-7">
+          <Plus className="h-4 w-4" />
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[500px] max-h-[80vh] flex flex-col">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Link2 className="h-5 w-5" />
-            연결된 책 관리
+      <DialogContent className="sm:max-w-[420px] max-h-[70vh] flex flex-col p-4">
+        <DialogHeader className="pb-2">
+          <DialogTitle className="flex items-center gap-2 text-base">
+            <Link2 className="h-4 w-4" />
+            연결된 책
           </DialogTitle>
-          <DialogDescription>
-            이 책과 관련된 다른 책들을 연결하세요.
-          </DialogDescription>
         </DialogHeader>
 
         {isLoading ? (

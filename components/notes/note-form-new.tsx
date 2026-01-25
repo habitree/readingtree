@@ -16,11 +16,10 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { createNote } from "@/app/actions/notes";
 import { toast } from "sonner";
-import { Loader2, Upload, X, PenTool, Camera, Quote, MessageSquare, Sparkles, CheckCircle2, Info } from "lucide-react";
+import { Loader2, X, PenTool, Camera, Quote, MessageSquare, Sparkles, CheckCircle2, Info } from "lucide-react";
 import Image from "next/image";
 import { getImageUrl, isValidImageUrl } from "@/lib/utils/image";
 import { validateImageSize, validateImageType } from "@/lib/utils/image";
@@ -223,47 +222,6 @@ export function NoteFormNew({ bookId }: NoteFormNewProps) {
     }
   };
 
-  const handleTranscriptionClick = () => {
-    console.log("필사등록 버튼 클릭됨", {
-      ref: transcriptionInputRef.current,
-      refExists: !!transcriptionInputRef.current,
-    });
-
-    if (!transcriptionInputRef.current) {
-      console.error("transcriptionInputRef가 null입니다.");
-      toast.error("파일 입력 요소를 찾을 수 없습니다. 페이지를 새로고침해주세요.");
-      return;
-    }
-
-    // 브라우저 보안 정책으로 인해 setTimeout을 사용하여 다음 이벤트 루프에서 실행
-    setTimeout(() => {
-      try {
-        if (transcriptionInputRef.current) {
-          // input 요소가 실제로 DOM에 있는지 확인
-          if (transcriptionInputRef.current.isConnected) {
-            transcriptionInputRef.current.click();
-            console.log("파일 선택 다이얼로그 열기 시도 완료");
-          } else {
-            console.error("input 요소가 DOM에 연결되지 않았습니다.");
-            toast.error("파일 입력 요소를 찾을 수 없습니다. 페이지를 새로고침해주세요.");
-          }
-        }
-      } catch (error) {
-        console.error("파일 선택 다이얼로그 열기 실패:", error);
-        toast.error("파일 선택에 실패했습니다.");
-      }
-    }, 0);
-  };
-
-  const handlePhotoClick = () => {
-    // 브라우저 보안 정책으로 인해 setTimeout을 사용하여 다음 이벤트 루프에서 실행
-    setTimeout(() => {
-      if (photoInputRef.current && photoInputRef.current.isConnected) {
-        photoInputRef.current.click();
-      }
-    }, 0);
-  };
-
   const removeImage = (index: number) => {
     setImages((prev) => {
       const newImages = prev.filter((_, i) => i !== index);
@@ -455,32 +413,26 @@ export function NoteFormNew({ bookId }: NoteFormNewProps) {
 
   return (
     <Form {...form}>
-      <form onSubmit={handleFormSubmit} className="space-y-6 sm:space-y-8">
-        {/* 안내 메시지 */}
-        <div className="flex items-start gap-3 p-3 sm:p-4 rounded-lg bg-primary/5 border border-primary/10">
-          <Info className="w-5 h-5 text-primary shrink-0 mt-0.5" />
-          <div className="text-sm text-muted-foreground">
-            <p className="font-medium text-foreground mb-1">기록 작성 가이드</p>
-            <p>인상깊은 구절, 나의 생각, 이미지 중 <span className="text-primary font-medium">하나 이상</span>을 입력하면 저장할 수 있어요.</p>
-          </div>
+      <form onSubmit={handleFormSubmit} className="space-y-4">
+        {/* 안내 메시지 - 간결하게 */}
+        <div className="flex items-center gap-2 p-2.5 rounded-lg bg-primary/5 border border-primary/10 text-sm text-muted-foreground">
+          <Info className="w-4 h-4 text-primary shrink-0" />
+          <span>구절, 생각, 이미지 중 <span className="text-primary font-medium">하나 이상</span> 입력 시 저장 가능</span>
         </div>
 
-        {/* 제목 입력 */}
+        {/* 제목 입력 - 컴팩트 */}
         <FormField
           control={form.control}
           name="title"
           render={({ field }) => (
-            <FormItem>
-              <FormLabel className="flex items-center gap-2">
-                <span>제목</span>
-                <span className="text-muted-foreground text-xs font-normal bg-muted px-1.5 py-0.5 rounded">선택</span>
-              </FormLabel>
+            <FormItem className="space-y-1.5">
+              <FormLabel className="text-sm">제목 <span className="text-muted-foreground text-xs">(선택)</span></FormLabel>
               <FormControl>
                 <Input
-                  placeholder="이 기록의 제목을 입력하세요"
+                  placeholder="제목"
                   {...field}
                   value={field.value || ""}
-                  className="text-base"
+                  className="text-sm h-9"
                 />
               </FormControl>
               <FormMessage />
@@ -488,149 +440,125 @@ export function NoteFormNew({ bookId }: NoteFormNewProps) {
           )}
         />
 
-        {/* 인상깊은 구절 - 개선된 UI */}
-        <div className="space-y-3 p-4 sm:p-5 rounded-xl bg-gradient-to-br from-blue-50/50 to-indigo-50/30 dark:from-blue-950/20 dark:to-indigo-950/10 border border-blue-100/50 dark:border-blue-900/30">
+        {/* 인상깊은 구절 - 컴팩트 */}
+        <div className="space-y-2 p-3 rounded-lg bg-blue-50/50 dark:bg-blue-950/20 border border-blue-100/50 dark:border-blue-900/30">
           <div className="flex items-center justify-between">
-            <Label htmlFor="quoteContent" className="flex items-center gap-2 text-blue-700 dark:text-blue-300">
-              <Quote className="w-4 h-4" />
-              <span className="font-semibold">인상깊은 구절</span>
+            <Label htmlFor="quoteContent" className="flex items-center gap-1.5 text-sm text-blue-700 dark:text-blue-300">
+              <Quote className="w-3.5 h-3.5" />
+              구절
               {quoteContent.length > 0 && (
-                <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
               )}
             </Label>
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-muted-foreground">
-                {quoteContent.length.toLocaleString()} / 5,000
-              </span>
-              <TextPreviewDialog
-                title="인상깊은 구절"
-                content={quoteContent}
-                label="전체 보기"
-                onSave={(value) => setValue("quoteContent", value)}
-                maxLength={5000}
-              />
-            </div>
+            <TextPreviewDialog
+              title="인상깊은 구절"
+              content={quoteContent}
+              label="확장"
+              onSave={(value) => setValue("quoteContent", value)}
+              maxLength={5000}
+            />
           </div>
           <BookMentionTextarea
             id="quoteContent"
             value={quoteContent}
             onValueChange={(value) => setValue("quoteContent", value)}
-            placeholder="책에서 인상깊었던 문장을 기록하세요"
-            rows={4}
-            className="resize-none bg-white/70 dark:bg-slate-900/50 border-blue-200/50 dark:border-blue-800/30 focus:border-blue-400 text-base"
+            placeholder="인상깊은 문장"
+            rows={3}
+            className="resize-none bg-white/70 dark:bg-slate-900/50 border-blue-200/50 dark:border-blue-800/30 text-sm"
           />
           {errors.quoteContent && (
-            <p className="text-sm text-destructive">{errors.quoteContent.message}</p>
+            <p className="text-xs text-destructive">{errors.quoteContent.message}</p>
           )}
         </div>
 
-        {/* 내 생각 - 개선된 UI */}
-        <div className="space-y-3 p-4 sm:p-5 rounded-xl bg-gradient-to-br from-amber-50/50 to-orange-50/30 dark:from-amber-950/20 dark:to-orange-950/10 border border-amber-100/50 dark:border-amber-900/30">
+        {/* 내 생각 - 컴팩트 */}
+        <div className="space-y-2 p-3 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-amber-100/50 dark:border-amber-900/30">
           <div className="flex items-center justify-between">
-            <Label htmlFor="memoContent" className="flex items-center gap-2 text-amber-700 dark:text-amber-300">
-              <MessageSquare className="w-4 h-4" />
-              <span className="font-semibold">내 생각</span>
+            <Label htmlFor="memoContent" className="flex items-center gap-1.5 text-sm text-amber-700 dark:text-amber-300">
+              <MessageSquare className="w-3.5 h-3.5" />
+              생각
               {memoContent.length > 0 && (
-                <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
               )}
             </Label>
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-muted-foreground">
-                {memoContent.length.toLocaleString()} / 10,000
-              </span>
-              <TextPreviewDialog
-                title="내 생각"
-                content={memoContent}
-                label="전체 보기"
-                onSave={(value) => setValue("memoContent", value)}
-                maxLength={10000}
-              />
-            </div>
+            <TextPreviewDialog
+              title="내 생각"
+              content={memoContent}
+              label="확장"
+              onSave={(value) => setValue("memoContent", value)}
+              maxLength={10000}
+            />
           </div>
           <BookMentionTextarea
             id="memoContent"
             value={memoContent}
             onValueChange={(value) => setValue("memoContent", value)}
-            placeholder="이 구절에 대한 나의 생각, 느낌, 깨달음을 자유롭게 적어보세요"
-            rows={6}
-            className="resize-none bg-white/70 dark:bg-slate-900/50 border-amber-200/50 dark:border-amber-800/30 focus:border-amber-400 text-base"
+            placeholder="느낀 점, 깨달음"
+            rows={4}
+            className="resize-none bg-white/70 dark:bg-slate-900/50 border-amber-200/50 dark:border-amber-800/30 text-sm"
           />
           {errors.memoContent && (
-            <p className="text-sm text-destructive">{errors.memoContent.message}</p>
+            <p className="text-xs text-destructive">{errors.memoContent.message}</p>
           )}
         </div>
 
-        {/* 이미지 업로드 버튼 - 개선된 UI */}
-        <div className="space-y-3 p-4 sm:p-5 rounded-xl bg-gradient-to-br from-slate-50 to-slate-100/50 dark:from-slate-900/50 dark:to-slate-800/30 border border-slate-200/50 dark:border-slate-700/30">
-          <div className="flex items-center gap-2">
-            <Camera className="w-4 h-4 text-slate-600 dark:text-slate-400" />
-            <Label className="font-semibold text-slate-700 dark:text-slate-300">이미지 등록</Label>
-            <span className="text-muted-foreground text-xs font-normal bg-muted px-1.5 py-0.5 rounded">선택</span>
-            {images.length > 0 && (
-              <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-            )}
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <label
-              htmlFor="transcription-input"
-              className="cursor-pointer group"
-              style={{ touchAction: "manipulation" }}
-            >
-              <div
-                className={`flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-purple-200 dark:border-purple-800 bg-purple-50/50 dark:bg-purple-950/20 p-4 sm:p-6 transition-all hover:border-purple-400 hover:bg-purple-100/50 dark:hover:bg-purple-900/30 group-hover:scale-[1.02] ${
-                  uploading || isUploadingRef.current ? "opacity-50 cursor-not-allowed pointer-events-none" : ""
-                }`}
-              >
-                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-purple-100 dark:bg-purple-900/50 flex items-center justify-center">
-                  <PenTool className="h-5 w-5 sm:h-6 sm:w-6 text-purple-600 dark:text-purple-400" />
-                </div>
-                <div className="text-center">
-                  <p className="font-medium text-sm text-purple-700 dark:text-purple-300">필사등록</p>
-                  <p className="text-xs text-purple-500/70 dark:text-purple-400/60 mt-0.5 hidden sm:block">OCR 자동 추출</p>
-                </div>
-              </div>
-            </label>
-            <label
-              htmlFor="photo-input"
-              className="cursor-pointer group"
-              style={{ touchAction: "manipulation" }}
-            >
-              <div
-                className={`flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-emerald-200 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-950/20 p-4 sm:p-6 transition-all hover:border-emerald-400 hover:bg-emerald-100/50 dark:hover:bg-emerald-900/30 group-hover:scale-[1.02] ${
-                  uploading || isUploadingRef.current ? "opacity-50 cursor-not-allowed pointer-events-none" : ""
-                }`}
-              >
-                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center">
-                  <Camera className="h-5 w-5 sm:h-6 sm:w-6 text-emerald-600 dark:text-emerald-400" />
-                </div>
-                <div className="text-center">
-                  <p className="font-medium text-sm text-emerald-700 dark:text-emerald-300">이미지등록</p>
-                  <p className="text-xs text-emerald-500/70 dark:text-emerald-400/60 mt-0.5 hidden sm:block">여러 장 선택 가능</p>
-                </div>
-              </div>
-            </label>
-          </div>
-
-          <div className="flex items-center justify-between pt-2">
-            <div className="flex items-center space-x-2">
+        {/* 이미지 업로드 버튼 - 컴팩트 UI */}
+        <div className="space-y-2 p-3 rounded-lg bg-slate-50/80 dark:bg-slate-900/30 border border-slate-200/50 dark:border-slate-700/30">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Camera className="w-4 h-4 text-slate-500" />
+              <Label className="text-sm font-medium">이미지</Label>
+              {images.length > 0 && (
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+              )}
+            </div>
+            <div className="flex items-center gap-2">
               <Checkbox
                 id="apply-stamp"
                 checked={applyStamp}
                 onCheckedChange={(checked) => setApplyStamp(checked === true)}
                 disabled={uploading}
+                className="h-3.5 w-3.5"
               />
               <Label
                 htmlFor="apply-stamp"
-                className="text-sm font-medium leading-none cursor-pointer flex items-center gap-1.5"
+                className="text-xs cursor-pointer flex items-center gap-1"
               >
-                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                스탬프 적용
+                <Sparkles className="w-3 h-3 text-amber-500" />
+                스탬프
               </Label>
             </div>
-            <p className="text-xs text-muted-foreground hidden sm:block">
-              필사 이미지에서 텍스트 자동 추출
-            </p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            <label
+              htmlFor="transcription-input"
+              className="cursor-pointer"
+              style={{ touchAction: "manipulation" }}
+            >
+              <div
+                className={`flex items-center justify-center gap-2 rounded-lg border-2 border-dashed border-purple-200 dark:border-purple-800 bg-purple-50/50 dark:bg-purple-950/20 p-2.5 sm:p-3 transition-all hover:border-purple-400 hover:bg-purple-100/50 ${
+                  uploading || isUploadingRef.current ? "opacity-50 cursor-not-allowed pointer-events-none" : ""
+                }`}
+              >
+                <PenTool className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                <span className="font-medium text-sm text-purple-700 dark:text-purple-300">필사</span>
+              </div>
+            </label>
+            <label
+              htmlFor="photo-input"
+              className="cursor-pointer"
+              style={{ touchAction: "manipulation" }}
+            >
+              <div
+                className={`flex items-center justify-center gap-2 rounded-lg border-2 border-dashed border-emerald-200 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-950/20 p-2.5 sm:p-3 transition-all hover:border-emerald-400 hover:bg-emerald-100/50 ${
+                  uploading || isUploadingRef.current ? "opacity-50 cursor-not-allowed pointer-events-none" : ""
+                }`}
+              >
+                <Camera className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                <span className="font-medium text-sm text-emerald-700 dark:text-emerald-300">사진</span>
+              </div>
+            </label>
           </div>
 
           <input
@@ -723,22 +651,15 @@ export function NoteFormNew({ bookId }: NoteFormNewProps) {
           </div>
         )}
 
-        {/* 페이지 번호 (여러 줄 입력 가능) */}
-        <div className="space-y-2">
-          <Label htmlFor="pageNumbers">페이지 번호</Label>
-          <Textarea
+        {/* 페이지 번호 - 컴팩트 */}
+        <div className="space-y-1.5">
+          <Label htmlFor="pageNumbers" className="text-sm">페이지</Label>
+          <Input
             id="pageNumbers"
             {...register("pageNumbers")}
-            placeholder={`예시)
-42
-100
-150`}
-            rows={4}
-            className="resize-none max-w-2xl"
+            placeholder="예: 42, 100-105"
+            className="max-w-xs"
           />
-          <p className="text-xs text-muted-foreground">
-            여러 페이지를 한번에 등록하려면 줄바꿈으로 구분하여 입력하세요.
-          </p>
           {errors.pageNumbers && (
             <p className="text-sm text-destructive">{errors.pageNumbers.message}</p>
           )}
@@ -750,64 +671,40 @@ export function NoteFormNew({ bookId }: NoteFormNewProps) {
           onChange={(value) => setValue("tags", value)}
         />
 
-        {/* 공개 설정 - 개선된 UI */}
-        <div className="flex items-center justify-between p-4 rounded-lg bg-muted/30 border">
-          <div className="flex items-center gap-3">
-            <Switch
-              id="isPublic"
-              checked={!isPublic}
-              onCheckedChange={(checked) => setValue("isPublic", !checked)}
-            />
-            <div>
-              <Label htmlFor="isPublic" className="cursor-pointer text-sm font-medium">
-                {isPublic ? "공개" : "비공개"}
-              </Label>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                {isPublic
-                  ? "다른 사용자도 볼 수 있어요"
-                  : "나만 볼 수 있어요"}
-              </p>
-            </div>
-          </div>
-          <div className={`px-2.5 py-1 rounded-full text-xs font-medium ${
-            isPublic
-              ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
-              : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400"
-          }`}>
-            {isPublic ? "공개됨" : "비공개"}
-          </div>
+        {/* 공개 설정 - 컴팩트 */}
+        <div className="flex items-center gap-3">
+          <Switch
+            id="isPublic"
+            checked={!isPublic}
+            onCheckedChange={(checked) => setValue("isPublic", !checked)}
+          />
+          <Label htmlFor="isPublic" className="cursor-pointer text-sm">
+            {isPublic ? "공개" : "비공개"}
+          </Label>
         </div>
 
-        {/* 제출 버튼 - 개선된 UI */}
-        <div className="flex flex-col gap-3 pt-4 sm:pt-6">
-          {/* 입력 상태 표시 */}
-          {!hasContent && (
-            <p className="text-center text-sm text-muted-foreground mb-2">
-              인상깊은 구절, 내 생각, 이미지 중 하나 이상 입력해주세요
-            </p>
-          )}
-
+        {/* 제출 버튼 - 컴팩트 */}
+        <div className="flex flex-col gap-2 pt-4">
           <Button
             type="submit"
             disabled={isSubmitting || uploading || !hasContent}
             fullWidth
-            size="lg"
-            className="h-12 sm:h-14 text-base font-semibold shadow-lg hover:shadow-xl transition-all"
+            className="h-11 font-semibold"
           >
             {isSubmitting ? (
               <>
-                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 저장 중...
               </>
             ) : uploading ? (
               <>
-                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 업로드 중...
               </>
             ) : (
               <>
-                <CheckCircle2 className="mr-2 h-5 w-5" />
-                기록 저장하기
+                <CheckCircle2 className="mr-2 h-4 w-4" />
+                저장
               </>
             )}
           </Button>
@@ -817,7 +714,7 @@ export function NoteFormNew({ bookId }: NoteFormNewProps) {
             onClick={() => router.back()}
             disabled={isSubmitting || uploading}
             fullWidth
-            className="h-10"
+            size="sm"
           >
             취소
           </Button>
