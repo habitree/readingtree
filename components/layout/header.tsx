@@ -25,6 +25,7 @@ import { getCurrentUserProfile } from "@/app/actions/profile";
 import { getImageUrl } from "@/lib/utils/image";
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
+import { PointsButton } from "@/components/points";
 
 /**
  * 헤더 컴포넌트
@@ -154,6 +155,9 @@ export function Header() {
                 <p>{mounted && isDarkMode ? "라이트 모드" : "다크 모드"}</p>
               </TooltipContent>
             </Tooltip>
+
+            {/* 포인트 버튼 (로그인 시에만 표시) */}
+            {user && <PointsButton />}
 
             {/* 프로필 메뉴 */}
             {user ? (

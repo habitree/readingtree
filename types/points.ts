@@ -269,3 +269,108 @@ export const LEVEL_DEFAULTS: PointLevel[] = [
   { id: "9", level: 9, required_points: 6000, title: "대가 독서가", description: "독서의 대가", badge_icon: "Trophy", streak_bonus: 1.40, created_at: "" },
   { id: "10", level: 10, required_points: 10000, title: "전설의 독서가", description: "전설적인 독서 기록", badge_icon: "Gem", streak_bonus: 1.50, created_at: "" },
 ];
+
+/**
+ * 레벨별 스타일 정보 (심리학적 색상 + 디자인)
+ * - 초기 레벨 (1-3): 녹색 계열 → 안정감, 성장
+ * - 중급 레벨 (4-6): 따뜻한 색 → 열정, 권위
+ * - 고급 레벨 (7-10): 특별한 색 → 희소성, 특별함
+ */
+export interface LevelStyle {
+  color: string;        // Tailwind 색상 클래스
+  bgColor: string;      // 배경색
+  borderColor: string;  // 테두리색
+  textColor: string;    // 텍스트색
+  emoji: string;        // 이모지
+  effect: "none" | "subtle" | "glow" | "premium"; // 애니메이션 효과
+}
+
+export const LEVEL_STYLES: Record<number, LevelStyle> = {
+  1: {
+    color: "#86efac",
+    bgColor: "bg-green-100 dark:bg-green-900/30",
+    borderColor: "border-green-300 dark:border-green-700",
+    textColor: "text-green-700 dark:text-green-300",
+    emoji: "🌱",
+    effect: "none",
+  },
+  2: {
+    color: "#fde047",
+    bgColor: "bg-yellow-100 dark:bg-yellow-900/30",
+    borderColor: "border-yellow-300 dark:border-yellow-700",
+    textColor: "text-yellow-700 dark:text-yellow-300",
+    emoji: "✨",
+    effect: "none",
+  },
+  3: {
+    color: "#4ade80",
+    bgColor: "bg-emerald-100 dark:bg-emerald-900/30",
+    borderColor: "border-emerald-300 dark:border-emerald-700",
+    textColor: "text-emerald-700 dark:text-emerald-300",
+    emoji: "📈",
+    effect: "none",
+  },
+  4: {
+    color: "#fb923c",
+    bgColor: "bg-orange-100 dark:bg-orange-900/30",
+    borderColor: "border-orange-300 dark:border-orange-700",
+    textColor: "text-orange-700 dark:text-orange-300",
+    emoji: "🔥",
+    effect: "subtle",
+  },
+  5: {
+    color: "#facc15",
+    bgColor: "bg-amber-100 dark:bg-amber-900/30",
+    borderColor: "border-amber-300 dark:border-amber-700",
+    textColor: "text-amber-700 dark:text-amber-300",
+    emoji: "⭐",
+    effect: "subtle",
+  },
+  6: {
+    color: "#c084fc",
+    bgColor: "bg-purple-100 dark:bg-purple-900/30",
+    borderColor: "border-purple-300 dark:border-purple-700",
+    textColor: "text-purple-700 dark:text-purple-300",
+    emoji: "👑",
+    effect: "subtle",
+  },
+  7: {
+    color: "#60a5fa",
+    bgColor: "bg-blue-100 dark:bg-blue-900/30",
+    borderColor: "border-blue-300 dark:border-blue-700",
+    textColor: "text-blue-700 dark:text-blue-300",
+    emoji: "🏅",
+    effect: "glow",
+  },
+  8: {
+    color: "#2dd4bf",
+    bgColor: "bg-teal-100 dark:bg-teal-900/30",
+    borderColor: "border-teal-300 dark:border-teal-700",
+    textColor: "text-teal-700 dark:text-teal-300",
+    emoji: "📖",
+    effect: "glow",
+  },
+  9: {
+    color: "#f472b6",
+    bgColor: "bg-pink-100 dark:bg-pink-900/30",
+    borderColor: "border-pink-300 dark:border-pink-700",
+    textColor: "text-pink-700 dark:text-pink-300",
+    emoji: "🏆",
+    effect: "glow",
+  },
+  10: {
+    color: "#e879f9",
+    bgColor: "bg-fuchsia-100 dark:bg-fuchsia-900/30",
+    borderColor: "border-fuchsia-300 dark:border-fuchsia-700",
+    textColor: "text-fuchsia-700 dark:text-fuchsia-300",
+    emoji: "💎",
+    effect: "premium",
+  },
+};
+
+/**
+ * 레벨 스타일 가져오기 유틸리티
+ */
+export function getLevelStyle(level: number): LevelStyle {
+  return LEVEL_STYLES[level] || LEVEL_STYLES[1];
+}

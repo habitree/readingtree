@@ -654,6 +654,88 @@ export async function getDailyMissions(user?: User | null): Promise<MissionWithD
 }
 
 /**
+ * 레벨별 사용자 수 분포 조회
+ */
+export async function getLevelDistribution(): Promise<{
+  level: number;
+  count: number;
+  title: string;
+  badge_icon: string;
+}[]> {
+  const supabase = await createServerSupabaseClient();
+
+  // 레벨 정보 조회
+  const { data: levels } = await supabase
+    .from("point_levels")
+    .select("level, title, badge_icon")
+    .order("level", { ascending: false });
+
+  if (!levels) return [];
+
+  // 각 레벨별 사용자 수 조회
+  const distribution = await Promise.all(
+    levels.map(async (level) => {
+      const { count } = await supabase
+        .from("user_points")
+        .select("*", { count: "exact", head: true })
+        .eq("current_level", level.level);
+
+      return {
+        level: level.level,
+        count: count || 0,
+        title: level.title,
+        badge_icon: level.badge_icon || "Star",
+      };
+    })
+  );
+
+  return distribution;
+}
+
+/**
+ * 사용자 순위 조회
+ */
+export async function getUserRank(user?: User | null): Promise<{
+  rank: number;
+  totalUsers: number;
+  percentile: number;
+} | null> {
+  const supabase = await createServerSupabaseClient();
+
+  let currentUser = user;
+  if (!currentUser) {
+    const { data: { user: fetchedUser } } = await supabase.auth.getUser();
+    if (!fetchedUser) return null;
+    currentUser = fetchedUser;
+  }
+
+  // 사용자 포인트 조회
+  const userPoints = await getUserPoints(currentUser);
+  if (!userPoints) return null;
+
+  // 자신보다 높은 포인트를 가진 사용자 수
+  const { count: higherCount } = await supabase
+    .from("user_points")
+    .select("*", { count: "exact", head: true })
+    .gt("lifetime_points", userPoints.lifetime_points);
+
+  // 전체 사용자 수
+  const { count: totalCount } = await supabase
+    .from("user_points")
+    .select("*", { count: "exact", head: true });
+
+  const rank = (higherCount || 0) + 1;
+  const totalUsers = totalCount || 1;
+  const percentile = Math.round((1 - (rank - 1) / totalUsers) * 100);
+
+  return {
+    rank,
+    totalUsers,
+    percentile,
+  };
+}
+
+/**
  * 포인트 거래 내역 조회
  */
 export async function getPointTransactions(

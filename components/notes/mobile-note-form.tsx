@@ -2,9 +2,9 @@
 
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { createNote } from "@/app/actions/notes";
 import { toast } from "sonner";
 import {
@@ -16,14 +16,17 @@ import {
   Quote,
   MessageSquare,
   CheckCircle2,
-  BookOpen,
+  FileText,
   Tag,
   Globe,
   Lock,
+  Sparkles,
 } from "lucide-react";
 import Image from "next/image";
 import { getImageUrl, isValidImageUrl } from "@/lib/utils/image";
 import { validateImageSize, validateImageType } from "@/lib/utils/image";
+import { addStampToImage } from "@/lib/utils/stamp";
+import { BookMentionTextarea } from "./book-mention-textarea";
 import type { NoteMode } from "@/hooks/use-mobile-note-sheet";
 import { cn } from "@/lib/utils";
 
@@ -40,7 +43,7 @@ interface MobileNoteFormProps {
 
 /**
  * 모바일 최적화된 기록 작성 폼
- * UX/UI 개선: 모든 옵션 한눈에, 텍스트 영역 포커스 시 확대
+ * 서재 기록 등록과 동일한 기능 + 컴팩트 UI
  */
 export function MobileNoteForm({
   bookId,
@@ -49,11 +52,13 @@ export function MobileNoteForm({
   onCancel,
 }: MobileNoteFormProps) {
   // 폼 상태
+  const [title, setTitle] = useState("");
   const [quoteContent, setQuoteContent] = useState("");
   const [memoContent, setMemoContent] = useState("");
   const [isPublic, setIsPublic] = useState(true);
   const [pageNumbers, setPageNumbers] = useState("");
   const [tags, setTags] = useState("");
+  const [applyStamp, setApplyStamp] = useState(false);
 
   // 텍스트 영역 포커스 상태
   const [quoteFocused, setQuoteFocused] = useState(false);
@@ -73,8 +78,10 @@ export function MobileNoteForm({
 
   // 파일 입력 ref
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const transcriptionInputRef = useRef<HTMLInputElement>(null);
+  const photoInputRef = useRef<HTMLInputElement>(null);
 
-  // 이미지 업로드 핸들러
+  // 이미지 업로드 핸들러 (스탬프 기능 포함)
   const handleImageUpload = async (
     files: FileList | null,
     type: "photo" | "transcription"
@@ -95,7 +102,8 @@ export function MobileNoteForm({
     if (validFiles.length === 0) {
       toast.error("유효한 이미지 파일을 선택해주세요. (최대 5MB)");
       isUploadingRef.current = false;
-      if (fileInputRef.current) fileInputRef.current.value = "";
+      if (transcriptionInputRef.current) transcriptionInputRef.current.value = "";
+      if (photoInputRef.current) photoInputRef.current.value = "";
       return;
     }
 
@@ -105,8 +113,22 @@ export function MobileNoteForm({
 
     for (const file of validFiles) {
       try {
+        // 스탬프 적용 여부에 따라 이미지 처리
+        let fileToUpload = file;
+        if (applyStamp) {
+          try {
+            const stampedBlob = await addStampToImage(file);
+            fileToUpload = new File([stampedBlob], file.name, {
+              type: file.type || "image/jpeg",
+            });
+          } catch (stampError) {
+            console.error("스탬프 적용 오류:", stampError);
+            toast.warning("스탬프 적용에 실패했습니다. 원본 이미지를 업로드합니다.");
+          }
+        }
+
         const formData = new FormData();
-        formData.append("file", file);
+        formData.append("file", fileToUpload);
         formData.append("type", type);
 
         const response = await fetch("/api/upload", {
@@ -140,7 +162,8 @@ export function MobileNoteForm({
     setUploading(false);
     isUploadingRef.current = false;
 
-    if (fileInputRef.current) fileInputRef.current.value = "";
+    if (transcriptionInputRef.current) transcriptionInputRef.current.value = "";
+    if (photoInputRef.current) photoInputRef.current.value = "";
   };
 
   // 이미지 제거
@@ -154,7 +177,7 @@ export function MobileNoteForm({
     });
   };
 
-  // 폼 제출
+  // 폼 제출 (제목 포함)
   const handleSubmit = async () => {
     if (isSubmittingRef.current || isSubmitting || uploading) {
       return;
@@ -201,6 +224,7 @@ export function MobileNoteForm({
         for (const imageUrl of images) {
           const result = await createNote({
             book_id: bookId,
+            title: title.trim() || undefined,
             type: noteType,
             quote_content: quoteContent.trim() || undefined,
             memo_content: memoContent.trim() || undefined,
@@ -249,6 +273,7 @@ export function MobileNoteForm({
         // 이미지가 없는 경우
         await createNote({
           book_id: bookId,
+          title: title.trim() || undefined,
           type: noteType,
           quote_content: quoteContent.trim() || undefined,
           memo_content: memoContent.trim() || undefined,
@@ -285,270 +310,233 @@ export function MobileNoteForm({
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex-1 overflow-y-auto space-y-3 px-0.5">
+      <div className="flex-1 overflow-y-auto space-y-2 px-0.5">
+        {/* 제목 입력 - 인라인 컴팩트 */}
+        <div className="flex items-center gap-2">
+          <FileText className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+          <Input
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="제목 (선택)"
+            className="h-7 text-xs border-slate-200/60"
+            maxLength={100}
+          />
+        </div>
+
         {/* 인상깊은 구절 - 컴팩트 */}
         <div className={cn(
-          "space-y-1.5 p-2.5 rounded-lg border transition-all duration-300",
+          "space-y-1 p-2 rounded-lg border transition-all",
           "bg-blue-50/50 dark:bg-blue-950/20",
           quoteFocused
             ? "border-blue-400 dark:border-blue-600"
             : "border-blue-100/50 dark:border-blue-900/30"
         )}>
-          <div className="flex items-center justify-between">
-            <Label htmlFor="quoteContent" className="text-xs font-medium flex items-center gap-1.5 text-blue-700 dark:text-blue-300">
-              <Quote className="w-3.5 h-3.5" />
-              구절
-              {quoteContent.length > 0 && (
-                <CheckCircle2 className="w-3 h-3 text-emerald-500" />
-              )}
-            </Label>
-          </div>
-          <Textarea
+          <Label htmlFor="quoteContent" className="text-[11px] font-medium flex items-center gap-1 text-blue-700 dark:text-blue-300">
+            <Quote className="w-3 h-3" />
+            구절
+            {quoteContent.length > 0 && <CheckCircle2 className="w-2.5 h-2.5 text-emerald-500" />}
+          </Label>
+          <BookMentionTextarea
             id="quoteContent"
             value={quoteContent}
-            onChange={(e) => setQuoteContent(e.target.value)}
+            onValueChange={setQuoteContent}
             onFocus={() => setQuoteFocused(true)}
             onBlur={() => setQuoteFocused(false)}
             placeholder="인상깊은 문장"
-            rows={quoteFocused ? 5 : 2}
-            className={cn(
-              "resize-none text-sm bg-white/80 dark:bg-slate-900/50 border-blue-200/50 dark:border-blue-800/30",
-              "transition-all duration-300"
-            )}
-            maxLength={5000}
+            rows={quoteFocused ? 4 : 2}
+            className="resize-none text-sm bg-white/80 dark:bg-slate-900/50 border-blue-200/50 dark:border-blue-800/30 min-h-0"
           />
         </div>
 
         {/* 내 생각 - 컴팩트 */}
         <div className={cn(
-          "space-y-1.5 p-2.5 rounded-lg border transition-all duration-300",
+          "space-y-1 p-2 rounded-lg border transition-all",
           "bg-amber-50/50 dark:bg-amber-950/20",
           memoFocused
             ? "border-amber-400 dark:border-amber-600"
             : "border-amber-100/50 dark:border-amber-900/30"
         )}>
-          <div className="flex items-center justify-between">
-            <Label htmlFor="memoContent" className="text-xs font-medium flex items-center gap-1.5 text-amber-700 dark:text-amber-300">
-              <MessageSquare className="w-3.5 h-3.5" />
-              생각
-              {memoContent.length > 0 && (
-                <CheckCircle2 className="w-3 h-3 text-emerald-500" />
-              )}
-            </Label>
-          </div>
-          <Textarea
+          <Label htmlFor="memoContent" className="text-[11px] font-medium flex items-center gap-1 text-amber-700 dark:text-amber-300">
+            <MessageSquare className="w-3 h-3" />
+            생각
+            {memoContent.length > 0 && <CheckCircle2 className="w-2.5 h-2.5 text-emerald-500" />}
+          </Label>
+          <BookMentionTextarea
             id="memoContent"
             value={memoContent}
-            onChange={(e) => setMemoContent(e.target.value)}
+            onValueChange={setMemoContent}
             onFocus={() => setMemoFocused(true)}
             onBlur={() => setMemoFocused(false)}
             placeholder="느낀 점, 깨달음"
-            rows={memoFocused ? 6 : 3}
-            className={cn(
-              "resize-none text-sm bg-white/80 dark:bg-slate-900/50 border-amber-200/50 dark:border-amber-800/30",
-              "transition-all duration-300"
-            )}
-            maxLength={10000}
+            rows={memoFocused ? 5 : 2}
+            className="resize-none text-sm bg-white/80 dark:bg-slate-900/50 border-amber-200/50 dark:border-amber-800/30 min-h-0"
           />
         </div>
 
-        {/* 페이지 번호 & 태그 - 컴팩트 */}
-        <div className="grid grid-cols-2 gap-2">
-          <div className="space-y-1">
-            <Label htmlFor="pageNumbers" className="text-xs text-slate-500 flex items-center gap-1">
-              <BookOpen className="w-3 h-3" />
-              페이지
-            </Label>
-            <Input
-              id="pageNumbers"
-              value={pageNumbers}
-              onChange={(e) => setPageNumbers(e.target.value)}
-              placeholder="42"
-              className="h-8 text-xs"
-            />
-          </div>
-          <div className="space-y-1">
-            <Label htmlFor="tags" className="text-xs text-slate-500 flex items-center gap-1">
-              <Tag className="w-3 h-3" />
-              태그
-            </Label>
-            <Input
-              id="tags"
-              value={tags}
-              onChange={(e) => setTags(e.target.value)}
-              placeholder="명언"
-              className="h-8 text-xs"
-            />
-          </div>
-        </div>
-
-        {/* 이미지 업로드 버튼 - 컴팩트 */}
-        <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <Camera className="w-3.5 h-3.5 text-slate-500" />
-            <Label className="text-xs font-medium">이미지</Label>
-            {images.length > 0 && (
-              <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+        {/* 이미지 업로드 & 옵션 - 한 줄에 아이콘 형태로 */}
+        <div className="flex items-center gap-1.5 py-1">
+          {/* 필사 버튼 */}
+          <label
+            htmlFor="transcription-input-mobile"
+            className={cn(
+              "flex items-center gap-1 px-2 py-1.5 rounded-md cursor-pointer transition-all",
+              "bg-purple-50 dark:bg-purple-950/30 border border-purple-200/60 dark:border-purple-800/40",
+              "hover:bg-purple-100 dark:hover:bg-purple-900/40 active:scale-95",
+              uploading && "opacity-50 pointer-events-none"
             )}
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              type="button"
+          >
+            <PenTool className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
+            <span className="text-[11px] font-medium text-purple-700 dark:text-purple-300">필사</span>
+          </label>
+
+          {/* 사진 버튼 */}
+          <label
+            htmlFor="photo-input-mobile"
+            className={cn(
+              "flex items-center gap-1 px-2 py-1.5 rounded-md cursor-pointer transition-all",
+              "bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200/60 dark:border-emerald-800/40",
+              "hover:bg-emerald-100 dark:hover:bg-emerald-900/40 active:scale-95",
+              uploading && "opacity-50 pointer-events-none"
+            )}
+          >
+            <Camera className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+            <span className="text-[11px] font-medium text-emerald-700 dark:text-emerald-300">사진</span>
+          </label>
+
+          {/* 스탬프 옵션 */}
+          <div className="flex items-center gap-1 ml-auto">
+            <Checkbox
+              id="stamp-mobile"
+              checked={applyStamp}
+              onCheckedChange={(checked) => setApplyStamp(checked === true)}
               disabled={uploading}
-              onClick={() => {
-                setUploadType("transcription");
-                fileInputRef.current?.click();
-              }}
-              className={cn(
-                "flex items-center justify-center gap-2 p-2.5 rounded-lg border-2 border-dashed transition-all active:scale-[0.98]",
-                "border-purple-200 dark:border-purple-800 bg-purple-50/50 dark:bg-purple-950/20",
-                "active:border-purple-400 active:bg-purple-100/50",
-                uploading && "opacity-50 pointer-events-none"
-              )}
-            >
-              <PenTool className="h-4 w-4 text-purple-600 dark:text-purple-400" />
-              <span className="text-xs font-medium text-purple-700 dark:text-purple-300">필사</span>
-            </button>
-            <button
-              type="button"
-              disabled={uploading}
-              onClick={() => {
-                setUploadType("photo");
-                fileInputRef.current?.click();
-              }}
-              className={cn(
-                "flex items-center justify-center gap-2 p-2.5 rounded-lg border-2 border-dashed transition-all active:scale-[0.98]",
-                "border-emerald-200 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-950/20",
-                "active:border-emerald-400 active:bg-emerald-100/50",
-                uploading && "opacity-50 pointer-events-none"
-              )}
-            >
-              <Camera className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-              <span className="text-xs font-medium text-emerald-700 dark:text-emerald-300">사진</span>
-            </button>
+              className="h-3 w-3"
+            />
+            <Label htmlFor="stamp-mobile" className="text-[10px] text-slate-500 cursor-pointer flex items-center gap-0.5">
+              <Sparkles className="w-2.5 h-2.5 text-amber-500" />
+              스탬프
+            </Label>
           </div>
+
+          {/* 이미지 카운트 */}
+          {images.length > 0 && (
+            <span className="text-[10px] text-emerald-600 font-medium">
+              {images.length}장
+            </span>
+          )}
+
           <input
-            ref={fileInputRef}
+            id="transcription-input-mobile"
+            ref={transcriptionInputRef}
             type="file"
             accept="image/jpeg,image/jpg,image/png,image/webp,image/heic"
-            multiple={uploadType === "photo"}
-            onChange={(e) => {
-              if (uploadType) {
-                handleImageUpload(e.target.files, uploadType);
-              }
-            }}
+            onChange={(e) => handleImageUpload(e.target.files, "transcription")}
+            className="hidden"
+          />
+          <input
+            id="photo-input-mobile"
+            ref={photoInputRef}
+            type="file"
+            accept="image/jpeg,image/jpg,image/png,image/webp,image/heic"
+            multiple
+            onChange={(e) => handleImageUpload(e.target.files, "photo")}
             className="hidden"
           />
         </div>
 
-        {/* 업로드된 이미지 표시 */}
+        {/* 업로드된 이미지 표시 - 가로 스크롤 */}
         {images.length > 0 && (
-          <div className="space-y-2">
-            <Label className="text-sm font-medium">
-              업로드된 이미지 ({images.length}개)
-            </Label>
-            <div className="grid grid-cols-3 gap-2">
-              {images.map((url, index) => {
-                const imageUrl = getImageUrl(url);
-                return (
-                  <div key={`${url}-${index}`} className="relative group">
-                    <div className="relative aspect-[3/4] w-full overflow-hidden rounded-lg bg-muted">
-                      {isValidImageUrl(url) ? (
-                        <Image
-                          src={imageUrl}
-                          alt={`업로드된 이미지 ${index + 1}`}
-                          fill
-                          className="object-cover"
-                          sizes="(max-width: 768px) 33vw, 20vw"
-                          unoptimized={true}
-                        />
-                      ) : (
-                        <div className="absolute inset-0 flex items-center justify-center bg-muted text-muted-foreground text-xs">
-                          <ImageIcon className="h-6 w-6" />
-                        </div>
-                      )}
-                    </div>
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="icon"
-                      className="absolute top-1 right-1 h-6 w-6 opacity-80 hover:opacity-100"
-                      onClick={() => removeImage(index)}
-                    >
-                      <X className="h-3 w-3" />
-                    </Button>
+          <div className="flex gap-2 overflow-x-auto pb-1 -mx-0.5 px-0.5">
+            {images.map((url, index) => {
+              const imageUrl = getImageUrl(url);
+              return (
+                <div key={`${url}-${index}`} className="relative shrink-0">
+                  <div className="relative w-14 h-[72px] overflow-hidden rounded-md bg-muted">
+                    {isValidImageUrl(url) ? (
+                      <Image
+                        src={imageUrl}
+                        alt={`이미지 ${index + 1}`}
+                        fill
+                        className="object-cover"
+                        sizes="56px"
+                        unoptimized={true}
+                      />
+                    ) : (
+                      <div className="absolute inset-0 flex items-center justify-center bg-muted">
+                        <ImageIcon className="h-4 w-4 text-muted-foreground" />
+                      </div>
+                    )}
                   </div>
-                );
-              })}
-            </div>
-            {uploadType && (
-              <p className="text-xs text-muted-foreground">
-                타입: {uploadType === "photo" ? "이미지" : "필사"}
-              </p>
-            )}
+                  <button
+                    type="button"
+                    onClick={() => removeImage(index)}
+                    className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center shadow-sm"
+                  >
+                    <X className="h-2.5 w-2.5" />
+                  </button>
+                </div>
+              );
+            })}
           </div>
         )}
 
-        {/* 공개 설정 - 간결 */}
-        <div className="flex items-center gap-2 py-1">
+        {/* 페이지 & 태그 & 공개 - 한 줄에 */}
+        <div className="flex items-center gap-2 py-0.5">
+          <Input
+            value={pageNumbers}
+            onChange={(e) => setPageNumbers(e.target.value)}
+            placeholder="페이지"
+            className="h-6 w-16 text-[11px] px-2"
+          />
+          <Input
+            value={tags}
+            onChange={(e) => setTags(e.target.value)}
+            placeholder="태그 (쉼표 구분)"
+            className="h-6 flex-1 text-[11px] px-2"
+          />
           <button
             type="button"
             onClick={() => setIsPublic(!isPublic)}
             className={cn(
-              "flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-all",
+              "flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium transition-all shrink-0",
               isPublic
                 ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
                 : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400"
             )}
           >
-            {isPublic ? (
-              <>
-                <Globe className="w-3 h-3" />
-                공개
-              </>
-            ) : (
-              <>
-                <Lock className="w-3 h-3" />
-                비공개
-              </>
-            )}
+            {isPublic ? <Globe className="w-3 h-3" /> : <Lock className="w-3 h-3" />}
+            {isPublic ? "공개" : "비공개"}
           </button>
         </div>
       </div>
 
-      {/* 하단 버튼 - 컴팩트 */}
-      <div className="pt-3 pb-1 space-y-2 border-t mt-3">
-        <Button
-          type="button"
-          onClick={handleSubmit}
-          disabled={isSubmitting || uploading || !hasContent}
-          className="w-full h-10 font-medium"
-        >
-          {isSubmitting ? (
-            <>
-              <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-              저장 중
-            </>
-          ) : uploading ? (
-            <>
-              <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-              업로드 중
-            </>
-          ) : (
-            <>
-              <CheckCircle2 className="mr-1.5 h-4 w-4" />
-              저장
-            </>
-          )}
-        </Button>
+      {/* 하단 버튼 - 더 컴팩트 */}
+      <div className="pt-2 pb-1 flex gap-2 border-t mt-2">
         <Button
           type="button"
           variant="ghost"
           onClick={onCancel}
           disabled={isSubmitting || uploading}
-          className="w-full h-8 text-sm"
+          className="h-9 px-4 text-sm"
         >
           취소
+        </Button>
+        <Button
+          type="button"
+          onClick={handleSubmit}
+          disabled={isSubmitting || uploading || !hasContent}
+          className="flex-1 h-9 font-medium"
+        >
+          {isSubmitting ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : uploading ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <>
+              <CheckCircle2 className="mr-1 h-4 w-4" />
+              저장
+            </>
+          )}
         </Button>
       </div>
     </div>
