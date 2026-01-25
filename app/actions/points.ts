@@ -1114,3 +1114,209 @@ export async function useStreakProtection(user?: User | null): Promise<{
     message: `🛡️ ${userPoints.current_streak}일 연속 기록이 보호되었습니다!`,
   };
 }
+
+/**
+ * ============================================
+ * 물주기 시스템 API
+ * ============================================
+ */
+
+import {
+  WateringStatus,
+  WateringResult,
+  WATERING_CONFIG,
+  getRandomEncouragementQuote,
+} from "@/types/points";
+
+/**
+ * 물주기 상태 조회
+ */
+export async function getWateringStatus(user?: User | null): Promise<WateringStatus> {
+  const supabase = await createServerSupabaseClient();
+
+  let currentUser = user;
+  if (!currentUser) {
+    const { data: { user: fetchedUser } } = await supabase.auth.getUser();
+    if (!fetchedUser) {
+      return {
+        canWater: false,
+        nextWateringAt: null,
+        remainingSeconds: 0,
+        todayWateringCount: 0,
+        totalWateringCount: 0,
+        treeHealth: 100,
+        lastWateredAt: null,
+      };
+    }
+    currentUser = fetchedUser;
+  }
+
+  const today = new Date().toISOString().split("T")[0];
+
+  // 오늘의 물주기 횟수 조회
+  const { count: todayCount } = await supabase
+    .from("point_transactions")
+    .select("*", { count: "exact", head: true })
+    .eq("user_id", currentUser.id)
+    .eq("reference_type", "tree_watering")
+    .gte("created_at", `${today}T00:00:00`);
+
+  // 총 물주기 횟수 조회
+  const { count: totalCount } = await supabase
+    .from("point_transactions")
+    .select("*", { count: "exact", head: true })
+    .eq("user_id", currentUser.id)
+    .eq("reference_type", "tree_watering");
+
+  // 마지막 물주기 시간 조회
+  const { data: lastWatering } = await supabase
+    .from("point_transactions")
+    .select("created_at")
+    .eq("user_id", currentUser.id)
+    .eq("reference_type", "tree_watering")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  // 쿨다운 계산
+  let canWater = true;
+  let nextWateringAt: string | null = null;
+  let remainingSeconds = 0;
+
+  if (lastWatering) {
+    const lastTime = new Date(lastWatering.created_at);
+    const cooldownMs = WATERING_CONFIG.cooldownHours * 60 * 60 * 1000;
+    const nextTime = new Date(lastTime.getTime() + cooldownMs);
+    const now = new Date();
+
+    if (nextTime > now) {
+      canWater = false;
+      nextWateringAt = nextTime.toISOString();
+      remainingSeconds = Math.ceil((nextTime.getTime() - now.getTime()) / 1000);
+    }
+  }
+
+  // 일일 최대 횟수 체크
+  if ((todayCount || 0) >= WATERING_CONFIG.maxDailyWaterings) {
+    canWater = false;
+  }
+
+  // 나무 건강도 계산 (마지막 물주기 이후 시간 기반)
+  let treeHealth = 100;
+  if (lastWatering) {
+    const hoursSinceWatering = (Date.now() - new Date(lastWatering.created_at).getTime()) / (1000 * 60 * 60);
+    const healthDecay = Math.floor(hoursSinceWatering * WATERING_CONFIG.healthDecayPerHour);
+    treeHealth = Math.max(0, 100 - healthDecay);
+  }
+
+  return {
+    canWater,
+    nextWateringAt,
+    remainingSeconds,
+    todayWateringCount: todayCount || 0,
+    totalWateringCount: totalCount || 0,
+    treeHealth,
+    lastWateredAt: lastWatering?.created_at || null,
+  };
+}
+
+/**
+ * 나무에 물주기
+ * 가변 보상 시스템 적용 (심리학적 슬롯머신 효과)
+ */
+export async function waterTree(user?: User | null): Promise<WateringResult> {
+  const supabase = await createServerSupabaseClient();
+
+  let currentUser = user;
+  if (!currentUser) {
+    const { data: { user: fetchedUser } } = await supabase.auth.getUser();
+    if (!fetchedUser) {
+      return { success: false, message: "로그인이 필요합니다." };
+    }
+    currentUser = fetchedUser;
+  }
+
+  // 물주기 가능 여부 확인
+  const status = await getWateringStatus(currentUser);
+  if (!status.canWater) {
+    if (status.remainingSeconds > 0) {
+      const minutes = Math.ceil(status.remainingSeconds / 60);
+      return {
+        success: false,
+        message: `${minutes}분 후에 다시 물을 줄 수 있어요 💧`,
+      };
+    }
+    return {
+      success: false,
+      message: "오늘은 충분히 물을 주셨어요! 내일 다시 만나요 🌙",
+    };
+  }
+
+  // 가변 보상 계산 (심리학적 설계)
+  const rand = Math.random();
+  let points = WATERING_CONFIG.basePoints;
+  let isLuckyDrop = false;
+  let bonusPoints = 0;
+
+  // 럭키 드롭 (10% 확률)
+  if (rand < WATERING_CONFIG.luckyDropChance) {
+    isLuckyDrop = true;
+    bonusPoints = Math.round(WATERING_CONFIG.basePoints * (WATERING_CONFIG.luckyDropMultiplier - 1));
+    points = WATERING_CONFIG.basePoints * WATERING_CONFIG.luckyDropMultiplier;
+  } else {
+    // 일반 가변 보상 (3-8 포인트)
+    points = WATERING_CONFIG.basePoints + Math.floor(rand * (WATERING_CONFIG.maxPoints - WATERING_CONFIG.basePoints + 1));
+  }
+
+  // 포인트 적립
+  const userPoints = await getUserPoints(currentUser);
+  if (!userPoints) {
+    return { success: false, message: "포인트 정보를 찾을 수 없습니다." };
+  }
+
+  const newTotal = userPoints.total_points + points;
+
+  // 거래 내역 생성
+  await supabase.from("point_transactions").insert({
+    user_id: currentUser.id,
+    action_type: "daily_first_activity",
+    points: points,
+    multiplier: 1,
+    final_points: points,
+    description: isLuckyDrop ? "🍀 럭키 물주기!" : "나무에 물주기",
+    reference_type: "tree_watering",
+    balance_after: newTotal,
+    metadata: { isLuckyDrop, bonusPoints },
+  });
+
+  // 포인트 업데이트
+  await supabase
+    .from("user_points")
+    .update({
+      total_points: newTotal,
+      lifetime_points: userPoints.lifetime_points + points,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("user_id", currentUser.id);
+
+  // 나무 건강도 계산
+  const newTreeHealth = Math.min(100, status.treeHealth + WATERING_CONFIG.healthRecoveryPerWatering);
+
+  // 독서 독려 문구 선택
+  const quoteCategory = isLuckyDrop ? "achievement" : (Math.random() > 0.5 ? "prompt" : "motivation");
+  const quote = getRandomEncouragementQuote(quoteCategory);
+
+  revalidatePath("/");
+
+  return {
+    success: true,
+    points,
+    message: isLuckyDrop
+      ? `🍀 럭키! +${points} 포인트!`
+      : `+${points} 포인트!`,
+    quote,
+    isLuckyDrop,
+    bonusPoints: isLuckyDrop ? bonusPoints : undefined,
+    newTreeHealth,
+  };
+}

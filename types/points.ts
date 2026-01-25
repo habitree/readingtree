@@ -494,6 +494,264 @@ export const BONUS_MISSION_DEFINITIONS: BonusMissionDefinition[] = [
 ];
 
 /**
+ * ============================================
+ * 물주기 시스템 (Reading Tree Watering System)
+ * ============================================
+ *
+ * 심리학적 설계 원칙:
+ * - 가변 보상 (Variable Reward): 매번 다른 포인트로 기대감 유발
+ * - 손실 회피 (Loss Aversion): 나무가 시들 수 있다는 암시
+ * - 사회적 증거 (Social Proof): 다른 사용자들의 물주기 활동
+ * - 진행 시각화: 나무 성장으로 성취감 제공
+ */
+
+/**
+ * 물주기 상태 정보
+ */
+export interface WateringStatus {
+  canWater: boolean;              // 물주기 가능 여부
+  nextWateringAt: string | null;  // 다음 물주기 가능 시간
+  remainingSeconds: number;       // 남은 시간 (초)
+  todayWateringCount: number;     // 오늘 물준 횟수
+  totalWateringCount: number;     // 총 물준 횟수
+  treeHealth: number;             // 나무 건강도 (0-100)
+  lastWateredAt: string | null;   // 마지막 물준 시간
+}
+
+/**
+ * 물주기 결과
+ */
+export interface WateringResult {
+  success: boolean;
+  points?: number;
+  message: string;
+  quote?: string;              // 독서 독려 문구
+  isLuckyDrop?: boolean;       // 럭키 드롭 여부 (가변 보상)
+  bonusPoints?: number;        // 보너스 포인트
+  newTreeHealth?: number;      // 새로운 나무 건강도
+}
+
+/**
+ * 레벨별 나무 성장 단계
+ * 디자인 원칙: 자연스러운 성장 곡선, 시각적 피드백
+ */
+export interface TreeGrowthStage {
+  level: number;
+  name: string;                   // 나무 이름
+  description: string;            // 설명
+  height: number;                 // 상대적 높이 (%)
+  hasLeaves: boolean;             // 잎 여부
+  hasFlowers: boolean;            // 꽃 여부
+  hasFruits: boolean;             // 열매 여부
+  trunkColor: string;             // 줄기 색상
+  leafColor: string;              // 잎 색상
+  glowEffect: boolean;            // 빛나는 효과
+  particleEffect: "none" | "subtle" | "sparkle" | "magical"; // 파티클 효과
+}
+
+/**
+ * 레벨별 나무 성장 단계 정의
+ * 미술/디자인 관점: 자연스러운 색상 전환, 성장의 시각적 표현
+ */
+export const TREE_GROWTH_STAGES: Record<number, TreeGrowthStage> = {
+  1: {
+    level: 1,
+    name: "씨앗",
+    description: "작은 씨앗에서 시작되는 여정",
+    height: 10,
+    hasLeaves: false,
+    hasFlowers: false,
+    hasFruits: false,
+    trunkColor: "#8B5A2B",
+    leafColor: "#90EE90",
+    glowEffect: false,
+    particleEffect: "none",
+  },
+  2: {
+    level: 2,
+    name: "새싹",
+    description: "땅을 뚫고 나온 작은 새싹",
+    height: 20,
+    hasLeaves: true,
+    hasFlowers: false,
+    hasFruits: false,
+    trunkColor: "#8B5A2B",
+    leafColor: "#98FB98",
+    glowEffect: false,
+    particleEffect: "none",
+  },
+  3: {
+    level: 3,
+    name: "어린 나무",
+    description: "조금씩 자라나는 어린 나무",
+    height: 35,
+    hasLeaves: true,
+    hasFlowers: false,
+    hasFruits: false,
+    trunkColor: "#A0522D",
+    leafColor: "#32CD32",
+    glowEffect: false,
+    particleEffect: "subtle",
+  },
+  4: {
+    level: 4,
+    name: "청년 나무",
+    description: "힘차게 성장하는 나무",
+    height: 50,
+    hasLeaves: true,
+    hasFlowers: true,
+    hasFruits: false,
+    trunkColor: "#8B4513",
+    leafColor: "#228B22",
+    glowEffect: false,
+    particleEffect: "subtle",
+  },
+  5: {
+    level: 5,
+    name: "성숙한 나무",
+    description: "풍성한 잎을 가진 나무",
+    height: 65,
+    hasLeaves: true,
+    hasFlowers: true,
+    hasFruits: false,
+    trunkColor: "#654321",
+    leafColor: "#006400",
+    glowEffect: true,
+    particleEffect: "sparkle",
+  },
+  6: {
+    level: 6,
+    name: "열매 나무",
+    description: "첫 열매를 맺기 시작한 나무",
+    height: 75,
+    hasLeaves: true,
+    hasFlowers: true,
+    hasFruits: true,
+    trunkColor: "#5D4037",
+    leafColor: "#2E7D32",
+    glowEffect: true,
+    particleEffect: "sparkle",
+  },
+  7: {
+    level: 7,
+    name: "고목",
+    description: "깊은 지혜를 품은 나무",
+    height: 85,
+    hasLeaves: true,
+    hasFlowers: true,
+    hasFruits: true,
+    trunkColor: "#4E342E",
+    leafColor: "#1B5E20",
+    glowEffect: true,
+    particleEffect: "sparkle",
+  },
+  8: {
+    level: 8,
+    name: "신비의 나무",
+    description: "신비로운 기운을 뿜는 나무",
+    height: 92,
+    hasLeaves: true,
+    hasFlowers: true,
+    hasFruits: true,
+    trunkColor: "#3E2723",
+    leafColor: "#00695C",
+    glowEffect: true,
+    particleEffect: "magical",
+  },
+  9: {
+    level: 9,
+    name: "세계수",
+    description: "세상의 지혜를 담은 거대한 나무",
+    height: 97,
+    hasLeaves: true,
+    hasFlowers: true,
+    hasFruits: true,
+    trunkColor: "#2C1810",
+    leafColor: "#004D40",
+    glowEffect: true,
+    particleEffect: "magical",
+  },
+  10: {
+    level: 10,
+    name: "전설의 나무",
+    description: "전설 속에서만 존재하던 황금빛 나무",
+    height: 100,
+    hasLeaves: true,
+    hasFlowers: true,
+    hasFruits: true,
+    trunkColor: "#B8860B",
+    leafColor: "#FFD700",
+    glowEffect: true,
+    particleEffect: "magical",
+  },
+};
+
+/**
+ * 물주기 설정 상수
+ */
+export const WATERING_CONFIG = {
+  cooldownHours: 3,                    // 쿨다운 시간 (3시간)
+  basePoints: 3,                       // 기본 포인트
+  maxPoints: 8,                        // 최대 포인트 (가변 보상)
+  luckyDropChance: 0.1,                // 럭키 드롭 확률 (10%)
+  luckyDropMultiplier: 3,              // 럭키 드롭 배수
+  maxDailyWaterings: 8,                // 일일 최대 물주기 횟수
+  healthDecayPerHour: 2,               // 시간당 건강도 감소
+  healthRecoveryPerWatering: 15,       // 물주기당 건강도 회복
+};
+
+/**
+ * 독서 독려 문구 (물주기 시 표시)
+ * 심리학: 긍정적 강화, 자기효능감 증진
+ */
+export const READING_ENCOURAGEMENT_QUOTES = [
+  // 동기부여 문구
+  { text: "오늘도 나무에게 생명을 주셨네요! 📚", category: "motivation" },
+  { text: "당신의 독서가 나무를 자라게 해요 🌱", category: "motivation" },
+  { text: "한 페이지가 모여 숲이 됩니다 🌲", category: "motivation" },
+  { text: "책 속의 지혜가 나무에 스며들어요 ✨", category: "motivation" },
+  { text: "독서하는 당신, 정말 멋져요! 💪", category: "motivation" },
+
+  // 독서 권유 문구
+  { text: "오늘 읽은 책에서 어떤 문장이 마음에 들었나요?", category: "prompt" },
+  { text: "잠시 쉬어가며 좋아하는 책을 펼쳐보세요 📖", category: "prompt" },
+  { text: "10분만 읽어도 나무가 기뻐해요!", category: "prompt" },
+  { text: "오늘의 인상 깊은 구절을 기록해보세요 ✍️", category: "prompt" },
+  { text: "커피 한 잔과 함께 책 한 페이지 어때요? ☕", category: "prompt" },
+
+  // 성취감 문구
+  { text: "나무가 쑥쑥 자라고 있어요! 🎉", category: "achievement" },
+  { text: "꾸준함이 만드는 기적, 바로 당신이에요", category: "achievement" },
+  { text: "독서 습관이 점점 단단해지고 있어요 💎", category: "achievement" },
+  { text: "당신의 나무가 행복해하고 있어요 🌳", category: "achievement" },
+  { text: "오늘도 성장하는 당신을 응원해요 🌟", category: "achievement" },
+
+  // 명언
+  { text: "책은 마음의 양식이다 - 키케로", category: "quote" },
+  { text: "독서는 정신에 있어 운동이 육체에 대한 것과 같다 - 스틸", category: "quote" },
+  { text: "오늘 읽는 책이 내일의 나를 만든다", category: "quote" },
+  { text: "한 권의 책은 하나의 세계다 - 윌리엄 카우퍼", category: "quote" },
+  { text: "좋은 책을 읽는 것은 위대한 사람과 대화하는 것이다 - 데카르트", category: "quote" },
+];
+
+/**
+ * 랜덤 독서 독려 문구 가져오기
+ */
+export function getRandomEncouragementQuote(category?: string): string {
+  const quotes = category
+    ? READING_ENCOURAGEMENT_QUOTES.filter(q => q.category === category)
+    : READING_ENCOURAGEMENT_QUOTES;
+  return quotes[Math.floor(Math.random() * quotes.length)].text;
+}
+
+/**
+ * 나무 성장 단계 가져오기
+ */
+export function getTreeGrowthStage(level: number): TreeGrowthStage {
+  return TREE_GROWTH_STAGES[level] || TREE_GROWTH_STAGES[1];
+}
+
+/**
  * 희소성별 색상 스타일
  */
 export const RARITY_STYLES = {

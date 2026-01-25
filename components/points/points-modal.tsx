@@ -9,6 +9,9 @@ import {
   Calendar,
   Zap,
   Target,
+  TreeDeciduous,
+  BarChart3,
+  Trophy,
 } from "lucide-react";
 import {
   Sheet,
@@ -24,6 +27,7 @@ import { cn } from "@/lib/utils";
 import { getPointsDashboardData } from "@/app/actions/points";
 import { LEVEL_STYLES, LEVEL_DEFAULTS, type PointsDashboardData } from "@/types/points";
 import { LevelLeaderboard } from "./level-leaderboard";
+import { TreeWatering } from "./tree-watering";
 
 interface PointsModalProps {
   open: boolean;
@@ -39,7 +43,7 @@ interface PointsModalProps {
 export function PointsModal({ open, onOpenChange }: PointsModalProps) {
   const [data, setData] = useState<PointsDashboardData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("overview");
+  const [activeTab, setActiveTab] = useState("tree");
 
   useEffect(() => {
     if (open) {
@@ -175,13 +179,28 @@ export function PointsModal({ open, onOpenChange }: PointsModalProps) {
 
               {/* 탭 네비게이션 */}
               <Tabs value={activeTab} onValueChange={setActiveTab}>
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="overview">개요</TabsTrigger>
-                  <TabsTrigger value="ranking">랭킹</TabsTrigger>
+                <TabsList className="grid w-full grid-cols-3">
+                  <TabsTrigger value="tree" className="gap-1">
+                    <TreeDeciduous className="h-3.5 w-3.5" />
+                    나무
+                  </TabsTrigger>
+                  <TabsTrigger value="stats" className="gap-1">
+                    <BarChart3 className="h-3.5 w-3.5" />
+                    통계
+                  </TabsTrigger>
+                  <TabsTrigger value="ranking" className="gap-1">
+                    <Trophy className="h-3.5 w-3.5" />
+                    랭킹
+                  </TabsTrigger>
                 </TabsList>
 
-                {/* 개요 탭 */}
-                <TabsContent value="overview" className="mt-4 space-y-4">
+                {/* 나무 탭 */}
+                <TabsContent value="tree" className="mt-4">
+                  <TreeWatering level={level} />
+                </TabsContent>
+
+                {/* 통계 탭 */}
+                <TabsContent value="stats" className="mt-4 space-y-4">
                   {/* 통계 카드들 */}
                   <div className="grid grid-cols-3 gap-3">
                     <StatCard
