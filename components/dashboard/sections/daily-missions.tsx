@@ -245,92 +245,94 @@ export function DailyMissions({
           </div>
         </div>
 
-        {/* 미션 목록 */}
-        <div className="divide-y divide-slate-100 dark:divide-slate-800">
-          <AnimatePresence>
-            {missions.map((mission, index) => {
-              const Icon = missionIcons[mission.type];
-              const isCompleted = mission.status === "completed";
-              const isCelebrating = celebratingMission === mission.id;
+        {/* 미션 목록 - PC에서 가로 그리드 */}
+        <div className="p-2 sm:p-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <AnimatePresence>
+              {missions.map((mission, index) => {
+                const Icon = missionIcons[mission.type];
+                const isCompleted = mission.status === "completed";
+                const isCelebrating = celebratingMission === mission.id;
 
-              return (
-                <motion.div
-                  key={mission.id}
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.3, delay: index * 0.1 }}
-                  onClick={() => handleMissionClick(mission)}
-                  className={cn(
-                    "px-4 py-3 flex items-center gap-3 transition-all",
-                    isCompleted
-                      ? "bg-green-50/50 dark:bg-green-950/20"
-                      : "hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer active:scale-[0.99]"
-                  )}
-                >
-                  {/* 상태 아이콘 */}
+                return (
                   <motion.div
-                    animate={isCelebrating ? { scale: [1, 1.3, 1] } : {}}
-                    transition={{ duration: 0.3 }}
-                  >
-                    {isCompleted ? (
-                      <CheckCircle2 className="h-5 w-5 text-green-500" />
-                    ) : (
-                      <Circle className="h-5 w-5 text-slate-300 dark:text-slate-600" />
-                    )}
-                  </motion.div>
-
-                  {/* 미션 아이콘 */}
-                  <div
+                    key={mission.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, delay: index * 0.1 }}
+                    onClick={() => handleMissionClick(mission)}
                     className={cn(
-                      "w-8 h-8 rounded-lg flex items-center justify-center shrink-0",
+                      "p-3 rounded-lg flex flex-col gap-2 transition-all border",
                       isCompleted
-                        ? "bg-green-100 dark:bg-green-900/30"
-                        : "bg-slate-100 dark:bg-slate-800"
+                        ? "bg-green-50/50 dark:bg-green-950/20 border-green-200 dark:border-green-800"
+                        : "bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 hover:border-forest-300 dark:hover:border-forest-600 cursor-pointer active:scale-[0.98]"
                     )}
                   >
-                    <Icon
-                      className={cn(
-                        "h-4 w-4",
-                        isCompleted ? "text-green-500" : missionColors[mission.type]
-                      )}
-                    />
-                  </div>
-
-                  {/* 미션 내용 */}
-                  <div className="flex-1 min-w-0">
-                    <p
-                      className={cn(
-                        "text-sm font-medium",
-                        isCompleted
-                          ? "text-green-700 dark:text-green-300 line-through"
-                          : "text-slate-900 dark:text-white"
-                      )}
-                    >
-                      {mission.title}
-                    </p>
-                    {mission.progress && !isCompleted && (
-                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                        {mission.progress.current}/{mission.progress.target} 완료
-                      </p>
-                    )}
-                  </div>
-
-                  {/* 보상 및 액션 */}
-                  <div className="shrink-0 flex items-center gap-2">
-                    <div className="flex items-center gap-1">
-                      <Gift className="h-3.5 w-3.5 text-amber-500" />
-                      <span className="text-xs font-medium text-amber-600 dark:text-amber-400">
-                        {mission.reward}
-                      </span>
+                    {/* 상단: 아이콘 + 상태 */}
+                    <div className="flex items-center justify-between">
+                      <div
+                        className={cn(
+                          "w-8 h-8 rounded-lg flex items-center justify-center shrink-0",
+                          isCompleted
+                            ? "bg-green-100 dark:bg-green-900/30"
+                            : "bg-white dark:bg-slate-700"
+                        )}
+                      >
+                        <Icon
+                          className={cn(
+                            "h-4 w-4",
+                            isCompleted ? "text-green-500" : missionColors[mission.type]
+                          )}
+                        />
+                      </div>
+                      <motion.div
+                        animate={isCelebrating ? { scale: [1, 1.3, 1] } : {}}
+                        transition={{ duration: 0.3 }}
+                      >
+                        {isCompleted ? (
+                          <CheckCircle2 className="h-5 w-5 text-green-500" />
+                        ) : (
+                          <Circle className="h-5 w-5 text-slate-300 dark:text-slate-600" />
+                        )}
+                      </motion.div>
                     </div>
-                    {!isCompleted && (
-                      <ChevronRight className="h-4 w-4 text-slate-400" />
-                    )}
-                  </div>
-                </motion.div>
-              );
-            })}
-          </AnimatePresence>
+
+                    {/* 미션 내용 */}
+                    <div className="flex-1 min-w-0">
+                      <p
+                        className={cn(
+                          "text-sm font-medium line-clamp-2",
+                          isCompleted
+                            ? "text-green-700 dark:text-green-300 line-through"
+                            : "text-slate-900 dark:text-white"
+                        )}
+                      >
+                        {mission.title}
+                      </p>
+                      {mission.progress && !isCompleted && (
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                          {mission.progress.current}/{mission.progress.target} 완료
+                        </p>
+                      )}
+                    </div>
+
+                    {/* 보상 */}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1">
+                        <Gift className="h-3.5 w-3.5 text-amber-500" />
+                        <span className="text-xs font-medium text-amber-600 dark:text-amber-400">
+                          {mission.reward}
+                        </span>
+                      </div>
+                      {!isCompleted && (
+                        <ChevronRight className="h-4 w-4 text-slate-400" />
+                      )}
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </AnimatePresence>
+          </div>
         </div>
 
         {/* 전체 완료 메시지 */}

@@ -33,7 +33,7 @@ export async function HomeHeroWrapper() {
     getPersonaDashboardData().catch(() => null),
     getReadingStats(user).catch(() => null),
     getStreakAndTodayData(user.id).catch(() => ({ streak: 0, todayNotes: 0, hasReadToday: false })),
-    getContinueReadingBooks(user, 3).catch(() => []),
+    getContinueReadingBooks(user, 4).catch(() => []),
     getBonusMissions(user).catch(() => ({ missions: [], isUnlocked: false, motivationMessage: undefined })),
   ]);
 

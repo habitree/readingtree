@@ -12,7 +12,6 @@ import {
   GoalProgressSection,
   RecentBooksSection,
   MonthlyStatsSection,
-  RecentNotesSection,
   HomeHeroWrapper,
   MobileQuickActions,
 } from "./sections";
@@ -22,7 +21,6 @@ import {
   GoalProgressSkeleton,
   RecentBooksSkeleton,
   MonthlyStatsSkeleton,
-  RecentNotesSkeleton,
   HomeHeroSkeleton,
 } from "./skeletons";
 
@@ -95,11 +93,6 @@ export default async function DashboardContent() {
         {/* 최근 기록한 책 - 스트리밍 */}
         <Suspense fallback={<RecentBooksSkeleton />}>
           <RecentBooksSection />
-        </Suspense>
-
-        {/* 최근 노트 - 스트리밍 */}
-        <Suspense fallback={<RecentNotesSkeleton />}>
-          <RecentNotesSection />
         </Suspense>
 
         {/* 월별 통계 차트 - 스트리밍 (기본 접힌 상태) */}

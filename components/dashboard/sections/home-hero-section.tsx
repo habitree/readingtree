@@ -216,14 +216,13 @@ export function HomeHeroSection({
         </div>
       </Card>
 
-      {/* 계속 읽기 카드 (Primary CTA) - 최대 3개까지 가로 표시 */}
+      {/* 계속 읽기 카드 (Primary CTA) - 최대 4개까지 2x2 그리드 표시 */}
       {userName && (
         continueReadingBooks.length > 0 ? (
           <div className={cn(
             "grid gap-2 sm:gap-3",
             continueReadingBooks.length === 1 && "grid-cols-1",
-            continueReadingBooks.length === 2 && "grid-cols-2",
-            continueReadingBooks.length >= 3 && "grid-cols-2 lg:grid-cols-3"
+            continueReadingBooks.length >= 2 && "grid-cols-2"
           )}>
             {continueReadingBooks.map((book, index) => (
               <ContinueReadingCard
