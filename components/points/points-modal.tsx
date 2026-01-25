@@ -7,7 +7,6 @@ import {
   Flame,
   TrendingUp,
   Calendar,
-  ChevronRight,
   Zap,
   Target,
 } from "lucide-react";
@@ -35,7 +34,6 @@ interface PointsModalProps {
  * 포인트 대시보드 모달 (Sheet)
  * - 개인 포인트 정보
  * - 레벨 진행률
- * - 최근 거래 내역
  * - 리더보드 (레벨별 분포)
  */
 export function PointsModal({ open, onOpenChange }: PointsModalProps) {
@@ -177,9 +175,8 @@ export function PointsModal({ open, onOpenChange }: PointsModalProps) {
 
               {/* 탭 네비게이션 */}
               <Tabs value={activeTab} onValueChange={setActiveTab}>
-                <TabsList className="grid w-full grid-cols-3">
+                <TabsList className="grid w-full grid-cols-2">
                   <TabsTrigger value="overview">개요</TabsTrigger>
-                  <TabsTrigger value="history">내역</TabsTrigger>
                   <TabsTrigger value="ranking">랭킹</TabsTrigger>
                 </TabsList>
 
@@ -237,49 +234,6 @@ export function PointsModal({ open, onOpenChange }: PointsModalProps) {
                         <span className="font-medium">{data.userPoints.longest_streak}일</span>
                       </div>
                     </div>
-                  </div>
-                </TabsContent>
-
-                {/* 내역 탭 */}
-                <TabsContent value="history" className="mt-4">
-                  <div className="space-y-2">
-                    {data.recentTransactions.length > 0 ? (
-                      data.recentTransactions.map((tx, index) => (
-                        <motion.div
-                          key={tx.id}
-                          initial={{ opacity: 0, x: -10 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: index * 0.05 }}
-                          className="flex items-center justify-between p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors"
-                        >
-                          <div>
-                            <div className="font-medium text-sm">
-                              {tx.description}
-                            </div>
-                            <div className="text-xs text-muted-foreground">
-                              {new Date(tx.created_at).toLocaleDateString("ko-KR", {
-                                month: "short",
-                                day: "numeric",
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })}
-                            </div>
-                          </div>
-                          <div
-                            className={cn(
-                              "font-semibold tabular-nums",
-                              tx.final_points > 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"
-                            )}
-                          >
-                            {tx.final_points > 0 ? "+" : ""}{tx.final_points} P
-                          </div>
-                        </motion.div>
-                      ))
-                    ) : (
-                      <div className="text-center py-8 text-muted-foreground">
-                        아직 거래 내역이 없습니다
-                      </div>
-                    )}
                   </div>
                 </TabsContent>
 

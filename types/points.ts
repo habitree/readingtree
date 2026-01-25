@@ -141,6 +141,45 @@ export type DailyMissionType =
   | "time_goal";       // 시간 목표
 
 /**
+ * 보너스 미션 타입 (모든 일일 미션 완료 후 해금)
+ */
+export type BonusMissionType =
+  | "extra_note"       // 추가 기록 작성
+  | "quote_collect"    // 인용구 수집
+  | "deep_reading"     // 깊이 읽기 (긴 메모)
+  | "photo_capture"    // 사진 기록
+  | "share_wisdom"     // 지혜 나누기
+  | "lucky_box";       // 럭키박스 (랜덤 보상)
+
+/**
+ * 보너스 미션 상세 정보
+ */
+export interface BonusMission {
+  id: string;
+  type: BonusMissionType;
+  title: string;
+  description: string;
+  status: "locked" | "available" | "in_progress" | "completed";
+  reward: {
+    min: number;       // 최소 보상
+    max: number;       // 최대 보상 (가변 보상)
+    actual?: number;   // 실제 획득한 보상
+  };
+  icon: string;
+  action_url?: string;
+  expires_at?: string; // 제한 시간 (희소성)
+  difficulty: "easy" | "medium" | "hard";
+  requirement?: {
+    type: string;
+    target: number;
+    current: number;
+  };
+  // 심리학적 요소
+  rarity: "common" | "rare" | "epic" | "legendary"; // 희소성 표시
+  completedBy?: number; // 오늘 완료한 사용자 수 (사회적 증거)
+}
+
+/**
  * 포인트 적립 요청
  */
 export interface EarnPointsRequest {
@@ -374,3 +413,148 @@ export const LEVEL_STYLES: Record<number, LevelStyle> = {
 export function getLevelStyle(level: number): LevelStyle {
   return LEVEL_STYLES[level] || LEVEL_STYLES[1];
 }
+
+/**
+ * 보너스 미션 정의 (심리학적 동기부여 요소 포함)
+ */
+export interface BonusMissionDefinition {
+  type: BonusMissionType;
+  title: string;
+  description: string;
+  icon: string;
+  action_url: string;
+  reward: { min: number; max: number };
+  difficulty: "easy" | "medium" | "hard";
+  rarity: "common" | "rare" | "epic" | "legendary";
+  durationMinutes?: number; // 제한 시간 (희소성)
+}
+
+export const BONUS_MISSION_DEFINITIONS: BonusMissionDefinition[] = [
+  {
+    type: "extra_note",
+    title: "추가 기록 도전",
+    description: "오늘 하루 1개 더 기록해보세요",
+    icon: "PenLine",
+    action_url: "/notes/new",
+    reward: { min: 15, max: 25 },
+    difficulty: "easy",
+    rarity: "common",
+  },
+  {
+    type: "quote_collect",
+    title: "명언 수집가",
+    description: "인상 깊은 구절을 기록하세요",
+    icon: "Quote",
+    action_url: "/notes/new",
+    reward: { min: 20, max: 35 },
+    difficulty: "easy",
+    rarity: "common",
+  },
+  {
+    type: "deep_reading",
+    title: "깊이 읽기",
+    description: "100자 이상의 생각을 기록하세요",
+    icon: "Brain",
+    action_url: "/notes/new",
+    reward: { min: 25, max: 50 },
+    difficulty: "medium",
+    rarity: "rare",
+  },
+  {
+    type: "photo_capture",
+    title: "순간 포착",
+    description: "책과 함께한 순간을 사진으로 남기세요",
+    icon: "Camera",
+    action_url: "/notes/new",
+    reward: { min: 20, max: 40 },
+    difficulty: "medium",
+    rarity: "rare",
+  },
+  {
+    type: "share_wisdom",
+    title: "지혜 나눔",
+    description: "기록을 공개로 설정하여 다른 독서가와 나누세요",
+    icon: "Share2",
+    action_url: "/notes/new",
+    reward: { min: 30, max: 60 },
+    difficulty: "medium",
+    rarity: "rare",
+  },
+  {
+    type: "lucky_box",
+    title: "🎁 럭키박스",
+    description: "무엇이 나올까요? 기록하고 열어보세요!",
+    icon: "Gift",
+    action_url: "/notes/new",
+    reward: { min: 10, max: 100 }, // 가변 보상 (슬롯머신 효과)
+    difficulty: "easy",
+    rarity: "legendary",
+    durationMinutes: 30, // 30분 제한 (희소성)
+  },
+];
+
+/**
+ * 희소성별 색상 스타일
+ */
+export const RARITY_STYLES = {
+  common: {
+    bg: "bg-slate-100 dark:bg-slate-800",
+    border: "border-slate-300 dark:border-slate-600",
+    text: "text-slate-700 dark:text-slate-300",
+    badge: "bg-slate-500",
+  },
+  rare: {
+    bg: "bg-blue-50 dark:bg-blue-950/30",
+    border: "border-blue-300 dark:border-blue-700",
+    text: "text-blue-700 dark:text-blue-300",
+    badge: "bg-blue-500",
+  },
+  epic: {
+    bg: "bg-purple-50 dark:bg-purple-950/30",
+    border: "border-purple-300 dark:border-purple-700",
+    text: "text-purple-700 dark:text-purple-300",
+    badge: "bg-purple-500",
+  },
+  legendary: {
+    bg: "bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30",
+    border: "border-amber-400 dark:border-amber-600",
+    text: "text-amber-700 dark:text-amber-300",
+    badge: "bg-gradient-to-r from-amber-500 to-orange-500",
+  },
+};
+
+/**
+ * 심리학적 동기부여 메시지
+ */
+export const MOTIVATION_MESSAGES = {
+  // Near-miss 효과 (거의 달성)
+  nearMiss: [
+    "거의 다 왔어요! 조금만 더!",
+    "마지막 한 걸음만 남았어요!",
+    "포기하기엔 너무 아까워요!",
+  ],
+  // 손실 회피 (스트릭 보호)
+  lossAversion: [
+    "🔥 {streak}일 연속 기록이 사라질 수 있어요!",
+    "오늘 기록하지 않으면 연속 기록이 끊겨요",
+    "지금까지의 노력이 물거품이 될 수 있어요",
+  ],
+  // 사회적 증거
+  socialProof: [
+    "오늘 {count}명이 이 미션을 완료했어요",
+    "상위 {percent}%의 독서가들이 도전 중!",
+    "지금 {active}명이 함께 읽고 있어요",
+  ],
+  // 성취감
+  achievement: [
+    "대단해요! 오늘도 성공!",
+    "꾸준함이 실력이에요!",
+    "한 걸음 더 성장했어요!",
+  ],
+  // 보너스 해금
+  bonusUnlock: [
+    "🎉 보너스 미션이 해금되었어요!",
+    "✨ 특별 보상을 받을 수 있어요!",
+    "🎁 추가 미션에 도전해보세요!",
+  ],
+};
