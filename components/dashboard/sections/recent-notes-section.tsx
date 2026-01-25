@@ -6,7 +6,7 @@ import { FileText } from "lucide-react";
 import type { NoteWithBook } from "@/types/note";
 
 /**
- * 최근 기록 섹션 (Streaming SSR)
+ * 최근 노트 섹션 (Streaming SSR)
  */
 export async function RecentNotesSection() {
   const user = await getCurrentUser();
@@ -21,7 +21,7 @@ export async function RecentNotesSection() {
             <FileText className="h-5 w-5 text-primary" />
           </div>
           <div className="flex-1 min-w-0">
-            <CardTitle className="mb-2">최근 기록</CardTitle>
+            <CardTitle className="mb-2">최근 노트</CardTitle>
           </div>
         </div>
       </CardHeader>

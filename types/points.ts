@@ -294,26 +294,28 @@ export const POINT_ACTION_DEFAULTS: Record<PointActionType, { base_points: numbe
 };
 
 /**
- * 레벨 기본값
+ * 레벨 기본값 (나무 성장 컨셉)
+ * 씨앗 → 새싹 → 떡잎 → 어린나무 → 나무 → 큰나무 → 꽃나무 → 열매나무 → 세계수 → 황금숲
  */
 export const LEVEL_DEFAULTS: PointLevel[] = [
-  { id: "1", level: 1, required_points: 0, title: "새싹 독서가", description: "독서 여정을 시작한 새싹", badge_icon: "Sprout", streak_bonus: 1.00, created_at: "" },
-  { id: "2", level: 2, required_points: 100, title: "호기심 독서가", description: "독서에 흥미를 느끼기 시작", badge_icon: "Sparkles", streak_bonus: 1.05, created_at: "" },
-  { id: "3", level: 3, required_points: 300, title: "성장하는 독서가", description: "꾸준히 성장하는 중", badge_icon: "TrendingUp", streak_bonus: 1.10, created_at: "" },
-  { id: "4", level: 4, required_points: 600, title: "열정 독서가", description: "독서에 대한 열정이 가득", badge_icon: "Flame", streak_bonus: 1.15, created_at: "" },
-  { id: "5", level: 5, required_points: 1000, title: "숙련 독서가", description: "독서 습관이 자리잡음", badge_icon: "Star", streak_bonus: 1.20, created_at: "" },
-  { id: "6", level: 6, required_points: 1500, title: "마스터 독서가", description: "독서의 즐거움을 아는 마스터", badge_icon: "Crown", streak_bonus: 1.25, created_at: "" },
-  { id: "7", level: 7, required_points: 2500, title: "전문 독서가", description: "깊이 있는 독서를 즐김", badge_icon: "Award", streak_bonus: 1.30, created_at: "" },
-  { id: "8", level: 8, required_points: 4000, title: "현자 독서가", description: "지혜가 쌓인 독서가", badge_icon: "BookOpen", streak_bonus: 1.35, created_at: "" },
-  { id: "9", level: 9, required_points: 6000, title: "대가 독서가", description: "독서의 대가", badge_icon: "Trophy", streak_bonus: 1.40, created_at: "" },
-  { id: "10", level: 10, required_points: 10000, title: "전설의 독서가", description: "전설적인 독서 기록", badge_icon: "Gem", streak_bonus: 1.50, created_at: "" },
+  { id: "1", level: 1, required_points: 0, title: "씨앗", description: "독서의 씨앗을 심었어요", badge_icon: "Nut", streak_bonus: 1.00, created_at: "" },
+  { id: "2", level: 2, required_points: 100, title: "새싹", description: "작은 새싹이 돋아났어요", badge_icon: "Sprout", streak_bonus: 1.05, created_at: "" },
+  { id: "3", level: 3, required_points: 300, title: "떡잎", description: "첫 잎이 자라나고 있어요", badge_icon: "Leaf", streak_bonus: 1.10, created_at: "" },
+  { id: "4", level: 4, required_points: 600, title: "어린나무", description: "줄기가 튼튼해지고 있어요", badge_icon: "TreePine", streak_bonus: 1.15, created_at: "" },
+  { id: "5", level: 5, required_points: 1000, title: "나무", description: "어엿한 나무로 성장했어요", badge_icon: "TreeDeciduous", streak_bonus: 1.20, created_at: "" },
+  { id: "6", level: 6, required_points: 1500, title: "큰나무", description: "풍성한 가지를 뻗고 있어요", badge_icon: "Trees", streak_bonus: 1.25, created_at: "" },
+  { id: "7", level: 7, required_points: 2500, title: "꽃나무", description: "아름다운 꽃이 피었어요", badge_icon: "Flower2", streak_bonus: 1.30, created_at: "" },
+  { id: "8", level: 8, required_points: 4000, title: "열매나무", description: "지혜의 열매가 맺혔어요", badge_icon: "Apple", streak_bonus: 1.35, created_at: "" },
+  { id: "9", level: 9, required_points: 6000, title: "세계수", description: "하늘을 향해 뻗은 거대한 나무", badge_icon: "Palmtree", streak_bonus: 1.40, created_at: "" },
+  { id: "10", level: 10, required_points: 10000, title: "황금숲", description: "전설의 황금빛 숲을 이뤘어요", badge_icon: "Mountain", streak_bonus: 1.50, created_at: "" },
 ];
 
 /**
- * 레벨별 스타일 정보 (심리학적 색상 + 디자인)
- * - 초기 레벨 (1-3): 녹색 계열 → 안정감, 성장
- * - 중급 레벨 (4-6): 따뜻한 색 → 열정, 권위
- * - 고급 레벨 (7-10): 특별한 색 → 희소성, 특별함
+ * 레벨별 스타일 정보 (나무 성장 컨셉 + 자연 색상)
+ * - 초기 (1-3): 씨앗~떡잎 - 갈색/연두/초록
+ * - 성장 (4-6): 어린나무~큰나무 - 에메랄드/진초록/숲색
+ * - 개화 (7-8): 꽃나무~열매나무 - 분홍/주황
+ * - 전설 (9-10): 세계수~황금숲 - 청록/황금
  */
 export interface LevelStyle {
   color: string;        // Tailwind 색상 클래스
@@ -325,84 +327,94 @@ export interface LevelStyle {
 }
 
 export const LEVEL_STYLES: Record<number, LevelStyle> = {
+  // 씨앗 - 갈색 (흙 속의 씨앗)
   1: {
+    color: "#a3785d",
+    bgColor: "bg-amber-50 dark:bg-amber-900/20",
+    borderColor: "border-amber-300 dark:border-amber-700",
+    textColor: "text-amber-800 dark:text-amber-300",
+    emoji: "🌰",
+    effect: "none",
+  },
+  // 새싹 - 연두색 (막 돋아난 새싹)
+  2: {
     color: "#86efac",
-    bgColor: "bg-green-100 dark:bg-green-900/30",
+    bgColor: "bg-green-50 dark:bg-green-900/20",
     borderColor: "border-green-300 dark:border-green-700",
     textColor: "text-green-700 dark:text-green-300",
     emoji: "🌱",
     effect: "none",
   },
-  2: {
-    color: "#fde047",
-    bgColor: "bg-yellow-100 dark:bg-yellow-900/30",
-    borderColor: "border-yellow-300 dark:border-yellow-700",
-    textColor: "text-yellow-700 dark:text-yellow-300",
-    emoji: "✨",
-    effect: "none",
-  },
+  // 떡잎 - 초록색 (첫 잎이 자라남)
   3: {
     color: "#4ade80",
-    bgColor: "bg-emerald-100 dark:bg-emerald-900/30",
-    borderColor: "border-emerald-300 dark:border-emerald-700",
-    textColor: "text-emerald-700 dark:text-emerald-300",
-    emoji: "📈",
+    bgColor: "bg-green-100 dark:bg-green-900/30",
+    borderColor: "border-green-400 dark:border-green-600",
+    textColor: "text-green-700 dark:text-green-300",
+    emoji: "🌿",
     effect: "none",
   },
+  // 어린나무 - 에메랄드 (줄기가 튼튼해짐)
   4: {
-    color: "#fb923c",
-    bgColor: "bg-orange-100 dark:bg-orange-900/30",
-    borderColor: "border-orange-300 dark:border-orange-700",
-    textColor: "text-orange-700 dark:text-orange-300",
-    emoji: "🔥",
+    color: "#34d399",
+    bgColor: "bg-emerald-100 dark:bg-emerald-900/30",
+    borderColor: "border-emerald-400 dark:border-emerald-600",
+    textColor: "text-emerald-700 dark:text-emerald-300",
+    emoji: "🪴",
     effect: "subtle",
   },
+  // 나무 - 진초록 (어엿한 나무)
   5: {
-    color: "#facc15",
-    bgColor: "bg-amber-100 dark:bg-amber-900/30",
-    borderColor: "border-amber-300 dark:border-amber-700",
-    textColor: "text-amber-700 dark:text-amber-300",
-    emoji: "⭐",
+    color: "#22c55e",
+    bgColor: "bg-green-200 dark:bg-green-800/40",
+    borderColor: "border-green-500 dark:border-green-500",
+    textColor: "text-green-800 dark:text-green-200",
+    emoji: "🌲",
     effect: "subtle",
   },
+  // 큰나무 - 숲색 (풍성한 가지)
   6: {
-    color: "#c084fc",
-    bgColor: "bg-purple-100 dark:bg-purple-900/30",
-    borderColor: "border-purple-300 dark:border-purple-700",
-    textColor: "text-purple-700 dark:text-purple-300",
-    emoji: "👑",
+    color: "#15803d",
+    bgColor: "bg-green-200 dark:bg-green-800/50",
+    borderColor: "border-green-600 dark:border-green-400",
+    textColor: "text-green-900 dark:text-green-100",
+    emoji: "🌳",
     effect: "subtle",
   },
+  // 꽃나무 - 분홍 (아름다운 꽃)
   7: {
-    color: "#60a5fa",
-    bgColor: "bg-blue-100 dark:bg-blue-900/30",
-    borderColor: "border-blue-300 dark:border-blue-700",
-    textColor: "text-blue-700 dark:text-blue-300",
-    emoji: "🏅",
-    effect: "glow",
-  },
-  8: {
-    color: "#2dd4bf",
-    bgColor: "bg-teal-100 dark:bg-teal-900/30",
-    borderColor: "border-teal-300 dark:border-teal-700",
-    textColor: "text-teal-700 dark:text-teal-300",
-    emoji: "📖",
-    effect: "glow",
-  },
-  9: {
     color: "#f472b6",
     bgColor: "bg-pink-100 dark:bg-pink-900/30",
-    borderColor: "border-pink-300 dark:border-pink-700",
+    borderColor: "border-pink-400 dark:border-pink-600",
     textColor: "text-pink-700 dark:text-pink-300",
-    emoji: "🏆",
+    emoji: "🌸",
     effect: "glow",
   },
+  // 열매나무 - 주황/빨강 (지혜의 열매)
+  8: {
+    color: "#f97316",
+    bgColor: "bg-orange-100 dark:bg-orange-900/30",
+    borderColor: "border-orange-400 dark:border-orange-600",
+    textColor: "text-orange-700 dark:text-orange-300",
+    emoji: "🍎",
+    effect: "glow",
+  },
+  // 세계수 - 청록 (신비로운 거대 나무)
+  9: {
+    color: "#2dd4bf",
+    bgColor: "bg-teal-100 dark:bg-teal-900/30",
+    borderColor: "border-teal-400 dark:border-teal-600",
+    textColor: "text-teal-700 dark:text-teal-300",
+    emoji: "🌴",
+    effect: "glow",
+  },
+  // 황금숲 - 황금색 (전설의 숲)
   10: {
-    color: "#e879f9",
-    bgColor: "bg-fuchsia-100 dark:bg-fuchsia-900/30",
-    borderColor: "border-fuchsia-300 dark:border-fuchsia-700",
-    textColor: "text-fuchsia-700 dark:text-fuchsia-300",
-    emoji: "💎",
+    color: "#fbbf24",
+    bgColor: "bg-gradient-to-br from-amber-100 to-yellow-100 dark:from-amber-900/40 dark:to-yellow-900/40",
+    borderColor: "border-amber-400 dark:border-amber-500",
+    textColor: "text-amber-700 dark:text-amber-300",
+    emoji: "🏞️",
     effect: "premium",
   },
 };
@@ -550,15 +562,16 @@ export interface TreeGrowthStage {
 }
 
 /**
- * 레벨별 나무 성장 단계 정의
- * 미술/디자인 관점: 자연스러운 색상 전환, 성장의 시각적 표현
+ * 레벨별 나무 성장 단계 정의 (LEVEL_DEFAULTS와 동기화)
+ * 씨앗 → 새싹 → 떡잎 → 어린나무 → 나무 → 큰나무 → 꽃나무 → 열매나무 → 세계수 → 황금숲
  */
 export const TREE_GROWTH_STAGES: Record<number, TreeGrowthStage> = {
+  // 씨앗 - 땅 속 씨앗
   1: {
     level: 1,
     name: "씨앗",
-    description: "작은 씨앗에서 시작되는 여정",
-    height: 10,
+    description: "독서의 씨앗을 심었어요",
+    height: 8,
     hasLeaves: false,
     hasFlowers: false,
     hasFruits: false,
@@ -567,114 +580,123 @@ export const TREE_GROWTH_STAGES: Record<number, TreeGrowthStage> = {
     glowEffect: false,
     particleEffect: "none",
   },
+  // 새싹 - 막 돋아난 새싹
   2: {
     level: 2,
     name: "새싹",
-    description: "땅을 뚫고 나온 작은 새싹",
-    height: 20,
+    description: "작은 새싹이 돋아났어요",
+    height: 18,
     hasLeaves: true,
     hasFlowers: false,
     hasFruits: false,
     trunkColor: "#8B5A2B",
-    leafColor: "#98FB98",
+    leafColor: "#86efac",
     glowEffect: false,
     particleEffect: "none",
   },
+  // 떡잎 - 첫 잎이 자라남
   3: {
     level: 3,
-    name: "어린 나무",
-    description: "조금씩 자라나는 어린 나무",
-    height: 35,
+    name: "떡잎",
+    description: "첫 잎이 자라나고 있어요",
+    height: 28,
     hasLeaves: true,
     hasFlowers: false,
     hasFruits: false,
     trunkColor: "#A0522D",
-    leafColor: "#32CD32",
+    leafColor: "#4ade80",
     glowEffect: false,
     particleEffect: "subtle",
   },
+  // 어린나무 - 줄기가 튼튼해짐
   4: {
     level: 4,
-    name: "청년 나무",
-    description: "힘차게 성장하는 나무",
-    height: 50,
+    name: "어린나무",
+    description: "줄기가 튼튼해지고 있어요",
+    height: 42,
     hasLeaves: true,
-    hasFlowers: true,
+    hasFlowers: false,
     hasFruits: false,
     trunkColor: "#8B4513",
-    leafColor: "#228B22",
+    leafColor: "#34d399",
     glowEffect: false,
     particleEffect: "subtle",
   },
+  // 나무 - 어엿한 나무
   5: {
     level: 5,
-    name: "성숙한 나무",
-    description: "풍성한 잎을 가진 나무",
-    height: 65,
+    name: "나무",
+    description: "어엿한 나무로 성장했어요",
+    height: 55,
+    hasLeaves: true,
+    hasFlowers: false,
+    hasFruits: false,
+    trunkColor: "#654321",
+    leafColor: "#22c55e",
+    glowEffect: true,
+    particleEffect: "sparkle",
+  },
+  // 큰나무 - 풍성한 가지
+  6: {
+    level: 6,
+    name: "큰나무",
+    description: "풍성한 가지를 뻗고 있어요",
+    height: 68,
+    hasLeaves: true,
+    hasFlowers: false,
+    hasFruits: false,
+    trunkColor: "#5D4037",
+    leafColor: "#15803d",
+    glowEffect: true,
+    particleEffect: "sparkle",
+  },
+  // 꽃나무 - 아름다운 꽃
+  7: {
+    level: 7,
+    name: "꽃나무",
+    description: "아름다운 꽃이 피었어요",
+    height: 78,
     hasLeaves: true,
     hasFlowers: true,
     hasFruits: false,
-    trunkColor: "#654321",
-    leafColor: "#006400",
-    glowEffect: true,
-    particleEffect: "sparkle",
-  },
-  6: {
-    level: 6,
-    name: "열매 나무",
-    description: "첫 열매를 맺기 시작한 나무",
-    height: 75,
-    hasLeaves: true,
-    hasFlowers: true,
-    hasFruits: true,
-    trunkColor: "#5D4037",
-    leafColor: "#2E7D32",
-    glowEffect: true,
-    particleEffect: "sparkle",
-  },
-  7: {
-    level: 7,
-    name: "고목",
-    description: "깊은 지혜를 품은 나무",
-    height: 85,
-    hasLeaves: true,
-    hasFlowers: true,
-    hasFruits: true,
     trunkColor: "#4E342E",
-    leafColor: "#1B5E20",
+    leafColor: "#16a34a",
     glowEffect: true,
     particleEffect: "sparkle",
   },
+  // 열매나무 - 지혜의 열매
   8: {
     level: 8,
-    name: "신비의 나무",
-    description: "신비로운 기운을 뿜는 나무",
-    height: 92,
+    name: "열매나무",
+    description: "지혜의 열매가 맺혔어요",
+    height: 88,
     hasLeaves: true,
     hasFlowers: true,
     hasFruits: true,
     trunkColor: "#3E2723",
-    leafColor: "#00695C",
+    leafColor: "#166534",
     glowEffect: true,
     particleEffect: "magical",
   },
+  // 세계수 - 거대한 나무
   9: {
     level: 9,
     name: "세계수",
-    description: "세상의 지혜를 담은 거대한 나무",
-    height: 97,
+    description: "하늘을 향해 뻗은 거대한 나무",
+    height: 95,
     hasLeaves: true,
     hasFlowers: true,
     hasFruits: true,
     trunkColor: "#2C1810",
-    leafColor: "#004D40",
+    leafColor: "#14b8a6",
     glowEffect: true,
     particleEffect: "magical",
   },
+  // 황금숲 - 전설의 숲
   10: {
     level: 10,
-    name: "전설의 나무",
-    description: "전설 속에서만 존재하던 황금빛 나무",
+    name: "황금숲",
+    description: "전설의 황금빛 숲을 이뤘어요",
     height: 100,
     hasLeaves: true,
     hasFlowers: true,

@@ -66,27 +66,6 @@ export function GoalProgressSkeleton() {
 }
 
 /**
- * 통계 카드 스켈레톤
- */
-export function StatsCardsSkeleton() {
-  return (
-    <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-3">
-      {[1, 2, 3].map((i) => (
-        <Card key={i} className="border-l-4 border-l-muted">
-          <CardHeader className="pb-2 sm:pb-3">
-            <div className="flex items-center gap-2 sm:gap-3 mb-1 sm:mb-2">
-              <Skeleton className="h-7 w-7 sm:h-8 sm:w-8 rounded-lg" />
-              <Skeleton className="h-3 w-16 sm:h-4 sm:w-20" />
-            </div>
-            <Skeleton className="h-8 w-12 sm:h-10 sm:w-16" />
-          </CardHeader>
-        </Card>
-      ))}
-    </div>
-  );
-}
-
-/**
  * 최근 기록한 책 스켈레톤
  */
 export function RecentBooksSkeleton() {
@@ -164,28 +143,3 @@ export function RecentNotesSkeleton() {
   );
 }
 
-/**
- * 가장 많이 기록한 책 스켈레톤
- */
-export function TopBooksSkeleton() {
-  return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-start gap-3">
-          <Skeleton className="h-9 w-9 rounded-lg" />
-          <div className="flex-1">
-            <Skeleton className="h-5 w-40 mb-2" />
-            <Skeleton className="h-4 w-32" />
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-2">
-          {[1, 2, 3, 4, 5].map((i) => (
-            <Skeleton key={i} className="h-14 w-full rounded-lg" />
-          ))}
-        </div>
-      </CardContent>
-    </Card>
-  );
-}

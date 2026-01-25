@@ -1,10 +1,12 @@
 "use client";
 
+import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { BarChart3 } from "lucide-react";
+import { BarChart3, ChevronDown, ChevronUp } from "lucide-react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
+import { cn } from "@/lib/utils";
 
 // Recharts는 클라이언트 전용이므로 dynamic import로 SSR 비활성화
 const MonthlyChart = dynamic(
@@ -22,12 +24,14 @@ const MonthlyChart = dynamic(
 interface MonthlyStatsCardProps {
   monthlyData: Array<{ month: string; count: number }>;
   isGuest: boolean;
+  defaultOpen?: boolean;
 }
 
 /**
- * 월별 기록 통계 카드 컴포넌트
+ * 월별 기록 통계 카드 컴포넌트 (접기/펼치기 가능)
  */
-export function MonthlyStatsCard({ monthlyData, isGuest }: MonthlyStatsCardProps) {
+export function MonthlyStatsCard({ monthlyData, isGuest, defaultOpen = false }: MonthlyStatsCardProps) {
+  const [isOpen, setIsOpen] = useState(defaultOpen);
   // 데이터 유효성 검사
   if (!monthlyData || !Array.isArray(monthlyData) || monthlyData.length === 0) {
     return (
@@ -101,7 +105,10 @@ export function MonthlyStatsCard({ monthlyData, isGuest }: MonthlyStatsCardProps
 
   return (
     <Card>
-      <CardHeader>
+      <CardHeader
+        className="cursor-pointer select-none hover:bg-muted/50 transition-colors rounded-t-lg"
+        onClick={() => setIsOpen(!isOpen)}
+      >
         <div className="flex items-start gap-3">
           <div className="rounded-lg bg-primary/10 p-2 shrink-0">
             <BarChart3 className="h-5 w-5 text-primary" />
@@ -110,11 +117,25 @@ export function MonthlyStatsCard({ monthlyData, isGuest }: MonthlyStatsCardProps
             <CardTitle className="mb-2">월별 기록 통계</CardTitle>
             <CardDescription>최근 6개월간 작성한 기록 수</CardDescription>
           </div>
+          <div className="shrink-0 text-muted-foreground">
+            {isOpen ? (
+              <ChevronUp className="h-5 w-5" />
+            ) : (
+              <ChevronDown className="h-5 w-5" />
+            )}
+          </div>
         </div>
       </CardHeader>
-      <CardContent>
-        <MonthlyChart data={monthlyData} />
-      </CardContent>
+      <div
+        className={cn(
+          "overflow-hidden transition-all duration-300 ease-in-out",
+          isOpen ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"
+        )}
+      >
+        <CardContent className="pt-0">
+          <MonthlyChart data={monthlyData} />
+        </CardContent>
+      </div>
     </Card>
   );
 }
