@@ -37,6 +37,7 @@ interface ChatSidebarProps {
   onNewSession: () => void;
   onSelectSession: (sessionId: string) => void;
   onDeleteSession: (sessionId: string) => void;
+  onDeleteAllSessions?: () => void;
   isCollapsed?: boolean;
   onToggleCollapse?: () => void;
   onClose?: () => void;
@@ -48,16 +49,25 @@ export function ChatSidebar({
   onNewSession,
   onSelectSession,
   onDeleteSession,
+  onDeleteAllSessions,
   isCollapsed = false,
   onToggleCollapse,
   onClose,
 }: ChatSidebarProps) {
   const [deleteSessionId, setDeleteSessionId] = useState<string | null>(null);
+  const [showDeleteAllDialog, setShowDeleteAllDialog] = useState(false);
 
   const handleDeleteConfirm = () => {
     if (deleteSessionId) {
       onDeleteSession(deleteSessionId);
       setDeleteSessionId(null);
+    }
+  };
+
+  const handleDeleteAllConfirm = () => {
+    if (onDeleteAllSessions) {
+      onDeleteAllSessions();
+      setShowDeleteAllDialog(false);
     }
   };
 
@@ -165,6 +175,21 @@ export function ChatSidebar({
             )}
           </div>
         </ScrollArea>
+
+        {/* 모든 대화 삭제 버튼 */}
+        {sessions.length > 0 && onDeleteAllSessions && (
+          <div className="border-t p-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full justify-start text-muted-foreground hover:text-destructive"
+              onClick={() => setShowDeleteAllDialog(true)}
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              모든 대화 삭제
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* 삭제 확인 다이얼로그 */}
@@ -186,6 +211,32 @@ export function ChatSidebar({
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               삭제
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* 모든 대화 삭제 확인 다이얼로그 */}
+      <AlertDialog
+        open={showDeleteAllDialog}
+        onOpenChange={setShowDeleteAllDialog}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>모든 대화 삭제</AlertDialogTitle>
+            <AlertDialogDescription>
+              정말 모든 대화 기록({sessions.length}개)을 삭제하시겠습니까?
+              <br />
+              삭제된 대화는 복구할 수 없습니다.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>취소</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteAllConfirm}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              모두 삭제
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

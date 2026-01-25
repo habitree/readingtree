@@ -344,3 +344,256 @@
   }
 }
 
+/* ============================================
+ * 나무 애니메이션 시스템 (Reading Tree)
+ * ============================================ */
+
+/* 기본 나무 컨테이너 */
+.tree-container {
+  will-change: transform;
+  transform-style: preserve-3d;
+}
+
+/* 나무 기본 흔들림 (idle) - 바람에 살랑이는 효과 */
+.tree-sway {
+  animation: treeSway 6s ease-in-out infinite;
+  transform-origin: center bottom;
+}
+
+@keyframes treeSway {
+  0%, 100% {
+    transform: rotate(0deg) translateX(0);
+  }
+  25% {
+    transform: rotate(0.5deg) translateX(1px);
+  }
+  50% {
+    transform: rotate(-0.3deg) translateX(-0.5px);
+  }
+  75% {
+    transform: rotate(0.4deg) translateX(0.8px);
+  }
+}
+
+/* 새싹 미세 흔들림 */
+.tree-sway-subtle {
+  animation: treeSwaySubtle 4s ease-in-out infinite;
+  transform-origin: center bottom;
+}
+
+@keyframes treeSwaySubtle {
+  0%, 100% {
+    transform: rotate(0deg);
+  }
+  50% {
+    transform: rotate(1deg);
+  }
+}
+
+/* 잎 흔들림 애니메이션 */
+.leaves-sway {
+  animation: leavesSway 5s ease-in-out infinite;
+  transform-origin: center center;
+}
+
+@keyframes leavesSway {
+  0%, 100% {
+    transform: scale(1) translateY(0);
+  }
+  25% {
+    transform: scale(1.01) translateY(-1px);
+  }
+  50% {
+    transform: scale(0.99) translateY(1px);
+  }
+  75% {
+    transform: scale(1.01) translateY(-0.5px);
+  }
+}
+
+/* 잎 팔랑거림 (개별 잎) */
+.leaves-flutter {
+  animation: leavesFlutter 3s ease-in-out infinite;
+}
+
+@keyframes leavesFlutter {
+  0%, 100% {
+    opacity: 0.7;
+    transform: translateY(0) rotate(0deg);
+  }
+  33% {
+    opacity: 0.8;
+    transform: translateY(-2px) rotate(5deg);
+  }
+  66% {
+    opacity: 0.6;
+    transform: translateY(1px) rotate(-3deg);
+  }
+}
+
+/* 꽃 피어오르기 */
+.flowers-bloom {
+  animation: flowersBreathe 4s ease-in-out infinite;
+}
+
+@keyframes flowersBreathe {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.9;
+  }
+}
+
+/* 열매 살랑임 */
+.fruits-sway {
+  animation: fruitsSway 3.5s ease-in-out infinite;
+}
+
+@keyframes fruitsSway {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(2px);
+  }
+}
+
+/* 오로라 효과 (레벨 9-10) */
+.aurora-effect {
+  background: conic-gradient(
+    from 0deg,
+    rgba(45, 212, 191, 0.3),
+    rgba(34, 197, 94, 0.3),
+    rgba(251, 191, 36, 0.3),
+    rgba(45, 212, 191, 0.3)
+  );
+  border-radius: 50%;
+  filter: blur(30px);
+  animation: auroraRotate 10s linear infinite;
+}
+
+@keyframes auroraRotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* 물주기 시 나무 반응 */
+.tree-water-response {
+  animation: waterResponse 0.5s ease-out;
+}
+
+@keyframes waterResponse {
+  0% {
+    transform: scale(1);
+  }
+  30% {
+    transform: scale(1.03) translateY(-3px);
+  }
+  60% {
+    transform: scale(0.98) translateY(1px);
+  }
+  100% {
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* 빛나는 효과 (고레벨) */
+.glow-effect {
+  animation: glowPulse 3s ease-in-out infinite;
+}
+
+@keyframes glowPulse {
+  0%, 100% {
+    filter: drop-shadow(0 0 8px currentColor);
+    opacity: 0.8;
+  }
+  50% {
+    filter: drop-shadow(0 0 20px currentColor);
+    opacity: 1;
+  }
+}
+
+/* 프리미엄 효과 (레벨 10) */
+.premium-shimmer {
+  animation: premiumShimmer 2s ease-in-out infinite;
+}
+
+@keyframes premiumShimmer {
+  0%, 100% {
+    filter: drop-shadow(0 0 10px #ffd700) brightness(1);
+  }
+  50% {
+    filter: drop-shadow(0 0 25px #ffd700) brightness(1.1);
+  }
+}
+
+/* 파티클 상승 효과 */
+.particle-rise {
+  animation: particleRise 3s ease-out infinite;
+}
+
+@keyframes particleRise {
+  0% {
+    transform: translateY(0);
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-50px);
+    opacity: 0;
+  }
+}
+
+/* 별 반짝임 효과 */
+.star-twinkle {
+  animation: starTwinkle 2s ease-in-out infinite;
+}
+
+@keyframes starTwinkle {
+  0%, 100% {
+    transform: scale(0.8);
+    opacity: 0.3;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 1;
+  }
+}
+
+/* 레벨 뱃지 호버 효과 */
+.level-badge-hover {
+  transition: all 0.3s ease;
+}
+
+.level-badge-hover:hover {
+  transform: scale(1.1);
+}
+
+/* 모션 감소 선호 사용자 대응 */
+@media (prefers-reduced-motion: reduce) {
+  .tree-sway,
+  .tree-sway-subtle,
+  .leaves-sway,
+  .leaves-flutter,
+  .flowers-bloom,
+  .fruits-sway,
+  .aurora-effect,
+  .glow-effect,
+  .premium-shimmer,
+  .particle-rise,
+  .star-twinkle {
+    animation: none;
+  }
+
+  .tree-water-response {
+    animation: none;
+  }
+}
+

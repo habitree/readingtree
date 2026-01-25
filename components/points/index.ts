@@ -5,3 +5,4 @@ export { PointsModal } from "./points-modal";
 export { LevelLeaderboard, LevelLeaderboardSkeleton } from "./level-leaderboard";
 export { ReadingTree } from "./reading-tree";
 export { TreeWatering } from "./tree-watering";
+export { LevelBadge } from "./level-badge";

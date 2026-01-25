@@ -5,13 +5,31 @@ import { ChatMessage, StreamingMessage } from "./chat-message";
 import { ChatInput } from "./chat-input";
 import { ChatSidebar } from "./chat-sidebar";
 import { Button } from "@/components/ui/button";
-import { Bot, Menu, X } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Bot, Menu, X, MoreVertical, Trash2, Plus } from "lucide-react";
 import { toast } from "sonner";
 import {
   createChatSession,
   getChatSessions,
   getChatSession,
   deleteChatSession,
+  deleteAllChatSessions,
   getChatContext,
   generateSessionTitle,
 } from "@/app/actions/ai";
@@ -32,6 +50,8 @@ export function ChatInterface({ userId, userAvatar, userName }: ChatInterfacePro
   const [streamingContent, setStreamingContent] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [context, setContext] = useState<ChatContext>({});
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showDeleteAllDialog, setShowDeleteAllDialog] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // 화면 크기에 따라 사이드바 상태 초기화
@@ -113,6 +133,19 @@ export function ChatInterface({ userId, userAvatar, userName }: ChatInterfacePro
         setMessages([]);
       }
       toast.success("대화가 삭제되었습니다.");
+    } catch (error) {
+      toast.error("대화 삭제에 실패했습니다.");
+    }
+  };
+
+  // 모든 세션 삭제
+  const handleDeleteAllSessions = async () => {
+    try {
+      const result = await deleteAllChatSessions();
+      setSessions([]);
+      setCurrentSession(null);
+      setMessages([]);
+      toast.success(`${result.deletedCount}개의 대화가 삭제되었습니다.`);
     } catch (error) {
       toast.error("대화 삭제에 실패했습니다.");
     }
@@ -270,6 +303,7 @@ export function ChatInterface({ userId, userAvatar, userName }: ChatInterfacePro
             }
           }}
           onDeleteSession={handleDeleteSession}
+          onDeleteAllSessions={handleDeleteAllSessions}
           onClose={() => setSidebarOpen(false)}
         />
       </div>
@@ -294,12 +328,47 @@ export function ChatInterface({ userId, userAvatar, userName }: ChatInterfacePro
           {/* 새 대화 버튼 */}
           <Button
             variant="ghost"
-            size="sm"
-            className="shrink-0 h-9 text-xs px-2"
+            size="icon"
+            className="shrink-0 h-9 w-9"
             onClick={handleNewSession}
           >
-            새 대화
+            <Plus className="h-5 w-5" />
           </Button>
+          {/* 더보기 메뉴 */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="shrink-0 h-9 w-9"
+              >
+                <MoreVertical className="h-5 w-5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {currentSession && (
+                <>
+                  <DropdownMenuItem
+                    onClick={() => setShowDeleteDialog(true)}
+                    className="text-destructive focus:text-destructive"
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    현재 대화 삭제
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                </>
+              )}
+              {sessions.length > 0 && (
+                <DropdownMenuItem
+                  onClick={() => setShowDeleteAllDialog(true)}
+                  className="text-destructive focus:text-destructive"
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  모든 대화 삭제 ({sessions.length}개)
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
         {currentSession || messages.length > 0 ? (
@@ -364,6 +433,58 @@ export function ChatInterface({ userId, userAvatar, userName }: ChatInterfacePro
           </div>
         )}
       </div>
+
+      {/* 현재 대화 삭제 확인 다이얼로그 */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>대화 삭제</AlertDialogTitle>
+            <AlertDialogDescription>
+              현재 대화를 삭제하시겠습니까? 삭제된 대화는 복구할 수 없습니다.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>취소</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (currentSession) {
+                  handleDeleteSession(currentSession.id);
+                }
+                setShowDeleteDialog(false);
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              삭제
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* 모든 대화 삭제 확인 다이얼로그 */}
+      <AlertDialog open={showDeleteAllDialog} onOpenChange={setShowDeleteAllDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>모든 대화 삭제</AlertDialogTitle>
+            <AlertDialogDescription>
+              정말 모든 대화 기록({sessions.length}개)을 삭제하시겠습니까?
+              <br />
+              삭제된 대화는 복구할 수 없습니다.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>취소</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                handleDeleteAllSessions();
+                setShowDeleteAllDialog(false);
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              모두 삭제
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

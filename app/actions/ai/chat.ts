@@ -129,6 +129,36 @@ export async function deleteChatSession(sessionId: string): Promise<void> {
 }
 
 /**
+ * 모든 채팅 세션 삭제
+ */
+export async function deleteAllChatSessions(): Promise<{ deletedCount: number }> {
+  const user = await getCurrentUser();
+  if (!user) {
+    throw new Error("로그인이 필요합니다.");
+  }
+
+  const supabase = await createServerSupabaseClient();
+
+  // 먼저 세션 수 확인
+  const { count } = await supabase
+    .from("chat_sessions")
+    .select("*", { count: "exact", head: true })
+    .eq("user_id", user.id);
+
+  // 모든 세션 삭제 (CASCADE로 메시지도 자동 삭제)
+  const { error } = await supabase
+    .from("chat_sessions")
+    .delete()
+    .eq("user_id", user.id);
+
+  if (error) {
+    throw new Error(`채팅 기록 삭제 실패: ${error.message}`);
+  }
+
+  return { deletedCount: count || 0 };
+}
+
+/**
  * 채팅 세션 제목 업데이트
  */
 export async function updateChatSessionTitle(

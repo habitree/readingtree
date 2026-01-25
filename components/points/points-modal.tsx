@@ -28,6 +28,7 @@ import { getPointsDashboardData } from "@/app/actions/points";
 import { LEVEL_STYLES, LEVEL_DEFAULTS, type PointsDashboardData } from "@/types/points";
 import { LevelLeaderboard } from "./level-leaderboard";
 import { TreeWatering } from "./tree-watering";
+import { LevelBadge } from "./level-badge";
 
 interface PointsModalProps {
   open: boolean;
@@ -109,15 +110,13 @@ export function PointsModal({ open, onOpenChange }: PointsModalProps) {
                       }
                       transition={{ duration: 2, repeat: Infinity }}
                     >
-                      <span
-                        className={cn(
-                          "text-4xl",
-                          levelStyle.effect === "glow" && "drop-shadow-[0_0_8px_currentColor]",
-                          levelStyle.effect === "premium" && "animate-pulse"
-                        )}
-                      >
-                        {levelStyle.emoji}
-                      </span>
+                      {/* 수채화 스타일 나무 뱃지 */}
+                      <LevelBadge
+                        level={level}
+                        size="lg"
+                        animated={levelStyle.effect !== "none"}
+                        showGlow={levelStyle.effect === "glow" || levelStyle.effect === "premium"}
+                      />
                       <div>
                         <div className={cn("text-2xl font-bold", levelStyle.textColor)}>
                           Lv.{level}

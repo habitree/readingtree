@@ -42,7 +42,7 @@ interface HomeHeroSectionProps {
   streak?: number;
   todayGoalProgress?: number;
   weeklyNotes?: number;
-  continueReading?: ContinueReadingData | null;
+  continueReadingBooks?: ContinueReadingData[];
   dailyMissions?: Mission[];
   bonusMissions?: BonusMission[];
   isBonusUnlocked?: boolean;
@@ -58,7 +58,7 @@ export function HomeHeroSection({
   streak = 0,
   todayGoalProgress = 0,
   weeklyNotes = 0,
-  continueReading = null,
+  continueReadingBooks = [],
   dailyMissions = [],
   bonusMissions = [],
   isBonusUnlocked = false,
@@ -96,7 +96,7 @@ export function HomeHeroSection({
   // 동기부여 메시지 생성
   const getContextualMessage = () => {
     // 계속 읽기 책이 있으면 시간대별 큐
-    if (continueReading) {
+    if (continueReadingBooks.length > 0) {
       return getTimeBasedCue();
     }
 
@@ -216,18 +216,29 @@ export function HomeHeroSection({
         </div>
       </Card>
 
-      {/* 계속 읽기 카드 (Primary CTA) */}
+      {/* 계속 읽기 카드 (Primary CTA) - 최대 3개까지 가로 표시 */}
       {userName && (
-        continueReading ? (
-          <ContinueReadingCard
-            userBookId={continueReading.userBookId}
-            title={continueReading.title}
-            author={continueReading.author}
-            coverImageUrl={continueReading.coverImageUrl}
-            currentPage={continueReading.currentPage}
-            totalPages={continueReading.totalPages}
-            progressPercent={continueReading.progressPercent}
-          />
+        continueReadingBooks.length > 0 ? (
+          <div className={cn(
+            "grid gap-2 sm:gap-3",
+            continueReadingBooks.length === 1 && "grid-cols-1",
+            continueReadingBooks.length === 2 && "grid-cols-2",
+            continueReadingBooks.length >= 3 && "grid-cols-2 lg:grid-cols-3"
+          )}>
+            {continueReadingBooks.map((book, index) => (
+              <ContinueReadingCard
+                key={book.userBookId}
+                userBookId={book.userBookId}
+                title={book.title}
+                author={book.author}
+                coverImageUrl={book.coverImageUrl}
+                currentPage={book.currentPage}
+                totalPages={book.totalPages}
+                progressPercent={book.progressPercent}
+                compact={continueReadingBooks.length > 1}
+              />
+            ))}
+          </div>
         ) : (
           <NoReadingBookCard />
         )

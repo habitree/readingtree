@@ -16,10 +16,12 @@ interface ContinueReadingCardProps {
   currentPage: number;
   totalPages: number | null;
   progressPercent: number;
+  compact?: boolean;
 }
 
 /**
  * 계속 읽기 카드 - 마지막 읽던 책으로 바로 이동하는 CTA
+ * compact 모드: 여러 책이 있을 때 작은 카드로 표시
  */
 export function ContinueReadingCard({
   userBookId,
@@ -29,7 +31,89 @@ export function ContinueReadingCard({
   currentPage,
   totalPages,
   progressPercent,
+  compact = false,
 }: ContinueReadingCardProps) {
+  // compact 모드: 세로 레이아웃의 작은 카드
+  if (compact) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.1 }}
+      >
+        <Link href={`/books/${userBookId}`} className="block group h-full">
+          <Card className="relative overflow-hidden h-full border-forest-200/50 dark:border-forest-800/50 bg-gradient-to-br from-forest-50/80 to-emerald-50/80 dark:from-forest-950/50 dark:to-emerald-950/50 hover:shadow-lg hover:border-forest-300 dark:hover:border-forest-700 transition-all duration-300">
+            {/* 배경 장식 */}
+            <div className="absolute top-0 right-0 w-16 h-16 bg-forest-200/20 dark:bg-forest-800/10 rounded-full blur-xl translate-x-1/2 -translate-y-1/2" />
+
+            <div className="relative p-3 flex flex-col h-full">
+              {/* 상단: 책 표지 + 제목 */}
+              <div className="flex items-start gap-3">
+                {/* 책 표지 */}
+                <div className="relative shrink-0">
+                  <motion.div
+                    whileHover={{ scale: 1.05 }}
+                    className="relative w-12 h-[72px] rounded-md overflow-hidden shadow-sm"
+                  >
+                    {coverImageUrl ? (
+                      <Image
+                        src={coverImageUrl}
+                        alt={title}
+                        fill
+                        className="object-cover"
+                        sizes="48px"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-forest-100 to-forest-200 dark:from-forest-800 dark:to-forest-900 flex items-center justify-center">
+                        <BookOpen className="h-4 w-4 text-forest-500" />
+                      </div>
+                    )}
+                  </motion.div>
+                </div>
+
+                {/* 책 정보 */}
+                <div className="flex-1 min-w-0">
+                  <p className="text-[10px] font-medium text-forest-600 dark:text-forest-400 mb-0.5">
+                    계속 읽기
+                  </p>
+                  <h3 className="text-sm font-semibold text-slate-900 dark:text-white line-clamp-2 group-hover:text-forest-700 dark:group-hover:text-forest-300 transition-colors leading-tight">
+                    {title}
+                  </h3>
+                  {author && (
+                    <p className="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">
+                      {author}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* 하단: 진행률 */}
+              <div className="mt-auto pt-2">
+                <div className="flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400 mb-1">
+                  <span>
+                    {currentPage}p {totalPages && `/ ${totalPages}p`}
+                  </span>
+                  <span className="font-medium text-forest-600 dark:text-forest-400">
+                    {progressPercent}%
+                  </span>
+                </div>
+                <div className="h-1 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                  <motion.div
+                    className="h-full bg-gradient-to-r from-forest-400 to-emerald-400 rounded-full"
+                    initial={{ width: 0 }}
+                    animate={{ width: `${progressPercent}%` }}
+                    transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
+                  />
+                </div>
+              </div>
+            </div>
+          </Card>
+        </Link>
+      </motion.div>
+    );
+  }
+
+  // 기본 모드: 가로 레이아웃의 큰 카드
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}

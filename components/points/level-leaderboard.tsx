@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { getLevelDistribution, getUserRank } from "@/app/actions/points";
 import { LEVEL_STYLES, LEVEL_DEFAULTS } from "@/types/points";
 import { Skeleton } from "@/components/ui/skeleton";
+import { LevelBadge } from "./level-badge";
 
 interface LevelDistribution {
   level: number;
@@ -129,24 +130,13 @@ export function LevelLeaderboard({ currentLevel, className }: LevelLeaderboardPr
               <div className="flex items-center justify-between">
                 {/* 레벨 정보 */}
                 <div className="flex items-center gap-3">
-                  {/* 레벨 아이콘 */}
-                  <motion.span
-                    className={cn(
-                      "text-xl",
-                      levelStyle.effect === "glow" && "drop-shadow-[0_0_6px_currentColor]",
-                      levelStyle.effect === "premium" && "animate-pulse"
-                    )}
-                    animate={
-                      levelStyle.effect === "premium"
-                        ? { scale: [1, 1.1, 1], rotate: [0, 5, -5, 0] }
-                        : levelStyle.effect === "glow"
-                        ? { scale: [1, 1.05, 1] }
-                        : {}
-                    }
-                    transition={{ duration: 2, repeat: Infinity }}
-                  >
-                    {levelStyle.emoji}
-                  </motion.span>
+                  {/* 레벨 아이콘 - 수채화 스타일 미니 나무 */}
+                  <LevelBadge
+                    level={item.level}
+                    size="sm"
+                    animated={levelStyle.effect !== "none"}
+                    showGlow={levelStyle.effect === "glow" || levelStyle.effect === "premium"}
+                  />
 
                   {/* 레벨 텍스트 */}
                   <div>
