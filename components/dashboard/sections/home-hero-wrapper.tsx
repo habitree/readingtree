@@ -2,6 +2,7 @@ import { getCurrentUser } from "@/app/actions/auth";
 import { getPersonaDashboardData } from "@/app/actions/persona";
 import { getReadingStats } from "@/app/actions/stats";
 import { getContinueReadingBook } from "@/app/actions/books";
+import { getBonusMissions } from "@/app/actions/points";
 import { HomeHeroSection } from "./home-hero-section";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
@@ -28,11 +29,12 @@ export async function HomeHeroWrapper() {
   }
 
   // 병렬로 데이터 조회
-  const [personaData, readingStats, streakAndTodayData, continueReading] = await Promise.all([
+  const [personaData, readingStats, streakAndTodayData, continueReading, bonusMissionsData] = await Promise.all([
     getPersonaDashboardData().catch(() => null),
     getReadingStats(user).catch(() => null),
     getStreakAndTodayData(user.id).catch(() => ({ streak: 0, todayNotes: 0, hasReadToday: false })),
     getContinueReadingBook(user).catch(() => null),
+    getBonusMissions(user).catch(() => ({ missions: [], isUnlocked: false, motivationMessage: undefined })),
   ]);
 
   // 오늘 목표 달성률 계산 (간단한 예: 목표 1개 기록 기준)
@@ -56,6 +58,9 @@ export async function HomeHeroWrapper() {
       weeklyNotes={readingStats?.thisWeek?.notes ?? 0}
       continueReading={continueReading}
       dailyMissions={dailyMissions}
+      bonusMissions={bonusMissionsData.missions}
+      isBonusUnlocked={bonusMissionsData.isUnlocked}
+      bonusMotivationMessage={bonusMissionsData.motivationMessage}
     />
   );
 }

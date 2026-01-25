@@ -822,7 +822,7 @@ export async function getBonusMissions(user?: User | null): Promise<{
       missions: [],
       isUnlocked: false,
       motivationMessage: remaining === 1
-        ? "마지막 1개만 완료하면 보너스 미션이 해금돼요! 🎁"
+        ? "마지막 1개만 완료하면 보너스 미션이 열려요! 🎁"
         : `${remaining}개 미션만 더 완료하면 보너스 미션이 열려요!`,
     };
   }
@@ -923,7 +923,7 @@ export async function getBonusMissions(user?: User | null): Promise<{
   return {
     missions: bonusMissions,
     isUnlocked: true,
-    motivationMessage: "🎉 보너스 미션이 해금되었어요! 추가 보상을 획득하세요!",
+    motivationMessage: "🎉 보너스 미션이 열렸어요! 추가 보상을 획득하세요!",
   };
 }
 

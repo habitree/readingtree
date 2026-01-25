@@ -372,7 +372,7 @@ export function DailyMissions({
                     🎁 보너스 미션
                   </p>
                   <p className="text-xs text-amber-600/80 dark:text-amber-400/80 mt-0.5">
-                    {motivationMessage || "모든 일일 미션을 완료하면 해금돼요!"}
+                    {motivationMessage || "모든 일일 미션을 완료하면 열려요!"}
                   </p>
                 </div>
                 <div className="flex items-center gap-1 text-amber-500">
@@ -398,14 +398,14 @@ export function DailyMissions({
             </Card>
           </motion.div>
         ) : (
-          /* 보너스 미션 해금 상태 */
+          /* 보너스 미션 오픈 상태 */
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ type: "spring", stiffness: 300, damping: 25 }}
           >
             <Card className="overflow-hidden">
-              {/* 해금 알림 */}
+              {/* 오픈 알림 */}
               <AnimatePresence>
                 {showBonusUnlock && (
                   <motion.div
@@ -417,7 +417,7 @@ export function DailyMissions({
                     <div className="flex items-center justify-center gap-2">
                       <Unlock className="h-4 w-4 animate-bounce" />
                       <span className="text-sm font-semibold">
-                        🎉 보너스 미션 해금!
+                        🎉 보너스 미션 오픈!
                       </span>
                     </div>
                   </motion.div>

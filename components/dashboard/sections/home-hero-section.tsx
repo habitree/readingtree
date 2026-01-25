@@ -18,6 +18,7 @@ import {
 import { cn } from "@/lib/utils";
 import type { UserPersona } from "@/types/persona";
 import type { ReadingStats } from "@/types/persona";
+import type { BonusMission } from "@/types/points";
 import { useStyle } from "@/hooks/use-style";
 import { ContinueReadingCard, NoReadingBookCard } from "./continue-reading-card";
 import { DailyMissions, type Mission } from "./daily-missions";
@@ -43,6 +44,9 @@ interface HomeHeroSectionProps {
   weeklyNotes?: number;
   continueReading?: ContinueReadingData | null;
   dailyMissions?: Mission[];
+  bonusMissions?: BonusMission[];
+  isBonusUnlocked?: boolean;
+  bonusMotivationMessage?: string;
 }
 
 /**
@@ -56,6 +60,9 @@ export function HomeHeroSection({
   weeklyNotes = 0,
   continueReading = null,
   dailyMissions = [],
+  bonusMissions = [],
+  isBonusUnlocked = false,
+  bonusMotivationMessage,
 }: HomeHeroSectionProps) {
   const [mounted, setMounted] = useState(false);
   const { greeting, getStreakMessage, getMotivationalMessage } = useStyle();
@@ -228,7 +235,12 @@ export function HomeHeroSection({
 
       {/* 오늘의 미션 */}
       {userName && dailyMissions.length > 0 && (
-        <DailyMissions missions={dailyMissions} />
+        <DailyMissions
+          missions={dailyMissions}
+          bonusMissions={bonusMissions}
+          isBonusUnlocked={isBonusUnlocked}
+          motivationMessage={bonusMotivationMessage}
+        />
       )}
 
       {/* 페르소나 인사이트 미니 카드 (있는 경우에만) */}
