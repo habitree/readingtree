@@ -172,7 +172,7 @@ async function generateImage(level: number): Promise<string> {
       style: "vivid",
     });
 
-    const imageUrl = response.data[0]?.url;
+    const imageUrl = response.data?.[0]?.url;
     if (!imageUrl) {
       throw new Error("이미지 URL을 받지 못했습니다.");
     }
