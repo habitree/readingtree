@@ -1,6 +1,7 @@
 import { getCurrentUser } from "@/app/actions/auth";
 import { getPersonaDashboardData } from "@/app/actions/persona";
 import { getReadingStats } from "@/app/actions/stats";
+import { getContinueReadingBook } from "@/app/actions/books";
 import { HomeHeroSection } from "./home-hero-section";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
@@ -20,21 +21,31 @@ export async function HomeHeroWrapper() {
         streak={0}
         todayGoalProgress={0}
         weeklyNotes={0}
+        continueReading={null}
+        dailyMissions={[]}
       />
     );
   }
 
   // 병렬로 데이터 조회
-  const [personaData, readingStats, streakAndTodayData] = await Promise.all([
+  const [personaData, readingStats, streakAndTodayData, continueReading] = await Promise.all([
     getPersonaDashboardData().catch(() => null),
     getReadingStats(user).catch(() => null),
-    getStreakAndTodayData(user.id).catch(() => ({ streak: 0, todayNotes: 0 })),
+    getStreakAndTodayData(user.id).catch(() => ({ streak: 0, todayNotes: 0, hasReadToday: false })),
+    getContinueReadingBook(user).catch(() => null),
   ]);
 
   // 오늘 목표 달성률 계산 (간단한 예: 목표 1개 기록 기준)
   const todayNotes = streakAndTodayData.todayNotes;
   const dailyGoal = 1; // 기본 일일 목표
   const todayGoalProgress = Math.min((todayNotes / dailyGoal) * 100, 100);
+
+  // 오늘의 미션 생성
+  const dailyMissions = generateDailyMissions(
+    streakAndTodayData.hasReadToday,
+    todayNotes,
+    streakAndTodayData.streak
+  );
 
   return (
     <HomeHeroSection
@@ -43,14 +54,62 @@ export async function HomeHeroWrapper() {
       streak={streakAndTodayData.streak}
       todayGoalProgress={todayGoalProgress}
       weeklyNotes={readingStats?.thisWeek?.notes ?? 0}
+      continueReading={continueReading}
+      dailyMissions={dailyMissions}
     />
   );
 }
 
 /**
+ * 오늘의 미션 생성
+ */
+function generateDailyMissions(
+  hasReadToday: boolean,
+  todayNotes: number,
+  streak: number
+) {
+  const missions = [];
+
+  // 미션 1: 오늘 첫 독서 기록
+  missions.push({
+    id: "first_read",
+    type: "first_read" as const,
+    title: "오늘 첫 독서 기록하기",
+    description: "책을 열고 오늘의 첫 기록을 남겨보세요",
+    status: hasReadToday || todayNotes > 0 ? "completed" as const : "pending" as const,
+    reward: "+10",
+  });
+
+  // 미션 2: 메모 작성
+  missions.push({
+    id: "note",
+    type: "note" as const,
+    title: "메모 1개 작성하기",
+    description: "인상 깊은 구절이나 생각을 기록해보세요",
+    status: todayNotes >= 1 ? "completed" as const : "pending" as const,
+    reward: "+15",
+    progress: todayNotes < 1 ? { current: todayNotes, target: 1 } : undefined,
+  });
+
+  // 미션 3: 스트릭 유지 (조건부)
+  if (streak >= 3) {
+    missions.push({
+      id: "streak",
+      type: "streak" as const,
+      title: `${streak}일 연속 기록 유지`,
+      description: "오늘도 기록을 남겨 연속 기록을 이어가세요",
+      status: todayNotes > 0 ? "completed" as const : "pending" as const,
+      reward: "+20",
+    });
+  }
+
+  return missions;
+}
+
+/**
  * 연속 기록 일수 및 오늘 기록 수 조회
  */
-async function getStreakAndTodayData(userId: string): Promise<{ streak: number; todayNotes: number }> {
+async function getStreakAndTodayData(userId: string): Promise<{ streak: number; todayNotes: number; hasReadToday: boolean }> {
   try {
     const supabase = await createServerSupabaseClient();
 
@@ -66,7 +125,7 @@ async function getStreakAndTodayData(userId: string): Promise<{ streak: number; 
       .order("created_at", { ascending: false });
 
     if (error || !notes || notes.length === 0) {
-      return { streak: 0, todayNotes: 0 };
+      return { streak: 0, todayNotes: 0, hasReadToday: false };
     }
 
     // 날짜별로 그룹화 및 오늘 기록 수 계산
@@ -104,9 +163,9 @@ async function getStreakAndTodayData(userId: string): Promise<{ streak: number; 
       }
     }
 
-    return { streak, todayNotes };
+    return { streak, todayNotes, hasReadToday: todayNotes > 0 };
   } catch (error) {
     console.error("스트릭 조회 오류:", error);
-    return { streak: 0, todayNotes: 0 };
+    return { streak: 0, todayNotes: 0, hasReadToday: false };
   }
 }

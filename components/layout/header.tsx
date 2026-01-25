@@ -138,28 +138,14 @@ export function Header() {
                     <p>프로필</p>
                   </TooltipContent>
                 </Tooltip>
-                <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuLabel>
-                    <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-medium leading-none">{userName}</p>
-                      <p className="text-xs leading-none text-muted-foreground">
-                        프로필 보기
-                      </p>
-                    </div>
-                  </DropdownMenuLabel>
-                  <DropdownMenuSeparator />
+                <DropdownMenuContent align="end" className="w-48">
                   <DropdownMenuItem asChild>
-                    <Link href="/profile">
-                      프로필 설정
+                    <Link href="/profile" className="flex items-center gap-2">
+                      <User className="h-4 w-4" />
+                      <span>프로필</span>
                       <DropdownMenuShortcut>⌘P</DropdownMenuShortcut>
                     </Link>
                   </DropdownMenuItem>
-                  {isAdmin && (
-                    <DropdownMenuItem asChild>
-                      <Link href="/admin">관리자 대시보드</Link>
-                    </DropdownMenuItem>
-                  )}
-                  <DropdownMenuItem>설정</DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     onClick={async () => {
@@ -169,6 +155,7 @@ export function Header() {
                         console.error("로그아웃 오류:", error);
                       }
                     }}
+                    className="text-destructive focus:text-destructive"
                   >
                     로그아웃
                   </DropdownMenuItem>

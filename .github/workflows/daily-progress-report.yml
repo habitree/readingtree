@@ -2,8 +2,8 @@ name: Daily Progress Report
 
 on:
   schedule:
-    # 매일 00:00 UTC 실행 (한국 시간 오전 9시)
-    - cron: "0 0 * * *"
+    # 매일 16:00 UTC 실행 (한국 시간 다음날 오전 1시)
+    - cron: "0 16 * * *"
   workflow_dispatch: {}
 
 jobs:
@@ -14,6 +14,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -33,4 +35,3 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           DAILY_PROGRESS_LINEAR_TEAM: ${{ secrets.DAILY_PROGRESS_LINEAR_TEAM || 'Readtree' }}
           DAILY_PROGRESS_LINEAR_PROJECT: ${{ secrets.DAILY_PROGRESS_LINEAR_PROJECT || 'AI Features' }}
-

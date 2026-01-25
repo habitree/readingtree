@@ -7,3 +7,7 @@ export { TopBooksSection } from "./top-books-section";
 export { HomeHeroWrapper } from "./home-hero-wrapper";
 export { HomeHeroSection, HomeHeroSkeleton } from "./home-hero-section";
 export { MobileQuickActions, DesktopQuickActions } from "./mobile-quick-actions";
+export { ContinueReadingCard, ContinueReadingCardSkeleton, NoReadingBookCard } from "./continue-reading-card";
+export { DailyMissions, DailyMissionsSkeleton } from "./daily-missions";
+export type { Mission } from "./daily-missions";
+export { AnimatedStreak, getStreakEncouragement } from "./animated-streak";

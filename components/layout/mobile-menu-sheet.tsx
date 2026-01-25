@@ -96,26 +96,6 @@ export function MobileMenuSheet({ open, onOpenChange }: MobileMenuSheetProps) {
         </SheetHeader>
 
         <div className="space-y-1 px-4 pb-6">
-          {/* 프로필 */}
-          {user && (
-            <SheetClose asChild>
-              <Link href="/profile" onClick={handleMenuClick}>
-                <Button
-                  variant={pathname === "/profile" ? "secondary" : "ghost"}
-                  className={cn(
-                    "w-full justify-start gap-3 h-12",
-                    pathname === "/profile" && "bg-secondary font-medium"
-                  )}
-                >
-                  <User className="h-5 w-5" />
-                  <span>프로필</span>
-                </Button>
-              </Link>
-            </SheetClose>
-          )}
-
-          <Separator className="my-2" />
-
           {/* 타임라인, 독서모임, 페르소나 (로그인 사용자만) */}
           {user && (
             <>
@@ -210,8 +190,8 @@ export function MobileMenuSheet({ open, onOpenChange }: MobileMenuSheetProps) {
             </>
           )}
 
-          {/* 다크모드 토글 */}
-          <div className="flex items-center justify-between h-12 px-4">
+          {/* 설정 섹션 */}
+          <div className="flex items-center justify-between h-12 px-4 rounded-lg hover:bg-accent transition-colors">
             <div className="flex items-center gap-3">
               {mounted && isDarkMode ? (
                 <Moon className="h-5 w-5" />

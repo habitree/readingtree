@@ -1494,6 +1494,118 @@ export async function getBooksWithoutPageCount(
 }
 
 /**
+ * 마지막 읽던 책 (계속 읽기) 조회
+ * 가장 최근에 활동(노트 작성 또는 진행률 업데이트)한 읽는 중인 책을 반환
+ * @param user 선택적 사용자 정보
+ */
+export async function getContinueReadingBook(user?: User | null): Promise<{
+  userBookId: string;
+  bookId: string;
+  title: string;
+  author: string | null;
+  coverImageUrl: string | null;
+  currentPage: number;
+  totalPages: number | null;
+  progressPercent: number;
+  lastActivityAt: string;
+} | null> {
+  const supabase = await createServerSupabaseClient();
+
+  // 현재 사용자 확인
+  let currentUser = user;
+  if (!currentUser) {
+    const {
+      data: { user: fetchedUser },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !fetchedUser) {
+      return null;
+    }
+    currentUser = fetchedUser;
+  }
+
+  // 읽는 중인 책 목록 조회 (최근 업데이트순)
+  const { data: readingBooks, error: booksError } = await supabase
+    .from("user_books")
+    .select(`
+      id,
+      book_id,
+      current_page,
+      updated_at,
+      books (
+        id,
+        title,
+        author,
+        cover_image_url,
+        total_pages
+      )
+    `)
+    .eq("user_id", currentUser.id)
+    .in("status", ["reading", "rereading"])
+    .order("updated_at", { ascending: false })
+    .limit(5);
+
+  if (booksError || !readingBooks || readingBooks.length === 0) {
+    return null;
+  }
+
+  // 각 책의 최근 노트 작성일 조회
+  const bookIds = readingBooks.map((rb: any) => rb.book_id).filter(Boolean);
+
+  const { data: recentNotes } = await supabase
+    .from("notes")
+    .select("book_id, created_at")
+    .eq("user_id", currentUser.id)
+    .in("book_id", bookIds)
+    .order("created_at", { ascending: false });
+
+  // book_id별 최근 노트 날짜 맵 생성
+  const noteActivityMap: Record<string, string> = {};
+  for (const note of recentNotes || []) {
+    if (!noteActivityMap[note.book_id]) {
+      noteActivityMap[note.book_id] = note.created_at;
+    }
+  }
+
+  // 가장 최근 활동한 책 찾기
+  let mostRecentBook = readingBooks[0];
+  let mostRecentActivity = mostRecentBook.updated_at;
+
+  for (const book of readingBooks) {
+    const noteActivity = noteActivityMap[book.book_id];
+    const bookActivity = book.updated_at;
+    const latestActivity = noteActivity && noteActivity > bookActivity ? noteActivity : bookActivity;
+
+    if (latestActivity > mostRecentActivity) {
+      mostRecentActivity = latestActivity;
+      mostRecentBook = book;
+    }
+  }
+
+  const bookData = mostRecentBook.books as any;
+  if (!bookData) return null;
+
+  const currentPage = mostRecentBook.current_page || 0;
+  const totalPages = bookData.total_pages || null;
+  const progressPercent = totalPages && totalPages > 0
+    ? Math.min(Math.round((currentPage / totalPages) * 100), 100)
+    : 0;
+
+  return {
+    userBookId: mostRecentBook.id,
+    bookId: mostRecentBook.book_id,
+    title: bookData.title,
+    author: bookData.author,
+    coverImageUrl: bookData.cover_image_url,
+    currentPage,
+    totalPages,
+    progressPercent,
+    lastActivityAt: mostRecentActivity,
+  };
+}
+
+/**
  * 페이지 수가 없는 책들의 페이지 수 일괄 업데이트
  * @param limit 업데이트할 최대 개수 (기본값: 20)
  */
