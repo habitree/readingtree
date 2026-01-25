@@ -518,6 +518,12 @@ export function DailyMissions({
                             </Badge>
                           )}
                         </div>
+                        {/* 미션 설명 */}
+                        {!isCompleted && mission.description && (
+                          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate">
+                            {mission.description}
+                          </p>
+                        )}
                         {/* 제한 시간 표시 (희소성) */}
                         {remainingTime && !isCompleted && (
                           <div className="flex items-center gap-1 mt-0.5">

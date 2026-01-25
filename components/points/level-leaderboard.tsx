@@ -121,9 +121,9 @@ export function LevelLeaderboard({ currentLevel, className }: LevelLeaderboardPr
               transition={{ delay: index * 0.05 }}
               className={cn(
                 "relative p-3 rounded-lg border transition-all",
-                isCurrentLevel
-                  ? cn(levelStyle.bgColor, levelStyle.borderColor, "ring-2 ring-offset-2 ring-primary/50")
-                  : "bg-muted/30 border-border hover:bg-muted/50"
+                levelStyle.bgColor,
+                levelStyle.borderColor,
+                isCurrentLevel && "ring-2 ring-offset-2 ring-primary/50"
               )}
             >
               <div className="flex items-center justify-between">
@@ -152,7 +152,7 @@ export function LevelLeaderboard({ currentLevel, className }: LevelLeaderboardPr
                   <div>
                     <div className={cn(
                       "font-semibold flex items-center gap-2",
-                      isCurrentLevel && levelStyle.textColor
+                      levelStyle.textColor
                     )}>
                       Lv.{item.level}
                       <span className="text-sm font-normal">
@@ -171,7 +171,7 @@ export function LevelLeaderboard({ currentLevel, className }: LevelLeaderboardPr
                 <div className="text-right">
                   <div className={cn(
                     "font-bold tabular-nums",
-                    isCurrentLevel ? levelStyle.textColor : "text-foreground"
+                    levelStyle.textColor
                   )}>
                     {item.count.toLocaleString()}명
                   </div>
@@ -182,17 +182,14 @@ export function LevelLeaderboard({ currentLevel, className }: LevelLeaderboardPr
               </div>
 
               {/* 진행 바 */}
-              <div className="mt-2 h-1.5 bg-muted rounded-full overflow-hidden">
+              <div className="mt-2 h-1.5 bg-background/50 rounded-full overflow-hidden">
                 <motion.div
                   initial={{ width: 0 }}
                   animate={{ width: `${Math.max(percentage, 1)}%` }}
                   transition={{ duration: 0.5, delay: index * 0.05 }}
-                  className={cn(
-                    "h-full rounded-full",
-                    isCurrentLevel ? "bg-primary" : "bg-muted-foreground/30"
-                  )}
+                  className="h-full rounded-full"
                   style={{
-                    backgroundColor: isCurrentLevel ? levelStyle.color : undefined,
+                    backgroundColor: levelStyle.color,
                   }}
                 />
               </div>
