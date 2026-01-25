@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { getWateringStatus, waterTree } from "@/app/actions/points";
-import { ReadingTreeRive } from "./reading-tree-rive";
+import { ReadingTreeImage } from "./reading-tree-image";
 import {
   type WateringStatus,
   type WateringResult,
@@ -111,7 +111,7 @@ export function TreeWatering({ level, className }: TreeWateringProps) {
     <div className={cn("relative", className)}>
       {/* 나무 영역 */}
       <div className="relative h-48 sm:h-56 flex items-end justify-center">
-        <ReadingTreeRive
+        <ReadingTreeImage
           level={level}
           health={status?.treeHealth || 100}
           isWatering={isWatering}

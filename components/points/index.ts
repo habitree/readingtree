@@ -9,4 +9,5 @@ export { LevelBadge } from "./level-badge";
 
 // Rive 및 이미지 기반 컴포넌트 (고도화)
 export { ReadingTreeRive, ReadingTreeStatic } from "./reading-tree-rive";
+export { ReadingTreeImage } from "./reading-tree-image";
 export { LevelBadgeImage, LevelBadgeAuto } from "./level-badge-image";
