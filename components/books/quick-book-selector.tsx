@@ -3,23 +3,26 @@
 import { useState, useEffect, useMemo } from "react";
 import { Input } from "@/components/ui/input";
 import { Search, BookOpen, Loader2 } from "lucide-react";
-import { cn } from "@/lib/utils";
 import Image from "next/image";
 import { getUserBooksWithNotes, type BookWithNotes } from "@/app/actions/books";
-import { toSelectedBook, useMobileNoteSheet } from "@/hooks/use-mobile-note-sheet";
 
 interface QuickBookSelectorProps {
   onSelect: (book: BookWithNotes) => void;
+  /** 제외할 책 ID 목록 (user_books.id) */
+  excludeUserBookIds?: string[];
 }
 
 /**
  * 빠른 책 선택 컴포넌트
  * 내 서재에서 책을 빠르게 선택할 수 있는 UI
  */
-export function QuickBookSelector({ onSelect }: QuickBookSelectorProps) {
+export function QuickBookSelector({ onSelect, excludeUserBookIds = [] }: QuickBookSelectorProps) {
   const [books, setBooks] = useState<BookWithNotes[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+
+  // 제외할 ID를 Set으로 변환 (검색 성능 최적화)
+  const excludeSet = useMemo(() => new Set(excludeUserBookIds), [excludeUserBookIds]);
 
   // 책 목록 로드
   useEffect(() => {
@@ -37,24 +40,26 @@ export function QuickBookSelector({ onSelect }: QuickBookSelectorProps) {
     loadBooks();
   }, []);
 
-  // 검색 필터링
+  // 검색 필터링 + 제외 목록 필터링
   const filteredBooks = useMemo(() => {
-    if (!searchQuery.trim()) return books;
+    const filtered = books.filter((book) => !excludeSet.has(book.id));
+
+    if (!searchQuery.trim()) return filtered;
 
     const query = searchQuery.toLowerCase();
-    return books.filter(
+    return filtered.filter(
       (book) =>
         book.books.title.toLowerCase().includes(query) ||
         book.books.author?.toLowerCase().includes(query)
     );
-  }, [books, searchQuery]);
+  }, [books, searchQuery, excludeSet]);
 
-  // 최근 읽은 책 (읽는 중 상태) - 최대 6권
+  // 최근 읽은 책 (읽는 중 상태) - 최대 6권 (제외 목록 적용)
   const recentBooks = useMemo(() => {
     return books
-      .filter((book) => book.status === "reading" || book.status === "rereading")
+      .filter((book) => !excludeSet.has(book.id) && (book.status === "reading" || book.status === "rereading"))
       .slice(0, 6);
-  }, [books]);
+  }, [books, excludeSet]);
 
   // 나머지 책 목록
   const otherBooks = useMemo(() => {

@@ -15,7 +15,7 @@ import { BookStatusSelector } from "@/components/books/book-status-selector";
 import { BookDeleteButton } from "@/components/books/book-delete-button";
 import { BookInfoEditor } from "@/components/books/book-info-editor";
 import { ReadingProgress } from "@/components/books/reading-progress";
-import { PenTool, LogIn, BookOpen, Calendar, Building2, Hash, Quote, Sparkles, Trophy } from "lucide-react";
+import { PenTool, LogIn, BookOpen, Calendar, Building2, Hash, Quote, Sparkles, Trophy, Link2 } from "lucide-react";
 import type { ReadingStatus } from "@/types/book";
 import { NotesList } from "@/components/notes/notes-list";
 import { SampleNotesList } from "@/components/notes/sample-notes-list";
@@ -23,6 +23,8 @@ import { isValidUUID } from "@/lib/utils/validation";
 import { sanitizeErrorForLogging } from "@/lib/utils/validation";
 import { BookScrollHandler } from "@/components/books/book-scroll-handler";
 import { BookTitle } from "@/components/books/book-title";
+import { RelatedBooksList } from "@/components/books/related-books-list";
+import { RelatedBooksEditor } from "@/components/books/related-books-editor";
 
 interface BookDetailPageProps {
   params: {
@@ -339,6 +341,24 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
           )}
         </CardContent>
       </Card>
+
+      {/* 연결된 책 섹션 - 로그인 사용자만 */}
+      {!isGuest && (
+        <Card className="border-muted/50">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2 text-base font-medium">
+                <Link2 className="w-4 h-4 text-primary/70" />
+                연결된 책
+              </CardTitle>
+              <RelatedBooksEditor userBookId={userBook.id} />
+            </div>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <RelatedBooksList userBookId={userBook.id} />
+          </CardContent>
+        </Card>
+      )}
 
       {/* 기록 목록 영역 - 개선된 헤더 */}
       <div className="pt-2">

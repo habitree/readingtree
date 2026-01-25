@@ -11,6 +11,8 @@ import type {
 } from "@/types/note";
 import { isValidUUID, isValidLength, isValidTags, sanitizeErrorMessage, sanitizeErrorForLogging } from "@/lib/utils/validation";
 import type { User } from "@supabase/supabase-js";
+import { earnPoints, updateStreak } from "./points";
+import type { PointActionType } from "@/types/points";
 
 /**
  * 기록 생성
@@ -169,6 +171,34 @@ export async function createNote(data: CreateNoteInput, user?: User | null) {
 
   if (error || !note) {
     throw new Error(sanitizeErrorMessage(error || new Error("기록 생성에 실패했습니다.")));
+  }
+
+  // 포인트 적립 (비동기로 처리하여 메인 플로우 차단하지 않음)
+  try {
+    // 스트릭 업데이트 (첫 활동 시 보너스)
+    await updateStreak(currentUser);
+
+    // 노트 타입에 따른 포인트 적립
+    let pointActionType: PointActionType = "note_create";
+    if (noteType === "quote") {
+      pointActionType = "note_quote";
+    } else if (noteType === "memo") {
+      pointActionType = "note_memo";
+    } else if (noteType === "photo") {
+      pointActionType = "note_photo";
+    } else if (noteType === "transcription") {
+      pointActionType = "note_transcription";
+    }
+
+    await earnPoints(pointActionType, {
+      user: currentUser,
+      referenceId: note.id,
+      referenceType: "note",
+      description: `${data.title || "기록"} 작성`,
+    });
+  } catch (pointError) {
+    // 포인트 적립 실패해도 노트 생성은 성공으로 처리
+    console.error("포인트 적립 오류:", sanitizeErrorForLogging(pointError));
   }
 
   revalidatePath("/notes");

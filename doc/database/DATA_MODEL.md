@@ -253,9 +253,48 @@ CREATE TYPE ocr_log_status AS ENUM ('success', 'failed');
 
 ---
 
-### 4.4 bookshelves (서재)
+### 4.4 user_book_relations (관련 도서 연결)
+
+**목적**: 사용자의 책들 간 관련 도서 관계를 관리합니다. 양방향 연결을 지원합니다.
+
+**소유 구조**: 개인 (각 사용자는 자신의 관계만 소유)
+
+**주요 컬럼**:
+- `id` (UUID, PK): 기본 키
+- `user_id` (UUID, NOT NULL): 사용자 ID (`auth.users(id)` 참조)
+- `source_user_book_id` (UUID, NOT NULL): 출발 책 ID (`user_books(id)` 참조)
+- `target_user_book_id` (UUID, NOT NULL): 도착 책 ID (`user_books(id)` 참조)
+- `created_at` (TIMESTAMP WITH TIME ZONE, DEFAULT NOW()): 생성 시간
+- **CHECK 제약**: `source_user_book_id != target_user_book_id` - 자기 자신 연결 방지
+- **UNIQUE 제약**: `(user_id, source_user_book_id, target_user_book_id)` - 중복 연결 방지
+
+**관계 정의**:
+- `user_id` → `auth.users(id)` (ON DELETE CASCADE)
+- `source_user_book_id` → `user_books(id)` (ON DELETE CASCADE)
+- `target_user_book_id` → `user_books(id)` (ON DELETE CASCADE)
+
+**인덱스**:
+- `idx_user_book_relations_user_id`: 사용자별 관계 조회용
+- `idx_user_book_relations_source`: 출발 책별 관계 조회용
+- `idx_user_book_relations_target`: 도착 책별 관계 조회용
+
+**RLS 정책 요약**:
+- **SELECT**: 자신의 관계만 조회 가능 (`auth.uid() = user_id`)
+- **INSERT**: 자신의 관계만 생성 가능 (`auth.uid() = user_id`)
+- **UPDATE**: 자신의 관계만 수정 가능 (`auth.uid() = user_id`)
+- **DELETE**: 자신의 관계만 삭제 가능 (`auth.uid() = user_id`)
+
+**특수 규칙**:
+- 양방향 연결: A↔B 연결 시 두 레코드 생성 (A→B, B→A)
+- 책 삭제 시 관련 연결도 자동 삭제 (CASCADE)
+
+---
+
+### 4.5 bookshelves (서재)
 
 **목적**: 사용자의 서재 정보를 관리합니다. 메인 서재(통합 뷰)와 하위 서재(개별 관리)를 지원합니다.
+
+> 참고: 기존 4.4~4.x 섹션 번호가 +1 되었습니다.
 
 **소유 구조**: 개인 (각 사용자는 자신의 서재만 소유)
 
@@ -738,13 +777,14 @@ group_shared_books ←→ user_books (N:M)
 13. **users ↔ chat_sessions**: 1:N 관계, 한 사용자는 여러 채팅 세션을 가질 수 있음
 14. **chat_sessions ↔ chat_messages**: 1:N 관계, 한 세션은 여러 메시지를 가짐
 15. **users ↔ user_personas**: 1:1 관계, 한 사용자는 하나의 페르소나만 가짐
+16. **user_books ↔ user_book_relations**: 1:N 관계, 한 책은 여러 관련 도서 연결을 가질 수 있음
 
 ### 5.3 CASCADE 규칙
 
-- **users 삭제 시**: `user_books`, `notes`, `groups` (리더인 경우), `group_members`, `ocr_usage_stats`, `ocr_logs` CASCADE 삭제
+- **users 삭제 시**: `user_books`, `notes`, `groups` (리더인 경우), `group_members`, `ocr_usage_stats`, `ocr_logs`, `user_book_relations` CASCADE 삭제
 - **books 삭제 시**: `user_books`, `notes`, `group_books` CASCADE 삭제
 - **groups 삭제 시**: `group_members`, `group_books`, `group_notes`, `group_shared_books` CASCADE 삭제
-- **user_books 삭제 시**: `group_shared_books` CASCADE 삭제
+- **user_books 삭제 시**: `group_shared_books`, `user_book_relations` CASCADE 삭제
 - **notes 삭제 시**: `group_notes` CASCADE 삭제, `ocr_logs`의 `note_id`는 SET NULL
 
 ---
@@ -963,6 +1003,25 @@ RLS 정책은 데이터베이스 레벨에서 접근 제어를 강제하므로, 
   - `migration-202601201010__user_personas__create_table.sql`
   - `migration-202601201020__books__add_ai_metadata_columns.sql`
 - **목적**: 사용자의 독서 기록을 분석하여 개인화된 AI 독서 도우미 제공
+
+### 2026-01-25 (관련 도서 연결 기능 추가)
+
+- **변경 내용**: 사용자의 책들 간 관련 도서 관계 관리 기능 추가
+  - `user_book_relations` 테이블 생성: 책들 간의 양방향 관계 관리
+    - `id` (UUID, PK): 기본 키
+    - `user_id` (UUID, NOT NULL): 사용자 ID (`auth.users(id)` 참조)
+    - `source_user_book_id` (UUID, NOT NULL): 출발 책 ID (`user_books(id)` 참조)
+    - `target_user_book_id` (UUID, NOT NULL): 도착 책 ID (`user_books(id)` 참조)
+    - `created_at` (TIMESTAMP WITH TIME ZONE): 생성 시간
+  - 제약조건:
+    - `different_books`: 자기 자신과의 연결 방지
+    - `UNIQUE(user_id, source_user_book_id, target_user_book_id)`: 중복 연결 방지
+  - RLS 정책: 자신의 관계만 CRUD 가능 (`auth.uid() = user_id`)
+  - 양방향 연결: A↔B 연결 시 두 레코드 생성 (A→B, B→A)
+- **영향받는 테이블**:
+  - `user_book_relations` (신규)
+- **마이그레이션 파일**: `migration-202601251200__user_book_relations__create_table.sql`
+- **목적**: 내 서재의 책들 간에 "관련 도서" 관계를 설정하고 관리하는 기능 제공
 
 ### 향후 변경 사항
 

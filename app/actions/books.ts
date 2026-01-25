@@ -7,6 +7,7 @@ import { fetchBookPageCount } from "@/lib/api/book-page-count";
 import type { ReadingStatus } from "@/types/book";
 import { isValidUUID, sanitizeErrorForLogging } from "@/lib/utils/validation";
 import type { User } from "@supabase/supabase-js";
+import { earnPoints, updateStreak } from "./points";
 
 // AI 관련 함수 (wrapper로 re-export - "use server" 파일에서는 async 함수만 export 가능)
 import { getBookDescriptionSummary as _getBookDescriptionSummary } from './ai/summarization';
@@ -224,6 +225,23 @@ export async function addBook(
     throw new Error("책 추가 후 user_books ID를 가져올 수 없습니다.");
   }
 
+  // 포인트 적립 (비동기로 처리하여 메인 플로우 차단하지 않음)
+  try {
+    // 스트릭 업데이트 (첫 활동 시 보너스)
+    await updateStreak(currentUser);
+
+    // 책 추가 포인트 적립
+    await earnPoints("book_add", {
+      user: currentUser,
+      referenceId: newUserBook.id,
+      referenceType: "user_book",
+      description: `${bookData.title} 추가`,
+    });
+  } catch (pointError) {
+    // 포인트 적립 실패해도 책 추가는 성공으로 처리
+    console.error("포인트 적립 오류:", sanitizeErrorForLogging(pointError));
+  }
+
   revalidatePath("/books");
   revalidatePath("/");
 
@@ -379,6 +397,34 @@ export async function updateBookStatus(
 
   if (error) {
     throw new Error(`상태 변경 실패: ${error.message}`);
+  }
+
+  // 완독 시 포인트 적립
+  if (status === "completed") {
+    try {
+      // 스트릭 업데이트 (첫 활동 시 보너스)
+      await updateStreak(currentUser);
+
+      // 책 정보 조회하여 제목 가져오기
+      const { data: bookInfo } = await supabase
+        .from("user_books")
+        .select("books(title)")
+        .eq("id", userBookId)
+        .single();
+
+      const bookTitle = (bookInfo?.books as any)?.title || "책";
+
+      // 책 완독 포인트 적립
+      await earnPoints("book_complete", {
+        user: currentUser,
+        referenceId: userBookId,
+        referenceType: "user_book",
+        description: `${bookTitle} 완독`,
+      });
+    } catch (pointError) {
+      // 포인트 적립 실패해도 상태 변경은 성공으로 처리
+      console.error("포인트 적립 오류:", sanitizeErrorForLogging(pointError));
+    }
   }
 
   revalidatePath("/books");

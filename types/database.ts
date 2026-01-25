@@ -717,6 +717,30 @@ export interface Database {
           created_at?: string;
         };
       };
+      // 관련 도서 연결 테이블
+      user_book_relations: {
+        Row: {
+          id: string;
+          user_id: string;
+          source_user_book_id: string;
+          target_user_book_id: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          source_user_book_id: string;
+          target_user_book_id: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          source_user_book_id?: string;
+          target_user_book_id?: string;
+          created_at?: string;
+        };
+      };
     };
   };
 }
