@@ -159,6 +159,51 @@ export async function deleteAllChatSessions(): Promise<{ deletedCount: number }>
 }
 
 /**
+ * 개별 채팅 메시지 삭제
+ */
+export async function deleteChatMessage(messageId: string): Promise<void> {
+  const user = await getCurrentUser();
+  if (!user) {
+    throw new Error("로그인이 필요합니다.");
+  }
+
+  const supabase = await createServerSupabaseClient();
+
+  // 메시지가 사용자의 세션에 속하는지 확인 후 삭제
+  const { data: message, error: fetchError } = await supabase
+    .from("chat_messages")
+    .select("session_id")
+    .eq("id", messageId)
+    .single();
+
+  if (fetchError || !message) {
+    throw new Error("메시지를 찾을 수 없습니다.");
+  }
+
+  // 세션이 사용자의 것인지 확인
+  const { data: session, error: sessionError } = await supabase
+    .from("chat_sessions")
+    .select("id")
+    .eq("id", message.session_id)
+    .eq("user_id", user.id)
+    .single();
+
+  if (sessionError || !session) {
+    throw new Error("권한이 없습니다.");
+  }
+
+  // 메시지 삭제
+  const { error } = await supabase
+    .from("chat_messages")
+    .delete()
+    .eq("id", messageId);
+
+  if (error) {
+    throw new Error(`메시지 삭제 실패: ${error.message}`);
+  }
+}
+
+/**
  * 채팅 세션 제목 업데이트
  */
 export async function updateChatSessionTitle(

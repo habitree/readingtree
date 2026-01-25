@@ -30,6 +30,7 @@ import {
   getChatSession,
   deleteChatSession,
   deleteAllChatSessions,
+  deleteChatMessage,
   getChatContext,
   generateSessionTitle,
 } from "@/app/actions/ai";
@@ -148,6 +149,17 @@ export function ChatInterface({ userId, userAvatar, userName }: ChatInterfacePro
       toast.success(`${result.deletedCount}개의 대화가 삭제되었습니다.`);
     } catch (error) {
       toast.error("대화 삭제에 실패했습니다.");
+    }
+  };
+
+  // 개별 메시지 삭제
+  const handleDeleteMessage = async (messageId: string) => {
+    try {
+      await deleteChatMessage(messageId);
+      setMessages((prev) => prev.filter((m) => m.id !== messageId));
+      toast.success("메시지가 삭제되었습니다.");
+    } catch (error) {
+      toast.error("메시지 삭제에 실패했습니다.");
     }
   };
 
@@ -382,6 +394,7 @@ export function ChatInterface({ userId, userAvatar, userName }: ChatInterfacePro
                     message={message}
                     userAvatar={userAvatar}
                     userName={userName}
+                    onDelete={handleDeleteMessage}
                   />
                 ))}
                 {streamingContent && (
