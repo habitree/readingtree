@@ -1,4 +1,5 @@
 import { createServerClient } from "@supabase/ssr";
+import { createClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
 
 /**
@@ -73,6 +74,31 @@ export async function createServerSupabaseClient() {
           // user sessions.
         }
       },
+    },
+  });
+}
+
+/**
+ * 관리자 권한이 필요한 작업을 위한 Supabase Admin 클라이언트
+ * service_role 키를 사용하여 RLS를 우회
+ *
+ * 주의: 서버 사이드에서만 사용해야 함 (클라이언트에 노출 금지)
+ * 사용 사례: 사용자 계정 삭제, 관리자 전용 데이터 작업
+ */
+export function createAdminSupabaseClient() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!supabaseUrl || !supabaseServiceRoleKey) {
+    throw new Error(
+      "Admin 클라이언트 생성 실패: SUPABASE_SERVICE_ROLE_KEY가 설정되지 않았습니다."
+    );
+  }
+
+  return createClient(supabaseUrl, supabaseServiceRoleKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
     },
   });
 }

@@ -1,6 +1,9 @@
 "use server";
 
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import {
+  createServerSupabaseClient,
+  createAdminSupabaseClient,
+} from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { getAppUrl } from "@/lib/utils/url";
@@ -331,13 +334,13 @@ export async function getCurrentUser() {
  */
 export async function isAdmin() {
   const user = await getCurrentUser();
-  
+
   if (!user) {
     return false;
   }
 
   const supabase = await createServerSupabaseClient();
-  
+
   const { data, error } = await supabase
     .from("users")
     .select("is_admin")
@@ -349,5 +352,45 @@ export async function isAdmin() {
   }
 
   return data.is_admin === true;
+}
+
+/**
+ * 계정 삭제
+ *
+ * 주의: 이 작업은 되돌릴 수 없습니다.
+ * - 사용자의 모든 데이터가 삭제됩니다 (CASCADE 설정에 따름)
+ * - Auth 사용자 정보도 삭제됩니다
+ *
+ * @param confirmText 확인 문구 ("계정삭제"를 입력해야 함)
+ */
+export async function deleteAccount(confirmText: string) {
+  // 확인 문구 검증
+  if (confirmText !== "계정삭제") {
+    throw new Error("확인 문구가 일치하지 않습니다.");
+  }
+
+  // 현재 사용자 확인
+  const user = await getCurrentUser();
+  if (!user) {
+    throw new Error("로그인이 필요합니다.");
+  }
+
+  const userId = user.id;
+
+  // Admin 클라이언트로 사용자 삭제 (service_role 필요)
+  const adminSupabase = createAdminSupabaseClient();
+
+  // 1. Auth 사용자 삭제 (관련 데이터는 CASCADE로 자동 삭제)
+  const { error: deleteError } = await adminSupabase.auth.admin.deleteUser(
+    userId
+  );
+
+  if (deleteError) {
+    console.error("계정 삭제 오류:", deleteError);
+    throw new Error(`계정 삭제에 실패했습니다: ${deleteError.message}`);
+  }
+
+  // 2. 세션 정리 및 로그인 페이지로 리다이렉트
+  redirect("/login?deleted=true");
 }
 

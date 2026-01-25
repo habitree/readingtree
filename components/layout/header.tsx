@@ -1,12 +1,11 @@
 "use client";
 
-import { Megaphone, User, Trees } from "lucide-react";
+import { Megaphone, User, Trees, Trash2, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
   DropdownMenuShortcut,
@@ -17,10 +16,22 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Link from "next/link";
 import { useAuth } from "@/hooks/use-auth";
-import { signOut } from "@/app/actions/auth";
+import { signOut, deleteAccount } from "@/app/actions/auth";
 import { getCurrentUserProfile } from "@/app/actions/profile";
 import { getImageUrl } from "@/lib/utils/image";
 import { useEffect, useState } from "react";
@@ -35,6 +46,10 @@ export function Header() {
   const { user, isLoading } = useAuth();
   const pathname = usePathname();
   const [userProfile, setUserProfile] = useState<{ id: string; name: string; avatar_url: string | null; is_admin?: boolean } | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   // 사용자 프로필 정보 가져오기
   // user가 변경되거나 프로필 페이지에서 다른 페이지로 이동할 때 갱신
@@ -76,7 +91,32 @@ export function Header() {
 
   const userName = userProfile?.name || user?.user_metadata?.name || user?.email?.split("@")[0] || "사용자";
   const userAvatar = userProfile?.avatar_url || null;
-  const isAdmin = userProfile?.is_admin === true;
+
+  const handleDeleteAccount = async () => {
+    if (deleteConfirmText !== "계정삭제") {
+      setDeleteError("확인 문구를 정확히 입력해주세요.");
+      return;
+    }
+
+    setIsDeleting(true);
+    setDeleteError(null);
+
+    try {
+      await deleteAccount(deleteConfirmText);
+    } catch (error) {
+      console.error("계정 삭제 오류:", error);
+      setDeleteError(
+        error instanceof Error ? error.message : "계정 삭제에 실패했습니다."
+      );
+      setIsDeleting(false);
+    }
+  };
+
+  const handleDeleteDialogClose = () => {
+    setDeleteDialogOpen(false);
+    setDeleteConfirmText("");
+    setDeleteError(null);
+  };
 
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -155,9 +195,15 @@ export function Header() {
                         console.error("로그아웃 오류:", error);
                       }
                     }}
-                    className="text-destructive focus:text-destructive"
                   >
                     로그아웃
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => setDeleteDialogOpen(true)}
+                    className="text-destructive focus:text-destructive"
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    계정 삭제
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -174,6 +220,63 @@ export function Header() {
           </TooltipProvider>
         </div>
       </div>
+
+      {/* 계정 삭제 확인 다이얼로그 */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={handleDeleteDialogClose}>
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="h-5 w-5" />
+              계정 삭제
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3">
+                <p className="font-medium text-destructive">
+                  이 작업은 되돌릴 수 없습니다.
+                </p>
+                <div className="rounded-lg bg-destructive/10 p-3 text-sm space-y-2">
+                  <p>계정을 삭제하면 다음 데이터가 영구적으로 삭제됩니다:</p>
+                  <ul className="list-disc list-inside space-y-1 text-muted-foreground">
+                    <li>프로필 정보</li>
+                    <li>독서 기록 및 메모</li>
+                    <li>서재에 등록한 책 정보</li>
+                    <li>작성한 리뷰 및 댓글</li>
+                  </ul>
+                  <p className="font-semibold text-destructive">
+                    삭제된 데이터는 복구할 수 없습니다.
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="delete-confirm" className="text-sm">
+                    확인을 위해 <span className="font-bold">계정삭제</span>를 입력하세요
+                  </Label>
+                  <Input
+                    id="delete-confirm"
+                    value={deleteConfirmText}
+                    onChange={(e) => setDeleteConfirmText(e.target.value)}
+                    placeholder="계정삭제"
+                    className="font-mono"
+                    disabled={isDeleting}
+                  />
+                  {deleteError && (
+                    <p className="text-sm text-destructive">{deleteError}</p>
+                  )}
+                </div>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>취소</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteAccount}
+              disabled={deleteConfirmText !== "계정삭제" || isDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting ? "삭제 중..." : "계정 삭제"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </header>
   );
 }
