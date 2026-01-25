@@ -1,11 +1,9 @@
 import { getProfile } from "@/app/actions/profile";
-import { getUserUIStyle } from "@/app/actions/onboarding";
 import { ProfileForm } from "./profile-form";
-import { StyleSelector } from "@/components/settings/style-selector";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { getImageUrl, getProxiedImageUrl } from "@/lib/utils/image";
+import { getProxiedImageUrl } from "@/lib/utils/image";
 import { formatSmartDate } from "@/lib/utils/date";
 import { User, AlertCircle, RefreshCw } from "lucide-react";
 import { sanitizeErrorForLogging } from "@/lib/utils/validation";
@@ -16,17 +14,13 @@ import { sanitizeErrorForLogging } from "@/lib/utils/validation";
  */
 export async function ProfileContent() {
   let user;
-  let uiStyle: "minimal" | "warm" | "professional" | "poetic" = "minimal";
   try {
-    [user, uiStyle] = await Promise.all([
-      getProfile(),
-      getUserUIStyle(),
-    ]);
+    user = await getProfile();
   } catch (error) {
     const safeError = sanitizeErrorForLogging(error);
     console.error("프로필 조회 오류:", safeError);
     const errorMessage = error instanceof Error ? error.message : "프로필을 불러올 수 없습니다.";
-    
+
     return (
       <Card>
         <CardContent className="pt-6">
@@ -35,7 +29,7 @@ export async function ProfileContent() {
             <div className="text-center space-y-2">
               <p className="text-lg font-semibold">프로필을 불러올 수 없습니다</p>
               <p className="text-sm text-muted-foreground">
-                {errorMessage.includes("로그인이 필요합니다") 
+                {errorMessage.includes("로그인이 필요합니다")
                   ? "로그인이 필요합니다. 다시 로그인해주세요."
                   : "일시적인 오류가 발생했습니다. 잠시 후 다시 시도해주세요."}
               </p>
@@ -69,7 +63,7 @@ export async function ProfileContent() {
         <CardContent>
           <div className="flex items-center gap-4">
             <Avatar className="h-16 w-16">
-              <AvatarImage 
+              <AvatarImage
                 src={user.avatar_url ? getProxiedImageUrl(user.avatar_url) : undefined}
                 alt={user.name}
               />
@@ -92,10 +86,6 @@ export async function ProfileContent() {
 
       {/* 프로필 수정 폼 */}
       <ProfileForm user={user} />
-
-      {/* UI 스타일 선택 */}
-      <StyleSelector currentStyle={uiStyle} />
     </div>
   );
 }
-

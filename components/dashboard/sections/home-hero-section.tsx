@@ -3,16 +3,13 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import {
   Sparkles,
   ChevronRight,
-  BookOpen,
-  FileText,
   Quote,
   Camera,
+  FileText,
   PenTool,
   TrendingUp,
   Target,
@@ -20,12 +17,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { UserPersona } from "@/types/persona";
-import type { ReadingStats, CategoryPreference } from "@/types/persona";
-import {
-  ReadingPaceLabels,
-  NoteStyleLabels,
-} from "@/types/persona";
-import type { UIStyleKey } from "@/types/style";
+import type { ReadingStats } from "@/types/persona";
 import { useStyle } from "@/hooks/use-style";
 
 interface HomeHeroSectionProps {
@@ -34,11 +26,7 @@ interface HomeHeroSectionProps {
   streak?: number; // 연속 기록 일수
   todayGoalProgress?: number; // 오늘 목표 달성률 (0-100)
   weeklyNotes?: number; // 이번 주 기록 수
-  uiStyle?: UIStyleKey; // UI 스타일
 }
-
-// 기존 getGreeting과 getMotivationalMessage 함수 제거됨
-// useStyle 훅에서 스타일별 메시지 제공
 
 /**
  * 홈 히어로 섹션 - 개인화된 인사 + 페르소나 인사이트
@@ -49,10 +37,9 @@ export function HomeHeroSection({
   streak = 0,
   todayGoalProgress = 0,
   weeklyNotes = 0,
-  uiStyle = "minimal",
 }: HomeHeroSectionProps) {
   const [mounted, setMounted] = useState(false);
-  const { greeting, getStreakMessage, getMotivationalMessage } = useStyle({ userStyle: uiStyle });
+  const { greeting, getStreakMessage, getMotivationalMessage } = useStyle();
   const stats = persona?.reading_stats as ReadingStats | null;
 
   useEffect(() => {
@@ -71,7 +58,6 @@ export function HomeHeroSection({
 
     // 이번 주 기록 기반
     if (weeklyNotes >= 5) {
-      // 스타일에 따른 메시지는 기본 동기부여 메시지 사용
       return getMotivationalMessage("default");
     }
 
@@ -218,7 +204,7 @@ export function HomeHeroSection({
 
                   {/* 범례 (모바일에서 숨김) */}
                   <div className="hidden sm:flex items-center gap-3 mt-1.5">
-                    {noteDistribution && Object.entries(noteTypeIcons).map(([key, { label, color }]) => (
+                    {noteDistribution && Object.entries(noteTypeIcons).map(([key, { label }]) => (
                       <div key={key} className="flex items-center gap-1">
                         <div className={cn("h-2 w-2 rounded-full", {
                           "bg-blue-500": key === "quote",
