@@ -1,0 +1,19 @@
+# Rive 애니메이션 파일 위치
+
+이 디렉토리에 reading-tree.riv 파일을 배치하세요.
+
+## 파일 요구사항
+
+- 파일명: reading-tree.riv
+- 상태 머신: TreeStateMachine
+- 입력값:
+  - level (number): 1-10
+  - health (number): 0-100
+  - isWatering (boolean)
+
+## Rive 에디터 설정
+
+1. rive.app에서 무료 계정 생성
+2. AI 생성 이미지를 배경으로 임포트
+3. 레벨별 상태 전환 설정
+4. 물주기 트리거 애니메이션 추가

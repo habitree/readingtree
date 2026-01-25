@@ -1,0 +1,37 @@
+# 레벨별 나무 이미지 위치
+
+이 디렉토리에 레벨별 나무 이미지 10종을 배치하세요.
+
+## 필요한 파일
+
+- level-1.webp (씨앗)
+- level-2.webp (새싹)
+- level-3.webp (떡잎)
+- level-4.webp (어린나무)
+- level-5.webp (나무)
+- level-6.webp (큰나무)
+- level-7.webp (꽃나무)
+- level-8.webp (열매나무)
+- level-9.webp (세계수)
+- level-10.webp (황금숲)
+
+## 이미지 요구사항
+
+- 권장 크기: 1024x1024px
+- 형식: WebP (PNG도 가능)
+- 배경: 투명 또는 단색
+- 스타일: 일관된 수채화/손그림 스타일
+
+## AI 프롬프트 예시 (Midjourney/DALL-E)
+
+Level 1 (씨앗):
+"cute kawaii seed in soil, soft watercolor style, warm earth tones,
+simple illustration, white background, game asset style --ar 1:1"
+
+Level 5 (나무):
+"beautiful growing tree with lush green leaves, soft watercolor
+illustration, warm colors, fantasy game style, white background --ar 1:1"
+
+Level 10 (황금숲):
+"majestic golden magical tree with glowing particles, fantasy
+watercolor style, ethereal lighting, white background --ar 1:1"

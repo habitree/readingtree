@@ -74,9 +74,26 @@ const nextConfig = {
       },
     ];
 
+    // 애니메이션 및 이미지 에셋 캐싱 헤더
+    const assetCacheHeaders = [
+      {
+        source: '/animations/:path*',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
+        ],
+      },
+      {
+        source: '/images/trees/:path*',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
+        ],
+      },
+    ];
+
     // 개발 환경 CSP (Turbopack HMR을 위해 완화된 정책)
     if (process.env.NODE_ENV === 'development') {
       return [
+        ...assetCacheHeaders,
         {
           source: '/:path*',
           headers: [
@@ -104,6 +121,7 @@ const nextConfig = {
 
     // 프로덕션 환경 CSP (강화된 정책)
     return [
+      ...assetCacheHeaders,
       {
         source: '/:path*',
         headers: [

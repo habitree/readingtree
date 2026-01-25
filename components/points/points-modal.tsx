@@ -28,7 +28,7 @@ import { getPointsDashboardData } from "@/app/actions/points";
 import { LEVEL_STYLES, LEVEL_DEFAULTS, type PointsDashboardData } from "@/types/points";
 import { LevelLeaderboard } from "./level-leaderboard";
 import { TreeWatering } from "./tree-watering";
-import { LevelBadge } from "./level-badge";
+import { LevelBadgeImage } from "./level-badge-image";
 
 interface PointsModalProps {
   open: boolean;
@@ -110,8 +110,8 @@ export function PointsModal({ open, onOpenChange }: PointsModalProps) {
                       }
                       transition={{ duration: 2, repeat: Infinity }}
                     >
-                      {/* 수채화 스타일 나무 뱃지 */}
-                      <LevelBadge
+                      {/* AI 생성 이미지 기반 나무 뱃지 */}
+                      <LevelBadgeImage
                         level={level}
                         size="lg"
                         animated={levelStyle.effect !== "none"}
