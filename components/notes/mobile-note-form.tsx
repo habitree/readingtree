@@ -14,13 +14,14 @@ import {
   Camera,
   PenTool,
   X,
-  ChevronDown,
-  ChevronUp,
   ImageIcon,
   Quote,
   MessageSquare,
   CheckCircle2,
-  Sparkles,
+  BookOpen,
+  Tag,
+  Globe,
+  Lock,
 } from "lucide-react";
 import Image from "next/image";
 import { getImageUrl, isValidImageUrl } from "@/lib/utils/image";
@@ -41,7 +42,7 @@ interface MobileNoteFormProps {
 
 /**
  * 모바일 최적화된 기록 작성 폼
- * note-form-new.tsx의 간소화 버전
+ * UX/UI 개선: 모든 옵션 한눈에, 텍스트 영역 포커스 시 확대
  */
 export function MobileNoteForm({
   bookId,
@@ -58,15 +59,16 @@ export function MobileNoteForm({
   const [pageNumbers, setPageNumbers] = useState("");
   const [tags, setTags] = useState("");
 
+  // 텍스트 영역 포커스 상태
+  const [quoteFocused, setQuoteFocused] = useState(false);
+  const [memoFocused, setMemoFocused] = useState(false);
+
   // 이미지 업로드 상태
   const [images, setImages] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
   const [uploadType, setUploadType] = useState<"photo" | "transcription" | null>(
     mode === "transcription" ? "transcription" : null
   );
-
-  // 고급 옵션 표시 여부
-  const [showAdvanced, setShowAdvanced] = useState(false);
 
   // 제출 상태
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -288,8 +290,14 @@ export function MobileNoteForm({
   return (
     <div className="flex flex-col h-full">
       <div className="flex-1 overflow-y-auto space-y-4 px-1">
-        {/* 인상깊은 구절 - 개선된 모바일 UI */}
-        <div className="space-y-2 p-3 rounded-xl bg-gradient-to-br from-blue-50/80 to-indigo-50/50 dark:from-blue-950/30 dark:to-indigo-950/20 border border-blue-100/50 dark:border-blue-900/30">
+        {/* 인상깊은 구절 - 포커스 시 확대 */}
+        <div className={cn(
+          "space-y-2 p-3 rounded-xl border transition-all duration-300",
+          "bg-gradient-to-br from-blue-50/80 to-indigo-50/50 dark:from-blue-950/30 dark:to-indigo-950/20",
+          quoteFocused
+            ? "border-blue-400 dark:border-blue-600 shadow-lg shadow-blue-100 dark:shadow-blue-900/20"
+            : "border-blue-100/50 dark:border-blue-900/30"
+        )}>
           <div className="flex items-center justify-between">
             <Label htmlFor="quoteContent" className="text-sm font-semibold flex items-center gap-2 text-blue-700 dark:text-blue-300">
               <Quote className="w-4 h-4" />
@@ -304,15 +312,26 @@ export function MobileNoteForm({
             id="quoteContent"
             value={quoteContent}
             onChange={(e) => setQuoteContent(e.target.value)}
+            onFocus={() => setQuoteFocused(true)}
+            onBlur={() => setQuoteFocused(false)}
             placeholder="책에서 인상깊었던 문장을 기록하세요"
-            rows={3}
-            className="resize-none text-base bg-white/80 dark:bg-slate-900/50 border-blue-200/50 dark:border-blue-800/30"
+            rows={quoteFocused ? 6 : 3}
+            className={cn(
+              "resize-none text-base bg-white/80 dark:bg-slate-900/50 border-blue-200/50 dark:border-blue-800/30",
+              "transition-all duration-300"
+            )}
             maxLength={5000}
           />
         </div>
 
-        {/* 내 생각 - 개선된 모바일 UI */}
-        <div className="space-y-2 p-3 rounded-xl bg-gradient-to-br from-amber-50/80 to-orange-50/50 dark:from-amber-950/30 dark:to-orange-950/20 border border-amber-100/50 dark:border-amber-900/30">
+        {/* 내 생각 - 포커스 시 확대 */}
+        <div className={cn(
+          "space-y-2 p-3 rounded-xl border transition-all duration-300",
+          "bg-gradient-to-br from-amber-50/80 to-orange-50/50 dark:from-amber-950/30 dark:to-orange-950/20",
+          memoFocused
+            ? "border-amber-400 dark:border-amber-600 shadow-lg shadow-amber-100 dark:shadow-amber-900/20"
+            : "border-amber-100/50 dark:border-amber-900/30"
+        )}>
           <div className="flex items-center justify-between">
             <Label htmlFor="memoContent" className="text-sm font-semibold flex items-center gap-2 text-amber-700 dark:text-amber-300">
               <MessageSquare className="w-4 h-4" />
@@ -327,14 +346,52 @@ export function MobileNoteForm({
             id="memoContent"
             value={memoContent}
             onChange={(e) => setMemoContent(e.target.value)}
+            onFocus={() => setMemoFocused(true)}
+            onBlur={() => setMemoFocused(false)}
             placeholder="이 구절에 대한 생각, 느낌, 깨달음을 적어보세요"
-            rows={4}
-            className="resize-none text-base bg-white/80 dark:bg-slate-900/50 border-amber-200/50 dark:border-amber-800/30"
+            rows={memoFocused ? 8 : 4}
+            className={cn(
+              "resize-none text-base bg-white/80 dark:bg-slate-900/50 border-amber-200/50 dark:border-amber-800/30",
+              "transition-all duration-300"
+            )}
             maxLength={10000}
           />
         </div>
 
-        {/* 이미지 업로드 버튼 - 개선된 모바일 UI */}
+        {/* 페이지 번호 & 태그 - 항상 표시, 컴팩트 레이아웃 */}
+        <div className="grid grid-cols-2 gap-3">
+          {/* 페이지 번호 */}
+          <div className="space-y-1.5">
+            <Label htmlFor="pageNumbers" className="text-xs font-medium flex items-center gap-1.5 text-slate-600 dark:text-slate-400">
+              <BookOpen className="w-3.5 h-3.5" />
+              페이지
+            </Label>
+            <Input
+              id="pageNumbers"
+              value={pageNumbers}
+              onChange={(e) => setPageNumbers(e.target.value)}
+              placeholder="42, 100-105"
+              className="h-9 text-sm"
+            />
+          </div>
+
+          {/* 태그 */}
+          <div className="space-y-1.5">
+            <Label htmlFor="tags" className="text-xs font-medium flex items-center gap-1.5 text-slate-600 dark:text-slate-400">
+              <Tag className="w-3.5 h-3.5" />
+              태그
+            </Label>
+            <Input
+              id="tags"
+              value={tags}
+              onChange={(e) => setTags(e.target.value)}
+              placeholder="명언, 인생"
+              className="h-9 text-sm"
+            />
+          </div>
+        </div>
+
+        {/* 이미지 업로드 버튼 */}
         <div className="space-y-3">
           <Label className="text-sm font-semibold flex items-center gap-2">
             <Camera className="w-4 h-4 text-slate-500" />
@@ -448,85 +505,37 @@ export function MobileNoteForm({
           </div>
         )}
 
-        {/* 고급 옵션 토글 */}
-        <button
-          type="button"
-          onClick={() => setShowAdvanced(!showAdvanced)}
-          className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors py-2"
-        >
-          {showAdvanced ? (
-            <ChevronUp className="h-4 w-4" />
-          ) : (
-            <ChevronDown className="h-4 w-4" />
-          )}
-          추가 옵션
-        </button>
-
-        {/* 고급 옵션 (접기/펼치기) */}
-        {showAdvanced && (
-          <div className="space-y-4 pt-2 border-t">
-            {/* 페이지 번호 */}
-            <div className="space-y-2">
-              <Label htmlFor="pageNumbers" className="text-sm font-medium">
-                페이지 번호
-              </Label>
-              <Input
-                id="pageNumbers"
-                value={pageNumbers}
-                onChange={(e) => setPageNumbers(e.target.value)}
-                placeholder="예: 42, 100-105"
-                className="h-10"
-              />
-            </div>
-
-            {/* 태그 */}
-            <div className="space-y-2">
-              <Label htmlFor="tags" className="text-sm font-medium">
-                태그
-              </Label>
-              <Input
-                id="tags"
-                value={tags}
-                onChange={(e) => setTags(e.target.value)}
-                placeholder="쉼표로 구분 (예: 인상깊은, 명언)"
-                className="h-10"
-              />
-              <p className="text-xs text-muted-foreground">
-                태그는 최대 10개까지 입력할 수 있습니다.
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* 공개 설정 - 개선된 모바일 UI */}
-        <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border">
-          <div className="flex items-center gap-2.5">
-            <Switch
-              id="isPublic"
-              checked={!isPublic}
-              onCheckedChange={(checked) => setIsPublic(!checked)}
-            />
-            <div>
-              <Label htmlFor="isPublic" className="text-sm font-medium cursor-pointer">
-                {isPublic ? "공개" : "비공개"}
-              </Label>
-              <p className="text-xs text-muted-foreground">
-                {isPublic ? "다른 사용자가 볼 수 있어요" : "나만 볼 수 있어요"}
-              </p>
-            </div>
-          </div>
-          <div className={cn(
-            "px-2 py-0.5 rounded-full text-xs font-medium",
-            isPublic
-              ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
-              : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400"
-          )}>
-            {isPublic ? "공개" : "비공개"}
-          </div>
+        {/* 공개 설정 - 더 간결하게 */}
+        <div className="flex items-center justify-between py-2">
+          <button
+            type="button"
+            onClick={() => setIsPublic(!isPublic)}
+            className={cn(
+              "flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-all",
+              isPublic
+                ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
+                : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400"
+            )}
+          >
+            {isPublic ? (
+              <>
+                <Globe className="w-3.5 h-3.5" />
+                공개
+              </>
+            ) : (
+              <>
+                <Lock className="w-3.5 h-3.5" />
+                비공개
+              </>
+            )}
+          </button>
+          <span className="text-xs text-muted-foreground">
+            {isPublic ? "다른 사용자가 볼 수 있어요" : "나만 볼 수 있어요"}
+          </span>
         </div>
       </div>
 
-      {/* 하단 버튼 - 개선된 모바일 UI */}
+      {/* 하단 버튼 */}
       <div className="pt-4 pb-2 space-y-2.5 border-t mt-4 bg-gradient-to-t from-background to-transparent">
         {!hasContent && (
           <p className="text-center text-xs text-muted-foreground pb-1">
