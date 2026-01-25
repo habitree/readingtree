@@ -157,15 +157,13 @@ export function ShareNoteCard({ note, className, isPublicView = false, hideActio
                         {/* 상단: 책 정보 요약 (항상 표시) */}
                         <div className="flex items-start gap-4 mb-8">
                             {hideActions ? (
-                                // 캡처 시: ImageLightbox 없이 직접 렌더링
+                                // 캡처 시: html2canvas 호환을 위해 일반 img 태그 사용
                                 <div className="relative w-16 h-24 shrink-0 shadow-md rounded-sm overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 aspect-[2/3]">
-                                    <Image
-                                        src={getImageUrl(book?.cover_image_url || "/placeholder-book.png")}
+                                    <img
+                                        src={getProxiedImageUrl(book?.cover_image_url || "/placeholder-book.png")}
                                         alt={book?.title || "Book"}
-                                        fill
-                                        className="object-cover"
-                                        sizes="64px"
-                                        priority={true}
+                                        className="absolute inset-0 w-full h-full object-cover"
+                                        crossOrigin="anonymous"
                                     />
                                 </div>
                             ) : (
