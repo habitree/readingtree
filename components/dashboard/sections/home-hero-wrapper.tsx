@@ -20,7 +20,7 @@ export async function HomeHeroWrapper() {
         userName={null}
         persona={null}
         streak={0}
-        todayGoalProgress={0}
+        todayNotes={0}
         weeklyNotes={0}
         continueReadingBooks={[]}
         dailyMissions={[]}
@@ -37,10 +37,8 @@ export async function HomeHeroWrapper() {
     getBonusMissions(user).catch(() => ({ missions: [], isUnlocked: false, motivationMessage: undefined })),
   ]);
 
-  // 오늘 목표 달성률 계산 (간단한 예: 목표 1개 기록 기준)
+  // 오늘 기록 수
   const todayNotes = streakAndTodayData.todayNotes;
-  const dailyGoal = 1; // 기본 일일 목표
-  const todayGoalProgress = Math.min((todayNotes / dailyGoal) * 100, 100);
 
   // 오늘의 미션 생성
   const dailyMissions = generateDailyMissions(
@@ -54,7 +52,7 @@ export async function HomeHeroWrapper() {
       userName={user.user_metadata?.name || user.email?.split("@")[0]}
       persona={personaData?.persona ?? null}
       streak={streakAndTodayData.streak}
-      todayGoalProgress={todayGoalProgress}
+      todayNotes={todayNotes}
       weeklyNotes={readingStats?.thisWeek?.notes ?? 0}
       continueReadingBooks={continueReadingBooks || []}
       dailyMissions={dailyMissions}
@@ -66,7 +64,9 @@ export async function HomeHeroWrapper() {
 }
 
 /**
- * 오늘의 미션 생성
+ * 오늘의 미션 생성 (간소화: 핵심 미션 1개 + 조건부 보너스)
+ * - 심리학적 원칙: SMART 목표 (구체적, 측정 가능)
+ * - UX 원칙: 인지 부하 감소, 명확한 행동 유도
  */
 function generateDailyMissions(
   hasReadToday: boolean,
@@ -75,36 +75,38 @@ function generateDailyMissions(
 ) {
   const missions = [];
 
-  // 미션 1: 오늘 첫 독서 기록
-  missions.push({
-    id: "first_read",
-    type: "first_read" as const,
-    title: "오늘 첫 독서 기록하기",
-    description: "책을 열고 오늘의 첫 기록을 남겨보세요",
-    status: hasReadToday || todayNotes > 0 ? "completed" as const : "pending" as const,
-    reward: "+10",
-  });
+  // 핵심 미션: 오늘 기록 남기기 (통합된 단일 미션)
+  const isCompleted = hasReadToday || todayNotes > 0;
 
-  // 미션 2: 메모 작성
+  // 스트릭 기반 동기부여 메시지
+  let description = "오늘의 독서 흔적을 남겨보세요";
+  if (streak > 0 && !isCompleted) {
+    description = `${streak}일 연속 기록을 이어가세요!`;
+  } else if (isCompleted && streak > 0) {
+    description = `${streak + 1}일 연속 기록 달성!`;
+  } else if (isCompleted) {
+    description = "오늘 기록을 남겼어요!";
+  }
+
   missions.push({
-    id: "note",
+    id: "daily_record",
     type: "note" as const,
-    title: "메모 1개 작성하기",
-    description: "인상 깊은 구절이나 생각을 기록해보세요",
-    status: todayNotes >= 1 ? "completed" as const : "pending" as const,
+    title: "오늘 기록 남기기",
+    description,
+    status: isCompleted ? "completed" as const : "pending" as const,
     reward: "+15",
-    progress: todayNotes < 1 ? { current: todayNotes, target: 1 } : undefined,
+    highlight: true, // 핵심 미션 강조 플래그
   });
 
-  // 미션 3: 스트릭 유지 (조건부)
-  if (streak >= 3) {
+  // 보너스 미션: 스트릭 7일 이상일 때만 표시 (선택적 확장)
+  if (streak >= 7) {
     missions.push({
-      id: "streak",
+      id: "streak_bonus",
       type: "streak" as const,
-      title: `${streak}일 연속 기록 유지`,
-      description: "오늘도 기록을 남겨 연속 기록을 이어가세요",
-      status: todayNotes > 0 ? "completed" as const : "pending" as const,
-      reward: "+20",
+      title: `${streak}일 연속 기록 보너스`,
+      description: "꾸준한 독서 습관에 추가 보상!",
+      status: isCompleted ? "completed" as const : "pending" as const,
+      reward: "+10",
     });
   }
 

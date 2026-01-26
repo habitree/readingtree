@@ -13,7 +13,8 @@ import {
   FileText,
   PenTool,
   TrendingUp,
-  Target,
+  PenLine,
+  CheckCircle2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { UserPersona } from "@/types/persona";
@@ -41,7 +42,8 @@ interface HomeHeroSectionProps {
   userName?: string | null;
   persona: UserPersona | null;
   streak?: number;
-  todayGoalProgress?: number;
+  /** 오늘 기록 수 (구체적인 숫자 표시) */
+  todayNotes?: number;
   weeklyNotes?: number;
   continueReadingBooks?: ContinueReadingData[];
   dailyMissions?: Mission[];
@@ -61,7 +63,7 @@ export function HomeHeroSection({
   userName,
   persona,
   streak = 0,
-  todayGoalProgress = 0,
+  todayNotes = 0,
   weeklyNotes = 0,
   continueReadingBooks = [],
   dailyMissions = [],
@@ -188,21 +190,29 @@ export function HomeHeroSection({
             {/* 애니메이션 스트릭 */}
             <AnimatedStreak streak={streak} size="md" />
 
-            {/* 오늘 목표 */}
-            <div className="bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm rounded-xl p-3 text-center border border-white/50 dark:border-slate-700/50">
+            {/* 오늘 기록 - 구체적 숫자 표시 + 클릭 시 기록 페이지 이동 */}
+            <Link
+              href="/notes"
+              className="bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm rounded-xl p-3 text-center border border-white/50 dark:border-slate-700/50 hover:border-primary/30 transition-colors"
+            >
               <div className="flex items-center justify-center gap-1 mb-1">
-                <Target className={cn("h-4 w-4", todayGoalProgress >= 100 ? "text-green-500" : "text-forest-500")} />
+                {todayNotes > 0 ? (
+                  <CheckCircle2 className="h-4 w-4 text-green-500" />
+                ) : (
+                  <PenLine className="h-4 w-4 text-forest-500" />
+                )}
                 <motion.span
-                  key={todayGoalProgress}
+                  key={todayNotes}
                   initial={{ scale: 0.8 }}
                   animate={{ scale: 1 }}
                   className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white"
                 >
-                  {Math.round(todayGoalProgress)}%
+                  {todayNotes}
                 </motion.span>
+                <span className="text-sm text-slate-500">개</span>
               </div>
-              <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400">오늘 목표</p>
-            </div>
+              <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400">오늘 기록</p>
+            </Link>
 
             {/* 이번 주 기록 */}
             <div className="bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm rounded-xl p-3 text-center border border-white/50 dark:border-slate-700/50">

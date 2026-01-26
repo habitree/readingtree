@@ -44,6 +44,8 @@ export interface Mission {
     target: number;
   };
   action_url?: string;
+  /** 핵심 미션 여부 - 강조 UI 표시 */
+  highlight?: boolean;
 }
 
 interface DailyMissionsProps {
@@ -296,15 +298,17 @@ export function DailyMissions({
           </AnimatePresence>
         </div>
 
-        {/* 미션 목록 - PC에서 가로 그리드 */}
-        <div className="p-2 sm:p-3">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-            <AnimatePresence>
-              {missions.map((mission, index) => {
-                const Icon = missionIcons[mission.type];
-                const isCompleted = mission.status === "completed";
-                const isCelebrating = celebratingMission === mission.id;
+        {/* 미션 목록 - 핵심 미션 강조, 보너스 미션 축소 */}
+        <div className="p-2 sm:p-3 space-y-2">
+          <AnimatePresence>
+            {missions.map((mission, index) => {
+              const Icon = missionIcons[mission.type];
+              const isCompleted = mission.status === "completed";
+              const isCelebrating = celebratingMission === mission.id;
+              const isHighlight = mission.highlight;
 
+              // 핵심 미션 (highlight) - 크게 강조
+              if (isHighlight) {
                 return (
                   <motion.div
                     key={mission.id}
@@ -313,77 +317,149 @@ export function DailyMissions({
                     transition={{ duration: 0.3, delay: index * 0.1 }}
                     onClick={() => handleMissionClick(mission)}
                     className={cn(
-                      "p-3 rounded-lg flex flex-col gap-2 transition-all border",
+                      "p-4 rounded-xl transition-all border-2",
                       isCompleted
-                        ? "bg-green-50/50 dark:bg-green-950/20 border-green-200 dark:border-green-800"
-                        : "bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 hover:border-forest-300 dark:hover:border-forest-600 cursor-pointer active:scale-[0.98]"
+                        ? "bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 border-green-300 dark:border-green-700"
+                        : "bg-gradient-to-r from-primary/10 to-emerald-50 dark:from-primary/20 dark:to-emerald-950/30 border-primary/30 dark:border-primary/40 hover:border-primary/50 cursor-pointer active:scale-[0.99]"
                     )}
                   >
-                    {/* 상단: 아이콘 + 상태 */}
                     <div className="flex items-center justify-between">
-                      <div
-                        className={cn(
-                          "w-8 h-8 rounded-lg flex items-center justify-center shrink-0",
-                          isCompleted
-                            ? "bg-green-100 dark:bg-green-900/30"
-                            : "bg-white dark:bg-slate-700"
-                        )}
-                      >
-                        <Icon
+                      <div className="flex items-center gap-3">
+                        {/* 큰 아이콘 */}
+                        <div
                           className={cn(
-                            "h-4 w-4",
-                            isCompleted ? "text-green-500" : missionColors[mission.type]
+                            "w-12 h-12 rounded-xl flex items-center justify-center shrink-0",
+                            isCompleted
+                              ? "bg-green-100 dark:bg-green-900/50"
+                              : "bg-primary/20 dark:bg-primary/30"
                           )}
-                        />
+                        >
+                          <Icon
+                            className={cn(
+                              "h-6 w-6",
+                              isCompleted ? "text-green-500" : "text-primary"
+                            )}
+                          />
+                        </div>
+
+                        {/* 미션 내용 */}
+                        <div className="flex-1 min-w-0">
+                          <p
+                            className={cn(
+                              "font-semibold",
+                              isCompleted
+                                ? "text-green-700 dark:text-green-300"
+                                : "text-slate-900 dark:text-white"
+                            )}
+                          >
+                            {mission.title}
+                          </p>
+                          <p className="text-sm text-muted-foreground mt-0.5">
+                            {mission.description}
+                          </p>
+                          {/* 보상 표시 */}
+                          <div className="flex items-center gap-1 mt-1">
+                            <Gift className="h-3.5 w-3.5 text-amber-500" />
+                            <span className="text-xs font-medium text-amber-600 dark:text-amber-400">
+                              {mission.reward}
+                            </span>
+                          </div>
+                        </div>
                       </div>
+
+                      {/* 완료 상태 또는 CTA */}
                       <motion.div
                         animate={isCelebrating ? { scale: [1, 1.3, 1] } : {}}
                         transition={{ duration: 0.3 }}
                       >
                         {isCompleted ? (
-                          <CheckCircle2 className="h-5 w-5 text-green-500" />
+                          <CheckCircle2 className="h-8 w-8 text-green-500" />
                         ) : (
-                          <Circle className="h-5 w-5 text-slate-300 dark:text-slate-600" />
+                          <div className="flex items-center gap-1 px-3 py-1.5 bg-primary text-white rounded-full text-sm font-medium">
+                            기록하기
+                            <ChevronRight className="h-4 w-4" />
+                          </div>
                         )}
                       </motion.div>
                     </div>
-
-                    {/* 미션 내용 */}
-                    <div className="flex-1 min-w-0">
-                      <p
-                        className={cn(
-                          "text-sm font-medium line-clamp-2",
-                          isCompleted
-                            ? "text-green-700 dark:text-green-300 line-through"
-                            : "text-slate-900 dark:text-white"
-                        )}
-                      >
-                        {mission.title}
-                      </p>
-                      {mission.progress && !isCompleted && (
-                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                          {mission.progress.current}/{mission.progress.target} 완료
-                        </p>
-                      )}
-                    </div>
-
-                    {/* 보상 */}
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-1">
-                        <Gift className="h-3.5 w-3.5 text-amber-500" />
-                        <span className="text-xs font-medium text-amber-600 dark:text-amber-400">
-                          {mission.reward}
-                        </span>
-                      </div>
-                      {!isCompleted && (
-                        <ChevronRight className="h-4 w-4 text-slate-400" />
-                      )}
-                    </div>
                   </motion.div>
                 );
-              })}
-            </AnimatePresence>
-          </div>
+              }
+
+              // 보너스/일반 미션 - 작게 표시
+              return (
+                <motion.div
+                  key={mission.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: index * 0.1 }}
+                  onClick={() => handleMissionClick(mission)}
+                  className={cn(
+                    "px-3 py-2.5 rounded-lg flex items-center gap-3 transition-all border",
+                    isCompleted
+                      ? "bg-green-50/50 dark:bg-green-950/20 border-green-200 dark:border-green-800"
+                      : "bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 hover:border-forest-300 dark:hover:border-forest-600 cursor-pointer active:scale-[0.98]"
+                  )}
+                >
+                  {/* 상태 아이콘 */}
+                  <motion.div
+                    animate={isCelebrating ? { scale: [1, 1.3, 1] } : {}}
+                    transition={{ duration: 0.3 }}
+                  >
+                    {isCompleted ? (
+                      <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0" />
+                    ) : (
+                      <Circle className="h-5 w-5 text-slate-300 dark:text-slate-600 shrink-0" />
+                    )}
+                  </motion.div>
+
+                  {/* 미션 아이콘 */}
+                  <div
+                    className={cn(
+                      "w-8 h-8 rounded-lg flex items-center justify-center shrink-0",
+                      isCompleted
+                        ? "bg-green-100 dark:bg-green-900/30"
+                        : "bg-white dark:bg-slate-700"
+                    )}
+                  >
+                    <Icon
+                      className={cn(
+                        "h-4 w-4",
+                        isCompleted ? "text-green-500" : missionColors[mission.type]
+                      )}
+                    />
+                  </div>
+
+                  {/* 미션 내용 */}
+                  <div className="flex-1 min-w-0">
+                    <p
+                      className={cn(
+                        "text-sm font-medium truncate",
+                        isCompleted
+                          ? "text-green-700 dark:text-green-300 line-through"
+                          : "text-slate-900 dark:text-white"
+                      )}
+                    >
+                      {mission.title}
+                    </p>
+                  </div>
+
+                  {/* 보상 */}
+                  <div className="shrink-0 flex items-center gap-2">
+                    <div className="flex items-center gap-1">
+                      <Gift className="h-3.5 w-3.5 text-amber-500" />
+                      <span className="text-xs font-medium text-amber-600 dark:text-amber-400">
+                        {mission.reward}
+                      </span>
+                    </div>
+                    {!isCompleted && (
+                      <ChevronRight className="h-4 w-4 text-slate-400" />
+                    )}
+                  </div>
+                </motion.div>
+              );
+            })}
+          </AnimatePresence>
         </div>
 
         {/* 전체 완료 메시지 + 다음 행동 제안 (Cognitive Fluency - 마찰 감소로 참여 증가) */}
