@@ -775,13 +775,8 @@ export async function getUserBooksWithNotes(
     };
   }
 
-  // 상태별 통계 조회 (서재별 또는 전체)
-  let statsQuery = supabase
-    .from("user_books")
-    .select("status")
-    .eq("user_id", currentUser.id);
-
-  // bookshelfId가 제공되면 해당 서재의 책만으로 통계 계산
+  // bookshelf 정보를 한 번만 조회하여 캐싱 (중복 쿼리 방지)
+  let cachedBookshelf: { is_main: boolean } | null = null;
   if (bookshelfId) {
     const { data: bookshelf } = await supabase
       .from("bookshelves")
@@ -789,13 +784,21 @@ export async function getUserBooksWithNotes(
       .eq("id", bookshelfId)
       .eq("user_id", currentUser.id)
       .maybeSingle();
-
-    // 메인 서재가 아니면 해당 서재의 책만 조회
-    if (bookshelf && !bookshelf.is_main) {
-      statsQuery = statsQuery.eq("bookshelf_id", bookshelfId);
-    }
-    // 메인 서재면 필터링하지 않음 (모든 서재의 책 조회)
+    cachedBookshelf = bookshelf;
   }
+
+  // 상태별 통계 조회 (서재별 또는 전체)
+  let statsQuery = supabase
+    .from("user_books")
+    .select("status")
+    .eq("user_id", currentUser.id);
+
+  // bookshelfId가 제공되면 해당 서재의 책만으로 통계 계산
+  if (bookshelfId && cachedBookshelf && !cachedBookshelf.is_main) {
+    // 메인 서재가 아니면 해당 서재의 책만 조회
+    statsQuery = statsQuery.eq("bookshelf_id", bookshelfId);
+  }
+  // 메인 서재면 필터링하지 않음 (모든 서재의 책 조회)
 
   const { data: allUserBooks } = await statsQuery;
 
@@ -842,24 +845,14 @@ export async function getUserBooksWithNotes(
     .eq("user_id", currentUser.id)
     .order("created_at", { ascending: false });
 
-  // bookshelfId 필터링
+  // bookshelfId 필터링 (캐싱된 bookshelf 정보 재사용)
   // null이거나 제공되지 않으면 모든 서재의 책 조회 (메인 서재 뷰)
   // 특정 서재 ID가 제공되면 해당 서재의 책만 조회
-  if (bookshelfId) {
-    // 메인 서재인지 확인
-    const { data: bookshelf } = await supabase
-      .from("bookshelves")
-      .select("is_main")
-      .eq("id", bookshelfId)
-      .eq("user_id", currentUser.id)
-      .maybeSingle();
-
+  if (bookshelfId && cachedBookshelf && !cachedBookshelf.is_main) {
     // 메인 서재가 아니면 해당 서재의 책만 조회
-    if (bookshelf && !bookshelf.is_main) {
-      booksQuery = booksQuery.eq("bookshelf_id", bookshelfId);
-    }
-    // 메인 서재면 필터링하지 않음 (모든 서재의 책 조회)
+    booksQuery = booksQuery.eq("bookshelf_id", bookshelfId);
   }
+  // 메인 서재면 필터링하지 않음 (모든 서재의 책 조회)
 
   // 상태 필터 적용
   if (status) {

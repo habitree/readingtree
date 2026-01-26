@@ -1,8 +1,11 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { getReadingStats } from "@/app/actions/stats";
 import { getCurrentUser } from "@/app/actions/auth";
 import Link from "next/link";
-import { BookOpen } from "lucide-react";
+import Image from "next/image";
+import { BookOpen, ArrowRight, PenLine } from "lucide-react";
+import { getImageUrl, isValidImageUrl } from "@/lib/utils/image";
 
 /**
  * 최근 기록한 책 섹션 (Streaming SSR)
@@ -14,13 +17,22 @@ export async function RecentBooksSection() {
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-start gap-3">
-          <div className="rounded-lg bg-primary/10 p-2 shrink-0">
-            <BookOpen className="h-5 w-5 text-primary" />
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-start gap-3">
+            <div className="rounded-lg bg-primary/10 p-2 shrink-0">
+              <BookOpen className="h-5 w-5 text-primary" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <CardTitle className="mb-2">최근 기록</CardTitle>
+            </div>
           </div>
-          <div className="flex-1 min-w-0">
-            <CardTitle className="mb-2">최근 기록</CardTitle>
-          </div>
+          {/* 빠른 링크: 전체 노트 보기 (Cognitive Fluency - 마찰 감소) */}
+          <Button variant="ghost" size="sm" asChild className="text-muted-foreground hover:text-primary shrink-0">
+            <Link href="/notes">
+              <span className="text-xs">전체 보기</span>
+              <ArrowRight className="h-3 w-3 ml-1" />
+            </Link>
+          </Button>
         </div>
       </CardHeader>
       <CardContent>
@@ -33,11 +45,13 @@ export async function RecentBooksSection() {
                 className="group space-y-2"
               >
                 <div className="aspect-[3/4] relative overflow-hidden rounded-lg border shadow-sm group-hover:shadow-md group-hover:ring-2 group-hover:ring-primary/20 transition-all">
-                  {item.book.cover_image_url ? (
-                    <img
-                      src={item.book.cover_image_url}
+                  {item.book.cover_image_url && isValidImageUrl(item.book.cover_image_url) ? (
+                    <Image
+                      src={getImageUrl(item.book.cover_image_url)}
                       alt={item.book.title}
-                      className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-300"
+                      fill
+                      className="object-cover group-hover:scale-105 transition-transform duration-300"
+                      sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw"
                     />
                   ) : (
                     <div className="w-full h-full bg-muted flex items-center justify-center">
@@ -50,9 +64,16 @@ export async function RecentBooksSection() {
                   <p className="text-xs font-semibold truncate group-hover:text-primary transition-colors leading-tight">
                     {item.book.title}
                   </p>
-                  <p className="text-[10px] sm:text-xs text-muted-foreground truncate">
-                    {item.noteCount}개 기록
-                  </p>
+                  <div className="flex items-center justify-between">
+                    <p className="text-[10px] sm:text-xs text-muted-foreground truncate">
+                      {item.noteCount}개 기록
+                    </p>
+                    {/* 빠른 링크: 해당 책 기록 보기 */}
+                    <span className="hidden group-hover:flex items-center gap-0.5 text-[10px] text-primary">
+                      <PenLine className="h-2.5 w-2.5" />
+                      <span>보기</span>
+                    </span>
+                  </div>
                 </div>
               </Link>
             ))}

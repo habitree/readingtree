@@ -23,7 +23,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { signOut } from "@/app/actions/auth";
 import { getCurrentUserProfile } from "@/app/actions/profile";
 import { getImageUrl } from "@/lib/utils/image";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { usePathname } from "next/navigation";
 import { PointsButton } from "@/components/points";
 
@@ -43,45 +43,47 @@ export function Header() {
     is_admin?: boolean;
   } | null>(null);
 
+  const prevPathnameRef = useRef(pathname);
+  const profileFetchedRef = useRef(false);
+
   // 테마 관련 hydration mismatch 방지
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // 사용자 프로필 정보 가져오기
-  useEffect(() => {
-    if (user) {
-      getCurrentUserProfile()
-        .then((profile) => {
-          if (profile) {
-            setUserProfile(profile);
-          } else {
-            setUserProfile(null);
-          }
-        })
-        .catch((error) => {
-          console.error("프로필 조회 오류:", error);
-          setUserProfile(null);
-        });
-    } else {
+  // 프로필 정보 fetch 함수 (useCallback으로 메모이제이션)
+  const fetchProfile = useCallback(async () => {
+    if (!user) {
+      setUserProfile(null);
+      return;
+    }
+    try {
+      const profile = await getCurrentUserProfile();
+      setUserProfile(profile || null);
+    } catch (error) {
+      console.error("프로필 조회 오류:", error);
       setUserProfile(null);
     }
-  }, [user, pathname]);
+  }, [user]);
 
-  // 프로필 페이지에서 돌아올 때 강제로 프로필 정보 갱신
+  // 사용자 프로필 정보 가져오기 (user 변경 시에만)
   useEffect(() => {
-    if (user && pathname !== "/profile") {
-      getCurrentUserProfile()
-        .then((profile) => {
-          if (profile) {
-            setUserProfile(profile);
-          }
-        })
-        .catch((error) => {
-          console.error("프로필 갱신 오류:", error);
-        });
+    if (!profileFetchedRef.current || !user) {
+      fetchProfile();
+      profileFetchedRef.current = true;
     }
-  }, [pathname, user]);
+  }, [user, fetchProfile]);
+
+  // 프로필 페이지에서 돌아올 때만 프로필 정보 갱신
+  useEffect(() => {
+    const wasOnProfile = prevPathnameRef.current === "/profile";
+    const isLeavingProfile = wasOnProfile && pathname !== "/profile";
+    prevPathnameRef.current = pathname;
+
+    if (isLeavingProfile && user) {
+      fetchProfile();
+    }
+  }, [pathname, user, fetchProfile]);
 
   const userName =
     userProfile?.name ||

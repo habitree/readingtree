@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -19,7 +20,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { createNote } from "@/app/actions/notes";
 import { toast } from "sonner";
-import { Loader2, X, PenTool, Camera, Quote, MessageSquare, Sparkles, CheckCircle2, Info } from "lucide-react";
+import { Loader2, X, PenTool, Camera, Quote, MessageSquare, Sparkles, CheckCircle2, Info, ChevronDown, Settings2 } from "lucide-react";
 import Image from "next/image";
 import { getImageUrl, isValidImageUrl } from "@/lib/utils/image";
 import { validateImageSize, validateImageType } from "@/lib/utils/image";
@@ -28,6 +29,7 @@ import { TextPreviewDialog } from "./text-preview-dialog";
 import { addStampToImage } from "@/lib/utils/stamp";
 import { Checkbox } from "@/components/ui/checkbox";
 import { BookMentionTextarea } from "./book-mention-textarea";
+import { cn } from "@/lib/utils";
 
 // 스키마: 모든 값은 선택이지만 완전히 빈값은 불가
 const noteFormSchema = z.object({
@@ -66,6 +68,7 @@ export function NoteFormNew({ bookId }: NoteFormNewProps) {
   const [uploadProgress, setUploadProgress] = useState<Record<number, number>>({});
   const [currentUploadType, setCurrentUploadType] = useState<"photo" | "transcription" | null>(null);
   const [applyStamp, setApplyStamp] = useState(false);
+  const [showOptionalFields, setShowOptionalFields] = useState(false); // 선택적 필드 표시 여부 (Cognitive Load Theory)
   const transcriptionInputRef = useRef<HTMLInputElement>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
   const isSubmittingRef = useRef<boolean>(false); // 중복 제출 방지 플래그
@@ -417,28 +420,8 @@ export function NoteFormNew({ bookId }: NoteFormNewProps) {
         {/* 안내 메시지 - 간결하게 */}
         <div className="flex items-center gap-2 p-2.5 rounded-lg bg-primary/5 border border-primary/10 text-sm text-muted-foreground">
           <Info className="w-4 h-4 text-primary shrink-0" />
-          <span>구절, 생각, 이미지 중 <span className="text-primary font-medium">하나 이상</span> 입력 시 저장 가능</span>
+          <span>구절, 생각, 이미지 중 <span className="text-primary font-medium">하나 이상</span> 입력</span>
         </div>
-
-        {/* 제목 입력 - 컴팩트 */}
-        <FormField
-          control={form.control}
-          name="title"
-          render={({ field }) => (
-            <FormItem className="space-y-1.5">
-              <FormLabel className="text-sm">제목 <span className="text-muted-foreground text-xs">(선택)</span></FormLabel>
-              <FormControl>
-                <Input
-                  placeholder="제목"
-                  {...field}
-                  value={field.value || ""}
-                  className="text-sm h-9"
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
 
         {/* 인상깊은 구절 - 컴팩트 */}
         <div className="space-y-2 p-3 rounded-lg bg-blue-50/50 dark:bg-blue-950/20 border border-blue-100/50 dark:border-blue-900/30">
@@ -651,36 +634,93 @@ export function NoteFormNew({ bookId }: NoteFormNewProps) {
           </div>
         )}
 
-        {/* 페이지 번호 - 컴팩트 */}
-        <div className="space-y-1.5">
-          <Label htmlFor="pageNumbers" className="text-sm">페이지</Label>
-          <Input
-            id="pageNumbers"
-            {...register("pageNumbers")}
-            placeholder="예: 42, 100-105"
-            className="max-w-xs"
-          />
-          {errors.pageNumbers && (
-            <p className="text-sm text-destructive">{errors.pageNumbers.message}</p>
-          )}
-        </div>
+        {/* 추가 옵션 섹션 (접힘 가능 - Cognitive Load Theory) */}
+        <div className="border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
+          <button
+            type="button"
+            onClick={() => setShowOptionalFields(!showOptionalFields)}
+            className="w-full flex items-center justify-between px-3 py-2.5 bg-slate-50/50 dark:bg-slate-800/30 hover:bg-slate-100/50 dark:hover:bg-slate-800/50 transition-colors"
+          >
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Settings2 className="h-4 w-4" />
+              <span>추가 옵션</span>
+              <span className="text-xs text-muted-foreground/70">
+                (제목, 페이지, 태그, 공개)
+              </span>
+            </div>
+            <motion.div
+              animate={{ rotate: showOptionalFields ? 180 : 0 }}
+              transition={{ duration: 0.2 }}
+            >
+              <ChevronDown className="h-4 w-4 text-muted-foreground" />
+            </motion.div>
+          </button>
 
-        {/* 태그 */}
-        <TagInput
-          value={watch("tags") || ""}
-          onChange={(value) => setValue("tags", value)}
-        />
+          <AnimatePresence>
+            {showOptionalFields && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="border-t border-slate-200 dark:border-slate-700"
+              >
+                <div className="p-3 space-y-4">
+                  {/* 제목 입력 */}
+                  <FormField
+                    control={form.control}
+                    name="title"
+                    render={({ field }) => (
+                      <FormItem className="space-y-1.5">
+                        <FormLabel className="text-sm">제목</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="기록 제목 (선택)"
+                            {...field}
+                            value={field.value || ""}
+                            className="text-sm h-9"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-        {/* 공개 설정 - 컴팩트 */}
-        <div className="flex items-center gap-3">
-          <Switch
-            id="isPublic"
-            checked={!isPublic}
-            onCheckedChange={(checked) => setValue("isPublic", !checked)}
-          />
-          <Label htmlFor="isPublic" className="cursor-pointer text-sm">
-            {isPublic ? "공개" : "비공개"}
-          </Label>
+                  {/* 페이지 번호 */}
+                  <div className="space-y-1.5">
+                    <Label htmlFor="pageNumbers" className="text-sm">페이지</Label>
+                    <Input
+                      id="pageNumbers"
+                      {...register("pageNumbers")}
+                      placeholder="예: 42, 100-105"
+                      className="max-w-xs text-sm h-9"
+                    />
+                    {errors.pageNumbers && (
+                      <p className="text-sm text-destructive">{errors.pageNumbers.message}</p>
+                    )}
+                  </div>
+
+                  {/* 태그 */}
+                  <TagInput
+                    value={watch("tags") || ""}
+                    onChange={(value) => setValue("tags", value)}
+                  />
+
+                  {/* 공개 설정 */}
+                  <div className="flex items-center gap-3 pt-1">
+                    <Switch
+                      id="isPublic"
+                      checked={!isPublic}
+                      onCheckedChange={(checked) => setValue("isPublic", !checked)}
+                    />
+                    <Label htmlFor="isPublic" className="cursor-pointer text-sm">
+                      {isPublic ? "공개" : "비공개"}
+                    </Label>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
         {/* 제출 버튼 - 컴팩트 */}

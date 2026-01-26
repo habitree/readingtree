@@ -25,6 +25,7 @@ import {
   Timer,
   Users,
   TrendingUp,
+  Trophy,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import confetti from "canvas-confetti";
@@ -99,8 +100,10 @@ export function DailyMissions({
   const router = useRouter();
   const [celebratingMission, setCelebratingMission] = useState<string | null>(null);
   const [showBonusUnlock, setShowBonusUnlock] = useState(false);
+  const [showHalfwayBadge, setShowHalfwayBadge] = useState(false);
   const [currentTime, setCurrentTime] = useState(() => Date.now());
   const prevBonusUnlockedRef = useRef(isBonusUnlocked);
+  const prevCompletedCountRef = useRef(0);
 
   // 남은 시간 업데이트를 위한 타이머 (1분마다)
   useEffect(() => {
@@ -113,6 +116,31 @@ export function DailyMissions({
   const completedCount = missions.filter((m) => m.status === "completed").length;
   const totalCount = missions.length;
   const allCompleted = completedCount === totalCount;
+  const halfwayThreshold = Math.ceil(totalCount / 2);
+  const isHalfwayCompleted = completedCount >= halfwayThreshold;
+
+  // 50% 달성 축하 효과 (Progress Principle - 작은 성취가 동기부여 강화)
+  useEffect(() => {
+    const wasHalfway = prevCompletedCountRef.current >= halfwayThreshold;
+    const justReachedHalfway = isHalfwayCompleted && !wasHalfway && !allCompleted && totalCount > 0;
+
+    if (justReachedHalfway) {
+      // 50% 달성 시 작은 confetti 효과
+      confetti({
+        particleCount: 30,
+        spread: 45,
+        origin: { y: 0.7 },
+        colors: ["#22c55e", "#10b981", "#fbbf24"],
+      });
+
+      // "절반 완료!" 배지 표시
+      setShowHalfwayBadge(true);
+      const timer = setTimeout(() => setShowHalfwayBadge(false), 3000);
+      return () => clearTimeout(timer);
+    }
+
+    prevCompletedCountRef.current = completedCount;
+  }, [completedCount, halfwayThreshold, isHalfwayCompleted, allCompleted, totalCount]);
 
   // 보너스 미션 해금 애니메이션
   useEffect(() => {
@@ -230,7 +258,7 @@ export function DailyMissions({
           </div>
 
           {/* 전체 진행률 바 */}
-          <div className="mt-2 h-1.5 bg-white/50 dark:bg-slate-800/50 rounded-full overflow-hidden">
+          <div className="mt-2 h-1.5 bg-white/50 dark:bg-slate-800/50 rounded-full overflow-hidden relative">
             <motion.div
               className={cn(
                 "h-full rounded-full",
@@ -242,7 +270,30 @@ export function DailyMissions({
               animate={{ width: `${(completedCount / totalCount) * 100}%` }}
               transition={{ duration: 0.5, ease: "easeOut" }}
             />
+            {/* 50% 마커 */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-0.5 h-3 bg-white/40 dark:bg-slate-600/40 rounded-full" />
           </div>
+
+          {/* 50% 달성 축하 배지 */}
+          <AnimatePresence>
+            {showHalfwayBadge && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8, y: 10 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.8, y: -10 }}
+                className="mt-2 flex items-center justify-center gap-1.5"
+              >
+                <motion.div
+                  animate={{ scale: [1, 1.1, 1] }}
+                  transition={{ duration: 0.5, repeat: 2 }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-full text-xs font-semibold shadow-lg"
+                >
+                  <Trophy className="h-3.5 w-3.5" />
+                  <span>절반 완료! 🎉</span>
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
         {/* 미션 목록 - PC에서 가로 그리드 */}
@@ -335,7 +386,7 @@ export function DailyMissions({
           </div>
         </div>
 
-        {/* 전체 완료 메시지 */}
+        {/* 전체 완료 메시지 + 다음 행동 제안 (Cognitive Fluency - 마찰 감소로 참여 증가) */}
         <AnimatePresence>
           {allCompleted && (
             <motion.div
@@ -344,11 +395,21 @@ export function DailyMissions({
               exit={{ opacity: 0, height: 0 }}
               className="px-4 py-3 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 border-t border-green-100 dark:border-green-900"
             >
-              <div className="flex items-center justify-center gap-2 text-green-700 dark:text-green-300">
-                <Sparkles className="h-4 w-4" />
-                <span className="text-sm font-medium">
-                  오늘의 미션을 모두 완료했어요! +30 보너스
-                </span>
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-2">
+                <div className="flex items-center gap-2 text-green-700 dark:text-green-300">
+                  <Sparkles className="h-4 w-4" />
+                  <span className="text-sm font-medium">
+                    오늘의 미션을 모두 완료했어요! +30 보너스
+                  </span>
+                </div>
+                {/* 다음 행동 제안 */}
+                <button
+                  onClick={() => router.push("/notes/new")}
+                  className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 transition-colors"
+                >
+                  <span>계속해서 기록 남기기</span>
+                  <ChevronRight className="h-3 w-3" />
+                </button>
               </div>
             </motion.div>
           )}

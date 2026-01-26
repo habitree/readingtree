@@ -23,6 +23,7 @@ import { useStyle } from "@/hooks/use-style";
 import { ContinueReadingCard, NoReadingBookCard } from "./continue-reading-card";
 import { DailyMissions, type Mission } from "./daily-missions";
 import { AnimatedStreak } from "./animated-streak";
+import { OnboardingChecklist, type OnboardingItem } from "@/components/onboarding/onboarding-checklist";
 
 interface ContinueReadingData {
   userBookId: string;
@@ -47,6 +48,10 @@ interface HomeHeroSectionProps {
   bonusMissions?: BonusMission[];
   isBonusUnlocked?: boolean;
   bonusMotivationMessage?: string;
+  /** 온보딩 체크리스트 (새 사용자에게 표시) */
+  onboardingItems?: OnboardingItem[];
+  /** 온보딩 숨기기 핸들러 */
+  onDismissOnboarding?: () => void;
 }
 
 /**
@@ -63,6 +68,8 @@ export function HomeHeroSection({
   bonusMissions = [],
   isBonusUnlocked = false,
   bonusMotivationMessage,
+  onboardingItems,
+  onDismissOnboarding,
 }: HomeHeroSectionProps) {
   const [mounted, setMounted] = useState(false);
   const { greeting, getStreakMessage, getMotivationalMessage } = useStyle();
@@ -215,6 +222,14 @@ export function HomeHeroSection({
           </motion.div>
         </div>
       </Card>
+
+      {/* 온보딩 체크리스트 (새 사용자용 - Endowed Progress Effect) */}
+      {userName && onboardingItems && onboardingItems.length > 0 && (
+        <OnboardingChecklist
+          items={onboardingItems}
+          onDismiss={onDismissOnboarding}
+        />
+      )}
 
       {/* 계속 읽기 카드 (Primary CTA) - 최대 4개까지 2x2 그리드 표시 */}
       {userName && (

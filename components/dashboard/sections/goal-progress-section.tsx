@@ -5,7 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { getGoalProgress } from "@/app/actions/stats";
 import { getCurrentUser } from "@/app/actions/auth";
 import Link from "next/link";
-import { Target } from "lucide-react";
+import { Target, Sparkles } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 /**
  * 목표 진행률 섹션 (Streaming SSR)
@@ -48,16 +49,53 @@ export async function GoalProgressSection() {
       <CardContent>
         {progress && progress.goal > 0 ? (
           <div className="space-y-3">
-            <Progress value={progress.progress} className="h-3" />
-            <div className="flex items-center gap-4 text-sm text-muted-foreground">
-              <span className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-primary"></span>
-                {progress.progress}% 완료
-              </span>
-              <span className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-muted-foreground"></span>
-                {progress.remaining}권 남음
-              </span>
+            {/* 마일스톤 마커가 있는 진행률 바 (Near-miss Effect - 목표 근접 시 지속력 증가) */}
+            <div className="relative">
+              <Progress value={progress.progress} className="h-3" />
+              {/* 25%, 50%, 75% 마일스톤 마커 */}
+              <div className="absolute inset-0 flex items-center pointer-events-none">
+                <div className="absolute left-1/4 -translate-x-1/2 w-0.5 h-5 bg-muted-foreground/30 rounded-full" />
+                <div className="absolute left-1/2 -translate-x-1/2 w-0.5 h-5 bg-muted-foreground/40 rounded-full" />
+                <div className="absolute left-3/4 -translate-x-1/2 w-0.5 h-5 bg-muted-foreground/30 rounded-full" />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                <span className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-primary"></span>
+                  {progress.progress}% 완료
+                </span>
+                <span className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-muted-foreground"></span>
+                  {progress.remaining}권 남음
+                </span>
+              </div>
+
+              {/* 75% 이상일 때 "거의 다 왔어요!" 펄스 배지 */}
+              {progress.progress >= 75 && progress.progress < 100 && (
+                <Badge
+                  variant="default"
+                  className={cn(
+                    "bg-gradient-to-r from-amber-500 to-orange-500 text-white border-0",
+                    "animate-pulse"
+                  )}
+                >
+                  <Sparkles className="h-3 w-3 mr-1" />
+                  거의 다 왔어요!
+                </Badge>
+              )}
+
+              {/* 100% 달성 시 축하 배지 */}
+              {progress.progress >= 100 && (
+                <Badge
+                  variant="default"
+                  className="bg-gradient-to-r from-green-500 to-emerald-500 text-white border-0"
+                >
+                  <Sparkles className="h-3 w-3 mr-1" />
+                  목표 달성! 🎉
+                </Badge>
+              )}
             </div>
           </div>
         ) : (

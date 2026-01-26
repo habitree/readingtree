@@ -12,6 +12,7 @@ export interface Book {
   publisher: string | null;
   published_date: string | null;
   cover_image_url: string | null;
+  total_pages: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -26,6 +27,7 @@ export interface UserBook {
   completed_at: string | null;
   completed_dates?: string | null; // JSONB 배열 (문자열로 저장)
   reading_reason: string | null;
+  current_page: number | null;
   created_at: string;
   updated_at: string;
 }

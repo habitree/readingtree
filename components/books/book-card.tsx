@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback, memo } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { BookStatusBadge } from "./book-status-badge";
@@ -8,6 +8,7 @@ import { BookTitle } from "./book-title";
 import { BookDeleteButton } from "./book-delete-button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import { getImageUrl, isValidImageUrl } from "@/lib/utils/image";
 import { BookOpen, Users } from "lucide-react";
 import type { BookWithUserBook, ReadingStatus } from "@/types/book";
@@ -24,8 +25,9 @@ interface BookCardProps {
 /**
  * 책 카드 컴포넌트
  * 책 목록에서 사용되는 카드 형태의 책 정보 표시
+ * React.memo로 래핑하여 불필요한 리렌더링 방지
  */
-export function BookCard({ book, userBookId, status, groupBooks, isSample: isSampleProp = false }: BookCardProps) {
+function BookCardComponent({ book, userBookId, status, groupBooks, isSample: isSampleProp = false }: BookCardProps) {
   const [imageError, setImageError] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
   const MAX_RETRIES = 2; // 최대 2번 재시도
@@ -39,7 +41,7 @@ export function BookCard({ book, userBookId, status, groupBooks, isSample: isSam
     return null;
   }
 
-  const handleImageError = () => {
+  const handleImageError = useCallback(() => {
     if (retryCount < MAX_RETRIES) {
       // 재시도: 짧은 지연 후 이미지 다시 로드 시도
       setTimeout(() => {
@@ -50,23 +52,12 @@ export function BookCard({ book, userBookId, status, groupBooks, isSample: isSam
       // 최대 재시도 횟수 초과 시 에러 상태로 설정
       setImageError(true);
     }
-  };
-
-  const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
-    // 디버깅: 클릭 시 userBookId 확인
-    console.log("BookCard: 책 클릭", {
-      userBookId,
-      bookTitle: book.title,
-      href: `/books/${userBookId}`,
-      isSample,
-    });
-  };
+  }, [retryCount, MAX_RETRIES]);
 
   return (
     <div className="relative group">
       <Link
         href={`/books/${userBookId}`}
-        onClick={handleClick}
         aria-label={`${book.title} 상세 보기`}
       >
         <Card
@@ -123,6 +114,24 @@ export function BookCard({ book, userBookId, status, groupBooks, isSample: isSam
                   ))}
                 </div>
               )}
+
+              {/* 읽기 진행률 표시 (Goal Gradient Effect - 진행 시각화가 완료 가속) */}
+              {book.total_pages && book.user_book?.current_page && status === "reading" && (
+                <div className="mt-2 space-y-1">
+                  <Progress
+                    value={(book.user_book.current_page / book.total_pages) * 100}
+                    className="h-1"
+                  />
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] text-muted-foreground">
+                      {book.user_book.current_page}/{book.total_pages}p
+                    </span>
+                    <span className="text-[10px] font-medium text-primary">
+                      {Math.round((book.user_book.current_page / book.total_pages) * 100)}%
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -140,4 +149,7 @@ export function BookCard({ book, userBookId, status, groupBooks, isSample: isSam
     </div>
   );
 }
+
+// React.memo로 래핑하여 props가 변경되지 않으면 리렌더링 방지
+export const BookCard = memo(BookCardComponent);
 

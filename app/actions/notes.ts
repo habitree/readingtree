@@ -232,10 +232,10 @@ export async function updateNote(noteId: string, data: UpdateNoteInput, user?: U
     currentUser = fetchedUser;
   }
 
-  // 기록 소유 확인
+  // 기록 소유 확인 및 필요한 모든 필드를 한 번에 조회 (중복 쿼리 방지)
   const { data: note, error: noteCheckError } = await supabase
     .from("notes")
-    .select("id, book_id")
+    .select("id, book_id, content")
     .eq("id", noteId)
     .eq("user_id", currentUser.id)
     .maybeSingle(); // .single() 대신 .maybeSingle() 사용
@@ -252,26 +252,20 @@ export async function updateNote(noteId: string, data: UpdateNoteInput, user?: U
   // content 구성: quote_content와 memo_content를 JSON으로 저장
   let content: string | null | undefined = undefined;
   if (data.quote_content !== undefined || data.memo_content !== undefined) {
-    // 기존 content를 파싱하여 기존 값 유지
-    const { data: existingNote } = await supabase
-      .from("notes")
-      .select("content")
-      .eq("id", noteId)
-      .single();
-
+    // 첫 조회에서 가져온 note.content 재사용 (중복 쿼리 제거)
     let existingQuote: string | undefined;
     let existingMemo: string | undefined;
 
-    if (existingNote?.content) {
+    if (note.content) {
       try {
-        const parsed = JSON.parse(existingNote.content);
+        const parsed = JSON.parse(note.content);
         if (typeof parsed === "object" && parsed !== null) {
           existingQuote = parsed.quote;
           existingMemo = parsed.memo;
         }
       } catch {
         // JSON이 아니면 기존 content를 memo로 처리
-        existingMemo = existingNote.content;
+        existingMemo = note.content;
       }
     }
 
@@ -323,27 +317,19 @@ export async function updateNote(noteId: string, data: UpdateNoteInput, user?: U
         }
       }
 
-      // 기존 기록의 book_id 조회 (주 책과 중복 확인용)
-      const { data: existingNote } = await supabase
-        .from("notes")
-        .select("book_id")
-        .eq("id", noteId)
-        .single();
+      // 첫 조회에서 가져온 note.book_id 재사용 (중복 쿼리 제거)
+      // 주 책의 user_books.id 조회
+      const { data: mainUserBook } = await supabase
+        .from("user_books")
+        .select("id")
+        .eq("book_id", note.book_id)
+        .eq("user_id", currentUser.id)
+        .maybeSingle();
 
-      if (existingNote) {
-        // 주 책의 user_books.id 조회
-        const { data: mainUserBook } = await supabase
-          .from("user_books")
-          .select("id")
-          .eq("book_id", existingNote.book_id)
-          .eq("user_id", currentUser.id)
-          .maybeSingle();
-
-        if (mainUserBook) {
-          // 주 책과 중복되지 않는지 확인
-          if (data.related_user_book_ids.includes(mainUserBook.id)) {
-            throw new Error("주 책은 관련 책 목록에 포함할 수 없습니다.");
-          }
+      if (mainUserBook) {
+        // 주 책과 중복되지 않는지 확인
+        if (data.related_user_book_ids.includes(mainUserBook.id)) {
+          throw new Error("주 책은 관련 책 목록에 포함할 수 없습니다.");
         }
       }
 
