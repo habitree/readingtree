@@ -1,747 +1,1394 @@
-/**
- * Supabase Database 타입 정의
- * 
- * 주의: 실제 Supabase 프로젝트에서 타입을 생성하려면:
- * npx supabase gen types typescript --project-id <project-id> > types/database.ts
- * 
- * 현재는 기본 구조만 정의합니다.
- */
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[]
 
-export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
-
-export interface Database {
+export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "14.1"
+  }
   public: {
     Tables: {
-      users: {
-        Row: {
-          id: string;
-          email: string | null;
-          name: string;
-          avatar_url: string | null;
-          reading_goal: number;
-          terms_agreed: boolean; // 이용약관 동의 여부
-          privacy_agreed: boolean; // 개인정보처리방침 동의 여부
-          consent_date: string | null; // 약관 동의 일시
-          created_at: string;
-          updated_at: string;
-        };
-        Insert: {
-          id: string;
-          email?: string | null;
-          name: string;
-          avatar_url?: string | null;
-          reading_goal?: number;
-          terms_agreed?: boolean;
-          privacy_agreed?: boolean;
-          consent_date?: string | null;
-          created_at?: string;
-          updated_at?: string;
-        };
-        Update: {
-          id?: string;
-          email?: string | null;
-          name?: string;
-          avatar_url?: string | null;
-          reading_goal?: number;
-          terms_agreed?: boolean;
-          privacy_agreed?: boolean;
-          consent_date?: string | null;
-          created_at?: string;
-          updated_at?: string;
-        };
-      };
-      books: {
-        Row: {
-          id: string;
-          isbn: string | null;
-          title: string;
-          author: string | null;
-          publisher: string | null;
-          published_date: string | null;
-          cover_image_url: string | null;
-          category: string | null;
-          total_pages: number | null;
-          summary: string | null;
-          description_summary: string | null;
-          external_link: string | null;
-          is_sample: boolean | null;
-          // AI 메타데이터 컬럼
-          table_of_contents: string | null;
-          full_description: string | null;
-          keywords: string[] | null;
-          author_info: string | null;
-          created_at: string;
-          updated_at: string;
-        };
-        Insert: {
-          id?: string;
-          isbn?: string | null;
-          title: string;
-          author?: string | null;
-          publisher?: string | null;
-          published_date?: string | null;
-          cover_image_url?: string | null;
-          category?: string | null;
-          total_pages?: number | null;
-          summary?: string | null;
-          description_summary?: string | null;
-          external_link?: string | null;
-          is_sample?: boolean | null;
-          // AI 메타데이터 컬럼
-          table_of_contents?: string | null;
-          full_description?: string | null;
-          keywords?: string[] | null;
-          author_info?: string | null;
-          created_at?: string;
-          updated_at?: string;
-        };
-        Update: {
-          id?: string;
-          isbn?: string | null;
-          title?: string;
-          author?: string | null;
-          publisher?: string | null;
-          published_date?: string | null;
-          cover_image_url?: string | null;
-          category?: string | null;
-          total_pages?: number | null;
-          summary?: string | null;
-          description_summary?: string | null;
-          external_link?: string | null;
-          is_sample?: boolean | null;
-          // AI 메타데이터 컬럼
-          table_of_contents?: string | null;
-          full_description?: string | null;
-          keywords?: string[] | null;
-          author_info?: string | null;
-          created_at?: string;
-          updated_at?: string;
-        };
-      };
-      user_books: {
-        Row: {
-          id: string;
-          user_id: string;
-          book_id: string;
-          bookshelf_id: string | null;
-          status: "reading" | "completed" | "paused" | "not_started" | "rereading";
-          started_at: string;
-          completed_at: string | null;
-          completed_dates?: any; // JSONB 배열
-          reading_reason: string | null;
-          book_format: string | null;
-          current_page: number; // 현재 읽은 페이지 (진행률 추적)
-          created_at: string;
-          updated_at: string;
-        };
-        Insert: {
-          id?: string;
-          user_id: string;
-          book_id: string;
-          bookshelf_id?: string | null;
-          status?: "reading" | "completed" | "paused" | "not_started" | "rereading";
-          started_at?: string;
-          completed_at?: string | null;
-          completed_dates?: any; // JSONB 배열
-          reading_reason?: string | null;
-          book_format?: string | null;
-          current_page?: number; // 현재 읽은 페이지 (진행률 추적)
-          created_at?: string;
-          updated_at?: string;
-        };
-        Update: {
-          id?: string;
-          user_id?: string;
-          book_id?: string;
-          bookshelf_id?: string | null;
-          status?: "reading" | "completed" | "paused" | "not_started" | "rereading";
-          started_at?: string;
-          completed_at?: string | null;
-          completed_dates?: any; // JSONB 배열
-          reading_reason?: string | null;
-          book_format?: string | null;
-          current_page?: number; // 현재 읽은 페이지 (진행률 추적)
-          created_at?: string;
-          updated_at?: string;
-        };
-      };
-      notes: {
-        Row: {
-          id: string;
-          user_id: string;
-          book_id: string;
-          title: string | null;
-          type: "quote" | "photo" | "memo" | "transcription";
-          content: string | null;
-          image_url: string | null;
-          page_number: number | null;
-          is_public: boolean;
-          tags: string[] | null;
-          related_user_book_ids: string[] | null;
-          created_at: string;
-          updated_at: string;
-        };
-        Insert: {
-          id?: string;
-          user_id: string;
-          book_id: string;
-          title?: string | null;
-          type: "quote" | "photo" | "memo" | "transcription";
-          content?: string | null;
-          image_url?: string | null;
-          page_number?: number | null;
-          is_public?: boolean;
-          tags?: string[] | null;
-          related_user_book_ids?: string[] | null;
-          created_at?: string;
-          updated_at?: string;
-        };
-        Update: {
-          id?: string;
-          user_id?: string;
-          book_id?: string;
-          title?: string | null;
-          type?: "quote" | "photo" | "memo" | "transcription";
-          content?: string | null;
-          image_url?: string | null;
-          page_number?: number | null;
-          is_public?: boolean;
-          tags?: string[] | null;
-          related_user_book_ids?: string[] | null;
-          created_at?: string;
-          updated_at?: string;
-        };
-      };
-      groups: {
-        Row: {
-          id: string;
-          name: string;
-          description: string | null;
-          leader_id: string;
-          is_public: boolean;
-          created_at: string;
-          updated_at: string;
-        };
-        Insert: {
-          id?: string;
-          name: string;
-          description?: string | null;
-          leader_id: string;
-          is_public?: boolean;
-          created_at?: string;
-          updated_at?: string;
-        };
-        Update: {
-          id?: string;
-          name?: string;
-          description?: string | null;
-          leader_id?: string;
-          is_public?: boolean;
-          created_at?: string;
-          updated_at?: string;
-        };
-      };
-      group_members: {
-        Row: {
-          id: string;
-          group_id: string;
-          user_id: string;
-          role: "leader" | "member";
-          status: "pending" | "approved" | "rejected";
-          joined_at: string;
-        };
-        Insert: {
-          id?: string;
-          group_id: string;
-          user_id: string;
-          role?: "leader" | "member";
-          status?: "pending" | "approved" | "rejected";
-          joined_at?: string;
-        };
-        Update: {
-          id?: string;
-          group_id?: string;
-          user_id?: string;
-          role?: "leader" | "member";
-          status?: "pending" | "approved" | "rejected";
-          joined_at?: string;
-        };
-      };
-      group_books: {
-        Row: {
-          id: string;
-          group_id: string;
-          book_id: string;
-          started_at: string;
-          target_completed_at: string | null;
-          created_at: string;
-        };
-        Insert: {
-          id?: string;
-          group_id: string;
-          book_id: string;
-          started_at?: string;
-          target_completed_at?: string | null;
-          created_at?: string;
-        };
-        Update: {
-          id?: string;
-          group_id?: string;
-          book_id?: string;
-          started_at?: string;
-          target_completed_at?: string | null;
-          created_at?: string;
-        };
-      };
-      ocr_usage_stats: {
-        Row: {
-          id: string;
-          user_id: string;
-          success_count: number;
-          failure_count: number;
-          last_processed_at: string | null;
-          created_at: string;
-          updated_at: string;
-        };
-        Insert: {
-          id?: string;
-          user_id: string;
-          success_count?: number;
-          failure_count?: number;
-          last_processed_at?: string | null;
-          created_at?: string;
-          updated_at?: string;
-        };
-        Update: {
-          id?: string;
-          user_id?: string;
-          success_count?: number;
-          failure_count?: number;
-          last_processed_at?: string | null;
-          created_at?: string;
-          updated_at?: string;
-        };
-      };
-      ocr_logs: {
-        Row: {
-          id: string;
-          user_id: string;
-          note_id: string | null;
-          status: "success" | "failed";
-          error_message: string | null;
-          processing_duration_ms: number | null;
-          created_at: string;
-        };
-        Insert: {
-          id?: string;
-          user_id: string;
-          note_id?: string | null;
-          status: "success" | "failed";
-          error_message?: string | null;
-          processing_duration_ms?: number | null;
-          created_at?: string;
-        };
-        Update: {
-          id?: string;
-          user_id?: string;
-          note_id?: string | null;
-          status?: "success" | "failed";
-          error_message?: string | null;
-          processing_duration_ms?: number | null;
-          created_at?: string;
-        };
-      };
-      // AI 독서 도우미 테이블
-      chat_sessions: {
-        Row: {
-          id: string;
-          user_id: string;
-          title: string | null;
-          last_message_at: string;
-          message_count: number;
-          created_at: string;
-          updated_at: string;
-        };
-        Insert: {
-          id?: string;
-          user_id: string;
-          title?: string | null;
-          last_message_at?: string;
-          message_count?: number;
-          created_at?: string;
-          updated_at?: string;
-        };
-        Update: {
-          id?: string;
-          user_id?: string;
-          title?: string | null;
-          last_message_at?: string;
-          message_count?: number;
-          created_at?: string;
-          updated_at?: string;
-        };
-      };
-      chat_messages: {
-        Row: {
-          id: string;
-          session_id: string;
-          role: "user" | "assistant" | "system";
-          content: string;
-          context_books: string[] | null;
-          context_notes: string[] | null;
-          created_at: string;
-        };
-        Insert: {
-          id?: string;
-          session_id: string;
-          role: "user" | "assistant" | "system";
-          content: string;
-          context_books?: string[] | null;
-          context_notes?: string[] | null;
-          created_at?: string;
-        };
-        Update: {
-          id?: string;
-          session_id?: string;
-          role?: "user" | "assistant" | "system";
-          content?: string;
-          context_books?: string[] | null;
-          context_notes?: string[] | null;
-          created_at?: string;
-        };
-      };
-      user_personas: {
-        Row: {
-          id: string;
-          user_id: string;
-          reading_pace: string | null;
-          note_style: string | null;
-          activity_pattern: string | null;
-          group_engagement: string | null;
-          reading_stats: Json;
-          category_preferences: Json;
-          persona_summary: string | null;
-          last_analyzed_at: string;
-          created_at: string;
-          updated_at: string;
-        };
-        Insert: {
-          id?: string;
-          user_id: string;
-          reading_pace?: string | null;
-          note_style?: string | null;
-          activity_pattern?: string | null;
-          group_engagement?: string | null;
-          reading_stats?: Json;
-          category_preferences?: Json;
-          persona_summary?: string | null;
-          last_analyzed_at?: string;
-          created_at?: string;
-          updated_at?: string;
-        };
-        Update: {
-          id?: string;
-          user_id?: string;
-          reading_pace?: string | null;
-          note_style?: string | null;
-          activity_pattern?: string | null;
-          group_engagement?: string | null;
-          reading_stats?: Json;
-          category_preferences?: Json;
-          persona_summary?: string | null;
-          last_analyzed_at?: string;
-          created_at?: string;
-          updated_at?: string;
-        };
-      };
-      // AI 시스템 설정 테이블
       ai_settings: {
         Row: {
-          id: string;
-          provider: "openai" | "google" | "anthropic";
-          model_id: string;
-          system_prompt_template: string;
-          welcome_message: string;
-          context_settings: Json;
-          generation_settings: Json;
-          memory_settings: Json;
-          is_active: boolean;
-          created_at: string;
-          updated_at: string;
-        };
+          context_settings: Json
+          created_at: string
+          generation_settings: Json
+          id: string
+          is_active: boolean
+          memory_settings: Json
+          model_id: string
+          provider: string
+          system_prompt_template: string
+          updated_at: string
+          welcome_message: string
+        }
         Insert: {
-          id?: string;
-          provider: "openai" | "google" | "anthropic";
-          model_id: string;
-          system_prompt_template: string;
-          welcome_message: string;
-          context_settings?: Json;
-          generation_settings?: Json;
-          memory_settings?: Json;
-          is_active?: boolean;
-          created_at?: string;
-          updated_at?: string;
-        };
+          context_settings?: Json
+          created_at?: string
+          generation_settings?: Json
+          id?: string
+          is_active?: boolean
+          memory_settings?: Json
+          model_id: string
+          provider: string
+          system_prompt_template: string
+          updated_at?: string
+          welcome_message: string
+        }
         Update: {
-          id?: string;
-          provider?: "openai" | "google" | "anthropic";
-          model_id?: string;
-          system_prompt_template?: string;
-          welcome_message?: string;
-          context_settings?: Json;
-          generation_settings?: Json;
-          memory_settings?: Json;
-          is_active?: boolean;
-          created_at?: string;
-          updated_at?: string;
-        };
-      };
-      // 사용자 AI 메모리 테이블
-      user_ai_memories: {
+          context_settings?: Json
+          created_at?: string
+          generation_settings?: Json
+          id?: string
+          is_active?: boolean
+          memory_settings?: Json
+          model_id?: string
+          provider?: string
+          system_prompt_template?: string
+          updated_at?: string
+          welcome_message?: string
+        }
+        Relationships: []
+      }
+      book_reflections: {
         Row: {
-          id: string;
-          user_id: string;
-          memory_type: string;
-          content: string;
-          metadata: Json | null;
-          created_at: string;
-          updated_at: string;
-        };
+          created_at: string | null
+          favorite_quote: string | null
+          id: string
+          rating: number | null
+          recommendation: string | null
+          reflection: string | null
+          updated_at: string | null
+          user_book_id: string
+          user_id: string
+        }
         Insert: {
-          id?: string;
-          user_id: string;
-          memory_type: string;
-          content: string;
-          metadata?: Json | null;
-          created_at?: string;
-          updated_at?: string;
-        };
+          created_at?: string | null
+          favorite_quote?: string | null
+          id?: string
+          rating?: number | null
+          recommendation?: string | null
+          reflection?: string | null
+          updated_at?: string | null
+          user_book_id: string
+          user_id: string
+        }
         Update: {
-          id?: string;
-          user_id?: string;
-          memory_type?: string;
-          content?: string;
-          metadata?: Json | null;
-          created_at?: string;
-          updated_at?: string;
-        };
-      };
-      // 포인트 시스템 테이블
-      user_points: {
+          created_at?: string | null
+          favorite_quote?: string | null
+          id?: string
+          rating?: number | null
+          recommendation?: string | null
+          reflection?: string | null
+          updated_at?: string | null
+          user_book_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "book_reflections_user_book_id_fkey"
+            columns: ["user_book_id"]
+            isOneToOne: false
+            referencedRelation: "user_books"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      books: {
         Row: {
-          id: string;
-          user_id: string;
-          total_points: number;
-          lifetime_points: number;
-          current_level: number;
-          streak_bonus_multiplier: number;
-          last_activity_date: string | null;
-          current_streak: number;
-          longest_streak: number;
-          created_at: string;
-          updated_at: string;
-        };
+          author: string | null
+          category: string | null
+          cover_image_url: string | null
+          created_at: string | null
+          description_summary: string | null
+          external_link: string | null
+          id: string
+          is_sample: boolean | null
+          isbn: string | null
+          published_date: string | null
+          publisher: string | null
+          summary: string | null
+          title: string
+          total_pages: number | null
+          updated_at: string | null
+        }
         Insert: {
-          id?: string;
-          user_id: string;
-          total_points?: number;
-          lifetime_points?: number;
-          current_level?: number;
-          streak_bonus_multiplier?: number;
-          last_activity_date?: string | null;
-          current_streak?: number;
-          longest_streak?: number;
-          created_at?: string;
-          updated_at?: string;
-        };
+          author?: string | null
+          category?: string | null
+          cover_image_url?: string | null
+          created_at?: string | null
+          description_summary?: string | null
+          external_link?: string | null
+          id?: string
+          is_sample?: boolean | null
+          isbn?: string | null
+          published_date?: string | null
+          publisher?: string | null
+          summary?: string | null
+          title: string
+          total_pages?: number | null
+          updated_at?: string | null
+        }
         Update: {
-          id?: string;
-          user_id?: string;
-          total_points?: number;
-          lifetime_points?: number;
-          current_level?: number;
-          streak_bonus_multiplier?: number;
-          last_activity_date?: string | null;
-          current_streak?: number;
-          longest_streak?: number;
-          created_at?: string;
-          updated_at?: string;
-        };
-      };
-      point_transactions: {
+          author?: string | null
+          category?: string | null
+          cover_image_url?: string | null
+          created_at?: string | null
+          description_summary?: string | null
+          external_link?: string | null
+          id?: string
+          is_sample?: boolean | null
+          isbn?: string | null
+          published_date?: string | null
+          publisher?: string | null
+          summary?: string | null
+          title?: string
+          total_pages?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      bookshelves: {
         Row: {
-          id: string;
-          user_id: string;
-          action_type: string;
-          points: number;
-          multiplier: number;
-          final_points: number;
-          description: string | null;
-          reference_id: string | null;
-          reference_type: string | null;
-          balance_after: number;
-          metadata: Json | null;
-          created_at: string;
-        };
+          created_at: string | null
+          description: string | null
+          id: string
+          is_main: boolean | null
+          is_public: boolean | null
+          name: string
+          order: number | null
+          updated_at: string | null
+          user_id: string
+        }
         Insert: {
-          id?: string;
-          user_id: string;
-          action_type: string;
-          points: number;
-          multiplier?: number;
-          final_points: number;
-          description?: string | null;
-          reference_id?: string | null;
-          reference_type?: string | null;
-          balance_after: number;
-          metadata?: Json | null;
-          created_at?: string;
-        };
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_main?: boolean | null
+          is_public?: boolean | null
+          name: string
+          order?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
         Update: {
-          id?: string;
-          user_id?: string;
-          action_type?: string;
-          points?: number;
-          multiplier?: number;
-          final_points?: number;
-          description?: string | null;
-          reference_id?: string | null;
-          reference_type?: string | null;
-          balance_after?: number;
-          metadata?: Json | null;
-          created_at?: string;
-        };
-      };
-      point_action_configs: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_main?: boolean | null
+          is_public?: boolean | null
+          name?: string
+          order?: number | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      chat_messages: {
         Row: {
-          id: string;
-          action_type: string;
-          base_points: number;
-          description: string;
-          category: string;
-          is_repeatable: boolean;
-          daily_limit: number | null;
-          is_active: boolean;
-          icon: string | null;
-          created_at: string;
-          updated_at: string;
-        };
+          content: string
+          context_books: string[] | null
+          context_notes: string[] | null
+          created_at: string
+          id: string
+          role: string
+          session_id: string
+        }
         Insert: {
-          id?: string;
-          action_type: string;
-          base_points: number;
-          description: string;
-          category: string;
-          is_repeatable?: boolean;
-          daily_limit?: number | null;
-          is_active?: boolean;
-          icon?: string | null;
-          created_at?: string;
-          updated_at?: string;
-        };
+          content: string
+          context_books?: string[] | null
+          context_notes?: string[] | null
+          created_at?: string
+          id?: string
+          role: string
+          session_id: string
+        }
         Update: {
-          id?: string;
-          action_type?: string;
-          base_points?: number;
-          description?: string;
-          category?: string;
-          is_repeatable?: boolean;
-          daily_limit?: number | null;
-          is_active?: boolean;
-          icon?: string | null;
-          created_at?: string;
-          updated_at?: string;
-        };
-      };
-      point_levels: {
+          content?: string
+          context_books?: string[] | null
+          context_notes?: string[] | null
+          created_at?: string
+          id?: string
+          role?: string
+          session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_messages_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "chat_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chat_sessions: {
         Row: {
-          id: string;
-          level: number;
-          required_points: number;
-          title: string;
-          description: string | null;
-          badge_icon: string | null;
-          streak_bonus: number;
-          created_at: string;
-        };
+          created_at: string
+          id: string
+          last_message_at: string | null
+          message_count: number
+          title: string | null
+          updated_at: string
+          user_id: string
+        }
         Insert: {
-          id?: string;
-          level: number;
-          required_points: number;
-          title: string;
-          description?: string | null;
-          badge_icon?: string | null;
-          streak_bonus?: number;
-          created_at?: string;
-        };
+          created_at?: string
+          id?: string
+          last_message_at?: string | null
+          message_count?: number
+          title?: string | null
+          updated_at?: string
+          user_id: string
+        }
         Update: {
-          id?: string;
-          level?: number;
-          required_points?: number;
-          title?: string;
-          description?: string | null;
-          badge_icon?: string | null;
-          streak_bonus?: number;
-          created_at?: string;
-        };
-      };
+          created_at?: string
+          id?: string
+          last_message_at?: string | null
+          message_count?: number
+          title?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       daily_missions: {
         Row: {
-          id: string;
-          user_id: string;
-          date: string;
-          mission_type: "first_read" | "note" | "streak" | "time_goal";
-          status: "pending" | "completed";
-          points_earned: number;
-          completed_at: string | null;
-          created_at: string;
-        };
+          completed_at: string | null
+          created_at: string
+          date: string
+          id: string
+          mission_type: string
+          points_earned: number | null
+          status: string
+          user_id: string
+        }
         Insert: {
-          id?: string;
-          user_id: string;
-          date: string;
-          mission_type: "first_read" | "note" | "streak" | "time_goal";
-          status?: "pending" | "completed";
-          points_earned?: number;
-          completed_at?: string | null;
-          created_at?: string;
-        };
+          completed_at?: string | null
+          created_at?: string
+          date?: string
+          id?: string
+          mission_type: string
+          points_earned?: number | null
+          status?: string
+          user_id: string
+        }
         Update: {
-          id?: string;
-          user_id?: string;
-          date?: string;
-          mission_type?: "first_read" | "note" | "streak" | "time_goal";
-          status?: "pending" | "completed";
-          points_earned?: number;
-          completed_at?: string | null;
-          created_at?: string;
-        };
-      };
-      // 관련 도서 연결 테이블
+          completed_at?: string | null
+          created_at?: string
+          date?: string
+          id?: string
+          mission_type?: string
+          points_earned?: number | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_missions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      group_activity_stats: {
+        Row: {
+          books_completed: number | null
+          created_at: string | null
+          group_id: string
+          id: string
+          notes_count: number | null
+          rank: number | null
+          reading_minutes: number | null
+          trend: string | null
+          updated_at: string | null
+          user_id: string
+          week_start: string
+        }
+        Insert: {
+          books_completed?: number | null
+          created_at?: string | null
+          group_id: string
+          id?: string
+          notes_count?: number | null
+          rank?: number | null
+          reading_minutes?: number | null
+          trend?: string | null
+          updated_at?: string | null
+          user_id: string
+          week_start: string
+        }
+        Update: {
+          books_completed?: number | null
+          created_at?: string | null
+          group_id?: string
+          id?: string
+          notes_count?: number | null
+          rank?: number | null
+          reading_minutes?: number | null
+          trend?: string | null
+          updated_at?: string | null
+          user_id?: string
+          week_start?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_activity_stats_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      group_books: {
+        Row: {
+          book_id: string
+          created_at: string | null
+          group_id: string
+          id: string
+          started_at: string | null
+          target_completed_at: string | null
+        }
+        Insert: {
+          book_id: string
+          created_at?: string | null
+          group_id: string
+          id?: string
+          started_at?: string | null
+          target_completed_at?: string | null
+        }
+        Update: {
+          book_id?: string
+          created_at?: string | null
+          group_id?: string
+          id?: string
+          started_at?: string | null
+          target_completed_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_books_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: false
+            referencedRelation: "books"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "group_books_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      group_members: {
+        Row: {
+          group_id: string
+          id: string
+          joined_at: string | null
+          role: Database["public"]["Enums"]["member_role"] | null
+          status: Database["public"]["Enums"]["member_status"] | null
+          user_id: string
+        }
+        Insert: {
+          group_id: string
+          id?: string
+          joined_at?: string | null
+          role?: Database["public"]["Enums"]["member_role"] | null
+          status?: Database["public"]["Enums"]["member_status"] | null
+          user_id: string
+        }
+        Update: {
+          group_id?: string
+          id?: string
+          joined_at?: string | null
+          role?: Database["public"]["Enums"]["member_role"] | null
+          status?: Database["public"]["Enums"]["member_status"] | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_members_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "group_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      group_notes: {
+        Row: {
+          group_id: string
+          id: string
+          note_id: string
+          shared_at: string | null
+        }
+        Insert: {
+          group_id: string
+          id?: string
+          note_id: string
+          shared_at?: string | null
+        }
+        Update: {
+          group_id?: string
+          id?: string
+          note_id?: string
+          shared_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_notes_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "group_notes_note_id_fkey"
+            columns: ["note_id"]
+            isOneToOne: false
+            referencedRelation: "notes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      group_shared_books: {
+        Row: {
+          group_id: string
+          id: string
+          shared_at: string | null
+          user_book_id: string
+        }
+        Insert: {
+          group_id: string
+          id?: string
+          shared_at?: string | null
+          user_book_id: string
+        }
+        Update: {
+          group_id?: string
+          id?: string
+          shared_at?: string | null
+          user_book_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_shared_books_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "group_shared_books_user_book_id_fkey"
+            columns: ["user_book_id"]
+            isOneToOne: false
+            referencedRelation: "user_books"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      groups: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          is_public: boolean | null
+          leader_id: string
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_public?: boolean | null
+          leader_id: string
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_public?: boolean | null
+          leader_id?: string
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "groups_leader_id_fkey"
+            columns: ["leader_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notes: {
+        Row: {
+          book_id: string
+          content: string | null
+          created_at: string | null
+          id: string
+          image_url: string | null
+          is_public: boolean | null
+          is_sample: boolean | null
+          page_number: number | null
+          related_user_book_ids: string[] | null
+          tags: string[] | null
+          title: string | null
+          type: Database["public"]["Enums"]["note_type"]
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          book_id: string
+          content?: string | null
+          created_at?: string | null
+          id?: string
+          image_url?: string | null
+          is_public?: boolean | null
+          is_sample?: boolean | null
+          page_number?: number | null
+          related_user_book_ids?: string[] | null
+          tags?: string[] | null
+          title?: string | null
+          type: Database["public"]["Enums"]["note_type"]
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          book_id?: string
+          content?: string | null
+          created_at?: string | null
+          id?: string
+          image_url?: string | null
+          is_public?: boolean | null
+          is_sample?: boolean | null
+          page_number?: number | null
+          related_user_book_ids?: string[] | null
+          tags?: string[] | null
+          title?: string | null
+          type?: Database["public"]["Enums"]["note_type"]
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notes_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: false
+            referencedRelation: "books"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ocr_logs: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          id: string
+          note_id: string | null
+          processing_duration_ms: number | null
+          status: Database["public"]["Enums"]["ocr_log_status"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          note_id?: string | null
+          processing_duration_ms?: number | null
+          status: Database["public"]["Enums"]["ocr_log_status"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          note_id?: string | null
+          processing_duration_ms?: number | null
+          status?: Database["public"]["Enums"]["ocr_log_status"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ocr_logs_note_id_fkey"
+            columns: ["note_id"]
+            isOneToOne: false
+            referencedRelation: "notes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ocr_usage_stats: {
+        Row: {
+          created_at: string
+          failure_count: number
+          id: string
+          last_processed_at: string | null
+          success_count: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          failure_count?: number
+          id?: string
+          last_processed_at?: string | null
+          success_count?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          failure_count?: number
+          id?: string
+          last_processed_at?: string | null
+          success_count?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      point_action_configs: {
+        Row: {
+          action_type: Database["public"]["Enums"]["point_action_type"]
+          base_points: number
+          category: string
+          created_at: string
+          daily_limit: number | null
+          description: string
+          icon: string | null
+          id: string
+          is_active: boolean
+          is_repeatable: boolean
+          updated_at: string
+        }
+        Insert: {
+          action_type: Database["public"]["Enums"]["point_action_type"]
+          base_points: number
+          category: string
+          created_at?: string
+          daily_limit?: number | null
+          description: string
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          is_repeatable?: boolean
+          updated_at?: string
+        }
+        Update: {
+          action_type?: Database["public"]["Enums"]["point_action_type"]
+          base_points?: number
+          category?: string
+          created_at?: string
+          daily_limit?: number | null
+          description?: string
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          is_repeatable?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      point_levels: {
+        Row: {
+          badge_icon: string | null
+          created_at: string
+          description: string | null
+          id: string
+          level: number
+          required_points: number
+          streak_bonus: number | null
+          title: string
+        }
+        Insert: {
+          badge_icon?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          level: number
+          required_points: number
+          streak_bonus?: number | null
+          title: string
+        }
+        Update: {
+          badge_icon?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          level?: number
+          required_points?: number
+          streak_bonus?: number | null
+          title?: string
+        }
+        Relationships: []
+      }
+      point_transactions: {
+        Row: {
+          action_type: Database["public"]["Enums"]["point_action_type"]
+          balance_after: number
+          created_at: string
+          description: string | null
+          final_points: number
+          id: string
+          metadata: Json | null
+          multiplier: number | null
+          points: number
+          reference_id: string | null
+          reference_type: string | null
+          user_id: string
+        }
+        Insert: {
+          action_type: Database["public"]["Enums"]["point_action_type"]
+          balance_after: number
+          created_at?: string
+          description?: string | null
+          final_points: number
+          id?: string
+          metadata?: Json | null
+          multiplier?: number | null
+          points: number
+          reference_id?: string | null
+          reference_type?: string | null
+          user_id: string
+        }
+        Update: {
+          action_type?: Database["public"]["Enums"]["point_action_type"]
+          balance_after?: number
+          created_at?: string
+          description?: string | null
+          final_points?: number
+          id?: string
+          metadata?: Json | null
+          multiplier?: number | null
+          points?: number
+          reference_id?: string | null
+          reference_type?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "point_transactions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      transcriptions: {
+        Row: {
+          created_at: string | null
+          extracted_text: string
+          id: string
+          memo_content: string | null
+          note_id: string
+          quote_content: string | null
+          status: Database["public"]["Enums"]["ocr_status"]
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          extracted_text: string
+          id?: string
+          memo_content?: string | null
+          note_id: string
+          quote_content?: string | null
+          status?: Database["public"]["Enums"]["ocr_status"]
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          extracted_text?: string
+          id?: string
+          memo_content?: string | null
+          note_id?: string
+          quote_content?: string | null
+          status?: Database["public"]["Enums"]["ocr_status"]
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transcriptions_note_id_fkey"
+            columns: ["note_id"]
+            isOneToOne: true
+            referencedRelation: "notes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_achievements: {
+        Row: {
+          achievement_type: string
+          created_at: string | null
+          earned_at: string | null
+          id: string
+          metadata: Json | null
+          tier: string | null
+          user_id: string
+        }
+        Insert: {
+          achievement_type: string
+          created_at?: string | null
+          earned_at?: string | null
+          id?: string
+          metadata?: Json | null
+          tier?: string | null
+          user_id: string
+        }
+        Update: {
+          achievement_type?: string
+          created_at?: string | null
+          earned_at?: string | null
+          id?: string
+          metadata?: Json | null
+          tier?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_ai_memories: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          memory_type: string
+          metadata: Json | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          memory_type: string
+          metadata?: Json | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          memory_type?: string
+          metadata?: Json | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_book_relations: {
         Row: {
-          id: string;
-          user_id: string;
-          source_user_book_id: string;
-          target_user_book_id: string;
-          created_at: string;
-        };
+          created_at: string | null
+          id: string
+          source_user_book_id: string
+          target_user_book_id: string
+          user_id: string
+        }
         Insert: {
-          id?: string;
-          user_id: string;
-          source_user_book_id: string;
-          target_user_book_id: string;
-          created_at?: string;
-        };
+          created_at?: string | null
+          id?: string
+          source_user_book_id: string
+          target_user_book_id: string
+          user_id: string
+        }
         Update: {
-          id?: string;
-          user_id?: string;
-          source_user_book_id?: string;
-          target_user_book_id?: string;
-          created_at?: string;
-        };
-      };
-    };
-  };
+          created_at?: string | null
+          id?: string
+          source_user_book_id?: string
+          target_user_book_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_book_relations_source_user_book_id_fkey"
+            columns: ["source_user_book_id"]
+            isOneToOne: false
+            referencedRelation: "user_books"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_book_relations_target_user_book_id_fkey"
+            columns: ["target_user_book_id"]
+            isOneToOne: false
+            referencedRelation: "user_books"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_books: {
+        Row: {
+          book_format: string | null
+          book_id: string
+          bookshelf_id: string | null
+          completed_at: string | null
+          completed_dates: Json | null
+          created_at: string | null
+          current_page: number | null
+          id: string
+          reading_reason: string | null
+          started_at: string | null
+          status: Database["public"]["Enums"]["reading_status"] | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          book_format?: string | null
+          book_id: string
+          bookshelf_id?: string | null
+          completed_at?: string | null
+          completed_dates?: Json | null
+          created_at?: string | null
+          current_page?: number | null
+          id?: string
+          reading_reason?: string | null
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["reading_status"] | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          book_format?: string | null
+          book_id?: string
+          bookshelf_id?: string | null
+          completed_at?: string | null
+          completed_dates?: Json | null
+          created_at?: string | null
+          current_page?: number | null
+          id?: string
+          reading_reason?: string | null
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["reading_status"] | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_books_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: false
+            referencedRelation: "books"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_books_bookshelf_id_fkey"
+            columns: ["bookshelf_id"]
+            isOneToOne: false
+            referencedRelation: "bookshelves"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_books_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_personas: {
+        Row: {
+          activity_pattern: string | null
+          category_preferences: Json | null
+          created_at: string
+          group_engagement: string | null
+          id: string
+          last_analyzed_at: string | null
+          note_style: string | null
+          persona_summary: string | null
+          reading_pace: string | null
+          reading_stats: Json | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          activity_pattern?: string | null
+          category_preferences?: Json | null
+          created_at?: string
+          group_engagement?: string | null
+          id?: string
+          last_analyzed_at?: string | null
+          note_style?: string | null
+          persona_summary?: string | null
+          reading_pace?: string | null
+          reading_stats?: Json | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          activity_pattern?: string | null
+          category_preferences?: Json | null
+          created_at?: string
+          group_engagement?: string | null
+          id?: string
+          last_analyzed_at?: string | null
+          note_style?: string | null
+          persona_summary?: string | null
+          reading_pace?: string | null
+          reading_stats?: Json | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_points: {
+        Row: {
+          created_at: string
+          current_level: number
+          current_streak: number
+          id: string
+          last_activity_date: string | null
+          lifetime_points: number
+          longest_streak: number
+          streak_bonus_multiplier: number | null
+          total_points: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_level?: number
+          current_streak?: number
+          id?: string
+          last_activity_date?: string | null
+          lifetime_points?: number
+          longest_streak?: number
+          streak_bonus_multiplier?: number | null
+          total_points?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_level?: number
+          current_streak?: number
+          id?: string
+          last_activity_date?: string | null
+          lifetime_points?: number
+          longest_streak?: number
+          streak_bonus_multiplier?: number | null
+          total_points?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_points_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      users: {
+        Row: {
+          avatar_url: string | null
+          consent_date: string | null
+          created_at: string | null
+          email: string | null
+          id: string
+          is_admin: boolean | null
+          name: string
+          onboarding_checklist: Json | null
+          privacy_agreed: boolean | null
+          reading_goal: number | null
+          terms_agreed: boolean | null
+          ui_style: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          consent_date?: string | null
+          created_at?: string | null
+          email?: string | null
+          id: string
+          is_admin?: boolean | null
+          name: string
+          onboarding_checklist?: Json | null
+          privacy_agreed?: boolean | null
+          reading_goal?: number | null
+          terms_agreed?: boolean | null
+          ui_style?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          consent_date?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          is_admin?: boolean | null
+          name?: string
+          onboarding_checklist?: Json | null
+          privacy_agreed?: boolean | null
+          reading_goal?: number | null
+          terms_agreed?: boolean | null
+          ui_style?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      get_daily_point_count: {
+        Args: {
+          p_action_type: Database["public"]["Enums"]["point_action_type"]
+          p_date?: string
+          p_user_id: string
+        }
+        Returns: number
+      }
+      get_user_completed_books_count: {
+        Args: { p_user_id: string; p_year?: number }
+        Returns: number
+      }
+      get_user_notes_count_this_week: {
+        Args: { p_user_id: string }
+        Returns: number
+      }
+      is_admin_user: { Args: never; Returns: boolean }
+    }
+    Enums: {
+      member_role: "leader" | "member"
+      member_status: "pending" | "approved" | "rejected"
+      note_type: "quote" | "photo" | "memo" | "transcription"
+      ocr_log_status: "success" | "failed"
+      ocr_status: "processing" | "completed" | "failed"
+      point_action_type:
+        | "note_create"
+        | "note_quote"
+        | "note_memo"
+        | "note_photo"
+        | "note_transcription"
+        | "book_add"
+        | "book_complete"
+        | "book_progress_update"
+        | "daily_first_activity"
+        | "streak_3_days"
+        | "streak_7_days"
+        | "streak_14_days"
+        | "streak_30_days"
+        | "streak_100_days"
+        | "streak_365_days"
+        | "mission_complete"
+        | "all_missions_complete"
+        | "group_join"
+        | "group_create"
+        | "note_share"
+        | "first_book"
+        | "first_note"
+        | "monthly_goal_achieve"
+        | "yearly_goal_achieve"
+        | "point_used"
+        | "point_expired"
+        | "admin_adjust"
+      reading_status:
+        | "reading"
+        | "completed"
+        | "paused"
+        | "not_started"
+        | "rereading"
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
 }
 
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
+
+export type Tables<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+      Row: infer R
+    }
+    ? R
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+        Row: infer R
+      }
+      ? R
+      : never
+    : never
+
+export type TablesInsert<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Insert: infer I
+    }
+    ? I
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Insert: infer I
+      }
+      ? I
+      : never
+    : never
+
+export type TablesUpdate<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Update: infer U
+    }
+    ? U
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Update: infer U
+      }
+      ? U
+      : never
+    : never
+
+export type Enums<
+  DefaultSchemaEnumNameOrOptions extends
+    | keyof DefaultSchema["Enums"]
+    | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    : never = never,
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+    : never
+
+export type CompositeTypes<
+  PublicCompositeTypeNameOrOptions extends
+    | keyof DefaultSchema["CompositeTypes"]
+    | { schema: keyof DatabaseWithoutInternals },
+  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    : never = never,
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+    : never
+
+export const Constants = {
+  public: {
+    Enums: {
+      member_role: ["leader", "member"],
+      member_status: ["pending", "approved", "rejected"],
+      note_type: ["quote", "photo", "memo", "transcription"],
+      ocr_log_status: ["success", "failed"],
+      ocr_status: ["processing", "completed", "failed"],
+      point_action_type: [
+        "note_create",
+        "note_quote",
+        "note_memo",
+        "note_photo",
+        "note_transcription",
+        "book_add",
+        "book_complete",
+        "book_progress_update",
+        "daily_first_activity",
+        "streak_3_days",
+        "streak_7_days",
+        "streak_14_days",
+        "streak_30_days",
+        "streak_100_days",
+        "streak_365_days",
+        "mission_complete",
+        "all_missions_complete",
+        "group_join",
+        "group_create",
+        "note_share",
+        "first_book",
+        "first_note",
+        "monthly_goal_achieve",
+        "yearly_goal_achieve",
+        "point_used",
+        "point_expired",
+        "admin_adjust",
+      ],
+      reading_status: [
+        "reading",
+        "completed",
+        "paused",
+        "not_started",
+        "rereading",
+      ],
+    },
+  },
+} as const
