@@ -145,7 +145,9 @@ export function ChatSidebar({
                         {session.title || "새 대화"}
                       </div>
                       <div className="text-xs text-muted-foreground">
-                        {new Date(session.last_message_at).toLocaleDateString("ko-KR")}
+                        {session.last_message_at
+                          ? new Date(session.last_message_at).toLocaleDateString("ko-KR")
+                          : "날짜 없음"}
                       </div>
                     </div>
                   </button>

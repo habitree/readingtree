@@ -60,7 +60,7 @@ export async function getUserPersona(): Promise<UserPersona | null> {
 export async function needsPersonaAnalysis(): Promise<boolean> {
   const persona = await getUserPersona();
 
-  if (!persona) {
+  if (!persona || !persona.last_analyzed_at) {
     return true;
   }
 
