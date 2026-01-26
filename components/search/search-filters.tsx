@@ -7,11 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { X, Search, BookOpen, Loader2 } from "lucide-react";
+import { X, Search, BookOpen, RotateCcw } from "lucide-react";
 import Image from "next/image";
 import { getImageUrl, isValidImageUrl } from "@/lib/utils/image";
 import { cn } from "@/lib/utils";
-import type { NoteType } from "@/types/note";
 import { getUserBooks } from "@/app/actions/books";
 import { getUserTags } from "@/app/actions/notes";
 
@@ -39,6 +38,9 @@ export function SearchFilters({ onBooksLoaded }: SearchFiltersProps) {
   const selectedTags = tagsParam
     ? tagsParam.split(",").map((t) => t.trim()).filter(Boolean)
     : [];
+
+  // 필터 적용 여부 확인
+  const hasAnyFilter = !!(bookId || startDate || endDate || tagsParam || types);
 
   useEffect(() => {
     // 책 목록 및 태그 목록 로드
@@ -97,6 +99,17 @@ export function SearchFilters({ onBooksLoaded }: SearchFiltersProps) {
     router.push(`/search?${params.toString()}`);
   };
 
+  // 모든 필터 초기화
+  const clearAllFilters = () => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("bookId");
+    params.delete("startDate");
+    params.delete("endDate");
+    params.delete("tags");
+    params.delete("types");
+    params.set("page", "1");
+    router.push(`/search?${params.toString()}`);
+  };
 
   // 책 검색 관련 상태
   const [bookSearchQuery, setBookSearchQuery] = useState("");
@@ -284,6 +297,7 @@ export function SearchFilters({ onBooksLoaded }: SearchFiltersProps) {
             type="date"
             value={startDate}
             onChange={(e) => updateFilter("startDate", e.target.value)}
+            max={endDate || undefined}
           />
         </div>
         <div className="space-y-2">
@@ -292,9 +306,16 @@ export function SearchFilters({ onBooksLoaded }: SearchFiltersProps) {
             type="date"
             value={endDate}
             onChange={(e) => updateFilter("endDate", e.target.value)}
+            min={startDate || undefined}
           />
         </div>
       </div>
+      {/* 날짜 유효성 경고 */}
+      {startDate && endDate && new Date(startDate) > new Date(endDate) && (
+        <p className="text-xs text-destructive mt-1">
+          시작일이 종료일보다 늦을 수 없어요
+        </p>
+      )}
       {(startDate || endDate) && (
         <Button
           variant="ghost"
@@ -418,6 +439,19 @@ export function SearchFilters({ onBooksLoaded }: SearchFiltersProps) {
           <p className="text-sm text-muted-foreground">저장된 태그가 없습니다.</p>
         )}
       </div>
+
+      {/* 필터 전체 초기화 버튼 */}
+      {hasAnyFilter && (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={clearAllFilters}
+          className="w-full mt-4 text-muted-foreground hover:text-foreground"
+        >
+          <RotateCcw className="h-4 w-4 mr-2" />
+          필터 전체 초기화
+        </Button>
+      )}
     </div>
   );
 }

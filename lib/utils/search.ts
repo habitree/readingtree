@@ -41,7 +41,7 @@ export function highlightText(text: string, query: string): string {
   // 이미 이스케이프된 텍스트에서 검색하므로 안전함
   return escapedText.replace(
     regex,
-    '<mark class="bg-yellow-200 dark:bg-yellow-900">$1</mark>'
+    '<mark class="bg-primary/20 dark:bg-primary/30 rounded px-0.5">$1</mark>'
   );
 }
 

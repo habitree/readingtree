@@ -3,13 +3,14 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
-import { Search } from "lucide-react";
+import { Search, X, BookOpen, Calendar, Tag, FileText } from "lucide-react";
 import { SearchFilters } from "@/components/search/search-filters";
 import { SearchResults } from "@/components/search/search-results";
 import { Pagination } from "@/components/search/pagination";
 import { useSearch } from "@/hooks/use-search";
 import { Loader2, Filter, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
 /**
@@ -32,6 +33,8 @@ export default function SearchPage() {
   );
   const [totalPages, setTotalPages] = useState(0);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  // 책 목록 (필터 칩에서 책 제목 표시용)
+  const [booksMap, setBooksMap] = useState<Map<string, string>>(new Map());
 
   // URL 파라미터에서 필터 값 추출 (의존성 최적화)
   const bookId = searchParams.get("bookId");
@@ -158,6 +161,48 @@ export default function SearchPage() {
     // URL 업데이트와 검색 실행은 performSearch의 useEffect에서 처리
   }, []);
 
+  // 필터 칩에서 책 목록 받아오기
+  const handleBooksLoaded = useCallback((books: Array<{ id: string; books: { title: string } }>) => {
+    const map = new Map<string, string>();
+    books.forEach((b) => {
+      map.set(b.id, (b as any).books?.title || "");
+    });
+    setBooksMap(map);
+  }, []);
+
+  // 초기 상태 여부 (검색어/필터 없음)
+  const hasQuery = query.trim().length > 0;
+  const hasBookFilter = !!bookId;
+  const hasDateFilter = !!startDate || !!endDate;
+  const hasTagFilter = !!tags;
+  const hasTypeFilter = !!types;
+  const isInitialState = !hasQuery && !hasBookFilter && !hasDateFilter && !hasTagFilter && !hasTypeFilter;
+  const hasAnyFilter = hasBookFilter || hasDateFilter || hasTagFilter || hasTypeFilter;
+
+  // 개별 필터 제거
+  const clearFilter = (key: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete(key);
+    params.set("page", "1");
+    router.push(`/search?${params.toString()}`);
+  };
+
+  // 모든 필터 초기화
+  const clearAllFilters = useCallback(() => {
+    const params = new URLSearchParams();
+    if (query.trim()) params.set("q", query.trim());
+    params.set("page", "1");
+    router.push(`/search?${params.toString()}`);
+  }, [query, router]);
+
+  // 기록 유형 라벨
+  const getTypeLabel = (type: string) => {
+    if (type.includes("quote") || type.includes("transcription")) return "필사";
+    if (type === "photo") return "사진";
+    if (type === "memo") return "기록";
+    return type;
+  };
+
   return (
     <div className="space-y-4 sm:space-y-6">
       <div>
@@ -175,7 +220,7 @@ export default function SearchPage() {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               type="search"
-              placeholder="검색어"
+              placeholder="책 제목, 저자, 기록 내용 검색..."
               value={query}
               onChange={(e) => handleQueryChange(e.target.value)}
               className="pl-10"
@@ -196,10 +241,95 @@ export default function SearchPage() {
             <div className="flex items-center gap-2">
               <Filter className="h-4 w-4" />
               <span>필터</span>
+              {hasAnyFilter && (
+                <Badge variant="secondary" className="ml-1 h-5 w-5 p-0 text-xs justify-center">
+                  {[hasBookFilter, hasDateFilter, hasTagFilter, hasTypeFilter].filter(Boolean).length}
+                </Badge>
+              )}
             </div>
             {isFilterOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
           </Button>
         </div>
+
+        {/* 적용된 필터 칩 */}
+        {hasAnyFilter && (
+          <div className="flex flex-wrap gap-2 mt-3">
+            {bookId && booksMap.get(bookId) && (
+              <Badge variant="secondary" className="gap-1 pr-1">
+                <BookOpen className="h-3 w-3" />
+                <span className="max-w-[120px] truncate">{booksMap.get(bookId)}</span>
+                <button
+                  onClick={() => clearFilter("bookId")}
+                  className="ml-1 rounded-full hover:bg-destructive hover:text-destructive-foreground p-0.5"
+                  aria-label="책 필터 제거"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </Badge>
+            )}
+            {(startDate || endDate) && (
+              <Badge variant="secondary" className="gap-1 pr-1">
+                <Calendar className="h-3 w-3" />
+                <span>
+                  {startDate && endDate
+                    ? `${startDate} ~ ${endDate}`
+                    : startDate
+                    ? `${startDate} ~`
+                    : `~ ${endDate}`}
+                </span>
+                <button
+                  onClick={() => {
+                    clearFilter("startDate");
+                    clearFilter("endDate");
+                  }}
+                  className="ml-1 rounded-full hover:bg-destructive hover:text-destructive-foreground p-0.5"
+                  aria-label="날짜 필터 제거"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </Badge>
+            )}
+            {types && (
+              <Badge variant="secondary" className="gap-1 pr-1">
+                <FileText className="h-3 w-3" />
+                <span>{getTypeLabel(types)}</span>
+                <button
+                  onClick={() => clearFilter("types")}
+                  className="ml-1 rounded-full hover:bg-destructive hover:text-destructive-foreground p-0.5"
+                  aria-label="유형 필터 제거"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </Badge>
+            )}
+            {tags && tags.split(",").map((tag) => (
+              <Badge key={tag} variant="secondary" className="gap-1 pr-1">
+                <Tag className="h-3 w-3" />
+                <span className="max-w-[80px] truncate">{tag.trim()}</span>
+                <button
+                  onClick={() => {
+                    const newTags = tags
+                      .split(",")
+                      .filter((t) => t.trim() !== tag.trim())
+                      .join(",");
+                    if (newTags) {
+                      const params = new URLSearchParams(searchParams.toString());
+                      params.set("tags", newTags);
+                      params.set("page", "1");
+                      router.push(`/search?${params.toString()}`);
+                    } else {
+                      clearFilter("tags");
+                    }
+                  }}
+                  className="ml-1 rounded-full hover:bg-destructive hover:text-destructive-foreground p-0.5"
+                  aria-label={`${tag} 태그 제거`}
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </Badge>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="grid gap-6 lg:grid-cols-4">
@@ -210,12 +340,21 @@ export default function SearchPage() {
         )}>
           <div className="sticky top-20 bg-background/95 backdrop-blur p-4 rounded-lg border lg:border-none lg:p-0">
             <h2 className="text-lg font-semibold mb-4 hidden lg:block">필터</h2>
-            <SearchFilters />
+            <SearchFilters onBooksLoaded={handleBooksLoaded} />
           </div>
         </div>
 
         {/* 검색 결과 */}
         <div className="lg:col-span-3 space-y-4">
+          {/* 접근성: 검색 결과 상태 알림 */}
+          <div aria-live="polite" aria-atomic="true" className="sr-only">
+            {isLoading
+              ? "검색 중입니다..."
+              : isInitialState
+              ? "검색어를 입력하거나 필터를 사용하세요."
+              : `${total}개의 검색 결과가 있습니다.`}
+          </div>
+
           {error && (
             <div className="text-center py-8 text-destructive">
               <p>검색 중 오류가 발생했습니다: {error.message}</p>
@@ -234,6 +373,8 @@ export default function SearchPage() {
                 results={results}
                 searchQuery={query}
                 isLoading={isLoading}
+                isInitialState={isInitialState}
+                onClearFilters={hasAnyFilter ? clearAllFilters : undefined}
               />
 
               {totalPages > 1 && (
