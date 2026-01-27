@@ -1,8 +1,7 @@
 import { NoteCard } from "./note-card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Button } from "@/components/ui/button";
-import { PenTool, FileText } from "lucide-react";
-import Link from "next/link";
+import { EmptyState } from "@/components/ui/empty-state";
+import { FileText } from "lucide-react";
 import type { NoteWithBook } from "@/types/note";
 
 interface NoteListProps {
@@ -36,25 +35,16 @@ export function NoteList({ notes, isLoading }: NoteListProps) {
 
   if (notes.length === 0) {
     return (
-      <div className="text-center py-12 sm:py-16 space-y-4">
-        <div className="flex justify-center">
-          <div className="rounded-full bg-muted p-4 sm:p-6">
-            <FileText className="h-8 w-8 sm:h-12 sm:w-12 text-muted-foreground" />
-          </div>
-        </div>
-        <div className="space-y-2 px-4">
-          <h3 className="text-base sm:text-lg font-semibold">기록이 없습니다</h3>
-          <p className="text-xs sm:text-sm text-muted-foreground max-w-md mx-auto">
-            첫 번째 기록을 작성하고 독서 여정을 시작해보세요!
-          </p>
-        </div>
-        <Button asChild size="sm" className="mt-4">
-          <Link href="/notes/new">
-            <PenTool className="mr-2 h-4 w-4" />
-            기록 작성하기
-          </Link>
-        </Button>
-      </div>
+      <EmptyState
+        icon={FileText}
+        title="기록이 없습니다"
+        description="첫 번째 기록을 작성하고 독서 여정을 시작해보세요!"
+        variant="encouraging"
+        action={{
+          label: "기록 작성하기",
+          href: "/notes/new",
+        }}
+      />
     );
   }
 
@@ -66,4 +56,3 @@ export function NoteList({ notes, isLoading }: NoteListProps) {
     </div>
   );
 }
-

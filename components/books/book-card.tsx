@@ -10,6 +10,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { getImageUrl, isValidImageUrl } from "@/lib/utils/image";
+import { cn } from "@/lib/utils";
 import { BookOpen, Users } from "lucide-react";
 import type { BookWithUserBook, ReadingStatus } from "@/types/book";
 import type { BookWithNotes } from "@/app/actions/books";
@@ -136,9 +137,18 @@ function BookCardComponent({ book, userBookId, status, groupBooks, isSample: isS
           </CardContent>
         </Card>
       </Link>
-      {/* 삭제 버튼 - 호버 시 표시 (샘플 데이터 제외) */}
+      {/* 삭제 버튼 - 모바일: 반투명 표시, 데스크톱: 호버 시 표시 (샘플 데이터 제외) */}
       {!isSample && (
-        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-10" onClick={(e) => e.stopPropagation()}>
+        <div
+          className={cn(
+            "absolute top-2 right-2 z-10 transition-opacity",
+            // 모바일: 반투명으로 항상 표시, 터치 시 불투명
+            "opacity-60 active:opacity-100",
+            // 데스크톱: 호버 시 표시
+            "sm:opacity-0 sm:group-hover:opacity-100"
+          )}
+          onClick={(e) => e.stopPropagation()}
+        >
           <BookDeleteButton
             userBookId={userBookId}
             bookTitle={book.title}

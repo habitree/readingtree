@@ -10,7 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { updateProfile, updateProfileImage } from "@/app/actions/profile";
 import { toast } from "sonner";
 import { Loader2, Upload, User } from "lucide-react";
-import { getImageUrl, getProxiedImageUrl } from "@/lib/utils/image";
+import { getImageUrl, getProxiedImageUrl, smartCompressImage, formatFileSize } from "@/lib/utils/image";
 import type { User as UserType } from "@/types/user";
 
 interface ProfileFormProps {
@@ -76,16 +76,33 @@ export function ProfileForm({ user }: ProfileFormProps) {
       return;
     }
 
-    // 파일 크기 검증 (최대 2MB)
-    const MAX_SIZE = 2 * 1024 * 1024;
-    if (file.size > MAX_SIZE) {
-      toast.error("파일 크기는 2MB 이하여야 합니다.");
-      return;
-    }
-
     setIsUploading(true);
     try {
-      const result = await updateProfileImage(file);
+      // 이미지 압축 (비율 유지 + 용량 자동 최적화)
+      // 프로필 이미지는 500KB 이상이면 압축, 최대 512x512
+      let fileToUpload = file;
+      try {
+        const originalSize = file.size;
+        fileToUpload = await smartCompressImage(file, {
+          compressionThreshold: 500 * 1024, // 500KB 이상이면 압축
+          maxWidth: 512,
+          maxHeight: 512,
+          targetSizeBytes: 500 * 1024, // 목표: 500KB
+          minQuality: 0.6,
+          maxQuality: 0.9,
+          verbose: true,
+        });
+
+        if (fileToUpload.size < originalSize) {
+          const savedPercent = Math.round((1 - fileToUpload.size / originalSize) * 100);
+          console.log(`[프로필 이미지 압축] ${formatFileSize(originalSize)} → ${formatFileSize(fileToUpload.size)} (${savedPercent}% 감소)`);
+        }
+      } catch (compressError) {
+        console.error("이미지 압축 오류:", compressError);
+        // 압축 실패 시 원본 파일 사용
+      }
+
+      const result = await updateProfileImage(fileToUpload);
       setAvatarUrl(result.avatarUrl);
       toast.success("저장됨");
       // 프로필 이미지 업로드 후 페이지 새로고침하여 헤더도 갱신

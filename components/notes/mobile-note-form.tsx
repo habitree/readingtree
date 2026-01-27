@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import { createNote } from "@/app/actions/notes";
 import { toast } from "sonner";
 import {
   Loader2,
@@ -17,18 +16,16 @@ import {
   MessageSquare,
   CheckCircle2,
   FileText,
-  Tag,
   Globe,
   Lock,
   Sparkles,
 } from "lucide-react";
 import Image from "next/image";
 import { getImageUrl, isValidImageUrl } from "@/lib/utils/image";
-import { validateImageSize, validateImageType } from "@/lib/utils/image";
-import { addStampToImage } from "@/lib/utils/stamp";
 import { BookMentionTextarea } from "./book-mention-textarea";
 import type { NoteMode } from "@/hooks/use-mobile-note-sheet";
 import { cn } from "@/lib/utils";
+import { useNoteForm } from "@/hooks/use-note-form";
 
 interface MobileNoteFormProps {
   /** user_books.id */
@@ -64,245 +61,57 @@ export function MobileNoteForm({
   const [quoteFocused, setQuoteFocused] = useState(false);
   const [memoFocused, setMemoFocused] = useState(false);
 
-  // 이미지 업로드 상태
-  const [images, setImages] = useState<string[]>([]);
-  const [uploading, setUploading] = useState(false);
-  const [uploadType, setUploadType] = useState<"photo" | "transcription" | null>(
-    mode === "transcription" ? "transcription" : null
-  );
-
-  // 제출 상태
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const isSubmittingRef = useRef(false);
-  const isUploadingRef = useRef(false);
-
   // 파일 입력 ref
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const transcriptionInputRef = useRef<HTMLInputElement>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
 
-  // 이미지 업로드 핸들러 (스탬프 기능 포함)
-  const handleImageUpload = async (
-    files: FileList | null,
-    type: "photo" | "transcription"
-  ) => {
-    if (!files || files.length === 0) return;
+  // 공통 노트 폼 훅 사용
+  const {
+    images,
+    uploading,
+    uploadType,
+    isSubmitting,
+    isUploadingRef,
+    handleImageUpload: hookHandleImageUpload,
+    removeImage,
+    submitNote,
+  } = useNoteForm({
+    bookId,
+    initialUploadType: mode === "transcription" ? "transcription" : null,
+    onSuccess: () => {
+      onSaved?.();
+    },
+  });
 
-    if (isUploadingRef.current) {
-      console.warn("이미 업로드 중입니다.");
-      return;
-    }
-    isUploadingRef.current = true;
+  // 이미지 업로드 핸들러 (스탬프 옵션 적용)
+  const handleImageUpload = async (files: FileList | null, type: "photo" | "transcription") => {
+    await hookHandleImageUpload(files, type, applyStamp);
 
-    const fileArray = Array.from(files);
-    const validFiles = fileArray.filter(
-      (file) => validateImageType(file) && validateImageSize(file)
-    );
-
-    if (validFiles.length === 0) {
-      toast.error("유효한 이미지 파일을 선택해주세요. (최대 5MB)");
-      isUploadingRef.current = false;
-      if (transcriptionInputRef.current) transcriptionInputRef.current.value = "";
-      if (photoInputRef.current) photoInputRef.current.value = "";
-      return;
-    }
-
-    setUploadType(type);
-    setUploading(true);
-    const newImages: string[] = [];
-
-    for (const file of validFiles) {
-      try {
-        // 스탬프 적용 여부에 따라 이미지 처리
-        let fileToUpload = file;
-        if (applyStamp) {
-          try {
-            const stampedBlob = await addStampToImage(file);
-            fileToUpload = new File([stampedBlob], file.name, {
-              type: file.type || "image/jpeg",
-            });
-          } catch (stampError) {
-            console.error("스탬프 적용 오류:", stampError);
-            toast.warning("스탬프 적용에 실패했습니다. 원본 이미지를 업로드합니다.");
-          }
-        }
-
-        const formData = new FormData();
-        formData.append("file", fileToUpload);
-        formData.append("type", type);
-
-        const response = await fetch("/api/upload", {
-          method: "POST",
-          body: formData,
-        });
-
-        if (!response.ok) {
-          throw new Error("업로드 실패");
-        }
-
-        const data = await response.json();
-
-        if (!data.url) {
-          toast.error(`${file.name} 업로드는 성공했지만 URL을 받지 못했습니다.`);
-          continue;
-        }
-
-        newImages.push(data.url);
-      } catch (error) {
-        console.error("이미지 업로드 오류:", error);
-        toast.error(`${file.name} 업로드에 실패했습니다.`);
-      }
-    }
-
-    if (newImages.length > 0) {
-      setImages((prev) => [...prev, ...newImages]);
-      toast.success(`${newImages.length}개의 이미지가 업로드되었습니다.`);
-    }
-
-    setUploading(false);
-    isUploadingRef.current = false;
-
+    // input value 초기화
     if (transcriptionInputRef.current) transcriptionInputRef.current.value = "";
     if (photoInputRef.current) photoInputRef.current.value = "";
   };
 
-  // 이미지 제거
-  const removeImage = (index: number) => {
-    setImages((prev) => {
-      const newImages = prev.filter((_, i) => i !== index);
-      if (newImages.length === 0) {
-        setUploadType(mode === "transcription" ? "transcription" : null);
-      }
-      return newImages;
-    });
-  };
-
-  // 폼 제출 (제목 포함)
+  // 폼 제출
   const handleSubmit = async () => {
-    if (isSubmittingRef.current || isSubmitting || uploading) {
-      return;
-    }
-
     // 최소 하나의 값이 있는지 확인
     const hasQuote = quoteContent.trim().length > 0;
     const hasMemo = memoContent.trim().length > 0;
     const hasImage = images.length > 0;
 
     if (!hasQuote && !hasMemo && !hasImage) {
-      toast.error(
-        "인상깊은 구절, 내 생각, 또는 이미지 중 최소 하나는 입력해주세요."
-      );
+      toast.error("인상깊은 구절, 내 생각, 또는 이미지 중 최소 하나는 입력해주세요.");
       return;
     }
 
-    isSubmittingRef.current = true;
-    setIsSubmitting(true);
-
-    try {
-      // type 결정
-      const noteType = images.length > 0
-        ? uploadType === "photo"
-          ? "photo"
-          : "transcription"
-        : "memo";
-
-      // 페이지 번호 (텍스트로 저장)
-      const pageNumber = pageNumbers.trim() || undefined;
-
-      // 태그 파싱
-      const parsedTags = tags
-        ? tags
-            .split(",")
-            .map((t) => t.trim())
-            .filter(Boolean)
-        : undefined;
-
-      let createdCount = 0;
-
-      // 다중 이미지 업로드 시 각 이미지별로 기록 생성
-      if (images.length > 0) {
-        for (const imageUrl of images) {
-          const result = await createNote({
-            book_id: bookId,
-            title: title.trim() || undefined,
-            type: noteType,
-            quote_content: quoteContent.trim() || undefined,
-            memo_content: memoContent.trim() || undefined,
-            image_url: imageUrl,
-            upload_type: uploadType || undefined,
-            page_number: pageNumber,
-            tags: parsedTags,
-            is_public: isPublic,
-          });
-
-          createdCount++;
-
-          // transcription 타입이면 OCR 처리 요청
-          if (noteType === "transcription" && result.noteId) {
-            try {
-              toast.info("필사 이미지에서 텍스트를 추출하는 중입니다...", {
-                description: "OCR 처리가 완료되면 자동으로 저장됩니다.",
-                duration: 5000,
-              });
-
-              const ocrResponse = await fetch("/api/ocr", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  noteId: result.noteId,
-                  imageUrl,
-                }),
-              });
-
-              if (ocrResponse.ok) {
-                toast.success("OCR 처리가 시작되었습니다.", {
-                  description: "처리가 완료되면 자동으로 업데이트됩니다.",
-                  duration: 3000,
-                });
-              } else {
-                toast.warning("OCR 처리 요청에 실패했습니다.", {
-                  description: "나중에 다시 시도해주세요.",
-                });
-              }
-            } catch (error) {
-              console.error("OCR 요청 오류:", error);
-            }
-          }
-        }
-      } else {
-        // 이미지가 없는 경우
-        await createNote({
-          book_id: bookId,
-          title: title.trim() || undefined,
-          type: noteType,
-          quote_content: quoteContent.trim() || undefined,
-          memo_content: memoContent.trim() || undefined,
-          upload_type: uploadType || undefined,
-          page_number: pageNumber,
-          tags: parsedTags,
-          is_public: isPublic,
-        });
-        createdCount++;
-      }
-
-      // 성공 메시지
-      if (createdCount > 1) {
-        toast.success(`${createdCount}개의 기록이 저장되었습니다.`);
-      } else {
-        toast.success("저장됨");
-      }
-
-      // 콜백 호출
-      onSaved?.();
-    } catch (error) {
-      console.error("기록 저장 오류:", error);
-      toast.error(
-        error instanceof Error ? error.message : "기록 저장에 실패했습니다."
-      );
-    } finally {
-      isSubmittingRef.current = false;
-      setIsSubmitting(false);
-    }
+    await submitNote({
+      title: title.trim() || undefined,
+      quoteContent: quoteContent.trim() || undefined,
+      memoContent: memoContent.trim() || undefined,
+      pageNumbers: pageNumbers.trim() || undefined,
+      tags: tags || undefined,
+      isPublic,
+    });
   };
 
   // 입력 완료 상태 체크
@@ -382,7 +191,7 @@ export function MobileNoteForm({
               "flex items-center gap-1 px-2 py-1.5 rounded-md cursor-pointer transition-all",
               "bg-purple-50 dark:bg-purple-950/30 border border-purple-200/60 dark:border-purple-800/40",
               "hover:bg-purple-100 dark:hover:bg-purple-900/40 active:scale-95",
-              uploading && "opacity-50 pointer-events-none"
+              (uploading || isUploadingRef.current) && "opacity-50 pointer-events-none"
             )}
           >
             <PenTool className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
@@ -396,7 +205,7 @@ export function MobileNoteForm({
               "flex items-center gap-1 px-2 py-1.5 rounded-md cursor-pointer transition-all",
               "bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200/60 dark:border-emerald-800/40",
               "hover:bg-emerald-100 dark:hover:bg-emerald-900/40 active:scale-95",
-              uploading && "opacity-50 pointer-events-none"
+              (uploading || isUploadingRef.current) && "opacity-50 pointer-events-none"
             )}
           >
             <Camera className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />

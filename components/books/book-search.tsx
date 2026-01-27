@@ -222,7 +222,7 @@ export function BookSearch({ onBookAdded, onSelectBook, excludeBookIds, showAlre
       </div>
 
       {results.length > 0 && (
-        <div className="space-y-2 max-h-96 overflow-y-auto">
+        <div className="space-y-2 max-h-[60vh] sm:max-h-96 overflow-y-auto">
           {results.map((book) => {
             // 고유 키 생성: ISBN이 있으면 ISBN 사용, 없으면 title과 author 조합
             const uniqueKey = book.isbn || `${book.title}-${book.author || 'unknown'}-${book.publisher || 'unknown'}`;

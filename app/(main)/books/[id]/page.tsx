@@ -15,7 +15,8 @@ import { BookStatusSelector } from "@/components/books/book-status-selector";
 import { BookDeleteButton } from "@/components/books/book-delete-button";
 import { BookInfoEditor } from "@/components/books/book-info-editor";
 import { ReadingProgress } from "@/components/books/reading-progress";
-import { PenTool, LogIn, BookOpen, Calendar, Building2, Hash, Quote, Sparkles, Trophy, Link2 } from "lucide-react";
+import { PenTool, LogIn, BookOpen, Quote, Sparkles, Trophy, Link2 } from "lucide-react";
+import { BookMetaInfo } from "@/components/books/book-meta-info";
 import type { ReadingStatus } from "@/types/book";
 import { NotesList } from "@/components/notes/notes-list";
 import { SampleNotesList } from "@/components/notes/sample-notes-list";
@@ -211,34 +212,13 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
               </div>
 
               {/* 메타 정보 그리드 - PC에서만 표시 */}
-              <div className="hidden lg:grid grid-cols-2 gap-3 mb-4">
-                {book.publisher && (
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Building2 className="w-4 h-4 shrink-0 opacity-60" />
-                    <span className="truncate">{book.publisher}</span>
-                  </div>
-                )}
-                {book.isbn && (
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Hash className="w-4 h-4 shrink-0 opacity-60" />
-                    <span className="truncate font-mono text-xs">{book.isbn}</span>
-                  </div>
-                )}
-                {userBook.started_at && (
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Calendar className="w-4 h-4 shrink-0 opacity-60" />
-                    <span>{formatDate(userBook.started_at)} 시작</span>
-                  </div>
-                )}
-                {completedDates.length > 0 && (
-                  <div className="flex items-center gap-2 text-sm">
-                    <Trophy className="w-4 h-4 shrink-0 text-emerald-500" />
-                    <span className="text-emerald-600 dark:text-emerald-400 font-medium">
-                      {completedDates.length}회 완독
-                    </span>
-                  </div>
-                )}
-              </div>
+              <BookMetaInfo
+                publisher={book.publisher}
+                isbn={book.isbn}
+                startedAt={userBook.started_at}
+                completedDates={completedDates}
+                className="hidden lg:grid mb-4"
+              />
 
               {/* 읽기 진행률 - 로그인 사용자만 */}
               {!isGuest && (
@@ -280,31 +260,13 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
       {/* 모바일 전용 메타 정보 */}
       <div className="lg:hidden">
         <Card className="border-muted/50">
-          <CardContent className="p-4 grid grid-cols-2 gap-3 text-sm">
-            {book.publisher && (
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Building2 className="w-4 h-4 shrink-0 opacity-60" />
-                <span className="truncate">{book.publisher}</span>
-              </div>
-            )}
-            {book.isbn && (
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Hash className="w-4 h-4 shrink-0 opacity-60" />
-                <span className="truncate font-mono text-xs">{book.isbn}</span>
-              </div>
-            )}
-            {userBook.started_at && (
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Calendar className="w-4 h-4 shrink-0 opacity-60" />
-                <span>{formatDate(userBook.started_at)}</span>
-              </div>
-            )}
-            {completedDates.length > 0 && (
-              <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
-                <Trophy className="w-4 h-4 shrink-0" />
-                <span className="font-medium">{completedDates.length}회 완독</span>
-              </div>
-            )}
+          <CardContent className="p-4">
+            <BookMetaInfo
+              publisher={book.publisher}
+              isbn={book.isbn}
+              startedAt={userBook.started_at}
+              completedDates={completedDates}
+            />
           </CardContent>
         </Card>
       </div>
