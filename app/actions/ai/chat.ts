@@ -400,10 +400,10 @@ export async function getChatContext(): Promise<ChatContext> {
     };
   }
 
-  // 최근 책 정보
+  // 최근 책 정보 - books.id 사용 (책 페이지 링크용)
   if (recentBooks && recentBooks.length > 0) {
     context.recentBooks = recentBooks.map((ub: any) => ({
-      id: ub.id,
+      id: ub.books?.id || ub.id,  // books 테이블의 id 사용
       title: ub.books?.title || "알 수 없는 책",
       author: ub.books?.author || null,
       status: ub.status,
