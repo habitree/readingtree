@@ -3,6 +3,7 @@ import { NoteFormNew } from "@/components/notes/note-form-new";
 import { redirect } from "next/navigation";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { isValidUUID } from "@/lib/utils/validation";
+import { typography } from "@/lib/design-tokens";
 
 export const metadata: Metadata = {
   title: "기록 작성 | ReadTree",
@@ -64,8 +65,8 @@ export default async function NewNotePage({ searchParams }: NewNotePageProps) {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">기록 작성</h1>
-        <p className="text-muted-foreground">
+        <h1 className={typography.pageTitle}>기록 작성</h1>
+        <p className={typography.pageDescription}>
           책에 대한 기록을 작성하세요
         </p>
       </div>

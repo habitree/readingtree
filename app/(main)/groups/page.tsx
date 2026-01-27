@@ -4,6 +4,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { Plus } from "lucide-react";
+import { typography } from "@/lib/design-tokens";
 
 /**
  * 모임 목록 페이지
@@ -14,8 +15,8 @@ export default function GroupsPage() {
     <div className="space-y-4 sm:space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">독서모임</h1>
-          <p className="text-sm sm:text-base text-muted-foreground">
+          <h1 className={typography.pageTitle}>독서모임</h1>
+          <p className={typography.pageDescription}>
             함께 읽고 기록을 공유하는 독서모임에 참여하세요
           </p>
         </div>

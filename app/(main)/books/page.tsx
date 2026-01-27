@@ -1,9 +1,9 @@
 import { Suspense } from "react";
 import { Metadata } from "next";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Plus, LogIn } from "lucide-react";
+import { GuestAlert } from "@/components/ui/guest-alert";
+import { Plus } from "lucide-react";
 import Link from "next/link";
 import { getUserBooksWithNotes } from "@/app/actions/books";
 import { getCurrentUser } from "@/app/actions/auth";
@@ -53,24 +53,7 @@ export default async function BooksPage({ searchParams }: BooksPageProps) {
       <div className="space-y-4 sm:space-y-6">
         {/* 게스트 사용자 안내 */}
         {isGuest && (
-          <Card className="border-primary/20 bg-primary/5">
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Badge variant="secondary">샘플 데이터</Badge>
-                  <p className="text-sm text-muted-foreground">
-                    현재 샘플 책 목록을 보고 계십니다. 로그인하여 나만의 서재를 만들어보세요!
-                  </p>
-                </div>
-                <Button asChild size="sm">
-                  <Link href="/login">
-                    <LogIn className="mr-2 h-4 w-4" />
-                    로그인
-                  </Link>
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+          <GuestAlert message="현재 샘플 책 목록을 보고 계십니다. 로그인하여 나만의 서재를 만들어보세요!" />
         )}
 
         <div className="flex items-center justify-between gap-2">

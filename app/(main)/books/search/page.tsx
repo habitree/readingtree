@@ -1,5 +1,6 @@
 import { BookSearch } from "@/components/books/book-search";
 import { Metadata } from "next";
+import { typography } from "@/lib/design-tokens";
 
 export const metadata: Metadata = {
   title: "책 검색 | ReadTree",
@@ -14,8 +15,8 @@ export default function BookSearchPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">책 검색</h1>
-        <p className="text-muted-foreground">
+        <h1 className={typography.pageTitle}>책 검색</h1>
+        <p className={typography.pageDescription}>
           책 제목이나 저자로 검색하여 내 서재에 추가하세요
         </p>
       </div>

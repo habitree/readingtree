@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { ProfileContent } from "@/components/profile/profile-content";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { typography } from "@/lib/design-tokens";
 
 /**
  * 프로필 페이지
@@ -11,8 +12,8 @@ export default function ProfilePage() {
   return (
     <div className="space-y-4 sm:space-y-6">
       <div>
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">프로필</h1>
-        <p className="text-sm sm:text-base text-muted-foreground">
+        <h1 className={typography.pageTitle}>프로필</h1>
+        <p className={typography.pageDescription}>
           프로필 정보를 수정하고 관리하세요
         </p>
       </div>

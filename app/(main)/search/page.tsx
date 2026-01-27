@@ -12,6 +12,7 @@ import { Loader2, Filter, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { typography } from "@/lib/design-tokens";
 
 /**
  * 검색 페이지
@@ -206,8 +207,8 @@ export default function SearchPage() {
   return (
     <div className="space-y-4 sm:space-y-6">
       <div>
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">검색</h1>
-        <p className="text-sm sm:text-base text-muted-foreground">
+        <h1 className={typography.pageTitle}>검색</h1>
+        <p className={typography.pageDescription}>
           저장한 모든 기록을 검색하세요
         </p>
       </div>

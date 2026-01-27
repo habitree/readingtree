@@ -1,8 +1,9 @@
 import { NoteCard } from "./note-card";
-import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
+import { NoteListSkeleton } from "@/components/ui/skeletons";
 import { FileText } from "lucide-react";
 import type { NoteWithBook } from "@/types/note";
+import { grids } from "@/lib/design-tokens";
 
 interface NoteListProps {
   notes: NoteWithBook[];
@@ -14,23 +15,7 @@ interface NoteListProps {
  */
 export function NoteList({ notes, isLoading }: NoteListProps) {
   if (isLoading) {
-    return (
-      <div className="grid gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} className="space-y-2 p-3 border rounded-lg">
-            <div className="flex gap-3">
-              <Skeleton className="h-[88px] w-16 sm:w-20 shrink-0 rounded-lg" />
-              <div className="flex-1 space-y-2">
-                <Skeleton className="h-5 w-20" />
-                <Skeleton className="h-4 w-full" />
-                <Skeleton className="h-3 w-3/4" />
-                <Skeleton className="h-3 w-1/2" />
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-    );
+    return <NoteListSkeleton count={6} />;
   }
 
   if (notes.length === 0) {
@@ -49,7 +34,7 @@ export function NoteList({ notes, isLoading }: NoteListProps) {
   }
 
   return (
-    <div className="grid gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <div className={grids.noteList}>
       {notes.map((note) => (
         <NoteCard key={note.id} note={note} showDeleteButton={true} />
       ))}

@@ -1,10 +1,10 @@
 import { BookCard } from "./book-card";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Button } from "@/components/ui/button";
-import { Plus, BookOpen } from "lucide-react";
-import Link from "next/link";
+import { EmptyState } from "@/components/ui/empty-state";
+import { BookListSkeleton } from "@/components/ui/skeletons";
+import { BookOpen } from "lucide-react";
 import type { BookWithUserBook } from "@/types/book";
 import type { UserBook, ReadingStatus } from "@/types/book";
+import { grids } from "@/lib/design-tokens";
 
 interface BookListProps {
   books: Array<{
@@ -35,45 +35,26 @@ interface BookListProps {
  */
 export function BookList({ books, isLoading, isSample = false }: BookListProps) {
   if (isLoading) {
-    return (
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
-        {Array.from({ length: 12 }).map((_, i) => (
-          <div key={i} className="space-y-2">
-            <Skeleton className="aspect-[3/4] w-full" />
-            <Skeleton className="h-4 w-3/4" />
-            <Skeleton className="h-3 w-1/2" />
-          </div>
-        ))}
-      </div>
-    );
+    return <BookListSkeleton count={10} />;
   }
 
   if (books.length === 0) {
     return (
-      <div className="text-center py-16 space-y-4">
-        <div className="flex justify-center">
-          <div className="rounded-full bg-muted p-6">
-            <BookOpen className="h-12 w-12 text-muted-foreground" />
-          </div>
-        </div>
-        <div className="space-y-2">
-          <h3 className="text-lg font-semibold">책 없음</h3>
-          <p className="text-sm text-muted-foreground max-w-md mx-auto">
-            책을 추가하세요
-          </p>
-        </div>
-        <Button asChild className="mt-4">
-          <Link href="/books/search">
-            <Plus className="mr-2 h-4 w-4" />
-            추가
-          </Link>
-        </Button>
-      </div>
+      <EmptyState
+        icon={BookOpen}
+        title="책이 없습니다"
+        description="첫 번째 책을 추가하여 나만의 서재를 만들어보세요"
+        variant="encouraging"
+        action={{
+          label: "책 추가하기",
+          href: "/books/search",
+        }}
+      />
     );
   }
 
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
+    <div className={grids.bookList}>
       {books.map((userBook) => {
         // userBook.id 검증
         if (!userBook.id || typeof userBook.id !== 'string' || userBook.id.trim() === '') {
