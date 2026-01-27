@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
+import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -14,8 +15,53 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Bot, User, Trash2 } from "lucide-react";
+import { Bot, User, Trash2, BookOpen, FileText } from "lucide-react";
 import type { ChatMessage as ChatMessageType } from "@/types/ai";
+
+/**
+ * 메시지 내용에서 [[book:id:제목]] 및 [[note:id:타입]] 형식을 파싱하여 링크로 변환
+ */
+function parseMessageContent(content: string): React.ReactNode[] {
+  // [[book:id:제목]] 또는 [[note:id:타입]] 패턴 매칭
+  const regex = /\[\[(book|note):([a-zA-Z0-9-]+):([^\]]+)\]\]/g;
+  const parts: React.ReactNode[] = [];
+  let lastIndex = 0;
+  let match;
+  let keyIndex = 0;
+
+  while ((match = regex.exec(content)) !== null) {
+    // 링크 전의 일반 텍스트
+    if (match.index > lastIndex) {
+      parts.push(content.slice(lastIndex, match.index));
+    }
+
+    const [, type, id, label] = match;
+    const href = type === "book" ? `/books/${id}` : `/notes/${id}`;
+    const Icon = type === "book" ? BookOpen : FileText;
+
+    // 링크 컴포넌트
+    parts.push(
+      <Link
+        key={`link-${keyIndex++}`}
+        href={href}
+        className="inline-flex items-center gap-1 text-primary hover:underline font-medium"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <Icon className="h-3 w-3" />
+        <span>{label}</span>
+      </Link>
+    );
+
+    lastIndex = match.index + match[0].length;
+  }
+
+  // 마지막 일반 텍스트
+  if (lastIndex < content.length) {
+    parts.push(content.slice(lastIndex));
+  }
+
+  return parts.length > 0 ? parts : [content];
+}
 
 interface ChatMessageProps {
   message: ChatMessageType;
@@ -27,6 +73,14 @@ interface ChatMessageProps {
 export function ChatMessage({ message, userAvatar, userName, onDelete }: ChatMessageProps) {
   const isUser = message.role === "user";
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+
+  // AI 응답에서만 링크 파싱 (사용자 메시지는 그대로 표시)
+  const parsedContent = useMemo(() => {
+    if (isUser || !message.content) {
+      return message.content;
+    }
+    return parseMessageContent(message.content);
+  }, [message.content, isUser]);
 
   const handleDelete = () => {
     if (onDelete) {
@@ -70,7 +124,7 @@ export function ChatMessage({ message, userAvatar, userName, onDelete }: ChatMes
             )}
           >
             <div className="whitespace-pre-wrap text-sm leading-relaxed">
-              {message.content}
+              {parsedContent}
             </div>
             <div
               className={cn(
@@ -135,6 +189,14 @@ interface StreamingMessageProps {
 }
 
 export function StreamingMessage({ content, isLoading }: StreamingMessageProps) {
+  // 스트리밍 완료 후에만 링크 파싱 (스트리밍 중에는 성능을 위해 일반 텍스트로 표시)
+  const parsedContent = useMemo(() => {
+    if (isLoading || !content) {
+      return content;
+    }
+    return parseMessageContent(content);
+  }, [content, isLoading]);
+
   return (
     <div className="flex gap-3 p-4">
       {/* AI 아바타 */}
@@ -147,7 +209,7 @@ export function StreamingMessage({ content, isLoading }: StreamingMessageProps) 
       {/* 메시지 내용 */}
       <div className="max-w-[80%] rounded-2xl bg-muted px-4 py-2">
         <div className="whitespace-pre-wrap text-sm leading-relaxed">
-          {content}
+          {parsedContent}
           {isLoading && (
             <span className="ml-1 inline-block h-4 w-1 animate-pulse bg-primary" />
           )}

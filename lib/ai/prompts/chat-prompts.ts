@@ -37,7 +37,14 @@ export function generateDynamicSystemPrompt(
     prompt += generateReadingGoalSection(context);
   }
 
-  prompt += `\n\n위 정보를 바탕으로 사용자에게 맞춤형 응답을 제공하세요.`;
+  // 링크 형식 사용 지시 추가
+  prompt += `\n\n## 응답 형식 규칙
+- 책을 언급할 때는 반드시 [[book:ID:「제목」]] 형식을 사용하세요
+- 기록을 언급할 때는 반드시 [[note:ID:타입]] 형식을 사용하세요
+- 위에 제공된 책/기록 정보에 있는 ID만 사용하세요
+- 이 형식을 사용하면 사용자가 클릭하여 해당 정보로 바로 이동할 수 있습니다
+
+위 정보를 바탕으로 사용자에게 맞춤형 응답을 제공하세요.`;
 
   return prompt;
 }
@@ -92,6 +99,7 @@ function generatePersonaSection(context: ChatContext): string {
 
 /**
  * 최근 읽은 책 섹션 생성
+ * 책 정보에 ID를 포함하여 AI가 링크 형식으로 응답할 수 있도록 함
  */
 function generateRecentBooksSection(context: ChatContext, maxBooks: number): string {
   let section = `\n\n## 최근 읽은 책`;
@@ -99,7 +107,8 @@ function generateRecentBooksSection(context: ChatContext, maxBooks: number): str
 
   books.forEach((book, index) => {
     const status = book.status === "completed" ? "완독" : "읽는 중";
-    section += `\n${index + 1}. 「${book.title}」 - ${book.author || "저자 미상"} (${status})`;
+    // ID를 포함하여 AI가 [[book:id:「제목」]] 형식으로 응답할 수 있도록 함
+    section += `\n${index + 1}. [[book:${book.id}:「${book.title}」]] - ${book.author || "저자 미상"} (${status})`;
   });
 
   return section;
@@ -107,6 +116,7 @@ function generateRecentBooksSection(context: ChatContext, maxBooks: number): str
 
 /**
  * 최근 기록 섹션 생성
+ * 기록 정보에 ID를 포함하여 AI가 링크 형식으로 응답할 수 있도록 함
  */
 function generateRecentNotesSection(context: ChatContext, maxNotes: number): string {
   let section = `\n\n## 최근 기록 (일부)`;
@@ -123,7 +133,10 @@ function generateRecentNotesSection(context: ChatContext, maxNotes: number): str
     const content = note.content
       ? (note.content.length > 50 ? note.content.substring(0, 50) + "..." : note.content)
       : "(내용 없음)";
-    section += `\n- [${type}] 「${note.book_title}」: ${content}`;
+    // ID를 포함하여 AI가 [[note:id:타입]] 형식으로 응답할 수 있도록 함
+    // book_id도 포함하여 책 페이지에서 기록을 볼 수 있도록 함
+    const bookRef = note.book_id ? `[[book:${note.book_id}:「${note.book_title}」]]` : `「${note.book_title}」`;
+    section += `\n- [[note:${note.id}:${type}]] ${bookRef}: ${content}`;
   });
 
   return section;
@@ -208,16 +221,16 @@ export function generateSystemPrompt(context: ChatContext): string {
     }
   }
 
-  // 최근 읽은 책 정보 추가
+  // 최근 읽은 책 정보 추가 (ID 포함)
   if (context.recentBooks && context.recentBooks.length > 0) {
     prompt += `\n\n## 최근 읽은 책`;
     context.recentBooks.forEach((book, index) => {
       const status = book.status === "completed" ? "완독" : "읽는 중";
-      prompt += `\n${index + 1}. 「${book.title}」 - ${book.author || "저자 미상"} (${status})`;
+      prompt += `\n${index + 1}. [[book:${book.id}:「${book.title}」]] - ${book.author || "저자 미상"} (${status})`;
     });
   }
 
-  // 최근 기록 정보 추가
+  // 최근 기록 정보 추가 (ID 포함)
   if (context.recentNotes && context.recentNotes.length > 0) {
     prompt += `\n\n## 최근 기록 (일부)`;
     const typeLabels: Record<string, string> = {
@@ -231,7 +244,8 @@ export function generateSystemPrompt(context: ChatContext): string {
       const content = note.content
         ? (note.content.length > 50 ? note.content.substring(0, 50) + "..." : note.content)
         : "(내용 없음)";
-      prompt += `\n- [${type}] 「${note.book_title}」: ${content}`;
+      const bookRef = note.book_id ? `[[book:${note.book_id}:「${note.book_title}」]]` : `「${note.book_title}」`;
+      prompt += `\n- [[note:${note.id}:${type}]] ${bookRef}: ${content}`;
     });
   }
 
@@ -243,7 +257,14 @@ export function generateSystemPrompt(context: ChatContext): string {
     prompt += `\n- 진행률: ${context.readingGoal.progress}%`;
   }
 
-  prompt += `\n\n위 정보를 바탕으로 사용자에게 맞춤형 응답을 제공하세요.`;
+  // 링크 형식 사용 지시 추가
+  prompt += `\n\n## 응답 형식 규칙
+- 책을 언급할 때는 반드시 [[book:ID:「제목」]] 형식을 사용하세요
+- 기록을 언급할 때는 반드시 [[note:ID:타입]] 형식을 사용하세요
+- 위에 제공된 책/기록 정보에 있는 ID만 사용하세요
+- 이 형식을 사용하면 사용자가 클릭하여 해당 정보로 바로 이동할 수 있습니다
+
+위 정보를 바탕으로 사용자에게 맞춤형 응답을 제공하세요.`;
 
   return prompt;
 }

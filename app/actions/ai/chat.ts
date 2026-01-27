@@ -350,7 +350,7 @@ export async function getChatContext(): Promise<ChatContext> {
     .order("updated_at", { ascending: false })
     .limit(5);
 
-  // 최근 기록 조회 (최근 10개)
+  // 최근 기록 조회 (최근 10개) - book_id 포함
   const { data: recentNotes } = await supabase
     .from("notes")
     .select(`
@@ -358,7 +358,9 @@ export async function getChatContext(): Promise<ChatContext> {
       type,
       content,
       created_at,
+      book_id,
       books (
+        id,
         title
       )
     `)
@@ -410,13 +412,14 @@ export async function getChatContext(): Promise<ChatContext> {
     }));
   }
 
-  // 최근 기록 정보
+  // 최근 기록 정보 - book_id 포함
   if (recentNotes && recentNotes.length > 0) {
     context.recentNotes = recentNotes.map((note: any) => ({
       id: note.id,
       type: note.type,
       content: note.content,
       book_title: note.books?.title || "알 수 없는 책",
+      book_id: note.book_id || note.books?.id,  // 책 페이지로 연결하기 위한 ID
       created_at: note.created_at,
     }));
   }

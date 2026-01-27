@@ -53,6 +53,7 @@ export interface ChatContext {
     type: string;
     content: string | null;
     book_title: string;
+    book_id?: string;  // 책 페이지로 연결하기 위한 ID
     created_at: string;
   }[];
   readingGoal?: {
