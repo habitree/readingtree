@@ -2,7 +2,7 @@
  * 독서모임 관련 타입 정의
  */
 
-export type MemberRole = "leader" | "member";
+export type MemberRole = "leader" | "moderator" | "member";
 export type MemberStatus = "pending" | "approved" | "rejected";
 
 export interface Group {
@@ -114,5 +114,46 @@ export interface ShareableNote {
   page_number: number | null;
   tags: string[] | null;
   created_at: string;
+}
+
+// 멤버 관리 관련 타입
+export interface PendingMember {
+  id: string;
+  user_id: string;
+  group_id: string;
+  created_at: string;
+  user: {
+    id: string;
+    name: string;
+    avatar_url: string | null;
+    email?: string;
+  };
+}
+
+export interface GroupMemberWithUser extends GroupMember {
+  users: {
+    id: string;
+    name: string;
+    avatar_url: string | null;
+    email?: string;
+  } | null;
+}
+
+export interface GroupMembershipStats {
+  total: number;
+  approved: number;
+  pending: number;
+  leaders: number;
+  moderators: number;
+}
+
+export interface MemberInvitation {
+  id: string;
+  group_id: string;
+  email: string;
+  invited_by: string;
+  status: "pending" | "accepted" | "expired";
+  created_at: string;
+  expires_at: string;
 }
 

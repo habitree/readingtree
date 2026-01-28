@@ -6,14 +6,49 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { MemberList } from "./member-list";
 import { SharedNotesList } from "./shared-notes-list";
 import { GroupBooksManager } from "./group-books-manager";
 import { SharedBooksManager } from "./shared-books-manager";
 import { MemberActivityList } from "./member-activity-list";
-import { joinGroup, getGroupBookNoteCounts } from "@/app/actions/groups";
+import {
+  joinGroup,
+  leaveGroup,
+  deleteGroup,
+  getGroupMembershipStats,
+} from "@/app/actions/groups";
 import { toast } from "sonner";
-import { Users, Lock, Globe, UserPlus, CheckCircle2, Clock, Activity, MessageSquare } from "lucide-react";
+import {
+  Users,
+  Lock,
+  Globe,
+  CheckCircle2,
+  Clock,
+  Activity,
+  Settings,
+  LogOut,
+  Trash2,
+  MoreVertical,
+  Shield,
+  Crown,
+} from "lucide-react";
 import { formatSmartDate } from "@/lib/utils/date";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
@@ -30,16 +65,40 @@ interface GroupDashboardProps {
     sharedBooks?: any[];
     isLeader: boolean;
   };
+  currentUserId?: string;
 }
 
 /**
  * 모임 대시보드 컴포넌트
  * 모임 정보, 구성원, 공유 기록 표시
  */
-export function GroupDashboard({ groupData }: GroupDashboardProps) {
+export function GroupDashboard({ groupData, currentUserId }: GroupDashboardProps) {
   const router = useRouter();
   const { group, members, myMembership, sharedNotes, isLeader } = groupData;
   const [isJoining, setIsJoining] = useState(false);
+  const [isLeaving, setIsLeaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showLeaveDialog, setShowLeaveDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [pendingCount, setPendingCount] = useState(0);
+
+  const isModerator = myMembership?.role === "moderator";
+
+  // 대기 중인 멤버 수 조회
+  useEffect(() => {
+    if (isLeader || isModerator) {
+      loadPendingCount();
+    }
+  }, [isLeader, isModerator, group.id]);
+
+  const loadPendingCount = async () => {
+    try {
+      const stats = await getGroupMembershipStats(group.id);
+      setPendingCount(stats.pending);
+    } catch (error) {
+      console.error("멤버십 통계 조회 오류:", error);
+    }
+  };
 
   const handleJoin = async () => {
     setIsJoining(true);
@@ -58,6 +117,38 @@ export function GroupDashboard({ groupData }: GroupDashboardProps) {
       );
     } finally {
       setIsJoining(false);
+    }
+  };
+
+  const handleLeave = async () => {
+    setIsLeaving(true);
+    try {
+      await leaveGroup(group.id);
+      toast.success("모임에서 나왔습니다.");
+      router.push("/groups");
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "모임 나가기에 실패했습니다."
+      );
+    } finally {
+      setIsLeaving(false);
+      setShowLeaveDialog(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    setIsDeleting(true);
+    try {
+      await deleteGroup(group.id);
+      toast.success("모임이 삭제되었습니다.");
+      router.push("/groups");
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "모임 삭제에 실패했습니다."
+      );
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteDialog(false);
     }
   };
 
@@ -110,24 +201,79 @@ export function GroupDashboard({ groupData }: GroupDashboardProps) {
           </div>
         </div>
 
-        {/* 참여 버튼 */}
-        {!myMembership && (
-          <Button onClick={handleJoin} disabled={isJoining}>
-            {isJoining ? "처리 중..." : "참여 신청"}
-          </Button>
-        )}
-        {myMembership && myMembership.status === "pending" && (
-          <Button variant="outline" disabled>
-            <Clock className="mr-2 h-4 w-4" />
-            승인 대기 중
-          </Button>
-        )}
-        {myMembership && myMembership.status === "approved" && (
-          <Badge variant="default">
-            <CheckCircle2 className="mr-1 h-3 w-3" />
-            멤버
-          </Badge>
-        )}
+        {/* 참여/멤버 상태 및 설정 */}
+        <div className="flex items-center gap-2 shrink-0">
+          {!myMembership && (
+            <Button onClick={handleJoin} disabled={isJoining}>
+              {isJoining ? "처리 중..." : "참여 신청"}
+            </Button>
+          )}
+          {myMembership && myMembership.status === "pending" && (
+            <Button variant="outline" disabled>
+              <Clock className="mr-2 h-4 w-4" />
+              승인 대기 중
+            </Button>
+          )}
+          {myMembership && myMembership.status === "approved" && (
+            <>
+              {/* 역할 배지 */}
+              {isLeader ? (
+                <Badge className="bg-amber-100 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 border-0">
+                  <Crown className="mr-1 h-3 w-3" />
+                  리더
+                </Badge>
+              ) : isModerator ? (
+                <Badge className="bg-blue-100 dark:bg-blue-950/30 text-blue-700 dark:text-blue-400 border-0">
+                  <Shield className="mr-1 h-3 w-3" />
+                  부리더
+                </Badge>
+              ) : (
+                <Badge variant="secondary">
+                  <CheckCircle2 className="mr-1 h-3 w-3" />
+                  멤버
+                </Badge>
+              )}
+
+              {/* 설정 드롭다운 */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-9 w-9">
+                    <MoreVertical className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  {isLeader && (
+                    <>
+                      <DropdownMenuItem asChild>
+                        <a href={`/groups/${group.id}/settings`}>
+                          <Settings className="mr-2 h-4 w-4" />
+                          모임 설정
+                        </a>
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        onClick={() => setShowDeleteDialog(true)}
+                        className="text-destructive focus:text-destructive"
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        모임 삭제
+                      </DropdownMenuItem>
+                    </>
+                  )}
+                  {!isLeader && (
+                    <DropdownMenuItem
+                      onClick={() => setShowLeaveDialog(true)}
+                      className="text-destructive focus:text-destructive"
+                    >
+                      <LogOut className="mr-2 h-4 w-4" />
+                      모임 나가기
+                    </DropdownMenuItem>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </>
+          )}
+        </div>
       </div>
 
       {/* 대시보드 탭 */}
@@ -135,7 +281,17 @@ export function GroupDashboard({ groupData }: GroupDashboardProps) {
         <Tabs defaultValue="overview" className="space-y-4">
           <TabsList className="flex-wrap h-auto gap-1">
             <TabsTrigger value="overview">개요</TabsTrigger>
-            <TabsTrigger value="members">구성원</TabsTrigger>
+            <TabsTrigger value="members" className="relative">
+              구성원
+              {pendingCount > 0 && (
+                <Badge
+                  variant="destructive"
+                  className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center text-[10px]"
+                >
+                  {pendingCount}
+                </Badge>
+              )}
+            </TabsTrigger>
             <TabsTrigger value="books">지정도서</TabsTrigger>
             <TabsTrigger value="shared-library">공유 서재</TabsTrigger>
             <TabsTrigger value="notes">공유 기록</TabsTrigger>
@@ -190,7 +346,12 @@ export function GroupDashboard({ groupData }: GroupDashboardProps) {
           </TabsContent>
 
           <TabsContent value="members">
-            <MemberList members={members} isLeader={isLeader} groupId={group.id} />
+            <MemberList
+              members={members}
+              isLeader={isLeader || isModerator}
+              groupId={group.id}
+              currentUserId={currentUserId}
+            />
           </TabsContent>
 
           <TabsContent value="books">
@@ -225,6 +386,52 @@ export function GroupDashboard({ groupData }: GroupDashboardProps) {
           </CardContent>
         </Card>
       )}
+
+      {/* 모임 나가기 확인 다이얼로그 */}
+      <AlertDialog open={showLeaveDialog} onOpenChange={setShowLeaveDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>모임을 나가시겠어요?</AlertDialogTitle>
+            <AlertDialogDescription>
+              <span className="font-medium">{group.name}</span> 모임에서 나갑니다.
+              다시 참여하려면 새로 신청해야 합니다.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>취소</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleLeave}
+              disabled={isLeaving}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isLeaving ? "처리 중..." : "나가기"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* 모임 삭제 확인 다이얼로그 */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>모임을 삭제하시겠어요?</AlertDialogTitle>
+            <AlertDialogDescription>
+              <span className="font-medium">{group.name}</span> 모임과 모든 관련 데이터가
+              삭제됩니다. 이 작업은 되돌릴 수 없습니다.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>취소</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={isDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting ? "삭제 중..." : "삭제하기"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

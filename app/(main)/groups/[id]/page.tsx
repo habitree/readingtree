@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { GroupDashboard } from "@/components/groups/group-dashboard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getGroupDetail } from "@/app/actions/groups";
+import { getCurrentUser } from "@/app/actions/auth";
 import { isValidUUID } from "@/lib/utils/validation";
 import { sanitizeErrorForLogging } from "@/lib/utils/validation";
 
@@ -31,8 +32,12 @@ export default async function GroupDetailPage({ params }: GroupDetailPageProps) 
   }
 
   let groupData;
+  let currentUser;
   try {
-    groupData = await getGroupDetail(resolvedParams.id);
+    [groupData, currentUser] = await Promise.all([
+      getGroupDetail(resolvedParams.id),
+      getCurrentUser(),
+    ]);
   } catch (error) {
     const safeError = sanitizeErrorForLogging(error);
     console.error("모임 상세 조회 오류:", safeError);
@@ -48,7 +53,7 @@ export default async function GroupDetailPage({ params }: GroupDetailPageProps) 
         </div>
       }
     >
-      <GroupDashboard groupData={groupData} />
+      <GroupDashboard groupData={groupData} currentUserId={currentUser?.id} />
     </Suspense>
   );
 }
