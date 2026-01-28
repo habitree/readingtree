@@ -66,6 +66,7 @@ interface MemberListProps {
     } | null;
   }>;
   isLeader: boolean;
+  isModerator?: boolean;
   groupId: string;
   currentUserId?: string;
 }
@@ -109,6 +110,7 @@ function getRoleBadge(role: string, isGroupLeader: boolean) {
 export function MemberList({
   members,
   isLeader,
+  isModerator = false,
   groupId,
   currentUserId,
 }: MemberListProps) {
@@ -116,6 +118,9 @@ export function MemberList({
   const [pendingMembers, setPendingMembers] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+
+  // 권한 분리: 멤버 관리(승인/거절/내보내기)는 리더 또는 부리더, 역할 변경/위임은 리더만
+  const canManageMembers = isLeader || isModerator;
   const [confirmDialog, setConfirmDialog] = useState<{
     open: boolean;
     type: "kick" | "transfer" | "role" | null;
@@ -136,7 +141,7 @@ export function MemberList({
   const loadPendingMembers = async () => {
     try {
       setIsLoading(true);
-      if (isLeader) {
+      if (canManageMembers) {
         const data = await getPendingMembers(groupId);
         setPendingMembers(data);
       }
@@ -283,7 +288,7 @@ export function MemberList({
     <>
       <div className="space-y-4">
         {/* 대기 중인 멤버 (리더/부리더만 표시) */}
-        {isLeader && pendingMembers.length > 0 && (
+        {canManageMembers && pendingMembers.length > 0 && (
           <Card className="border-orange-200 dark:border-orange-900/50 bg-orange-50/50 dark:bg-orange-950/20">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
@@ -406,9 +411,13 @@ export function MemberList({
                   const user = member.users;
                   const userName = user?.name || `사용자 ${member.user_id.slice(0, 8)}`;
                   const isGroupLeader = member.role === "leader";
-                  const isModerator = member.role === "moderator";
+                  const isMemberModerator = member.role === "moderator";
                   const isCurrentUser = member.user_id === currentUserId;
-                  const canManage = isLeader && !isGroupLeader && !isCurrentUser;
+                  // 리더: 역할 변경, 리더 위임, 내보내기 모두 가능
+                  // 부리더: 내보내기만 가능 (자기보다 권한 높은 리더 제외)
+                  const canManageRole = isLeader && !isGroupLeader && !isCurrentUser;
+                  const canKick = canManageMembers && !isGroupLeader && !isCurrentUser && !(isModerator && isMemberModerator);
+                  const showManageMenu = canManageRole || canKick;
 
                   return (
                     <div
@@ -446,8 +455,8 @@ export function MemberList({
                         </div>
                       </div>
 
-                      {/* 멤버 관리 드롭다운 (리더만) */}
-                      {canManage && (
+                      {/* 멤버 관리 드롭다운 (리더/부리더) */}
+                      {showManageMenu && (
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button
@@ -464,43 +473,53 @@ export function MemberList({
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            {isModerator ? (
-                              <DropdownMenuItem
-                                onClick={() =>
-                                  openConfirmDialog("role", member.user_id, userName, "member")
-                                }
-                              >
-                                <ShieldOff className="mr-2 h-4 w-4" />
-                                부리더 해제
-                              </DropdownMenuItem>
-                            ) : (
-                              <DropdownMenuItem
-                                onClick={() =>
-                                  openConfirmDialog("role", member.user_id, userName, "moderator")
-                                }
-                              >
-                                <Shield className="mr-2 h-4 w-4" />
-                                부리더 임명
-                              </DropdownMenuItem>
+                            {/* 역할 변경 - 리더만 */}
+                            {canManageRole && (
+                              <>
+                                {isMemberModerator ? (
+                                  <DropdownMenuItem
+                                    onClick={() =>
+                                      openConfirmDialog("role", member.user_id, userName, "member")
+                                    }
+                                  >
+                                    <ShieldOff className="mr-2 h-4 w-4" />
+                                    부리더 해제
+                                  </DropdownMenuItem>
+                                ) : (
+                                  <DropdownMenuItem
+                                    onClick={() =>
+                                      openConfirmDialog("role", member.user_id, userName, "moderator")
+                                    }
+                                  >
+                                    <Shield className="mr-2 h-4 w-4" />
+                                    부리더 임명
+                                  </DropdownMenuItem>
+                                )}
+                                <DropdownMenuItem
+                                  onClick={() =>
+                                    openConfirmDialog("transfer", member.user_id, userName)
+                                  }
+                                >
+                                  <ArrowRightLeft className="mr-2 h-4 w-4" />
+                                  리더 위임
+                                </DropdownMenuItem>
+                              </>
                             )}
-                            <DropdownMenuItem
-                              onClick={() =>
-                                openConfirmDialog("transfer", member.user_id, userName)
-                              }
-                            >
-                              <ArrowRightLeft className="mr-2 h-4 w-4" />
-                              리더 위임
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                              onClick={() =>
-                                openConfirmDialog("kick", member.user_id, userName)
-                              }
-                              className="text-destructive focus:text-destructive"
-                            >
-                              <UserMinus className="mr-2 h-4 w-4" />
-                              내보내기
-                            </DropdownMenuItem>
+                            {/* 내보내기 - 리더 또는 부리더 */}
+                            {canKick && (
+                              <>
+                                {canManageRole && <DropdownMenuSeparator />}
+                                <DropdownMenuItem
+                                  onClick={() =>
+                                    openConfirmDialog("kick", member.user_id, userName)
+                                  }
+                                  className="text-destructive focus:text-destructive"
+                                >
+                                  <UserMinus className="mr-2 h-4 w-4" />
+                                  내보내기
+                                </DropdownMenuItem>
+                              </>
+                            )}
                           </DropdownMenuContent>
                         </DropdownMenu>
                       )}

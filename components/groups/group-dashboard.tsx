@@ -348,7 +348,8 @@ export function GroupDashboard({ groupData, currentUserId }: GroupDashboardProps
           <TabsContent value="members">
             <MemberList
               members={members}
-              isLeader={isLeader || isModerator}
+              isLeader={isLeader}
+              isModerator={isModerator}
               groupId={group.id}
               currentUserId={currentUserId}
             />

@@ -130,7 +130,7 @@ export async function joinGroup(groupId: string) {
 
 /**
  * 모임 참여 승인
- * 리더만 승인 가능
+ * 리더 또는 부리더만 승인 가능
  */
 export async function approveMember(groupId: string, userId: string) {
   const supabase = await createServerSupabaseClient();
@@ -145,7 +145,15 @@ export async function approveMember(groupId: string, userId: string) {
     throw new Error("로그인이 필요합니다.");
   }
 
-  // 리더 권한 확인
+  // 권한 확인 (리더 또는 부리더)
+  const { data: myMembership } = await supabase
+    .from("group_members")
+    .select("role")
+    .eq("group_id", groupId)
+    .eq("user_id", user.id)
+    .eq("status", "approved")
+    .single();
+
   const { data: group, error: groupError } = await supabase
     .from("groups")
     .select("leader_id")
@@ -156,8 +164,11 @@ export async function approveMember(groupId: string, userId: string) {
     throw new Error("모임을 찾을 수 없습니다.");
   }
 
-  if (group.leader_id !== user.id) {
-    throw new Error("리더만 멤버를 승인할 수 있습니다.");
+  const isLeader = group.leader_id === user.id;
+  const isModerator = myMembership?.role === "moderator";
+
+  if (!isLeader && !isModerator) {
+    throw new Error("멤버 승인 권한이 없습니다.");
   }
 
   // 멤버 승인
@@ -177,7 +188,7 @@ export async function approveMember(groupId: string, userId: string) {
 
 /**
  * 모임 참여 거부
- * 리더만 거부 가능
+ * 리더 또는 부리더만 거부 가능
  */
 export async function rejectMember(groupId: string, userId: string) {
   const supabase = await createServerSupabaseClient();
@@ -192,7 +203,15 @@ export async function rejectMember(groupId: string, userId: string) {
     throw new Error("로그인이 필요합니다.");
   }
 
-  // 리더 권한 확인
+  // 권한 확인 (리더 또는 부리더)
+  const { data: myMembership } = await supabase
+    .from("group_members")
+    .select("role")
+    .eq("group_id", groupId)
+    .eq("user_id", user.id)
+    .eq("status", "approved")
+    .single();
+
   const { data: group, error: groupError } = await supabase
     .from("groups")
     .select("leader_id")
@@ -203,8 +222,11 @@ export async function rejectMember(groupId: string, userId: string) {
     throw new Error("모임을 찾을 수 없습니다.");
   }
 
-  if (group.leader_id !== user.id) {
-    throw new Error("리더만 멤버를 거부할 수 있습니다.");
+  const isLeader = group.leader_id === user.id;
+  const isModerator = myMembership?.role === "moderator";
+
+  if (!isLeader && !isModerator) {
+    throw new Error("멤버 거부 권한이 없습니다.");
   }
 
   // 멤버 거부 (삭제)

@@ -1,7 +1,6 @@
 ---
 name: ship
 description: Linear 이슈 생성 + GitHub 배포를 일괄 처리합니다. 작업 완료 후 정리/배포할 때 사용합니다.
-disable-model-invocation: true
 argument-hint: [작업 요약 메시지]
 allowed-tools: Bash(git:*), Bash(gh:*), mcp__linear__create_issue, mcp__linear__update_issue, mcp__linear__list_issues, mcp__linear__list_issue_labels, Read, Grep
 ---
