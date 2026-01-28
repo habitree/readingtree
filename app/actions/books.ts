@@ -24,6 +24,30 @@ export async function getBookDescriptionSummary(
   return _getBookDescriptionSummary(bookId, isbn, title);
 }
 
+/**
+ * 책 정보 조회 (books 테이블에서 직접 조회)
+ * @param bookId 책 ID
+ */
+export async function getBook(bookId: string) {
+  const supabase = await createServerSupabaseClient();
+
+  if (!isValidUUID(bookId)) {
+    return null;
+  }
+
+  const { data: book, error } = await supabase
+    .from("books")
+    .select("id, title, author, publisher, cover_image_url, isbn, published_date, category, total_pages")
+    .eq("id", bookId)
+    .single();
+
+  if (error || !book) {
+    return null;
+  }
+
+  return book;
+}
+
 export interface AddBookInput {
   isbn?: string | null;
   title: string;

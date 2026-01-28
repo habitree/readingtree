@@ -43,3 +43,76 @@ export interface GroupWithDetails extends Group {
   };
 }
 
+export type NoteType = "quote" | "photo" | "memo" | "transcription";
+
+export interface GroupNote {
+  id: string;
+  group_id: string;
+  note_id: string;
+  shared_at: string;
+}
+
+export interface GroupBookWithNoteCount extends GroupBook {
+  books: {
+    id: string;
+    title: string;
+    author: string | null;
+    publisher: string | null;
+    cover_image_url: string | null;
+  };
+  note_count: number;
+}
+
+export interface SharedNoteWithAuthor {
+  id: string;
+  group_id: string;
+  note_id: string;
+  shared_at: string;
+  notes: {
+    id: string;
+    user_id: string;
+    book_id: string;
+    title: string | null;
+    type: NoteType;
+    content: string | null;
+    image_url: string | null;
+    page_number: number | null;
+    tags: string[] | null;
+    created_at: string;
+    users: {
+      id: string;
+      name: string;
+      avatar_url: string | null;
+    };
+  };
+}
+
+export interface MemberActivity {
+  user: {
+    id: string;
+    name: string;
+    avatar_url: string | null;
+  };
+  role: MemberRole;
+  totalSharedNotes: number;
+  groupBookNotes: number;
+  lastSharedAt: string | null;
+  noteTypes: {
+    quote: number;
+    memo: number;
+    photo: number;
+    transcription: number;
+  };
+}
+
+export interface ShareableNote {
+  id: string;
+  title: string | null;
+  type: NoteType;
+  content: string | null;
+  image_url: string | null;
+  page_number: number | null;
+  tags: string[] | null;
+  created_at: string;
+}
+

@@ -6,11 +6,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { BookSearch } from "@/components/books/book-search";
-import { 
-  addGroupBook, 
-  getGroupBooksWithUserStatus, 
+import { GroupBookCardEnhanced } from "./group-book-card-enhanced";
+import {
+  addGroupBook,
+  getGroupBooksWithUserStatus,
   addGroupBookToMyLibrary,
-  removeGroupBook 
+  removeGroupBook,
+  getGroupBookNoteCounts
 } from "@/app/actions/groups";
 import { getUserBooksWithNotes } from "@/app/actions/books";
 import { toast } from "sonner";
@@ -42,10 +44,12 @@ export function GroupBooksManager({ groupId, isLeader }: GroupBooksManagerProps)
   const [isLoading, setIsLoading] = useState(true);
   const [deletingBookId, setDeletingBookId] = useState<string | null>(null);
   const [myBookIds, setMyBookIds] = useState<Set<string>>(new Set());
+  const [noteCounts, setNoteCounts] = useState<Record<string, number>>({});
 
   useEffect(() => {
     loadGroupBooks();
     loadMyBooks();
+    loadNoteCounts();
   }, [groupId]);
 
   const loadMyBooks = async () => {
@@ -55,6 +59,15 @@ export function GroupBooksManager({ groupId, isLeader }: GroupBooksManagerProps)
       setMyBookIds(bookIds);
     } catch (error) {
       console.error("내 서재 조회 오류:", error);
+    }
+  };
+
+  const loadNoteCounts = async () => {
+    try {
+      const counts = await getGroupBookNoteCounts(groupId);
+      setNoteCounts(counts);
+    } catch (error) {
+      console.error("기록 수 조회 오류:", error);
     }
   };
 
@@ -185,66 +198,25 @@ export function GroupBooksManager({ groupId, isLeader }: GroupBooksManagerProps)
             if (!book) return null;
 
             return (
-              <Card key={groupBook.id} className="overflow-hidden">
-                <div className="relative aspect-[3/4] w-full bg-muted">
-                  {isValidImageUrl(book.cover_image_url) ? (
-                    <Image
-                      src={getImageUrl(book.cover_image_url)}
-                      alt={book.title}
-                      fill
-                      className="object-cover"
-                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                    />
-                  ) : (
-                    <div className="flex items-center justify-center h-full">
-                      <BookOpen className="h-12 w-12 text-muted-foreground" />
-                    </div>
-                  )}
-                </div>
-                <CardContent className="p-4">
-                  <div className="space-y-2">
-                    <h4 className="font-semibold line-clamp-2">{book.title}</h4>
-                    {book.author && (
-                      <p className="text-sm text-muted-foreground">
-                        {book.author}
-                      </p>
-                    )}
-                    
-                    {groupBook.isInMyLibrary ? (
-                      <div className="flex items-center gap-2">
-                        <Badge variant="secondary" className="text-xs">
-                          <CheckCircle2 className="mr-1 h-3 w-3" />
-                          내 서재에 있음
-                        </Badge>
-                        {groupBook.myStatus && (
-                          <BookStatusBadge status={groupBook.myStatus} />
-                        )}
-                      </div>
-                    ) : (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="w-full"
-                        onClick={() => handleAddToMyLibrary(book.id)}
-                      >
-                        내 서재에 추가
-                      </Button>
-                    )}
-
-                    {isLeader && (
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        className="w-full"
-                        onClick={() => setDeletingBookId(book.id)}
-                      >
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        지정도서 삭제
-                      </Button>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
+              <div key={groupBook.id} className="relative">
+                <GroupBookCardEnhanced
+                  groupId={groupId}
+                  groupBook={groupBook}
+                  noteCount={noteCounts[book.id] || 0}
+                  onAddToLibrary={!groupBook.isInMyLibrary ? handleAddToMyLibrary : undefined}
+                />
+                {isLeader && (
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    className="w-full mt-2"
+                    onClick={() => setDeletingBookId(book.id)}
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    지정도서 삭제
+                  </Button>
+                )}
+              </div>
             );
           })}
         </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,9 +10,10 @@ import { MemberList } from "./member-list";
 import { SharedNotesList } from "./shared-notes-list";
 import { GroupBooksManager } from "./group-books-manager";
 import { SharedBooksManager } from "./shared-books-manager";
-import { joinGroup } from "@/app/actions/groups";
+import { MemberActivityList } from "./member-activity-list";
+import { joinGroup, getGroupBookNoteCounts } from "@/app/actions/groups";
 import { toast } from "sonner";
-import { Users, Lock, Globe, UserPlus, CheckCircle2, Clock } from "lucide-react";
+import { Users, Lock, Globe, UserPlus, CheckCircle2, Clock, Activity, MessageSquare } from "lucide-react";
 import { formatSmartDate } from "@/lib/utils/date";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
@@ -132,12 +133,16 @@ export function GroupDashboard({ groupData }: GroupDashboardProps) {
       {/* 대시보드 탭 */}
       {myMembership && myMembership.status === "approved" && (
         <Tabs defaultValue="overview" className="space-y-4">
-          <TabsList>
+          <TabsList className="flex-wrap h-auto gap-1">
             <TabsTrigger value="overview">개요</TabsTrigger>
             <TabsTrigger value="members">구성원</TabsTrigger>
             <TabsTrigger value="books">지정도서</TabsTrigger>
             <TabsTrigger value="shared-library">공유 서재</TabsTrigger>
             <TabsTrigger value="notes">공유 기록</TabsTrigger>
+            <TabsTrigger value="activity">
+              <Activity className="mr-1 h-4 w-4" />
+              멤버 활동
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-4">
@@ -198,6 +203,10 @@ export function GroupDashboard({ groupData }: GroupDashboardProps) {
 
           <TabsContent value="notes">
             <SharedNotesList notes={sharedNotes} />
+          </TabsContent>
+
+          <TabsContent value="activity">
+            <MemberActivityList groupId={group.id} />
           </TabsContent>
         </Tabs>
       )}
