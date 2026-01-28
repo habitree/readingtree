@@ -136,7 +136,7 @@ export function MemberList({
 
   useEffect(() => {
     loadPendingMembers();
-  }, [groupId]);
+  }, [groupId, canManageMembers]);
 
   const loadPendingMembers = async () => {
     try {
