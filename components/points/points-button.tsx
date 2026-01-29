@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Coins } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
+import { Coins, Flame, Sparkles } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import {
@@ -56,81 +56,131 @@ export function PointsButton({ className }: PointsButtonProps) {
     return () => clearInterval(interval);
   }, [prevPoints]);
 
+  // 포인트 증가량 계산
+  const pointsGained = useMemo(() => {
+    if (prevPoints === null || !userPoints) return 0;
+    return userPoints.total_points - prevPoints;
+  }, [prevPoints, userPoints?.total_points]);
+
   if (!userPoints) {
     return null;
   }
 
   const level = userPoints.current_level;
   const levelStyle = LEVEL_STYLES[level] || LEVEL_STYLES[1];
+  const hasStreak = userPoints.current_streak > 0;
+  const isHighLevel = level >= 7;
 
   return (
     <>
       <Tooltip>
         <TooltipTrigger asChild>
-          <Button
-            variant="ghost"
-            size="sm"
-            className={cn(
-              "relative h-8 sm:h-10 px-2 sm:px-3 gap-1.5",
-              "hover:bg-accent/50",
-              className
-            )}
-            onClick={() => setIsModalOpen(true)}
-            aria-label="포인트 대시보드"
-          >
-            {/* 레벨 이모지 */}
-            <motion.span
+          <motion.div whileTap={{ scale: 0.95 }}>
+            <Button
+              variant="ghost"
+              size="sm"
               className={cn(
-                "text-sm sm:text-base",
-                levelStyle.effect === "glow" && "drop-shadow-[0_0_4px_currentColor]",
-                levelStyle.effect === "premium" && "animate-pulse"
+                "relative h-9 sm:h-10 px-2.5 sm:px-3 gap-1.5 rounded-xl",
+                "hover:bg-accent/60 transition-all duration-200",
+                "border border-transparent hover:border-border/50",
+                isHighLevel && "bg-gradient-to-r from-amber-50/50 to-orange-50/50 dark:from-amber-950/20 dark:to-orange-950/20",
+                className
               )}
-              animate={
-                levelStyle.effect === "premium"
-                  ? { rotate: [0, 5, -5, 0] }
-                  : {}
-              }
-              transition={{ duration: 2, repeat: Infinity }}
+              onClick={() => setIsModalOpen(true)}
+              aria-label="포인트 대시보드"
             >
-              {levelStyle.emoji}
-            </motion.span>
-
-            {/* 포인트 숫자 */}
-            <AnimatePresence mode="popLayout">
+              {/* 레벨 이모지 - 개선된 애니메이션 */}
               <motion.span
-                key={userPoints.total_points}
-                initial={isAnimating ? { y: -10, opacity: 0 } : false}
-                animate={{ y: 0, opacity: 1 }}
-                exit={{ y: 10, opacity: 0 }}
                 className={cn(
-                  "font-semibold text-xs sm:text-sm tabular-nums",
-                  isAnimating && "text-green-500"
+                  "text-base sm:text-lg",
+                  levelStyle.effect === "glow" && "drop-shadow-[0_0_6px_currentColor]",
+                  levelStyle.effect === "premium" && "drop-shadow-[0_0_8px_rgba(251,191,36,0.5)]"
                 )}
+                animate={
+                  levelStyle.effect === "premium"
+                    ? { scale: [1, 1.1, 1], rotate: [0, 5, -5, 0] }
+                    : levelStyle.effect === "glow"
+                    ? { scale: [1, 1.05, 1] }
+                    : {}
+                }
+                transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
               >
-                {userPoints.total_points.toLocaleString()}
+                {levelStyle.emoji}
               </motion.span>
-            </AnimatePresence>
 
-            {/* 포인트 증가 애니메이션 */}
-            <AnimatePresence>
-              {isAnimating && (
+              {/* 포인트 숫자 - 시각적 강화 */}
+              <div className="flex flex-col items-start leading-none">
+                <AnimatePresence mode="popLayout">
+                  <motion.span
+                    key={userPoints.total_points}
+                    initial={isAnimating ? { y: -8, opacity: 0, scale: 1.1 } : false}
+                    animate={{ y: 0, opacity: 1, scale: 1 }}
+                    exit={{ y: 8, opacity: 0 }}
+                    className={cn(
+                      "font-bold text-sm sm:text-base tabular-nums",
+                      isAnimating ? "text-green-500" : "text-foreground"
+                    )}
+                  >
+                    {userPoints.total_points.toLocaleString()}
+                  </motion.span>
+                </AnimatePresence>
+                <span className="text-[9px] text-muted-foreground hidden sm:block">
+                  Lv.{level}
+                </span>
+              </div>
+
+              {/* 스트릭 인디케이터 (작은 불꽃) */}
+              {hasStreak && (
                 <motion.div
-                  initial={{ opacity: 1, y: 0 }}
-                  animate={{ opacity: 0, y: -20 }}
-                  exit={{ opacity: 0 }}
-                  className="absolute -top-2 right-0 text-xs font-bold text-green-500"
+                  animate={{ scale: [1, 1.15, 1] }}
+                  transition={{ duration: 1, repeat: Infinity }}
+                  className="flex items-center gap-0.5 text-orange-500"
                 >
-                  +{prevPoints !== null ? userPoints.total_points - prevPoints : 0}
+                  <Flame className="h-3 w-3" />
+                  <span className="text-[10px] font-semibold hidden sm:inline">
+                    {userPoints.current_streak}
+                  </span>
                 </motion.div>
               )}
-            </AnimatePresence>
 
-            {/* 코인 아이콘 (모바일에서는 숨김) */}
-            <Coins className="hidden sm:block h-3.5 w-3.5 text-amber-500" />
-          </Button>
+              {/* 포인트 증가 애니메이션 - 더 눈에 띄게 */}
+              <AnimatePresence>
+                {isAnimating && pointsGained > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 5, scale: 0.8 }}
+                    animate={{ opacity: 1, y: -25, scale: 1 }}
+                    exit={{ opacity: 0, y: -35, scale: 0.8 }}
+                    transition={{ duration: 0.8 }}
+                    className="absolute -top-1 left-1/2 -translate-x-1/2 flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-500 text-white text-xs font-bold shadow-lg"
+                  >
+                    <Sparkles className="h-3 w-3" />
+                    +{pointsGained}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* 코인 아이콘 - 숨김 처리 (이모지로 대체) */}
+              {/* <Coins className="hidden sm:block h-3.5 w-3.5 text-amber-500" /> */}
+            </Button>
+          </motion.div>
         </TooltipTrigger>
-        <TooltipContent>
-          <p>Lv.{level} {levelStyle.emoji} | {userPoints.total_points.toLocaleString()} 포인트</p>
+        <TooltipContent side="bottom" className="p-3">
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">{levelStyle.emoji}</span>
+            <div>
+              <div className="font-semibold">
+                Lv.{level} · {userPoints.total_points.toLocaleString()}P
+              </div>
+              <div className="text-xs text-muted-foreground">
+                {hasStreak && (
+                  <span className="text-orange-500 mr-2">
+                    {userPoints.current_streak}일 연속
+                  </span>
+                )}
+                클릭하여 대시보드 열기
+              </div>
+            </div>
+          </div>
         </TooltipContent>
       </Tooltip>
 

@@ -1,25 +1,17 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { getSharedBooks, shareUserBookToGroup, unshareUserBookFromGroup } from "@/app/actions/groups";
 import { getUserBooksWithNotes } from "@/app/actions/books";
 import { toast } from "sonner";
-import { BookOpen, Share2, X, Loader2 } from "lucide-react";
+import { BookOpen, X, Loader2 } from "lucide-react";
 import Image from "next/image";
 import { getImageUrl, isValidImageUrl } from "@/lib/utils/image";
 import { BookStatusBadge } from "@/components/books/book-status-badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { UserBookSelectDialog } from "@/components/books/user-book-select-dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -36,7 +28,6 @@ interface SharedBooksManagerProps {
 }
 
 export function SharedBooksManager({ groupId }: SharedBooksManagerProps) {
-  const router = useRouter();
   const [sharedBooks, setSharedBooks] = useState<any[]>([]);
   const [myBooks, setMyBooks] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -66,11 +57,11 @@ export function SharedBooksManager({ groupId }: SharedBooksManagerProps) {
     }
   };
 
-  const handleShareBook = async (userBookId: string) => {
+  const handleShareBook = async (userBook: any) => {
     try {
       setIsSharing(true);
-      await shareUserBookToGroup(groupId, userBookId);
-      toast.success("공유됨");
+      await shareUserBookToGroup(groupId, userBook.id);
+      toast.success(`'${userBook.books?.title}'이(가) 공유되었습니다!`);
       loadData();
     } catch (error) {
       toast.error(
@@ -99,11 +90,6 @@ export function SharedBooksManager({ groupId }: SharedBooksManagerProps) {
     sharedBooks.map((sb) => sb.user_book_id)
   );
 
-  // 공유 가능한 내 책 목록
-  const shareableBooks = myBooks.filter(
-    (book) => !sharedBookIds.has(book.id)
-  );
-
   if (isLoading) {
     return (
       <Card>
@@ -125,23 +111,15 @@ export function SharedBooksManager({ groupId }: SharedBooksManagerProps) {
             모임 멤버들이 공유한 개인 서재입니다
           </p>
         </div>
-        {shareableBooks.length > 0 && (
-          <Select
-            onValueChange={(value) => handleShareBook(value)}
-            disabled={isSharing}
-          >
-            <SelectTrigger className="w-[200px]">
-              <SelectValue placeholder="내 서재 공유하기" />
-            </SelectTrigger>
-            <SelectContent>
-              {shareableBooks.map((book) => (
-                <SelectItem key={book.id} value={book.id}>
-                  {book.books?.title || "알 수 없음"}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        )}
+        <UserBookSelectDialog
+          books={myBooks}
+          excludeBookIds={sharedBookIds}
+          onSelect={handleShareBook}
+          isSelecting={isSharing}
+          title="내 서재에서 공유"
+          description="모임에 공유할 책을 선택하세요"
+          selectButtonText="공유하기"
+        />
       </div>
 
       {sharedBooks.length === 0 ? (

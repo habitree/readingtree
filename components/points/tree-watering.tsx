@@ -1,10 +1,20 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Droplets, Clock, Sparkles, Heart } from "lucide-react";
+import {
+  Droplets,
+  Clock,
+  Sparkles,
+  Heart,
+  Gift,
+  Leaf,
+  Sun,
+  CloudRain,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { getWateringStatus, waterTree } from "@/app/actions/points";
 import { ReadingTreeImage } from "./reading-tree-image";
@@ -107,165 +117,299 @@ export function TreeWatering({ level, className }: TreeWateringProps) {
     return `${secs}초`;
   };
 
+  // 건강도 상태 메시지 (심리학적 요소)
+  const healthMessage = useMemo(() => {
+    if (!status) return null;
+    const health = status.treeHealth;
+    if (health >= 90) return { text: "최상의 컨디션!", icon: Sun, color: "text-green-500" };
+    if (health >= 70) return { text: "건강해요", icon: Leaf, color: "text-green-500" };
+    if (health >= 50) return { text: "물이 필요해요", icon: Droplets, color: "text-yellow-500" };
+    return { text: "목이 말라요!", icon: CloudRain, color: "text-red-500" };
+  }, [status?.treeHealth]);
+
+  // 남은 물주기 횟수
+  const remainingWaterings = status
+    ? WATERING_CONFIG.maxDailyWaterings - status.todayWateringCount
+    : 0;
+
   return (
     <div className={cn("relative", className)}>
-      {/* 나무 영역 */}
-      <div className="relative h-48 sm:h-56 flex items-end justify-center">
-        <ReadingTreeImage
-          level={level}
-          health={status?.treeHealth || 100}
-          isWatering={isWatering}
-          className="h-full w-auto"
-        />
+      {/* 배경 장식 */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute -top-10 -right-10 w-40 h-40 bg-green-200/20 dark:bg-green-800/10 rounded-full blur-3xl" />
+        <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-blue-200/20 dark:bg-blue-800/10 rounded-full blur-3xl" />
+      </div>
 
-        {/* 럭키 드롭 효과 */}
-        <AnimatePresence>
-          {result?.isLuckyDrop && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0 }}
-              className="absolute top-4 left-1/2 -translate-x-1/2"
-            >
-              <div className="flex items-center gap-2 px-4 py-2 bg-yellow-400 text-yellow-900 rounded-full font-bold shadow-lg">
-                <Sparkles className="h-5 w-5" />
-                럭키!
+      {/* 나무 영역 - 시각적 강화 */}
+      <div className="relative">
+        <div className="relative h-52 sm:h-60 flex items-end justify-center">
+          <ReadingTreeImage
+            level={level}
+            health={status?.treeHealth || 100}
+            isWatering={isWatering}
+            className="h-full w-auto"
+          />
+
+          {/* 럭키 드롭 효과 - 더 화려하게 */}
+          <AnimatePresence>
+            {result?.isLuckyDrop && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0, rotate: -10 }}
+                animate={{ opacity: 1, scale: 1, rotate: 0 }}
+                exit={{ opacity: 0, scale: 0 }}
+                className="absolute top-2 left-1/2 -translate-x-1/2"
+              >
+                <div className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-yellow-400 to-amber-400 text-yellow-900 rounded-full font-bold shadow-lg shadow-yellow-500/40">
+                  <motion.div
+                    animate={{ rotate: [0, 15, -15, 0] }}
+                    transition={{ duration: 0.5, repeat: 3 }}
+                  >
+                    <Gift className="h-5 w-5" />
+                  </motion.div>
+                  럭키 드롭!
+                  <Sparkles className="h-4 w-4" />
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* 포인트 획득 표시 - 더 눈에 띄게 */}
+          <AnimatePresence>
+            {result?.success && result.points && (
+              <motion.div
+                initial={{ opacity: 0, y: 30, scale: 0.5 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -50, scale: 0.8 }}
+                transition={{ type: "spring", stiffness: 300 }}
+                className="absolute top-1/4 left-1/2 -translate-x-1/2"
+              >
+                <div className={cn(
+                  "px-4 py-2 rounded-xl font-bold text-3xl shadow-lg",
+                  result.isLuckyDrop
+                    ? "bg-gradient-to-r from-yellow-400 to-amber-400 text-yellow-900"
+                    : "bg-gradient-to-r from-green-400 to-emerald-400 text-green-900"
+                )}>
+                  +{result.points}P
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* 나무 정보 카드 */}
+        <div className="mt-3 p-4 rounded-xl bg-gradient-to-r from-green-50/80 to-emerald-50/80 dark:from-green-900/20 dark:to-emerald-900/20 border border-green-200/50 dark:border-green-800/50">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-lg font-bold text-green-800 dark:text-green-200">
+                {stage.name}
               </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* 포인트 획득 표시 */}
-        <AnimatePresence>
-          {result?.success && result.points && (
-            <motion.div
-              initial={{ opacity: 0, y: 20, scale: 0.8 }}
-              animate={{ opacity: 1, y: -20, scale: 1 }}
-              exit={{ opacity: 0, y: -40 }}
-              transition={{ duration: 0.5 }}
-              className={cn(
-                "absolute top-1/3 left-1/2 -translate-x-1/2 text-2xl font-bold",
-                result.isLuckyDrop ? "text-yellow-500" : "text-green-500"
-              )}
-            >
-              +{result.points}P
-            </motion.div>
-          )}
-        </AnimatePresence>
+              <div className="text-xs text-green-600/70 dark:text-green-400/70">
+                {stage.description}
+              </div>
+            </div>
+            {healthMessage && (
+              <Badge
+                variant="secondary"
+                className={cn(
+                  "flex items-center gap-1",
+                  healthMessage.color,
+                  status?.treeHealth && status.treeHealth >= 70
+                    ? "bg-green-100 dark:bg-green-900/30"
+                    : status?.treeHealth && status.treeHealth >= 50
+                    ? "bg-yellow-100 dark:bg-yellow-900/30"
+                    : "bg-red-100 dark:bg-red-900/30"
+                )}
+              >
+                <healthMessage.icon className="h-3 w-3" />
+                {healthMessage.text}
+              </Badge>
+            )}
+          </div>
+        </div>
       </div>
 
-      {/* 나무 정보 */}
-      <div className="text-center mt-2 space-y-1">
-        <div className="text-lg font-semibold">{stage.name}</div>
-        <div className="text-sm text-muted-foreground">{stage.description}</div>
-      </div>
-
-      {/* 나무 건강도 */}
+      {/* 나무 건강도 - 시각적 개선 */}
       {status && (
-        <div className="mt-4 space-y-2">
-          <div className="flex items-center justify-between text-sm">
-            <span className="flex items-center gap-1 text-muted-foreground">
-              <Heart className="h-3.5 w-3.5 text-red-400" />
-              나무 건강
-            </span>
+        <div className="mt-4 p-4 rounded-xl bg-muted/30 border border-border/50">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <div className={cn(
+                "w-8 h-8 rounded-lg flex items-center justify-center",
+                status.treeHealth >= 70 ? "bg-green-100 dark:bg-green-900/30" :
+                status.treeHealth >= 50 ? "bg-yellow-100 dark:bg-yellow-900/30" :
+                "bg-red-100 dark:bg-red-900/30"
+              )}>
+                <Heart className={cn(
+                  "h-4 w-4",
+                  status.treeHealth >= 70 ? "text-green-500" :
+                  status.treeHealth >= 50 ? "text-yellow-500" :
+                  "text-red-500"
+                )} />
+              </div>
+              <span className="text-sm font-medium">나무 건강</span>
+            </div>
             <span className={cn(
-              "font-medium",
-              status.treeHealth >= 80 ? "text-green-500" :
+              "text-lg font-bold tabular-nums",
+              status.treeHealth >= 70 ? "text-green-500" :
               status.treeHealth >= 50 ? "text-yellow-500" :
               "text-red-500"
             )}>
               {status.treeHealth}%
             </span>
           </div>
-          <Progress
-            value={status.treeHealth}
-            className={cn(
-              "h-2",
-              status.treeHealth >= 80 ? "[&>div]:bg-green-500" :
-              status.treeHealth >= 50 ? "[&>div]:bg-yellow-500" :
-              "[&>div]:bg-red-500"
-            )}
-          />
+          <div className="relative">
+            <Progress
+              value={status.treeHealth}
+              className={cn(
+                "h-3 bg-muted/50",
+                status.treeHealth >= 70 ? "[&>div]:bg-gradient-to-r [&>div]:from-green-400 [&>div]:to-emerald-500" :
+                status.treeHealth >= 50 ? "[&>div]:bg-gradient-to-r [&>div]:from-yellow-400 [&>div]:to-amber-500" :
+                "[&>div]:bg-gradient-to-r [&>div]:from-red-400 [&>div]:to-orange-500"
+              )}
+            />
+            {/* 건강도 임계점 표시 */}
+            <div className="absolute top-0 left-[50%] w-px h-3 bg-border/50" />
+            <div className="absolute top-0 left-[70%] w-px h-3 bg-border/50" />
+          </div>
         </div>
       )}
 
-      {/* 물주기 버튼 */}
+      {/* 물주기 버튼 - 디자인 대폭 개선 */}
       <div className="mt-4">
         {status?.canWater ? (
-          <Button
-            onClick={handleWater}
-            disabled={isWatering}
-            className={cn(
-              "w-full h-12 text-base font-semibold",
-              "bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600",
-              "shadow-lg shadow-blue-500/30"
-            )}
-          >
-            {isWatering ? (
-              <motion.span
-                animate={{ opacity: [1, 0.5, 1] }}
-                transition={{ duration: 0.5, repeat: Infinity }}
-                className="flex items-center gap-2"
-              >
-                <Droplets className="h-5 w-5" />
-                물 주는 중...
-              </motion.span>
-            ) : (
-              <span className="flex items-center gap-2">
-                <Droplets className="h-5 w-5" />
-                물 주기
-              </span>
-            )}
-          </Button>
+          <motion.div whileTap={{ scale: 0.98 }}>
+            <Button
+              onClick={handleWater}
+              disabled={isWatering}
+              className={cn(
+                "w-full h-14 text-base font-semibold rounded-xl",
+                "bg-gradient-to-r from-blue-500 via-cyan-500 to-teal-500",
+                "hover:from-blue-600 hover:via-cyan-600 hover:to-teal-600",
+                "shadow-lg shadow-blue-500/30 hover:shadow-blue-500/40",
+                "transition-all duration-300"
+              )}
+            >
+              {isWatering ? (
+                <motion.span
+                  animate={{ opacity: [1, 0.6, 1] }}
+                  transition={{ duration: 0.8, repeat: Infinity }}
+                  className="flex items-center gap-2"
+                >
+                  <motion.div
+                    animate={{ y: [0, -3, 0] }}
+                    transition={{ duration: 0.4, repeat: Infinity }}
+                  >
+                    <Droplets className="h-5 w-5" />
+                  </motion.div>
+                  물 주는 중...
+                </motion.span>
+              ) : (
+                <span className="flex items-center gap-2">
+                  <Droplets className="h-5 w-5" />
+                  물 주기
+                  <Badge variant="secondary" className="ml-2 bg-white/20 text-white border-0">
+                    {WATERING_CONFIG.basePoints}~{WATERING_CONFIG.maxPoints}P
+                  </Badge>
+                </span>
+              )}
+            </Button>
+          </motion.div>
         ) : (
-          <div className="space-y-2">
+          <div className="space-y-3">
             <Button
               disabled
-              className="w-full h-12 text-base"
+              className="w-full h-14 text-base rounded-xl"
               variant="secondary"
             >
               <Clock className="h-5 w-5 mr-2" />
-              {countdown > 0 ? formatTime(countdown) : "오늘 완료"}
+              {countdown > 0 ? (
+                <span className="tabular-nums">{formatTime(countdown)}</span>
+              ) : (
+                "오늘 물주기 완료!"
+              )}
             </Button>
             {countdown > 0 && (
-              <p className="text-xs text-center text-muted-foreground">
-                다음 물주기까지 기다려주세요
-              </p>
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="text-center"
+              >
+                <p className="text-xs text-muted-foreground">
+                  조금만 기다리면 다시 물을 줄 수 있어요
+                </p>
+              </motion.div>
             )}
           </div>
         )}
       </div>
 
-      {/* 물주기 통계 */}
+      {/* 물주기 통계 - 카드 형태로 개선 */}
       {status && (
-        <div className="mt-4 flex justify-center gap-6 text-sm text-muted-foreground">
-          <div className="text-center">
-            <div className="font-semibold text-foreground">{status.todayWateringCount}</div>
-            <div>오늘</div>
-          </div>
-          <div className="text-center">
-            <div className="font-semibold text-foreground">{WATERING_CONFIG.maxDailyWaterings - status.todayWateringCount}</div>
-            <div>남은 횟수</div>
-          </div>
-          <div className="text-center">
-            <div className="font-semibold text-foreground">{status.totalWateringCount}</div>
-            <div>총 물주기</div>
-          </div>
+        <div className="mt-4 grid grid-cols-3 gap-3">
+          <motion.div
+            whileHover={{ scale: 1.02 }}
+            className="p-3 rounded-xl bg-blue-50 dark:bg-blue-950/30 text-center border border-blue-200/50 dark:border-blue-800/50"
+          >
+            <div className="text-xl font-bold text-blue-600 dark:text-blue-400">
+              {status.todayWateringCount}
+            </div>
+            <div className="text-xs text-blue-500/70">오늘 물주기</div>
+          </motion.div>
+          <motion.div
+            whileHover={{ scale: 1.02 }}
+            className={cn(
+              "p-3 rounded-xl text-center border",
+              remainingWaterings > 0
+                ? "bg-green-50 dark:bg-green-950/30 border-green-200/50 dark:border-green-800/50"
+                : "bg-muted/30 border-border/50"
+            )}
+          >
+            <div className={cn(
+              "text-xl font-bold",
+              remainingWaterings > 0
+                ? "text-green-600 dark:text-green-400"
+                : "text-muted-foreground"
+            )}>
+              {remainingWaterings}
+            </div>
+            <div className={cn(
+              "text-xs",
+              remainingWaterings > 0
+                ? "text-green-500/70"
+                : "text-muted-foreground/70"
+            )}>
+              남은 횟수
+            </div>
+          </motion.div>
+          <motion.div
+            whileHover={{ scale: 1.02 }}
+            className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/30 text-center border border-amber-200/50 dark:border-amber-800/50"
+          >
+            <div className="text-xl font-bold text-amber-600 dark:text-amber-400">
+              {status.totalWateringCount}
+            </div>
+            <div className="text-xs text-amber-500/70">총 물주기</div>
+          </motion.div>
         </div>
       )}
 
-      {/* 독서 독려 문구 */}
+      {/* 독서 독려 문구 - 더 눈에 띄게 */}
       <AnimatePresence>
         {showQuote && result?.quote && (
           <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="mt-4 p-4 rounded-lg bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border border-green-200 dark:border-green-800"
+            initial={{ opacity: 0, y: 15, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -10, scale: 0.95 }}
+            className="mt-4 p-4 rounded-xl bg-gradient-to-r from-green-50 via-emerald-50 to-teal-50 dark:from-green-900/20 dark:via-emerald-900/20 dark:to-teal-900/20 border border-green-200 dark:border-green-800 shadow-sm"
           >
-            <p className="text-sm text-center text-green-700 dark:text-green-300 font-medium">
-              {result.quote}
-            </p>
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 rounded-full bg-green-100 dark:bg-green-800/50 flex items-center justify-center flex-shrink-0">
+                <Leaf className="h-4 w-4 text-green-600 dark:text-green-400" />
+              </div>
+              <p className="text-sm text-green-700 dark:text-green-300 font-medium leading-relaxed">
+                "{result.quote}"
+              </p>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -274,10 +418,10 @@ export function TreeWatering({ level, className }: TreeWateringProps) {
       <AnimatePresence>
         {result && !result.success && (
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
-            className="mt-4 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800"
+            className="mt-4 p-4 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800"
           >
             <p className="text-sm text-center text-red-600 dark:text-red-400">
               {result.message}

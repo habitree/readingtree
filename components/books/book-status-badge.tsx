@@ -5,13 +5,14 @@ import { cn } from "@/lib/utils";
 interface BookStatusBadgeProps {
   status: ReadingStatus;
   className?: string;
+  size?: "sm" | "default";
 }
 
 /**
  * 독서 상태 배지 컴포넌트
  * UX 원칙 03: 색상을 활용한 시각적 구분 적용
  */
-export function BookStatusBadge({ status, className }: BookStatusBadgeProps) {
+export function BookStatusBadge({ status, className, size = "default" }: BookStatusBadgeProps) {
   const statusConfig = {
     reading: {
       label: "읽는 중",
@@ -37,10 +38,15 @@ export function BookStatusBadge({ status, className }: BookStatusBadgeProps) {
 
   const config = statusConfig[status];
 
+  const sizeClasses = {
+    sm: "text-[10px] px-1.5 py-0",
+    default: "",
+  };
+
   return (
-    <Badge 
-      variant="outline" 
-      className={cn("border", config.className, className)}
+    <Badge
+      variant="outline"
+      className={cn("border", config.className, sizeClasses[size], className)}
     >
       {config.label}
     </Badge>
