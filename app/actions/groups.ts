@@ -8,6 +8,60 @@ export type MemberRole = "leader" | "moderator" | "member";
 export type MemberStatus = "pending" | "approved" | "rejected";
 
 /**
+ * 현재 주의 시작일(월요일) 계산
+ */
+function getWeekStart(date: Date = new Date()): string {
+  const d = new Date(date);
+  const day = d.getDay();
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1); // 월요일로 조정
+  d.setDate(diff);
+  d.setHours(0, 0, 0, 0);
+  return d.toISOString().split("T")[0]; // YYYY-MM-DD 형식
+}
+
+/**
+ * 그룹 멤버 활동 통계 업데이트
+ * 기록 공유/해제 시 notes_count 증감
+ */
+async function updateGroupActivityStats(
+  supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>,
+  groupId: string,
+  userId: string,
+  delta: number // +1 for share, -1 for unshare
+) {
+  const weekStart = getWeekStart();
+
+  // 기존 통계 조회
+  const { data: existing } = await supabase
+    .from("group_activity_stats")
+    .select("id, notes_count")
+    .eq("group_id", groupId)
+    .eq("user_id", userId)
+    .eq("week_start", weekStart)
+    .single();
+
+  if (existing) {
+    // 기존 레코드 업데이트
+    const newCount = Math.max(0, (existing.notes_count || 0) + delta);
+    await supabase
+      .from("group_activity_stats")
+      .update({
+        notes_count: newCount,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", existing.id);
+  } else if (delta > 0) {
+    // 새 레코드 생성 (감소 시에는 생성하지 않음)
+    await supabase.from("group_activity_stats").insert({
+      group_id: groupId,
+      user_id: userId,
+      week_start: weekStart,
+      notes_count: delta,
+    });
+  }
+}
+
+/**
  * 모임 생성
  * 생성자는 자동으로 리더가 됨
  */
@@ -717,6 +771,9 @@ export async function shareNoteToGroup(noteId: string, groupId: string) {
   if (shareError) {
     throw new Error(`공유 실패: ${shareError.message}`);
   }
+
+  // 활동 통계 업데이트
+  await updateGroupActivityStats(supabase, groupId, user.id, 1);
 
   revalidatePath(`/groups/${groupId}`);
   return { success: true };
@@ -1586,6 +1643,11 @@ export async function shareNotesToGroup(noteIds: string[], groupId: string) {
     throw new Error(`공유 실패: ${shareError.message}`);
   }
 
+  // 활동 통계 업데이트 (공유된 기록 수만큼 증가)
+  if (newNoteIds.length > 0) {
+    await updateGroupActivityStats(supabase, groupId, user.id, newNoteIds.length);
+  }
+
   revalidatePath(`/groups/${groupId}`);
   return { success: true, sharedCount: newNoteIds.length };
 }
@@ -1631,6 +1693,9 @@ export async function unshareNoteFromGroup(noteId: string, groupId: string) {
   if (unshareError) {
     throw new Error(`공유 해제 실패: ${unshareError.message}`);
   }
+
+  // 활동 통계 업데이트 (기록 수 감소)
+  await updateGroupActivityStats(supabase, groupId, user.id, -1);
 
   revalidatePath(`/groups/${groupId}`);
   return { success: true };
