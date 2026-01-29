@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Trash2, AlertTriangle } from "lucide-react";
+import { Trash2, AlertTriangle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -66,7 +66,7 @@ export function DeleteAccountSection() {
   };
 
   return (
-    <Card className="border-destructive/50">
+    <Card variant="destructive">
       <CardHeader>
         <CardTitle className="text-destructive flex items-center gap-2">
           <AlertTriangle className="h-5 w-5" />
@@ -132,9 +132,19 @@ export function DeleteAccountSection() {
               <AlertDialogAction
                 onClick={handleDeleteAccount}
                 disabled={deleteConfirmText !== "계정삭제" || isDeleting}
-                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                variant="destructive"
               >
-                {isDeleting ? "삭제 중..." : "계정 삭제"}
+                {isDeleting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    삭제 중...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    계정 삭제
+                  </>
+                )}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>

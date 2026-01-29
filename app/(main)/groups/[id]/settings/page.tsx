@@ -303,7 +303,7 @@ export default function GroupSettingsPage({ params }: PageProps) {
       </Card>
 
       {/* 위험 영역 */}
-      <Card className="border-destructive/50">
+      <Card variant="destructive">
         <CardHeader>
           <CardTitle className="text-destructive">위험 영역</CardTitle>
           <CardDescription>
@@ -338,7 +338,7 @@ export default function GroupSettingsPage({ params }: PageProps) {
                   <AlertDialogAction
                     onClick={handleDelete}
                     disabled={isDeleting}
-                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    variant="destructive"
                   >
                     {isDeleting ? (
                       <>

@@ -1,20 +1,47 @@
 import * as React from "react"
+import { cva, type VariantProps } from "class-variance-authority"
 
 import { cn } from "@/lib/utils"
 
-const Card = React.forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
-  <div
-    ref={ref}
-    className={cn(
-      "rounded-lg border bg-card text-card-foreground shadow-sm hover:shadow-md transition-shadow",
-      className
-    )}
-    {...props}
-  />
-))
+const cardVariants = cva(
+  "rounded-lg border bg-card text-card-foreground shadow-sm hover:shadow-md transition-shadow",
+  {
+    variants: {
+      variant: {
+        default: "",
+        // 위험/삭제 영역 (계정 삭제, 모임 삭제 등)
+        destructive: "border-destructive/50",
+        // 경고/주의 영역
+        warning: "border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-950/20",
+        // 강조/하이라이트 영역
+        highlight: "border-primary/50 bg-primary/5",
+        // 성공/완료 영역
+        success: "border-green-200 dark:border-green-800 bg-green-50/50 dark:bg-green-950/20",
+        // 최소 스타일 (보더 없음)
+        ghost: "border-transparent shadow-none hover:shadow-none bg-transparent",
+        // 인터랙티브 카드 (클릭 가능)
+        interactive: "cursor-pointer hover:shadow-lg active:shadow-md active:scale-[0.99] transition-all",
+      },
+    },
+    defaultVariants: {
+      variant: "default",
+    },
+  }
+)
+
+export interface CardProps
+  extends React.HTMLAttributes<HTMLDivElement>,
+    VariantProps<typeof cardVariants> {}
+
+const Card = React.forwardRef<HTMLDivElement, CardProps>(
+  ({ className, variant, ...props }, ref) => (
+    <div
+      ref={ref}
+      className={cn(cardVariants({ variant }), className)}
+      {...props}
+    />
+  )
+)
 Card.displayName = "Card"
 
 const CardHeader = React.forwardRef<

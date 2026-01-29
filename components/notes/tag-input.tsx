@@ -450,7 +450,7 @@ export function TagInput({ value, onChange, placeholder = "태그 입력", label
                       <AlertDialogCancel>취소</AlertDialogCancel>
                       <AlertDialogAction
                         onClick={handleBatchDeleteTags}
-                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        variant="destructive"
                       >
                         삭제
                       </AlertDialogAction>

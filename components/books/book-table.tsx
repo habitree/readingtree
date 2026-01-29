@@ -712,7 +712,7 @@ export function BookTable({ books }: BookTableProps) {
                     deletingBookId === item.id ||
                     (confirmDeleteTitle[item.id]?.trim() || "") !== book.title.trim()
                   }
-                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  variant="destructive"
                 >
                   {deletingBookId === item.id ? (
                     <>

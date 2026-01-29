@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { ChatMessage, StreamingMessage } from "./chat-message";
 import { ChatInput } from "./chat-input";
 import { ChatSidebar } from "./chat-sidebar";
+import { TypingIndicator } from "./typing-indicator";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -22,7 +23,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Bot, Menu, X, MoreVertical, Trash2, Plus } from "lucide-react";
+import { Bot, Menu, X, MoreVertical, Trash2, Plus, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import {
   createChatSession,
@@ -53,6 +54,8 @@ export function ChatInterface({ userId, userAvatar, userName }: ChatInterfacePro
   const [context, setContext] = useState<ChatContext>({});
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showDeleteAllDialog, setShowDeleteAllDialog] = useState(false);
+  const [lastFailedMessage, setLastFailedMessage] = useState<string | null>(null);
+  const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // 화면 크기에 따라 사이드바 상태 초기화
@@ -167,6 +170,9 @@ export function ChatInterface({ userId, userAvatar, userName }: ChatInterfacePro
   const handleSendMessage = async (message: string) => {
     if (!message.trim() || isLoading) return;
 
+    // 에러 상태 초기화
+    setLastFailedMessage(null);
+
     let sessionId = currentSession?.id;
 
     // 세션이 없으면 새로 생성
@@ -181,6 +187,7 @@ export function ChatInterface({ userId, userAvatar, userName }: ChatInterfacePro
         await generateSessionTitle(sessionId, message);
       } catch (error) {
         toast.error("새 대화 생성에 실패했습니다.");
+        setLastFailedMessage(message);
         return;
       }
     }
@@ -198,6 +205,7 @@ export function ChatInterface({ userId, userAvatar, userName }: ChatInterfacePro
     setMessages((prev) => [...prev, userMessage]);
 
     setIsLoading(true);
+    setIsTyping(true);
     setStreamingContent("");
 
     try {
@@ -240,6 +248,10 @@ export function ChatInterface({ userId, userAvatar, userName }: ChatInterfacePro
               const data = JSON.parse(line.slice(6));
 
               if (data.type === "content") {
+                // 첫 콘텐츠 수신 시 타이핑 인디케이터 숨김
+                if (!fullContent) {
+                  setIsTyping(false);
+                }
                 fullContent += data.content;
                 setStreamingContent(fullContent);
               } else if (data.type === "done") {
@@ -255,6 +267,7 @@ export function ChatInterface({ userId, userAvatar, userName }: ChatInterfacePro
                 };
                 setMessages((prev) => [...prev, assistantMessage]);
                 setStreamingContent("");
+                setIsTyping(false);
 
                 // 세션 목록 새로고침
                 loadSessions();
@@ -269,10 +282,21 @@ export function ChatInterface({ userId, userAvatar, userName }: ChatInterfacePro
       }
     } catch (error) {
       console.error("메시지 전송 오류:", error);
-      toast.error("메시지 전송에 실패했습니다.");
+      toast.error("메시지 전송에 실패했습니다. 재시도해 주세요.");
       setStreamingContent("");
+      setIsTyping(false);
+      setLastFailedMessage(message);
+      // 실패한 사용자 메시지 제거
+      setMessages((prev) => prev.filter((m) => !m.id.startsWith("temp-")));
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // 재시도 핸들러
+  const handleRetry = () => {
+    if (lastFailedMessage) {
+      handleSendMessage(lastFailedMessage);
     }
   };
 
@@ -397,8 +421,26 @@ export function ChatInterface({ userId, userAvatar, userName }: ChatInterfacePro
                     onDelete={handleDeleteMessage}
                   />
                 ))}
+                {/* 타이핑 인디케이터 - 응답 시작 전 표시 */}
+                {isTyping && !streamingContent && (
+                  <TypingIndicator />
+                )}
                 {streamingContent && (
                   <StreamingMessage content={streamingContent} isLoading={true} />
+                )}
+                {/* 에러 재시도 버튼 */}
+                {lastFailedMessage && !isLoading && (
+                  <div className="flex justify-center py-4">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleRetry}
+                      className="gap-2"
+                    >
+                      <RefreshCw className="h-4 w-4" />
+                      다시 시도
+                    </Button>
+                  </div>
                 )}
                 {/* 스크롤 타겟 - 입력창 높이만큼 여백 */}
                 <div ref={messagesEndRef} className="h-4" />
@@ -465,7 +507,7 @@ export function ChatInterface({ userId, userAvatar, userName }: ChatInterfacePro
                 }
                 setShowDeleteDialog(false);
               }}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              variant="destructive"
             >
               삭제
             </AlertDialogAction>
@@ -491,7 +533,7 @@ export function ChatInterface({ userId, userAvatar, userName }: ChatInterfacePro
                 handleDeleteAllSessions();
                 setShowDeleteAllDialog(false);
               }}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              variant="destructive"
             >
               모두 삭제
             </AlertDialogAction>

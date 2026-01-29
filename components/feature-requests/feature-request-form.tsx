@@ -102,19 +102,16 @@ export function FeatureRequestForm({
             </p>
           </div>
 
-          <div className="flex gap-2 pt-2">
+          <div className="flex flex-col gap-2 pt-4">
             <Button
-              type="button"
-              variant="outline"
-              onClick={() => router.back()}
+              type="submit"
               disabled={isPending}
+              fullWidth
+              size="lg"
             >
-              취소
-            </Button>
-            <Button type="submit" disabled={isPending}>
               {isPending ? (
                 <>
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   {mode === "create" ? "등록 중..." : "수정 중..."}
                 </>
               ) : mode === "create" ? (
@@ -122,6 +119,15 @@ export function FeatureRequestForm({
               ) : (
                 "수정하기"
               )}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => router.back()}
+              disabled={isPending}
+              fullWidth
+            >
+              취소
             </Button>
           </div>
         </form>

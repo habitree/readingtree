@@ -119,12 +119,14 @@ export function SocialLoginButtons() {
 
   return (
     <div className="space-y-3">
+      {/* 카카오 로그인 - 전용 variant 사용 */}
       <Button
         type="button"
         onClick={handleKakaoLogin}
         disabled={isLoading !== null}
-        className="w-full bg-[#FEE500] text-[#000000] hover:bg-[#FEE500]/90"
+        variant="kakao"
         size="lg"
+        fullWidth
       >
         {isLoading === "kakao" ? (
           <>
@@ -139,13 +141,14 @@ export function SocialLoginButtons() {
         )}
       </Button>
 
+      {/* 구글 로그인 - 전용 variant 사용 */}
       <Button
         type="button"
         onClick={handleGoogleLogin}
         disabled={isLoading !== null}
-        variant="outline"
-        className="w-full"
+        variant="google"
         size="lg"
+        fullWidth
       >
         {isLoading === "google" ? (
           <>

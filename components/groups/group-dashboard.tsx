@@ -439,7 +439,7 @@ export function GroupDashboard({ groupData, currentUserId }: GroupDashboardProps
             <AlertDialogAction
               onClick={handleLeave}
               disabled={isLeaving}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              variant="destructive"
             >
               {isLeaving ? "처리 중..." : "나가기"}
             </AlertDialogAction>
@@ -478,7 +478,7 @@ export function GroupDashboard({ groupData, currentUserId }: GroupDashboardProps
             <AlertDialogAction
               onClick={handleDelete}
               disabled={isDeleting}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              variant="destructive"
             >
               {isDeleting ? "삭제 중..." : "삭제하기"}
             </AlertDialogAction>

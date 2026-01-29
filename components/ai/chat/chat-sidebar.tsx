@@ -210,7 +210,7 @@ export function ChatSidebar({
             <AlertDialogCancel>취소</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteConfirm}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              variant="destructive"
             >
               삭제
             </AlertDialogAction>
@@ -236,7 +236,7 @@ export function ChatSidebar({
             <AlertDialogCancel>취소</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteAllConfirm}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              variant="destructive"
             >
               모두 삭제
             </AlertDialogAction>

@@ -73,7 +73,7 @@ export function NoteDeleteButton({ noteId }: NoteDeleteButtonProps) {
           <AlertDialogAction
             onClick={handleDelete}
             disabled={isDeleting}
-            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            variant="destructive"
           >
             {isDeleting ? (
               <>
@@ -81,7 +81,10 @@ export function NoteDeleteButton({ noteId }: NoteDeleteButtonProps) {
                 삭제 중...
               </>
             ) : (
-              "삭제"
+              <>
+                <Trash2 className="mr-2 h-4 w-4" />
+                삭제
+              </>
             )}
           </AlertDialogAction>
         </AlertDialogFooter>

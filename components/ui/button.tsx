@@ -25,6 +25,18 @@ const buttonVariants = cva(
         ghost: "hover:bg-accent hover:text-accent-foreground",
         // Link: 텍스트 링크
         link: "text-primary underline-offset-4 hover:underline",
+        // Kakao: 카카오 소셜 로그인
+        kakao:
+          "bg-[#FEE500] text-[#191919] hover:bg-[#FEE500]/90 shadow-sm hover:shadow-md font-semibold",
+        // Google: 구글 소셜 로그인
+        google:
+          "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 hover:border-gray-400 shadow-sm hover:shadow-md font-medium dark:bg-gray-800 dark:text-gray-100 dark:border-gray-600 dark:hover:bg-gray-700",
+        // Success: 성공/완료 상태
+        success:
+          "bg-green-600 text-white hover:bg-green-700 shadow-sm hover:shadow-md",
+        // Gradient: 그라데이션 효과 (CTA 강조)
+        gradient:
+          "bg-gradient-to-r from-primary to-primary/80 text-primary-foreground hover:from-primary/90 hover:to-primary/70 shadow-sm hover:shadow-md",
       },
       size: {
         // 8dp 그리드 시스템 기준: 32px (h-8), 40px (h-10), 48px (h-12)

@@ -406,16 +406,13 @@ export function SimpleShareDialog({ note }: SimpleShareDialogProps) {
 
           <div className="flex-1 overflow-y-auto p-4 sm:p-8 pt-2">
             {/* 개편된 3버튼 체계 (상단으로 이동, 슬림하게 변경) */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
               {/* 1. 링크 공유 */}
               <Button
                 onClick={handleCopyLink}
-                variant={linkCopied ? "default" : "outline"}
+                variant={linkCopied ? "success" : "outline"}
                 size="sm"
-                className={cn(
-                  "h-10 rounded-xl gap-2 text-xs font-bold transition-all duration-300 shadow-sm",
-                  linkCopied ? "bg-green-500 hover:bg-green-600 border-none text-white" : "border hover:bg-slate-50 border-slate-200 text-slate-600"
-                )}
+                className="h-11 rounded-xl gap-2 font-semibold transition-all duration-300"
                 disabled={!note.is_public}
               >
                 {linkCopied ? (
@@ -425,7 +422,7 @@ export function SimpleShareDialog({ note }: SimpleShareDialogProps) {
                   </>
                 ) : (
                   <>
-                    <LinkIcon className="h-4 w-4 text-forest-600" />
+                    <LinkIcon className="h-4 w-4" />
                     링크 공유
                   </>
                 )}
@@ -434,12 +431,9 @@ export function SimpleShareDialog({ note }: SimpleShareDialogProps) {
               {/* 2. 카드 복사 */}
               <Button
                 onClick={handleCopyCardImage}
-                variant={cardCopied ? "default" : "outline"}
+                variant={cardCopied ? "success" : "outline"}
                 size="sm"
-                className={cn(
-                  "h-10 rounded-xl gap-2 text-xs font-bold transition-all duration-300 shadow-sm",
-                  cardCopied ? "bg-forest-600 hover:bg-forest-700 border-none text-white" : "border hover:bg-slate-50 border-slate-200 text-slate-600"
-                )}
+                className="h-11 rounded-xl gap-2 font-semibold transition-all duration-300"
               >
                 {cardCopied ? (
                   <>
@@ -448,7 +442,7 @@ export function SimpleShareDialog({ note }: SimpleShareDialogProps) {
                   </>
                 ) : (
                   <>
-                    <ImageIcon className="h-4 w-4 text-forest-600" />
+                    <ImageIcon className="h-4 w-4" />
                     카드 복사
                   </>
                 )}
@@ -458,12 +452,9 @@ export function SimpleShareDialog({ note }: SimpleShareDialogProps) {
               {hasImage && (
                 <Button
                   onClick={handleCopyPhotoOnly}
-                  variant={photoCopied ? "default" : "outline"}
+                  variant={photoCopied ? "success" : "outline"}
                   size="sm"
-                  className={cn(
-                    "h-10 rounded-xl gap-2 text-xs font-bold transition-all duration-300 shadow-sm",
-                    photoCopied ? "bg-slate-900 border-none text-white" : "border hover:bg-slate-50 border-slate-200 text-slate-600"
-                  )}
+                  className="h-11 rounded-xl gap-2 font-semibold transition-all duration-300"
                 >
                   {photoCopied ? (
                     <>
@@ -472,7 +463,7 @@ export function SimpleShareDialog({ note }: SimpleShareDialogProps) {
                     </>
                   ) : (
                     <>
-                      <Download className="h-4 w-4 text-forest-600" />
+                      <Download className="h-4 w-4" />
                       이미지 복사
                     </>
                   )}

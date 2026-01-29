@@ -124,7 +124,7 @@ export function BookDeleteButton({ userBookId, bookTitle, variant = "default", s
           <AlertDialogAction
             onClick={handleDelete}
             disabled={isDeleting || confirmTitle.trim() !== bookTitle.trim()}
-            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            variant="destructive"
           >
             {isDeleting ? (
               <>
@@ -132,7 +132,10 @@ export function BookDeleteButton({ userBookId, bookTitle, variant = "default", s
                 삭제 중...
               </>
             ) : (
-              "삭제"
+              <>
+                <Trash2 className="mr-2 h-4 w-4" />
+                삭제
+              </>
             )}
           </AlertDialogAction>
         </AlertDialogFooter>

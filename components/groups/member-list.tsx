@@ -586,16 +586,35 @@ export function MemberList({
                 else if (confirmDialog.type === "transfer") handleTransfer();
                 else if (confirmDialog.type === "role") handleRoleChange();
               }}
-              className={
-                confirmDialog.type === "kick"
-                  ? "bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                  : ""
-              }
+              variant={confirmDialog.type === "kick" ? "destructive" : "default"}
             >
-              {confirmDialog.type === "kick" && "내보내기"}
-              {confirmDialog.type === "transfer" && "위임하기"}
-              {confirmDialog.type === "role" &&
-                (confirmDialog.newRole === "moderator" ? "임명하기" : "해제하기")}
+              {confirmDialog.type === "kick" && (
+                <>
+                  <UserMinus className="mr-2 h-4 w-4" />
+                  내보내기
+                </>
+              )}
+              {confirmDialog.type === "transfer" && (
+                <>
+                  <ArrowRightLeft className="mr-2 h-4 w-4" />
+                  위임하기
+                </>
+              )}
+              {confirmDialog.type === "role" && (
+                <>
+                  {confirmDialog.newRole === "moderator" ? (
+                    <>
+                      <Shield className="mr-2 h-4 w-4" />
+                      임명하기
+                    </>
+                  ) : (
+                    <>
+                      <ShieldOff className="mr-2 h-4 w-4" />
+                      해제하기
+                    </>
+                  )}
+                </>
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
