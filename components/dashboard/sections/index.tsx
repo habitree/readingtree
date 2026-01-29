@@ -9,3 +9,4 @@ export { ContinueReadingCard, ContinueReadingCardSkeleton, NoReadingBookCard } f
 export { DailyMissions, DailyMissionsSkeleton } from "./daily-missions";
 export type { Mission } from "./daily-missions";
 export { AnimatedStreak, getStreakEncouragement } from "./animated-streak";
+export { FeatureRequestPreviewWrapper, FeatureRequestPreviewSkeleton } from "./feature-request-preview-wrapper";

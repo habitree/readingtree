@@ -12,6 +12,7 @@ import {
   Trees,
   Bot,
   Sparkles,
+  Lightbulb,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
@@ -45,6 +46,7 @@ const sidebarItems: SidebarItem[] = [
   { icon: Users, label: "독서모임", href: "/groups" },
   { icon: Bot, label: "AI 도우미", href: "/chat" },
   { icon: Sparkles, label: "내 페르소나", href: "/persona" },
+  { icon: Lightbulb, label: "기능 요청", href: "/feature-requests" },
   { icon: User, label: "프로필", href: "/profile" },
   { icon: Trees, label: "관리자", href: "/admin", adminOnly: true },
 ];

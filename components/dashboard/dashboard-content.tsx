@@ -14,6 +14,8 @@ import {
   MonthlyStatsSection,
   HomeHeroWrapper,
   MobileQuickActions,
+  FeatureRequestPreviewWrapper,
+  FeatureRequestPreviewSkeleton,
 } from "./sections";
 
 // 스켈레톤 컴포넌트
@@ -84,6 +86,11 @@ export default async function DashboardContent() {
 
         {/* 모바일 퀵 액션 버튼 */}
         <MobileQuickActions />
+
+        {/* 기능 요청 프리뷰 섹션 */}
+        <Suspense fallback={<FeatureRequestPreviewSkeleton />}>
+          <FeatureRequestPreviewWrapper />
+        </Suspense>
 
         {/* 목표 진행률 - 스트리밍 */}
         <Suspense fallback={<GoalProgressSkeleton />}>
