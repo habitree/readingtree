@@ -15,8 +15,13 @@ import {
   Trophy,
   Medal,
   Users,
+  TrendingUp,
+  TrendingDown,
+  Minus,
+  Calendar,
+  Flame,
 } from "lucide-react";
-import { getMemberActivities } from "@/app/actions/groups";
+import { getMemberActivities, getGroupWeeklyStats } from "@/app/actions/groups";
 import { toast } from "sonner";
 import { formatSmartDate } from "@/lib/utils/date";
 import Link from "next/link";
@@ -24,6 +29,21 @@ import type { MemberActivity } from "@/types/group";
 
 interface MemberActivityListProps {
   groupId: string;
+}
+
+interface WeeklyStats {
+  weekStart: string;
+  totalNotesThisWeek: number;
+  totalNotesLastWeek: number;
+  weekOverWeekChange: number;
+  memberStats: {
+    rank: number;
+    user: { id: string; name: string; avatar_url: string | null };
+    notesCount: number;
+    booksCompleted: number;
+    lastWeekCount: number;
+    trend: "up" | "down" | "same";
+  }[];
 }
 
 function ActivitySkeleton() {
@@ -78,6 +98,7 @@ function getRankBadge(rank: number) {
 
 export function MemberActivityList({ groupId }: MemberActivityListProps) {
   const [activities, setActivities] = useState<MemberActivity[]>([]);
+  const [weeklyStats, setWeeklyStats] = useState<WeeklyStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -87,12 +108,16 @@ export function MemberActivityList({ groupId }: MemberActivityListProps) {
   const loadActivities = async () => {
     try {
       setIsLoading(true);
-      const data = await getMemberActivities(groupId);
+      const [activitiesData, weeklyData] = await Promise.all([
+        getMemberActivities(groupId),
+        getGroupWeeklyStats(groupId).catch(() => null),
+      ]);
       // Sort by total shared notes descending
-      const sorted = [...data].sort(
+      const sorted = [...activitiesData].sort(
         (a, b) => b.totalSharedNotes - a.totalSharedNotes
       );
       setActivities(sorted);
+      setWeeklyStats(weeklyData);
     } catch (error) {
       console.error("활동 조회 오류:", error);
       toast.error("활동을 불러오는데 실패했습니다.");
@@ -133,6 +158,82 @@ export function MemberActivityList({ groupId }: MemberActivityListProps) {
           </Badge>
         )}
       </div>
+
+      {/* 이번 주 활동 통계 */}
+      {weeklyStats && weeklyStats.totalNotesThisWeek > 0 && (
+        <Card className="bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
+          <CardContent className="pt-4 pb-4">
+            <div className="flex items-center gap-2 mb-3">
+              <Flame className="h-5 w-5 text-orange-500" />
+              <span className="font-semibold text-sm">이번 주 활동</span>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-primary">
+                  {weeklyStats.totalNotesThisWeek}
+                </div>
+                <div className="text-xs text-muted-foreground">공유된 기록</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold">
+                  {weeklyStats.memberStats.length}
+                </div>
+                <div className="text-xs text-muted-foreground">활동 멤버</div>
+              </div>
+              <div className="text-center">
+                <div className="flex items-center justify-center gap-1">
+                  <span className="text-2xl font-bold">
+                    {weeklyStats.weekOverWeekChange > 0 ? "+" : ""}
+                    {weeklyStats.weekOverWeekChange}%
+                  </span>
+                  {weeklyStats.weekOverWeekChange > 0 ? (
+                    <TrendingUp className="h-4 w-4 text-green-500" />
+                  ) : weeklyStats.weekOverWeekChange < 0 ? (
+                    <TrendingDown className="h-4 w-4 text-red-500" />
+                  ) : (
+                    <Minus className="h-4 w-4 text-muted-foreground" />
+                  )}
+                </div>
+                <div className="text-xs text-muted-foreground">지난 주 대비</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-amber-500">
+                  {weeklyStats.memberStats[0]?.user?.name?.slice(0, 4) || "-"}
+                </div>
+                <div className="text-xs text-muted-foreground">이번 주 MVP</div>
+              </div>
+            </div>
+            {/* 이번 주 랭킹 */}
+            {weeklyStats.memberStats.length > 0 && (
+              <div className="mt-4 pt-3 border-t border-primary/10">
+                <div className="text-xs text-muted-foreground mb-2">이번 주 랭킹</div>
+                <div className="flex items-center gap-2 overflow-x-auto pb-1">
+                  {weeklyStats.memberStats.slice(0, 5).map((stat, idx) => (
+                    <div
+                      key={stat.user.id}
+                      className="flex items-center gap-1.5 bg-background/80 rounded-full px-2 py-1 text-xs shrink-0"
+                    >
+                      <span className={`font-bold ${idx === 0 ? "text-amber-500" : idx === 1 ? "text-slate-400" : idx === 2 ? "text-amber-700" : ""}`}>
+                        {idx + 1}.
+                      </span>
+                      <Avatar className="h-5 w-5">
+                        <AvatarImage src={stat.user.avatar_url || undefined} />
+                        <AvatarFallback className="text-[10px]">
+                          {stat.user.name?.[0]}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="truncate max-w-[60px]">{stat.user.name}</span>
+                      <span className="text-muted-foreground">({stat.notesCount})</span>
+                      {stat.trend === "up" && <TrendingUp className="h-3 w-3 text-green-500" />}
+                      {stat.trend === "down" && <TrendingDown className="h-3 w-3 text-red-500" />}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {activities.length === 0 ? (
         <Card className="border-dashed">

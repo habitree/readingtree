@@ -2392,3 +2392,124 @@ export async function getMemberActivities(groupId: string) {
   return activities;
 }
 
+/**
+ * 그룹 주간 활동 통계 조회
+ * group_activity_stats 테이블 활용
+ */
+export async function getGroupWeeklyStats(groupId: string) {
+  const supabase = await createServerSupabaseClient();
+
+  // 현재 사용자 확인
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    throw new Error("로그인이 필요합니다.");
+  }
+
+  // 멤버십 또는 리더 확인
+  const { data: membership } = await supabase
+    .from("group_members")
+    .select("id")
+    .eq("group_id", groupId)
+    .eq("user_id", user.id)
+    .eq("status", "approved")
+    .maybeSingle();
+
+  const { data: group } = await supabase
+    .from("groups")
+    .select("leader_id")
+    .eq("id", groupId)
+    .single();
+
+  if (!group) {
+    throw new Error("모임을 찾을 수 없습니다.");
+  }
+
+  const isLeader = group.leader_id === user.id;
+  const isMember = !!membership;
+
+  if (!isLeader && !isMember) {
+    throw new Error("모임 멤버만 조회할 수 있습니다.");
+  }
+
+  // 이번 주, 지난 주 시작일 계산
+  const thisWeekStart = getWeekStart();
+  const lastWeekDate = new Date();
+  lastWeekDate.setDate(lastWeekDate.getDate() - 7);
+  const lastWeekStart = getWeekStart(lastWeekDate);
+
+  // 이번 주 통계 조회
+  const { data: thisWeekStats } = await supabase
+    .from("group_activity_stats")
+    .select(`
+      user_id,
+      notes_count,
+      books_completed,
+      users (
+        id,
+        name,
+        avatar_url
+      )
+    `)
+    .eq("group_id", groupId)
+    .eq("week_start", thisWeekStart)
+    .order("notes_count", { ascending: false });
+
+  // 지난 주 통계 조회 (비교용)
+  const { data: lastWeekStats } = await supabase
+    .from("group_activity_stats")
+    .select("user_id, notes_count")
+    .eq("group_id", groupId)
+    .eq("week_start", lastWeekStart);
+
+  // 지난 주 데이터 맵
+  const lastWeekMap = new Map(
+    (lastWeekStats || []).map((s: any) => [s.user_id, s.notes_count])
+  );
+
+  // 이번 주 총 기록 수
+  const totalThisWeek = (thisWeekStats || []).reduce(
+    (sum: number, s: any) => sum + (s.notes_count || 0),
+    0
+  );
+
+  // 지난 주 총 기록 수
+  const totalLastWeek = (lastWeekStats || []).reduce(
+    (sum: number, s: any) => sum + (s.notes_count || 0),
+    0
+  );
+
+  // 순위 및 트렌드 계산
+  const rankedStats = (thisWeekStats || []).map((stat: any, index: number) => {
+    const lastWeekCount = lastWeekMap.get(stat.user_id) || 0;
+    const trend: "up" | "down" | "same" =
+      stat.notes_count > lastWeekCount
+        ? "up"
+        : stat.notes_count < lastWeekCount
+        ? "down"
+        : "same";
+
+    return {
+      rank: index + 1,
+      user: stat.users as { id: string; name: string; avatar_url: string | null },
+      notesCount: stat.notes_count || 0,
+      booksCompleted: stat.books_completed || 0,
+      lastWeekCount,
+      trend,
+    };
+  });
+
+  return {
+    weekStart: thisWeekStart,
+    totalNotesThisWeek: totalThisWeek,
+    totalNotesLastWeek: totalLastWeek,
+    weekOverWeekChange: totalLastWeek > 0
+      ? Math.round(((totalThisWeek - totalLastWeek) / totalLastWeek) * 100)
+      : totalThisWeek > 0 ? 100 : 0,
+    memberStats: rankedStats,
+  };
+}
+
