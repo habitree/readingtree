@@ -832,25 +832,27 @@ export async function shareNoteToGroup(noteId: string, groupId: string) {
     throw new Error("모임 멤버만 기록을 공유할 수 있습니다.");
   }
 
-  // 이미 공유된 기록인지 확인
-  const { data: existing } = await supabase
+  // 기록 공유 (upsert로 race condition 방지)
+  // UNIQUE 제약조건이 있으므로 onConflict 사용
+  const { data: shareResult, error: shareError } = await supabase
     .from("group_notes")
+    .upsert(
+      { group_id: groupId, note_id: noteId },
+      { onConflict: "group_id,note_id", ignoreDuplicates: true }
+    )
     .select("id")
-    .eq("group_id", groupId)
-    .eq("note_id", noteId)
     .single();
 
-  if (existing) {
+  // 이미 존재하는 경우 (upsert가 아무것도 반환하지 않음)
+  if (!shareResult && !shareError) {
     throw new Error("이미 공유된 기록입니다.");
   }
 
-  // 기록 공유
-  const { error: shareError } = await supabase.from("group_notes").insert({
-    group_id: groupId,
-    note_id: noteId,
-  });
-
   if (shareError) {
+    // 23505: unique_violation - 이미 공유된 경우
+    if (shareError.code === "23505") {
+      throw new Error("이미 공유된 기록입니다.");
+    }
     throw new Error(`공유 실패: ${shareError.message}`);
   }
 
@@ -1699,39 +1701,31 @@ export async function shareNotesToGroup(noteIds: string[], groupId: string) {
     throw new Error("본인의 기록만 공유할 수 있습니다.");
   }
 
-  // 이미 공유된 기록 확인
-  const { data: existingShares } = await supabase
+  // 기록 공유 (upsert로 race condition 방지, 중복 무시)
+  const insertData = noteIds.map((noteId) => ({
+    group_id: groupId,
+    note_id: noteId,
+  }));
+
+  const { data: shareResults, error: shareError } = await supabase
     .from("group_notes")
-    .select("note_id")
-    .eq("group_id", groupId)
-    .in("note_id", noteIds);
-
-  const alreadySharedIds = (existingShares || []).map((es) => es.note_id);
-  const newNoteIds = noteIds.filter((id) => !alreadySharedIds.includes(id));
-
-  if (newNoteIds.length === 0) {
-    return { success: true, sharedCount: 0 };
-  }
-
-  // 기록 공유
-  const { error: shareError } = await supabase.from("group_notes").insert(
-    newNoteIds.map((noteId) => ({
-      group_id: groupId,
-      note_id: noteId,
-    }))
-  );
+    .upsert(insertData, { onConflict: "group_id,note_id", ignoreDuplicates: true })
+    .select("id, note_id");
 
   if (shareError) {
     throw new Error(`공유 실패: ${shareError.message}`);
   }
 
-  // 활동 통계 업데이트 (공유된 기록 수만큼 증가)
-  if (newNoteIds.length > 0) {
-    await updateGroupActivityStats(supabase, groupId, user.id, newNoteIds.length);
+  // 실제로 새로 공유된 기록 수 (이미 있던 건 제외됨)
+  const sharedCount = shareResults?.length || 0;
+
+  // 활동 통계 업데이트 (새로 공유된 기록 수만큼 증가)
+  if (sharedCount > 0) {
+    await updateGroupActivityStats(supabase, groupId, user.id, sharedCount);
   }
 
   revalidatePath(`/groups/${groupId}`);
-  return { success: true, sharedCount: newNoteIds.length };
+  return { success: true, sharedCount };
 }
 
 /**
