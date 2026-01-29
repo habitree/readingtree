@@ -426,10 +426,31 @@ export async function getGroupDetail(groupId: string) {
     throw new Error("모임을 찾을 수 없습니다.");
   }
 
-  // 조회 성공한 경우, 접근 권한 확인
-  // 멤버가 아닌 경우, 공개 그룹이거나 리더인 경우만 접근 가능
-  if (!membership && !group.is_public && group.leader_id !== user.id) {
-    throw new Error("모임을 찾을 수 없습니다. 모임이 비공개이거나 접근 권한이 없습니다.");
+  // 비공개 모임 + 비멤버인 경우: 제한된 정보만 반환 (링크 접근 허용)
+  const isNonMemberPrivateGroup = !membership && !group.is_public && group.leader_id !== user.id;
+
+  // 대기 중인 멤버십 확인 (pending 상태)
+  const { data: pendingMembership } = await supabase
+    .from("group_members")
+    .select("role, status")
+    .eq("group_id", groupId)
+    .eq("user_id", user.id)
+    .eq("status", "pending")
+    .single();
+
+  if (isNonMemberPrivateGroup) {
+    // 비멤버가 비공개 모임에 링크로 접근한 경우
+    // 제한된 정보만 반환 (참여 신청 UI를 보여주기 위함)
+    return {
+      group,
+      members: [], // 멤버 목록 비공개
+      myMembership: pendingMembership || null, // 대기 중인 경우 표시
+      sharedNotes: [], // 공유 기록 비공개
+      groupBooks: [], // 지정도서 비공개
+      sharedBooks: [], // 공유 서재 비공개
+      isLeader: false,
+      isPrivatePreview: true, // 비공개 모임 미리보기 플래그
+    };
   }
 
   // 멤버 목록 조회

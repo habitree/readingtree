@@ -32,7 +32,7 @@ import {
   deleteGroup,
 } from "@/app/actions/groups";
 import { toast } from "sonner";
-import { ArrowLeft, Loader2, Trash2, AlertTriangle } from "lucide-react";
+import { ArrowLeft, Loader2, Trash2, AlertTriangle, Copy, Check, Link as LinkIcon } from "lucide-react";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -54,6 +54,7 @@ export default function GroupSettingsPage({ params }: PageProps) {
     description: "",
     isPublic: true,
   });
+  const [isCopied, setIsCopied] = useState(false);
 
   // 파라미터 및 데이터 로드
   useEffect(() => {
@@ -97,6 +98,21 @@ export default function GroupSettingsPage({ params }: PageProps) {
       toast.error(err instanceof Error ? err.message : "모임 수정에 실패했습니다.");
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleCopyLink = async () => {
+    if (!groupId) return;
+
+    const inviteLink = `${window.location.origin}/groups/${groupId}`;
+    try {
+      await navigator.clipboard.writeText(inviteLink);
+      setIsCopied(true);
+      toast.success("초대 링크가 복사되었습니다.");
+      setTimeout(() => setIsCopied(false), 2000);
+    } catch (err) {
+      console.error("링크 복사 오류:", err);
+      toast.error("링크 복사에 실패했습니다.");
     }
   };
 
@@ -236,6 +252,53 @@ export default function GroupSettingsPage({ params }: PageProps) {
               </Button>
             </div>
           </form>
+        </CardContent>
+      </Card>
+
+      {/* 초대 링크 */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <LinkIcon className="h-5 w-5" />
+            초대 링크
+          </CardTitle>
+          <CardDescription>
+            {formData.isPublic
+              ? "이 링크를 공유하면 누구나 모임에 바로 참여할 수 있습니다."
+              : "비공개 모임입니다. 링크를 받은 사용자는 참여 신청 후 승인을 받아야 합니다."}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex gap-2">
+            <Input
+              readOnly
+              value={groupId ? `${typeof window !== "undefined" ? window.location.origin : ""}/groups/${groupId}` : ""}
+              className="font-mono text-sm"
+            />
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleCopyLink}
+              className="shrink-0"
+            >
+              {isCopied ? (
+                <>
+                  <Check className="mr-2 h-4 w-4 text-green-600" />
+                  복사됨
+                </>
+              ) : (
+                <>
+                  <Copy className="mr-2 h-4 w-4" />
+                  복사
+                </>
+              )}
+            </Button>
+          </div>
+          {!formData.isPublic && (
+            <p className="text-sm text-amber-600 mt-3">
+              비공개 모임이므로, 참여 신청이 들어오면 멤버 관리에서 승인해주세요.
+            </p>
+          )}
         </CardContent>
       </Card>
 

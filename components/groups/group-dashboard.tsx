@@ -65,6 +65,7 @@ interface GroupDashboardProps {
     groupBooks?: any[];
     sharedBooks?: any[];
     isLeader: boolean;
+    isPrivatePreview?: boolean; // 비공개 모임 링크 접근 시
   };
   currentUserId?: string;
 }
@@ -75,7 +76,7 @@ interface GroupDashboardProps {
  */
 export function GroupDashboard({ groupData, currentUserId }: GroupDashboardProps) {
   const router = useRouter();
-  const { group, members, myMembership, sharedNotes, isLeader } = groupData;
+  const { group, members, myMembership, sharedNotes, isLeader, isPrivatePreview } = groupData;
   const [isJoining, setIsJoining] = useState(false);
   const [isLeaving, setIsLeaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -376,14 +377,48 @@ export function GroupDashboard({ groupData, currentUserId }: GroupDashboardProps
 
       {/* 비멤버용 안내 */}
       {(!myMembership || myMembership.status !== "approved") && (
-        <Card>
+        <Card className={isPrivatePreview ? "border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-950/20" : ""}>
           <CardContent className="pt-6">
-            <div className="text-center py-8">
-              <p className="text-muted-foreground">
-                {myMembership?.status === "pending"
-                  ? "리더의 승인을 기다리고 있습니다."
-                  : "모임에 참여하여 대시보드를 확인하세요."}
-              </p>
+            <div className="text-center py-8 space-y-4">
+              {isPrivatePreview && (
+                <>
+                  <Lock className="h-12 w-12 text-amber-500 mx-auto" />
+                  <div>
+                    <h3 className="text-lg font-semibold mb-2">비공개 모임</h3>
+                    <p className="text-muted-foreground">
+                      이 모임은 비공개입니다. 참여하려면 리더의 승인이 필요합니다.
+                    </p>
+                  </div>
+                  {!myMembership && (
+                    <Button onClick={handleJoin} disabled={isJoining} size="lg">
+                      {isJoining ? (
+                        <>
+                          <Clock className="mr-2 h-4 w-4 animate-spin" />
+                          처리 중...
+                        </>
+                      ) : (
+                        "참여 신청하기"
+                      )}
+                    </Button>
+                  )}
+                </>
+              )}
+              {myMembership?.status === "pending" && (
+                <>
+                  <Clock className="h-12 w-12 text-amber-500 mx-auto" />
+                  <div>
+                    <h3 className="text-lg font-semibold mb-2">승인 대기 중</h3>
+                    <p className="text-muted-foreground">
+                      참여 신청이 완료되었습니다. 리더의 승인을 기다리고 있습니다.
+                    </p>
+                  </div>
+                </>
+              )}
+              {!isPrivatePreview && !myMembership && (
+                <p className="text-muted-foreground">
+                  모임에 참여하여 대시보드를 확인하세요.
+                </p>
+              )}
             </div>
           </CardContent>
         </Card>
