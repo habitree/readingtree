@@ -451,10 +451,26 @@ export function GroupDashboard({ groupData, currentUserId }: GroupDashboardProps
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>모임을 삭제하시겠어요?</AlertDialogTitle>
-            <AlertDialogDescription>
-              <span className="font-medium">{group.name}</span> 모임과 모든 관련 데이터가
-              삭제됩니다. 이 작업은 되돌릴 수 없습니다.
+            <AlertDialogTitle className="text-destructive">
+              모임을 삭제하시겠어요?
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3">
+                <p>
+                  <span className="font-medium">{group.name}</span> 모임을 삭제하면
+                  다음 데이터가 모두 삭제됩니다:
+                </p>
+                <ul className="list-disc list-inside text-sm space-y-1 text-muted-foreground">
+                  <li>모임에 공유된 모든 기록 ({sharedNotes?.length || 0}개)</li>
+                  <li>지정도서 목록 ({groupData.groupBooks?.length || 0}권)</li>
+                  <li>공유된 서재 ({groupData.sharedBooks?.length || 0}개)</li>
+                  <li>멤버 정보 ({members.length}명)</li>
+                  <li>멤버 활동 통계</li>
+                </ul>
+                <p className="text-destructive font-medium">
+                  이 작업은 되돌릴 수 없습니다.
+                </p>
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

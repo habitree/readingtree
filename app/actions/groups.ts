@@ -62,6 +62,88 @@ async function updateGroupActivityStats(
 }
 
 /**
+ * 그룹 권한 검증 결과 타입
+ */
+interface GroupAccessResult {
+  user: { id: string };
+  group: { id: string; leader_id: string };
+  membership: { role: MemberRole; status: MemberStatus } | null;
+  isLeader: boolean;
+  isModerator: boolean;
+  isMember: boolean;
+}
+
+/**
+ * 그룹 접근 권한 검증 헬퍼 함수
+ * @param supabase - Supabase 클라이언트
+ * @param groupId - 그룹 ID
+ * @param requiredRole - 필요한 최소 권한 ('leader' | 'moderator' | 'member')
+ * @returns GroupAccessResult
+ * @throws Error - 권한이 없거나 로그인하지 않은 경우
+ */
+async function checkGroupAccess(
+  supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>,
+  groupId: string,
+  requiredRole?: "leader" | "moderator" | "member"
+): Promise<GroupAccessResult> {
+  // 현재 사용자 확인
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    throw new Error("로그인이 필요합니다.");
+  }
+
+  // 그룹 정보 조회
+  const { data: group, error: groupError } = await supabase
+    .from("groups")
+    .select("id, leader_id")
+    .eq("id", groupId)
+    .single();
+
+  if (groupError || !group) {
+    throw new Error("모임을 찾을 수 없습니다.");
+  }
+
+  // 멤버십 조회
+  const { data: membership } = await supabase
+    .from("group_members")
+    .select("role, status")
+    .eq("group_id", groupId)
+    .eq("user_id", user.id)
+    .eq("status", "approved")
+    .single();
+
+  const isLeader = group.leader_id === user.id;
+  const isModerator = membership?.role === "moderator";
+  const isMember = !!membership;
+
+  // 권한 검증
+  if (requiredRole === "leader" && !isLeader) {
+    throw new Error("리더만 이 작업을 수행할 수 있습니다.");
+  }
+
+  if (requiredRole === "moderator" && !isLeader && !isModerator) {
+    throw new Error("리더 또는 부리더만 이 작업을 수행할 수 있습니다.");
+  }
+
+  if (requiredRole === "member" && !isLeader && !isMember) {
+    throw new Error("모임 멤버만 이 작업을 수행할 수 있습니다.");
+  }
+
+  return {
+    user: { id: user.id },
+    group: { id: group.id, leader_id: group.leader_id },
+    membership: membership as { role: MemberRole; status: MemberStatus } | null,
+    isLeader,
+    isModerator,
+    isMember,
+  };
+}
+
+/**
  * 모임 생성
  * 생성자는 자동으로 리더가 됨
  */
