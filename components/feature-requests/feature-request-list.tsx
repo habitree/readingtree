@@ -96,14 +96,14 @@ export function FeatureRequestList({
 
         {/* 상태 필터 */}
         <Select
-          value={initialStatus}
-          onValueChange={(value) => updateFilters({ status: value })}
+          value={initialStatus || "all"}
+          onValueChange={(value) => updateFilters({ status: value === "all" ? "" : value })}
         >
           <SelectTrigger className="w-full sm:w-[140px]">
             <SelectValue placeholder="전체 상태" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">전체 상태</SelectItem>
+            <SelectItem value="all">전체 상태</SelectItem>
             {Object.entries(FEATURE_REQUEST_STATUS_CONFIG).map(([key, config]) => (
               <SelectItem key={key} value={key}>
                 {config.label}
