@@ -366,7 +366,7 @@ export function GroupDashboard({ groupData, currentUserId }: GroupDashboardProps
           </TabsContent>
 
           <TabsContent value="notes">
-            <SharedNotesList notes={sharedNotes} />
+            <SharedNotesList notes={sharedNotes} groupId={group.id} />
           </TabsContent>
 
           <TabsContent value="activity">

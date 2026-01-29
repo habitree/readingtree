@@ -617,7 +617,7 @@ export async function getGroupDetail(groupId: string) {
     .eq("user_id", user.id)
     .single();
 
-  // 공유된 기록 목록 조회
+  // 공유된 기록 목록 조회 (책 정보 + 작성자 정보 포함)
   const { data: sharedNotes, error: notesError } = await supabase
     .from("group_notes")
     .select(
@@ -630,6 +630,11 @@ export async function getGroupDetail(groupId: string) {
           title,
           author,
           cover_image_url
+        ),
+        users (
+          id,
+          name,
+          avatar_url
         )
       )
     `
