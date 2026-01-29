@@ -1973,6 +1973,116 @@ export async function getGroupMembershipStats(groupId: string) {
 }
 
 /**
+ * 모임 정보 수정
+ * 리더만 가능
+ */
+export async function updateGroup(
+  groupId: string,
+  data: {
+    name?: string;
+    description?: string;
+    isPublic?: boolean;
+  }
+): Promise<{ success: boolean }> {
+  const supabase = await createServerSupabaseClient();
+
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    throw new Error("로그인이 필요합니다.");
+  }
+
+  // 리더인지 확인
+  const { data: group } = await supabase
+    .from("groups")
+    .select("leader_id")
+    .eq("id", groupId)
+    .single();
+
+  if (!group) {
+    throw new Error("모임을 찾을 수 없습니다.");
+  }
+
+  if (group.leader_id !== user.id) {
+    throw new Error("리더만 모임 정보를 수정할 수 있습니다.");
+  }
+
+  // 업데이트할 데이터 준비
+  const updateData: Record<string, unknown> = {};
+
+  if (data.name !== undefined) {
+    if (!data.name.trim()) {
+      throw new Error("모임 이름은 필수입니다.");
+    }
+    updateData.name = data.name.trim();
+  }
+
+  if (data.description !== undefined) {
+    updateData.description = data.description.trim() || null;
+  }
+
+  if (data.isPublic !== undefined) {
+    updateData.is_public = data.isPublic;
+  }
+
+  if (Object.keys(updateData).length === 0) {
+    throw new Error("수정할 내용이 없습니다.");
+  }
+
+  const { error } = await supabase
+    .from("groups")
+    .update(updateData)
+    .eq("id", groupId);
+
+  if (error) {
+    throw new Error(`모임 수정 실패: ${error.message}`);
+  }
+
+  revalidatePath(`/groups/${groupId}`);
+  revalidatePath(`/groups/${groupId}/settings`);
+  revalidatePath("/groups");
+  return { success: true };
+}
+
+/**
+ * 모임 상세 조회 (설정 페이지용)
+ * 리더만 가능
+ */
+export async function getGroupForSettings(groupId: string) {
+  const supabase = await createServerSupabaseClient();
+
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    throw new Error("로그인이 필요합니다.");
+  }
+
+  // 모임 정보 조회
+  const { data: group, error: groupError } = await supabase
+    .from("groups")
+    .select("*")
+    .eq("id", groupId)
+    .single();
+
+  if (groupError || !group) {
+    throw new Error("모임을 찾을 수 없습니다.");
+  }
+
+  // 리더인지 확인
+  if (group.leader_id !== user.id) {
+    throw new Error("리더만 모임 설정에 접근할 수 있습니다.");
+  }
+
+  return group;
+}
+
+/**
  * 모임 삭제
  * 리더만 가능
  */

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -245,10 +246,10 @@ export function GroupDashboard({ groupData, currentUserId }: GroupDashboardProps
                   {isLeader && (
                     <>
                       <DropdownMenuItem asChild>
-                        <a href={`/groups/${group.id}/settings`}>
+                        <Link href={`/groups/${group.id}/settings`}>
                           <Settings className="mr-2 h-4 w-4" />
                           모임 설정
-                        </a>
+                        </Link>
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem
