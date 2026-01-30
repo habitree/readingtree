@@ -28,7 +28,6 @@ import { MemberList } from "./member-list";
 import { SharedNotesList } from "./shared-notes-list";
 import { GroupBooksManager } from "./group-books-manager";
 import { SharedBooksManager } from "./shared-books-manager";
-import { MemberActivityList } from "./member-activity-list";
 import {
   joinGroup,
   leaveGroup,
@@ -42,7 +41,6 @@ import {
   Globe,
   CheckCircle2,
   Clock,
-  Activity,
   Settings,
   LogOut,
   Trash2,
@@ -297,10 +295,6 @@ export function GroupDashboard({ groupData, currentUserId }: GroupDashboardProps
             <TabsTrigger value="books">지정도서</TabsTrigger>
             <TabsTrigger value="shared-library">공유 서재</TabsTrigger>
             <TabsTrigger value="notes">공유 기록</TabsTrigger>
-            <TabsTrigger value="activity">
-              <Activity className="mr-1 h-4 w-4" />
-              멤버 활동
-            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-4">
@@ -367,10 +361,6 @@ export function GroupDashboard({ groupData, currentUserId }: GroupDashboardProps
 
           <TabsContent value="notes">
             <SharedNotesList notes={sharedNotes} groupId={group.id} />
-          </TabsContent>
-
-          <TabsContent value="activity">
-            <MemberActivityList groupId={group.id} />
           </TabsContent>
         </Tabs>
       )}

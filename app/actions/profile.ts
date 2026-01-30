@@ -65,6 +65,7 @@ export async function getProfile() {
 export async function updateProfile(data: {
   name?: string;
   reading_goal?: number;
+  ai_enabled?: boolean;
 }) {
   const supabase = await createServerSupabaseClient();
 
@@ -96,6 +97,7 @@ export async function updateProfile(data: {
   const updateData: {
     name?: string;
     reading_goal?: number;
+    ai_enabled?: boolean;
   } = {};
 
   if (data.name !== undefined) {
@@ -103,6 +105,9 @@ export async function updateProfile(data: {
   }
   if (data.reading_goal !== undefined) {
     updateData.reading_goal = data.reading_goal;
+  }
+  if (data.ai_enabled !== undefined) {
+    updateData.ai_enabled = data.ai_enabled;
   }
 
   const { error } = await supabase
@@ -118,6 +123,7 @@ export async function updateProfile(data: {
   revalidatePath("/profile");
   revalidatePath("/");
   revalidatePath("/dashboard");
+  revalidatePath("/chat");
   revalidatePath("/", "layout"); // 레이아웃 캐시도 무효화
   return { success: true };
 }

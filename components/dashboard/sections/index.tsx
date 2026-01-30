@@ -1,12 +1,7 @@
-export { GoalProgressSection } from "./goal-progress-section";
 export { RecentBooksSection } from "./recent-books-section";
-export { MonthlyStatsSection } from "./monthly-stats-section";
 export { RecentNotesSection } from "./recent-notes-section";
 export { HomeHeroWrapper } from "./home-hero-wrapper";
 export { HomeHeroSection, HomeHeroSkeleton } from "./home-hero-section";
 export { MobileQuickActions, DesktopQuickActions } from "./mobile-quick-actions";
 export { ContinueReadingCard, ContinueReadingCardSkeleton, NoReadingBookCard } from "./continue-reading-card";
-export { DailyMissions, DailyMissionsSkeleton } from "./daily-missions";
-export type { Mission } from "./daily-missions";
-export { AnimatedStreak, getStreakEncouragement } from "./animated-streak";
 export { FeatureRequestPreviewWrapper, FeatureRequestPreviewSkeleton } from "./feature-request-preview-wrapper";

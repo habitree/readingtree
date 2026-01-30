@@ -9,9 +9,7 @@ import { LoginSuccessToast } from "./login-success-toast";
 
 // Streaming SSR 섹션 컴포넌트
 import {
-  GoalProgressSection,
   RecentBooksSection,
-  MonthlyStatsSection,
   HomeHeroWrapper,
   MobileQuickActions,
   FeatureRequestPreviewWrapper,
@@ -20,9 +18,7 @@ import {
 
 // 스켈레톤 컴포넌트
 import {
-  GoalProgressSkeleton,
   RecentBooksSkeleton,
-  MonthlyStatsSkeleton,
   HomeHeroSkeleton,
 } from "./skeletons";
 
@@ -92,19 +88,9 @@ export default async function DashboardContent() {
           <FeatureRequestPreviewWrapper />
         </Suspense>
 
-        {/* 목표 진행률 - 스트리밍 */}
-        <Suspense fallback={<GoalProgressSkeleton />}>
-          <GoalProgressSection />
-        </Suspense>
-
         {/* 최근 기록한 책 - 스트리밍 */}
         <Suspense fallback={<RecentBooksSkeleton />}>
           <RecentBooksSection />
-        </Suspense>
-
-        {/* 월별 통계 차트 - 스트리밍 (기본 접힌 상태) */}
-        <Suspense fallback={<MonthlyStatsSkeleton />}>
-          <MonthlyStatsSection />
         </Suspense>
       </div>
     </>

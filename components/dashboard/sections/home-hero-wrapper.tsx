@@ -2,7 +2,6 @@ import { getCurrentUser } from "@/app/actions/auth";
 import { getPersonaDashboardData } from "@/app/actions/persona";
 import { getReadingStats } from "@/app/actions/stats";
 import { getContinueReadingBooks } from "@/app/actions/books";
-import { getBonusMissions } from "@/app/actions/points";
 import { HomeHeroSection } from "./home-hero-section";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
@@ -23,100 +22,34 @@ export async function HomeHeroWrapper() {
         todayNotes={0}
         weeklyNotes={0}
         continueReadingBooks={[]}
-        dailyMissions={[]}
       />
     );
   }
 
   // 병렬로 데이터 조회
-  const [personaData, readingStats, streakAndTodayData, continueReadingBooks, bonusMissionsData] = await Promise.all([
+  const [personaData, readingStats, streakAndTodayData, continueReadingBooks] = await Promise.all([
     getPersonaDashboardData().catch(() => null),
     getReadingStats(user).catch(() => null),
-    getStreakAndTodayData(user.id).catch(() => ({ streak: 0, todayNotes: 0, hasReadToday: false })),
+    getStreakAndTodayData(user.id).catch(() => ({ streak: 0, todayNotes: 0 })),
     getContinueReadingBooks(user, 4).catch(() => []),
-    getBonusMissions(user).catch(() => ({ missions: [], isUnlocked: false, motivationMessage: undefined })),
   ]);
-
-  // 오늘 기록 수
-  const todayNotes = streakAndTodayData.todayNotes;
-
-  // 오늘의 미션 생성
-  const dailyMissions = generateDailyMissions(
-    streakAndTodayData.hasReadToday,
-    todayNotes,
-    streakAndTodayData.streak
-  );
 
   return (
     <HomeHeroSection
       userName={user.user_metadata?.name || user.email?.split("@")[0]}
       persona={personaData?.persona ?? null}
       streak={streakAndTodayData.streak}
-      todayNotes={todayNotes}
+      todayNotes={streakAndTodayData.todayNotes}
       weeklyNotes={readingStats?.thisWeek?.notes ?? 0}
       continueReadingBooks={continueReadingBooks || []}
-      dailyMissions={dailyMissions}
-      bonusMissions={bonusMissionsData.missions}
-      isBonusUnlocked={bonusMissionsData.isUnlocked}
-      bonusMotivationMessage={bonusMissionsData.motivationMessage}
     />
   );
 }
 
 /**
- * 오늘의 미션 생성 (간소화: 핵심 미션 1개 + 조건부 보너스)
- * - 심리학적 원칙: SMART 목표 (구체적, 측정 가능)
- * - UX 원칙: 인지 부하 감소, 명확한 행동 유도
- */
-function generateDailyMissions(
-  hasReadToday: boolean,
-  todayNotes: number,
-  streak: number
-) {
-  const missions = [];
-
-  // 핵심 미션: 오늘 기록 남기기 (통합된 단일 미션)
-  const isCompleted = hasReadToday || todayNotes > 0;
-
-  // 스트릭 기반 동기부여 메시지
-  let description = "오늘의 독서 흔적을 남겨보세요";
-  if (streak > 0 && !isCompleted) {
-    description = `${streak}일 연속 기록을 이어가세요!`;
-  } else if (isCompleted && streak > 0) {
-    description = `${streak + 1}일 연속 기록 달성!`;
-  } else if (isCompleted) {
-    description = "오늘 기록을 남겼어요!";
-  }
-
-  missions.push({
-    id: "daily_record",
-    type: "note" as const,
-    title: "오늘 기록 남기기",
-    description,
-    status: isCompleted ? "completed" as const : "pending" as const,
-    reward: "+15",
-    highlight: true, // 핵심 미션 강조 플래그
-  });
-
-  // 보너스 미션: 스트릭 7일 이상일 때만 표시 (선택적 확장)
-  if (streak >= 7) {
-    missions.push({
-      id: "streak_bonus",
-      type: "streak" as const,
-      title: `${streak}일 연속 기록 보너스`,
-      description: "꾸준한 독서 습관에 추가 보상!",
-      status: isCompleted ? "completed" as const : "pending" as const,
-      reward: "+10",
-    });
-  }
-
-  return missions;
-}
-
-/**
  * 연속 기록 일수 및 오늘 기록 수 조회
  */
-async function getStreakAndTodayData(userId: string): Promise<{ streak: number; todayNotes: number; hasReadToday: boolean }> {
+async function getStreakAndTodayData(userId: string): Promise<{ streak: number; todayNotes: number }> {
   try {
     const supabase = await createServerSupabaseClient();
 
@@ -132,7 +65,7 @@ async function getStreakAndTodayData(userId: string): Promise<{ streak: number; 
       .order("created_at", { ascending: false });
 
     if (error || !notes || notes.length === 0) {
-      return { streak: 0, todayNotes: 0, hasReadToday: false };
+      return { streak: 0, todayNotes: 0 };
     }
 
     // 날짜별로 그룹화 및 오늘 기록 수 계산
@@ -170,9 +103,9 @@ async function getStreakAndTodayData(userId: string): Promise<{ streak: number; 
       }
     }
 
-    return { streak, todayNotes, hasReadToday: todayNotes > 0 };
+    return { streak, todayNotes };
   } catch (error) {
     console.error("스트릭 조회 오류:", error);
-    return { streak: 0, todayNotes: 0, hasReadToday: false };
+    return { streak: 0, todayNotes: 0 };
   }
 }

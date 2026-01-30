@@ -1112,6 +1112,7 @@ export type Database = {
       }
       users: {
         Row: {
+          ai_enabled: boolean | null
           avatar_url: string | null
           consent_date: string | null
           created_at: string | null
@@ -1127,6 +1128,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          ai_enabled?: boolean | null
           avatar_url?: string | null
           consent_date?: string | null
           created_at?: string | null
@@ -1142,6 +1144,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          ai_enabled?: boolean | null
           avatar_url?: string | null
           consent_date?: string | null
           created_at?: string | null

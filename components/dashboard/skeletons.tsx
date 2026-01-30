@@ -40,32 +40,6 @@ export function HomeHeroSkeleton() {
 }
 
 /**
- * 목표 진행률 스켈레톤
- */
-export function GoalProgressSkeleton() {
-  return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-start gap-3">
-          <Skeleton className="h-9 w-9 rounded-lg" />
-          <div className="flex-1">
-            <Skeleton className="h-5 w-32 mb-2" />
-            <Skeleton className="h-4 w-48" />
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <Skeleton className="h-3 w-full mb-3" />
-        <div className="flex gap-4">
-          <Skeleton className="h-4 w-20" />
-          <Skeleton className="h-4 w-20" />
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-/**
  * 최근 기록한 책 스켈레톤
  */
 export function RecentBooksSkeleton() {
@@ -90,28 +64,6 @@ export function RecentBooksSkeleton() {
             </div>
           ))}
         </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-/**
- * 월별 통계 차트 스켈레톤
- */
-export function MonthlyStatsSkeleton() {
-  return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-start gap-3">
-          <Skeleton className="h-9 w-9 rounded-lg" />
-          <div className="flex-1">
-            <Skeleton className="h-5 w-32 mb-2" />
-            <Skeleton className="h-4 w-48" />
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <Skeleton className="h-[300px] w-full rounded-lg" />
       </CardContent>
     </Card>
   );

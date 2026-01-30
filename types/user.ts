@@ -8,6 +8,7 @@ export interface User {
   name: string;
   avatar_url: string | null;
   reading_goal: number;
+  ai_enabled: boolean | null;
   created_at: string;
   updated_at: string;
 }

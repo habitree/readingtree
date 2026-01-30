@@ -19,11 +19,8 @@ import {
 import { cn } from "@/lib/utils";
 import type { UserPersona } from "@/types/persona";
 import type { ReadingStats } from "@/types/persona";
-import type { BonusMission } from "@/types/points";
 import { useStyle } from "@/hooks/use-style";
 import { ContinueReadingCard, NoReadingBookCard } from "./continue-reading-card";
-import { DailyMissions, type Mission } from "./daily-missions";
-import { AnimatedStreak } from "./animated-streak";
 import { OnboardingChecklist, type OnboardingItem } from "@/components/onboarding/onboarding-checklist";
 
 interface ContinueReadingData {
@@ -46,10 +43,6 @@ interface HomeHeroSectionProps {
   todayNotes?: number;
   weeklyNotes?: number;
   continueReadingBooks?: ContinueReadingData[];
-  dailyMissions?: Mission[];
-  bonusMissions?: BonusMission[];
-  isBonusUnlocked?: boolean;
-  bonusMotivationMessage?: string;
   /** 온보딩 체크리스트 (새 사용자에게 표시) */
   onboardingItems?: OnboardingItem[];
   /** 온보딩 숨기기 핸들러 */
@@ -66,10 +59,6 @@ export function HomeHeroSection({
   todayNotes = 0,
   weeklyNotes = 0,
   continueReadingBooks = [],
-  dailyMissions = [],
-  bonusMissions = [],
-  isBonusUnlocked = false,
-  bonusMotivationMessage,
   onboardingItems,
   onDismissOnboarding,
 }: HomeHeroSectionProps) {
@@ -187,8 +176,22 @@ export function HomeHeroSection({
             transition={{ duration: 0.4, delay: 0.1 }}
             className="grid grid-cols-3 gap-2 sm:gap-3"
           >
-            {/* 애니메이션 스트릭 */}
-            <AnimatedStreak streak={streak} size="md" />
+            {/* 스트릭 */}
+            <div className="bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm rounded-xl p-3 text-center border border-white/50 dark:border-slate-700/50">
+              <div className="flex items-center justify-center gap-1 mb-1">
+                <span className="text-lg">🔥</span>
+                <motion.span
+                  key={streak}
+                  initial={{ scale: 0.8 }}
+                  animate={{ scale: 1 }}
+                  className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white"
+                >
+                  {streak}
+                </motion.span>
+                <span className="text-sm text-slate-500">일</span>
+              </div>
+              <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400">연속 기록</p>
+            </div>
 
             {/* 오늘 기록 - 구체적 숫자 표시 + 클릭 시 기록 페이지 이동 */}
             <Link
@@ -266,16 +269,6 @@ export function HomeHeroSection({
         ) : (
           <NoReadingBookCard />
         )
-      )}
-
-      {/* 오늘의 미션 */}
-      {userName && dailyMissions.length > 0 && (
-        <DailyMissions
-          missions={dailyMissions}
-          bonusMissions={bonusMissions}
-          isBonusUnlocked={isBonusUnlocked}
-          motivationMessage={bonusMotivationMessage}
-        />
       )}
 
       {/* 페르소나 인사이트 미니 카드 (있는 경우에만) */}

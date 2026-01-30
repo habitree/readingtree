@@ -9,12 +9,7 @@ import {
   Calendar,
   Zap,
   Target,
-  TreeDeciduous,
-  BarChart3,
-  Trophy,
   Sparkles,
-  ChevronRight,
-  Award,
 } from "lucide-react";
 import {
   Sheet,
@@ -22,17 +17,13 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { getPointsDashboardData } from "@/app/actions/points";
-import { LEVEL_STYLES, LEVEL_DEFAULTS, type PointsDashboardData } from "@/types/points";
-import { LevelLeaderboard } from "./level-leaderboard";
-import { TreeWatering } from "./tree-watering";
-import { LevelBadgeImage } from "./level-badge-image";
+import type { PointsDashboardData } from "@/types/points";
 
 interface PointsModalProps {
   open: boolean;
@@ -42,13 +33,12 @@ interface PointsModalProps {
 /**
  * 포인트 대시보드 모달 (Sheet)
  * - 개인 포인트 정보
- * - 레벨 진행률
- * - 리더보드 (레벨별 분포)
+ * - 스트릭 현황
+ * - 기간별 통계
  */
 export function PointsModal({ open, onOpenChange }: PointsModalProps) {
   const [data, setData] = useState<PointsDashboardData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("tree");
 
   useEffect(() => {
     if (open) {
@@ -68,21 +58,6 @@ export function PointsModal({ open, onOpenChange }: PointsModalProps) {
     }
   };
 
-  const level = data?.userPoints?.current_level || 1;
-  const levelStyle = LEVEL_STYLES[level] || LEVEL_STYLES[1];
-  const levelInfo = LEVEL_DEFAULTS.find((l) => l.level === level);
-  const nextLevelInfo = LEVEL_DEFAULTS.find((l) => l.level === level + 1);
-
-  // 심리학적 요소: "거의 달성" 메시지 계산
-  const motivationMessage = useMemo(() => {
-    if (!data?.progressToNextLevel) return null;
-    const progress = data.progressToNextLevel;
-    if (progress >= 90) return "거의 다 왔어요! 조금만 더!";
-    if (progress >= 70) return "레벨업이 코앞이에요!";
-    if (progress >= 50) return "절반 달성! 잘하고 있어요";
-    if (progress >= 25) return "좋은 시작이에요!";
-    return null;
-  }, [data?.progressToNextLevel]);
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -113,69 +88,27 @@ export function PointsModal({ open, onOpenChange }: PointsModalProps) {
             <PointsModalSkeleton />
           ) : data?.userPoints ? (
             <div className="p-6 space-y-6">
-              {/* 메인 포인트 카드 - 디자인 대폭 개선 */}
+              {/* 메인 포인트 카드 - 간소화 */}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, ease: "easeOut" }}
-                className={cn(
-                  "relative rounded-2xl border-2 overflow-hidden",
-                  levelStyle.bgColor,
-                  levelStyle.borderColor
-                )}
+                className="relative rounded-2xl border-2 overflow-hidden bg-gradient-to-br from-forest-50 to-emerald-50 dark:from-forest-950/30 dark:to-emerald-950/30 border-forest-200 dark:border-forest-800"
               >
-                {/* 배경 그라데이션 패턴 - 더 세련된 디자인 */}
+                {/* 배경 패턴 */}
                 <div className="absolute inset-0">
                   <div className="absolute inset-0 opacity-[0.03] bg-[radial-gradient(circle_at_30%_20%,currentColor_1px,transparent_1px)] [background-size:16px_16px]" />
-                  <div
-                    className="absolute top-0 right-0 w-40 h-40 opacity-20 blur-3xl rounded-full"
-                    style={{ backgroundColor: levelStyle.color }}
-                  />
                 </div>
 
-                {/* 상단 영역: 레벨 + 스트릭 */}
+                {/* 상단 영역: 스트릭 */}
                 <div className="relative px-5 pt-5 pb-3">
                   <div className="flex items-start justify-between">
-                    {/* 레벨 뱃지 */}
-                    <motion.div
-                      className="flex items-center gap-3"
-                      animate={
-                        levelStyle.effect === "premium"
-                          ? { scale: [1, 1.02, 1] }
-                          : {}
-                      }
-                      transition={{ duration: 2, repeat: Infinity }}
-                    >
-                      <div className="relative">
-                        <LevelBadgeImage
-                          level={level}
-                          size="lg"
-                          animated={levelStyle.effect !== "none"}
-                          showGlow={levelStyle.effect === "glow" || levelStyle.effect === "premium"}
-                        />
-                        {/* 레벨 뱃지 아래 번호 */}
-                        <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-background border-2 border-current flex items-center justify-center">
-                          <span className={cn("text-xs font-bold", levelStyle.textColor)}>{level}</span>
-                        </div>
-                      </div>
-                      <div>
-                        <div className={cn("text-xl font-bold flex items-center gap-1.5", levelStyle.textColor)}>
-                          {levelInfo?.title}
-                          {level >= 8 && <Sparkles className="h-4 w-4" />}
-                        </div>
-                        <div className="text-xs text-muted-foreground flex items-center gap-1">
-                          <span>Lv.{level}</span>
-                          {nextLevelInfo && (
-                            <>
-                              <ChevronRight className="h-3 w-3" />
-                              <span className="opacity-60">Lv.{level + 1} {nextLevelInfo.title}</span>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    </motion.div>
+                    <div className="flex items-center gap-2">
+                      <Coins className="h-5 w-5 text-amber-500" />
+                      <span className="font-semibold text-foreground">내 포인트</span>
+                    </div>
 
-                    {/* 스트릭 뱃지 - 더 눈에 띄게 */}
+                    {/* 스트릭 뱃지 */}
                     {data.userPoints.current_streak > 0 && (
                       <motion.div
                         initial={{ scale: 0.8, opacity: 0 }}
@@ -197,7 +130,7 @@ export function PointsModal({ open, onOpenChange }: PointsModalProps) {
                   </div>
                 </div>
 
-                {/* 중앙: 총 포인트 - 시각적 강조 */}
+                {/* 중앙: 총 포인트 */}
                 <div className="relative px-5 py-6 text-center">
                   <motion.div
                     initial={{ scale: 0.9 }}
@@ -209,10 +142,7 @@ export function PointsModal({ open, onOpenChange }: PointsModalProps) {
                     </div>
                     <AnimatedCounter
                       value={data.userPoints.total_points}
-                      className={cn(
-                        "text-5xl font-extrabold tabular-nums tracking-tight",
-                        levelStyle.textColor
-                      )}
+                      className="text-5xl font-extrabold tabular-nums tracking-tight text-forest-600 dark:text-forest-400"
                     />
                     <div className="mt-2 flex items-center justify-center gap-2 text-sm text-muted-foreground">
                       <span>누적 {data.userPoints.lifetime_points.toLocaleString()}P</span>
@@ -225,98 +155,10 @@ export function PointsModal({ open, onOpenChange }: PointsModalProps) {
                     </div>
                   </motion.div>
                 </div>
-
-                {/* 하단: 다음 레벨 진행률 - 심리학적 개선 */}
-                {data.nextLevel && (
-                  <div className="relative px-5 pb-5">
-                    <div className="p-4 rounded-xl bg-background/60 backdrop-blur-sm border border-border/50">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <Award className="h-4 w-4 text-muted-foreground" />
-                          <span className="text-sm font-medium">다음 레벨까지</span>
-                        </div>
-                        <span className={cn("text-sm font-bold", levelStyle.textColor)}>
-                          {data.nextLevel.required_points - data.userPoints.lifetime_points}P
-                        </span>
-                      </div>
-
-                      {/* 진행률 바 - 시각적 강화 */}
-                      <div className="relative">
-                        <Progress
-                          value={data.progressToNextLevel}
-                          className="h-3 bg-muted/50"
-                          style={{
-                            // @ts-ignore
-                            "--progress-background": levelStyle.color,
-                          }}
-                        />
-                        {/* 진행률 마커 */}
-                        <motion.div
-                          className="absolute top-1/2 -translate-y-1/2 w-1 h-5 rounded-full bg-background shadow-sm border"
-                          style={{ left: `${data.progressToNextLevel}%` }}
-                          animate={{ scale: [1, 1.1, 1] }}
-                          transition={{ duration: 1.5, repeat: Infinity }}
-                        />
-                      </div>
-
-                      <div className="flex items-center justify-between mt-2 text-xs">
-                        <span className="text-muted-foreground">Lv.{level}</span>
-                        <span className={cn("font-semibold", levelStyle.textColor)}>
-                          {data.progressToNextLevel}% 달성
-                        </span>
-                        <span className="text-muted-foreground">Lv.{data.nextLevel.level}</span>
-                      </div>
-
-                      {/* 동기부여 메시지 (심리학적 요소) */}
-                      {motivationMessage && (
-                        <motion.div
-                          initial={{ opacity: 0, y: 5 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          className="mt-3 text-center"
-                        >
-                          <span className="text-xs text-muted-foreground bg-muted/50 px-3 py-1 rounded-full">
-                            {motivationMessage}
-                          </span>
-                        </motion.div>
-                      )}
-                    </div>
-                  </div>
-                )}
               </motion.div>
 
-              {/* 탭 네비게이션 - 디자인 개선 */}
-              <Tabs value={activeTab} onValueChange={setActiveTab}>
-                <TabsList className="grid w-full grid-cols-3 h-12 p-1 bg-muted/50">
-                  <TabsTrigger
-                    value="tree"
-                    className="gap-1.5 data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all"
-                  >
-                    <TreeDeciduous className="h-4 w-4" />
-                    <span className="font-medium">나무</span>
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="stats"
-                    className="gap-1.5 data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all"
-                  >
-                    <BarChart3 className="h-4 w-4" />
-                    <span className="font-medium">통계</span>
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="ranking"
-                    className="gap-1.5 data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all"
-                  >
-                    <Trophy className="h-4 w-4" />
-                    <span className="font-medium">랭킹</span>
-                  </TabsTrigger>
-                </TabsList>
-
-                {/* 나무 탭 */}
-                <TabsContent value="tree" className="mt-4">
-                  <TreeWatering level={level} />
-                </TabsContent>
-
-                {/* 통계 탭 - 대폭 개선 */}
-                <TabsContent value="stats" className="mt-4 space-y-5">
+              {/* 통계 섹션 - 직접 표시 (탭 제거) */}
+              <div className="space-y-5">
                   {/* 기간별 통계 카드 - 시각적 강화 */}
                   <div className="grid grid-cols-3 gap-3">
                     <StatCard
@@ -366,7 +208,7 @@ export function PointsModal({ open, onOpenChange }: PointsModalProps) {
                               스트릭 보너스 활성화
                             </div>
                             <div className="text-xs text-orange-600/70 dark:text-orange-400/70">
-                              레벨 {level} 달성 보상
+                              연속 활동 보상
                             </div>
                           </div>
                         </div>
@@ -380,18 +222,13 @@ export function PointsModal({ open, onOpenChange }: PointsModalProps) {
                     </motion.div>
                   )}
 
-                  {/* 상세 정보 카드 - 카드 형태로 개선 */}
+                  {/* 상세 정보 카드 */}
                   <div className="p-4 rounded-xl bg-muted/30 border border-border/50 space-y-4">
                     <h4 className="font-semibold text-sm flex items-center gap-2">
                       <Target className="h-4 w-4 text-muted-foreground" />
                       상세 통계
                     </h4>
                     <div className="grid grid-cols-2 gap-4">
-                      <InfoItem
-                        label="현재 레벨"
-                        value={levelInfo?.title || ""}
-                        subValue={`Lv.${level}`}
-                      />
                       <InfoItem
                         label="누적 포인트"
                         value={data.userPoints.lifetime_points.toLocaleString()}
@@ -408,15 +245,15 @@ export function PointsModal({ open, onOpenChange }: PointsModalProps) {
                         value={data.userPoints.longest_streak.toString()}
                         subValue="일"
                       />
+                      <InfoItem
+                        label="보너스 배율"
+                        value={data.userPoints.streak_bonus_multiplier > 1 ? `x${data.userPoints.streak_bonus_multiplier.toFixed(2)}` : "-"}
+                        subValue=""
+                        highlight={data.userPoints.streak_bonus_multiplier > 1}
+                      />
                     </div>
                   </div>
-                </TabsContent>
-
-                {/* 랭킹 탭 */}
-                <TabsContent value="ranking" className="mt-4">
-                  <LevelLeaderboard currentLevel={level} />
-                </TabsContent>
-              </Tabs>
+                </div>
             </div>
           ) : (
             <div className="p-6 text-center text-muted-foreground">

@@ -3,37 +3,16 @@
 import { motion } from "framer-motion";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import {
-  Star,
-  Crown,
-  Trophy,
-  Award,
+  Coins,
   Flame,
   TrendingUp,
-  BookOpen,
-  Gem,
-  Sprout,
   Sparkles,
   Zap,
   Calendar,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { PointsDashboardData, PointTransaction } from "@/types/points";
-
-// 레벨별 아이콘 매핑
-const levelIcons: Record<string, React.ElementType> = {
-  Sprout,
-  Sparkles,
-  TrendingUp,
-  Flame,
-  Star,
-  Crown,
-  Award,
-  BookOpen,
-  Trophy,
-  Gem,
-};
 
 interface PointsDashboardProps {
   data: PointsDashboardData;
@@ -42,18 +21,11 @@ interface PointsDashboardProps {
 export function PointsDashboard({ data }: PointsDashboardProps) {
   const {
     userPoints,
-    currentLevel,
-    nextLevel,
-    progressToNextLevel,
     recentTransactions,
     todayEarned,
     weeklyEarned,
     monthlyEarned,
   } = data;
-
-  const LevelIcon = currentLevel?.badge_icon
-    ? levelIcons[currentLevel.badge_icon] || Star
-    : Star;
 
   return (
     <div className="space-y-4">
@@ -73,30 +45,13 @@ export function PointsDashboard({ data }: PointsDashboardProps) {
               </motion.p>
             </div>
             <div className="w-14 h-14 rounded-full bg-white/20 flex items-center justify-center">
-              <LevelIcon className="h-7 w-7" />
+              <Coins className="h-7 w-7" />
             </div>
           </div>
 
-          {/* 레벨 정보 */}
-          <div className="mt-4">
-            <div className="flex items-center justify-between text-sm mb-1">
-              <span className="text-forest-100">
-                Lv.{currentLevel?.level || 1} {currentLevel?.title || "새싹 독서가"}
-              </span>
-              {nextLevel && (
-                <span className="text-forest-100">
-                  Lv.{nextLevel.level}까지 {progressToNextLevel}%
-                </span>
-              )}
-            </div>
-            <div className="h-2 bg-white/20 rounded-full overflow-hidden">
-              <motion.div
-                className="h-full bg-white rounded-full"
-                initial={{ width: 0 }}
-                animate={{ width: `${progressToNextLevel}%` }}
-                transition={{ duration: 0.8, ease: "easeOut" }}
-              />
-            </div>
+          {/* 누적 포인트 */}
+          <div className="mt-3 text-sm text-forest-100 opacity-90">
+            누적 {(userPoints?.lifetime_points || 0).toLocaleString()}P
           </div>
         </div>
 
@@ -169,7 +124,7 @@ export function PointsDashboard({ data }: PointsDashboardProps) {
             <div className="mt-3 px-3 py-2 bg-amber-50 dark:bg-amber-950/30 rounded-lg">
               <p className="text-xs text-amber-700 dark:text-amber-300">
                 <Sparkles className="inline-block h-3 w-3 mr-1" />
-                레벨 보너스로 포인트 x{userPoints.streak_bonus_multiplier.toFixed(2)} 적용 중!
+                스트릭 보너스로 포인트 x{userPoints.streak_bonus_multiplier.toFixed(2)} 적용 중!
               </p>
             </div>
           )}
@@ -308,12 +263,8 @@ export function PointsDashboardSkeleton() {
             </div>
             <div className="w-14 h-14 rounded-full bg-slate-300 dark:bg-slate-600 animate-pulse" />
           </div>
-          <div className="mt-4 space-y-2">
-            <div className="flex justify-between">
-              <div className="h-3 w-20 bg-slate-300 dark:bg-slate-600 rounded animate-pulse" />
-              <div className="h-3 w-16 bg-slate-300 dark:bg-slate-600 rounded animate-pulse" />
-            </div>
-            <div className="h-2 bg-slate-300 dark:bg-slate-600 rounded-full animate-pulse" />
+          <div className="mt-3">
+            <div className="h-3 w-20 bg-slate-300 dark:bg-slate-600 rounded animate-pulse" />
           </div>
         </div>
         <div className="grid grid-cols-3 divide-x divide-slate-100 dark:divide-slate-800">
