@@ -709,6 +709,12 @@ export async function getUserBooks(
   return data || [];
 }
 
+export interface RelatedBookPreview {
+  userBookId: string;
+  coverImageUrl: string | null;
+  title: string;
+}
+
 export interface BookWithNotes {
   id: string; // user_books.id
   status: ReadingStatus;
@@ -744,6 +750,7 @@ export interface BookWithNotes {
     group_name: string;
     group_leader_id: string;
   }>; // 이 책이 지정도서로 등록된 모임 정보
+  relatedBooks?: RelatedBookPreview[]; // 연결된 책 미리보기 (최대 3개)
 }
 
 export interface BookStats {
@@ -1006,6 +1013,48 @@ export async function getUserBooksWithNotes(
     }
   }
 
+  // 2.5. 연결된 책 정보 조회 (user_book_relations)
+  const userBookIds = userBooks.map((ub: any) => ub.id);
+  let relatedBooksMap: Record<string, RelatedBookPreview[]> = {};
+
+  if (userBookIds.length > 0) {
+    const { data: relations } = await supabase
+      .from("user_book_relations")
+      .select(`
+        source_user_book_id,
+        target_user_book_id,
+        target_book:user_books!user_book_relations_target_user_book_id_fkey (
+          id,
+          books (
+            title,
+            cover_image_url
+          )
+        )
+      `)
+      .eq("user_id", currentUser.id)
+      .in("source_user_book_id", userBookIds)
+      .order("created_at", { ascending: false });
+
+    // source_user_book_id별로 연결된 책 그룹화 (최대 3개)
+    for (const relation of relations || []) {
+      const sourceId = relation.source_user_book_id;
+      const targetBook = relation.target_book as any;
+
+      if (!relatedBooksMap[sourceId]) {
+        relatedBooksMap[sourceId] = [];
+      }
+
+      // 최대 3개만 저장
+      if (relatedBooksMap[sourceId].length < 3 && targetBook?.books) {
+        relatedBooksMap[sourceId].push({
+          userBookId: relation.target_user_book_id,
+          coverImageUrl: targetBook.books.cover_image_url || null,
+          title: targetBook.books.title || "알 수 없는 책",
+        });
+      }
+    }
+  }
+
   // 3. 결과 매핑 (추가 쿼리 없이 메모리에서 처리)
   const booksWithNotes = userBooks.map((userBook: any) => {
     const bookId = userBook.books?.id;
@@ -1062,6 +1111,7 @@ export async function getUserBooksWithNotes(
       noteCount: noteCountMap[bookId] || 0,
       latestNote: latestNoteMap[bookId],
       groupBooks: groupBooksMap[bookId] || [],
+      relatedBooks: relatedBooksMap[userBook.id] || [],
       // 정렬을 위해 created_at 추가 (user_books의 created_at)
       created_at: userBook.created_at,
     };

@@ -15,11 +15,18 @@ import { BookOpen, Users } from "lucide-react";
 import type { BookWithUserBook, ReadingStatus } from "@/types/book";
 import type { BookWithNotes } from "@/app/actions/books";
 
+interface RelatedBookPreview {
+  userBookId: string;
+  coverImageUrl: string | null;
+  title: string;
+}
+
 interface BookCardProps {
   book: BookWithUserBook;
   userBookId: string;
   status: ReadingStatus;
   groupBooks?: BookWithNotes["groupBooks"];
+  relatedBooks?: RelatedBookPreview[];
   isSample?: boolean;
 }
 
@@ -28,7 +35,7 @@ interface BookCardProps {
  * 책 목록에서 사용되는 카드 형태의 책 정보 표시
  * React.memo로 래핑하여 불필요한 리렌더링 방지
  */
-function BookCardComponent({ book, userBookId, status, groupBooks, isSample: isSampleProp = false }: BookCardProps) {
+function BookCardComponent({ book, userBookId, status, groupBooks, relatedBooks, isSample: isSampleProp = false }: BookCardProps) {
   const [imageError, setImageError] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
   const MAX_RETRIES = 2; // 최대 2번 재시도
@@ -80,6 +87,39 @@ function BookCardComponent({ book, userBookId, status, groupBooks, isSample: isS
                 <div className="absolute inset-0 flex flex-col items-center justify-center bg-muted/50" aria-label="이미지 없음">
                   <BookOpen className="w-8 h-8 text-muted-foreground mb-1" aria-hidden="true" />
                   <span className="text-xs text-muted-foreground">이미지 없음</span>
+                </div>
+              )}
+              {/* 연결된 책 미니 표지 (오른쪽 하단 스택) */}
+              {relatedBooks && relatedBooks.length > 0 && (
+                <div
+                  className="absolute bottom-2 right-2 flex items-end"
+                  title={`연결된 책 ${relatedBooks.length}권`}
+                >
+                  {relatedBooks.slice(0, 3).map((related, index) => (
+                    <div
+                      key={related.userBookId}
+                      className={cn(
+                        "relative w-6 h-8 sm:w-7 sm:h-9 rounded-sm overflow-hidden border border-white/80 shadow-sm bg-slate-200 dark:bg-slate-700",
+                        index > 0 && "-ml-3"
+                      )}
+                      style={{ zIndex: 3 - index }}
+                      title={related.title}
+                    >
+                      {related.coverImageUrl ? (
+                        <Image
+                          src={getImageUrl(related.coverImageUrl)}
+                          alt={related.title}
+                          fill
+                          className="object-cover"
+                          sizes="28px"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <BookOpen className="w-3 h-3 text-slate-400" />
+                        </div>
+                      )}
+                    </div>
+                  ))}
                 </div>
               )}
             </div>

@@ -6,6 +6,12 @@ import type { BookWithUserBook } from "@/types/book";
 import type { UserBook, ReadingStatus } from "@/types/book";
 import { grids } from "@/lib/design-tokens";
 
+interface RelatedBookPreview {
+  userBookId: string;
+  coverImageUrl: string | null;
+  title: string;
+}
+
 interface BookListProps {
   books: Array<{
     id: string;
@@ -24,6 +30,7 @@ interface BookListProps {
       group_name: string;
       group_leader_id: string;
     }>;
+    relatedBooks?: RelatedBookPreview[];
   }>;
   isLoading?: boolean;
   isSample?: boolean;
@@ -69,6 +76,7 @@ export function BookList({ books, isLoading, isSample = false }: BookListProps) 
             userBookId={userBook.id}
             status={userBook.status}
             groupBooks={userBook.groupBooks}
+            relatedBooks={userBook.relatedBooks}
             isSample={isSample}
           />
         );

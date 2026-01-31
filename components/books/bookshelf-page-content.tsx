@@ -187,6 +187,7 @@ async function BooksListGrid({
           updated_at: item.books.updated_at || "",
         },
         groupBooks: item.groupBooks || [],
+        relatedBooks: item.relatedBooks || [],
       }));
 
     return <BookList books={books} isSample={isSample} />;
