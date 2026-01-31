@@ -9,9 +9,14 @@ import { BookDeleteButton } from "./book-delete-button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@/components/ui/hover-card";
 import { getImageUrl, isValidImageUrl } from "@/lib/utils/image";
 import { cn } from "@/lib/utils";
-import { BookOpen, Users } from "lucide-react";
+import { BookOpen, Users, Link2 } from "lucide-react";
 import type { BookWithUserBook, ReadingStatus } from "@/types/book";
 import type { BookWithNotes } from "@/app/actions/books";
 
@@ -89,37 +94,16 @@ function BookCardComponent({ book, userBookId, status, groupBooks, relatedBooks,
                   <span className="text-xs text-muted-foreground">이미지 없음</span>
                 </div>
               )}
-              {/* 연결된 책 미니 표지 (오른쪽 하단 스택) */}
+              {/* 모바일: 연결된 책 미니 배지 (좌하단, 심플) */}
               {relatedBooks && relatedBooks.length > 0 && (
                 <div
-                  className="absolute bottom-2 right-2 flex items-end"
+                  className="absolute bottom-2 left-2 lg:hidden"
                   title={`연결된 책 ${relatedBooks.length}권`}
                 >
-                  {relatedBooks.slice(0, 3).map((related, index) => (
-                    <div
-                      key={related.userBookId}
-                      className={cn(
-                        "relative w-6 h-8 sm:w-7 sm:h-9 rounded-sm overflow-hidden border border-white/80 shadow-sm bg-slate-200 dark:bg-slate-700",
-                        index > 0 && "-ml-3"
-                      )}
-                      style={{ zIndex: 3 - index }}
-                      title={related.title}
-                    >
-                      {related.coverImageUrl ? (
-                        <Image
-                          src={getImageUrl(related.coverImageUrl)}
-                          alt={related.title}
-                          fill
-                          className="object-cover"
-                          sizes="28px"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <BookOpen className="w-3 h-3 text-slate-400" />
-                        </div>
-                      )}
-                    </div>
-                  ))}
+                  <div className="flex items-center gap-0.5 bg-black/60 backdrop-blur-sm text-white px-1.5 py-0.5 rounded-full text-[10px] font-medium">
+                    <Link2 className="w-2.5 h-2.5" />
+                    <span>{relatedBooks.length}</span>
+                  </div>
                 </div>
               )}
             </div>
@@ -171,6 +155,60 @@ function BookCardComponent({ book, userBookId, status, groupBooks, relatedBooks,
                       {Math.round((book.user_book.current_page / book.total_pages) * 100)}%
                     </span>
                   </div>
+                </div>
+              )}
+
+              {/* PC: 연결된 책 심플 버튼 + 호버 미리보기 */}
+              {relatedBooks && relatedBooks.length > 0 && (
+                <div className="hidden lg:block mt-2 pt-2 border-t border-border/50">
+                  <HoverCard openDelay={200} closeDelay={100}>
+                    <HoverCardTrigger asChild>
+                      <button
+                        type="button"
+                        className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors w-full"
+                        onClick={(e) => e.preventDefault()}
+                      >
+                        <Link2 className="w-3 h-3" />
+                        <span>연결 {relatedBooks.length}권</span>
+                      </button>
+                    </HoverCardTrigger>
+                    <HoverCardContent
+                      side="top"
+                      align="start"
+                      className="w-auto p-2"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div className="flex items-center gap-2">
+                        {relatedBooks.slice(0, 3).map((related) => (
+                          <Link
+                            key={related.userBookId}
+                            href={`/books/${related.userBookId}`}
+                            className="group/related flex flex-col items-center gap-1 p-1 rounded hover:bg-muted/50 transition-colors"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <div className="relative w-10 h-14 rounded overflow-hidden bg-muted shadow-sm ring-1 ring-border/30 group-hover/related:ring-primary/50 transition-all">
+                              {related.coverImageUrl ? (
+                                <Image
+                                  src={getImageUrl(related.coverImageUrl)}
+                                  alt={related.title}
+                                  fill
+                                  className="object-cover"
+                                  sizes="40px"
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center bg-muted">
+                                  <BookOpen className="w-4 h-4 text-muted-foreground" />
+                                </div>
+                              )}
+                            </div>
+                            <span className="text-[10px] text-muted-foreground group-hover/related:text-foreground line-clamp-1 max-w-[60px] text-center transition-colors">
+                              {related.title}
+                            </span>
+                          </Link>
+                        ))}
+                      </div>
+                    </HoverCardContent>
+                  </HoverCard>
                 </div>
               )}
             </div>

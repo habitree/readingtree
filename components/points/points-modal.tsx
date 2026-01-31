@@ -10,6 +10,7 @@ import {
   Zap,
   Target,
   Sparkles,
+  Trophy,
 } from "lucide-react";
 import {
   Sheet,
@@ -17,7 +18,6 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
@@ -33,7 +33,7 @@ interface PointsModalProps {
 /**
  * 포인트 대시보드 모달 (Sheet)
  * - 개인 포인트 정보
- * - 스트릭 현황
+ * - 연속 기록 현황 (핵심)
  * - 기간별 통계
  */
 export function PointsModal({ open, onOpenChange }: PointsModalProps) {
@@ -62,7 +62,7 @@ export function PointsModal({ open, onOpenChange }: PointsModalProps) {
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="w-full sm:max-w-md p-0 overflow-hidden">
-        {/* 헤더 - 디자인 개선 */}
+        {/* 헤더 */}
         <SheetHeader className="px-6 pt-6 pb-4 border-b bg-gradient-to-r from-background to-muted/30">
           <SheetTitle className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -88,7 +88,7 @@ export function PointsModal({ open, onOpenChange }: PointsModalProps) {
             <PointsModalSkeleton />
           ) : data?.userPoints ? (
             <div className="p-6 space-y-6">
-              {/* 메인 포인트 카드 - 간소화 */}
+              {/* 메인 포인트 카드 - 연속 기록 중심 */}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -100,7 +100,7 @@ export function PointsModal({ open, onOpenChange }: PointsModalProps) {
                   <div className="absolute inset-0 opacity-[0.03] bg-[radial-gradient(circle_at_30%_20%,currentColor_1px,transparent_1px)] [background-size:16px_16px]" />
                 </div>
 
-                {/* 상단 영역: 스트릭 */}
+                {/* 상단 영역: 연속 기록 강조 */}
                 <div className="relative px-5 pt-5 pb-3">
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-2">
@@ -108,23 +108,23 @@ export function PointsModal({ open, onOpenChange }: PointsModalProps) {
                       <span className="font-semibold text-foreground">내 포인트</span>
                     </div>
 
-                    {/* 스트릭 뱃지 */}
+                    {/* 연속 기록 뱃지 - 핵심 동기부여 요소 */}
                     {data.userPoints.current_streak > 0 && (
                       <motion.div
                         initial={{ scale: 0.8, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
-                        className="flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl bg-gradient-to-br from-orange-100 to-amber-100 dark:from-orange-900/40 dark:to-amber-900/40 border border-orange-200 dark:border-orange-800"
+                        className="flex flex-col items-center gap-0.5 px-4 py-2 rounded-xl bg-gradient-to-br from-orange-100 to-amber-100 dark:from-orange-900/40 dark:to-amber-900/40 border border-orange-200 dark:border-orange-800"
                       >
                         <motion.div
                           animate={{ scale: [1, 1.2, 1] }}
                           transition={{ duration: 0.5, repeat: Infinity, repeatDelay: 2 }}
                         >
-                          <Flame className="h-5 w-5 text-orange-500" />
+                          <Flame className="h-6 w-6 text-orange-500" />
                         </motion.div>
-                        <span className="font-bold text-orange-600 dark:text-orange-400">
+                        <span className="text-2xl font-bold text-orange-600 dark:text-orange-400">
                           {data.userPoints.current_streak}일
                         </span>
-                        <span className="text-[10px] text-orange-500/70">연속</span>
+                        <span className="text-[10px] text-orange-500/70">연속 기록</span>
                       </motion.div>
                     )}
                   </div>
@@ -144,116 +144,121 @@ export function PointsModal({ open, onOpenChange }: PointsModalProps) {
                       value={data.userPoints.total_points}
                       className="text-5xl font-extrabold tabular-nums tracking-tight text-forest-600 dark:text-forest-400"
                     />
-                    <div className="mt-2 flex items-center justify-center gap-2 text-sm text-muted-foreground">
-                      <span>누적 {data.userPoints.lifetime_points.toLocaleString()}P</span>
-                      {data.userPoints.streak_bonus_multiplier > 1 && (
-                        <Badge variant="outline" className="text-xs border-amber-300 text-amber-600 dark:text-amber-400">
-                          <Zap className="h-3 w-3 mr-0.5" />
-                          x{data.userPoints.streak_bonus_multiplier.toFixed(2)}
-                        </Badge>
-                      )}
+                    <div className="mt-2 text-sm text-muted-foreground">
+                      누적 {data.userPoints.lifetime_points.toLocaleString()}P
                     </div>
                   </motion.div>
                 </div>
               </motion.div>
 
-              {/* 통계 섹션 - 직접 표시 (탭 제거) */}
+              {/* 통계 섹션 */}
               <div className="space-y-5">
-                  {/* 기간별 통계 카드 - 시각적 강화 */}
-                  <div className="grid grid-cols-3 gap-3">
-                    <StatCard
-                      icon={Zap}
-                      label="오늘"
-                      value={data.todayEarned}
-                      color="text-amber-500"
-                      bgColor="bg-amber-50 dark:bg-amber-950/30"
-                      trend={data.todayEarned > 0 ? "up" : undefined}
-                    />
-                    <StatCard
-                      icon={Calendar}
-                      label="이번 주"
-                      value={data.weeklyEarned}
-                      color="text-blue-500"
-                      bgColor="bg-blue-50 dark:bg-blue-950/30"
-                    />
-                    <StatCard
-                      icon={TrendingUp}
-                      label="이번 달"
-                      value={data.monthlyEarned}
-                      color="text-emerald-500"
-                      bgColor="bg-emerald-50 dark:bg-emerald-950/30"
-                    />
-                  </div>
-
-                  {/* 주간 활동 히트맵 (심리학적 요소: 시각적 습관 추적) */}
-                  <WeeklyActivityHeatmap
-                    todayEarned={data.todayEarned}
-                    streak={data.userPoints.current_streak}
+                {/* 기간별 통계 카드 */}
+                <div className="grid grid-cols-3 gap-3">
+                  <StatCard
+                    icon={Zap}
+                    label="오늘"
+                    value={data.todayEarned}
+                    color="text-amber-500"
+                    bgColor="bg-amber-50 dark:bg-amber-950/30"
+                    trend={data.todayEarned > 0 ? "up" : undefined}
                   />
+                  <StatCard
+                    icon={Calendar}
+                    label="이번 주"
+                    value={data.weeklyEarned}
+                    color="text-blue-500"
+                    bgColor="bg-blue-50 dark:bg-blue-950/30"
+                  />
+                  <StatCard
+                    icon={TrendingUp}
+                    label="이번 달"
+                    value={data.monthlyEarned}
+                    color="text-emerald-500"
+                    bgColor="bg-emerald-50 dark:bg-emerald-950/30"
+                  />
+                </div>
 
-                  {/* 스트릭 보너스 정보 - 더 눈에 띄게 */}
-                  {data.userPoints.streak_bonus_multiplier > 1 && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="p-4 rounded-xl bg-gradient-to-r from-orange-50 via-amber-50 to-yellow-50 dark:from-orange-900/20 dark:via-amber-900/20 dark:to-yellow-900/20 border border-orange-200 dark:border-orange-800"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-orange-400 to-amber-500 flex items-center justify-center shadow-lg shadow-orange-500/30">
-                            <Zap className="h-5 w-5 text-white" />
-                          </div>
-                          <div>
-                            <div className="font-semibold text-orange-700 dark:text-orange-300">
-                              스트릭 보너스 활성화
-                            </div>
-                            <div className="text-xs text-orange-600/70 dark:text-orange-400/70">
-                              연속 활동 보상
-                            </div>
-                          </div>
+                {/* 주간 활동 히트맵 (심리학적 요소: 시각적 습관 추적) */}
+                <WeeklyActivityHeatmap
+                  todayEarned={data.todayEarned}
+                  streak={data.userPoints.current_streak}
+                />
+
+                {/* 연속 기록 정보 카드 - 손실 회피 심리 활용 */}
+                {data.userPoints.current_streak > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="p-4 rounded-xl bg-gradient-to-r from-orange-50 via-amber-50 to-yellow-50 dark:from-orange-900/20 dark:via-amber-900/20 dark:to-yellow-900/20 border border-orange-200 dark:border-orange-800"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-orange-400 to-amber-500 flex items-center justify-center shadow-lg shadow-orange-500/30">
+                          <Flame className="h-5 w-5 text-white" />
                         </div>
-                        <div className="text-right">
-                          <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">
-                            +{((data.userPoints.streak_bonus_multiplier - 1) * 100).toFixed(0)}%
+                        <div>
+                          <div className="font-semibold text-orange-700 dark:text-orange-300">
+                            연속 기록 진행 중!
                           </div>
-                          <div className="text-xs text-orange-500/70">추가 포인트</div>
+                          <div className="text-xs text-orange-600/70 dark:text-orange-400/70">
+                            {data.userPoints.current_streak >= 7
+                              ? "대단해요! 이 기록을 지켜나가세요"
+                              : "오늘도 기록해서 연속일을 늘려보세요"}
+                          </div>
                         </div>
                       </div>
-                    </motion.div>
-                  )}
-
-                  {/* 상세 정보 카드 */}
-                  <div className="p-4 rounded-xl bg-muted/30 border border-border/50 space-y-4">
-                    <h4 className="font-semibold text-sm flex items-center gap-2">
-                      <Target className="h-4 w-4 text-muted-foreground" />
-                      상세 통계
-                    </h4>
-                    <div className="grid grid-cols-2 gap-4">
-                      <InfoItem
-                        label="누적 포인트"
-                        value={data.userPoints.lifetime_points.toLocaleString()}
-                        subValue="P"
-                      />
-                      <InfoItem
-                        label="현재 스트릭"
-                        value={data.userPoints.current_streak.toString()}
-                        subValue="일 연속"
-                        highlight={data.userPoints.current_streak >= 7}
-                      />
-                      <InfoItem
-                        label="최장 기록"
-                        value={data.userPoints.longest_streak.toString()}
-                        subValue="일"
-                      />
-                      <InfoItem
-                        label="보너스 배율"
-                        value={data.userPoints.streak_bonus_multiplier > 1 ? `x${data.userPoints.streak_bonus_multiplier.toFixed(2)}` : "-"}
-                        subValue=""
-                        highlight={data.userPoints.streak_bonus_multiplier > 1}
-                      />
+                      <div className="text-right">
+                        <div className="text-3xl font-bold text-orange-600 dark:text-orange-400">
+                          {data.userPoints.current_streak}
+                        </div>
+                        <div className="text-xs text-orange-500/70">일 연속</div>
+                      </div>
                     </div>
+
+                    {/* 다음 마일스톤 안내 */}
+                    {getNextMilestoneMessage(data.userPoints.current_streak) && (
+                      <div className="mt-3 pt-3 border-t border-orange-200/50 dark:border-orange-700/50">
+                        <div className="flex items-center gap-2 text-sm text-orange-600/80 dark:text-orange-400/80">
+                          <Trophy className="h-4 w-4" />
+                          <span>{getNextMilestoneMessage(data.userPoints.current_streak)}</span>
+                        </div>
+                      </div>
+                    )}
+                  </motion.div>
+                )}
+
+                {/* 상세 정보 카드 */}
+                <div className="p-4 rounded-xl bg-muted/30 border border-border/50 space-y-4">
+                  <h4 className="font-semibold text-sm flex items-center gap-2">
+                    <Target className="h-4 w-4 text-muted-foreground" />
+                    상세 통계
+                  </h4>
+                  <div className="grid grid-cols-2 gap-4">
+                    <InfoItem
+                      label="누적 포인트"
+                      value={data.userPoints.lifetime_points.toLocaleString()}
+                      subValue="P"
+                    />
+                    <InfoItem
+                      label="현재 스트릭"
+                      value={data.userPoints.current_streak.toString()}
+                      subValue="일 연속"
+                      highlight={data.userPoints.current_streak >= 7}
+                    />
+                    <InfoItem
+                      label="최장 기록"
+                      value={data.userPoints.longest_streak.toString()}
+                      subValue="일"
+                    />
+                    <InfoItem
+                      label="현재 레벨"
+                      value={data.currentLevel?.title || "씨앗"}
+                      subValue={`Lv.${data.userPoints.current_level}`}
+                    />
                   </div>
                 </div>
+              </div>
             </div>
           ) : (
             <div className="p-6 text-center text-muted-foreground">
@@ -267,7 +272,24 @@ export function PointsModal({ open, onOpenChange }: PointsModalProps) {
 }
 
 /**
- * 통계 카드 컴포넌트 - 디자인 개선
+ * 다음 마일스톤 메시지 생성
+ */
+function getNextMilestoneMessage(currentStreak: number): string | null {
+  if (currentStreak < 7) {
+    const daysLeft = 7 - currentStreak;
+    return `${daysLeft}일 후 7일 마일스톤! (+50P)`;
+  } else if (currentStreak < 30) {
+    const daysLeft = 30 - currentStreak;
+    return `${daysLeft}일 후 30일 마일스톤! (+200P)`;
+  } else if (currentStreak < 100) {
+    const daysLeft = 100 - currentStreak;
+    return `${daysLeft}일 후 100일 마일스톤! (+500P)`;
+  }
+  return null;
+}
+
+/**
+ * 통계 카드 컴포넌트
  */
 function StatCard({
   icon: Icon,
@@ -332,7 +354,7 @@ function WeeklyActivityHeatmap({
   const today = new Date().getDay();
   const adjustedToday = today === 0 ? 6 : today - 1; // 월요일 기준으로 조정
 
-  // 스트릭 기반 활동일 계산 (실제로는 API에서 가져와야 함)
+  // 스트릭 기반 활동일 계산
   const activeDays = useMemo(() => {
     const active = new Set<number>();
     // 오늘 활동이 있으면 오늘 추가
@@ -480,17 +502,13 @@ function PointsModalSkeleton() {
   return (
     <div className="p-6 space-y-6">
       <Skeleton className="h-64 w-full rounded-2xl" />
-      <Skeleton className="h-10 w-full rounded-lg" />
       <div className="grid grid-cols-3 gap-3">
         <Skeleton className="h-20 rounded-lg" />
         <Skeleton className="h-20 rounded-lg" />
         <Skeleton className="h-20 rounded-lg" />
       </div>
-      <div className="space-y-2">
-        {Array.from({ length: 5 }).map((_, i) => (
-          <Skeleton key={i} className="h-16 w-full rounded-lg" />
-        ))}
-      </div>
+      <Skeleton className="h-32 w-full rounded-lg" />
+      <Skeleton className="h-40 w-full rounded-lg" />
     </div>
   );
 }

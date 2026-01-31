@@ -7,7 +7,6 @@ import {
   Coins,
   Flame,
   TrendingUp,
-  Sparkles,
   Zap,
   Calendar,
 } from "lucide-react";
@@ -119,15 +118,6 @@ export function PointsDashboard({ data }: PointsDashboardProps) {
             </div>
           </div>
 
-          {/* 스트릭 보너스 */}
-          {userPoints.streak_bonus_multiplier > 1.0 && (
-            <div className="mt-3 px-3 py-2 bg-amber-50 dark:bg-amber-950/30 rounded-lg">
-              <p className="text-xs text-amber-700 dark:text-amber-300">
-                <Sparkles className="inline-block h-3 w-3 mr-1" />
-                스트릭 보너스로 포인트 x{userPoints.streak_bonus_multiplier.toFixed(2)} 적용 중!
-              </p>
-            </div>
-          )}
         </Card>
       )}
 

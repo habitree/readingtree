@@ -7,18 +7,12 @@ import type {
   PointActionType,
   UserPoints,
   PointTransaction,
-  PointLevel,
   EarnPointsResult,
   PointsDashboardData,
   MissionWithDetails,
   DailyMissionType,
   Achievement,
-  BonusMission,
-  BonusMissionType,
-  POINT_ACTION_DEFAULTS,
-  LEVEL_DEFAULTS,
 } from "@/types/points";
-import { BONUS_MISSION_DEFINITIONS } from "@/types/points";
 
 /**
  * 사용자 포인트 정보 조회
@@ -71,7 +65,7 @@ export async function getUserPoints(user?: User | null): Promise<UserPoints | nu
 }
 
 /**
- * 포인트 적립
+ * 포인트 적립 (배율 없이 순수 포인트)
  */
 export async function earnPoints(
   actionType: PointActionType,
@@ -89,7 +83,7 @@ export async function earnPoints(
   if (!currentUser) {
     const { data: { user: fetchedUser } } = await supabase.auth.getUser();
     if (!fetchedUser) {
-      return { success: false, points_earned: 0, final_points: 0, multiplier_applied: 1, new_total: 0, error: "로그인이 필요합니다." };
+      return { success: false, points_earned: 0, new_total: 0, error: "로그인이 필요합니다." };
     }
     currentUser = fetchedUser;
   }
@@ -104,7 +98,7 @@ export async function earnPoints(
       .single();
 
     if (!actionConfig) {
-      return { success: false, points_earned: 0, final_points: 0, multiplier_applied: 1, new_total: 0, error: "유효하지 않은 액션입니다." };
+      return { success: false, points_earned: 0, new_total: 0, error: "유효하지 않은 액션입니다." };
     }
 
     // 2. 일일 제한 확인
@@ -119,7 +113,7 @@ export async function earnPoints(
         .lte("created_at", `${today}T23:59:59`);
 
       if (count && count >= actionConfig.daily_limit) {
-        return { success: false, points_earned: 0, final_points: 0, multiplier_applied: 1, new_total: 0, error: "일일 획득 한도에 도달했습니다." };
+        return { success: false, points_earned: 0, new_total: 0, error: "일일 획득 한도에 도달했습니다." };
       }
     }
 
@@ -133,7 +127,7 @@ export async function earnPoints(
         .maybeSingle();
 
       if (existingTransaction) {
-        return { success: false, points_earned: 0, final_points: 0, multiplier_applied: 1, new_total: 0, error: "이미 획득한 보상입니다." };
+        return { success: false, points_earned: 0, new_total: 0, error: "이미 획득한 보상입니다." };
       }
     }
 
@@ -155,27 +149,25 @@ export async function earnPoints(
         .single();
 
       if (createError || !newPoints) {
-        return { success: false, points_earned: 0, final_points: 0, multiplier_applied: 1, new_total: 0, error: "포인트 초기화 실패" };
+        return { success: false, points_earned: 0, new_total: 0, error: "포인트 초기화 실패" };
       }
       userPoints = newPoints as UserPoints;
     }
 
-    // 5. 배율 계산 (스트릭 보너스 등)
-    const multiplier = userPoints!.streak_bonus_multiplier || 1.0;
+    // 5. 포인트 계산 (배율 없이 순수 포인트)
     const basePoints = actionConfig.base_points;
-    const finalPoints = Math.round(basePoints * multiplier);
+    const finalPoints = basePoints;
 
     // 6. 새 잔액 계산
     const newTotal = userPoints!.total_points + finalPoints;
 
-    // 7. 거래 내역 생성
+    // 7. 거래 내역 생성 (배율 필드 제거)
     const { error: transactionError } = await supabase
       .from("point_transactions")
       .insert({
         user_id: currentUser.id,
         action_type: actionType,
         points: basePoints,
-        multiplier: multiplier,
         final_points: finalPoints,
         description: options?.description || actionConfig.description,
         reference_id: options?.referenceId,
@@ -186,7 +178,7 @@ export async function earnPoints(
 
     if (transactionError) {
       console.error("거래 내역 생성 오류:", transactionError);
-      return { success: false, points_earned: 0, final_points: 0, multiplier_applied: 1, new_total: 0, error: "포인트 적립 실패" };
+      return { success: false, points_earned: 0, new_total: 0, error: "포인트 적립 실패" };
     }
 
     // 8. 레벨 업 확인
@@ -210,7 +202,18 @@ export async function earnPoints(
       }
     }
 
-    // 9. 업적 확인
+    // 9. 사용자 포인트 업데이트
+    await supabase
+      .from("user_points")
+      .update({
+        total_points: newTotal,
+        lifetime_points: newLifetimePoints,
+        current_level: newLevel,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("user_id", currentUser.id);
+
+    // 10. 업적 확인
     const achievements: Achievement[] = [];
 
     // 첫 번째 특별 보상 확인
@@ -228,7 +231,7 @@ export async function earnPoints(
           type: "first_time",
           title: "첫 기록!",
           description: "첫 번째 노트를 작성했습니다",
-          points_bonus: 20,
+          points_bonus: 25,
           icon: "Pencil",
         });
       }
@@ -247,7 +250,7 @@ export async function earnPoints(
           type: "first_time",
           title: "독서 시작!",
           description: "첫 번째 책을 등록했습니다",
-          points_bonus: 30,
+          points_bonus: 35,
           icon: "BookOpen",
         });
       }
@@ -270,9 +273,7 @@ export async function earnPoints(
 
     return {
       success: true,
-      points_earned: basePoints,
-      final_points: finalPoints,
-      multiplier_applied: multiplier,
+      points_earned: finalPoints,
       new_total: newTotal,
       new_level: levelUp ? newLevel : undefined,
       level_up: levelUp,
@@ -280,12 +281,12 @@ export async function earnPoints(
     };
   } catch (error) {
     console.error("포인트 적립 오류:", error);
-    return { success: false, points_earned: 0, final_points: 0, multiplier_applied: 1, new_total: 0, error: "알 수 없는 오류가 발생했습니다." };
+    return { success: false, points_earned: 0, new_total: 0, error: "알 수 없는 오류가 발생했습니다." };
   }
 }
 
 /**
- * 스트릭 업데이트 및 보너스 적립
+ * 스트릭 업데이트 및 보너스 적립 (3개 마일스톤만 유지)
  */
 export async function updateStreak(user?: User | null): Promise<{
   streak: number;
@@ -348,14 +349,11 @@ export async function updateStreak(user?: User | null): Promise<{
     })
     .eq("user_id", currentUser.id);
 
-  // 스트릭 마일스톤 보너스 확인
+  // 스트릭 마일스톤 보너스 확인 (3개만 유지: 7일, 30일, 100일)
   const STREAK_MILESTONES: { days: number; action: PointActionType }[] = [
-    { days: 3, action: "streak_3_days" },
     { days: 7, action: "streak_7_days" },
-    { days: 14, action: "streak_14_days" },
     { days: 30, action: "streak_30_days" },
     { days: 100, action: "streak_100_days" },
-    { days: 365, action: "streak_365_days" },
   ];
 
   for (const milestone of STREAK_MILESTONES) {
@@ -784,539 +782,4 @@ export async function getPointTransactions(
   }
 
   return data || [];
-}
-
-/**
- * 보너스 미션 조회 (모든 일일 미션 완료 시 해금)
- * 심리학적 동기부여 요소 포함:
- * - 가변 보상 (슬롯머신 효과)
- * - 희소성 (제한 시간)
- * - 사회적 증거 (완료한 사용자 수)
- */
-export async function getBonusMissions(user?: User | null): Promise<{
-  missions: BonusMission[];
-  isUnlocked: boolean;
-  motivationMessage?: string;
-}> {
-  const supabase = await createServerSupabaseClient();
-
-  let currentUser = user;
-  if (!currentUser) {
-    const { data: { user: fetchedUser } } = await supabase.auth.getUser();
-    if (!fetchedUser) return { missions: [], isUnlocked: false };
-    currentUser = fetchedUser;
-  }
-
-  const today = new Date().toISOString().split("T")[0];
-
-  // 오늘의 일일 미션 상태 확인
-  const dailyMissions = await getDailyMissions(currentUser);
-  const allDailyComplete = dailyMissions.every(m => m.status === "completed");
-
-  // 일일 미션 모두 완료하지 않으면 보너스 미션 잠금
-  if (!allDailyComplete) {
-    const completedCount = dailyMissions.filter(m => m.status === "completed").length;
-    const remaining = dailyMissions.length - completedCount;
-
-    return {
-      missions: [],
-      isUnlocked: false,
-      motivationMessage: remaining === 1
-        ? "마지막 1개만 완료하면 보너스 미션이 열려요! 🎁"
-        : `${remaining}개 미션만 더 완료하면 보너스 미션이 열려요!`,
-    };
-  }
-
-  // 오늘 완료한 보너스 미션 조회
-  const { data: completedBonusMissions } = await supabase
-    .from("point_transactions")
-    .select("reference_id, action_type")
-    .eq("user_id", currentUser.id)
-    .eq("reference_type", "bonus_mission")
-    .gte("created_at", `${today}T00:00:00`);
-
-  const completedTypes = new Set(
-    completedBonusMissions?.map(m => m.reference_id) || []
-  );
-
-  // 오늘의 사용자 활동 데이터 조회 (보너스 미션 진행률 체크용)
-  const { data: todayNotes } = await supabase
-    .from("notes")
-    .select("id, quote_content, memo_content, image_url, is_public")
-    .eq("user_id", currentUser.id)
-    .gte("created_at", `${today}T00:00:00`);
-
-  const notesCount = todayNotes?.length || 0;
-
-  // 오늘 보너스 미션 완료자 수 (사회적 증거)
-  const { count: todayCompletedUsers } = await supabase
-    .from("point_transactions")
-    .select("user_id", { count: "exact", head: true })
-    .eq("reference_type", "bonus_mission")
-    .gte("created_at", `${today}T00:00:00`);
-
-  // 보너스 미션 2-3개 랜덤 선택 (매일 다른 조합)
-  const seed = new Date().getDate() + currentUser.id.charCodeAt(0);
-  const shuffled = [...BONUS_MISSION_DEFINITIONS].sort((a, b) => {
-    const hashA = (seed * a.type.length) % 100;
-    const hashB = (seed * b.type.length) % 100;
-    return hashA - hashB;
-  });
-  const selectedDefinitions = shuffled.slice(0, 3);
-
-  // 보너스 미션 생성
-  const bonusMissions: BonusMission[] = selectedDefinitions.map((def, index) => {
-    const isCompleted = completedTypes.has(def.type);
-    const now = new Date();
-
-    // 제한 시간 계산 (희소성)
-    let expiresAt: string | undefined;
-    if (def.durationMinutes && !isCompleted) {
-      const expires = new Date(now.getTime() + def.durationMinutes * 60 * 1000);
-      // 오늘 자정까지만
-      const midnight = new Date(now);
-      midnight.setHours(23, 59, 59, 999);
-      expiresAt = (expires < midnight ? expires : midnight).toISOString();
-    }
-
-    // 요구사항 계산
-    let requirement: BonusMission["requirement"];
-    if (def.type === "extra_note") {
-      requirement = { type: "notes", target: notesCount + 1, current: notesCount };
-    } else if (def.type === "deep_reading") {
-      const longMemoCount = todayNotes?.filter(n =>
-        (n.memo_content?.length || 0) >= 100
-      ).length || 0;
-      requirement = { type: "long_memo", target: 1, current: longMemoCount };
-    } else if (def.type === "photo_capture") {
-      const photoCount = todayNotes?.filter(n => n.image_url).length || 0;
-      requirement = { type: "photo", target: 1, current: photoCount };
-    } else if (def.type === "share_wisdom") {
-      const publicCount = todayNotes?.filter(n => n.is_public).length || 0;
-      requirement = { type: "public_note", target: 1, current: publicCount };
-    }
-
-    return {
-      id: `bonus_${def.type}_${today}`,
-      type: def.type,
-      title: def.title,
-      description: def.description,
-      status: isCompleted
-        ? "completed"
-        : requirement && requirement.current >= requirement.target
-          ? "completed"
-          : "available",
-      reward: {
-        min: def.reward.min,
-        max: def.reward.max,
-      },
-      icon: def.icon,
-      action_url: def.action_url,
-      expires_at: expiresAt,
-      difficulty: def.difficulty,
-      rarity: def.rarity,
-      requirement,
-      completedBy: todayCompletedUsers || 0,
-    };
-  });
-
-  return {
-    missions: bonusMissions,
-    isUnlocked: true,
-    motivationMessage: "🎉 보너스 미션이 열렸어요! 추가 보상을 획득하세요!",
-  };
-}
-
-/**
- * 보너스 미션 완료 처리
- * 가변 보상 시스템 (심리학적 슬롯머신 효과)
- */
-export async function completeBonusMission(
-  missionType: BonusMissionType,
-  user?: User | null
-): Promise<{
-  success: boolean;
-  reward?: number;
-  message?: string;
-  isLuckyBonus?: boolean;
-}> {
-  const supabase = await createServerSupabaseClient();
-
-  let currentUser = user;
-  if (!currentUser) {
-    const { data: { user: fetchedUser } } = await supabase.auth.getUser();
-    if (!fetchedUser) {
-      return { success: false, message: "로그인이 필요합니다." };
-    }
-    currentUser = fetchedUser;
-  }
-
-  const today = new Date().toISOString().split("T")[0];
-
-  // 이미 완료했는지 확인
-  const { data: existing } = await supabase
-    .from("point_transactions")
-    .select("id")
-    .eq("user_id", currentUser.id)
-    .eq("reference_type", "bonus_mission")
-    .eq("reference_id", missionType)
-    .gte("created_at", `${today}T00:00:00`)
-    .maybeSingle();
-
-  if (existing) {
-    return { success: false, message: "이미 완료한 미션입니다." };
-  }
-
-  // 미션 정의 찾기
-  const missionDef = BONUS_MISSION_DEFINITIONS.find(m => m.type === missionType);
-  if (!missionDef) {
-    return { success: false, message: "유효하지 않은 미션입니다." };
-  }
-
-  // 가변 보상 계산 (슬롯머신 효과)
-  const { min, max } = missionDef.reward;
-  let reward: number;
-  let isLuckyBonus = false;
-
-  if (missionType === "lucky_box") {
-    // 럭키박스: 확률 기반 보상
-    const rand = Math.random();
-    if (rand < 0.05) {
-      // 5% 확률: 최대 보상
-      reward = max;
-      isLuckyBonus = true;
-    } else if (rand < 0.20) {
-      // 15% 확률: 상위 보상
-      reward = Math.round(min + (max - min) * 0.7);
-    } else if (rand < 0.50) {
-      // 30% 확률: 중간 보상
-      reward = Math.round(min + (max - min) * 0.4);
-    } else {
-      // 50% 확률: 기본 보상
-      reward = Math.round(min + (max - min) * 0.1);
-    }
-  } else {
-    // 일반 보너스 미션: 약간의 변동
-    const variance = (max - min) * 0.3;
-    reward = Math.round(min + Math.random() * variance);
-  }
-
-  // 포인트 적립
-  const result = await earnPoints("mission_complete", {
-    user: currentUser,
-    description: `보너스 미션 완료: ${missionDef.title}`,
-    referenceId: missionType,
-    referenceType: "bonus_mission",
-    metadata: {
-      reward,
-      isLuckyBonus,
-      missionType,
-    },
-  });
-
-  if (!result.success) {
-    return { success: false, message: result.error };
-  }
-
-  // 추가 포인트 적립 (가변 보상분)
-  const bonusPoints = reward - 10; // mission_complete 기본 10포인트 제외
-  if (bonusPoints > 0) {
-    await supabase.from("point_transactions").insert({
-      user_id: currentUser.id,
-      action_type: "admin_adjust",
-      points: bonusPoints,
-      multiplier: 1,
-      final_points: bonusPoints,
-      description: `보너스 미션 추가 보상: ${missionDef.title}`,
-      reference_id: missionType,
-      reference_type: "bonus_mission_extra",
-      balance_after: result.new_total + bonusPoints,
-    });
-
-    // 총 포인트 업데이트
-    await supabase
-      .from("user_points")
-      .update({
-        total_points: result.new_total + bonusPoints,
-        lifetime_points: (await getUserPoints(currentUser))!.lifetime_points + bonusPoints,
-      })
-      .eq("user_id", currentUser.id);
-  }
-
-  revalidatePath("/");
-
-  return {
-    success: true,
-    reward,
-    isLuckyBonus,
-    message: isLuckyBonus
-      ? `🎉 대박! ${reward} 포인트 획득!`
-      : `+${reward} 포인트 획득!`,
-  };
-}
-
-/**
- * 스트릭 보호권 사용 (손실 회피 심리)
- */
-export async function useStreakProtection(user?: User | null): Promise<{
-  success: boolean;
-  message: string;
-}> {
-  const supabase = await createServerSupabaseClient();
-
-  let currentUser = user;
-  if (!currentUser) {
-    const { data: { user: fetchedUser } } = await supabase.auth.getUser();
-    if (!fetchedUser) {
-      return { success: false, message: "로그인이 필요합니다." };
-    }
-    currentUser = fetchedUser;
-  }
-
-  const userPoints = await getUserPoints(currentUser);
-  if (!userPoints) {
-    return { success: false, message: "포인트 정보를 찾을 수 없습니다." };
-  }
-
-  // 스트릭 보호권 비용 (포인트 소모)
-  const protectionCost = 50;
-  if (userPoints.total_points < protectionCost) {
-    return { success: false, message: `스트릭 보호에 ${protectionCost} 포인트가 필요합니다.` };
-  }
-
-  // 포인트 차감 및 스트릭 유지
-  const today = new Date().toISOString().split("T")[0];
-
-  await supabase
-    .from("user_points")
-    .update({
-      total_points: userPoints.total_points - protectionCost,
-      last_activity_date: today, // 오늘 활동한 것으로 처리
-    })
-    .eq("user_id", currentUser.id);
-
-  // 거래 내역 기록
-  await supabase.from("point_transactions").insert({
-    user_id: currentUser.id,
-    action_type: "point_used",
-    points: -protectionCost,
-    multiplier: 1,
-    final_points: -protectionCost,
-    description: "스트릭 보호권 사용",
-    reference_type: "streak_protection",
-    balance_after: userPoints.total_points - protectionCost,
-  });
-
-  revalidatePath("/");
-
-  return {
-    success: true,
-    message: `🛡️ ${userPoints.current_streak}일 연속 기록이 보호되었습니다!`,
-  };
-}
-
-/**
- * ============================================
- * 물주기 시스템 API
- * ============================================
- */
-
-import {
-  WateringStatus,
-  WateringResult,
-  WATERING_CONFIG,
-  getRandomEncouragementQuote,
-} from "@/types/points";
-
-/**
- * 물주기 상태 조회
- */
-export async function getWateringStatus(user?: User | null): Promise<WateringStatus> {
-  const supabase = await createServerSupabaseClient();
-
-  let currentUser = user;
-  if (!currentUser) {
-    const { data: { user: fetchedUser } } = await supabase.auth.getUser();
-    if (!fetchedUser) {
-      return {
-        canWater: false,
-        nextWateringAt: null,
-        remainingSeconds: 0,
-        todayWateringCount: 0,
-        totalWateringCount: 0,
-        treeHealth: 100,
-        lastWateredAt: null,
-      };
-    }
-    currentUser = fetchedUser;
-  }
-
-  const today = new Date().toISOString().split("T")[0];
-
-  // 오늘의 물주기 횟수 조회
-  const { count: todayCount } = await supabase
-    .from("point_transactions")
-    .select("*", { count: "exact", head: true })
-    .eq("user_id", currentUser.id)
-    .eq("reference_type", "tree_watering")
-    .gte("created_at", `${today}T00:00:00`);
-
-  // 총 물주기 횟수 조회
-  const { count: totalCount } = await supabase
-    .from("point_transactions")
-    .select("*", { count: "exact", head: true })
-    .eq("user_id", currentUser.id)
-    .eq("reference_type", "tree_watering");
-
-  // 마지막 물주기 시간 조회
-  const { data: lastWatering } = await supabase
-    .from("point_transactions")
-    .select("created_at")
-    .eq("user_id", currentUser.id)
-    .eq("reference_type", "tree_watering")
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  // 쿨다운 계산
-  let canWater = true;
-  let nextWateringAt: string | null = null;
-  let remainingSeconds = 0;
-
-  if (lastWatering) {
-    const lastTime = new Date(lastWatering.created_at);
-    const cooldownMs = WATERING_CONFIG.cooldownHours * 60 * 60 * 1000;
-    const nextTime = new Date(lastTime.getTime() + cooldownMs);
-    const now = new Date();
-
-    if (nextTime > now) {
-      canWater = false;
-      nextWateringAt = nextTime.toISOString();
-      remainingSeconds = Math.ceil((nextTime.getTime() - now.getTime()) / 1000);
-    }
-  }
-
-  // 일일 최대 횟수 체크
-  if ((todayCount || 0) >= WATERING_CONFIG.maxDailyWaterings) {
-    canWater = false;
-  }
-
-  // 나무 건강도 계산 (마지막 물주기 이후 시간 기반)
-  let treeHealth = 100;
-  if (lastWatering) {
-    const hoursSinceWatering = (Date.now() - new Date(lastWatering.created_at).getTime()) / (1000 * 60 * 60);
-    const healthDecay = Math.floor(hoursSinceWatering * WATERING_CONFIG.healthDecayPerHour);
-    treeHealth = Math.max(0, 100 - healthDecay);
-  }
-
-  return {
-    canWater,
-    nextWateringAt,
-    remainingSeconds,
-    todayWateringCount: todayCount || 0,
-    totalWateringCount: totalCount || 0,
-    treeHealth,
-    lastWateredAt: lastWatering?.created_at || null,
-  };
-}
-
-/**
- * 나무에 물주기
- * 가변 보상 시스템 적용 (심리학적 슬롯머신 효과)
- */
-export async function waterTree(user?: User | null): Promise<WateringResult> {
-  const supabase = await createServerSupabaseClient();
-
-  let currentUser = user;
-  if (!currentUser) {
-    const { data: { user: fetchedUser } } = await supabase.auth.getUser();
-    if (!fetchedUser) {
-      return { success: false, message: "로그인이 필요합니다." };
-    }
-    currentUser = fetchedUser;
-  }
-
-  // 물주기 가능 여부 확인
-  const status = await getWateringStatus(currentUser);
-  if (!status.canWater) {
-    if (status.remainingSeconds > 0) {
-      const minutes = Math.ceil(status.remainingSeconds / 60);
-      return {
-        success: false,
-        message: `${minutes}분 후에 다시 물을 줄 수 있어요 💧`,
-      };
-    }
-    return {
-      success: false,
-      message: "오늘은 충분히 물을 주셨어요! 내일 다시 만나요 🌙",
-    };
-  }
-
-  // 가변 보상 계산 (심리학적 설계)
-  const rand = Math.random();
-  let points = WATERING_CONFIG.basePoints;
-  let isLuckyDrop = false;
-  let bonusPoints = 0;
-
-  // 럭키 드롭 (10% 확률)
-  if (rand < WATERING_CONFIG.luckyDropChance) {
-    isLuckyDrop = true;
-    bonusPoints = Math.round(WATERING_CONFIG.basePoints * (WATERING_CONFIG.luckyDropMultiplier - 1));
-    points = WATERING_CONFIG.basePoints * WATERING_CONFIG.luckyDropMultiplier;
-  } else {
-    // 일반 가변 보상 (3-8 포인트)
-    points = WATERING_CONFIG.basePoints + Math.floor(rand * (WATERING_CONFIG.maxPoints - WATERING_CONFIG.basePoints + 1));
-  }
-
-  // 포인트 적립
-  const userPoints = await getUserPoints(currentUser);
-  if (!userPoints) {
-    return { success: false, message: "포인트 정보를 찾을 수 없습니다." };
-  }
-
-  const newTotal = userPoints.total_points + points;
-
-  // 거래 내역 생성
-  await supabase.from("point_transactions").insert({
-    user_id: currentUser.id,
-    action_type: "daily_first_activity",
-    points: points,
-    multiplier: 1,
-    final_points: points,
-    description: isLuckyDrop ? "🍀 럭키 물주기!" : "나무에 물주기",
-    reference_type: "tree_watering",
-    balance_after: newTotal,
-    metadata: { isLuckyDrop, bonusPoints },
-  });
-
-  // 포인트 업데이트
-  await supabase
-    .from("user_points")
-    .update({
-      total_points: newTotal,
-      lifetime_points: userPoints.lifetime_points + points,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("user_id", currentUser.id);
-
-  // 나무 건강도 계산
-  const newTreeHealth = Math.min(100, status.treeHealth + WATERING_CONFIG.healthRecoveryPerWatering);
-
-  // 독서 독려 문구 선택
-  const quoteCategory = isLuckyDrop ? "achievement" : (Math.random() > 0.5 ? "prompt" : "motivation");
-  const quote = getRandomEncouragementQuote(quoteCategory);
-
-  revalidatePath("/");
-
-  return {
-    success: true,
-    points,
-    message: isLuckyDrop
-      ? `🍀 럭키! +${points} 포인트!`
-      : `+${points} 포인트!`,
-    quote,
-    isLuckyDrop,
-    bonusPoints: isLuckyDrop ? bonusPoints : undefined,
-    newTreeHealth,
-  };
 }

@@ -1,8 +1,8 @@
 # 데이터 모델 (Data Model)
 
 **프로젝트:** Habitree Reading Hub v4.0.0  
-**최종 업데이트:** 2025년 1월  
-**버전:** 1.0
+**최종 업데이트:** 2026년 2월
+**버전:** 1.1
 
 ---
 
@@ -736,6 +736,185 @@ CREATE TYPE ocr_log_status AS ENUM ('success', 'failed');
 
 ---
 
+### 4.12 user_points (사용자 포인트)
+
+**목적**: 사용자의 포인트 및 연속 기록(스트릭) 정보를 저장합니다.
+
+**소유 구조**: 개인 (각 사용자는 하나의 포인트 레코드만 소유)
+
+**주요 컬럼**:
+- `id` (UUID, PK): 기본 키
+- `user_id` (UUID, NOT NULL, UNIQUE): 사용자 ID (`auth.users(id)` 참조)
+- `total_points` (INTEGER, DEFAULT 0): 총 누적 포인트
+- `current_points` (INTEGER, DEFAULT 0): 현재 사용 가능 포인트
+- `level` (INTEGER, DEFAULT 1): 현재 레벨 (1~10)
+- `current_streak` (INTEGER, DEFAULT 0): 현재 연속 기록 일수
+- `longest_streak` (INTEGER, DEFAULT 0): 최장 연속 기록 일수
+- `last_activity_date` (DATE): 마지막 활동 날짜
+- `created_at`, `updated_at` (TIMESTAMP WITH TIME ZONE): 생성/수정 시간
+- **UNIQUE 제약**: `(user_id)` - 한 사용자는 하나의 포인트 레코드만 가짐
+
+**관계 정의**:
+- `user_id` → `auth.users(id)` (ON DELETE CASCADE)
+- `id` ← `point_transactions(user_id)` (ON DELETE CASCADE)
+
+**인덱스**:
+- `idx_user_points_user_id`: 사용자별 포인트 조회용 (UNIQUE 인덱스)
+- `idx_user_points_level`: 레벨별 필터링용
+- `idx_user_points_current_streak`: 스트릭 랭킹 조회용
+
+**RLS 정책 요약**:
+- **SELECT**: 자신의 포인트만 조회 가능 (`auth.uid() = user_id`)
+- **INSERT**: 자신의 포인트만 생성 가능 (`auth.uid() = user_id`)
+- **UPDATE**: 자신의 포인트만 수정 가능 (`auth.uid() = user_id`)
+- **DELETE**: 자신의 포인트만 삭제 가능 (`auth.uid() = user_id`)
+
+---
+
+### 4.13 point_transactions (포인트 거래 내역)
+
+**목적**: 사용자의 포인트 적립/사용 내역을 기록합니다.
+
+**소유 구조**: 개인 (각 사용자는 자신의 거래 내역만 소유)
+
+**주요 컬럼**:
+- `id` (UUID, PK): 기본 키
+- `user_id` (UUID, NOT NULL): 사용자 ID (`auth.users(id)` 참조)
+- `action_type` (VARCHAR(50), NOT NULL): 포인트 적립 액션 타입
+- `points` (INTEGER, NOT NULL): 적립/사용 포인트 (양수: 적립, 음수: 사용)
+- `description` (TEXT): 거래 설명
+- `reference_id` (UUID): 관련 참조 ID (예: 노트 ID, 책 ID 등)
+- `reference_type` (VARCHAR(50)): 참조 타입 (예: 'note', 'book')
+- `created_at` (TIMESTAMP WITH TIME ZONE): 생성 시간
+
+**관계 정의**:
+- `user_id` → `auth.users(id)` (ON DELETE CASCADE)
+
+**인덱스**:
+- `idx_point_transactions_user_id`: 사용자별 거래 내역 조회용
+- `idx_point_transactions_action_type`: 액션 타입별 필터링용
+- `idx_point_transactions_created_at`: 시간순 정렬용 (DESC)
+
+**RLS 정책 요약**:
+- **SELECT**: 자신의 거래 내역만 조회 가능 (`auth.uid() = user_id`)
+- **INSERT**: 자신의 거래 내역만 생성 가능 (`auth.uid() = user_id`)
+- **UPDATE**: 없음 (거래 내역은 수정 불가)
+- **DELETE**: 사용자 삭제 시 CASCADE 삭제
+
+---
+
+### 4.14 point_action_configs (포인트 액션 설정)
+
+**목적**: 각 액션 타입별 포인트 적립 설정을 관리합니다.
+
+**소유 구조**: 시스템 (관리자만 관리)
+
+**주요 컬럼**:
+- `id` (UUID, PK): 기본 키
+- `action_type` (VARCHAR(50), NOT NULL, UNIQUE): 액션 타입
+- `base_points` (INTEGER, NOT NULL): 기본 적립 포인트
+- `description` (TEXT): 액션 설명
+- `category` (VARCHAR(50)): 카테고리 (reading, streak, mission, social, special, system)
+- `is_active` (BOOLEAN, DEFAULT TRUE): 활성화 여부
+- `daily_limit` (INTEGER): 일일 적립 제한 횟수 (NULL이면 무제한)
+- `created_at`, `updated_at` (TIMESTAMP WITH TIME ZONE): 생성/수정 시간
+
+**활성화된 액션 타입**:
+| 카테고리 | 액션 | 포인트 | 설명 |
+|----------|------|--------|------|
+| reading | `note_create` | 10P | 노트 작성 |
+| reading | `note_quote` | 15P | 인용구 기록 |
+| reading | `note_memo` | 10P | 메모 작성 |
+| reading | `note_photo` | 12P | 사진 기록 |
+| reading | `book_add` | 8P | 책 추가 |
+| reading | `book_complete` | 60P | 책 완독 |
+| streak | `daily_first_activity` | 8P | 오늘 첫 활동 |
+| streak | `streak_7_days` | 50P | 7일 연속 달성 |
+| streak | `streak_30_days` | 200P | 30일 연속 달성 |
+| streak | `streak_100_days` | 500P | 100일 연속 달성 |
+| mission | `mission_complete` | 가변 | 미션 완료 |
+| mission | `all_missions_complete` | 30P | 모든 미션 완료 |
+| social | `note_share` | 8P | 노트 공유 |
+| special | `first_book` | 35P | 첫 책 등록 |
+| special | `first_note` | 25P | 첫 노트 작성 |
+| system | `admin_adjust` | 가변 | 관리자 조정 |
+
+**RLS 정책 요약**:
+- **SELECT**: 모든 사용자가 조회 가능 (공개 설정 데이터)
+- **INSERT/UPDATE/DELETE**: 관리자만 가능
+
+---
+
+### 4.15 point_levels (포인트 레벨)
+
+**목적**: 레벨별 요구 포인트 및 혜택 설정을 관리합니다.
+
+**소유 구조**: 시스템 (관리자만 관리)
+
+**주요 컬럼**:
+- `id` (UUID, PK): 기본 키
+- `level` (INTEGER, NOT NULL, UNIQUE): 레벨 (1~10)
+- `name` (VARCHAR(50), NOT NULL): 레벨 이름
+- `required_points` (INTEGER, NOT NULL): 필요 포인트
+- `icon` (VARCHAR(50)): 레벨 아이콘
+- `color` (VARCHAR(50)): 레벨 색상
+- `created_at`, `updated_at` (TIMESTAMP WITH TIME ZONE): 생성/수정 시간
+
+**레벨 정의**:
+| 레벨 | 이름 | 필요 포인트 |
+|------|------|------------|
+| 1 | 씨앗 | 0P |
+| 2 | 새싹 | 100P |
+| 3 | 떡잎 | 300P |
+| 4 | 줄기 | 600P |
+| 5 | 가지 | 1,000P |
+| 6 | 잎 | 1,500P |
+| 7 | 꽃 | 2,100P |
+| 8 | 열매 | 2,800P |
+| 9 | 나무 | 3,600P |
+| 10 | 황금숲 | 4,500P |
+
+**RLS 정책 요약**:
+- **SELECT**: 모든 사용자가 조회 가능 (공개 설정 데이터)
+- **INSERT/UPDATE/DELETE**: 관리자만 가능
+
+---
+
+### 4.16 daily_missions (일일 미션)
+
+**목적**: 사용자의 일일 미션 완료 상태를 관리합니다.
+
+**소유 구조**: 개인 (각 사용자는 자신의 미션만 소유)
+
+**주요 컬럼**:
+- `id` (UUID, PK): 기본 키
+- `user_id` (UUID, NOT NULL): 사용자 ID (`auth.users(id)` 참조)
+- `mission_date` (DATE, NOT NULL): 미션 날짜
+- `mission_type` (VARCHAR(50), NOT NULL): 미션 타입
+- `target_count` (INTEGER, NOT NULL): 목표 횟수
+- `current_count` (INTEGER, DEFAULT 0): 현재 완료 횟수
+- `is_completed` (BOOLEAN, DEFAULT FALSE): 완료 여부
+- `points_earned` (INTEGER, DEFAULT 0): 적립된 포인트
+- `completed_at` (TIMESTAMP WITH TIME ZONE): 완료 시간
+- `created_at` (TIMESTAMP WITH TIME ZONE): 생성 시간
+- **UNIQUE 제약**: `(user_id, mission_date, mission_type)` - 한 사용자는 같은 날 같은 미션 한 번만
+
+**관계 정의**:
+- `user_id` → `auth.users(id)` (ON DELETE CASCADE)
+
+**인덱스**:
+- `idx_daily_missions_user_id`: 사용자별 미션 조회용
+- `idx_daily_missions_mission_date`: 날짜별 미션 조회용
+- `idx_daily_missions_is_completed`: 완료 상태별 필터링용
+
+**RLS 정책 요약**:
+- **SELECT**: 자신의 미션만 조회 가능 (`auth.uid() = user_id`)
+- **INSERT**: 자신의 미션만 생성 가능 (`auth.uid() = user_id`)
+- **UPDATE**: 자신의 미션만 수정 가능 (`auth.uid() = user_id`)
+- **DELETE**: 자신의 미션만 삭제 가능 (`auth.uid() = user_id`)
+
+---
+
 ## 5. 관계 요약
 
 ### 5.1 주요 관계 다이어그램
@@ -778,10 +957,13 @@ group_shared_books ←→ user_books (N:M)
 14. **chat_sessions ↔ chat_messages**: 1:N 관계, 한 세션은 여러 메시지를 가짐
 15. **users ↔ user_personas**: 1:1 관계, 한 사용자는 하나의 페르소나만 가짐
 16. **user_books ↔ user_book_relations**: 1:N 관계, 한 책은 여러 관련 도서 연결을 가질 수 있음
+17. **users ↔ user_points**: 1:1 관계, 한 사용자는 하나의 포인트 레코드만 가짐
+18. **users ↔ point_transactions**: 1:N 관계, 한 사용자는 여러 포인트 거래 내역을 가짐
+19. **users ↔ daily_missions**: 1:N 관계, 한 사용자는 여러 일일 미션을 가짐
 
 ### 5.3 CASCADE 규칙
 
-- **users 삭제 시**: `user_books`, `notes`, `groups` (리더인 경우), `group_members`, `ocr_usage_stats`, `ocr_logs`, `user_book_relations` CASCADE 삭제
+- **users 삭제 시**: `user_books`, `notes`, `groups` (리더인 경우), `group_members`, `ocr_usage_stats`, `ocr_logs`, `user_book_relations`, `user_points`, `point_transactions`, `daily_missions` CASCADE 삭제
 - **books 삭제 시**: `user_books`, `notes`, `group_books` CASCADE 삭제
 - **groups 삭제 시**: `group_members`, `group_books`, `group_notes`, `group_shared_books` CASCADE 삭제
 - **user_books 삭제 시**: `group_shared_books`, `user_book_relations` CASCADE 삭제
@@ -872,6 +1054,22 @@ RLS 정책은 데이터베이스 레벨에서 접근 제어를 강제하므로, 
 - **마이그레이션 파일**: `migration-202601091224__bookshelves__create_table.sql`
 - **목적**: 여러 서재를 관리할 수 있도록 하고, 메인 서재는 통합 뷰로, 하위 서재는 개별 관리로 구분
 - **향후 확장**: `bookshelf_shares` 테이블을 통한 서재별 공유 기능 예정
+
+### 2026-02-01 (포인트 시스템 단순화)
+
+- **변경 내용**: 포인트 시스템 단순화 - 스트릭 보너스 배율 제거
+  - `user_points` 테이블에서 `streak_bonus_multiplier` 컬럼 제거
+  - `point_transactions` 테이블에서 `multiplier` 컬럼 제거
+  - `point_levels` 테이블에서 `streak_bonus` 컬럼 제거
+  - 불필요한 action_type 비활성화 (스트릭 마일스톤 3개만 유지: 7일, 30일, 100일)
+  - 스트릭 마일스톤 포인트 업데이트 (7일=50P, 30일=200P, 100일=500P)
+- **영향받는 테이블**:
+  - `user_points` (컬럼 제거)
+  - `point_transactions` (컬럼 제거)
+  - `point_levels` (컬럼 제거)
+  - `point_action_configs` (action_type 비활성화)
+- **마이그레이션 파일**: `migration-202602011200__points__simplify_point_system.sql`
+- **목적**: 심리학/UX 관점에서 시스템 단순화 - 연속 기록 숫자 자체가 가장 강력한 동기부여
 
 ### 2025-01 (초기 스키마)
 
