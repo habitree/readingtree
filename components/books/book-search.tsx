@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Search, Loader2, BookOpen } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -38,6 +38,9 @@ export function BookSearch({ onBookAdded, onSelectBook, excludeBookIds, showAlre
   const [results, setResults] = useState<SearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [isAdding, setIsAdding] = useState<string | null>(null);
+
+  // IME 조합 상태 추적
+  const isComposingRef = useRef(false);
 
   // 디바운싱을 위한 검색 함수
   const performSearch = useCallback(async (searchQuery: string) => {
@@ -140,7 +143,13 @@ export function BookSearch({ onBookAdded, onSelectBook, excludeBookIds, showAlre
   }, []);
 
   // 디바운싱 (300ms) - 검색어가 2자 이상일 때만 검색
+  // IME 조합 중에는 검색하지 않음
   useEffect(() => {
+    // IME 조합 중이면 검색 하지 않음
+    if (isComposingRef.current) {
+      return;
+    }
+
     if (query.trim().length < 2 && query.trim().length > 0) {
       // 검색어가 1자일 때는 결과를 비우고 검색하지 않음
       setResults([]);
@@ -148,6 +157,11 @@ export function BookSearch({ onBookAdded, onSelectBook, excludeBookIds, showAlre
     }
 
     const timer = setTimeout(() => {
+      // 조합 완료 후에도 확인
+      if (isComposingRef.current) {
+        return;
+      }
+
       if (query.trim().length >= 2) {
         performSearch(query);
       } else if (query.trim().length === 0) {
@@ -157,6 +171,15 @@ export function BookSearch({ onBookAdded, onSelectBook, excludeBookIds, showAlre
 
     return () => clearTimeout(timer);
   }, [query, performSearch]);
+
+  // IME 조합 이벤트 핸들러
+  const handleCompositionStart = useCallback(() => {
+    isComposingRef.current = true;
+  }, []);
+
+  const handleCompositionEnd = useCallback(() => {
+    isComposingRef.current = false;
+  }, []);
 
   const handleAddBook = async (book: SearchResult) => {
     setIsAdding(book.isbn || book.title);
@@ -212,6 +235,8 @@ export function BookSearch({ onBookAdded, onSelectBook, excludeBookIds, showAlre
           placeholder="책 제목이나 저자를 검색하세요..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
+          onCompositionStart={handleCompositionStart}
+          onCompositionEnd={handleCompositionEnd}
           className="pl-10"
         />
         {isSearching && (

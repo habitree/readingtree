@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -119,6 +119,18 @@ export function SearchFilters({ onBooksLoaded }: SearchFiltersProps) {
   const bookInputRef = useRef<HTMLInputElement>(null);
   const bookSuggestionsRef = useRef<HTMLDivElement>(null);
 
+  // IME 조합 상태 추적
+  const isComposingRef = useRef(false);
+
+  // IME 조합 이벤트 핸들러
+  const handleCompositionStart = useCallback(() => {
+    isComposingRef.current = true;
+  }, []);
+
+  const handleCompositionEnd = useCallback(() => {
+    isComposingRef.current = false;
+  }, []);
+
   // 선택된 책 정보
   const selectedBook = books.find((b) => b.id === bookId);
   const selectedBookTitle = selectedBook ? (selectedBook as any).books?.title : "";
@@ -196,6 +208,8 @@ export function SearchFilters({ onBooksLoaded }: SearchFiltersProps) {
               value={bookSearchQuery}
               onChange={(e) => handleBookSearchChange(e.target.value)}
               onKeyDown={handleBookSearchKeyDown}
+              onCompositionStart={handleCompositionStart}
+              onCompositionEnd={handleCompositionEnd}
               onFocus={() => {
                 if (bookSuggestions.length > 0) {
                   setShowBookSuggestions(true);

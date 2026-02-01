@@ -1,6 +1,6 @@
 import { getCurrentUser } from "@/app/actions/auth";
 import { getPersonaDashboardData } from "@/app/actions/persona";
-import { getReadingStats, getWeeklyProgress, getDailyRecordsForCalendar } from "@/app/actions/stats";
+import { getReadingStats, getWeeklyProgress, getDailyRecordsForCalendar, getDailyRecordsByType } from "@/app/actions/stats";
 import { getContinueReadingBooks } from "@/app/actions/books";
 import { HomeHeroSection } from "./home-hero-section";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
@@ -31,6 +31,11 @@ export async function HomeHeroWrapper() {
   const calendarStartDate = new Date(today.getFullYear(), today.getMonth() - 2, 1);
   const calendarEndDate = new Date(today.getFullYear(), today.getMonth() + 1, 0); // 이번 달 마지막 날
 
+  // 30일 활동 캘린더용 날짜 범위
+  const activityCalendarStart = new Date(today);
+  activityCalendarStart.setDate(today.getDate() - 29);
+  activityCalendarStart.setHours(0, 0, 0, 0);
+
   // 병렬로 데이터 조회
   const [
     personaData,
@@ -39,6 +44,7 @@ export async function HomeHeroWrapper() {
     continueReadingBooks,
     weeklyProgress,
     dailyRecords,
+    dailyRecordsByType,
   ] = await Promise.all([
     getPersonaDashboardData().catch(() => null),
     getReadingStats(user).catch(() => null),
@@ -46,6 +52,7 @@ export async function HomeHeroWrapper() {
     getContinueReadingBooks(user, 4).catch(() => []),
     getWeeklyProgress(user).catch(() => null),
     getDailyRecordsForCalendar(user, calendarStartDate, calendarEndDate).catch(() => ({})),
+    getDailyRecordsByType(user, activityCalendarStart, today).catch(() => ({})),
   ]);
 
   return (
@@ -58,6 +65,7 @@ export async function HomeHeroWrapper() {
       continueReadingBooks={continueReadingBooks || []}
       weeklyProgress={weeklyProgress}
       dailyRecords={dailyRecords}
+      dailyRecordsByType={dailyRecordsByType}
     />
   );
 }

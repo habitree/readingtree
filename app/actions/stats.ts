@@ -671,6 +671,78 @@ export async function getDailyRecordsForCalendar(
 }
 
 /**
+ * 일별 기록 타입별 조회 (캘린더용)
+ * 타입별 색상 구분: transcription(필사), photo(사진), memo/quote(기록)
+ */
+export interface DailyRecordByType {
+  transcription: number;
+  photo: number;
+  memo: number;
+  quote: number;
+  progress: number;
+  total: number;
+}
+
+export async function getDailyRecordsByType(
+  user: User | null,
+  startDate: Date,
+  endDate: Date
+): Promise<Record<string, DailyRecordByType>> {
+  if (!user) {
+    return {};
+  }
+
+  const supabase = await createServerSupabaseClient();
+
+  const { data: notes, error } = await supabase
+    .from("notes")
+    .select("created_at, type")
+    .eq("user_id", user.id)
+    .gte("created_at", startDate.toISOString())
+    .lte("created_at", endDate.toISOString());
+
+  if (error || !notes) {
+    console.error("일별 타입별 기록 조회 오류:", error);
+    return {};
+  }
+
+  // 날짜별, 타입별로 그룹화
+  const dailyRecords: Record<string, DailyRecordByType> = {};
+
+  notes.forEach((note) => {
+    const date = new Date(note.created_at);
+    const dateKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+
+    if (!dailyRecords[dateKey]) {
+      dailyRecords[dateKey] = {
+        transcription: 0,
+        photo: 0,
+        memo: 0,
+        quote: 0,
+        progress: 0,
+        total: 0,
+      };
+    }
+
+    const type = note.type as string;
+    if (type === "transcription") {
+      dailyRecords[dateKey].transcription++;
+    } else if (type === "photo") {
+      dailyRecords[dateKey].photo++;
+    } else if (type === "memo") {
+      dailyRecords[dateKey].memo++;
+    } else if (type === "quote") {
+      dailyRecords[dateKey].quote++;
+    } else if (type === "progress") {
+      dailyRecords[dateKey].progress++;
+    }
+    dailyRecords[dateKey].total++;
+  });
+
+  return dailyRecords;
+}
+
+/**
  * 이번 주 진행 상황 조회
  * 주간 일별 기록 여부와 스트릭 정보 반환
  * @param user 사용자 정보
