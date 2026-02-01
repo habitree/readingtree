@@ -176,11 +176,9 @@ export async function createNote(data: CreateNoteInput, user?: User | null) {
     throw new Error(sanitizeErrorMessage(error || new Error("기록 생성에 실패했습니다.")));
   }
 
-  // 포인트 적립 (비동기로 처리하여 메인 플로우 차단하지 않음)
+  // 포인트 적립 (완전히 독립적으로 처리 - 실패해도 노트 생성에 영향 없음)
+  // 포인트 시스템이 설정되지 않은 경우에도 노트 생성은 정상 동작해야 함
   try {
-    // 스트릭 업데이트 (첫 활동 시 보너스)
-    await updateStreak(currentUser);
-
     // 노트 타입에 따른 포인트 적립
     let pointActionType: PointActionType = "note_create";
     if (noteType === "quote") {
@@ -195,15 +193,18 @@ export async function createNote(data: CreateNoteInput, user?: User | null) {
       pointActionType = "note_progress";
     }
 
-    await earnPoints(pointActionType, {
-      user: currentUser,
-      referenceId: note.id,
-      referenceType: "note",
-      description: `${data.title || "기록"} 작성`,
-    });
-  } catch (pointError) {
-    // 포인트 적립 실패해도 노트 생성은 성공으로 처리
-    console.error("포인트 적립 오류:", sanitizeErrorForLogging(pointError));
+    // 포인트 시스템 호출 (실패해도 무시)
+    Promise.all([
+      updateStreak(currentUser).catch(() => null),
+      earnPoints(pointActionType, {
+        user: currentUser,
+        referenceId: note.id,
+        referenceType: "note",
+        description: `${data.title || "기록"} 작성`,
+      }).catch(() => null),
+    ]).catch(() => null);
+  } catch {
+    // 포인트 설정 중 에러 발생해도 완전히 무시
   }
 
   revalidatePath("/notes");
