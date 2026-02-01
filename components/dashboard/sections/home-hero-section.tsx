@@ -444,26 +444,43 @@ export function HomeHeroSkeleton() {
         </div>
       </Card>
 
-      {/* 미니 히트맵 스켈레톤 (컴팩트) */}
-      <Card className="p-2.5 sm:p-3">
-        <div className="space-y-2">
+      {/* 독서 활동 히트맵 스켈레톤 */}
+      <Card className="p-3 sm:p-4">
+        <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <div className="h-3 w-16 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
-            <div className="h-3 w-12 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
+            <div className="flex items-center gap-2">
+              <div className="h-4 w-4 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
+              <div className="h-4 w-16 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="h-3 w-12 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
+              <div className="h-3 w-10 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
+            </div>
           </div>
-          <div className="flex gap-[3px]">
-            {Array.from({ length: 8 }).map((_, weekIndex) => (
-              <div key={weekIndex} className="flex flex-col gap-[3px]">
-                {Array.from({ length: 7 }).map((_, dayIndex) => (
-                  <div
-                    key={dayIndex}
-                    className="w-[10px] h-[10px] sm:w-[11px] sm:h-[11px] rounded-[2px] bg-slate-200 dark:bg-slate-700 animate-pulse"
-                  />
-                ))}
-              </div>
-            ))}
+          <div className="h-4 ml-6" />
+          <div className="flex gap-1.5">
+            <div className="flex flex-col gap-[3px]">
+              {Array.from({ length: 7 }).map((_, i) => (
+                <div key={i} className="h-[14px] sm:h-[16px] w-4" />
+              ))}
+            </div>
+            <div className="flex gap-[3px] flex-1">
+              {Array.from({ length: 10 }).map((_, weekIndex) => (
+                <div key={weekIndex} className="flex flex-col gap-[3px]">
+                  {Array.from({ length: 7 }).map((_, dayIndex) => (
+                    <div
+                      key={dayIndex}
+                      className="w-[14px] h-[14px] sm:w-[16px] sm:h-[16px] rounded-sm bg-slate-200 dark:bg-slate-700 animate-pulse"
+                    />
+                  ))}
+                </div>
+              ))}
+            </div>
           </div>
-          <div className="h-2 w-20 ml-auto rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
+          <div className="flex items-center justify-between pt-1">
+            <div className="h-3 w-20 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
+            <div className="h-3 w-24 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
+          </div>
         </div>
       </Card>
 
