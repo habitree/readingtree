@@ -6,21 +6,25 @@ import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { BookOpen, Check, Loader2, Settings2, Flame, Target, Trophy, Sparkles, TrendingUp, GripHorizontal } from "lucide-react";
+import { BookOpen, Check, Loader2, Settings2, Flame, Target, Trophy, Sparkles, TrendingUp, GripHorizontal, PenLine } from "lucide-react";
 import { updateBookProgress } from "@/app/actions/books";
 import { toast } from "sonner";
 import { TotalPagesEditor } from "./total-pages-editor";
+import { ProgressRecordSheet } from "./progress-record-sheet";
 import { cn } from "@/lib/utils";
 
 interface ReadingProgressProps {
   userBookId: string;
   bookId?: string;
   isbn?: string | null;
+  bookTitle?: string;
+  bookAuthor?: string | null;
   currentPage: number;
   totalPages: number | null | undefined;
   status: string;
   onUpdate?: (newPage: number) => void;
   onTotalPagesUpdate?: (newTotalPages: number | null) => void;
+  onRecordCreated?: () => void;
 }
 
 /**
@@ -30,11 +34,14 @@ export function ReadingProgress({
   userBookId,
   bookId,
   isbn,
+  bookTitle = "책",
+  bookAuthor,
   currentPage: initialPage,
   totalPages: initialTotalPages,
   status,
   onUpdate,
   onTotalPagesUpdate,
+  onRecordCreated,
 }: ReadingProgressProps) {
   const [currentPage, setCurrentPage] = useState(initialPage || 0);
   const [totalPages, setTotalPages] = useState(initialTotalPages);
@@ -43,6 +50,7 @@ export function ReadingProgress({
   const [isDragging, setIsDragging] = useState(false);
   const [dragValue, setDragValue] = useState(initialPage || 0);
   const [isPending, startTransition] = useTransition();
+  const [isRecordSheetOpen, setIsRecordSheetOpen] = useState(false);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // 총 페이지 수 업데이트 핸들러
@@ -369,16 +377,39 @@ export function ReadingProgress({
             />
           )}
           <div className="flex-1" />
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => setIsEditing(true)}
-            className="h-8 text-xs"
-          >
-            진행률 수정
-          </Button>
+          <div className="flex items-center gap-1.5">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setIsEditing(true)}
+              className="h-8 text-xs"
+            >
+              진행률 수정
+            </Button>
+            <Button
+              size="sm"
+              variant="default"
+              onClick={() => setIsRecordSheetOpen(true)}
+              className="h-8 text-xs bg-forest-600 hover:bg-forest-700 text-white"
+            >
+              <PenLine className="h-3.5 w-3.5 mr-1" />
+              기록
+            </Button>
+          </div>
         </div>
       )}
+
+      {/* 진행 기록 시트 */}
+      <ProgressRecordSheet
+        open={isRecordSheetOpen}
+        onOpenChange={setIsRecordSheetOpen}
+        userBookId={userBookId}
+        bookTitle={bookTitle}
+        bookAuthor={bookAuthor ?? null}
+        currentPage={currentPage}
+        totalPages={totalPages ?? null}
+        onSuccess={onRecordCreated}
+      />
     </div>
   );
 }

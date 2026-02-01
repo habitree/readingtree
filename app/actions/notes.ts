@@ -64,8 +64,11 @@ export async function createNote(data: CreateNoteInput, user?: User | null) {
   const hasMemo = data.memo_content && data.memo_content.trim().length > 0;
   const hasContent = data.content && data.content.trim().length > 0;
   const hasImage = data.image_url && data.image_url.trim().length > 0;
+  const isProgressType = data.type === "progress";
+  const hasPageNumber = data.page_number !== null && data.page_number !== undefined;
 
-  if (!hasQuote && !hasMemo && !hasContent && !hasImage) {
+  // progress 타입은 page_number만 있어도 OK
+  if (!hasQuote && !hasMemo && !hasContent && !hasImage && !(isProgressType && hasPageNumber)) {
     throw new Error("인상깊은 구절, 내 생각, 내용, 또는 이미지 중 최소 하나는 입력해주세요.");
   }
 
@@ -188,6 +191,8 @@ export async function createNote(data: CreateNoteInput, user?: User | null) {
       pointActionType = "note_photo";
     } else if (noteType === "transcription") {
       pointActionType = "note_transcription";
+    } else if (noteType === "progress") {
+      pointActionType = "note_progress";
     }
 
     await earnPoints(pointActionType, {

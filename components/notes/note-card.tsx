@@ -24,7 +24,7 @@ import { NoteContentViewer } from "./note-content-viewer";
 import { OCRStatusBadge } from "./ocr-status-badge";
 import { useOCRStatus } from "@/hooks/use-ocr-status";
 import type { NoteWithBook } from "@/types/note";
-import { FileText, Image as ImageIcon, PenTool, Camera, Trash2, Loader2, BookOpen } from "lucide-react";
+import { FileText, Image as ImageIcon, PenTool, Camera, Trash2, Loader2, BookOpen, TrendingUp } from "lucide-react";
 import { BookLinkRenderer } from "./book-link-renderer";
 
 interface NoteCardProps {
@@ -43,6 +43,7 @@ export function NoteCard({ note, showDeleteButton = false, onDelete }: NoteCardP
     transcription: PenTool,
     photo: Camera,
     memo: ImageIcon,
+    progress: TrendingUp,
   };
 
   const hasImage = !!note.image_url;

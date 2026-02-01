@@ -8,7 +8,7 @@ import { getNoteTypeLabel, parsePageNumber } from "@/lib/utils/note";
 import { NoteContentViewer } from "@/components/notes/note-content-viewer";
 import { cn } from "@/lib/utils";
 import type { NoteWithBook } from "@/types/note";
-import { FileText, PenTool, Camera, ImageIcon, BookOpen } from "lucide-react";
+import { FileText, PenTool, Camera, ImageIcon, BookOpen, TrendingUp } from "lucide-react";
 import { highlightText } from "@/lib/utils/search";
 
 interface SearchResultCardProps {
@@ -26,6 +26,7 @@ export function SearchResultCard({ note, searchQuery }: SearchResultCardProps) {
     transcription: PenTool,
     photo: Camera,
     memo: ImageIcon,
+    progress: TrendingUp,
   };
 
   const hasImage = !!note.image_url;

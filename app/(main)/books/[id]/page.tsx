@@ -229,6 +229,8 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
                         userBookId={userBook.id}
                         bookId={book.id}
                         isbn={book.isbn}
+                        bookTitle={book.title}
+                        bookAuthor={book.author}
                         currentPage={(userBook as any).current_page || 0}
                         totalPages={book.total_pages}
                         status={userBook.status as string}

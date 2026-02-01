@@ -8,21 +8,26 @@ export function getNoteTypeLabel(
   type: NoteType,
   hasImage: boolean
 ): string {
+  // 진행 기록 타입
+  if (type === "progress") {
+    return "진행";
+  }
+
   // 이미지가 있고 type이 photo면 "사진"
   if (hasImage && type === "photo") {
     return "사진";
   }
-  
+
   // 이미지가 있고 type이 transcription이면 "필사"
   if (hasImage && type === "transcription") {
     return "필사";
   }
-  
+
   // type이 quote면 "필사"
   if (type === "quote") {
     return "필사";
   }
-  
+
   // 그 외는 모두 "기록"
   return "기록";
 }

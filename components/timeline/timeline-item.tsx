@@ -8,7 +8,7 @@ import { formatSmartDate } from "@/lib/utils/date";
 import { getNoteTypeLabel, parsePageNumber } from "@/lib/utils/note";
 import { NoteContentViewer } from "@/components/notes/note-content-viewer";
 import type { NoteWithBook } from "@/types/note";
-import { FileText, PenTool, Camera, ImageIcon, BookOpen } from "lucide-react";
+import { FileText, PenTool, Camera, ImageIcon, BookOpen, TrendingUp } from "lucide-react";
 
 interface TimelineItemProps {
   note: NoteWithBook;
@@ -24,6 +24,7 @@ export function TimelineItem({ note }: TimelineItemProps) {
     transcription: PenTool,
     photo: Camera,
     memo: ImageIcon,
+    progress: TrendingUp,
   };
 
   const hasImage = !!note.image_url;

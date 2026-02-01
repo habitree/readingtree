@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { getImageUrl, getProxiedImageUrl, isValidImageUrl } from "@/lib/utils/image";
 import { parseNoteContentFields, getNoteTypeLabel } from "@/lib/utils/note";
 import type { NoteWithBook } from "@/types/note";
-import { Quote, BookOpen, Calendar, ChevronDown, ChevronUp, Trees } from "lucide-react";
+import { Quote, BookOpen, Calendar, ChevronDown, ChevronUp, Trees, TrendingUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ImageLightbox } from "@/components/notes/image-lightbox";
@@ -111,6 +111,7 @@ export function ShareNoteCard({ note, className, isPublicView = false, hideActio
     const hasImage = !!note.image_url && isValidImageUrl(note.image_url);
     const typeLabel = getNoteTypeLabel(note.type, hasImage);
     const formattedDate = formatDate(note.created_at);
+    const isProgressType = note.type === "progress";
 
     // 디버깅: 이미지 URL 확인
     if (note.image_url) {
@@ -142,6 +143,103 @@ export function ShareNoteCard({ note, className, isPublicView = false, hideActio
             </div>
         </div>
     );
+
+    // 진행 기록 타입: 컴팩트한 특별 레이아웃
+    if (isProgressType) {
+        return (
+            <Card className={cn("overflow-hidden border-none shadow-xl bg-white dark:bg-slate-950 w-full max-w-[600px] mx-auto", className)}>
+                <CardContent className="p-0">
+                    <div className="flex flex-col">
+                        {/* 상단: 책 정보 + 진행 상태 */}
+                        <div className="bg-gradient-to-br from-forest-50 to-emerald-50 dark:from-forest-950 dark:to-emerald-950 p-6">
+                            <div className="flex items-start gap-4">
+                                {/* 책 표지 */}
+                                {hideActions ? (
+                                    <div className="relative w-20 h-28 shrink-0 shadow-lg rounded-md overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800">
+                                        <img
+                                            src={getProxiedImageUrl(book?.cover_image_url || "/placeholder-book.png")}
+                                            alt={book?.title || "Book"}
+                                            className="absolute inset-0 w-full h-full object-cover"
+                                            crossOrigin="anonymous"
+                                        />
+                                    </div>
+                                ) : (
+                                    <ImageLightbox src={book?.cover_image_url || "/placeholder-book.png"} alt={book?.title || "Book"}>
+                                        <div className="relative w-20 h-28 shrink-0 shadow-lg rounded-md overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800">
+                                            <Image
+                                                src={getImageUrl(book?.cover_image_url || "/placeholder-book.png")}
+                                                alt={book?.title || "Book"}
+                                                fill
+                                                className="object-cover"
+                                                sizes="80px"
+                                                priority={true}
+                                            />
+                                        </div>
+                                    </ImageLightbox>
+                                )}
+
+                                {/* 책 정보 */}
+                                <div className="flex-1 min-w-0">
+                                    <h3 className="font-bold text-lg text-slate-900 dark:text-slate-100 leading-tight mb-1">
+                                        <BookTitle
+                                            title={book?.title || "제목 없음"}
+                                            mainTitleClassName="text-slate-900 dark:text-slate-100"
+                                            subtitleClassName="text-slate-500 dark:text-slate-400 text-sm font-normal block mt-0.5"
+                                        />
+                                    </h3>
+                                    <p className="text-sm text-forest-700 dark:text-forest-400 font-medium mb-3">
+                                        {book?.author || "저자 미상"}
+                                    </p>
+
+                                    {/* 진행 정보 강조 */}
+                                    <div className="flex items-center gap-2 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-lg px-3 py-2 shadow-sm">
+                                        <TrendingUp className="w-5 h-5 text-forest-500" />
+                                        <div>
+                                            <div className="text-xs text-slate-500 dark:text-slate-400">읽은 페이지</div>
+                                            <div className="text-xl font-bold text-forest-600 dark:text-forest-400">
+                                                {note.page_number || 0}
+                                                <span className="text-sm font-normal text-slate-400 ml-1">페이지</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* 메모 (있는 경우) + 푸터 */}
+                        <div className="p-6 space-y-4">
+                            {hasMemo && (
+                                <div className="bg-slate-50 dark:bg-slate-900 rounded-lg p-4">
+                                    <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+                                        {memo}
+                                    </p>
+                                </div>
+                            )}
+
+                            {/* 푸터: 날짜 + 로고 + 사용자 */}
+                            <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800">
+                                <div className="flex items-center gap-2 text-xs text-slate-400">
+                                    <Calendar className="w-3.5 h-3.5" />
+                                    <span>{formattedDate}</span>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    <FooterLogo />
+                                    {user && (
+                                        <div className="flex items-center gap-1.5 text-xs text-slate-500">
+                                            <span>by</span>
+                                            <span className="font-medium text-slate-700 dark:text-slate-300">
+                                                {user.name || "익명"}
+                                            </span>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+        );
+    }
 
     return (
         <Card className={cn("overflow-hidden border-none shadow-2xl bg-white dark:bg-slate-950 w-full max-w-[960px] mx-auto", className)}>

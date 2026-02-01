@@ -2,7 +2,7 @@
  * 기록 관련 타입 정의
  */
 
-export type NoteType = "quote" | "photo" | "memo" | "transcription";
+export type NoteType = "quote" | "photo" | "memo" | "transcription" | "progress";
 
 export interface Note {
   id: string;
