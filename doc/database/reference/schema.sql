@@ -41,7 +41,7 @@ BEGIN
 
     -- 기록 유형
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'note_type') THEN
-        CREATE TYPE note_type AS ENUM ('quote', 'photo', 'memo', 'transcription');
+        CREATE TYPE note_type AS ENUM ('quote', 'photo', 'memo', 'transcription', 'progress');
     END IF;
 
     -- 모임 멤버 역할

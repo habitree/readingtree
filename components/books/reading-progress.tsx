@@ -390,7 +390,9 @@ export function ReadingProgress({
               size="sm"
               variant="default"
               onClick={() => setIsRecordSheetOpen(true)}
-              className="h-8 text-xs bg-forest-600 hover:bg-forest-700 text-white"
+              disabled={currentPage < 1}
+              className="h-8 text-xs bg-forest-600 hover:bg-forest-700 text-white disabled:opacity-50"
+              title={currentPage < 1 ? "먼저 읽은 페이지를 입력해주세요" : undefined}
             >
               <PenLine className="h-3.5 w-3.5 mr-1" />
               기록
