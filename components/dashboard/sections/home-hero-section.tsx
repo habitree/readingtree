@@ -12,7 +12,6 @@ import {
   Camera,
   FileText,
   PenTool,
-  TrendingUp,
   PenLine,
   CheckCircle2,
 } from "lucide-react";
@@ -22,6 +21,8 @@ import type { ReadingStats } from "@/types/persona";
 import { useStyle } from "@/hooks/use-style";
 import { ContinueReadingCard, NoReadingBookCard } from "./continue-reading-card";
 import { OnboardingChecklist, type OnboardingItem } from "@/components/onboarding/onboarding-checklist";
+import { WeeklyProgressBar } from "./weekly-progress-bar";
+import { MiniCalendarHeatmap } from "./mini-calendar-heatmap";
 
 interface ContinueReadingData {
   userBookId: string;
@@ -33,6 +34,24 @@ interface ContinueReadingData {
   totalPages: number | null;
   progressPercent: number;
   lastActivityAt: string;
+}
+
+interface WeeklyProgressDay {
+  date: string;
+  dayOfWeek: number;
+  dayLabel: string;
+  hasRecord: boolean;
+  count: number;
+  isToday: boolean;
+  isFuture: boolean;
+}
+
+interface WeeklyProgressData {
+  days: WeeklyProgressDay[];
+  recordedDays: number;
+  totalDays: number;
+  streak: number;
+  streakStatus: "active" | "at_risk" | "none";
 }
 
 interface HomeHeroSectionProps {
@@ -47,6 +66,10 @@ interface HomeHeroSectionProps {
   onboardingItems?: OnboardingItem[];
   /** 온보딩 숨기기 핸들러 */
   onDismissOnboarding?: () => void;
+  /** 주간 진행 상황 데이터 */
+  weeklyProgress?: WeeklyProgressData | null;
+  /** 일별 기록 데이터 (달력용) */
+  dailyRecords?: Record<string, number>;
 }
 
 /**
@@ -61,6 +84,8 @@ export function HomeHeroSection({
   continueReadingBooks = [],
   onboardingItems,
   onDismissOnboarding,
+  weeklyProgress,
+  dailyRecords = {},
 }: HomeHeroSectionProps) {
   const [mounted, setMounted] = useState(false);
   const { greeting, getStreakMessage, getMotivationalMessage } = useStyle();
@@ -169,12 +194,12 @@ export function HomeHeroSection({
             </p>
           </motion.div>
 
-          {/* 퀵 스탯 (애니메이션 스트릭, 목표, 기록) */}
+          {/* 퀵 스탯 (간소화: 스트릭 + 오늘 기록) */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: 0.1 }}
-            className="grid grid-cols-3 gap-2 sm:gap-3"
+            className="grid grid-cols-2 gap-2 sm:gap-3"
           >
             {/* 스트릭 */}
             <div className="bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm rounded-xl p-3 text-center border border-white/50 dark:border-slate-700/50">
@@ -216,25 +241,37 @@ export function HomeHeroSection({
               </div>
               <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400">오늘 기록</p>
             </Link>
-
-            {/* 이번 주 기록 */}
-            <div className="bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm rounded-xl p-3 text-center border border-white/50 dark:border-slate-700/50">
-              <div className="flex items-center justify-center gap-1 mb-1">
-                <TrendingUp className="h-4 w-4 text-blue-500" />
-                <motion.span
-                  key={weeklyNotes}
-                  initial={{ scale: 0.8 }}
-                  animate={{ scale: 1 }}
-                  className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white"
-                >
-                  {weeklyNotes}
-                </motion.span>
-              </div>
-              <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400">이번 주</p>
-            </div>
           </motion.div>
         </div>
       </Card>
+
+      {/* 주간 진행률 바 (로그인 사용자만) */}
+      {userName && weeklyProgress && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.15 }}
+        >
+          <WeeklyProgressBar
+            days={weeklyProgress.days}
+            recordedDays={weeklyProgress.recordedDays}
+            totalDays={weeklyProgress.totalDays}
+            streak={weeklyProgress.streak}
+            streakStatus={weeklyProgress.streakStatus}
+          />
+        </motion.div>
+      )}
+
+      {/* 미니 달력 히트맵 (로그인 사용자만) */}
+      {userName && Object.keys(dailyRecords).length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.2 }}
+        >
+          <MiniCalendarHeatmap dailyRecords={dailyRecords} />
+        </motion.div>
+      )}
 
       {/* 온보딩 체크리스트 (새 사용자용 - Endowed Progress Effect) */}
       {userName && onboardingItems && onboardingItems.length > 0 && (
@@ -364,6 +401,7 @@ export function HomeHeroSection({
 export function HomeHeroSkeleton() {
   return (
     <div className="space-y-3">
+      {/* 메인 히어로 카드 스켈레톤 */}
       <Card className="relative overflow-hidden border-none bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
         <div className="p-4 sm:p-6">
           <div className="mb-4">
@@ -374,14 +412,64 @@ export function HomeHeroSkeleton() {
             <div className="h-4 w-56 rounded bg-slate-200 dark:bg-slate-700 animate-pulse ml-9" />
           </div>
 
-          <div className="grid grid-cols-3 gap-2 sm:gap-3">
-            {Array.from({ length: 3 }).map((_, i) => (
+          {/* 2열 퀵 스탯 스켈레톤 */}
+          <div className="grid grid-cols-2 gap-2 sm:gap-3">
+            {Array.from({ length: 2 }).map((_, i) => (
               <div key={i} className="bg-white/60 dark:bg-slate-800/60 rounded-xl p-3 space-y-2">
                 <div className="h-6 w-12 mx-auto rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
                 <div className="h-3 w-16 mx-auto rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
               </div>
             ))}
           </div>
+        </div>
+      </Card>
+
+      {/* 주간 진행률 스켈레톤 */}
+      <Card className="p-3 sm:p-4">
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="h-4 w-24 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
+            <div className="h-4 w-12 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
+          </div>
+          <div className="h-2 rounded-full bg-slate-200 dark:bg-slate-700 animate-pulse" />
+          <div className="flex justify-between gap-1">
+            {Array.from({ length: 7 }).map((_, i) => (
+              <div key={i} className="flex flex-col items-center gap-1 flex-1">
+                <div className="h-3 w-4 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
+                <div className="h-6 w-6 rounded-full bg-slate-200 dark:bg-slate-700 animate-pulse" />
+              </div>
+            ))}
+          </div>
+          <div className="h-4 w-32 mx-auto rounded bg-slate-200 dark:bg-slate-700 animate-pulse pt-2" />
+        </div>
+      </Card>
+
+      {/* 미니 달력 스켈레톤 */}
+      <Card className="p-3 sm:p-4">
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="h-6 w-6 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
+              <div className="h-4 w-20 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
+              <div className="h-6 w-6 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
+            </div>
+            <div className="h-4 w-16 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
+          </div>
+          <div className="grid grid-cols-7 gap-1">
+            {Array.from({ length: 7 }).map((_, i) => (
+              <div key={i} className="h-4 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
+            ))}
+          </div>
+          {Array.from({ length: 5 }).map((_, weekIndex) => (
+            <div key={weekIndex} className="grid grid-cols-7 gap-1">
+              {Array.from({ length: 7 }).map((_, dayIndex) => (
+                <div
+                  key={dayIndex}
+                  className="aspect-square rounded-md bg-slate-200 dark:bg-slate-700 animate-pulse"
+                />
+              ))}
+            </div>
+          ))}
         </div>
       </Card>
 

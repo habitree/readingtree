@@ -1,6 +1,6 @@
 import { getCurrentUser } from "@/app/actions/auth";
 import { getPersonaDashboardData } from "@/app/actions/persona";
-import { getReadingStats } from "@/app/actions/stats";
+import { getReadingStats, getWeeklyProgress, getDailyRecordsForCalendar } from "@/app/actions/stats";
 import { getContinueReadingBooks } from "@/app/actions/books";
 import { HomeHeroSection } from "./home-hero-section";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
@@ -26,12 +26,26 @@ export async function HomeHeroWrapper() {
     );
   }
 
+  // 달력용 날짜 범위 계산 (현재 월 + 이전 2개월)
+  const today = new Date();
+  const calendarStartDate = new Date(today.getFullYear(), today.getMonth() - 2, 1);
+  const calendarEndDate = new Date(today.getFullYear(), today.getMonth() + 1, 0); // 이번 달 마지막 날
+
   // 병렬로 데이터 조회
-  const [personaData, readingStats, streakAndTodayData, continueReadingBooks] = await Promise.all([
+  const [
+    personaData,
+    readingStats,
+    streakAndTodayData,
+    continueReadingBooks,
+    weeklyProgress,
+    dailyRecords,
+  ] = await Promise.all([
     getPersonaDashboardData().catch(() => null),
     getReadingStats(user).catch(() => null),
     getStreakAndTodayData(user.id).catch(() => ({ streak: 0, todayNotes: 0 })),
     getContinueReadingBooks(user, 4).catch(() => []),
+    getWeeklyProgress(user).catch(() => null),
+    getDailyRecordsForCalendar(user, calendarStartDate, calendarEndDate).catch(() => ({})),
   ]);
 
   return (
@@ -42,6 +56,8 @@ export async function HomeHeroWrapper() {
       todayNotes={streakAndTodayData.todayNotes}
       weeklyNotes={readingStats?.thisWeek?.notes ?? 0}
       continueReadingBooks={continueReadingBooks || []}
+      weeklyProgress={weeklyProgress}
+      dailyRecords={dailyRecords}
     />
   );
 }

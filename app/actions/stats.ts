@@ -628,6 +628,195 @@ export async function getGoalProgress(user?: User | null) {
  * 최근 6개월간의 기록 수
  * @param user 선택적 사용자 정보 (전달되지 않으면 자동 조회)
  */
+/**
+ * 달력용 일별 기록 데이터 조회
+ * 지정된 기간 내의 날짜별 기록 수를 반환
+ * @param user 사용자 정보
+ * @param startDate 시작일
+ * @param endDate 종료일
+ * @returns { "2025-01-20": 3, "2025-01-21": 1, ... }
+ */
+export async function getDailyRecordsForCalendar(
+  user: User | null,
+  startDate: Date,
+  endDate: Date
+): Promise<Record<string, number>> {
+  if (!user) {
+    return {};
+  }
+
+  const supabase = await createServerSupabaseClient();
+
+  const { data: notes, error } = await supabase
+    .from("notes")
+    .select("created_at")
+    .eq("user_id", user.id)
+    .gte("created_at", startDate.toISOString())
+    .lte("created_at", endDate.toISOString());
+
+  if (error || !notes) {
+    console.error("일별 기록 조회 오류:", error);
+    return {};
+  }
+
+  // 날짜별로 그룹화
+  const dailyRecords: Record<string, number> = {};
+  notes.forEach((note) => {
+    const date = new Date(note.created_at);
+    const dateKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+    dailyRecords[dateKey] = (dailyRecords[dateKey] || 0) + 1;
+  });
+
+  return dailyRecords;
+}
+
+/**
+ * 이번 주 진행 상황 조회
+ * 주간 일별 기록 여부와 스트릭 정보 반환
+ * @param user 사용자 정보
+ * @returns { days: [{ date, hasRecord, count }], streak, streakStatus }
+ */
+export async function getWeeklyProgress(user: User | null): Promise<{
+  days: Array<{
+    date: string;
+    dayOfWeek: number;
+    dayLabel: string;
+    hasRecord: boolean;
+    count: number;
+    isToday: boolean;
+    isFuture: boolean;
+  }>;
+  recordedDays: number;
+  totalDays: number;
+  streak: number;
+  streakStatus: "active" | "at_risk" | "none";
+}> {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  // 이번 주 시작일 (일요일)
+  const startOfWeek = new Date(today);
+  startOfWeek.setDate(today.getDate() - today.getDay());
+
+  // 이번 주 종료일 (토요일)
+  const endOfWeek = new Date(startOfWeek);
+  endOfWeek.setDate(startOfWeek.getDate() + 6);
+  endOfWeek.setHours(23, 59, 59, 999);
+
+  const dayLabels = ["일", "월", "화", "수", "목", "금", "토"];
+
+  // 기본 응답 (비로그인)
+  if (!user) {
+    const days = [];
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(startOfWeek);
+      date.setDate(startOfWeek.getDate() + i);
+      const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+      days.push({
+        date: dateStr,
+        dayOfWeek: i,
+        dayLabel: dayLabels[i],
+        hasRecord: false,
+        count: 0,
+        isToday: date.getTime() === today.getTime(),
+        isFuture: date.getTime() > today.getTime(),
+      });
+    }
+    return { days, recordedDays: 0, totalDays: 7, streak: 0, streakStatus: "none" };
+  }
+
+  const supabase = await createServerSupabaseClient();
+
+  // 이번 주 기록 조회
+  const { data: notes, error } = await supabase
+    .from("notes")
+    .select("created_at")
+    .eq("user_id", user.id)
+    .gte("created_at", startOfWeek.toISOString())
+    .lte("created_at", endOfWeek.toISOString());
+
+  // 날짜별 기록 수 계산
+  const dailyCounts: Record<string, number> = {};
+  if (notes && !error) {
+    notes.forEach((note) => {
+      const date = new Date(note.created_at);
+      const dateKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+      dailyCounts[dateKey] = (dailyCounts[dateKey] || 0) + 1;
+    });
+  }
+
+  // 주간 일별 데이터 생성
+  const days = [];
+  let recordedDays = 0;
+  for (let i = 0; i < 7; i++) {
+    const date = new Date(startOfWeek);
+    date.setDate(startOfWeek.getDate() + i);
+    const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+    const count = dailyCounts[dateStr] || 0;
+    const hasRecord = count > 0;
+    if (hasRecord) recordedDays++;
+
+    days.push({
+      date: dateStr,
+      dayOfWeek: i,
+      dayLabel: dayLabels[i],
+      hasRecord,
+      count,
+      isToday: date.getTime() === today.getTime(),
+      isFuture: date.getTime() > today.getTime(),
+    });
+  }
+
+  // 스트릭 계산 (최근 30일 기준)
+  const thirtyDaysAgo = new Date(today);
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+  const { data: streakNotes } = await supabase
+    .from("notes")
+    .select("created_at")
+    .eq("user_id", user.id)
+    .gte("created_at", thirtyDaysAgo.toISOString())
+    .order("created_at", { ascending: false });
+
+  let streak = 0;
+  if (streakNotes && streakNotes.length > 0) {
+    const recordedDates = new Set<string>();
+    streakNotes.forEach((note) => {
+      const date = new Date(note.created_at);
+      recordedDates.add(`${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`);
+    });
+
+    for (let i = 0; i < 30; i++) {
+      const checkDate = new Date(today);
+      checkDate.setDate(checkDate.getDate() - i);
+      const dateKey = `${checkDate.getFullYear()}-${checkDate.getMonth()}-${checkDate.getDate()}`;
+
+      if (recordedDates.has(dateKey)) {
+        streak++;
+      } else if (i > 0) {
+        break;
+      }
+    }
+  }
+
+  // 스트릭 상태 결정
+  const todayKey = `${today.getFullYear()}-${today.getMonth()}-${today.getDate()}`;
+  const todayRecorded = dailyCounts[days.find(d => d.isToday)?.date || ""] > 0;
+
+  let streakStatus: "active" | "at_risk" | "none" = "none";
+  if (streak >= 1) {
+    streakStatus = todayRecorded ? "active" : "at_risk";
+  }
+
+  return {
+    days,
+    recordedDays,
+    totalDays: 7,
+    streak,
+    streakStatus,
+  };
+}
+
 export async function getMonthlyStats(user?: User | null) {
   const supabase = await createServerSupabaseClient();
 
