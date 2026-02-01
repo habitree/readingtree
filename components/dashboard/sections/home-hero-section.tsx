@@ -444,32 +444,26 @@ export function HomeHeroSkeleton() {
         </div>
       </Card>
 
-      {/* 미니 달력 스켈레톤 */}
-      <Card className="p-3 sm:p-4">
-        <div className="space-y-3">
+      {/* 미니 히트맵 스켈레톤 (컴팩트) */}
+      <Card className="p-2.5 sm:p-3">
+        <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="h-6 w-6 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
-              <div className="h-4 w-20 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
-              <div className="h-6 w-6 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
-            </div>
-            <div className="h-4 w-16 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
+            <div className="h-3 w-16 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
+            <div className="h-3 w-12 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
           </div>
-          <div className="grid grid-cols-7 gap-1">
-            {Array.from({ length: 7 }).map((_, i) => (
-              <div key={i} className="h-4 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
+          <div className="flex gap-[3px]">
+            {Array.from({ length: 8 }).map((_, weekIndex) => (
+              <div key={weekIndex} className="flex flex-col gap-[3px]">
+                {Array.from({ length: 7 }).map((_, dayIndex) => (
+                  <div
+                    key={dayIndex}
+                    className="w-[10px] h-[10px] sm:w-[11px] sm:h-[11px] rounded-[2px] bg-slate-200 dark:bg-slate-700 animate-pulse"
+                  />
+                ))}
+              </div>
             ))}
           </div>
-          {Array.from({ length: 5 }).map((_, weekIndex) => (
-            <div key={weekIndex} className="grid grid-cols-7 gap-1">
-              {Array.from({ length: 7 }).map((_, dayIndex) => (
-                <div
-                  key={dayIndex}
-                  className="aspect-square rounded-md bg-slate-200 dark:bg-slate-700 animate-pulse"
-                />
-              ))}
-            </div>
-          ))}
+          <div className="h-2 w-20 ml-auto rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
         </div>
       </Card>
 
