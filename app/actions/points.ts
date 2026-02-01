@@ -89,15 +89,16 @@ export async function earnPoints(
   }
 
   try {
-    // 1. 액션 설정 조회
-    const { data: actionConfig } = await supabase
+    // 1. 액션 설정 조회 (.maybeSingle() 사용으로 에러 방지)
+    const { data: actionConfig, error: configError } = await supabase
       .from("point_action_configs")
       .select("*")
       .eq("action_type", actionType)
       .eq("is_active", true)
-      .single();
+      .maybeSingle();
 
-    if (!actionConfig) {
+    if (configError || !actionConfig) {
+      console.warn(`포인트 액션 설정 없음: ${actionType}`);
       return { success: false, points_earned: 0, new_total: 0, error: "유효하지 않은 액션입니다." };
     }
 
