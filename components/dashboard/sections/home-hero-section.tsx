@@ -444,37 +444,25 @@ export function HomeHeroSkeleton() {
         </div>
       </Card>
 
-      {/* 독서 활동 히트맵 스켈레톤 */}
-      <Card className="p-4">
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="h-4 w-4 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
-              <div className="h-4 w-16 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
-            </div>
-            <div className="h-3 w-20 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
+      {/* 독서 활동 히트맵 스켈레톤 (컴팩트) */}
+      <Card className="px-3 py-2.5">
+        <div className="flex items-center gap-3">
+          <div className="shrink-0 space-y-1">
+            <div className="h-3 w-12 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
+            <div className="h-2.5 w-10 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
           </div>
-          <div className="space-y-1">
-            <div className="h-4 ml-7" />
-            <div className="flex gap-1">
-              <div className="w-6 shrink-0" />
-              <div className="flex-1 flex gap-[3px]">
-                {Array.from({ length: 12 }).map((_, weekIndex) => (
-                  <div key={weekIndex} className="flex flex-col gap-[3px] flex-1">
-                    {Array.from({ length: 7 }).map((_, dayIndex) => (
-                      <div
-                        key={dayIndex}
-                        className="aspect-square rounded-sm bg-slate-200 dark:bg-slate-700 animate-pulse"
-                      />
-                    ))}
-                  </div>
+          <div className="flex-1 flex gap-[2px]">
+            {Array.from({ length: 12 }).map((_, i) => (
+              <div key={i} className="flex flex-col gap-[2px]">
+                {Array.from({ length: 7 }).map((_, j) => (
+                  <div key={j} className="w-[8px] h-[8px] rounded-[2px] bg-slate-200 dark:bg-slate-700 animate-pulse" />
                 ))}
               </div>
-            </div>
+            ))}
           </div>
-          <div className="flex items-center justify-between pt-2">
-            <div className="h-3 w-20 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
-            <div className="h-3 w-28 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
+          <div className="shrink-0 space-y-1">
+            <div className="h-3 w-10 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
+            <div className="h-2 w-14 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
           </div>
         </div>
       </Card>
