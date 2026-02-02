@@ -22,7 +22,6 @@ import { useStyle } from "@/hooks/use-style";
 import { ContinueReadingCard, NoReadingBookCard } from "./continue-reading-card";
 import { OnboardingChecklist, type OnboardingItem } from "@/components/onboarding/onboarding-checklist";
 import { WeeklyProgressBar } from "./weekly-progress-bar";
-import { MiniCalendarHeatmap } from "./mini-calendar-heatmap";
 import { ActivityCalendar } from "./activity-calendar";
 import type { DailyRecordByType } from "@/app/actions/stats";
 
@@ -70,8 +69,6 @@ interface HomeHeroSectionProps {
   onDismissOnboarding?: () => void;
   /** 주간 진행 상황 데이터 */
   weeklyProgress?: WeeklyProgressData | null;
-  /** 일별 기록 데이터 (달력용) */
-  dailyRecords?: Record<string, number>;
   /** 일별 타입별 기록 데이터 (30일 활동 캘린더용) */
   dailyRecordsByType?: Record<string, DailyRecordByType>;
 }
@@ -89,7 +86,6 @@ export function HomeHeroSection({
   onboardingItems,
   onDismissOnboarding,
   weeklyProgress,
-  dailyRecords = {},
   dailyRecordsByType = {},
 }: HomeHeroSectionProps) {
   const [mounted, setMounted] = useState(false);
@@ -275,17 +271,6 @@ export function HomeHeroSection({
           transition={{ duration: 0.4, delay: 0.2 }}
         >
           <ActivityCalendar dailyRecordsByType={dailyRecordsByType} />
-        </motion.div>
-      )}
-
-      {/* 미니 달력 히트맵 (로그인 사용자만 - 12주 히트맵) */}
-      {userName && Object.keys(dailyRecords).length > 0 && (
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.25 }}
-        >
-          <MiniCalendarHeatmap dailyRecords={dailyRecords} />
         </motion.div>
       )}
 

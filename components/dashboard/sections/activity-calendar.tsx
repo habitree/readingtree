@@ -4,7 +4,7 @@ import { useMemo, useState, useCallback, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { CalendarDays, PenTool, Camera, FileText } from "lucide-react";
+import { Flame } from "lucide-react";
 import type { DailyRecordByType } from "@/app/actions/stats";
 
 interface ActivityCalendarProps {
@@ -13,33 +13,32 @@ interface ActivityCalendarProps {
 }
 
 const DAY_LABELS = ["일", "월", "화", "수", "목", "금", "토"];
-const MONTH_LABELS = ["1월", "2월", "3월", "4월", "5월", "6월", "7월", "8월", "9월", "10월", "11월", "12월"];
 
-// 타입별 색상 정의
+// 타입별 색상 정의 (더 부드러운 톤)
 const TYPE_COLORS = {
   transcription: {
-    bg: "bg-purple-400 dark:bg-purple-500",
-    text: "text-purple-600 dark:text-purple-400",
+    base: "bg-violet-400/90 dark:bg-violet-500/80",
+    light: "bg-violet-200 dark:bg-violet-800/50",
+    text: "text-violet-600 dark:text-violet-400",
     label: "필사",
-    icon: FileText,
   },
   photo: {
-    bg: "bg-blue-400 dark:bg-blue-500",
-    text: "text-blue-600 dark:text-blue-400",
+    base: "bg-sky-400/90 dark:bg-sky-500/80",
+    light: "bg-sky-200 dark:bg-sky-800/50",
+    text: "text-sky-600 dark:text-sky-400",
     label: "사진",
-    icon: Camera,
   },
   memo: {
-    bg: "bg-emerald-400 dark:bg-emerald-500",
+    base: "bg-emerald-400/90 dark:bg-emerald-500/80",
+    light: "bg-emerald-200 dark:bg-emerald-800/50",
     text: "text-emerald-600 dark:text-emerald-400",
     label: "기록",
-    icon: PenTool,
   },
 };
 
 /**
- * 30일 독서활동 캘린더
- * 타입별 색상 구분: 필사(보라), 사진(파랑), 기록(초록)
+ * 30일 독서활동 캘린더 (컴팩트 디자인)
+ * 타입별 색상 구분: 필사(보라), 사진(하늘), 기록(초록)
  */
 export function ActivityCalendar({
   dailyRecordsByType,
@@ -48,65 +47,72 @@ export function ActivityCalendar({
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // 30일 캘린더 데이터 생성
-  const { calendarData, stats } = useMemo(() => {
+  // 30일 데이터 생성 (GitHub 스타일 - 주별 열 구조)
+  const { weeklyData, stats } = useMemo(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const days: Array<{
+    // 시작일 계산: 4주 전 일요일부터 (약 30일)
+    const startDate = new Date(today);
+    startDate.setDate(today.getDate() - 27 - today.getDay());
+
+    const weeks: Array<Array<{
       date: string;
       displayDate: string;
       dayOfWeek: number;
-      dayOfMonth: number;
-      month: number;
       records: DailyRecordByType | null;
       isToday: boolean;
       isFuture: boolean;
-    }> = [];
+    }>> = [];
 
+    let currentWeek: typeof weeks[0] = [];
     let totalRecords = 0;
-    let transcriptionCount = 0;
-    let photoCount = 0;
-    let memoCount = 0;
     let recordedDays = 0;
 
-    // 최근 30일 (오늘 포함)
-    for (let i = 29; i >= 0; i--) {
-      const date = new Date(today);
-      date.setDate(today.getDate() - i);
+    const current = new Date(startDate);
+    const endDate = new Date(today);
+    endDate.setDate(today.getDate() + (6 - today.getDay()));
 
-      const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
-      const displayDate = `${date.getMonth() + 1}월 ${date.getDate()}일`;
+    while (current <= endDate) {
+      const dateStr = `${current.getFullYear()}-${String(current.getMonth() + 1).padStart(2, "0")}-${String(current.getDate()).padStart(2, "0")}`;
+      const displayDate = `${current.getMonth() + 1}/${current.getDate()}`;
       const records = dailyRecordsByType[dateStr] || null;
-      const isToday = i === 0;
+      const isToday = current.getTime() === today.getTime();
+      const isFuture = current.getTime() > today.getTime();
 
-      if (records && records.total > 0) {
+      if (!isFuture && records && records.total > 0) {
         totalRecords += records.total;
-        transcriptionCount += records.transcription;
-        photoCount += records.photo;
-        memoCount += records.memo + records.quote;
         recordedDays++;
       }
 
-      days.push({
+      currentWeek.push({
         date: dateStr,
         displayDate,
-        dayOfWeek: date.getDay(),
-        dayOfMonth: date.getDate(),
-        month: date.getMonth(),
+        dayOfWeek: current.getDay(),
         records,
         isToday,
-        isFuture: false,
+        isFuture,
       });
+
+      if (current.getDay() === 6) {
+        weeks.push(currentWeek);
+        currentWeek = [];
+      }
+
+      current.setDate(current.getDate() + 1);
+    }
+
+    if (currentWeek.length > 0) {
+      weeks.push(currentWeek);
     }
 
     return {
-      calendarData: days,
-      stats: { totalRecords, transcriptionCount, photoCount, memoCount, recordedDays },
+      weeklyData: weeks,
+      stats: { totalRecords, recordedDays },
     };
   }, [dailyRecordsByType]);
 
-  // 외부 클릭 시 툴팁 닫기
+  // 외부 클릭 시 닫기
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent | TouchEvent) => {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
@@ -122,17 +128,11 @@ export function ActivityCalendar({
     };
   }, []);
 
-  const handleDayClick = useCallback((date: string) => {
-    setSelectedDay(prev => prev === date ? null : date);
-  }, []);
+  // 타입에 따른 색상 결정
+  const getDayColor = (records: DailyRecordByType | null, isFuture: boolean) => {
+    if (isFuture) return "bg-slate-100/50 dark:bg-slate-800/30";
+    if (!records || records.total === 0) return "bg-slate-200/60 dark:bg-slate-700/40";
 
-  // 타입에 따른 색상 결정 (가장 많은 타입 기준)
-  const getDayColor = (records: DailyRecordByType | null) => {
-    if (!records || records.total === 0) {
-      return "bg-slate-100 dark:bg-slate-800/50";
-    }
-
-    // 가장 많은 타입 결정
     const counts = {
       transcription: records.transcription,
       photo: records.photo,
@@ -143,214 +143,168 @@ export function ActivityCalendar({
       counts[a[0] as keyof typeof counts] >= counts[b[0] as keyof typeof counts] ? a : b
     )[0] as keyof typeof TYPE_COLORS;
 
-    return TYPE_COLORS[maxType].bg;
+    return TYPE_COLORS[maxType].base;
   };
 
   // 선택된 날짜 정보
   const selectedDayInfo = useMemo(() => {
     if (!selectedDay) return null;
-    return calendarData.find(day => day.date === selectedDay) || null;
-  }, [selectedDay, calendarData]);
-
-  // 주별로 그룹화 (캘린더 형식)
-  const weeks = useMemo(() => {
-    const result: typeof calendarData[] = [];
-    let currentWeek: typeof calendarData = [];
-
-    // 첫째 날 앞의 빈 칸 채우기
-    const firstDayOfWeek = calendarData[0]?.dayOfWeek || 0;
-    for (let i = 0; i < firstDayOfWeek; i++) {
-      currentWeek.push({
-        date: `empty-${i}`,
-        displayDate: "",
-        dayOfWeek: i,
-        dayOfMonth: 0,
-        month: 0,
-        records: null,
-        isToday: false,
-        isFuture: true, // 빈 칸 표시용
-      });
+    for (const week of weeklyData) {
+      const day = week.find(d => d.date === selectedDay);
+      if (day) return day;
     }
-
-    calendarData.forEach(day => {
-      currentWeek.push(day);
-      if (day.dayOfWeek === 6) {
-        result.push(currentWeek);
-        currentWeek = [];
-      }
-    });
-
-    // 마지막 주 남은 칸 채우기
-    if (currentWeek.length > 0) {
-      const remaining = 7 - currentWeek.length;
-      for (let i = 0; i < remaining; i++) {
-        currentWeek.push({
-          date: `empty-end-${i}`,
-          displayDate: "",
-          dayOfWeek: (currentWeek.length),
-          dayOfMonth: 0,
-          month: 0,
-          records: null,
-          isToday: false,
-          isFuture: true,
-        });
-      }
-      result.push(currentWeek);
-    }
-
-    return result;
-  }, [calendarData]);
+    return null;
+  }, [selectedDay, weeklyData]);
 
   return (
     <Card
       ref={containerRef}
       className={cn(
-        "p-3 border-slate-200 dark:border-slate-700/50 overflow-visible",
+        "p-2.5 sm:p-3 border-slate-200/80 dark:border-slate-700/50",
         className
       )}
     >
-      <div className="space-y-2.5">
-        {/* 헤더: 타이틀 + 통계 */}
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-1.5 shrink-0">
-            <CalendarDays className="w-3.5 h-3.5 text-forest-500 shrink-0" />
-            <span className="text-xs font-medium text-slate-700 dark:text-slate-300 whitespace-nowrap">
-              활동 캘린더
+      <div className="space-y-2">
+        {/* 헤더 */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1.5">
+            <Flame className="w-3.5 h-3.5 text-orange-500" />
+            <span className="text-xs font-medium text-slate-700 dark:text-slate-300">
+              독서 활동
             </span>
-            <span className="text-[10px] text-slate-400 dark:text-slate-500 whitespace-nowrap">
+            <span className="text-[10px] text-slate-400 dark:text-slate-500 ml-0.5">
               30일
             </span>
           </div>
-          <div className="flex items-center gap-1.5 text-[11px] shrink-0">
-            <span className="text-slate-500 dark:text-slate-400 whitespace-nowrap">
+          <div className="flex items-center gap-1.5 text-[11px]">
+            <span className="text-slate-500 dark:text-slate-400">
               <span className="font-semibold text-forest-600 dark:text-forest-400">{stats.recordedDays}</span>일
             </span>
             <span className="text-slate-300 dark:text-slate-600">·</span>
-            <span className="text-slate-500 dark:text-slate-400 whitespace-nowrap">
+            <span className="text-slate-500 dark:text-slate-400">
               <span className="font-semibold text-forest-600 dark:text-forest-400">{stats.totalRecords}</span>개
             </span>
           </div>
         </div>
 
-        {/* 요일 헤더 */}
-        <div className="grid grid-cols-7 gap-[2px]">
-          {DAY_LABELS.map((label, i) => (
+        {/* 히트맵 그리드 (GitHub 스타일) */}
+        <div className="flex gap-1">
+          {/* 요일 라벨 */}
+          <div className="flex flex-col justify-between py-[1px] shrink-0">
+            {[0, 2, 4, 6].map((dayIndex) => (
+              <span
+                key={dayIndex}
+                className="text-[8px] text-slate-400 dark:text-slate-500 leading-none h-[10px] flex items-center"
+              >
+                {DAY_LABELS[dayIndex]}
+              </span>
+            ))}
+          </div>
+
+          {/* 히트맵 */}
+          <div className="flex-1 min-w-0">
             <div
-              key={label}
-              className={cn(
-                "text-center text-[10px] font-medium py-0.5",
-                i === 0 ? "text-red-400" : i === 6 ? "text-blue-400" : "text-slate-400"
-              )}
+              className="grid gap-[2px]"
+              style={{
+                gridTemplateColumns: `repeat(${weeklyData.length}, minmax(0, 1fr))`,
+                gridTemplateRows: "repeat(7, 10px)"
+              }}
             >
-              {label}
+              {weeklyData.map((week, weekIndex) =>
+                week.map((day, dayIndex) => (
+                  <motion.div
+                    key={day.date}
+                    className={cn(
+                      "rounded-[2px] cursor-pointer",
+                      getDayColor(day.records, day.isFuture),
+                      day.isToday && "ring-1 ring-forest-500 ring-offset-1 ring-offset-white dark:ring-offset-slate-900",
+                      selectedDay === day.date && "ring-1.5 ring-forest-600",
+                      !day.isFuture && "hover:brightness-110 active:scale-90 transition-all"
+                    )}
+                    style={{
+                      gridColumn: weekIndex + 1,
+                      gridRow: dayIndex + 1
+                    }}
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: weekIndex * 0.01 + dayIndex * 0.003 }}
+                    onClick={() => !day.isFuture && setSelectedDay(prev => prev === day.date ? null : day.date)}
+                    onMouseEnter={() => !day.isFuture && setSelectedDay(day.date)}
+                    onMouseLeave={() => setSelectedDay(null)}
+                  />
+                ))
+              )}
             </div>
-          ))}
+          </div>
         </div>
 
-        {/* 캘린더 그리드 */}
-        <div className="space-y-[2px]">
-          {weeks.map((week, weekIndex) => (
-            <div key={weekIndex} className="grid grid-cols-7 gap-[2px]">
-              {week.map((day, dayIndex) => (
-                <motion.div
-                  key={day.date}
-                  className={cn(
-                    "aspect-square rounded-[3px] flex items-center justify-center text-[10px] font-medium cursor-pointer relative",
-                    day.date.startsWith("empty")
-                      ? "bg-transparent cursor-default"
-                      : getDayColor(day.records),
-                    day.isToday && !day.date.startsWith("empty") && "ring-1 ring-forest-500 ring-offset-1 ring-offset-white dark:ring-offset-slate-900",
-                    selectedDay === day.date && "ring-2 ring-forest-600",
-                    !day.date.startsWith("empty") && "hover:brightness-110 active:scale-95 transition-all",
-                    day.records && day.records.total > 0 ? "text-white" : "text-slate-400 dark:text-slate-500"
-                  )}
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: weekIndex * 0.03 + dayIndex * 0.01 }}
-                  onClick={() => !day.date.startsWith("empty") && handleDayClick(day.date)}
-                  onMouseEnter={() => !day.date.startsWith("empty") && setSelectedDay(day.date)}
-                  onMouseLeave={() => setSelectedDay(null)}
-                >
-                  {!day.date.startsWith("empty") && day.dayOfMonth}
-                </motion.div>
-              ))}
-            </div>
-          ))}
-        </div>
-
-        {/* 선택된 날짜 상세 정보 */}
+        {/* 선택된 날짜 상세 or 범례 */}
         <AnimatePresence mode="wait">
-          {selectedDayInfo && !selectedDayInfo.date.startsWith("empty") && (
+          {selectedDayInfo && !selectedDayInfo.isFuture ? (
             <motion.div
               key={selectedDayInfo.date}
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.15 }}
+              transition={{ duration: 0.12 }}
               className="overflow-hidden"
             >
-              <div className="bg-slate-50 dark:bg-slate-800/70 rounded-md px-2.5 py-2 space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-medium text-slate-700 dark:text-slate-300">
-                    {selectedDayInfo.displayDate} ({DAY_LABELS[selectedDayInfo.dayOfWeek]})
+              <div className="flex items-center justify-between bg-slate-50 dark:bg-slate-800/60 rounded px-2 py-1.5">
+                <div className="flex items-center gap-1.5">
+                  <div className={cn(
+                    "w-2.5 h-2.5 rounded-sm shrink-0",
+                    getDayColor(selectedDayInfo.records, false)
+                  )} />
+                  <span className="text-[11px] font-medium text-slate-700 dark:text-slate-300">
+                    {selectedDayInfo.displayDate}
                     {selectedDayInfo.isToday && (
-                      <span className="ml-1.5 text-[10px] text-forest-500 font-semibold">오늘</span>
+                      <span className="ml-1 text-forest-500 font-semibold">오늘</span>
                     )}
-                  </span>
-                  <span className={cn(
-                    "text-xs font-semibold",
-                    selectedDayInfo.records && selectedDayInfo.records.total > 0
-                      ? "text-forest-600 dark:text-forest-400"
-                      : "text-slate-400 dark:text-slate-500"
-                  )}>
-                    {selectedDayInfo.records?.total || 0}개 기록
                   </span>
                 </div>
-
-                {selectedDayInfo.records && selectedDayInfo.records.total > 0 && (
-                  <div className="flex items-center gap-3 text-[11px]">
-                    {selectedDayInfo.records.transcription > 0 && (
-                      <div className="flex items-center gap-1">
-                        <div className="w-2 h-2 rounded-full bg-purple-400" />
-                        <span className="text-purple-600 dark:text-purple-400">
+                <div className="flex items-center gap-2 text-[10px]">
+                  {selectedDayInfo.records && selectedDayInfo.records.total > 0 ? (
+                    <>
+                      {selectedDayInfo.records.transcription > 0 && (
+                        <span className="text-violet-600 dark:text-violet-400">
                           필사 {selectedDayInfo.records.transcription}
                         </span>
-                      </div>
-                    )}
-                    {selectedDayInfo.records.photo > 0 && (
-                      <div className="flex items-center gap-1">
-                        <div className="w-2 h-2 rounded-full bg-blue-400" />
-                        <span className="text-blue-600 dark:text-blue-400">
+                      )}
+                      {selectedDayInfo.records.photo > 0 && (
+                        <span className="text-sky-600 dark:text-sky-400">
                           사진 {selectedDayInfo.records.photo}
                         </span>
-                      </div>
-                    )}
-                    {(selectedDayInfo.records.memo > 0 || selectedDayInfo.records.quote > 0) && (
-                      <div className="flex items-center gap-1">
-                        <div className="w-2 h-2 rounded-full bg-emerald-400" />
+                      )}
+                      {(selectedDayInfo.records.memo > 0 || selectedDayInfo.records.quote > 0) && (
                         <span className="text-emerald-600 dark:text-emerald-400">
                           기록 {selectedDayInfo.records.memo + selectedDayInfo.records.quote}
                         </span>
-                      </div>
-                    )}
-                  </div>
-                )}
+                      )}
+                    </>
+                  ) : (
+                    <span className="text-slate-400 dark:text-slate-500">기록 없음</span>
+                  )}
+                </div>
               </div>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="legend"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.12 }}
+              className="flex items-center justify-center gap-3"
+            >
+              {Object.entries(TYPE_COLORS).map(([key, value]) => (
+                <div key={key} className="flex items-center gap-1">
+                  <div className={cn("w-2 h-2 rounded-sm", value.base)} />
+                  <span className="text-[9px] text-slate-500 dark:text-slate-400">{value.label}</span>
+                </div>
+              ))}
             </motion.div>
           )}
         </AnimatePresence>
-
-        {/* 범례 (선택된 날짜가 없을 때만 표시) */}
-        {!selectedDayInfo && (
-          <div className="flex items-center justify-center gap-4 pt-0.5">
-            {Object.entries(TYPE_COLORS).map(([key, value]) => (
-              <div key={key} className="flex items-center gap-1">
-                <div className={cn("w-2.5 h-2.5 rounded-[2px]", value.bg)} />
-                <span className="text-[10px] text-slate-500 dark:text-slate-400">{value.label}</span>
-              </div>
-            ))}
-          </div>
-        )}
       </div>
     </Card>
   );
@@ -358,13 +312,13 @@ export function ActivityCalendar({
 
 export function ActivityCalendarSkeleton() {
   return (
-    <Card className="p-3">
-      <div className="space-y-2.5">
+    <Card className="p-2.5 sm:p-3">
+      <div className="space-y-2">
         {/* 헤더 스켈레톤 */}
-        <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5">
             <div className="w-3.5 h-3.5 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
-            <div className="h-4 w-16 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
+            <div className="h-3.5 w-14 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
           </div>
           <div className="flex items-center gap-1.5">
             <div className="h-3 w-8 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
@@ -372,33 +326,34 @@ export function ActivityCalendarSkeleton() {
           </div>
         </div>
 
-        {/* 요일 헤더 스켈레톤 */}
-        <div className="grid grid-cols-7 gap-[2px]">
-          {Array.from({ length: 7 }).map((_, i) => (
-            <div key={i} className="h-4 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
-          ))}
-        </div>
-
-        {/* 캘린더 그리드 스켈레톤 */}
-        <div className="space-y-[2px]">
-          {Array.from({ length: 5 }).map((_, weekIndex) => (
-            <div key={weekIndex} className="grid grid-cols-7 gap-[2px]">
-              {Array.from({ length: 7 }).map((_, dayIndex) => (
-                <div
-                  key={dayIndex}
-                  className="aspect-square rounded-[3px] bg-slate-200 dark:bg-slate-700 animate-pulse"
-                />
+        {/* 히트맵 스켈레톤 */}
+        <div className="flex gap-1">
+          <div className="flex flex-col justify-between py-[1px] shrink-0">
+            {[0, 1, 2, 3].map((i) => (
+              <div key={i} className="w-2.5 h-[10px] rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
+            ))}
+          </div>
+          <div className="flex-1">
+            <div
+              className="grid gap-[2px]"
+              style={{
+                gridTemplateColumns: "repeat(5, minmax(0, 1fr))",
+                gridTemplateRows: "repeat(7, 10px)"
+              }}
+            >
+              {Array.from({ length: 35 }).map((_, i) => (
+                <div key={i} className="rounded-[2px] bg-slate-200 dark:bg-slate-700 animate-pulse" />
               ))}
             </div>
-          ))}
+          </div>
         </div>
 
         {/* 범례 스켈레톤 */}
-        <div className="flex items-center justify-center gap-4 pt-0.5">
+        <div className="flex items-center justify-center gap-3">
           {Array.from({ length: 3 }).map((_, i) => (
             <div key={i} className="flex items-center gap-1">
-              <div className="w-2.5 h-2.5 rounded-[2px] bg-slate-200 dark:bg-slate-700 animate-pulse" />
-              <div className="w-6 h-3 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
+              <div className="w-2 h-2 rounded-sm bg-slate-200 dark:bg-slate-700 animate-pulse" />
+              <div className="w-5 h-2.5 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
             </div>
           ))}
         </div>

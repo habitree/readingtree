@@ -1,6 +1,6 @@
 import { getCurrentUser } from "@/app/actions/auth";
 import { getPersonaDashboardData } from "@/app/actions/persona";
-import { getReadingStats, getWeeklyProgress, getDailyRecordsForCalendar, getDailyRecordsByType } from "@/app/actions/stats";
+import { getReadingStats, getWeeklyProgress, getDailyRecordsByType } from "@/app/actions/stats";
 import { getContinueReadingBooks } from "@/app/actions/books";
 import { HomeHeroSection } from "./home-hero-section";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
@@ -26,12 +26,8 @@ export async function HomeHeroWrapper() {
     );
   }
 
-  // 달력용 날짜 범위 계산 (현재 월 + 이전 2개월)
-  const today = new Date();
-  const calendarStartDate = new Date(today.getFullYear(), today.getMonth() - 2, 1);
-  const calendarEndDate = new Date(today.getFullYear(), today.getMonth() + 1, 0); // 이번 달 마지막 날
-
   // 30일 활동 캘린더용 날짜 범위
+  const today = new Date();
   const activityCalendarStart = new Date(today);
   activityCalendarStart.setDate(today.getDate() - 29);
   activityCalendarStart.setHours(0, 0, 0, 0);
@@ -43,7 +39,6 @@ export async function HomeHeroWrapper() {
     streakAndTodayData,
     continueReadingBooks,
     weeklyProgress,
-    dailyRecords,
     dailyRecordsByType,
   ] = await Promise.all([
     getPersonaDashboardData().catch(() => null),
@@ -51,7 +46,6 @@ export async function HomeHeroWrapper() {
     getStreakAndTodayData(user.id).catch(() => ({ streak: 0, todayNotes: 0 })),
     getContinueReadingBooks(user, 4).catch(() => []),
     getWeeklyProgress(user).catch(() => null),
-    getDailyRecordsForCalendar(user, calendarStartDate, calendarEndDate).catch(() => ({})),
     getDailyRecordsByType(user, activityCalendarStart, today).catch(() => ({})),
   ]);
 
@@ -64,7 +58,6 @@ export async function HomeHeroWrapper() {
       weeklyNotes={readingStats?.thisWeek?.notes ?? 0}
       continueReadingBooks={continueReadingBooks || []}
       weeklyProgress={weeklyProgress}
-      dailyRecords={dailyRecords}
       dailyRecordsByType={dailyRecordsByType}
     />
   );
