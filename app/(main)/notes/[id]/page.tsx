@@ -14,7 +14,6 @@ import { OCRStatusChecker } from "@/components/notes/ocr-status-checker";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { NoteWithBook } from "@/types/note";
 import { getUserById } from "@/app/actions/profile";
-import { BookLinkRenderer } from "@/components/notes/book-link-renderer";
 import { RelatedBooksManager, RelatedBooksDisplay } from "@/components/notes/related-books-manager";
 
 interface NoteDetailPageProps {
@@ -160,8 +159,8 @@ export default async function NoteDetailPage({ params }: NoteDetailPageProps) {
         </Card>
       )}
 
-      {/* 4. 상세 분석 정보 (필사 데이터 등) - 개선된 디자인 */}
-      {transcription && (transcription.status === "completed" || transcription.extracted_text) && (
+      {/* 4. 상세 분석 정보 (필사 데이터 - 추출된 원문만 표시) */}
+      {transcription && (transcription.status === "completed" || transcription.extracted_text) && transcription.extracted_text && (
         <Card className="border border-primary/10 bg-gradient-to-br from-primary/5 via-slate-50 to-slate-100/30 dark:from-primary/10 dark:via-slate-900/50 dark:to-slate-800/30 overflow-hidden relative">
           {/* 장식 요소 */}
           <div className="absolute top-0 right-0 w-20 h-20 sm:w-32 sm:h-32 bg-gradient-to-bl from-primary/10 to-transparent rounded-full blur-2xl -z-10" />
@@ -172,48 +171,17 @@ export default async function NoteDetailPage({ params }: NoteDetailPageProps) {
               AI 텍스트 분석
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4 sm:space-y-5 pt-0 px-4 sm:px-6">
-            {transcription.extracted_text && (
-              <div className="space-y-2.5">
-                <h4 className="text-xs sm:text-sm font-semibold text-primary flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-primary" />
-                  추출된 원문
-                </h4>
-                <div className="bg-white/80 dark:bg-slate-900/80 p-4 sm:p-5 rounded-xl border border-slate-100 dark:border-slate-800 shadow-sm backdrop-blur-sm">
-                  <p className="text-sm sm:text-base leading-relaxed text-slate-700 dark:text-slate-300 whitespace-pre-wrap">
-                    {transcription.extracted_text}
-                  </p>
-                </div>
+          <CardContent className="pt-0 px-4 sm:px-6">
+            <div className="space-y-2.5">
+              <h4 className="text-xs sm:text-sm font-semibold text-primary flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+                추출된 원문
+              </h4>
+              <div className="bg-white/80 dark:bg-slate-900/80 p-4 sm:p-5 rounded-xl border border-slate-100 dark:border-slate-800 shadow-sm backdrop-blur-sm">
+                <p className="text-sm sm:text-base leading-relaxed text-slate-700 dark:text-slate-300 whitespace-pre-wrap">
+                  {transcription.extracted_text}
+                </p>
               </div>
-            )}
-
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-              {transcription.quote_content && (
-                <div className="space-y-2">
-                  <h4 className="text-xs sm:text-sm font-semibold text-blue-600 dark:text-blue-400 flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-                    인상깊은 구절
-                  </h4>
-                  <div className="bg-gradient-to-br from-blue-50 to-indigo-50/50 dark:from-blue-950/30 dark:to-indigo-950/20 p-4 rounded-xl border-l-3 border-blue-400">
-                    <p className="text-sm leading-relaxed text-slate-700 dark:text-slate-300 italic">
-                      "<BookLinkRenderer text={transcription.quote_content} />"
-                    </p>
-                  </div>
-                </div>
-              )}
-              {transcription.memo_content && (
-                <div className="space-y-2">
-                  <h4 className="text-xs sm:text-sm font-semibold text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-                    내 생각
-                  </h4>
-                  <div className="bg-gradient-to-br from-amber-50 to-orange-50/50 dark:from-amber-950/30 dark:to-orange-950/20 p-4 rounded-xl">
-                    <p className="text-sm leading-relaxed text-slate-600 dark:text-slate-400">
-                      <BookLinkRenderer text={transcription.memo_content} />
-                    </p>
-                  </div>
-                </div>
-              )}
             </div>
           </CardContent>
         </Card>
