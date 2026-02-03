@@ -3,3 +3,4 @@ export * from './chat';
 export * from './persona';
 export * from './settings';
 export * from './providers';
+export * from './ocr-settings';

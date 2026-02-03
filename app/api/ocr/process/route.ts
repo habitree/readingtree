@@ -70,9 +70,9 @@ export async function POST(request: NextRequest) {
     const rawExtractedText = await extractTextFromImage(imageUrl);
     console.log("[OCR Process] OCR API 호출 완료, 추출된 텍스트 길이:", rawExtractedText.length);
 
-    // GPT를 사용한 텍스트 보정 (OpenAI API 키가 있는 경우에만)
+    // GPT를 사용한 텍스트 보정 (API 키가 있는 경우에만)
     let finalText = rawExtractedText;
-    if (isOcrCorrectionAvailable() && rawExtractedText.length > 0) {
+    if ((await isOcrCorrectionAvailable()) && rawExtractedText.length > 0) {
       console.log("[OCR Process] GPT 텍스트 보정 시작");
       try {
         const correctionResult = await correctOcrText(rawExtractedText);
