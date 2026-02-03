@@ -6,15 +6,16 @@ import { Badge } from "@/components/ui/badge";
 import { getNoteDetail, getTranscription } from "@/app/actions/notes";
 import { SimpleShareDialog } from "@/components/share/simple-share-dialog";
 import { NoteDeleteButton } from "@/components/notes/note-delete-button";
-import { Edit, ChevronLeft, ShieldCheck, ShieldAlert, BookOpen, Sparkles } from "lucide-react";
+import { Edit, ChevronLeft, ShieldCheck, ShieldAlert, BookOpen } from "lucide-react";
 import { isValidUUID } from "@/lib/utils/validation";
 import { sanitizeErrorForLogging } from "@/lib/utils/validation";
 import { ShareNoteCard } from "@/components/share/share-note-card";
 import { OCRStatusChecker } from "@/components/notes/ocr-status-checker";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import type { NoteWithBook } from "@/types/note";
 import { getUserById } from "@/app/actions/profile";
 import { RelatedBooksManager, RelatedBooksDisplay } from "@/components/notes/related-books-manager";
+import { OcrTextViewer } from "@/components/notes/ocr-text-viewer";
 
 interface NoteDetailPageProps {
   params: {
@@ -159,32 +160,12 @@ export default async function NoteDetailPage({ params }: NoteDetailPageProps) {
         </Card>
       )}
 
-      {/* 4. 상세 분석 정보 (필사 데이터 - 추출된 원문만 표시) */}
+      {/* 4. 상세 분석 정보 (필사 데이터 - AI 보정/원문 토글) */}
       {transcription && (transcription.status === "completed" || transcription.extracted_text) && transcription.extracted_text && (
-        <Card className="border border-primary/10 bg-gradient-to-br from-primary/5 via-slate-50 to-slate-100/30 dark:from-primary/10 dark:via-slate-900/50 dark:to-slate-800/30 overflow-hidden relative">
-          {/* 장식 요소 */}
-          <div className="absolute top-0 right-0 w-20 h-20 sm:w-32 sm:h-32 bg-gradient-to-bl from-primary/10 to-transparent rounded-full blur-2xl -z-10" />
-
-          <CardHeader className="pb-3 px-4 sm:px-6">
-            <CardTitle className="text-xs sm:text-sm font-bold uppercase tracking-widest text-primary/80 flex items-center gap-2">
-              <Sparkles className="w-4 h-4" />
-              AI 텍스트 분석
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-0 px-4 sm:px-6">
-            <div className="space-y-2.5">
-              <h4 className="text-xs sm:text-sm font-semibold text-primary flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-primary" />
-                추출된 원문
-              </h4>
-              <div className="bg-white/80 dark:bg-slate-900/80 p-4 sm:p-5 rounded-xl border border-slate-100 dark:border-slate-800 shadow-sm backdrop-blur-sm">
-                <p className="text-sm sm:text-base leading-relaxed text-slate-700 dark:text-slate-300 whitespace-pre-wrap">
-                  {transcription.extracted_text}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <OcrTextViewer
+          correctedText={transcription.extracted_text}
+          rawText={transcription.raw_extracted_text}
+        />
       )}
     </div>
   );

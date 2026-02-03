@@ -92,8 +92,8 @@ export async function POST(request: NextRequest) {
       console.log("[OCR Process] GPT 보정 건너뜀 (API 키 미설정 또는 빈 텍스트)");
     }
 
-    // Transcriptions 테이블에 저장
-    await createOrUpdateTranscription(noteId, finalText);
+    // Transcriptions 테이블에 저장 (보정된 텍스트 + 원본 텍스트)
+    await createOrUpdateTranscription(noteId, finalText, rawExtractedText);
     console.log("[OCR Process] Transcription 저장 완료");
 
     // 상태 업데이트 확인 (completed로 변경되었는지 확인)

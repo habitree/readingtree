@@ -993,11 +993,13 @@ export async function createTranscriptionInitial(noteId: string) {
 /**
  * 필사 OCR 데이터 생성 또는 업데이트
  * @param noteId 기록 ID
- * @param extractedText OCR로 추출된 텍스트
+ * @param extractedText OCR로 추출된 텍스트 (보정된 텍스트 또는 원본)
+ * @param rawExtractedText OCR 원본 텍스트 (GPT 보정 전, 선택적)
  */
 export async function createOrUpdateTranscription(
   noteId: string,
-  extractedText: string
+  extractedText: string,
+  rawExtractedText?: string
 ) {
   const supabase = await createServerSupabaseClient();
 
@@ -1023,13 +1025,17 @@ export async function createOrUpdateTranscription(
     .eq("note_id", noteId)
     .maybeSingle();
 
+  // 원본 텍스트가 없으면 보정된 텍스트를 원본으로 사용
+  const rawText = rawExtractedText?.trim() || extractedText.trim();
+
   if (existingTranscription) {
-    // 기존 transcription 업데이트2
+    // 기존 transcription 업데이트
     // OCR 결과는 extracted_text에만 저장하고, quote_content는 null로 유지 (사용자가 나중에 편집 가능)
     const { error: updateError } = await supabase
       .from("transcriptions")
       .update({
         extracted_text: extractedText.trim(),
+        raw_extracted_text: rawText,
         quote_content: null, // OCR 결과는 extracted_text에만 저장
         memo_content: null, // 사용자가 나중에 추가 가능
         status: "completed",
@@ -1046,6 +1052,7 @@ export async function createOrUpdateTranscription(
       noteId,
       status: "completed",
       extractedTextLength: extractedText.trim().length,
+      rawTextLength: rawText.length,
     });
   } else {
     // 새 transcription 생성
@@ -1055,6 +1062,7 @@ export async function createOrUpdateTranscription(
       .insert({
         note_id: noteId,
         extracted_text: extractedText.trim(),
+        raw_extracted_text: rawText,
         quote_content: null, // OCR 결과는 extracted_text에만 저장
         memo_content: null, // 사용자가 나중에 추가 가능
         status: "completed",
@@ -1072,6 +1080,7 @@ export async function createOrUpdateTranscription(
       noteId,
       status: "completed",
       extractedTextLength: extractedText.trim().length,
+      rawTextLength: rawText.length,
     });
   }
 
