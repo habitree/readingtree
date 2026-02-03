@@ -3,6 +3,7 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { extractTextFromImage } from "@/lib/api/ocr";
 import { createOrUpdateTranscription, updateTranscriptionStatus, verifyNoteOwnership } from "@/app/actions/notes";
 import { recordOcrSuccess, recordOcrFailure } from "@/app/actions/ocr";
+import { correctOcrText, isOcrCorrectionAvailable } from "@/lib/ai/ocr-correction";
 import type { User } from "@supabase/supabase-js";
 
 /**
@@ -66,11 +67,33 @@ export async function POST(request: NextRequest) {
 
     // OCR 처리 (Google Cloud Run OCR)
     console.log("[OCR Process] OCR API 호출 시작");
-    const extractedText = await extractTextFromImage(imageUrl);
-    console.log("[OCR Process] OCR API 호출 완료, 추출된 텍스트 길이:", extractedText.length);
+    const rawExtractedText = await extractTextFromImage(imageUrl);
+    console.log("[OCR Process] OCR API 호출 완료, 추출된 텍스트 길이:", rawExtractedText.length);
+
+    // GPT를 사용한 텍스트 보정 (OpenAI API 키가 있는 경우에만)
+    let finalText = rawExtractedText;
+    if (isOcrCorrectionAvailable() && rawExtractedText.length > 0) {
+      console.log("[OCR Process] GPT 텍스트 보정 시작");
+      try {
+        const correctionResult = await correctOcrText(rawExtractedText);
+        finalText = correctionResult.correctedText;
+        console.log("[OCR Process] GPT 텍스트 보정 완료:", {
+          wasModified: correctionResult.wasModified,
+          correctionDuration: `${correctionResult.duration}ms`,
+          originalLength: rawExtractedText.length,
+          correctedLength: finalText.length,
+        });
+      } catch (correctionError) {
+        console.warn("[OCR Process] GPT 보정 실패, 원본 텍스트 사용:", correctionError);
+        // 보정 실패 시 원본 텍스트 사용 (서비스 중단 방지)
+        finalText = rawExtractedText;
+      }
+    } else {
+      console.log("[OCR Process] GPT 보정 건너뜀 (API 키 미설정 또는 빈 텍스트)");
+    }
 
     // Transcriptions 테이블에 저장
-    await createOrUpdateTranscription(noteId, extractedText);
+    await createOrUpdateTranscription(noteId, finalText);
     console.log("[OCR Process] Transcription 저장 완료");
 
     // 상태 업데이트 확인 (completed로 변경되었는지 확인)
@@ -109,11 +132,12 @@ export async function POST(request: NextRequest) {
       // 통계 기록 실패해도 OCR 처리는 성공으로 간주
     }
 
-    return NextResponse.json({ 
-      success: true, 
-      extractedText,
-      textLength: extractedText.length,
+    return NextResponse.json({
+      success: true,
+      extractedText: finalText,
+      textLength: finalText.length,
       duration,
+      corrected: finalText !== rawExtractedText,
     });
   } catch (error) {
     const duration = Date.now() - startTime;
