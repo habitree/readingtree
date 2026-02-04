@@ -75,7 +75,7 @@ function ExpandableText({
 /**
  * AI 텍스트 인식 섹션 - 접이식 UI
  * 기본 접힌 상태로 시작, 사용자가 펼쳐서 확인 가능
- * PC/모바일 반응형 지원
+ * PC/모바일 반응형 지원 - 카드 하단 전체 너비 사용
  */
 function CollapsibleAiSection({
     text,
@@ -86,37 +86,40 @@ function CollapsibleAiSection({
 }) {
     const [isOpen, setIsOpen] = useState(false);
 
-    // PC에서는 더 긴 미리보기 (120자), 모바일은 80자
+    // PC에서는 더 긴 미리보기, 모바일은 짧게
     const getPreviewText = () => {
-        // 첫 번째 줄 또는 일정 길이까지만 표시
         const firstLine = text.split('\n')[0];
-        const maxLength = 120;
+        const maxLength = 150;
         if (firstLine.length <= maxLength) return firstLine;
         return firstLine.slice(0, maxLength).trim() + "...";
     };
     const previewText = getPreviewText();
 
     return (
-        <div className="mt-6 md:mt-8 pt-5 md:pt-6 border-t border-slate-100 dark:border-slate-800">
+        <div className="px-6 py-4 md:px-10 md:py-5 bg-slate-50/50 dark:bg-slate-900/30">
             {/* 헤더 - 클릭 가능 */}
             <button
                 onClick={() => !hideActions && setIsOpen(!isOpen)}
                 className={cn(
-                    "w-full flex items-center justify-between gap-3 group transition-colors rounded-lg -mx-2 px-2 py-1",
-                    !hideActions && "cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-900/50"
+                    "w-full flex items-center justify-between gap-4 group transition-colors rounded-lg py-1",
+                    !hideActions && "cursor-pointer"
                 )}
                 disabled={hideActions}
             >
-                <div className="flex items-center gap-2 md:gap-2.5">
-                    <Sparkles className="w-3.5 h-3.5 md:w-4 md:h-4 text-forest-500/70" />
-                    <span className="text-[11px] md:text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                <div className="flex items-center gap-2.5">
+                    <div className="p-1.5 bg-forest-500/10 dark:bg-forest-500/20 rounded-lg">
+                        <Sparkles className="w-3.5 h-3.5 md:w-4 md:h-4 text-forest-600 dark:text-forest-400" />
+                    </div>
+                    <span className="text-[11px] md:text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                         AI 텍스트 인식
                     </span>
                 </div>
                 {!hideActions && (
                     <div className={cn(
-                        "flex items-center gap-1.5 text-[10px] md:text-[11px] font-medium text-slate-400 transition-colors",
-                        "group-hover:text-forest-500"
+                        "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] md:text-[11px] font-semibold transition-all",
+                        isOpen
+                            ? "bg-forest-100 dark:bg-forest-900/50 text-forest-700 dark:text-forest-300"
+                            : "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 group-hover:bg-forest-100 dark:group-hover:bg-forest-900/50 group-hover:text-forest-700 dark:group-hover:text-forest-300"
                     )}>
                         <span>{isOpen ? "접기" : "펼쳐보기"}</span>
                         {isOpen ? (
@@ -128,24 +131,24 @@ function CollapsibleAiSection({
                 )}
             </button>
 
-            {/* 콘텐츠 영역 */}
+            {/* 접힌 상태일 때 미리보기 텍스트 */}
+            {!isOpen && !hideActions && (
+                <p className="mt-3 text-[12px] md:text-[13px] text-slate-400 dark:text-slate-500 leading-relaxed line-clamp-1 md:line-clamp-2">
+                    {previewText}
+                </p>
+            )}
+
+            {/* 펼쳐진 콘텐츠 영역 - 전체 너비 활용 */}
             <div className={cn(
                 "overflow-hidden transition-all duration-300 ease-in-out",
-                isOpen || hideActions ? "max-h-[800px] opacity-100 mt-3 md:mt-4" : "max-h-0 opacity-0 mt-0"
+                isOpen || hideActions ? "max-h-[1000px] opacity-100 mt-4" : "max-h-0 opacity-0 mt-0"
             )}>
-                <div className="bg-slate-50/70 dark:bg-slate-900/40 rounded-lg md:rounded-xl p-3 md:p-4 border border-slate-100 dark:border-slate-800">
-                    <p className="text-[13px] md:text-sm leading-relaxed md:leading-loose text-slate-600 dark:text-slate-400 whitespace-pre-wrap">
+                <div className="bg-white dark:bg-slate-900 rounded-xl p-4 md:p-6 border border-slate-200 dark:border-slate-700 shadow-sm">
+                    <p className="text-[13px] md:text-sm lg:text-base leading-relaxed md:leading-loose text-slate-700 dark:text-slate-300 whitespace-pre-wrap">
                         {text}
                     </p>
                 </div>
             </div>
-
-            {/* 접힌 상태일 때 미리보기 텍스트 - PC에서는 2줄까지 표시 */}
-            {!isOpen && !hideActions && (
-                <p className="mt-2 md:mt-3 text-[12px] md:text-[13px] text-slate-400 dark:text-slate-500 leading-relaxed line-clamp-2">
-                    {previewText}
-                </p>
-            )}
         </div>
     );
 }
@@ -562,13 +565,6 @@ export function ShareNoteCard({ note, className, isPublicView = false, hideActio
                                     </div>
                                 )}
 
-                                {/* AI 텍스트 인식 (필사 타입일 때만 표시) - 접이식 UI */}
-                                {hasAiAnalysis && (
-                                    <CollapsibleAiSection
-                                        text={aiAnalysisText!}
-                                        hideActions={hideActions}
-                                    />
-                                )}
                             </div>
 
                             {/* 푸터: 사용자 & 로고 */}
@@ -625,6 +621,16 @@ export function ShareNoteCard({ note, className, isPublicView = false, hideActio
                         </div>
                     </div>
                 </div>
+
+                {/* AI 텍스트 인식 - 카드 하단 전체 너비로 표시 */}
+                {hasAiAnalysis && (
+                    <div className="border-t border-slate-100 dark:border-slate-800">
+                        <CollapsibleAiSection
+                            text={aiAnalysisText!}
+                            hideActions={hideActions}
+                        />
+                    </div>
+                )}
             </CardContent>
         </Card>
     );
