@@ -73,6 +73,77 @@ function ExpandableText({
 }
 
 /**
+ * AI 텍스트 인식 섹션 - 접이식 UI
+ * 기본 접힌 상태로 시작, 사용자가 펼쳐서 확인 가능
+ */
+function CollapsibleAiSection({
+    text,
+    hideActions = false
+}: {
+    text: string;
+    hideActions?: boolean;
+}) {
+    const [isOpen, setIsOpen] = useState(false);
+    const previewLength = 80;
+    const previewText = text.length > previewLength
+        ? text.slice(0, previewLength).trim() + "..."
+        : text;
+
+    return (
+        <div className="mt-6 pt-5 border-t border-slate-100 dark:border-slate-800">
+            {/* 헤더 - 클릭 가능 */}
+            <button
+                onClick={() => !hideActions && setIsOpen(!isOpen)}
+                className={cn(
+                    "w-full flex items-center justify-between gap-3 group",
+                    !hideActions && "cursor-pointer"
+                )}
+                disabled={hideActions}
+            >
+                <div className="flex items-center gap-2">
+                    <Sparkles className="w-3.5 h-3.5 text-forest-500/70" />
+                    <span className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                        AI 텍스트 인식
+                    </span>
+                </div>
+                {!hideActions && (
+                    <div className={cn(
+                        "flex items-center gap-1 text-[10px] font-medium text-slate-400 transition-colors",
+                        "group-hover:text-forest-500"
+                    )}>
+                        <span>{isOpen ? "접기" : "펼치기"}</span>
+                        {isOpen ? (
+                            <ChevronUp className="w-3 h-3" />
+                        ) : (
+                            <ChevronDown className="w-3 h-3" />
+                        )}
+                    </div>
+                )}
+            </button>
+
+            {/* 콘텐츠 영역 */}
+            <div className={cn(
+                "overflow-hidden transition-all duration-300 ease-in-out",
+                isOpen || hideActions ? "max-h-[500px] opacity-100 mt-3" : "max-h-0 opacity-0 mt-0"
+            )}>
+                <div className="bg-slate-50/50 dark:bg-slate-900/30 rounded-lg p-3 border border-slate-100 dark:border-slate-800">
+                    <p className="text-[13px] leading-relaxed text-slate-600 dark:text-slate-400 whitespace-pre-wrap">
+                        {text}
+                    </p>
+                </div>
+            </div>
+
+            {/* 접힌 상태일 때 미리보기 텍스트 */}
+            {!isOpen && !hideActions && (
+                <p className="mt-2 text-[12px] text-slate-400 dark:text-slate-500 leading-relaxed truncate">
+                    {previewText}
+                </p>
+            )}
+        </div>
+    );
+}
+
+/**
  * 날짜를 YYYY.MM.DD 형식으로 변환
  */
 const formatDate = (dateStr: string) => {
@@ -484,26 +555,12 @@ export function ShareNoteCard({ note, className, isPublicView = false, hideActio
                                     </div>
                                 )}
 
-                                {/* AI 텍스트 분석 (필사 타입일 때만 표시) */}
+                                {/* AI 텍스트 인식 (필사 타입일 때만 표시) - 접이식 UI */}
                                 {hasAiAnalysis && (
-                                    <div className="mt-8 pt-6 border-t border-slate-100 dark:border-slate-800">
-                                        <div className="flex items-center gap-2 mb-4">
-                                            <div className="p-1.5 bg-gradient-to-br from-violet-500 to-purple-600 rounded-lg">
-                                                <Sparkles className="w-4 h-4 text-white" />
-                                            </div>
-                                            <span className="text-xs font-black text-violet-600 dark:text-violet-400 uppercase tracking-widest">
-                                                AI Text Analysis
-                                            </span>
-                                        </div>
-                                        <div className="bg-gradient-to-br from-violet-50 to-purple-50 dark:from-violet-950/30 dark:to-purple-950/30 rounded-xl p-4 border border-violet-100 dark:border-violet-900/50">
-                                            <ExpandableText
-                                                text={aiAnalysisText!}
-                                                className="text-sm leading-relaxed text-slate-700 dark:text-slate-300 font-medium"
-                                                limit={300}
-                                                hideActions={hideActions}
-                                            />
-                                        </div>
-                                    </div>
+                                    <CollapsibleAiSection
+                                        text={aiAnalysisText!}
+                                        hideActions={hideActions}
+                                    />
                                 )}
                             </div>
 
