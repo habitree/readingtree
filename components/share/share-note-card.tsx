@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { getImageUrl, getProxiedImageUrl, isValidImageUrl } from "@/lib/utils/image";
 import { parseNoteContentFields, getNoteTypeLabel } from "@/lib/utils/note";
 import type { NoteWithBook } from "@/types/note";
-import { Quote, BookOpen, Calendar, ChevronDown, ChevronUp, Trees, TrendingUp } from "lucide-react";
+import { Quote, BookOpen, Calendar, ChevronDown, ChevronUp, Trees, TrendingUp, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ImageLightbox } from "@/components/notes/image-lightbox";
@@ -105,12 +105,11 @@ export function ShareNoteCard({ note, className, isPublicView = false, hideActio
     // [데이터 매핑 수정] Supabase 쿼리 결과인 'books' 필드와 'book' 필드 모두를 지원하도록 정규화
     const book = note.book || (note as any).books;
 
-    const { quote: originalQuote, memo } = parseNoteContentFields(note.content);
-    // 필사 타입이고 transcription 데이터가 있으면 보정된 OCR 텍스트 사용
-    const quote = (note.type === "transcription" && note.transcription?.extracted_text)
-        ? note.transcription.extracted_text
-        : originalQuote;
+    const { quote, memo } = parseNoteContentFields(note.content);
     const hasQuote = quote && quote.trim().length > 0;
+    // 필사 타입의 AI 분석 텍스트 (하단에 별도 표시)
+    const aiAnalysisText = note.type === "transcription" ? note.transcription?.extracted_text : null;
+    const hasAiAnalysis = !!aiAnalysisText;
     const hasMemo = memo && memo.trim().length > 0;
     const hasImage = !!note.image_url && isValidImageUrl(note.image_url);
     const typeLabel = getNoteTypeLabel(note.type, hasImage);
@@ -482,6 +481,28 @@ export function ShareNoteCard({ note, className, isPublicView = false, hideActio
                                             limit={hasImage ? 250 : 500}
                                             hideActions={hideActions}
                                         />
+                                    </div>
+                                )}
+
+                                {/* AI 텍스트 분석 (필사 타입일 때만 표시) */}
+                                {hasAiAnalysis && (
+                                    <div className="mt-8 pt-6 border-t border-slate-100 dark:border-slate-800">
+                                        <div className="flex items-center gap-2 mb-4">
+                                            <div className="p-1.5 bg-gradient-to-br from-violet-500 to-purple-600 rounded-lg">
+                                                <Sparkles className="w-4 h-4 text-white" />
+                                            </div>
+                                            <span className="text-xs font-black text-violet-600 dark:text-violet-400 uppercase tracking-widest">
+                                                AI Text Analysis
+                                            </span>
+                                        </div>
+                                        <div className="bg-gradient-to-br from-violet-50 to-purple-50 dark:from-violet-950/30 dark:to-purple-950/30 rounded-xl p-4 border border-violet-100 dark:border-violet-900/50">
+                                            <ExpandableText
+                                                text={aiAnalysisText!}
+                                                className="text-sm leading-relaxed text-slate-700 dark:text-slate-300 font-medium"
+                                                limit={300}
+                                                hideActions={hideActions}
+                                            />
+                                        </div>
                                     </div>
                                 )}
                             </div>
