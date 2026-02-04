@@ -1057,6 +1057,107 @@ export interface CurrentBookProgress {
   progressPercent: number;
 }
 
+/**
+ * 월별 독서 활동 조회 (책 표지 포함)
+ * 날짜별로 읽은 책들의 표지 이미지를 반환
+ * @param user 사용자 정보
+ * @param year 연도
+ * @param month 월 (1-12)
+ */
+export interface DailyBookActivity {
+  date: string;
+  books: Array<{
+    bookId: string;
+    userBookId: string;
+    title: string;
+    coverImageUrl: string | null;
+  }>;
+}
+
+export async function getMonthlyBookActivities(
+  user: User | null,
+  year: number,
+  month: number
+): Promise<Record<string, DailyBookActivity>> {
+  if (!user) {
+    return {};
+  }
+
+  const supabase = await createServerSupabaseClient();
+
+  // 해당 월의 시작일과 종료일 계산
+  const startDate = new Date(year, month - 1, 1);
+  const endDate = new Date(year, month, 0, 23, 59, 59, 999);
+
+  // 해당 월의 기록 조회 (책 정보 포함)
+  const { data: notes, error } = await supabase
+    .from("notes")
+    .select(`
+      id,
+      book_id,
+      created_at,
+      books (
+        id,
+        title,
+        cover_image_url
+      )
+    `)
+    .eq("user_id", user.id)
+    .gte("created_at", startDate.toISOString())
+    .lte("created_at", endDate.toISOString())
+    .order("created_at", { ascending: true });
+
+  if (error || !notes) {
+    console.error("월별 독서 활동 조회 오류:", error);
+    return {};
+  }
+
+  // user_books ID 매핑 조회
+  const bookIds = [...new Set(notes.map((n) => n.book_id))];
+  const { data: userBooksData } = await supabase
+    .from("user_books")
+    .select("id, book_id")
+    .eq("user_id", user.id)
+    .in("book_id", bookIds);
+
+  const userBookIdMap = new Map<string, string>();
+  if (userBooksData) {
+    userBooksData.forEach((ub) => userBookIdMap.set(ub.book_id, ub.id));
+  }
+
+  // 날짜별로 그룹화
+  const dailyActivities: Record<string, DailyBookActivity> = {};
+
+  notes.forEach((note: any) => {
+    const date = new Date(note.created_at);
+    const dateKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+    const book = Array.isArray(note.books) ? note.books[0] : note.books;
+
+    if (!dailyActivities[dateKey]) {
+      dailyActivities[dateKey] = {
+        date: dateKey,
+        books: [],
+      };
+    }
+
+    // 같은 날짜에 같은 책이 중복되지 않도록
+    const existingBook = dailyActivities[dateKey].books.find(
+      (b) => b.bookId === note.book_id
+    );
+
+    if (!existingBook && book) {
+      dailyActivities[dateKey].books.push({
+        bookId: note.book_id,
+        userBookId: userBookIdMap.get(note.book_id) || note.book_id,
+        title: book.title || "알 수 없는 책",
+        coverImageUrl: book.cover_image_url || null,
+      });
+    }
+  });
+
+  return dailyActivities;
+}
+
 export async function getCurrentBookProgress(
   user: User | null
 ): Promise<CurrentBookProgress | null> {

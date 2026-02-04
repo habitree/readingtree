@@ -24,9 +24,7 @@ import type { ReadingStats } from "@/types/persona";
 import { useStyle } from "@/hooks/use-style";
 import { ContinueReadingCard, NoReadingBookCard } from "./continue-reading-card";
 import { OnboardingChecklist, type OnboardingItem } from "@/components/onboarding/onboarding-checklist";
-import { ActivityCalendar } from "./activity-calendar";
-import type { DailyRecordByType, ProgressLogItem } from "@/app/actions/stats";
-import { RecentProgressSection } from "./recent-progress-section";
+import type { DailyRecordByType } from "@/app/actions/stats";
 
 interface ContinueReadingData {
   userBookId: string;
@@ -78,7 +76,6 @@ interface HomeHeroSectionProps {
   weeklyProgress?: WeeklyProgressData | null;
   dailyRecordsByType?: Record<string, DailyRecordByType>;
   currentBookProgress?: CurrentBookProgressData | null;
-  recentProgressLogs?: ProgressLogItem[];
 }
 
 /**
@@ -97,7 +94,6 @@ export function HomeHeroSection({
   weeklyProgress,
   dailyRecordsByType = {},
   currentBookProgress,
-  recentProgressLogs = [],
 }: HomeHeroSectionProps) {
   const [mounted, setMounted] = useState(false);
   const { greeting, getStreakMessage, getMotivationalMessage } = useStyle();
@@ -322,32 +318,27 @@ export function HomeHeroSection({
         </div>
       </Card>
 
-      {/* ======== SECONDARY ZONE: 액션 유도 (2열 그리드) ======== */}
+      {/* ======== SECONDARY ZONE: 액션 유도 ======== */}
       {userName && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="space-y-2 sm:space-y-3">
           {/* 계속 읽기 (Primary CTA) */}
-          <div className="space-y-2 sm:space-y-3">
-            {continueReadingBooks.length > 0 ? (
-              continueReadingBooks.slice(0, 2).map((book) => (
-                <ContinueReadingCard
-                  key={book.userBookId}
-                  userBookId={book.userBookId}
-                  title={book.title}
-                  author={book.author}
-                  coverImageUrl={book.coverImageUrl}
-                  currentPage={book.currentPage}
-                  totalPages={book.totalPages}
-                  progressPercent={book.progressPercent}
-                  compact={true}
-                />
-              ))
-            ) : (
-              <NoReadingBookCard />
-            )}
-          </div>
-
-          {/* 최근 진행 체크 */}
-          <RecentProgressSection logs={recentProgressLogs} />
+          {continueReadingBooks.length > 0 ? (
+            continueReadingBooks.slice(0, 2).map((book) => (
+              <ContinueReadingCard
+                key={book.userBookId}
+                userBookId={book.userBookId}
+                title={book.title}
+                author={book.author}
+                coverImageUrl={book.coverImageUrl}
+                currentPage={book.currentPage}
+                totalPages={book.totalPages}
+                progressPercent={book.progressPercent}
+                compact={true}
+              />
+            ))
+          ) : (
+            <NoReadingBookCard />
+          )}
         </div>
       )}
 
@@ -559,41 +550,17 @@ export function HomeHeroSkeleton() {
         </div>
       </Card>
 
-      {/* 2열 그리드 스켈레톤 */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        {/* 계속 읽기 스켈레톤 */}
-        <Card className="p-4">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-16 rounded-lg bg-slate-200 dark:bg-slate-700 animate-pulse shrink-0" />
-            <div className="flex-1 space-y-2">
-              <div className="h-3 w-12 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
-              <div className="h-4 w-28 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
-              <div className="h-1.5 w-full rounded bg-slate-200 dark:bg-slate-700 animate-pulse mt-2" />
-            </div>
+      {/* 계속 읽기 스켈레톤 */}
+      <Card className="p-4">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-16 rounded-lg bg-slate-200 dark:bg-slate-700 animate-pulse shrink-0" />
+          <div className="flex-1 space-y-2">
+            <div className="h-3 w-12 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
+            <div className="h-4 w-28 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
+            <div className="h-1.5 w-full rounded bg-slate-200 dark:bg-slate-700 animate-pulse mt-2" />
           </div>
-        </Card>
-
-        {/* 진행 체크 스켈레톤 */}
-        <Card className="p-4">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <div className="h-8 w-8 rounded-lg bg-slate-200 dark:bg-slate-700 animate-pulse" />
-              <div className="h-4 w-24 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
-            </div>
-          </div>
-          <div className="space-y-2">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="flex items-start gap-3 p-2.5">
-                <div className="w-8 h-8 rounded-md bg-slate-200 dark:bg-slate-700 animate-pulse shrink-0" />
-                <div className="flex-1 space-y-1.5">
-                  <div className="h-4 w-24 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
-                  <div className="h-3 w-16 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
-                </div>
-              </div>
-            ))}
-          </div>
-        </Card>
-      </div>
+        </div>
+      </Card>
     </div>
   );
 }

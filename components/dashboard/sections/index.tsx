@@ -5,6 +5,5 @@ export { HomeHeroSection, HomeHeroSkeleton, PersonaInsightCard } from "./home-he
 export { MobileQuickActions, DesktopQuickActions } from "./mobile-quick-actions";
 export { ContinueReadingCard, ContinueReadingCardSkeleton, NoReadingBookCard } from "./continue-reading-card";
 export { FeatureRequestPreviewWrapper, FeatureRequestPreviewSkeleton } from "./feature-request-preview-wrapper";
-export { RecentProgressSection, RecentProgressSectionSkeleton } from "./recent-progress-section";
 export { CollapsibleSection } from "./collapsible-section";
-export { ActivityCalendar } from "./activity-calendar";
+export { MonthlyBookCalendar, MonthlyBookCalendarSkeleton } from "./monthly-book-calendar";

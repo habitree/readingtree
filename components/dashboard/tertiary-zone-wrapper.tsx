@@ -1,6 +1,6 @@
 import { getCurrentUser } from "@/app/actions/auth";
 import { getPersonaDashboardData } from "@/app/actions/persona";
-import { getDailyRecordsByType } from "@/app/actions/stats";
+import { getMonthlyBookActivities } from "@/app/actions/stats";
 import { TertiaryZoneClient } from "./tertiary-zone-client";
 import type { ReadingStats } from "@/types/persona";
 
@@ -16,20 +16,19 @@ export async function TertiaryZoneWrapper() {
     return null;
   }
 
-  // 30일 활동 캘린더용 날짜 범위
+  // 현재 월의 독서 활동 조회
   const today = new Date();
-  const activityCalendarStart = new Date(today);
-  activityCalendarStart.setDate(today.getDate() - 29);
-  activityCalendarStart.setHours(0, 0, 0, 0);
+  const currentYear = today.getFullYear();
+  const currentMonth = today.getMonth() + 1;
 
   // 병렬로 데이터 조회
-  const [personaData, dailyRecordsByType] = await Promise.all([
+  const [personaData, monthlyActivities] = await Promise.all([
     getPersonaDashboardData().catch(() => null),
-    getDailyRecordsByType(user, activityCalendarStart, today).catch(() => ({})),
+    getMonthlyBookActivities(user, currentYear, currentMonth).catch(() => ({})),
   ]);
 
   // 데이터가 없으면 숨김
-  const hasActivityData = Object.keys(dailyRecordsByType || {}).length > 0;
+  const hasActivityData = Object.keys(monthlyActivities || {}).length > 0;
   const persona = personaData?.persona;
   const readingStats = persona?.reading_stats as ReadingStats | null;
   const hasPersonaData = persona && readingStats;
@@ -40,7 +39,9 @@ export async function TertiaryZoneWrapper() {
 
   return (
     <TertiaryZoneClient
-      dailyRecordsByType={dailyRecordsByType || {}}
+      monthlyActivities={monthlyActivities || {}}
+      initialYear={currentYear}
+      initialMonth={currentMonth}
       persona={persona ?? null}
       readingStats={readingStats ?? null}
     />
