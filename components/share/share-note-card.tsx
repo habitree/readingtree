@@ -105,7 +105,11 @@ export function ShareNoteCard({ note, className, isPublicView = false, hideActio
     // [데이터 매핑 수정] Supabase 쿼리 결과인 'books' 필드와 'book' 필드 모두를 지원하도록 정규화
     const book = note.book || (note as any).books;
 
-    const { quote, memo } = parseNoteContentFields(note.content);
+    const { quote: originalQuote, memo } = parseNoteContentFields(note.content);
+    // 필사 타입이고 transcription 데이터가 있으면 보정된 OCR 텍스트 사용
+    const quote = (note.type === "transcription" && note.transcription?.extracted_text)
+        ? note.transcription.extracted_text
+        : originalQuote;
     const hasQuote = quote && quote.trim().length > 0;
     const hasMemo = memo && memo.trim().length > 0;
     const hasImage = !!note.image_url && isValidImageUrl(note.image_url);

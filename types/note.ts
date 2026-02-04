@@ -36,6 +36,11 @@ export interface NoteWithBook extends Note {
     reading_reason: string | null;
     status: string;
   }>;
+  /** 필사(transcription) 타입 기록의 OCR 텍스트 데이터 */
+  transcription?: {
+    extracted_text: string; // GPT 보정된 OCR 텍스트
+    raw_extracted_text: string | null; // 원본 OCR 텍스트
+  };
 }
 
 export interface CreateNoteInput {

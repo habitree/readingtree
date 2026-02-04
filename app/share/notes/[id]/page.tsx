@@ -44,11 +44,26 @@ export async function generateMetadata({
   const bookTitle = book?.title || "제목 없음";
   const { quote, memo } = parseNoteContentFields(note.content);
 
+  // 필사(transcription) 타입일 때 OCR 보정 텍스트 조회
+  let transcriptionText: string | null = null;
+  if (note.type === "transcription") {
+    const { data: transcription } = await supabase
+      .from("transcriptions")
+      .select("extracted_text")
+      .eq("note_id", noteId)
+      .eq("status", "completed")
+      .maybeSingle();
+
+    if (transcription?.extracted_text) {
+      transcriptionText = transcription.extracted_text;
+    }
+  }
+
   const baseUrl = getAppUrl();
   const shareUrl = `${baseUrl}/share/notes/${note.id}`;
 
-  // OG 설명 구성 (인상깊은 구절 우선, 없으면 생각)
-  let description = quote || memo || "기록 내용을 확인해보세요.";
+  // OG 설명 구성 (필사 타입이면 OCR 텍스트, 그 외에는 인상깊은 구절 우선, 없으면 생각)
+  let description = transcriptionText || quote || memo || "기록 내용을 확인해보세요.";
   if (description.length > 100) description = description.substring(0, 97) + "...";
 
   return {
@@ -111,6 +126,20 @@ export default async function ShareNotePage({
   }
 
   const noteWithBook = note as NoteWithBook;
+
+  // 필사(transcription) 타입일 때 OCR 보정 텍스트 조회
+  if (note.type === "transcription") {
+    const { data: transcription } = await supabase
+      .from("transcriptions")
+      .select("extracted_text, raw_extracted_text")
+      .eq("note_id", noteId)
+      .eq("status", "completed")
+      .maybeSingle();
+
+    if (transcription) {
+      noteWithBook.transcription = transcription;
+    }
+  }
 
   // 사용자 정보 가져오기
   const user = note.user_id ? await getUserById(note.user_id) : null;
