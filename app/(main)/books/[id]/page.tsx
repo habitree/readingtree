@@ -18,8 +18,9 @@ import { ReadingProgress } from "@/components/books/reading-progress";
 import { PenTool, LogIn, BookOpen, Quote, Sparkles, Trophy, Link2 } from "lucide-react";
 import { BookMetaInfo } from "@/components/books/book-meta-info";
 import type { ReadingStatus } from "@/types/book";
-import { NotesList } from "@/components/notes/notes-list";
 import { SampleNotesList } from "@/components/notes/sample-notes-list";
+import { BookNotesTabs } from "@/components/books/book-notes-tabs";
+import { getNotes } from "@/app/actions/notes";
 import { isValidUUID } from "@/lib/utils/validation";
 import { sanitizeErrorForLogging } from "@/lib/utils/validation";
 import { BookScrollHandler } from "@/components/books/book-scroll-handler";
@@ -94,6 +95,9 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
 
   const book = bookDetail.books as any;
   const userBook = bookDetail;
+
+  // 로그인 사용자의 경우 기록 목록 조회
+  const notes = !isGuest ? await getNotes(userBook.id) : [];
 
   // 완독 날짜 배열 계산
   let completedDates: string[] = [];
@@ -350,7 +354,7 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
         {isGuest ? (
           <SampleNotesList bookId={userBook.id} />
         ) : (
-          <NotesList bookId={userBook.id} />
+          <BookNotesTabs userBookId={userBook.id} notes={notes} />
         )}
       </div>
     </div>

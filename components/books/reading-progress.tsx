@@ -6,7 +6,8 @@ import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { BookOpen, Check, Loader2, Settings2, Flame, Target, Trophy, Sparkles, TrendingUp, GripHorizontal, PenLine } from "lucide-react";
+import { BookOpen, Check, Loader2, Settings2, Flame, Target, Trophy, Sparkles, TrendingUp, GripHorizontal, PenLine, X, Send } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 import { updateBookProgress } from "@/app/actions/books";
 import { toast } from "sonner";
 import { TotalPagesEditor } from "./total-pages-editor";
@@ -53,6 +54,12 @@ export function ReadingProgress({
   const [isRecordSheetOpen, setIsRecordSheetOpen] = useState(false);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // 인라인 메모 관련 state
+  const [showInlineMemo, setShowInlineMemo] = useState(false);
+  const [inlineMemo, setInlineMemo] = useState("");
+  const [pendingPageUpdate, setPendingPageUpdate] = useState<number | null>(null);
+  const [isInlineSaving, setIsInlineSaving] = useState(false);
+
   // 총 페이지 수 업데이트 핸들러
   const handleTotalPagesUpdate = (newTotalPages: number | null) => {
     setTotalPages(newTotalPages);
@@ -95,19 +102,79 @@ export function ReadingProgress({
     // 값이 변경되지 않았으면 저장하지 않음
     if (newPage === currentPage) return;
 
-    startTransition(async () => {
-      try {
-        await updateBookProgress(userBookId, newPage);
-        setCurrentPage(newPage);
-        setInputValue(String(newPage));
-        onUpdate?.(newPage);
-        toast.success(`${newPage}페이지로 업데이트됨`);
-      } catch (error) {
-        toast.error("진행률 업데이트에 실패했습니다.");
-        setDragValue(currentPage);
-      }
-    });
-  }, [totalPages, currentPage, userBookId, onUpdate]);
+    // 인라인 메모 입력 UI 표시
+    setPendingPageUpdate(newPage);
+    setShowInlineMemo(true);
+    setInlineMemo("");
+  }, [totalPages, currentPage]);
+
+  // 인라인 메모 없이 진행률만 저장
+  const handleSaveProgressOnly = useCallback(async () => {
+    if (pendingPageUpdate === null) return;
+
+    setIsInlineSaving(true);
+    try {
+      await updateBookProgress(userBookId, pendingPageUpdate);
+      setCurrentPage(pendingPageUpdate);
+      setInputValue(String(pendingPageUpdate));
+      setDragValue(pendingPageUpdate);
+      onUpdate?.(pendingPageUpdate);
+      toast.success(`${pendingPageUpdate}페이지로 업데이트됨`);
+      setShowInlineMemo(false);
+      setPendingPageUpdate(null);
+    } catch (error) {
+      toast.error("진행률 업데이트에 실패했습니다.");
+    } finally {
+      setIsInlineSaving(false);
+    }
+  }, [pendingPageUpdate, userBookId, onUpdate]);
+
+  // 인라인 메모와 함께 진행률 저장
+  const handleSaveWithMemo = useCallback(async () => {
+    if (pendingPageUpdate === null) return;
+
+    setIsInlineSaving(true);
+    try {
+      // 진행률 업데이트
+      await updateBookProgress(userBookId, pendingPageUpdate);
+
+      // 진행 기록 생성 (메모 포함)
+      const { createNote } = await import("@/app/actions/notes");
+      const content = inlineMemo.trim()
+        ? JSON.stringify({ memo: inlineMemo.trim() })
+        : null;
+
+      await createNote({
+        book_id: userBookId,
+        type: "progress",
+        content: content || undefined,
+        page_number: String(pendingPageUpdate),
+        is_public: true,
+      });
+
+      setCurrentPage(pendingPageUpdate);
+      setInputValue(String(pendingPageUpdate));
+      setDragValue(pendingPageUpdate);
+      onUpdate?.(pendingPageUpdate);
+      onRecordCreated?.();
+      toast.success("진행 기록이 저장되었습니다");
+      setShowInlineMemo(false);
+      setPendingPageUpdate(null);
+      setInlineMemo("");
+    } catch (error) {
+      toast.error("저장에 실패했습니다.");
+    } finally {
+      setIsInlineSaving(false);
+    }
+  }, [pendingPageUpdate, userBookId, inlineMemo, onUpdate, onRecordCreated]);
+
+  // 인라인 메모 취소
+  const handleCancelInlineMemo = useCallback(() => {
+    setShowInlineMemo(false);
+    setPendingPageUpdate(null);
+    setInlineMemo("");
+    setDragValue(currentPage);
+  }, [currentPage]);
 
   const handleSave = () => {
     const newPage = parseInt(inputValue, 10);
@@ -267,8 +334,74 @@ export function ReadingProgress({
             </div>
           )}
 
+          {/* 인라인 메모 입력 UI */}
+          {showInlineMemo && pendingPageUpdate !== null && (
+            <div className="p-3 rounded-lg bg-teal-50/50 dark:bg-teal-950/30 border border-teal-200/50 dark:border-teal-800/50 animate-in slide-in-from-top-2 duration-200">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <TrendingUp className="h-4 w-4 text-teal-600 dark:text-teal-400" />
+                  <span className="text-sm font-medium text-teal-700 dark:text-teal-300">
+                    {pendingPageUpdate}페이지로 업데이트
+                  </span>
+                </div>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={handleCancelInlineMemo}
+                  disabled={isInlineSaving}
+                  className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+              <Textarea
+                placeholder="한줄 메모를 남겨보세요 (선택사항)"
+                value={inlineMemo}
+                onChange={(e) => setInlineMemo(e.target.value)}
+                disabled={isInlineSaving}
+                className="min-h-[60px] text-sm resize-none bg-white dark:bg-slate-900 border-teal-200/50 dark:border-teal-800/50 focus-visible:ring-teal-500"
+                maxLength={200}
+              />
+              <div className="flex items-center justify-between mt-2">
+                <span className="text-xs text-muted-foreground">
+                  {inlineMemo.length}/200
+                </span>
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={handleSaveProgressOnly}
+                    disabled={isInlineSaving}
+                    className="h-8 text-xs"
+                  >
+                    {isInlineSaving ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      "메모 없이 저장"
+                    )}
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={handleSaveWithMemo}
+                    disabled={isInlineSaving}
+                    className="h-8 text-xs bg-teal-600 hover:bg-teal-700 text-white"
+                  >
+                    {isInlineSaving ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <>
+                        <Send className="h-3.5 w-3.5 mr-1" />
+                        기록 저장
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* 동기부여 메시지 */}
-          {motivation && !isDragging && (
+          {motivation && !isDragging && !showInlineMemo && (
             <div className={cn("flex items-center gap-1.5 text-xs", motivation.color)}>
               <MotivationIcon className="h-3.5 w-3.5" />
               <span className="font-medium">{motivation.message}</span>

@@ -26,6 +26,7 @@ import { useOCRStatus } from "@/hooks/use-ocr-status";
 import type { NoteWithBook } from "@/types/note";
 import { FileText, Image as ImageIcon, PenTool, Camera, Trash2, Loader2, BookOpen, TrendingUp } from "lucide-react";
 import { BookLinkRenderer } from "./book-link-renderer";
+import { cn } from "@/lib/utils";
 
 interface NoteCardProps {
   note: NoteWithBook;
@@ -64,6 +65,66 @@ export function NoteCard({ note, showDeleteButton = false, onDelete }: NoteCardP
     }
   };
 
+  // progress 타입은 컴팩트 가로 레이아웃으로 표시
+  const isProgressType = note.type === "progress";
+
+  // progress 타입용 컴팩트 카드
+  if (isProgressType) {
+    return (
+      <Link href={`/notes/${note.id}`} className="block">
+        <Card className="hover:shadow-md active:scale-[0.99] transition-all cursor-pointer relative group border-teal-200/50 dark:border-teal-800/50 bg-gradient-to-r from-teal-50/50 to-transparent dark:from-teal-950/30">
+          <CardContent className="p-3 sm:p-4">
+            <div className="flex items-center gap-3">
+              {/* 아이콘 */}
+              <div className="shrink-0 w-10 h-10 rounded-full bg-teal-100 dark:bg-teal-900/50 flex items-center justify-center">
+                <TrendingUp className="h-5 w-5 text-teal-600 dark:text-teal-400" />
+              </div>
+
+              {/* 내용 */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-0.5">
+                  <Badge variant="secondary" className="text-[10px] h-5 px-1.5 bg-teal-100 dark:bg-teal-900/50 text-teal-700 dark:text-teal-300">
+                    진행 기록
+                  </Badge>
+                  {pageNumber && (
+                    <span className="text-sm font-semibold text-teal-600 dark:text-teal-400">
+                      p.{pageNumber}
+                    </span>
+                  )}
+                </div>
+                {note.content && (
+                  <p className="text-xs text-muted-foreground line-clamp-1 mt-1">
+                    <NoteContentViewer content={note.content} pageNumber={null} maxLength={60} compact />
+                  </p>
+                )}
+              </div>
+
+              {/* 날짜 */}
+              <time className="text-[10px] sm:text-xs text-muted-foreground shrink-0">
+                {formatSmartDate(note.created_at)}
+              </time>
+            </div>
+          </CardContent>
+
+          {/* 삭제 버튼 */}
+          {showDeleteButton && (
+            <div
+              data-delete-button
+              className="absolute top-2 right-2 opacity-60 sm:opacity-0 group-hover:opacity-100 transition-opacity z-20"
+              onClick={(e) => {
+                e.stopPropagation();
+                e.preventDefault();
+              }}
+            >
+              <NoteDeleteButtonWithCallback noteId={note.id} onDelete={handleDelete} />
+            </div>
+          )}
+        </Card>
+      </Link>
+    );
+  }
+
+  // 기존 카드 레이아웃 (progress 외 타입)
   const cardContent = (
     <Link
       href={`/notes/${note.id}`}

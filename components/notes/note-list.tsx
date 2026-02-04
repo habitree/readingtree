@@ -8,17 +8,23 @@ import { grids } from "@/lib/design-tokens";
 interface NoteListProps {
   notes: NoteWithBook[];
   isLoading?: boolean;
+  excludeProgress?: boolean;  // progress 타입 제외 옵션
 }
 
 /**
  * 기록 목록 컴포넌트
  */
-export function NoteList({ notes, isLoading }: NoteListProps) {
+export function NoteList({ notes, isLoading, excludeProgress = false }: NoteListProps) {
   if (isLoading) {
     return <NoteListSkeleton count={6} />;
   }
 
-  if (notes.length === 0) {
+  // excludeProgress가 true이면 progress 타입 제외
+  const filteredNotes = excludeProgress
+    ? notes.filter(n => n.type !== "progress")
+    : notes;
+
+  if (filteredNotes.length === 0) {
     return (
       <EmptyState
         icon={FileText}
@@ -35,7 +41,7 @@ export function NoteList({ notes, isLoading }: NoteListProps) {
 
   return (
     <div className={grids.noteList}>
-      {notes.map((note) => (
+      {filteredNotes.map((note) => (
         <NoteCard key={note.id} note={note} showDeleteButton={true} />
       ))}
     </div>
