@@ -12,8 +12,6 @@ import {
   RecentBooksSection,
   HomeHeroWrapper,
   MobileQuickActions,
-  FeatureRequestPreviewWrapper,
-  FeatureRequestPreviewSkeleton,
 } from "./sections";
 
 // 스켈레톤 컴포넌트
@@ -21,6 +19,9 @@ import {
   RecentBooksSkeleton,
   HomeHeroSkeleton,
 } from "./skeletons";
+
+// Tertiary Zone 컴포넌트
+import { TertiaryZoneWrapper } from "./tertiary-zone-wrapper";
 
 /**
  * 게스트 사용자 배너 (동기 렌더링)
@@ -60,8 +61,10 @@ async function GuestBanner() {
 /**
  * 대시보드 컨텐츠 컴포넌트 (Streaming SSR)
  *
- * 각 섹션이 독립적으로 로드되어 점진적으로 화면에 표시됩니다.
- * 첫 번째 바이트(TTFB)가 빨라지고 사용자 체감 속도가 향상됩니다.
+ * 5초 규칙 기반 정보 계층 구조:
+ * - Primary Zone: 인사말 + 핵심 지표 + 주간 진행 바
+ * - Secondary Zone: 계속 읽기 + 최근 진행 체크 (2열 그리드)
+ * - Tertiary Zone: 활동 캘린더 + 최근 기록한 책 (접이식)
  */
 export default async function DashboardContent() {
   return (
@@ -75,7 +78,8 @@ export default async function DashboardContent() {
           <GuestBanner />
         </Suspense>
 
-        {/* 홈 히어로 섹션 - 개인화 인사 + 페르소나 인사이트 */}
+        {/* ======== PRIMARY + SECONDARY ZONE ======== */}
+        {/* 홈 히어로 섹션 - 개인화 인사 + 핵심 지표 + 계속 읽기 + 진행 체크 */}
         <Suspense fallback={<HomeHeroSkeleton />}>
           <HomeHeroWrapper />
         </Suspense>
@@ -83,16 +87,27 @@ export default async function DashboardContent() {
         {/* 모바일 퀵 액션 버튼 */}
         <MobileQuickActions />
 
-        {/* 기능 요청 프리뷰 섹션 */}
-        <Suspense fallback={<FeatureRequestPreviewSkeleton />}>
-          <FeatureRequestPreviewWrapper />
-        </Suspense>
-
-        {/* 최근 기록한 책 - 스트리밍 */}
-        <Suspense fallback={<RecentBooksSkeleton />}>
-          <RecentBooksSection />
+        {/* ======== TERTIARY ZONE (접이식) ======== */}
+        {/* 활동 캘린더, 최근 기록한 책, 페르소나 인사이트 */}
+        <Suspense fallback={<TertiaryZoneSkeleton />}>
+          <TertiaryZoneWrapper />
         </Suspense>
       </div>
     </>
+  );
+}
+
+/**
+ * Tertiary Zone 스켈레톤
+ */
+function TertiaryZoneSkeleton() {
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center gap-2">
+        <div className="h-4 w-4 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
+        <div className="h-4 w-16 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
+        <div className="flex-1 h-px bg-slate-200 dark:bg-slate-700" />
+      </div>
+    </div>
   );
 }

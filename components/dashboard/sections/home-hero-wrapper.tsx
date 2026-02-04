@@ -1,6 +1,12 @@
 import { getCurrentUser } from "@/app/actions/auth";
 import { getPersonaDashboardData } from "@/app/actions/persona";
-import { getReadingStats, getWeeklyProgress, getDailyRecordsByType } from "@/app/actions/stats";
+import {
+  getReadingStats,
+  getWeeklyProgress,
+  getDailyRecordsByType,
+  getRecentProgressLogs,
+  getCurrentBookProgress,
+} from "@/app/actions/stats";
 import { getContinueReadingBooks } from "@/app/actions/books";
 import { HomeHeroSection } from "./home-hero-section";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
@@ -22,6 +28,7 @@ export async function HomeHeroWrapper() {
         todayNotes={0}
         weeklyNotes={0}
         continueReadingBooks={[]}
+        recentProgressLogs={[]}
       />
     );
   }
@@ -40,6 +47,8 @@ export async function HomeHeroWrapper() {
     continueReadingBooks,
     weeklyProgress,
     dailyRecordsByType,
+    recentProgressLogs,
+    currentBookProgress,
   ] = await Promise.all([
     getPersonaDashboardData().catch(() => null),
     getReadingStats(user).catch(() => null),
@@ -47,6 +56,8 @@ export async function HomeHeroWrapper() {
     getContinueReadingBooks(user, 4).catch(() => []),
     getWeeklyProgress(user).catch(() => null),
     getDailyRecordsByType(user, activityCalendarStart, today).catch(() => ({})),
+    getRecentProgressLogs(user, 3).catch(() => []),
+    getCurrentBookProgress(user).catch(() => null),
   ]);
 
   return (
@@ -59,6 +70,8 @@ export async function HomeHeroWrapper() {
       continueReadingBooks={continueReadingBooks || []}
       weeklyProgress={weeklyProgress}
       dailyRecordsByType={dailyRecordsByType}
+      recentProgressLogs={recentProgressLogs}
+      currentBookProgress={currentBookProgress}
     />
   );
 }

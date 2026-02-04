@@ -962,3 +962,142 @@ export async function getMonthlyStats(user?: User | null) {
   return results;
 }
 
+/**
+ * 최근 진행 체크 로그 조회
+ * 진행 체크(progress) 타입의 최근 기록을 조회
+ * @param user 사용자 정보
+ * @param limit 조회할 개수 (기본값: 3)
+ */
+export interface ProgressLogItem {
+  id: string;
+  bookId: string;
+  userBookId: string;
+  bookTitle: string;
+  bookAuthor: string | null;
+  bookCoverUrl: string | null;
+  pageNumber: string | null;
+  content: string | null;
+  createdAt: string;
+}
+
+export async function getRecentProgressLogs(
+  user: User | null,
+  limit: number = 3
+): Promise<ProgressLogItem[]> {
+  if (!user) {
+    return [];
+  }
+
+  const supabase = await createServerSupabaseClient();
+
+  // 진행 체크(progress) 타입의 최근 기록 조회
+  const { data: notes, error } = await supabase
+    .from("notes")
+    .select(`
+      id,
+      book_id,
+      page_number,
+      content,
+      created_at,
+      books (
+        id,
+        title,
+        author,
+        cover_image_url
+      )
+    `)
+    .eq("user_id", user.id)
+    .eq("type", "progress")
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (error || !notes) {
+    console.error("진행 로그 조회 오류:", error);
+    return [];
+  }
+
+  // user_books ID 매핑 조회
+  const bookIds = [...new Set(notes.map((n) => n.book_id))];
+  const { data: userBooksData } = await supabase
+    .from("user_books")
+    .select("id, book_id")
+    .eq("user_id", user.id)
+    .in("book_id", bookIds);
+
+  const userBookIdMap = new Map<string, string>();
+  if (userBooksData) {
+    userBooksData.forEach((ub) => userBookIdMap.set(ub.book_id, ub.id));
+  }
+
+  return notes.map((note: any) => {
+    const book = Array.isArray(note.books) ? note.books[0] : note.books;
+    return {
+      id: note.id,
+      bookId: note.book_id,
+      userBookId: userBookIdMap.get(note.book_id) || note.book_id,
+      bookTitle: book?.title || "알 수 없는 책",
+      bookAuthor: book?.author || null,
+      bookCoverUrl: book?.cover_image_url || null,
+      pageNumber: note.page_number,
+      content: note.content,
+      createdAt: note.created_at,
+    };
+  });
+}
+
+/**
+ * 현재 읽고 있는 책의 진행률 조회
+ * @param user 사용자 정보
+ */
+export interface CurrentBookProgress {
+  userBookId: string;
+  bookTitle: string;
+  currentPage: number;
+  totalPages: number | null;
+  progressPercent: number;
+}
+
+export async function getCurrentBookProgress(
+  user: User | null
+): Promise<CurrentBookProgress | null> {
+  if (!user) {
+    return null;
+  }
+
+  const supabase = await createServerSupabaseClient();
+
+  // 가장 최근에 활동한 '읽는 중' 상태의 책 조회
+  const { data, error } = await supabase
+    .from("user_books")
+    .select(`
+      id,
+      current_page,
+      books (
+        title,
+        total_pages
+      )
+    `)
+    .eq("user_id", user.id)
+    .eq("status", "reading")
+    .order("updated_at", { ascending: false })
+    .limit(1)
+    .single();
+
+  if (error || !data) {
+    return null;
+  }
+
+  const book = Array.isArray(data.books) ? data.books[0] : data.books;
+  const currentPage = data.current_page || 0;
+  const totalPages = (book as any)?.total_pages || null;
+  const progressPercent = totalPages ? Math.round((currentPage / totalPages) * 100) : 0;
+
+  return {
+    userBookId: data.id,
+    bookTitle: (book as any)?.title || "알 수 없는 책",
+    currentPage,
+    totalPages,
+    progressPercent,
+  };
+}
+

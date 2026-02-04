@@ -21,6 +21,8 @@ const cardVariants = cva(
         ghost: "border-transparent shadow-none hover:shadow-none bg-transparent",
         // 인터랙티브 카드 (클릭 가능)
         interactive: "cursor-pointer hover:shadow-lg active:shadow-md active:scale-[0.99] transition-all",
+        // 글래스모피즘 (반투명 배경)
+        glass: "bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm border-white/50 dark:border-slate-700/50",
       },
     },
     defaultVariants: {
