@@ -543,6 +543,112 @@ export type Database = {
           },
         ]
       }
+      feature_request_comments: {
+        Row: {
+          content: string
+          created_at: string | null
+          feature_request_id: string
+          id: string
+          is_admin_comment: boolean | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          feature_request_id: string
+          id?: string
+          is_admin_comment?: boolean | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          feature_request_id?: string
+          id?: string
+          is_admin_comment?: boolean | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feature_request_comments_feature_request_id_fkey"
+            columns: ["feature_request_id"]
+            isOneToOne: false
+            referencedRelation: "feature_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      feature_request_votes: {
+        Row: {
+          created_at: string | null
+          feature_request_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          feature_request_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          feature_request_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feature_request_votes_feature_request_id_fkey"
+            columns: ["feature_request_id"]
+            isOneToOne: false
+            referencedRelation: "feature_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      feature_requests: {
+        Row: {
+          admin_response: string | null
+          created_at: string | null
+          description: string
+          id: string
+          is_pinned: boolean | null
+          status: Database["public"]["Enums"]["feature_request_status"] | null
+          title: string
+          updated_at: string | null
+          user_id: string
+          vote_count: number | null
+        }
+        Insert: {
+          admin_response?: string | null
+          created_at?: string | null
+          description: string
+          id?: string
+          is_pinned?: boolean | null
+          status?: Database["public"]["Enums"]["feature_request_status"] | null
+          title: string
+          updated_at?: string | null
+          user_id: string
+          vote_count?: number | null
+        }
+        Update: {
+          admin_response?: string | null
+          created_at?: string | null
+          description?: string
+          id?: string
+          is_pinned?: boolean | null
+          status?: Database["public"]["Enums"]["feature_request_status"] | null
+          title?: string
+          updated_at?: string | null
+          user_id?: string
+          vote_count?: number | null
+        }
+        Relationships: []
+      }
       notes: {
         Row: {
           book_id: string
@@ -613,27 +719,42 @@ export type Database = {
         Row: {
           created_at: string
           error_message: string | null
+          estimated_cost_usd: number | null
           id: string
+          input_tokens: number | null
+          model_id: string | null
           note_id: string | null
+          output_tokens: number | null
           processing_duration_ms: number | null
+          provider: string | null
           status: Database["public"]["Enums"]["ocr_log_status"]
           user_id: string
         }
         Insert: {
           created_at?: string
           error_message?: string | null
+          estimated_cost_usd?: number | null
           id?: string
+          input_tokens?: number | null
+          model_id?: string | null
           note_id?: string | null
+          output_tokens?: number | null
           processing_duration_ms?: number | null
+          provider?: string | null
           status: Database["public"]["Enums"]["ocr_log_status"]
           user_id: string
         }
         Update: {
           created_at?: string
           error_message?: string | null
+          estimated_cost_usd?: number | null
           id?: string
+          input_tokens?: number | null
+          model_id?: string | null
           note_id?: string | null
+          output_tokens?: number | null
           processing_duration_ms?: number | null
+          provider?: string | null
           status?: Database["public"]["Enums"]["ocr_log_status"]
           user_id?: string
         }
@@ -646,6 +767,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      ocr_correction_settings: {
+        Row: {
+          created_at: string
+          generation_settings: Json
+          id: string
+          is_active: boolean
+          model_id: string
+          provider: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          generation_settings?: Json
+          id?: string
+          is_active?: boolean
+          model_id?: string
+          provider?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          generation_settings?: Json
+          id?: string
+          is_active?: boolean
+          model_id?: string
+          provider?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       ocr_usage_stats: {
         Row: {
@@ -813,6 +964,7 @@ export type Database = {
           memo_content: string | null
           note_id: string
           quote_content: string | null
+          raw_extracted_text: string | null
           status: Database["public"]["Enums"]["ocr_status"]
           updated_at: string | null
         }
@@ -823,6 +975,7 @@ export type Database = {
           memo_content?: string | null
           note_id: string
           quote_content?: string | null
+          raw_extracted_text?: string | null
           status?: Database["public"]["Enums"]["ocr_status"]
           updated_at?: string | null
         }
@@ -833,6 +986,7 @@ export type Database = {
           memo_content?: string | null
           note_id?: string
           quote_content?: string | null
+          raw_extracted_text?: string | null
           status?: Database["public"]["Enums"]["ocr_status"]
           updated_at?: string | null
         }
@@ -1185,9 +1339,16 @@ export type Database = {
       is_admin_user: { Args: never; Returns: boolean }
     }
     Enums: {
-      member_role: "leader" | "member"
+      feature_request_status:
+        | "requested"
+        | "under_review"
+        | "planned"
+        | "in_progress"
+        | "completed"
+        | "declined"
+      member_role: "leader" | "moderator" | "member"
       member_status: "pending" | "approved" | "rejected"
-      note_type: "quote" | "photo" | "memo" | "transcription"
+      note_type: "quote" | "photo" | "memo" | "transcription" | "progress"
       ocr_log_status: "success" | "failed"
       ocr_status: "processing" | "completed" | "failed"
       point_action_type:
@@ -1196,6 +1357,7 @@ export type Database = {
         | "note_memo"
         | "note_photo"
         | "note_transcription"
+        | "note_progress"
         | "book_add"
         | "book_complete"
         | "book_progress_update"
@@ -1351,9 +1513,17 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      member_role: ["leader", "member"],
+      feature_request_status: [
+        "requested",
+        "under_review",
+        "planned",
+        "in_progress",
+        "completed",
+        "declined",
+      ],
+      member_role: ["leader", "moderator", "member"],
       member_status: ["pending", "approved", "rejected"],
-      note_type: ["quote", "photo", "memo", "transcription"],
+      note_type: ["quote", "photo", "memo", "transcription", "progress"],
       ocr_log_status: ["success", "failed"],
       ocr_status: ["processing", "completed", "failed"],
       point_action_type: [
@@ -1362,6 +1532,7 @@ export const Constants = {
         "note_memo",
         "note_photo",
         "note_transcription",
+        "note_progress",
         "book_add",
         "book_complete",
         "book_progress_update",

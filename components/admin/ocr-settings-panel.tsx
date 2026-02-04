@@ -39,6 +39,8 @@ import {
   TrendingUp,
   Sparkles,
   Info,
+  PlayCircle,
+  Database,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -47,6 +49,8 @@ import {
   createOcrCorrectionSettings,
   getOcrCorrectionStats,
   testOcrCorrectionConnection,
+  getOcrBatchCorrectionStats,
+  runOcrBatchCorrection,
 } from "@/app/actions/ai/ocr-settings";
 import {
   OCR_CORRECTION_MODELS,
@@ -85,6 +89,21 @@ export function OcrSettingsPanel({
     success: boolean;
     message: string;
     responseTime?: number;
+  } | null>(null);
+
+  // 일괄 보정 상태
+  const [batchStats, setBatchStats] = useState<{
+    total: number;
+    corrected: number;
+    pending: number;
+  } | null>(null);
+  const [isBatchLoading, setIsBatchLoading] = useState(false);
+  const [isBatchRunning, setIsBatchRunning] = useState(false);
+  const [batchResult, setBatchResult] = useState<{
+    processed: number;
+    success: number;
+    failed: number;
+    modified: number;
   } | null>(null);
 
   // 폼 상태
@@ -195,6 +214,47 @@ export function OcrSettingsPanel({
     setModelId(DEFAULT_OCR_CORRECTION_SETTINGS.modelId);
     setGenerationSettings(DEFAULT_OCR_CORRECTION_SETTINGS.generationSettings);
     toast.info("기본값으로 초기화되었습니다. 저장을 눌러 적용하세요.");
+  };
+
+  // 일괄 보정 통계 로드
+  const loadBatchStats = async () => {
+    setIsBatchLoading(true);
+    try {
+      const stats = await getOcrBatchCorrectionStats();
+      setBatchStats({
+        total: stats.total,
+        corrected: stats.corrected,
+        pending: stats.pending,
+      });
+    } catch (error) {
+      console.error("일괄 보정 통계 로드 실패:", error);
+      toast.error("통계 로드에 실패했습니다.");
+    } finally {
+      setIsBatchLoading(false);
+    }
+  };
+
+  // 일괄 보정 실행
+  const handleRunBatchCorrection = async () => {
+    setIsBatchRunning(true);
+    setBatchResult(null);
+    try {
+      const result = await runOcrBatchCorrection(10);
+      setBatchResult({
+        processed: result.processed,
+        success: result.success,
+        failed: result.failed,
+        modified: result.modified,
+      });
+      toast.success(`${result.success}건 보정 완료 (${result.modified}건 수정됨)`);
+      // 통계 새로고침
+      await loadBatchStats();
+    } catch (error) {
+      console.error("일괄 보정 실행 실패:", error);
+      toast.error("일괄 보정 중 오류가 발생했습니다.");
+    } finally {
+      setIsBatchRunning(false);
+    }
   };
 
   return (
@@ -321,7 +381,7 @@ export function OcrSettingsPanel({
       </Card>
 
       <Tabs defaultValue="model" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="model" className="flex items-center gap-2">
             <Sparkles className="h-4 w-4" />
             모델 선택
@@ -333,6 +393,16 @@ export function OcrSettingsPanel({
           <TabsTrigger value="cost" className="flex items-center gap-2">
             <DollarSign className="h-4 w-4" />
             비용 정보
+          </TabsTrigger>
+          <TabsTrigger
+            value="batch"
+            className="flex items-center gap-2"
+            onClick={() => {
+              if (!batchStats) loadBatchStats();
+            }}
+          >
+            <Database className="h-4 w-4" />
+            일괄 보정
           </TabsTrigger>
         </TabsList>
 
@@ -675,6 +745,128 @@ export function OcrSettingsPanel({
                   </div>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* 일괄 보정 탭 */}
+        <TabsContent value="batch">
+          <Card>
+            <CardHeader>
+              <CardTitle>기존 데이터 일괄 보정</CardTitle>
+              <CardDescription>
+                보정이 적용되지 않은 기존 OCR 데이터에 GPT 보정을 일괄 적용합니다
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* 통계 */}
+              {isBatchLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  <span className="ml-2 text-muted-foreground">통계 로드 중...</span>
+                </div>
+              ) : batchStats ? (
+                <div className="grid gap-4 md:grid-cols-3">
+                  <div className="p-4 bg-muted/50 rounded-lg">
+                    <p className="text-sm text-muted-foreground">전체 데이터</p>
+                    <p className="text-2xl font-bold">{batchStats.total}</p>
+                  </div>
+                  <div className="p-4 bg-green-500/10 rounded-lg border border-green-500/20">
+                    <p className="text-sm text-green-700">보정 완료</p>
+                    <p className="text-2xl font-bold text-green-700">{batchStats.corrected}</p>
+                  </div>
+                  <div className="p-4 bg-orange-500/10 rounded-lg border border-orange-500/20">
+                    <p className="text-sm text-orange-700">보정 대기</p>
+                    <p className="text-2xl font-bold text-orange-700">{batchStats.pending}</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-8 gap-4">
+                  <Database className="h-12 w-12 text-muted-foreground/30" />
+                  <Button variant="outline" onClick={loadBatchStats}>
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    통계 로드
+                  </Button>
+                </div>
+              )}
+
+              {/* 실행 버튼 */}
+              {batchStats && batchStats.pending > 0 && (
+                <div className="space-y-4">
+                  <div className="p-4 bg-blue-500/10 rounded-lg border border-blue-500/20">
+                    <div className="flex items-start gap-2">
+                      <Info className="h-5 w-5 text-blue-600 mt-0.5" />
+                      <div className="text-sm text-blue-800">
+                        <p className="font-medium mb-1">일괄 보정 안내</p>
+                        <ul className="list-disc list-inside text-xs space-y-1">
+                          <li>한 번에 최대 10건씩 보정됩니다</li>
+                          <li>API Rate Limit 방지를 위해 건당 0.5초 지연됩니다</li>
+                          <li>원본 텍스트는 별도 보관됩니다 (복원 가능)</li>
+                          <li>완료 후 &apos;원본/보정&apos; 토글로 확인할 수 있습니다</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-4">
+                    <Button
+                      onClick={handleRunBatchCorrection}
+                      disabled={isBatchRunning}
+                      className="bg-purple-600 hover:bg-purple-700"
+                    >
+                      {isBatchRunning ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <PlayCircle className="h-4 w-4 mr-2" />
+                      )}
+                      {isBatchRunning ? "보정 중..." : `${Math.min(10, batchStats.pending)}건 보정 실행`}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={loadBatchStats}
+                      disabled={isBatchLoading || isBatchRunning}
+                    >
+                      <RefreshCw className={`h-4 w-4 mr-2 ${isBatchLoading ? "animate-spin" : ""}`} />
+                      새로고침
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* 보정 완료 메시지 */}
+              {batchStats && batchStats.pending === 0 && (
+                <div className="p-4 bg-green-500/10 rounded-lg border border-green-500/20">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="h-5 w-5 text-green-600" />
+                    <span className="text-green-700 font-medium">모든 데이터가 보정 완료되었습니다!</span>
+                  </div>
+                </div>
+              )}
+
+              {/* 실행 결과 */}
+              {batchResult && (
+                <div className="p-4 bg-muted/50 rounded-lg space-y-2">
+                  <p className="font-medium">실행 결과</p>
+                  <div className="grid grid-cols-4 gap-4 text-sm">
+                    <div>
+                      <p className="text-muted-foreground">처리</p>
+                      <p className="font-bold">{batchResult.processed}건</p>
+                    </div>
+                    <div>
+                      <p className="text-green-600">성공</p>
+                      <p className="font-bold text-green-600">{batchResult.success}건</p>
+                    </div>
+                    <div>
+                      <p className="text-red-600">실패</p>
+                      <p className="font-bold text-red-600">{batchResult.failed}건</p>
+                    </div>
+                    <div>
+                      <p className="text-blue-600">수정됨</p>
+                      <p className="font-bold text-blue-600">{batchResult.modified}건</p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

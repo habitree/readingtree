@@ -362,3 +362,188 @@ export async function invalidateSettingsCache(): Promise<void> {
   settingsCache = null;
   settingsCacheTime = 0;
 }
+
+/**
+ * OCR 일괄 보정 대상 통계 조회 (관리자 전용)
+ */
+export async function getOcrBatchCorrectionStats(): Promise<{
+  total: number;
+  corrected: number;
+  pending: number;
+  pendingItems: Array<{ id: string; noteId: string; textLength: number }>;
+}> {
+  const supabase = await createServerSupabaseClient();
+  await checkAdminPermission(supabase);
+
+  // raw_extracted_text가 NULL인 데이터 (보정 전 데이터)
+  const { data: pendingData } = await supabase
+    .from("transcriptions")
+    .select("id, note_id, extracted_text")
+    .is("raw_extracted_text", null)
+    .eq("status", "completed");
+
+  // 전체 데이터 수
+  const { count: totalCount } = await supabase
+    .from("transcriptions")
+    .select("id", { count: "exact", head: true })
+    .eq("status", "completed");
+
+  // 이미 보정된 데이터 수
+  const { count: correctedCount } = await supabase
+    .from("transcriptions")
+    .select("id", { count: "exact", head: true })
+    .not("raw_extracted_text", "is", null);
+
+  const pending = pendingData || [];
+
+  return {
+    total: totalCount || 0,
+    corrected: correctedCount || 0,
+    pending: pending.length,
+    pendingItems: pending.map((item) => ({
+      id: item.id,
+      noteId: item.note_id,
+      textLength: item.extracted_text?.length || 0,
+    })),
+  };
+}
+
+/**
+ * OCR 일괄 보정 실행 (관리자 전용)
+ */
+export async function runOcrBatchCorrection(
+  batchSize: number = 10
+): Promise<{
+  processed: number;
+  success: number;
+  failed: number;
+  modified: number;
+  results: Array<{
+    id: string;
+    noteId: string;
+    success: boolean;
+    wasModified?: boolean;
+    error?: string;
+  }>;
+}> {
+  const supabase = await createServerSupabaseClient();
+  const user = await checkAdminPermission(supabase);
+
+  // 동적 import로 순환 참조 방지
+  const { correctOcrText } = await import("@/lib/ai/ocr-correction");
+
+  // 보정 대상 조회 (최대 50개)
+  const safeBatchSize = Math.min(batchSize, 50);
+  const { data: targets, error: fetchError } = await supabase
+    .from("transcriptions")
+    .select("id, note_id, extracted_text")
+    .is("raw_extracted_text", null)
+    .eq("status", "completed")
+    .limit(safeBatchSize);
+
+  if (fetchError) {
+    console.error("[OCR Batch] 대상 조회 실패:", fetchError);
+    throw new Error("대상 조회 실패");
+  }
+
+  if (!targets || targets.length === 0) {
+    return {
+      processed: 0,
+      success: 0,
+      failed: 0,
+      modified: 0,
+      results: [],
+    };
+  }
+
+  const results: Array<{
+    id: string;
+    noteId: string;
+    success: boolean;
+    wasModified?: boolean;
+    error?: string;
+  }> = [];
+
+  for (const target of targets) {
+    try {
+      const originalText = target.extracted_text;
+
+      if (!originalText || originalText.trim().length < 5) {
+        // 텍스트가 너무 짧으면 원본 그대로 저장
+        await supabase
+          .from("transcriptions")
+          .update({ raw_extracted_text: originalText })
+          .eq("id", target.id);
+
+        results.push({
+          id: target.id,
+          noteId: target.note_id,
+          success: true,
+          wasModified: false,
+        });
+        continue;
+      }
+
+      // GPT 보정 실행
+      const correctionResult = await correctOcrText(originalText);
+
+      // DB 업데이트
+      const { error: updateError } = await supabase
+        .from("transcriptions")
+        .update({
+          raw_extracted_text: originalText, // 원본 백업
+          extracted_text: correctionResult.correctedText, // 보정된 텍스트
+        })
+        .eq("id", target.id);
+
+      if (updateError) {
+        throw new Error(`DB 업데이트 실패: ${updateError.message}`);
+      }
+
+      // 로그 기록
+      if (correctionResult.provider && correctionResult.modelId) {
+        await recordOcrCorrectionLog({
+          userId: user.id,
+          noteId: target.note_id,
+          provider: correctionResult.provider,
+          modelId: correctionResult.modelId,
+          inputTokens: correctionResult.inputTokens,
+          outputTokens: correctionResult.outputTokens,
+          status: "success",
+          durationMs: correctionResult.duration,
+        });
+      }
+
+      results.push({
+        id: target.id,
+        noteId: target.note_id,
+        success: true,
+        wasModified: correctionResult.wasModified,
+      });
+
+      // API Rate limit 방지를 위한 지연
+      await new Promise((resolve) => setTimeout(resolve, 500));
+    } catch (error) {
+      console.error(`[OCR Batch] ID ${target.id} 보정 실패:`, error);
+
+      results.push({
+        id: target.id,
+        noteId: target.note_id,
+        success: false,
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  }
+
+  const successCount = results.filter((r) => r.success).length;
+  const failedCount = results.filter((r) => !r.success).length;
+  const modifiedCount = results.filter((r) => r.wasModified).length;
+
+  return {
+    processed: results.length,
+    success: successCount,
+    failed: failedCount,
+    modified: modifiedCount,
+    results,
+  };
+}

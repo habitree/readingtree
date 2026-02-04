@@ -86,23 +86,25 @@ CREATE TYPE reading_status AS ENUM ('reading', 'completed', 'paused', 'not_start
 ### 3.2 note_type (기록 유형)
 
 ```sql
-CREATE TYPE note_type AS ENUM ('quote', 'photo', 'memo', 'transcription');
+CREATE TYPE note_type AS ENUM ('quote', 'photo', 'memo', 'transcription', 'progress');
 ```
 
 - **quote**: 인용구
 - **photo**: 사진
 - **memo**: 메모
 - **transcription**: 전사 (OCR)
+- **progress**: 진행 기록 (페이지 업데이트)
 
 **사용 테이블**: `notes`
 
 ### 3.3 member_role (모임 멤버 역할)
 
 ```sql
-CREATE TYPE member_role AS ENUM ('leader', 'member');
+CREATE TYPE member_role AS ENUM ('leader', 'moderator', 'member');
 ```
 
 - **leader**: 리더
+- **moderator**: 부리더 (멤버 관리 권한 보유)
 - **member**: 일반 멤버
 
 **사용 테이블**: `group_members`
@@ -129,6 +131,21 @@ CREATE TYPE ocr_log_status AS ENUM ('success', 'failed');
 - **failed**: OCR 처리 실패
 
 **사용 테이블**: `ocr_logs`
+
+### 3.6 feature_request_status (기능 요청 상태)
+
+```sql
+CREATE TYPE feature_request_status AS ENUM ('requested', 'under_review', 'planned', 'in_progress', 'completed', 'declined');
+```
+
+- **requested**: 요청됨
+- **under_review**: 검토중
+- **planned**: 계획됨
+- **in_progress**: 개발중
+- **completed**: 완료
+- **declined**: 거절됨
+
+**사용 테이블**: `feature_requests`
 
 ---
 
@@ -387,7 +404,8 @@ CREATE TYPE ocr_log_status AS ENUM ('success', 'failed');
 **주요 컬럼**:
 - `id` (UUID, PK): 기본 키
 - `note_id` (UUID, NOT NULL): 기록 ID (`notes(id)` 참조, UNIQUE)
-- `extracted_text` (TEXT, NOT NULL): OCR로 추출된 원본 텍스트
+- `extracted_text` (TEXT, NOT NULL): OCR 추출 텍스트 (GPT 보정 후, 또는 보정 미적용 시 원본)
+- `raw_extracted_text` (TEXT): OCR 원본 텍스트 (GPT 보정 전)
 - `quote_content` (TEXT): 책 구절 (사용자가 편집 가능)
 - `memo_content` (TEXT): 사용자의 생각 (사용자가 추가 가능)
 - `status` (ocr_status, DEFAULT 'processing'): OCR 처리 상태
@@ -462,6 +480,11 @@ CREATE TYPE ocr_log_status AS ENUM ('success', 'failed');
   - `failed`: 실패
 - `error_message` (TEXT): 실패 시 에러 메시지 (NULL 허용)
 - `processing_duration_ms` (INTEGER): 처리 소요 시간 (밀리초, NULL 허용)
+- `model_id` (TEXT): 사용된 AI 모델 ID (NULL 허용)
+- `input_tokens` (INTEGER): 입력 토큰 수 (NULL 허용)
+- `output_tokens` (INTEGER): 출력 토큰 수 (NULL 허용)
+- `estimated_cost_usd` (DECIMAL(10,8)): 예상 비용 (USD, NULL 허용)
+- `provider` (TEXT): AI 프로바이더 (openai, google, anthropic 등, NULL 허용)
 - `created_at` (TIMESTAMP WITH TIME ZONE, DEFAULT NOW()): 로그 생성 시간
 
 **관계 정의**:
@@ -487,7 +510,37 @@ CREATE TYPE ocr_log_status AS ENUM ('success', 'failed');
 
 ---
 
-### 4.8 groups (독서모임)
+### 4.8 ocr_correction_settings (OCR 보정 설정)
+
+**목적**: OCR 텍스트 보정 기능의 관리자 설정을 저장합니다. AI 프로바이더 및 모델 설정, 생성 파라미터를 관리합니다.
+
+**소유 구조**: 시스템 (관리자만 관리)
+
+**주요 컬럼**:
+- `id` (UUID, PK): 기본 키
+- `provider` (TEXT, NOT NULL, DEFAULT 'openai'): AI 프로바이더 (openai, google, anthropic)
+- `model_id` (TEXT, NOT NULL, DEFAULT 'gpt-4o-mini'): 사용할 모델 ID
+- `generation_settings` (JSONB, NOT NULL): 생성 파라미터 (temperature, maxOutputTokens)
+- `is_active` (BOOLEAN, NOT NULL, DEFAULT TRUE): 활성화 여부
+- `created_at`, `updated_at` (TIMESTAMP WITH TIME ZONE): 생성/수정 시간
+
+**인덱스**:
+- `idx_ocr_correction_settings_is_active`: 활성 설정 조회용 (부분 인덱스, `is_active = true`만)
+
+**RLS 정책 요약**:
+- **SELECT**: 관리자만 조회 가능 (`is_admin_user()` 함수 사용)
+- **INSERT**: 관리자만 생성 가능 (`is_admin_user()` 함수 사용)
+- **UPDATE**: 관리자만 수정 가능 (`is_admin_user()` 함수 사용)
+- **DELETE**: 관리자만 삭제 가능 (`is_admin_user()` 함수 사용)
+
+**특수 기능**:
+- 관리자만 접근 가능 (일반 사용자 접근 불가)
+- 기본 설정 자동 삽입 (테이블 생성 시)
+- `updated_at` 자동 갱신 트리거
+
+---
+
+### 4.9 groups (독서모임)
 
 **목적**: 독서 그룹 정보를 저장합니다. 리더가 그룹을 생성하고 관리합니다.
 
@@ -915,6 +968,106 @@ CREATE TYPE ocr_log_status AS ENUM ('success', 'failed');
 
 ---
 
+### 4.17 feature_requests (기능 요청)
+
+**목적**: 사용자가 새로운 기능을 요청하고, 다른 사용자가 투표할 수 있는 기능 요청 게시판입니다.
+
+**소유 구조**: 개인/공개 (작성자가 소유, 모든 사용자가 조회 가능)
+
+**주요 컬럼**:
+- `id` (UUID, PK): 기본 키
+- `user_id` (UUID, NOT NULL): 사용자 ID (`auth.users(id)` 참조)
+- `title` (VARCHAR(200), NOT NULL): 요청 제목
+- `description` (TEXT, NOT NULL): 요청 내용
+- `status` (feature_request_status, DEFAULT 'requested'): 요청 상태
+- `vote_count` (INTEGER, DEFAULT 0): 투표 수
+- `admin_response` (TEXT): 관리자 응답 (NULL 허용)
+- `is_pinned` (BOOLEAN, DEFAULT FALSE): 상단 고정 여부
+- `created_at`, `updated_at` (TIMESTAMP WITH TIME ZONE): 생성/수정 시간
+
+**관계 정의**:
+- `user_id` → `auth.users(id)` (ON DELETE CASCADE)
+- `id` ← `feature_request_votes(feature_request_id)` (ON DELETE CASCADE)
+- `id` ← `feature_request_comments(feature_request_id)` (ON DELETE CASCADE)
+
+**인덱스**:
+- `idx_feature_requests_user_id`: 사용자별 요청 조회용
+- `idx_feature_requests_status`: 상태별 필터링용
+- `idx_feature_requests_vote_count`: 인기순 정렬용 (DESC)
+- `idx_feature_requests_created_at`: 최신순 정렬용 (DESC)
+- `idx_feature_requests_is_pinned`: 고정 요청 조회용 (부분 인덱스)
+
+**RLS 정책 요약**:
+- **SELECT**: 모든 사용자가 조회 가능 (공개)
+- **INSERT**: 인증된 사용자만 생성 가능 (`auth.uid() = user_id`)
+- **UPDATE**: 본인 또는 관리자만 수정 가능
+- **DELETE**: 본인 또는 관리자만 삭제 가능
+
+---
+
+### 4.18 feature_request_votes (기능 요청 투표)
+
+**목적**: 기능 요청에 대한 사용자 투표를 관리합니다.
+
+**소유 구조**: 개인 (각 사용자는 자신의 투표만 소유)
+
+**주요 컬럼**:
+- `id` (UUID, PK): 기본 키
+- `feature_request_id` (UUID, NOT NULL): 기능 요청 ID (`feature_requests(id)` 참조)
+- `user_id` (UUID, NOT NULL): 사용자 ID (`auth.users(id)` 참조)
+- `created_at` (TIMESTAMP WITH TIME ZONE): 생성 시간
+- **UNIQUE 제약**: `(feature_request_id, user_id)` - 한 사용자는 한 요청에 한 번만 투표 가능
+
+**관계 정의**:
+- `feature_request_id` → `feature_requests(id)` (ON DELETE CASCADE)
+- `user_id` → `auth.users(id)` (ON DELETE CASCADE)
+
+**인덱스**:
+- `idx_feature_request_votes_feature_request_id`: 요청별 투표 조회용
+- `idx_feature_request_votes_user_id`: 사용자별 투표 조회용
+
+**RLS 정책 요약**:
+- **SELECT**: 모든 사용자가 조회 가능 (공개)
+- **INSERT**: 인증된 사용자만 생성 가능 (`auth.uid() = user_id`)
+- **DELETE**: 본인 투표만 삭제 가능 (`auth.uid() = user_id`)
+
+**특수 기능**:
+- 투표 시 자동으로 `feature_requests.vote_count` 증가 (트리거)
+- 투표 삭제 시 자동으로 `feature_requests.vote_count` 감소 (트리거)
+
+---
+
+### 4.19 feature_request_comments (기능 요청 댓글)
+
+**목적**: 기능 요청에 대한 댓글을 관리합니다.
+
+**소유 구조**: 개인 (각 사용자는 자신의 댓글만 소유)
+
+**주요 컬럼**:
+- `id` (UUID, PK): 기본 키
+- `feature_request_id` (UUID, NOT NULL): 기능 요청 ID (`feature_requests(id)` 참조)
+- `user_id` (UUID, NOT NULL): 사용자 ID (`auth.users(id)` 참조)
+- `content` (TEXT, NOT NULL): 댓글 내용
+- `is_admin_comment` (BOOLEAN, DEFAULT FALSE): 관리자 댓글 여부
+- `created_at`, `updated_at` (TIMESTAMP WITH TIME ZONE): 생성/수정 시간
+
+**관계 정의**:
+- `feature_request_id` → `feature_requests(id)` (ON DELETE CASCADE)
+- `user_id` → `auth.users(id)` (ON DELETE CASCADE)
+
+**인덱스**:
+- `idx_feature_request_comments_feature_request_id`: 요청별 댓글 조회용
+- `idx_feature_request_comments_user_id`: 사용자별 댓글 조회용
+- `idx_feature_request_comments_created_at`: 시간순 정렬용
+
+**RLS 정책 요약**:
+- **SELECT**: 모든 사용자가 조회 가능 (공개)
+- **INSERT**: 인증된 사용자만 생성 가능 (`auth.uid() = user_id`)
+- **UPDATE**: 본인만 수정 가능 (`auth.uid() = user_id`)
+- **DELETE**: 본인 또는 관리자만 삭제 가능
+
+---
+
 ## 5. 관계 요약
 
 ### 5.1 주요 관계 다이어그램
@@ -1257,6 +1410,57 @@ RLS 정책은 데이터베이스 레벨에서 접근 제어를 강제하므로, 
 - **영향받는 테이블**:
   - `notes`
 - **마이그레이션 파일**: `migration-202601041320__notes__add_title_column.sql`
+
+### 2026-01-29 (기능 요청 게시판 추가)
+
+- **변경 내용**: 기능 요청 게시판 및 관련 테이블 추가
+  - `feature_requests` 테이블 생성: 기능 요청 게시판
+  - `feature_request_votes` 테이블 생성: 기능 요청 투표
+  - `feature_request_comments` 테이블 생성: 기능 요청 댓글
+  - `feature_request_status` ENUM 추가: 요청 상태 관리
+  - `member_role` ENUM에 'moderator' 값 추가: 부리더 역할 지원
+- **영향받는 테이블**:
+  - `feature_requests` (신규)
+  - `feature_request_votes` (신규)
+  - `feature_request_comments` (신규)
+  - `group_members` (ENUM 확장)
+- **마이그레이션 파일**:
+  - `migration-202601291500__feature_requests__create_tables.sql`
+  - `migration-202601292000__groups__add_moderator_role.sql`
+- **목적**: 사용자가 새로운 기능을 요청하고 투표할 수 있는 기능 제공
+
+### 2026-02-01 (진행 기록 노트 타입 추가)
+
+- **변경 내용**: 진행 기록을 위한 노트 타입 추가
+  - `note_type` ENUM에 'progress' 값 추가
+  - `point_action_type` ENUM에 'note_progress' 값 추가 (포인트 적립용)
+- **영향받는 테이블**:
+  - `notes` (ENUM 확장)
+  - `point_action_configs` (액션 추가)
+- **마이그레이션 파일**:
+  - `migration-202602011300__notes__add_progress_note_type.sql`
+  - `migration-202602011330__points__add_note_progress_action.sql`
+- **목적**: 읽기 진행률 기록 기능 지원
+
+### 2026-02-04 (OCR 보정 설정 및 원본 텍스트 기능 추가)
+
+- **변경 내용**: OCR 텍스트 보정 기능의 관리자 설정 및 원본 텍스트 저장 기능 추가
+  - `ocr_correction_settings` 테이블 생성: OCR 보정 AI 설정 (관리자 전용)
+  - `transcriptions` 테이블에 `raw_extracted_text` 컬럼 추가: OCR 원본 텍스트 저장
+  - `ocr_logs` 테이블에 비용 추적 컬럼 추가:
+    - `model_id`: 사용된 AI 모델 ID
+    - `input_tokens`: 입력 토큰 수
+    - `output_tokens`: 출력 토큰 수
+    - `estimated_cost_usd`: 예상 비용 (USD)
+    - `provider`: AI 프로바이더
+- **영향받는 테이블**:
+  - `ocr_correction_settings` (신규)
+  - `transcriptions` (컬럼 추가)
+  - `ocr_logs` (컬럼 추가)
+- **마이그레이션 파일**:
+  - `migration-202502041200__ocr__add_correction_settings.sql`
+  - `migration-202502041400__transcriptions__add_raw_text.sql`
+- **목적**: OCR 텍스트 GPT 자동 보정 기능 및 원문/보정 텍스트 토글 기능 지원
 
 ---
 
