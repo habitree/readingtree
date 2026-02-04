@@ -75,6 +75,7 @@ function ExpandableText({
 /**
  * AI 텍스트 인식 섹션 - 접이식 UI
  * 기본 접힌 상태로 시작, 사용자가 펼쳐서 확인 가능
+ * PC/모바일 반응형 지원
  */
 function CollapsibleAiSection({
     text,
@@ -84,38 +85,44 @@ function CollapsibleAiSection({
     hideActions?: boolean;
 }) {
     const [isOpen, setIsOpen] = useState(false);
-    const previewLength = 80;
-    const previewText = text.length > previewLength
-        ? text.slice(0, previewLength).trim() + "..."
-        : text;
+
+    // PC에서는 더 긴 미리보기 (120자), 모바일은 80자
+    const getPreviewText = () => {
+        // 첫 번째 줄 또는 일정 길이까지만 표시
+        const firstLine = text.split('\n')[0];
+        const maxLength = 120;
+        if (firstLine.length <= maxLength) return firstLine;
+        return firstLine.slice(0, maxLength).trim() + "...";
+    };
+    const previewText = getPreviewText();
 
     return (
-        <div className="mt-6 pt-5 border-t border-slate-100 dark:border-slate-800">
+        <div className="mt-6 md:mt-8 pt-5 md:pt-6 border-t border-slate-100 dark:border-slate-800">
             {/* 헤더 - 클릭 가능 */}
             <button
                 onClick={() => !hideActions && setIsOpen(!isOpen)}
                 className={cn(
-                    "w-full flex items-center justify-between gap-3 group",
-                    !hideActions && "cursor-pointer"
+                    "w-full flex items-center justify-between gap-3 group transition-colors rounded-lg -mx-2 px-2 py-1",
+                    !hideActions && "cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-900/50"
                 )}
                 disabled={hideActions}
             >
-                <div className="flex items-center gap-2">
-                    <Sparkles className="w-3.5 h-3.5 text-forest-500/70" />
-                    <span className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                <div className="flex items-center gap-2 md:gap-2.5">
+                    <Sparkles className="w-3.5 h-3.5 md:w-4 md:h-4 text-forest-500/70" />
+                    <span className="text-[11px] md:text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
                         AI 텍스트 인식
                     </span>
                 </div>
                 {!hideActions && (
                     <div className={cn(
-                        "flex items-center gap-1 text-[10px] font-medium text-slate-400 transition-colors",
+                        "flex items-center gap-1.5 text-[10px] md:text-[11px] font-medium text-slate-400 transition-colors",
                         "group-hover:text-forest-500"
                     )}>
-                        <span>{isOpen ? "접기" : "펼치기"}</span>
+                        <span>{isOpen ? "접기" : "펼쳐보기"}</span>
                         {isOpen ? (
-                            <ChevronUp className="w-3 h-3" />
+                            <ChevronUp className="w-3 h-3 md:w-3.5 md:h-3.5" />
                         ) : (
-                            <ChevronDown className="w-3 h-3" />
+                            <ChevronDown className="w-3 h-3 md:w-3.5 md:h-3.5" />
                         )}
                     </div>
                 )}
@@ -124,18 +131,18 @@ function CollapsibleAiSection({
             {/* 콘텐츠 영역 */}
             <div className={cn(
                 "overflow-hidden transition-all duration-300 ease-in-out",
-                isOpen || hideActions ? "max-h-[500px] opacity-100 mt-3" : "max-h-0 opacity-0 mt-0"
+                isOpen || hideActions ? "max-h-[800px] opacity-100 mt-3 md:mt-4" : "max-h-0 opacity-0 mt-0"
             )}>
-                <div className="bg-slate-50/50 dark:bg-slate-900/30 rounded-lg p-3 border border-slate-100 dark:border-slate-800">
-                    <p className="text-[13px] leading-relaxed text-slate-600 dark:text-slate-400 whitespace-pre-wrap">
+                <div className="bg-slate-50/70 dark:bg-slate-900/40 rounded-lg md:rounded-xl p-3 md:p-4 border border-slate-100 dark:border-slate-800">
+                    <p className="text-[13px] md:text-sm leading-relaxed md:leading-loose text-slate-600 dark:text-slate-400 whitespace-pre-wrap">
                         {text}
                     </p>
                 </div>
             </div>
 
-            {/* 접힌 상태일 때 미리보기 텍스트 */}
+            {/* 접힌 상태일 때 미리보기 텍스트 - PC에서는 2줄까지 표시 */}
             {!isOpen && !hideActions && (
-                <p className="mt-2 text-[12px] text-slate-400 dark:text-slate-500 leading-relaxed truncate">
+                <p className="mt-2 md:mt-3 text-[12px] md:text-[13px] text-slate-400 dark:text-slate-500 leading-relaxed line-clamp-2">
                     {previewText}
                 </p>
             )}
