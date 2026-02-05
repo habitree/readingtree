@@ -8,6 +8,8 @@ import {
   fetchRecommendedBooksByIsbn,
 } from "@/lib/api/data4library";
 import type { PopularBook, RecommendedBook, ExternalPopularBook } from "@/lib/api/data4library-types";
+import { searchBooks, transformNaverBookItem } from "@/lib/api/naver";
+import { getOpenLibraryCoverUrl } from "@/lib/api/open-library-covers";
 
 // ============================================
 // 타입 정의
@@ -31,6 +33,9 @@ const CACHE_TTL_HOURS = 6;
 
 /** 기본 조회 개수 */
 const DEFAULT_PAGE_SIZE = 10;
+
+/** 표지 보강할 최대 도서 수 (성능 고려) */
+const MAX_COVER_ENRICH_COUNT = 5;
 
 // ============================================
 // 메인 서버 액션
@@ -69,15 +74,18 @@ export async function getPopularBooks(
     console.log(`[popular-books] 캐시 미스, API 조회: ${category}`);
     const freshBooks = await fetchBooksFromApi(category, regionCode, limit);
 
+    // 2.5. 표지가 없는 도서 보강 (상위 N권만, 성능 고려)
+    const enrichedBooks = await enrichBooksWithCoverImages(freshBooks);
+
     // 3. 캐시 저장 (비동기, 실패해도 결과 반환)
-    if (freshBooks.length > 0) {
-      saveBooksToCache(category, freshBooks, regionCode).catch((err) => {
+    if (enrichedBooks.length > 0) {
+      saveBooksToCache(category, enrichedBooks, regionCode).catch((err) => {
         console.error("[popular-books] 캐시 저장 오류:", err);
       });
     }
 
     return {
-      books: freshBooks,
+      books: enrichedBooks,
       category,
       fromCache: false,
     };
@@ -400,4 +408,63 @@ function transformCacheToPopularBook(cache: ExternalPopularBook): PopularBook {
     category: metadata.categoryName as string | undefined,
     source: "data4library",
   };
+}
+
+/**
+ * 표지가 없는 도서에 대해 네이버 API / Open Library로 표지 보강
+ * 성능을 위해 상위 N권만 처리
+ */
+async function enrichBooksWithCoverImages(books: PopularBook[]): Promise<PopularBook[]> {
+  // 표지가 없는 도서 필터링 (상위 N권만)
+  const booksWithoutCover = books.filter((book) => !book.coverImageUrl && book.isbn13);
+  const toEnrich = booksWithoutCover.slice(0, MAX_COVER_ENRICH_COUNT);
+
+  if (toEnrich.length === 0) {
+    return books;
+  }
+
+  console.log(`[popular-books] 표지 보강 시작: ${toEnrich.length}권`);
+
+  // 병렬로 표지 조회
+  const coverResults = await Promise.allSettled(
+    toEnrich.map(async (book) => {
+      // 1. 네이버 API 시도
+      try {
+        const naverResponse = await searchBooks({ query: book.isbn13, display: 1 });
+        if (naverResponse.items && naverResponse.items.length > 0) {
+          const naverBook = transformNaverBookItem(naverResponse.items[0]);
+          if (naverBook.cover_image_url) {
+            return { isbn13: book.isbn13, coverUrl: naverBook.cover_image_url, source: "naver" };
+          }
+        }
+      } catch (err) {
+        // 네이버 API 실패 시 Open Library 폴백
+      }
+
+      // 2. Open Library 폴백 (HEAD 요청 없이 URL만 생성)
+      const openLibraryCover = getOpenLibraryCoverUrl(book.isbn13, "M");
+      if (openLibraryCover) {
+        return { isbn13: book.isbn13, coverUrl: openLibraryCover, source: "openlibrary" };
+      }
+
+      return { isbn13: book.isbn13, coverUrl: null, source: null };
+    })
+  );
+
+  // 결과를 Map으로 변환
+  const coverMap = new Map<string, string>();
+  coverResults.forEach((result) => {
+    if (result.status === "fulfilled" && result.value.coverUrl) {
+      coverMap.set(result.value.isbn13, result.value.coverUrl);
+      console.log(`[popular-books] 표지 보강 성공: ${result.value.isbn13} (${result.value.source})`);
+    }
+  });
+
+  // 도서 목록에 표지 URL 적용
+  return books.map((book) => {
+    if (!book.coverImageUrl && coverMap.has(book.isbn13)) {
+      return { ...book, coverImageUrl: coverMap.get(book.isbn13) };
+    }
+    return book;
+  });
 }

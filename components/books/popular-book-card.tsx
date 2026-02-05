@@ -1,14 +1,14 @@
 "use client";
 
-import { useState, useCallback, memo } from "react";
+import { useState, useCallback, memo, useEffect } from "react";
 import Image from "next/image";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { BookOpen, TrendingUp, Plus, Sparkles } from "lucide-react";
+import { BookOpen, TrendingUp, Plus, Sparkles, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getImageUrl, isValidImageUrl } from "@/lib/utils/image";
-import { addBook } from "@/app/actions/books";
+import { addBook, getBookCoverByIsbn } from "@/app/actions/books";
 import { toast } from "sonner";
 import type { PopularBook } from "@/lib/api/data4library-types";
 
@@ -40,8 +40,41 @@ function PopularBookCardComponent({
 }: PopularBookCardProps) {
   const [imageError, setImageError] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
+  const [fallbackCoverUrl, setFallbackCoverUrl] = useState<string | null>(null);
+  const [isFetchingCover, setIsFetchingCover] = useState(false);
+  const [coverFetchAttempted, setCoverFetchAttempted] = useState(false);
 
-  const hasValidImage = isValidImageUrl(book.coverImageUrl) && book.coverImageUrl && !imageError;
+  // 현재 사용할 이미지 URL 결정
+  const currentCoverUrl = fallbackCoverUrl || book.coverImageUrl;
+  const hasValidImage = isValidImageUrl(currentCoverUrl) && currentCoverUrl && !imageError;
+
+  // 이미지가 없거나 로드 실패 시 fallback 이미지 조회
+  useEffect(() => {
+    // 이미 유효한 이미지가 있거나, 이미 시도했거나, 현재 조회 중이면 스킵
+    if (hasValidImage || coverFetchAttempted || isFetchingCover) return;
+
+    // 이미지 오류가 발생했거나 처음부터 이미지가 없는 경우
+    if (imageError || !book.coverImageUrl || !isValidImageUrl(book.coverImageUrl)) {
+      if (!book.isbn13) return;
+
+      setIsFetchingCover(true);
+      setCoverFetchAttempted(true);
+
+      getBookCoverByIsbn(book.isbn13, book.title)
+        .then(({ coverUrl }) => {
+          if (coverUrl) {
+            setFallbackCoverUrl(coverUrl);
+            setImageError(false); // 새 URL로 리셋
+          }
+        })
+        .catch((err) => {
+          console.error("[PopularBookCard] 표지 조회 실패:", err);
+        })
+        .finally(() => {
+          setIsFetchingCover(false);
+        });
+    }
+  }, [book.isbn13, book.title, book.coverImageUrl, imageError, hasValidImage, coverFetchAttempted, isFetchingCover]);
 
   const handleImageError = useCallback(() => {
     setImageError(true);
@@ -55,6 +88,9 @@ function PopularBookCardComponent({
 
     setIsAdding(true);
     try {
+      // fallback 표지가 있으면 그것을 사용, 없으면 원본 표지 사용
+      const coverUrl = fallbackCoverUrl || book.coverImageUrl || null;
+
       await addBook(
         {
           isbn: book.isbn13,
@@ -62,7 +98,7 @@ function PopularBookCardComponent({
           author: book.author || null,
           publisher: book.publisher || null,
           published_date: book.publicationYear || null,
-          cover_image_url: book.coverImageUrl || null,
+          cover_image_url: coverUrl,
         },
         "not_started"
       );
@@ -78,7 +114,7 @@ function PopularBookCardComponent({
     } finally {
       setIsAdding(false);
     }
-  }, [book, onAdd]);
+  }, [book, onAdd, fallbackCoverUrl]);
 
   // 랭킹 배지 색상
   const getRankingColor = (ranking: number) => {
@@ -98,9 +134,14 @@ function PopularBookCardComponent({
       <CardContent className="p-0">
         {/* 표지 이미지 */}
         <div className="relative aspect-[3/4] w-full overflow-hidden bg-muted">
-          {hasValidImage ? (
+          {isFetchingCover ? (
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-muted/50">
+              <Loader2 className="w-6 h-6 text-muted-foreground animate-spin mb-1" />
+              <span className="text-xs text-muted-foreground">로딩 중...</span>
+            </div>
+          ) : hasValidImage ? (
             <Image
-              src={getImageUrl(book.coverImageUrl!)}
+              src={getImageUrl(currentCoverUrl!)}
               alt={`${book.title} 표지`}
               fill
               className="object-cover group-hover:scale-105 transition-transform duration-200"
