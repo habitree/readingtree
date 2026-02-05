@@ -22,25 +22,26 @@ const OPEN_LIBRARY_COVER_TIMEOUT_MS = 1500;
  * 날짜 문자열을 유효한 date 형식으로 정규화
  * "2014" -> "2014-01-01", "2014-05" -> "2014-05-01", "2014-05-20" -> "2014-05-20"
  */
-function normalizePublishedDate(dateStr: string | null | undefined): string | null {
-  if (!dateStr) return null;
+function normalizePublishedDate(dateStr: string | number | null | undefined): string | null {
+  if (dateStr === null || dateStr === undefined) return null;
 
-  const trimmed = dateStr.trim();
-  if (!trimmed) return null;
+  // 숫자인 경우 문자열로 변환
+  const strValue = String(dateStr).trim();
+  if (!strValue) return null;
 
   // 년도만 있는 경우 (예: "2014")
-  if (/^\d{4}$/.test(trimmed)) {
-    return `${trimmed}-01-01`;
+  if (/^\d{4}$/.test(strValue)) {
+    return `${strValue}-01-01`;
   }
 
   // 년-월 형식 (예: "2014-05")
-  if (/^\d{4}-\d{2}$/.test(trimmed)) {
-    return `${trimmed}-01`;
+  if (/^\d{4}-\d{2}$/.test(strValue)) {
+    return `${strValue}-01`;
   }
 
   // 이미 유효한 형식이면 그대로 반환
-  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
-    return trimmed;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(strValue)) {
+    return strValue;
   }
 
   // 그 외 형식은 null 반환 (파싱 실패 방지)
