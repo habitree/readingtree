@@ -1,6 +1,6 @@
 "use server";
 
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { createServerSupabaseClient, createAdminSupabaseClient } from "@/lib/supabase/server";
 import {
   fetchPopularBooks,
   fetchTrendingBooks,
@@ -71,7 +71,7 @@ export async function getPopularBooks(
 
     // 3. 캐시 저장 (비동기, 실패해도 결과 반환)
     if (freshBooks.length > 0) {
-      saveBooksToCache(supabase, category, freshBooks, regionCode).catch((err) => {
+      saveBooksToCache(category, freshBooks, regionCode).catch((err) => {
         console.error("[popular-books] 캐시 저장 오류:", err);
       });
     }
@@ -218,12 +218,13 @@ export async function getRecommendedBooksForGroup(
 /**
  * 캐시 강제 갱신
  * 관리자용 또는 수동 갱신 시 사용
+ * RLS 정책으로 인해 service role (admin) 클라이언트 사용 필요
  */
 export async function refreshPopularBooksCache(
   category?: PopularBookCategory,
   regionCode?: string | null
 ): Promise<{ success: boolean; message: string }> {
-  const supabase = await createServerSupabaseClient();
+  const adminClient = createAdminSupabaseClient();
 
   try {
     const categories: PopularBookCategory[] = category
@@ -231,8 +232,8 @@ export async function refreshPopularBooksCache(
       : ["popular", "trending", "mania"];
 
     for (const cat of categories) {
-      // 기존 캐시 삭제
-      const deleteQuery = supabase
+      // 기존 캐시 삭제 (admin 클라이언트 사용)
+      const deleteQuery = adminClient
         .from("external_popular_books")
         .delete()
         .eq("source", "data4library")
@@ -249,7 +250,7 @@ export async function refreshPopularBooksCache(
       // 새 데이터 조회 및 저장
       const freshBooks = await fetchBooksFromApi(cat, regionCode, 20);
       if (freshBooks.length > 0) {
-        await saveBooksToCache(supabase, cat, freshBooks, regionCode);
+        await saveBooksToCache(cat, freshBooks, regionCode);
       }
     }
 
@@ -336,13 +337,15 @@ async function getCachedBooks(
 
 /**
  * 도서 데이터를 Supabase 캐시에 저장
+ * RLS 정책으로 인해 service role (admin) 클라이언트 사용 필요
  */
 async function saveBooksToCache(
-  supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>,
   category: PopularBookCategory,
   books: PopularBook[],
   regionCode?: string | null
 ): Promise<void> {
+  const adminClient = createAdminSupabaseClient();
+
   const expiresAt = new Date();
   expiresAt.setHours(expiresAt.getHours() + CACHE_TTL_HOURS);
 
@@ -365,7 +368,7 @@ async function saveBooksToCache(
   }));
 
   // upsert로 기존 데이터 갱신
-  const { error } = await supabase
+  const { error } = await adminClient
     .from("external_popular_books")
     .upsert(records, {
       onConflict: "source,category,isbn13,region_code",
