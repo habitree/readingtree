@@ -220,23 +220,14 @@ export async function POST(request: NextRequest) {
             console.error("AI 응답 저장 실패:", assistantError);
           }
 
-          // 세션 업데이트
+          // 세션 업데이트 (메시지 수 계산: 이전 메시지 + 사용자 메시지 + AI 응답)
+          const newMessageCount = (previousMessages?.length || 0) + 2;
           await supabase
             .from("chat_sessions")
             .update({
               last_message_at: new Date().toISOString(),
+              message_count: newMessageCount,
             })
-            .eq("id", sessionId);
-
-          // 메시지 수 직접 조회 후 업데이트
-          const { count } = await supabase
-            .from("chat_messages")
-            .select("*", { count: "exact", head: true })
-            .eq("session_id", sessionId);
-
-          await supabase
-            .from("chat_sessions")
-            .update({ message_count: count || 0 })
             .eq("id", sessionId);
 
           // 완료 신호

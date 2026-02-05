@@ -514,43 +514,49 @@ export async function getGroupDetail(groupId: string) {
     throw new Error("로그인이 필요합니다.");
   }
 
-  // 먼저 사용자가 멤버인지 확인 (RLS 재귀 방지)
-  const { data: membership } = await supabase
-    .from("group_members")
-    .select("group_id, role, status")
-    .eq("group_id", groupId)
-    .eq("user_id", user.id)
-    .eq("status", "approved")
-    .single();
-
-  // 모임 정보 조회
-  // RLS 정책: 공개 그룹(is_public = TRUE) 또는 리더(leader_id = auth.uid())만 조회 가능
-  // 멤버인 경우: 공개 그룹이 아니고 리더도 아니면 조회 불가
-  // → 멤버인 경우 그룹 조회를 위해 별도 처리 필요
-  const { data: group, error: groupError } = await supabase
-    .from("groups")
-    .select(
+  // Phase 1: 병렬로 membership, group, pendingMembership 조회
+  const [membershipResult, groupResult, pendingMembershipResult] = await Promise.all([
+    // 멤버십 확인 (RLS 재귀 방지)
+    supabase
+      .from("group_members")
+      .select("group_id, role, status")
+      .eq("group_id", groupId)
+      .eq("user_id", user.id)
+      .eq("status", "approved")
+      .single(),
+    // 모임 정보 조회
+    supabase
+      .from("groups")
+      .select(
+        `
+        *,
+        users!groups_leader_id_fkey (
+          id,
+          name,
+          avatar_url
+        )
       `
-      *,
-      users!groups_leader_id_fkey (
-        id,
-        name,
-        avatar_url
       )
-    `
-    )
-    .eq("id", groupId)
-    .single();
+      .eq("id", groupId)
+      .single(),
+    // 대기 중인 멤버십 확인 (pending 상태)
+    supabase
+      .from("group_members")
+      .select("role, status")
+      .eq("group_id", groupId)
+      .eq("user_id", user.id)
+      .eq("status", "pending")
+      .single(),
+  ]);
+
+  const membership = membershipResult.data;
+  const group = groupResult.data;
+  const groupError = groupResult.error;
+  const pendingMembership = pendingMembershipResult.data;
 
   // RLS 정책으로 인해 조회 실패 처리
   if (groupError || !group) {
-    // 멤버인 경우에도 RLS 정책으로 인해 조회 실패할 수 있음
-    // (공개 그룹이 아니고 리더도 아닌 경우)
     if (membership) {
-      // 멤버인데 조회 실패: RLS 정책 문제
-      // 이 경우 멤버인 그룹 ID 목록을 통해 간접 조회 시도
-      // 하지만 이미 membership이 있으므로 그룹이 존재함을 알 수 있음
-      // 따라서 에러 메시지만 개선
       console.error("멤버인데 그룹 조회 실패:", {
         groupId,
         userId: user.id,
@@ -564,15 +570,6 @@ export async function getGroupDetail(groupId: string) {
 
   // 비공개 모임 + 비멤버인 경우: 제한된 정보만 반환 (링크 접근 허용)
   const isNonMemberPrivateGroup = !membership && !group.is_public && group.leader_id !== user.id;
-
-  // 대기 중인 멤버십 확인 (pending 상태)
-  const { data: pendingMembership } = await supabase
-    .from("group_members")
-    .select("role, status")
-    .eq("group_id", groupId)
-    .eq("user_id", user.id)
-    .eq("status", "pending")
-    .single();
 
   if (isNonMemberPrivateGroup) {
     // 비멤버가 비공개 모임에 링크로 접근한 경우
@@ -589,116 +586,115 @@ export async function getGroupDetail(groupId: string) {
     };
   }
 
-  // 멤버 목록 조회
-  const { data: members, error: membersError } = await supabase
-    .from("group_members")
-    .select(
+  // Phase 2: 병렬로 members, myMembership, sharedNotes, groupBooks, sharedBooks 조회
+  const [membersResult, myMembershipResult, sharedNotesResult, groupBooksResult, sharedBooksResult] = await Promise.all([
+    // 멤버 목록 조회
+    supabase
+      .from("group_members")
+      .select(
+        `
+        *,
+        users (
+          id,
+          name,
+          avatar_url
+        )
       `
-      *,
-      users (
-        id,
-        name,
-        avatar_url
       )
-    `
-    )
-    .eq("group_id", groupId)
-    .eq("status", "approved");
-
-  if (membersError) {
-    throw new Error(`멤버 목록 조회 실패: ${membersError.message}`);
-  }
-
-  // 현재 사용자의 멤버십 확인
-  const { data: myMembership } = await supabase
-    .from("group_members")
-    .select("role, status")
-    .eq("group_id", groupId)
-    .eq("user_id", user.id)
-    .single();
-
-  // 공유된 기록 목록 조회 (책 정보 + 작성자 정보 포함)
-  const { data: sharedNotes, error: notesError } = await supabase
-    .from("group_notes")
-    .select(
+      .eq("group_id", groupId)
+      .eq("status", "approved"),
+    // 현재 사용자의 멤버십 확인
+    supabase
+      .from("group_members")
+      .select("role, status")
+      .eq("group_id", groupId)
+      .eq("user_id", user.id)
+      .single(),
+    // 공유된 기록 목록 조회 (책 정보 + 작성자 정보 포함)
+    supabase
+      .from("group_notes")
+      .select(
+        `
+        *,
+        notes (
+          *,
+          books (
+            id,
+            title,
+            author,
+            cover_image_url
+          ),
+          users (
+            id,
+            name,
+            avatar_url
+          )
+        )
       `
-      *,
-      notes (
+      )
+      .eq("group_id", groupId)
+      .order("shared_at", { ascending: false })
+      .limit(20),
+    // 지정도서 목록 조회
+    supabase
+      .from("group_books")
+      .select(
+        `
         *,
         books (
           id,
           title,
           author,
           cover_image_url
-        ),
-        users (
-          id,
-          name,
-          avatar_url
         )
+      `
       )
-    `
-    )
-    .eq("group_id", groupId)
-    .order("shared_at", { ascending: false })
-    .limit(20);
+      .eq("group_id", groupId)
+      .order("created_at", { ascending: false })
+      .limit(10),
+    // 공유된 서재 목록 조회
+    supabase
+      .from("group_shared_books")
+      .select(
+        `
+        *,
+        user_books (
+          id,
+          status,
+          books (
+            id,
+            title,
+            author,
+            cover_image_url
+          ),
+          users (
+            id,
+            name,
+            avatar_url
+          )
+        )
+      `
+      )
+      .eq("group_id", groupId)
+      .order("shared_at", { ascending: false })
+      .limit(10),
+  ]);
 
-  if (notesError) {
-    console.error("공유 기록 조회 오류:", notesError);
+  if (membersResult.error) {
+    throw new Error(`멤버 목록 조회 실패: ${membersResult.error.message}`);
   }
 
-  // 지정도서 목록 조회 (간단한 버전)
-  const { data: groupBooks } = await supabase
-    .from("group_books")
-    .select(
-      `
-      *,
-      books (
-        id,
-        title,
-        author,
-        cover_image_url
-      )
-    `
-    )
-    .eq("group_id", groupId)
-    .order("created_at", { ascending: false })
-    .limit(10);
-
-  // 공유된 서재 목록 조회 (간단한 버전)
-  const { data: sharedBooks } = await supabase
-    .from("group_shared_books")
-    .select(
-      `
-      *,
-      user_books (
-        id,
-        status,
-        books (
-          id,
-          title,
-          author,
-          cover_image_url
-        ),
-        users (
-          id,
-          name,
-          avatar_url
-        )
-      )
-    `
-    )
-    .eq("group_id", groupId)
-    .order("shared_at", { ascending: false })
-    .limit(10);
+  if (sharedNotesResult.error) {
+    console.error("공유 기록 조회 오류:", sharedNotesResult.error);
+  }
 
   return {
     group,
-    members: members || [],
-    myMembership: myMembership || null,
-    sharedNotes: sharedNotes || [],
-    groupBooks: groupBooks || [],
-    sharedBooks: sharedBooks || [],
+    members: membersResult.data || [],
+    myMembership: myMembershipResult.data || null,
+    sharedNotes: sharedNotesResult.data || [],
+    groupBooks: groupBooksResult.data || [],
+    sharedBooks: sharedBooksResult.data || [],
     isLeader: group.leader_id === user.id,
   };
 }
@@ -754,41 +750,64 @@ export async function getMemberProgress(groupId: string) {
     throw new Error(`멤버 목록 조회 실패: ${membersError.message}`);
   }
 
-  // 각 멤버의 진행 상황 조회
-  const progress = await Promise.all(
-    (members || []).map(async (member) => {
-      const userId = member.user_id;
+  // 멤버 user_id 목록 추출
+  const memberList = members || [];
+  const userIds = memberList.map((m) => m.user_id);
 
-      // 완독한 책 수
-      const { count: completedBooks } = await supabase
-        .from("user_books")
-        .select("*", { count: "exact", head: true })
-        .eq("user_id", userId)
-        .eq("status", "completed");
+  if (userIds.length === 0) {
+    return [];
+  }
 
-      // 작성한 기록 수
-      const { count: notesCount } = await supabase
-        .from("notes")
-        .select("*", { count: "exact", head: true })
-        .eq("user_id", userId);
+  // 배치 쿼리로 모든 멤버의 진행 상황 조회 (3개 쿼리로 최적화)
+  const [completedBooksResult, allNotesResult, recentNotesResult] = await Promise.all([
+    // 모든 멤버의 완독 책 조회
+    supabase
+      .from("user_books")
+      .select("user_id")
+      .in("user_id", userIds)
+      .eq("status", "completed"),
+    // 모든 멤버의 기록 조회
+    supabase
+      .from("notes")
+      .select("user_id")
+      .in("user_id", userIds),
+    // 모든 멤버의 최근 기록 조회
+    supabase
+      .from("notes")
+      .select("user_id, created_at")
+      .in("user_id", userIds)
+      .order("created_at", { ascending: false }),
+  ]);
 
-      // 최근 활동 일자
-      const { data: recentNote } = await supabase
-        .from("notes")
-        .select("created_at")
-        .eq("user_id", userId)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .single();
+  // 완독 책 수 집계 (user_id별 카운트)
+  const completedBooksMap = new Map<string, number>();
+  (completedBooksResult.data || []).forEach((book) => {
+    const current = completedBooksMap.get(book.user_id) || 0;
+    completedBooksMap.set(book.user_id, current + 1);
+  });
 
-      return {
-        user: member.users || null, // users가 null일 수 있음
-        completedBooks: completedBooks || 0,
-        notesCount: notesCount || 0,
-        lastActivity: recentNote?.created_at || null,
-      };
-    })
-  );
+  // 기록 수 집계 (user_id별 카운트)
+  const notesCountMap = new Map<string, number>();
+  (allNotesResult.data || []).forEach((note) => {
+    const current = notesCountMap.get(note.user_id) || 0;
+    notesCountMap.set(note.user_id, current + 1);
+  });
+
+  // 최근 활동 일자 (user_id별 첫 번째 = 가장 최근)
+  const lastActivityMap = new Map<string, string>();
+  (recentNotesResult.data || []).forEach((note) => {
+    if (!lastActivityMap.has(note.user_id)) {
+      lastActivityMap.set(note.user_id, note.created_at);
+    }
+  });
+
+  // 멤버별 진행 상황 매핑
+  const progress = memberList.map((member) => ({
+    user: member.users || null,
+    completedBooks: completedBooksMap.get(member.user_id) || 0,
+    notesCount: notesCountMap.get(member.user_id) || 0,
+    lastActivity: lastActivityMap.get(member.user_id) || null,
+  }));
 
   return progress;
 }

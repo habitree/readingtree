@@ -41,13 +41,13 @@ interface BookCardProps {
  * React.memo로 래핑하여 불필요한 리렌더링 방지
  */
 function BookCardComponent({ book, userBookId, status, groupBooks, relatedBooks, isSample: isSampleProp = false }: BookCardProps) {
-  const [imageError, setImageError] = useState(false);
-  const [retryCount, setRetryCount] = useState(0);
+  // 이미지 상태를 단일 객체로 통합 (리렌더링 최적화)
+  const [imageState, setImageState] = useState({ error: false, retryCount: 0 });
   const MAX_RETRIES = 2; // 최대 2번 재시도
-  const hasValidImage = isValidImageUrl(book.cover_image_url) && book.cover_image_url && !imageError;
+  const hasValidImage = isValidImageUrl(book.cover_image_url) && book.cover_image_url && !imageState.error;
   // isSample은 prop으로 전달되거나 userBookId가 sample-로 시작하는 경우
   const isSample = isSampleProp || userBookId?.startsWith("sample-") || false;
-  
+
   // userBookId 검증
   if (!userBookId || typeof userBookId !== 'string' || userBookId.trim() === '') {
     console.error('BookCard: userBookId가 유효하지 않습니다.', { userBookId, book });
@@ -55,17 +55,19 @@ function BookCardComponent({ book, userBookId, status, groupBooks, relatedBooks,
   }
 
   const handleImageError = useCallback(() => {
-    if (retryCount < MAX_RETRIES) {
-      // 재시도: 짧은 지연 후 이미지 다시 로드 시도
-      setTimeout(() => {
-        setRetryCount(prev => prev + 1);
-        setImageError(false);
-      }, 500 * (retryCount + 1)); // 지수 백오프: 500ms, 1000ms
-    } else {
-      // 최대 재시도 횟수 초과 시 에러 상태로 설정
-      setImageError(true);
-    }
-  }, [retryCount, MAX_RETRIES]);
+    setImageState((prev) => {
+      if (prev.retryCount < MAX_RETRIES) {
+        // 재시도: 짧은 지연 후 이미지 다시 로드 시도
+        setTimeout(() => {
+          setImageState((p) => ({ error: false, retryCount: p.retryCount + 1 }));
+        }, 500 * (prev.retryCount + 1)); // 지수 백오프: 500ms, 1000ms
+        return prev; // 현재 상태 유지 (setTimeout에서 업데이트)
+      } else {
+        // 최대 재시도 횟수 초과 시 에러 상태로 설정
+        return { ...prev, error: true };
+      }
+    });
+  }, []);
 
   return (
     <div className="relative group">
@@ -80,7 +82,7 @@ function BookCardComponent({ book, userBookId, status, groupBooks, relatedBooks,
             <div className="relative aspect-[3/4] w-full overflow-hidden rounded-t-lg bg-muted" role="img" aria-label={`${book.title} 표지`}>
               {hasValidImage ? (
                 <Image
-                  key={`${book.cover_image_url}-retry-${retryCount}`}
+                  key={`${book.cover_image_url}-retry-${imageState.retryCount}`}
                   src={getImageUrl(book.cover_image_url)}
                   alt={`${book.title} 표지`}
                   fill

@@ -949,33 +949,60 @@ export async function getUserBooksWithNotes(
     cachedBookshelf = bookshelf;
   }
 
-  // 상태별 통계 조회 (서재별 또는 전체)
-  let statsQuery = supabase
+  // 검색어가 있으면 먼저 매칭 책 ID 조회
+  let matchingBookIds: string[] | null = null;
+  if (query && query.trim()) {
+    const sanitizedQuery = query.trim();
+    const { data: matchingBooks } = await supabase
+      .from("books")
+      .select("id")
+      .or(
+        `title.ilike.%${sanitizedQuery}%,author.ilike.%${sanitizedQuery}%,isbn.ilike.%${sanitizedQuery}%`
+      );
+
+    matchingBookIds = matchingBooks?.map((b) => b.id) || [];
+
+    // 매칭되는 책이 없으면 빈 결과 반환 (early return)
+    if (matchingBookIds.length === 0) {
+      // 통계만 조회해서 반환
+      let statsQuery = supabase
+        .from("user_books")
+        .select("status")
+        .eq("user_id", currentUser.id);
+
+      if (bookshelfId && cachedBookshelf && !cachedBookshelf.is_main) {
+        statsQuery = statsQuery.eq("bookshelf_id", bookshelfId);
+      }
+
+      const { data: allUserBooks } = await statsQuery;
+
+      return {
+        books: [],
+        stats: {
+          total: allUserBooks?.length || 0,
+          reading: allUserBooks?.filter((ub) => ub.status === "reading").length || 0,
+          completed: allUserBooks?.filter((ub) => ub.status === "completed").length || 0,
+          paused: allUserBooks?.filter((ub) => ub.status === "paused").length || 0,
+          not_started: allUserBooks?.filter((ub) => ub.status === "not_started").length || 0,
+          rereading: allUserBooks?.filter((ub) => ub.status === "rereading").length || 0,
+        },
+      };
+    }
+  }
+
+  // === 병렬 쿼리 실행 시작 ===
+  // 상태별 통계 조회 쿼리 준비
+  let statsQueryBuilder = supabase
     .from("user_books")
     .select("status")
     .eq("user_id", currentUser.id);
 
-  // bookshelfId가 제공되면 해당 서재의 책만으로 통계 계산
   if (bookshelfId && cachedBookshelf && !cachedBookshelf.is_main) {
-    // 메인 서재가 아니면 해당 서재의 책만 조회
-    statsQuery = statsQuery.eq("bookshelf_id", bookshelfId);
+    statsQueryBuilder = statsQueryBuilder.eq("bookshelf_id", bookshelfId);
   }
-  // 메인 서재면 필터링하지 않음 (모든 서재의 책 조회)
 
-  const { data: allUserBooks } = await statsQuery;
-
-  const stats: BookStats = {
-    total: allUserBooks?.length || 0,
-    reading: allUserBooks?.filter((ub) => ub.status === "reading").length || 0,
-    completed: allUserBooks?.filter((ub) => ub.status === "completed").length || 0,
-    paused: allUserBooks?.filter((ub) => ub.status === "paused").length || 0,
-    not_started: allUserBooks?.filter((ub) => ub.status === "not_started").length || 0,
-    rereading: allUserBooks?.filter((ub) => ub.status === "rereading").length || 0,
-  };
-
-  // 책 목록 조회
-  // reading_reason 컬럼이 아직 없을 수 있으므로 선택적으로 처리
-  let booksQuery = supabase
+  // 책 목록 조회 쿼리 준비
+  let booksQueryBuilder = supabase
     .from("user_books")
     .select(
       `
@@ -1007,45 +1034,46 @@ export async function getUserBooksWithNotes(
     .eq("user_id", currentUser.id)
     .order("created_at", { ascending: false });
 
-  // bookshelfId 필터링 (캐싱된 bookshelf 정보 재사용)
-  // null이거나 제공되지 않으면 모든 서재의 책 조회 (메인 서재 뷰)
-  // 특정 서재 ID가 제공되면 해당 서재의 책만 조회
+  // bookshelfId 필터링
   if (bookshelfId && cachedBookshelf && !cachedBookshelf.is_main) {
-    // 메인 서재가 아니면 해당 서재의 책만 조회
-    booksQuery = booksQuery.eq("bookshelf_id", bookshelfId);
+    booksQueryBuilder = booksQueryBuilder.eq("bookshelf_id", bookshelfId);
   }
-  // 메인 서재면 필터링하지 않음 (모든 서재의 책 조회)
 
   // 상태 필터 적용
   if (status) {
-    booksQuery = booksQuery.eq("status", status);
+    booksQueryBuilder = booksQueryBuilder.eq("status", status);
   }
 
   // 검색어 필터 적용
-  if (query && query.trim()) {
-    const sanitizedQuery = query.trim();
-    // books 테이블에서 제목, 저자, ISBN으로 검색
-    const { data: matchingBooks } = await supabase
-      .from("books")
-      .select("id")
-      .or(
-        `title.ilike.%${sanitizedQuery}%,author.ilike.%${sanitizedQuery}%,isbn.ilike.%${sanitizedQuery}%`
-      );
-
-    const matchingBookIds = matchingBooks?.map((b) => b.id) || [];
-
-    if (matchingBookIds.length > 0) {
-      booksQuery = booksQuery.in("book_id", matchingBookIds);
-    } else {
-      // 매칭되는 책이 없으면 빈 결과 반환
-      return {
-        books: [],
-        stats,
-      };
-    }
+  if (matchingBookIds && matchingBookIds.length > 0) {
+    booksQueryBuilder = booksQueryBuilder.in("book_id", matchingBookIds);
   }
 
-  const { data: userBooks, error } = await booksQuery;
+  // 사용자 멤버십 조회 쿼리 준비
+  const membershipQueryBuilder = supabase
+    .from("group_members")
+    .select("group_id, groups!inner(id, name, leader_id)")
+    .eq("user_id", currentUser.id)
+    .eq("status", "approved");
+
+  // 3개 쿼리 병렬 실행
+  const [statsResult, booksResult, membershipResult] = await Promise.all([
+    statsQueryBuilder,
+    booksQueryBuilder,
+    membershipQueryBuilder,
+  ]);
+
+  const allUserBooks = statsResult.data;
+  const stats: BookStats = {
+    total: allUserBooks?.length || 0,
+    reading: allUserBooks?.filter((ub) => ub.status === "reading").length || 0,
+    completed: allUserBooks?.filter((ub) => ub.status === "completed").length || 0,
+    paused: allUserBooks?.filter((ub) => ub.status === "paused").length || 0,
+    not_started: allUserBooks?.filter((ub) => ub.status === "not_started").length || 0,
+    rereading: allUserBooks?.filter((ub) => ub.status === "rereading").length || 0,
+  };
+
+  const { data: userBooks, error } = booksResult;
 
   if (error) {
     throw new Error(`책 목록 조회 실패: ${error.message}`);
@@ -1058,26 +1086,23 @@ export async function getUserBooksWithNotes(
     };
   }
 
-  // 사용자가 멤버인 모임의 지정도서 정보 조회
-  const { data: userMemberships } = await supabase
-    .from("group_members")
-    .select("group_id, groups!inner(id, name, leader_id)")
-    .eq("user_id", currentUser.id)
-    .eq("status", "approved");
+  const { data: userMemberships } = membershipResult;
 
+  // === 두 번째 병렬 쿼리 세트 준비 ===
+  const bookIds = userBooks
+    .map((ub: any) => ub.books?.id)
+    .filter((id: string | undefined): id is string => !!id);
+  const userBookIds = userBooks.map((ub: any) => ub.id);
   const userGroupIds = (userMemberships || []).map((m: any) => m.group_id);
-  let groupBooksMap: Record<string, any[]> = {};
 
-  if (userGroupIds.length > 0) {
-    const bookIds = userBooks
-      .map((ub: any) => ub.books?.id)
-      .filter((id: string) => id);
-    
-    if (bookIds.length > 0) {
-      const { data: groupBooks } = await supabase
+  // === 병렬 쿼리 실행 (그룹도서, 노트, 연결책) ===
+  const hasGroupsAndBooks = userGroupIds.length > 0 && bookIds.length > 0;
+
+  // 쿼리 준비 (조건부로 실행)
+  const groupBooksPromise = hasGroupsAndBooks
+    ? supabase
         .from("group_books")
-        .select(
-          `
+        .select(`
           book_id,
           group_id,
           groups (
@@ -1085,55 +1110,72 @@ export async function getUserBooksWithNotes(
             name,
             leader_id
           )
-        `
-        )
+        `)
         .in("group_id", userGroupIds)
-        .in("book_id", bookIds);
+        .in("book_id", bookIds)
+    : Promise.resolve({ data: [] as any[] });
 
-      // book_id별로 그룹 정보 그룹화
-      groupBooksMap = (groupBooks || []).reduce((acc: any, gb: any) => {
-        const bookId = gb.book_id;
-        if (!acc[bookId]) {
-          acc[bookId] = [];
-        }
-        if (gb.groups) {
-          acc[bookId].push({
-            group_id: gb.group_id,
-            group_name: gb.groups.name,
-            group_leader_id: gb.groups.leader_id,
-          });
-        }
-        return acc;
-      }, {});
+  const notesPromise = bookIds.length > 0
+    ? supabase
+        .from("notes")
+        .select("id, type, content, created_at, book_id")
+        .eq("user_id", currentUser.id)
+        .in("book_id", bookIds)
+        .order("created_at", { ascending: false })
+    : Promise.resolve({ data: [] as any[] });
+
+  const relationsPromise = userBookIds.length > 0
+    ? supabase
+        .from("user_book_relations")
+        .select(`
+          source_user_book_id,
+          target_user_book_id,
+          target_book:user_books!user_book_relations_target_user_book_id_fkey (
+            id,
+            books (
+              title,
+              cover_image_url
+            )
+          )
+        `)
+        .eq("user_id", currentUser.id)
+        .in("source_user_book_id", userBookIds)
+        .order("created_at", { ascending: false })
+    : Promise.resolve({ data: [] as any[] });
+
+  // 병렬 쿼리 실행
+  const [groupBooksResult, notesResult, relationsResult] = await Promise.all([
+    groupBooksPromise,
+    notesPromise,
+    relationsPromise,
+  ]);
+
+  // 결과 처리: 그룹 도서
+  let groupBooksMap: Record<string, any[]> = {};
+  const groupBooks = groupBooksResult?.data || [];
+  groupBooksMap = groupBooks.reduce((acc: any, gb: any) => {
+    const bookId = gb.book_id;
+    if (!acc[bookId]) {
+      acc[bookId] = [];
     }
-  }
+    if (gb.groups) {
+      acc[bookId].push({
+        group_id: gb.group_id,
+        group_name: gb.groups.name,
+        group_leader_id: gb.groups.leader_id,
+      });
+    }
+    return acc;
+  }, {});
 
-  // 배치 쿼리로 모든 책의 노트 정보를 한 번에 조회 (N+1 문제 해결)
-  const bookIds = userBooks
-    .map((ub: any) => ub.books?.id)
-    .filter((id: string | undefined): id is string => !!id);
-
-  // 1. 모든 노트를 한 번에 조회 (노트 개수 및 최근 노트용)
-  let notesData: any[] = [];
-  if (bookIds.length > 0) {
-    const { data: allNotes } = await supabase
-      .from("notes")
-      .select("id, type, content, created_at, book_id")
-      .eq("user_id", currentUser.id)
-      .in("book_id", bookIds)
-      .order("created_at", { ascending: false });
-    notesData = allNotes || [];
-  }
-
-  // 2. 메모리에서 book_id별로 그룹화하여 개수와 최근 노트 계산
+  // 결과 처리: 노트
+  const notesData = notesResult?.data || [];
   const noteCountMap: Record<string, number> = {};
   const latestNoteMap: Record<string, any> = {};
 
   for (const note of notesData) {
     const bookId = note.book_id;
-    // 개수 집계
     noteCountMap[bookId] = (noteCountMap[bookId] || 0) + 1;
-    // 최근 노트 (이미 created_at 내림차순 정렬되어 있음)
     if (!latestNoteMap[bookId]) {
       latestNoteMap[bookId] = {
         id: note.id,
@@ -1144,49 +1186,27 @@ export async function getUserBooksWithNotes(
     }
   }
 
-  // 2.5. 연결된 책 정보 조회 (user_book_relations)
-  const userBookIds = userBooks.map((ub: any) => ub.id);
+  // 결과 처리: 연결된 책
   let relatedBooksMap: Record<string, RelatedBookPreview[]> = {};
+  const relations = relationsResult?.data || [];
+  for (const relation of relations) {
+    const sourceId = relation.source_user_book_id;
+    const targetBook = relation.target_book as any;
 
-  if (userBookIds.length > 0) {
-    const { data: relations } = await supabase
-      .from("user_book_relations")
-      .select(`
-        source_user_book_id,
-        target_user_book_id,
-        target_book:user_books!user_book_relations_target_user_book_id_fkey (
-          id,
-          books (
-            title,
-            cover_image_url
-          )
-        )
-      `)
-      .eq("user_id", currentUser.id)
-      .in("source_user_book_id", userBookIds)
-      .order("created_at", { ascending: false });
+    if (!relatedBooksMap[sourceId]) {
+      relatedBooksMap[sourceId] = [];
+    }
 
-    // source_user_book_id별로 연결된 책 그룹화 (최대 3개)
-    for (const relation of relations || []) {
-      const sourceId = relation.source_user_book_id;
-      const targetBook = relation.target_book as any;
-
-      if (!relatedBooksMap[sourceId]) {
-        relatedBooksMap[sourceId] = [];
-      }
-
-      // 최대 3개만 저장
-      if (relatedBooksMap[sourceId].length < 3 && targetBook?.books) {
-        relatedBooksMap[sourceId].push({
-          userBookId: relation.target_user_book_id,
-          coverImageUrl: targetBook.books.cover_image_url || null,
-          title: targetBook.books.title || "알 수 없는 책",
-        });
-      }
+    if (relatedBooksMap[sourceId].length < 3 && targetBook?.books) {
+      relatedBooksMap[sourceId].push({
+        userBookId: relation.target_user_book_id,
+        coverImageUrl: targetBook.books.cover_image_url || null,
+        title: targetBook.books.title || "알 수 없는 책",
+      });
     }
   }
 
-  // 3. 결과 매핑 (추가 쿼리 없이 메모리에서 처리)
+  // 결과 매핑 (추가 쿼리 없이 메모리에서 처리)
   const booksWithNotes = userBooks.map((userBook: any) => {
     const bookId = userBook.books?.id;
     // reading_reason은 이미 user_books 조회 시 포함되어 있을 수 있음
@@ -1505,40 +1525,59 @@ export async function deleteBook(userBookId: string, user?: User | null) {
     // 기록 조회 실패해도 책 삭제는 진행
   }
 
-  // 기록의 이미지 파일 삭제
+  // 기록의 이미지 파일 삭제 (버킷별 일괄 삭제로 성능 최적화)
   if (notes && notes.length > 0) {
+    // 버킷별로 파일 경로 수집
+    const bucketPathsMap = new Map<string, string[]>();
+
     for (const note of notes) {
       if (note.image_url) {
         try {
           const url = new URL(note.image_url);
           const pathParts = url.pathname.split("/storage/v1/object/public/");
-          
+
           if (pathParts.length === 2) {
             const fullPath = pathParts[1];
             const pathSegments = fullPath.split("/");
-            
+
             if (pathSegments.length >= 2) {
               const bucket = pathSegments[0];
               const filePath = pathSegments.slice(1).join("/");
 
-              const { error: removeError } = await supabase.storage
-                .from(bucket)
-                .remove([filePath]);
-
-              if (removeError) {
-                const safeError = sanitizeErrorForLogging(removeError);
-                console.error("이미지 삭제 오류:", safeError);
-                // 이미지 삭제 실패해도 책 삭제는 진행
+              if (!bucketPathsMap.has(bucket)) {
+                bucketPathsMap.set(bucket, []);
               }
+              bucketPathsMap.get(bucket)!.push(filePath);
             }
           }
         } catch (error) {
           const safeError = sanitizeErrorForLogging(error);
-          console.error("이미지 삭제 오류:", safeError);
-          // 이미지 삭제 실패해도 책 삭제는 진행
+          console.error("이미지 URL 파싱 오류:", safeError);
         }
       }
     }
+
+    // 버킷별 일괄 삭제 실행
+    const deletePromises = Array.from(bucketPathsMap.entries()).map(
+      async ([bucket, paths]) => {
+        try {
+          const { error: removeError } = await supabase.storage
+            .from(bucket)
+            .remove(paths);
+
+          if (removeError) {
+            const safeError = sanitizeErrorForLogging(removeError);
+            console.error(`[${bucket}] 이미지 일괄 삭제 오류:`, safeError);
+          }
+        } catch (error) {
+          const safeError = sanitizeErrorForLogging(error);
+          console.error(`[${bucket}] 이미지 삭제 오류:`, safeError);
+        }
+      }
+    );
+
+    // 모든 버킷 삭제 작업을 병렬로 실행 (실패해도 책 삭제는 진행)
+    await Promise.all(deletePromises);
   }
 
   // user_books에서 삭제 (CASCADE로 notes도 자동 삭제됨)

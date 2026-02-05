@@ -35,7 +35,10 @@ const CACHE_TTL_HOURS = 6;
 const DEFAULT_PAGE_SIZE = 10;
 
 /** 표지 보강할 최대 도서 수 (성능 고려) */
-const MAX_COVER_ENRICH_COUNT = 5;
+const MAX_COVER_ENRICH_COUNT = 8;
+
+/** 표지 조회 타임아웃 (ms) */
+const COVER_FETCH_TIMEOUT = 3000;
 
 // ============================================
 // 메인 서버 액션
@@ -411,8 +414,18 @@ function transformCacheToPopularBook(cache: ExternalPopularBook): PopularBook {
 }
 
 /**
+ * 타임아웃이 있는 Promise 래퍼
+ */
+function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((resolve) => setTimeout(() => resolve(fallback), ms)),
+  ]);
+}
+
+/**
  * 표지가 없는 도서에 대해 네이버 API / Open Library로 표지 보강
- * 성능을 위해 상위 N권만 처리
+ * 성능을 위해 상위 N권만 처리, 타임아웃 적용
  */
 async function enrichBooksWithCoverImages(books: PopularBook[]): Promise<PopularBook[]> {
   // 표지가 없는 도서 필터링 (상위 N권만)
@@ -425,29 +438,37 @@ async function enrichBooksWithCoverImages(books: PopularBook[]): Promise<Popular
 
   console.log(`[popular-books] 표지 보강 시작: ${toEnrich.length}권`);
 
-  // 병렬로 표지 조회
+  // 병렬로 표지 조회 (타임아웃 적용)
   const coverResults = await Promise.allSettled(
     toEnrich.map(async (book) => {
-      // 1. 네이버 API 시도
-      try {
-        const naverResponse = await searchBooks({ query: book.isbn13, display: 1 });
-        if (naverResponse.items && naverResponse.items.length > 0) {
-          const naverBook = transformNaverBookItem(naverResponse.items[0]);
-          if (naverBook.cover_image_url) {
-            return { isbn13: book.isbn13, coverUrl: naverBook.cover_image_url, source: "naver" };
+      const fallbackResult = { isbn13: book.isbn13, coverUrl: null as string | null, source: null as string | null };
+
+      return withTimeout(
+        (async () => {
+          // 1. 네이버 API 시도
+          try {
+            const naverResponse = await searchBooks({ query: book.isbn13, display: 1 });
+            if (naverResponse.items && naverResponse.items.length > 0) {
+              const naverBook = transformNaverBookItem(naverResponse.items[0]);
+              if (naverBook.cover_image_url) {
+                return { isbn13: book.isbn13, coverUrl: naverBook.cover_image_url, source: "naver" };
+              }
+            }
+          } catch (err) {
+            // 네이버 API 실패 시 Open Library 폴백
           }
-        }
-      } catch (err) {
-        // 네이버 API 실패 시 Open Library 폴백
-      }
 
-      // 2. Open Library 폴백 (HEAD 요청 없이 URL만 생성)
-      const openLibraryCover = getOpenLibraryCoverUrl(book.isbn13, "M");
-      if (openLibraryCover) {
-        return { isbn13: book.isbn13, coverUrl: openLibraryCover, source: "openlibrary" };
-      }
+          // 2. Open Library 폴백 (HEAD 요청 없이 URL만 생성)
+          const openLibraryCover = getOpenLibraryCoverUrl(book.isbn13, "M");
+          if (openLibraryCover) {
+            return { isbn13: book.isbn13, coverUrl: openLibraryCover, source: "openlibrary" };
+          }
 
-      return { isbn13: book.isbn13, coverUrl: null, source: null };
+          return fallbackResult;
+        })(),
+        COVER_FETCH_TIMEOUT,
+        fallbackResult
+      );
     })
   );
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Card } from "@/components/ui/card";
@@ -105,7 +105,8 @@ export function HomeHeroSection({
 
   const displayGreeting = mounted ? greeting : { text: "안녕하세요", emoji: "" };
 
-  const getTimeBasedCue = () => {
+  // 시간대별 메시지 (useMemo로 캐싱)
+  const timeBasedCue = useMemo(() => {
     const hour = new Date().getHours();
     if (hour >= 5 && hour < 9) {
       return "아침 10분 독서로 하루를 시작해볼까요?";
@@ -120,11 +121,14 @@ export function HomeHeroSection({
     } else {
       return "조용한 밤, 책 읽기 좋은 시간이에요.";
     }
-  };
+  }, []); // 컴포넌트 마운트 시 한 번만 계산
 
-  const getContextualMessage = () => {
+  // 컨텍스트 기반 메시지 (useMemo로 캐싱)
+  const motivationalMessage = useMemo(() => {
+    if (!mounted) return "독서의 흔적을 남겨보세요";
+
     if (continueReadingBooks.length > 0) {
-      return getTimeBasedCue();
+      return timeBasedCue;
     }
     if (streak >= 3) {
       return getStreakMessage(streak);
@@ -140,9 +144,7 @@ export function HomeHeroSection({
       return getMotivationalMessage("visualFocused");
     }
     return getMotivationalMessage("default");
-  };
-
-  const motivationalMessage = mounted ? getContextualMessage() : "독서의 흔적을 남겨보세요";
+  }, [mounted, continueReadingBooks.length, streak, weeklyNotes, persona?.note_style, timeBasedCue, getStreakMessage, getMotivationalMessage]);
 
   // 기록 유형 분포 계산
   const noteDistribution = stats?.noteTypeDistribution;

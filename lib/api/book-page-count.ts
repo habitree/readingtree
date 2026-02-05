@@ -307,17 +307,30 @@ function isValidPageCount(pageCount: number): boolean {
 // ============================================
 
 /**
- * 복합 전략으로 책 페이지 수 조회
+ * 복합 전략으로 책 페이지 수 조회 (병렬 실행으로 성능 최적화)
  *
  * 우선순위:
  * 1. 국립중앙도서관 ISBN서지정보 API
  * 2. 알라딘 상품조회 API
  * 3. Google Books API
  *
+ * 모든 API를 병렬로 호출하고 우선순위에 따라 결과 반환
+ *
  * @param isbn ISBN (10자리 또는 13자리)
  * @returns 페이지 수와 출처 정보
  */
 export async function fetchBookPageCount(isbn: string): Promise<PageCountResult> {
+  // 병렬 함수로 위임 (약 67% 시간 단축)
+  return fetchBookPageCountParallel(isbn);
+}
+
+/**
+ * 순차 폴백으로 책 페이지 수 조회 (API 호출 비용 최소화)
+ *
+ * 우선순위대로 순차 실행, 성공 시 즉시 반환
+ * 네트워크 비용이 중요한 경우 사용
+ */
+export async function fetchBookPageCountSequential(isbn: string): Promise<PageCountResult> {
   if (!isbn || !isValidIsbn(isbn)) {
     return { pageCount: null, source: null, error: "유효하지 않은 ISBN입니다." };
   }

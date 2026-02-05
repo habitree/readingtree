@@ -1,4 +1,3 @@
-import { Suspense } from "react";
 import { BookList } from "@/components/books/book-list";
 import { BookTable } from "@/components/books/book-table";
 import { BookListView } from "@/components/books/book-list-view";
@@ -6,7 +5,7 @@ import { BookStatsCards } from "@/components/books/book-stats-cards";
 import { BookSearchInput } from "@/components/books/book-search-input";
 import { ViewModeToggle } from "@/components/books/view-mode-toggle";
 import { StatusFilter } from "@/components/books/status-filter";
-import { getUserBooksWithNotes } from "@/app/actions/books";
+import { getUserBooksWithNotes, type BookStats } from "@/app/actions/books";
 import { getSampleBooksWithNotes, getSampleBookshelfBooks } from "@/app/actions/sample";
 import type { ReadingStatus } from "@/types/book";
 
@@ -19,11 +18,20 @@ interface BookshelfPageContentProps {
   isGuest?: boolean;
 }
 
+// 공통 책 데이터 타입
+interface BookDataResult {
+  books: any[];
+  stats: BookStats;
+  isSample: boolean;
+}
+
 /**
  * 서재 페이지 공통 컨텐츠 컴포넌트
  * 내 서재와 서재 개별 페이지에서 공통으로 사용
+ *
+ * 성능 최적화: 데이터를 한 번만 조회하여 모든 하위 컴포넌트에 전달
  */
-export function BookshelfPageContent({
+export async function BookshelfPageContent({
   status,
   query,
   view,
@@ -31,12 +39,13 @@ export function BookshelfPageContent({
   bookshelfId,
   isGuest = false,
 }: BookshelfPageContentProps) {
+  // 데이터 한 번만 조회 (중복 호출 제거)
+  const bookData = await fetchBookData(status, query, user, bookshelfId, isGuest);
+
   return (
     <>
-      {/* 통계 카드 - 게스트도 샘플 통계 표시 */}
-      <Suspense fallback={<div className="h-32" />}>
-        <BookshelfStats status={status} query={query} user={user} bookshelfId={bookshelfId} isGuest={isGuest} />
-      </Suspense>
+      {/* 통계 카드 - 조회된 데이터에서 stats 사용 */}
+      <BookStatsCards stats={bookData.stats} />
 
       {/* 필터 및 검색 - 모바일에서 상단 고정 */}
       <div className="sticky top-12 sm:top-14 z-30 -mx-2 sm:-mx-4 px-2 sm:px-4 py-2 bg-background/95 backdrop-blur-sm border-b lg:relative lg:top-0 lg:mx-0 lg:px-0 lg:py-0 lg:bg-transparent lg:backdrop-blur-none lg:border-b-0">
@@ -55,186 +64,119 @@ export function BookshelfPageContent({
 
       {/* 책 목록 (그리드 또는 테이블/리스트) */}
       {/* 모바일에서는 리스트 뷰, 데스크톱에서는 테이블 뷰 */}
-      <Suspense fallback={<BookList books={[]} isLoading />}>
-        {view === "table" && !isGuest ? (
-          <>
-            {/* 테이블 뷰: 모바일에서는 리스트 뷰, 데스크톱에서는 테이블 뷰 */}
-            <div className="lg:hidden">
-              <BooksListViewContent status={status} query={query} user={user} bookshelfId={bookshelfId} />
-            </div>
-            <div className="hidden lg:block">
-              <BooksTableContent status={status} query={query} user={user} bookshelfId={bookshelfId} />
-            </div>
-          </>
-        ) : (
-          /* 그리드 뷰 또는 게스트 사용자 */
-          <BooksListGrid status={status} query={query} user={user} bookshelfId={bookshelfId} />
-        )}
-      </Suspense>
+      {view === "table" && !isGuest ? (
+        <>
+          {/* 테이블 뷰: 모바일에서는 리스트 뷰, 데스크톱에서는 테이블 뷰 */}
+          <div className="lg:hidden">
+            <BooksListViewRenderer booksData={bookData.books} />
+          </div>
+          <div className="hidden lg:block">
+            <BooksTableRenderer booksData={bookData.books} />
+          </div>
+        </>
+      ) : (
+        /* 그리드 뷰 또는 게스트 사용자 */
+        <BooksListRenderer booksData={bookData.books} isSample={bookData.isSample} />
+      )}
     </>
   );
 }
 
-async function BookshelfStats({
-  status,
-  query,
-  user,
-  bookshelfId,
-  isGuest = false,
-}: {
-  status?: ReadingStatus;
-  query?: string;
-  user?: any;
-  bookshelfId?: string;
-  isGuest?: boolean;
-}) {
+/**
+ * 데이터 조회 함수 - 한 번만 호출하여 stats와 books 모두 반환
+ */
+async function fetchBookData(
+  status?: ReadingStatus,
+  query?: string,
+  user?: any,
+  bookshelfId?: string,
+  isGuest?: boolean
+): Promise<BookDataResult> {
+  const defaultStats: BookStats = {
+    total: 0,
+    reading: 0,
+    completed: 0,
+    paused: 0,
+    not_started: 0,
+    rereading: 0,
+  };
+
   try {
     if (isGuest || !user) {
-      // 게스트 사용자: 샘플 데이터 통계
+      // 게스트 사용자: 샘플 데이터 조회
       if (bookshelfId) {
-        // 특정 서재의 샘플 통계
-        const { stats } = await getSampleBookshelfBooks(bookshelfId, status, query);
-        return <BookStatsCards stats={stats} />;
+        const { books, stats } = await getSampleBookshelfBooks(bookshelfId, status, query);
+        return { books: books || [], stats: stats || defaultStats, isSample: true };
       }
-      const { stats } = await getSampleBooksWithNotes(status, query);
-      return <BookStatsCards stats={stats} />;
-    }
-    const { stats } = await getUserBooksWithNotes(status, query, user, bookshelfId);
-    return <BookStatsCards stats={stats} />;
-  } catch (error) {
-    console.error("BookshelfStats 오류:", error);
-    return null;
-  }
-}
-
-async function BooksTableContent({
-  status,
-  query,
-  user,
-  bookshelfId,
-}: {
-  status?: ReadingStatus;
-  query?: string;
-  user?: any;
-  bookshelfId?: string;
-}) {
-  try {
-    const { books } = await getUserBooksWithNotes(status, query, user, bookshelfId);
-    return <BookTable books={books} />;
-  } catch (error) {
-    console.error("BooksTableContent 오류:", error);
-    return <BookTable books={[]} />;
-  }
-}
-
-async function BooksListGrid({
-  status,
-  query,
-  user,
-  bookshelfId,
-}: {
-  status?: ReadingStatus;
-  query?: string;
-  user?: any;
-  bookshelfId?: string;
-}) {
-  try {
-    let booksData: any[] = [];
-    let isSample = false;
-
-    if (!user) {
-      // 게스트 사용자: 관리자(샘플) 데이터 조회
-      try {
-        if (bookshelfId) {
-          // 특정 서재의 샘플 책 목록
-          const { books: sampleBooks } = await getSampleBookshelfBooks(bookshelfId, status, query);
-          booksData = sampleBooks || [];
-        } else {
-          const { books: sampleBooks } = await getSampleBooksWithNotes(status, query);
-          booksData = sampleBooks || [];
-        }
-        isSample = true;
-      } catch (error) {
-        console.error("BooksListGrid: getSampleBooks 오류:", error);
-        booksData = [];
-      }
-    } else {
-      // 인증된 사용자: 기록 정보 포함 조회
-      try {
-        const { books: booksWithNotes } = await getUserBooksWithNotes(status, query, user, bookshelfId);
-        booksData = booksWithNotes || [];
-      } catch (error) {
-        console.error("BooksListGrid: getUserBooksWithNotes 오류:", error);
-        booksData = [];
-      }
+      const { books, stats } = await getSampleBooksWithNotes(status, query);
+      return { books: books || [], stats: stats || defaultStats, isSample: true };
     }
 
-    // BookList 컴포넌트가 기대하는 형태로 변환
-    const books = booksData
-      .filter((item) => item.books && item.books.id)
-      .map((item) => ({
-        id: item.id,
-        status: item.status,
-        books: {
-          id: item.books.id,
-          title: item.books.title,
-          author: item.books.author,
-          publisher: item.books.publisher,
-          isbn: item.books.isbn,
-          cover_image_url: item.books.cover_image_url,
-          published_date: item.books.published_date || null,
-          created_at: item.books.created_at || "",
-          updated_at: item.books.updated_at || "",
-        },
-        groupBooks: item.groupBooks || [],
-        relatedBooks: item.relatedBooks || [],
-      }));
-
-    return <BookList books={books} isSample={isSample} />;
+    // 인증된 사용자: 실제 데이터 조회
+    const { books, stats } = await getUserBooksWithNotes(status, query, user, bookshelfId);
+    return { books: books || [], stats: stats || defaultStats, isSample: false };
   } catch (error) {
-    console.error("BooksListGrid 렌더링 오류:", error);
-    return <BookList books={[]} />;
+    console.error("fetchBookData 오류:", error);
+    return { books: [], stats: defaultStats, isSample: false };
   }
 }
 
 /**
- * 모바일용 리스트 뷰 (테이블 뷰의 모바일 대체)
+ * 테이블 뷰 렌더러 (데이터를 props로 받음)
  */
-async function BooksListViewContent({
-  status,
-  query,
-  user,
-  bookshelfId,
-}: {
-  status?: ReadingStatus;
-  query?: string;
-  user?: any;
-  bookshelfId?: string;
-}) {
-  try {
-    const { books: booksData } = await getUserBooksWithNotes(status, query, user, bookshelfId);
+function BooksTableRenderer({ booksData }: { booksData: any[] }) {
+  return <BookTable books={booksData} />;
+}
 
-    // BookListView 컴포넌트가 기대하는 형태로 변환
-    const books = (booksData || [])
-      .filter((item) => item.books && item.books.id)
-      .map((item) => ({
-        id: item.id,
-        status: item.status,
-        books: {
-          id: item.books.id,
-          title: item.books.title,
-          author: item.books.author,
-          publisher: item.books.publisher,
-          isbn: item.books.isbn,
-          cover_image_url: item.books.cover_image_url,
-          published_date: item.books.published_date || null,
-        },
-        groupBooks: item.groupBooks || [],
-      }));
+/**
+ * 그리드 뷰 렌더러 (데이터를 props로 받음)
+ */
+function BooksListRenderer({ booksData, isSample = false }: { booksData: any[]; isSample?: boolean }) {
+  // BookList 컴포넌트가 기대하는 형태로 변환
+  const books = booksData
+    .filter((item) => item.books && item.books.id)
+    .map((item) => ({
+      id: item.id,
+      status: item.status,
+      books: {
+        id: item.books.id,
+        title: item.books.title,
+        author: item.books.author,
+        publisher: item.books.publisher,
+        isbn: item.books.isbn,
+        cover_image_url: item.books.cover_image_url,
+        published_date: item.books.published_date || null,
+        created_at: item.books.created_at || "",
+        updated_at: item.books.updated_at || "",
+      },
+      groupBooks: item.groupBooks || [],
+      relatedBooks: item.relatedBooks || [],
+    }));
 
-    return <BookListView books={books} />;
-  } catch (error) {
-    console.error("BooksListViewContent 오류:", error);
-    return <BookListView books={[]} />;
-  }
+  return <BookList books={books} isSample={isSample} />;
+}
+
+/**
+ * 모바일용 리스트 뷰 렌더러 (데이터를 props로 받음)
+ */
+function BooksListViewRenderer({ booksData }: { booksData: any[] }) {
+  // BookListView 컴포넌트가 기대하는 형태로 변환
+  const books = booksData
+    .filter((item) => item.books && item.books.id)
+    .map((item) => ({
+      id: item.id,
+      status: item.status,
+      books: {
+        id: item.books.id,
+        title: item.books.title,
+        author: item.books.author,
+        publisher: item.books.publisher,
+        isbn: item.books.isbn,
+        cover_image_url: item.books.cover_image_url,
+        published_date: item.books.published_date || null,
+      },
+      groupBooks: item.groupBooks || [],
+    }));
+
+  return <BookListView books={books} />;
 }
