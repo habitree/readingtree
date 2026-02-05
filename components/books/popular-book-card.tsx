@@ -189,20 +189,37 @@ function PopularBookCardComponent({
             </div>
           )}
 
-          {/* 서재 추가 버튼 (호버 시 표시) */}
+          {/* 서재 추가 버튼 (PC: 호버 시 표시, 모바일: 우하단 항상 표시) */}
           {showAddButton && (
-            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+            <>
+              {/* PC용 오버레이 버튼 */}
+              <div className="hidden sm:flex absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity items-center justify-center">
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  className="gap-1"
+                  onClick={handleAddToLibrary}
+                  disabled={isAdding}
+                >
+                  <Plus className="w-4 h-4" />
+                  {isAdding ? "추가 중..." : "내 서재에 추가"}
+                </Button>
+              </div>
+              {/* 모바일용 하단 버튼 */}
               <Button
-                size="sm"
+                size="icon"
                 variant="secondary"
-                className="gap-1"
+                className="sm:hidden absolute bottom-2 right-2 w-8 h-8 rounded-full shadow-lg"
                 onClick={handleAddToLibrary}
                 disabled={isAdding}
               >
-                <Plus className="w-4 h-4" />
-                {isAdding ? "추가 중..." : "내 서재에 추가"}
+                {isAdding ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Plus className="w-4 h-4" />
+                )}
               </Button>
-            </div>
+            </>
           )}
         </div>
 

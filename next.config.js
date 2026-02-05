@@ -21,6 +21,10 @@ const nextConfig = {
       },
       {
         protocol: 'https',
+        hostname: 'bookthumb-phinf.pstatic.net',
+      },
+      {
+        protocol: 'https',
         hostname: 'shopping-phinf.pstatic.net',
       },
       {
@@ -30,6 +34,18 @@ const nextConfig = {
       {
         protocol: 'https',
         hostname: 'k.kakaocdn.net',
+      },
+      {
+        protocol: 'https',
+        hostname: 'covers.openlibrary.org',
+      },
+      {
+        protocol: 'https',
+        hostname: 'cover.nl.go.kr',
+      },
+      {
+        protocol: 'http',
+        hostname: 'cover.nl.go.kr',
       },
     ],
   },
