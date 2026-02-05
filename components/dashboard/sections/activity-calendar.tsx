@@ -34,6 +34,12 @@ const TYPE_COLORS = {
     text: "text-emerald-600 dark:text-emerald-400",
     label: "기록",
   },
+  progress: {
+    base: "bg-amber-400/90 dark:bg-amber-500/80",
+    light: "bg-amber-200 dark:bg-amber-800/50",
+    text: "text-amber-600 dark:text-amber-400",
+    label: "진행",
+  },
 };
 
 /**
@@ -128,15 +134,16 @@ export function ActivityCalendar({
     };
   }, []);
 
-  // 타입에 따른 색상 결정
-  const getDayColor = (records: DailyRecordByType | null, isFuture: boolean) => {
+  // 타입에 따른 색상 결정 (progress 타입 포함)
+  const getDayColor = useCallback((records: DailyRecordByType | null, isFuture: boolean) => {
     if (isFuture) return "bg-slate-100/50 dark:bg-slate-800/30";
     if (!records || records.total === 0) return "bg-slate-200/60 dark:bg-slate-700/40";
 
     const counts = {
-      transcription: records.transcription,
-      photo: records.photo,
-      memo: records.memo + records.quote,
+      transcription: records.transcription || 0,
+      photo: records.photo || 0,
+      memo: (records.memo || 0) + (records.quote || 0),
+      progress: records.progress || 0,
     };
 
     const maxType = Object.entries(counts).reduce((a, b) =>
@@ -144,7 +151,7 @@ export function ActivityCalendar({
     )[0] as keyof typeof TYPE_COLORS;
 
     return TYPE_COLORS[maxType].base;
-  };
+  }, []);
 
   // 선택된 날짜 정보
   const selectedDayInfo = useMemo(() => {
@@ -278,6 +285,11 @@ export function ActivityCalendar({
                       {(selectedDayInfo.records.memo > 0 || selectedDayInfo.records.quote > 0) && (
                         <span className="text-emerald-600 dark:text-emerald-400">
                           기록 {selectedDayInfo.records.memo + selectedDayInfo.records.quote}
+                        </span>
+                      )}
+                      {selectedDayInfo.records.progress > 0 && (
+                        <span className="text-amber-600 dark:text-amber-400">
+                          진행 {selectedDayInfo.records.progress}
                         </span>
                       )}
                     </>

@@ -81,6 +81,10 @@ export function MobileNoteForm({
     onSuccess: () => {
       onSaved?.();
     },
+    onError: (error) => {
+      // 에러 발생 시 사용자에게 토스트로 알림
+      toast.error(error.message || "기록 저장에 실패했습니다. 다시 시도해주세요.");
+    },
   });
 
   // 이미지 업로드 핸들러 (스탬프 옵션 적용)

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useCallback } from "react";
+import { useMemo, useState, useCallback, memo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -304,7 +304,11 @@ interface DayCellProps {
   onHoverEnd: () => void;
 }
 
-function DayCell({
+/**
+ * DayCell 컴포넌트 - 메모이제이션으로 불필요한 리렌더링 방지
+ * 35개 이상의 셀이 렌더링되므로 성능 최적화 필수
+ */
+const DayCell = memo(function DayCell({
   day,
   date,
   books,
@@ -379,14 +383,20 @@ function DayCell({
       </div>
     </div>
   );
-}
+});
+
+// DayCell displayName 설정 (React DevTools 디버깅용)
+DayCell.displayName = "DayCell";
 
 interface StackedBookCoversProps {
   books: DailyBookActivity["books"];
   isHovered: boolean;
 }
 
-function StackedBookCovers({ books, isHovered }: StackedBookCoversProps) {
+/**
+ * StackedBookCovers 컴포넌트 - 메모이제이션으로 책 표지 겹침 효과 최적화
+ */
+const StackedBookCovers = memo(function StackedBookCovers({ books, isHovered }: StackedBookCoversProps) {
   // 최대 3개까지 표시 (성능 최적화)
   const displayBooks = books.slice(0, 3);
   const remainingCount = Math.max(0, books.length - 3);
@@ -474,7 +484,10 @@ function StackedBookCovers({ books, isHovered }: StackedBookCoversProps) {
       )}
     </div>
   );
-}
+});
+
+// StackedBookCovers displayName 설정 (React DevTools 디버깅용)
+StackedBookCovers.displayName = "StackedBookCovers";
 
 interface SelectedDateDetailProps {
   date: string;
