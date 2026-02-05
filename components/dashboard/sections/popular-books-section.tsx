@@ -2,14 +2,12 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PopularBookCard } from "@/components/books/popular-book-card";
 import { getPopularBooks, type PopularBookCategory } from "@/app/actions/popular-books";
 import type { PopularBook } from "@/lib/api/data4library-types";
-import { TrendingUp, Flame, Sparkles, ChevronRight, AlertCircle } from "lucide-react";
+import { TrendingUp, Flame, Sparkles, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
-import Link from "next/link";
 
 interface PopularBooksSectionProps {
   /** 로그인 상태 (서재 추가 버튼 표시 여부) */
@@ -130,12 +128,6 @@ export function PopularBooksSection({
           <TrendingUp className="h-5 w-5 text-primary" />
           <h3 className="font-semibold text-base">인기 대출 도서</h3>
         </div>
-        <Link href="/explore/popular" className="hidden sm:flex">
-          <Button variant="ghost" size="sm" className="text-muted-foreground">
-            전체 보기
-            <ChevronRight className="ml-1 h-4 w-4" />
-          </Button>
-        </Link>
       </div>
 
       {/* 탭 네비게이션 */}
@@ -212,14 +204,6 @@ export function PopularBooksSection({
           </TabsContent>
         ))}
       </Tabs>
-
-      {/* 모바일 전체 보기 */}
-      <Link href="/explore/popular" className="sm:hidden block">
-        <Button variant="outline" size="sm" className="w-full">
-          전체 보기
-          <ChevronRight className="ml-1 h-4 w-4" />
-        </Button>
-      </Link>
 
       {/* 데이터 출처 안내 */}
       <p className="text-[10px] text-muted-foreground text-center">

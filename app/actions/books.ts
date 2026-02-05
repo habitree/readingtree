@@ -1,6 +1,6 @@
 "use server";
 
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { createServerSupabaseClient, createAdminSupabaseClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { searchBooks, transformNaverBookItem } from "@/lib/api/naver";
 import { fetchBookPageCount } from "@/lib/api/book-page-count";
@@ -217,18 +217,21 @@ export async function addBook(
       .maybeSingle();
 
     if (!mainBookshelf) {
-      // 메인 서재가 없으면 자동 생성
-      const { data: newBookshelf, error: createBookshelfError } = await supabase
+      // 메인 서재가 없으면 자동 생성 (RLS 우회를 위해 admin 클라이언트 사용)
+      const adminClient = createAdminSupabaseClient();
+      const { data: newBookshelf, error: createBookshelfError } = await adminClient
         .from("bookshelves")
         .insert({
           user_id: currentUser.id,
           name: "내 서재",
           is_main: true,
+          order: 0,
         })
         .select("id")
         .single();
 
       if (createBookshelfError || !newBookshelf) {
+        console.error("[addBook] 메인 서재 생성 실패:", createBookshelfError);
         throw new Error("메인 서재 생성에 실패했습니다. 다시 시도해주세요.");
       }
       targetBookshelfId = newBookshelf.id;
