@@ -4,6 +4,7 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { searchBooks, transformNaverBookItem } from "@/lib/api/naver";
 import { fetchBookPageCount } from "@/lib/api/book-page-count";
+import { resolveOpenLibraryCoverUrl } from "@/lib/api/open-library-covers";
 import type { ReadingStatus } from "@/types/book";
 import { isValidUUID, sanitizeErrorForLogging } from "@/lib/utils/validation";
 import type { User } from "@supabase/supabase-js";
@@ -11,6 +12,11 @@ import { earnPoints, updateStreak } from "./points";
 
 // AI 관련 함수 (wrapper로 re-export - "use server" 파일에서는 async 함수만 export 가능)
 import { getBookDescriptionSummary as _getBookDescriptionSummary } from './ai/summarization';
+
+/** Open Library Covers 폴백: 요청당 최대 건수 (레이트리밋 5분 100회 고려) */
+const OPEN_LIBRARY_COVER_BATCH_LIMIT = 3;
+/** 표지 확인 HEAD 요청 타임아웃(ms) — 응답 지연 방지 */
+const OPEN_LIBRARY_COVER_TIMEOUT_MS = 1500;
 
 /**
  * 책소개 가져오기 (wrapper)
@@ -639,6 +645,28 @@ export async function getUserBooks(
       );
     }
 
+    // 네이버에서도 표지를 못 찾은 책만 Open Library Covers로 보강 (배치 수 제한으로 병목/레이트리밋 방지)
+    const stillWithoutCover = (sampleBooks || []).filter(
+      (b) => !b.cover_image_url && b.isbn
+    );
+    const toBackfill = stillWithoutCover.slice(0, OPEN_LIBRARY_COVER_BATCH_LIMIT);
+    for (const book of toBackfill) {
+      try {
+        const coverUrl = await resolveOpenLibraryCoverUrl(book.isbn!, {
+          timeoutMs: OPEN_LIBRARY_COVER_TIMEOUT_MS,
+        });
+        if (coverUrl) {
+          await supabase
+            .from("books")
+            .update({ cover_image_url: coverUrl })
+            .eq("id", book.id);
+          book.cover_image_url = coverUrl;
+        }
+      } catch {
+        // 타임아웃/네트워크 실패 시 무시
+      }
+    }
+
     // 모든 책 반환 (이미지가 업데이트된 책 포함)
     const booksWithImages = sampleBooks || [];
 
@@ -706,7 +734,28 @@ export async function getUserBooks(
     throw new Error(`책 목록 조회 실패: ${error.message}`);
   }
 
-  return data || [];
+  const list = data || [];
+  // 표지가 없는 책만 Open Library Covers로 보강 (요청당 최대 건수 제한)
+  const withoutCover = list.filter(
+    (ub) => ub.books && !(ub.books as { cover_image_url?: string | null }).cover_image_url && (ub.books as { isbn?: string | null }).isbn
+  );
+  const toBackfill = withoutCover.slice(0, OPEN_LIBRARY_COVER_BATCH_LIMIT);
+  for (const ub of toBackfill) {
+    const b = ub.books as { id: string; isbn: string | null; cover_image_url: string | null };
+    try {
+      const coverUrl = await resolveOpenLibraryCoverUrl(b.isbn!, {
+        timeoutMs: OPEN_LIBRARY_COVER_TIMEOUT_MS,
+      });
+      if (coverUrl) {
+        await supabase.from("books").update({ cover_image_url: coverUrl }).eq("id", b.id);
+        b.cover_image_url = coverUrl;
+      }
+    } catch {
+      // 무시
+    }
+  }
+
+  return list;
 }
 
 export interface RelatedBookPreview {
@@ -1194,18 +1243,36 @@ export async function getBookDetail(userBookId: string, user?: User | null) {
       let finalCoverImageUrl = sampleBook.cover_image_url;
       if (!finalCoverImageUrl && sampleBook.isbn) {
         try {
-          const { searchBooks, transformNaverBookItem } = await import("@/lib/api/naver");
-          const naverResponse = await searchBooks({ query: sampleBook.isbn, display: 1 });
+          const { searchBooks: searchNaver } = await import("@/lib/api/naver");
+          const naverResponse = await searchNaver({ query: sampleBook.isbn, display: 1 });
           if (naverResponse.items && naverResponse.items.length > 0) {
             finalCoverImageUrl = naverResponse.items[0].image;
-            // 데이터베이스 업데이트
             await supabase
               .from("books")
               .update({ cover_image_url: finalCoverImageUrl })
               .eq("id", sampleBook.id);
           }
         } catch (naverApiError) {
-          console.warn(`네이버 API 이미지 검색 실패 (ISBN: ${sampleBook.isbn}):`, naverApiError);
+          if (process.env.NODE_ENV === "development") {
+            console.warn(`네이버 API 이미지 검색 실패 (ISBN: ${sampleBook.isbn}):`, naverApiError);
+          }
+        }
+        // 네이버에서도 없으면 Open Library Covers 폴백 (타임아웃으로 응답 지연 제한)
+        if (!finalCoverImageUrl && sampleBook.isbn) {
+          try {
+            const openLibUrl = await resolveOpenLibraryCoverUrl(sampleBook.isbn, {
+              timeoutMs: OPEN_LIBRARY_COVER_TIMEOUT_MS,
+            });
+            if (openLibUrl) {
+              await supabase
+                .from("books")
+                .update({ cover_image_url: openLibUrl })
+                .eq("id", sampleBook.id);
+              finalCoverImageUrl = openLibUrl;
+            }
+          } catch {
+            // 무시
+          }
         }
       }
 
@@ -1268,6 +1335,25 @@ export async function getBookDetail(userBookId: string, user?: User | null) {
       userId: currentUser.id,
     });
     throw new Error("책을 찾을 수 없습니다.");
+  }
+
+  // 표지가 없고 ISBN이 있으면 Open Library Covers 폴백 1회 (타임아웃으로 병목 방지)
+  const bookRow = data.books as { id: string; isbn: string | null; cover_image_url: string | null } | null;
+  if (bookRow && !bookRow.cover_image_url && bookRow.isbn) {
+    try {
+      const openLibUrl = await resolveOpenLibraryCoverUrl(bookRow.isbn, {
+        timeoutMs: OPEN_LIBRARY_COVER_TIMEOUT_MS,
+      });
+      if (openLibUrl) {
+        await supabase
+          .from("books")
+          .update({ cover_image_url: openLibUrl })
+          .eq("id", bookRow.id);
+        Object.assign(bookRow, { cover_image_url: openLibUrl });
+      }
+    } catch {
+      // 무시
+    }
   }
 
   console.log("getBookDetail: 책 상세 조회 성공", {

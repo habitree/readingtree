@@ -23,17 +23,9 @@ const MONTH_LABELS = [
   "7월", "8월", "9월", "10월", "11월", "12월"
 ];
 
-// Warm, earthy 색상 팔레트 - 감정 디자인 기반
-const WARM_COLORS = {
-  achievement: "from-amber-400/20 to-orange-400/20",
-  glow: "shadow-amber-400/30",
-  border: "border-amber-300/50",
-  ring: "ring-amber-400/60",
-};
-
-// 부드러운 스프링 애니메이션 설정
-const springConfig = { stiffness: 300, damping: 30, mass: 0.8 };
-const gentleSpring = { type: "spring" as const, stiffness: 200, damping: 25 };
+// 부드러운 스프링 애니메이션 설정 (성능 최적화: 가벼운 설정)
+const gentleSpring = { type: "spring" as const, stiffness: 260, damping: 20 };
+const quickTransition = { duration: 0.15 };
 
 /**
  * 월별 독서 활동 캘린더 v2.0
@@ -182,84 +174,58 @@ export function MonthlyBookCalendar({
       )}
     >
       <div className="space-y-4">
-        {/* 헤더 - Visual Hierarchy */}
+        {/* 헤더 */}
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <motion.div
-              className="p-2 rounded-xl bg-gradient-to-br from-forest-500/20 to-forest-600/10 dark:from-forest-400/20 dark:to-forest-500/10"
-              whileHover={{ scale: 1.05, rotate: 5 }}
-              transition={gentleSpring}
-            >
+          <div className="flex items-center gap-2">
+            <div className="p-1.5 rounded-lg bg-gradient-to-br from-forest-500/20 to-forest-600/10 dark:from-forest-400/20 dark:to-forest-500/10">
               <Calendar className="w-4 h-4 text-forest-600 dark:text-forest-400" />
-            </motion.div>
-            <div>
-              <span className="text-sm font-semibold text-slate-800 dark:text-white">
-                독서 달력
-              </span>
-              <p className="text-[10px] text-slate-500 dark:text-slate-400">
-                책과 함께한 날들
-              </p>
             </div>
+            <span className="text-sm font-semibold text-slate-800 dark:text-white">
+              독서 달력
+            </span>
           </div>
 
-          {/* 통계 뱃지 - Emotional Design */}
-          <div className="flex items-center gap-2">
-            <motion.div
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gradient-to-r from-amber-100 to-orange-100 dark:from-amber-900/30 dark:to-orange-900/30"
-              whileHover={{ scale: 1.02 }}
-              transition={gentleSpring}
-            >
+          {/* 통계 뱃지 */}
+          <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-100/80 dark:bg-amber-900/30">
               <Sparkles className="w-3 h-3 text-amber-600 dark:text-amber-400" />
               <span className="text-xs font-medium text-amber-700 dark:text-amber-300">
                 {calendarData.recordedDays}일
               </span>
-            </motion.div>
-            <motion.div
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gradient-to-r from-forest-100 to-emerald-100 dark:from-forest-900/30 dark:to-emerald-900/30"
-              whileHover={{ scale: 1.02 }}
-              transition={gentleSpring}
-            >
+            </div>
+            <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-forest-100/80 dark:bg-forest-900/30">
               <BookOpen className="w-3 h-3 text-forest-600 dark:text-forest-400" />
               <span className="text-xs font-medium text-forest-700 dark:text-forest-300">
                 {calendarData.uniqueBooks}권
               </span>
-            </motion.div>
+            </div>
           </div>
         </div>
 
-        {/* 월 선택 - Micro-animation */}
-        <div className="flex items-center justify-between px-1">
-          <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 w-8 p-0 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800"
-              onClick={handlePrevMonth}
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-          </motion.div>
-
-          <motion.span
-            key={`${year}-${month}`}
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-base font-semibold text-slate-800 dark:text-white"
+        {/* 월 선택 */}
+        <div className="flex items-center justify-between">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 w-7 p-0 rounded-full"
+            onClick={handlePrevMonth}
           >
-            {year}년 {MONTH_LABELS[month - 1]}
-          </motion.span>
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
 
-          <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 w-8 p-0 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800"
-              onClick={handleNextMonth}
-              disabled={isCurrentMonth || isFutureMonth}
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </motion.div>
+          <span className="text-sm font-semibold text-slate-800 dark:text-white">
+            {year}년 {MONTH_LABELS[month - 1]}
+          </span>
+
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 w-7 p-0 rounded-full"
+            onClick={handleNextMonth}
+            disabled={isCurrentMonth || isFutureMonth}
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
         </div>
 
         {/* 요일 헤더 */}
@@ -352,213 +318,143 @@ function DayCell({
   onHoverEnd,
 }: DayCellProps) {
   if (!day) {
-    return <div className="aspect-square" />;
+    // 빈 셀도 책 비율 유지
+    return <div className="aspect-[3/4]" />;
   }
 
   const hasBooks = books.length > 0;
 
   return (
-    <motion.div
+    <div
       className={cn(
-        "aspect-square rounded-xl cursor-pointer relative overflow-visible",
-        "transition-all duration-200",
+        // 책 비율: 3:4 (세로로 긴 책 형태)
+        "aspect-[3/4] rounded-lg cursor-pointer relative",
         isFuture && "opacity-30 cursor-default",
-        !isFuture && !hasBooks && "hover:bg-slate-100/80 dark:hover:bg-slate-800/50",
-        !hasBooks && "bg-slate-50/50 dark:bg-slate-800/30"
+        !hasBooks && "bg-slate-50/60 dark:bg-slate-800/40",
+        !isFuture && "hover:scale-105 hover:z-10 transition-transform duration-150"
       )}
       onClick={onClick}
-      onHoverStart={onHoverStart}
-      onHoverEnd={onHoverEnd}
-      whileHover={!isFuture ? { scale: 1.08, zIndex: 10 } : undefined}
-      whileTap={!isFuture ? { scale: 0.95 } : undefined}
-      transition={gentleSpring}
-      style={{ willChange: "transform" }}
+      onMouseEnter={onHoverStart}
+      onMouseLeave={onHoverEnd}
     >
       {/* 오늘 날짜 링 */}
       {isToday && (
-        <motion.div
-          className="absolute -inset-0.5 rounded-xl bg-gradient-to-br from-forest-400 to-forest-600 dark:from-forest-500 dark:to-forest-700"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          layoutId="today-ring"
-        />
+        <div className="absolute -inset-0.5 rounded-lg bg-gradient-to-br from-forest-400 to-forest-600 dark:from-forest-500 dark:to-forest-700" />
       )}
 
       {/* 선택 상태 링 */}
-      {isSelected && (
-        <motion.div
-          className="absolute -inset-0.5 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500"
-          layoutId="selected-ring"
-          transition={gentleSpring}
-        />
+      {isSelected && !isToday && (
+        <div className="absolute -inset-0.5 rounded-lg bg-gradient-to-br from-amber-400 to-orange-500" />
       )}
 
       {/* 내부 컨텐츠 */}
       <div className={cn(
-        "absolute inset-0.5 rounded-lg overflow-hidden",
-        isToday || isSelected ? "bg-white dark:bg-slate-900" : ""
+        "absolute inset-0.5 rounded-md overflow-hidden",
+        (isToday || isSelected) && "bg-white dark:bg-slate-900"
       )}>
         {hasBooks ? (
-          <StackedBookCovers
-            books={books}
-            isHovered={isHovered}
-            isSelected={isSelected}
-          />
+          <StackedBookCovers books={books} isHovered={isHovered} />
         ) : (
-          /* 빈 날: 도트 패턴 */
-          <div className="w-full h-full flex items-center justify-center">
-            <div className="w-1 h-1 rounded-full bg-slate-200 dark:bg-slate-700" />
+          /* 빈 날: 연한 배경 + 날짜만 */
+          <div className="w-full h-full flex items-end justify-end p-1">
+            <span className={cn(
+              "text-[9px] font-medium",
+              dayOfWeek === 0
+                ? "text-rose-400 dark:text-rose-500"
+                : dayOfWeek === 6
+                  ? "text-blue-400 dark:text-blue-500"
+                  : "text-slate-400 dark:text-slate-500"
+            )}>
+              {day}
+            </span>
           </div>
         )}
 
-        {/* 날짜 표시 - Visual Hierarchy */}
-        <div
-          className={cn(
-            "absolute bottom-0 right-0 text-[9px] font-bold px-1.5 py-0.5 rounded-tl-md",
-            hasBooks
-              ? "bg-black/70 text-white backdrop-blur-sm"
-              : cn(
-                  dayOfWeek === 0
-                    ? "text-rose-400 dark:text-rose-500"
-                    : dayOfWeek === 6
-                      ? "text-blue-400 dark:text-blue-500"
-                      : "text-slate-400 dark:text-slate-500"
-                )
-          )}
-        >
-          {day}
-        </div>
-
-        {/* 성취 글로우 효과 - Emotional Design */}
+        {/* 날짜 오버레이 (책 있을 때) */}
         {hasBooks && (
-          <motion.div
-            className="absolute inset-0 rounded-lg pointer-events-none"
-            initial={{ opacity: 0 }}
-            animate={{
-              opacity: isHovered ? 0.4 : 0.2,
-              boxShadow: isHovered
-                ? "inset 0 0 20px rgba(251, 191, 36, 0.3)"
-                : "inset 0 0 10px rgba(251, 191, 36, 0.1)"
-            }}
-            transition={{ duration: 0.2 }}
-          />
+          <div className="absolute bottom-0 right-0 text-[8px] font-bold px-1 py-0.5 rounded-tl bg-black/60 text-white">
+            {day}
+          </div>
         )}
       </div>
-    </motion.div>
+    </div>
   );
 }
 
 interface StackedBookCoversProps {
   books: DailyBookActivity["books"];
   isHovered: boolean;
-  isSelected: boolean;
 }
 
-function StackedBookCovers({ books, isHovered, isSelected }: StackedBookCoversProps) {
-  // 최대 4개까지 표시
-  const displayBooks = books.slice(0, 4);
-  const remainingCount = Math.max(0, books.length - 4);
+function StackedBookCovers({ books, isHovered }: StackedBookCoversProps) {
+  // 최대 3개까지 표시 (성능 최적화)
+  const displayBooks = books.slice(0, 3);
+  const remainingCount = Math.max(0, books.length - 3);
   const bookCount = displayBooks.length;
 
-  // Fan/Scattered 효과를 위한 회전 및 위치 계산
-  const getBookTransform = (index: number, total: number, hovered: boolean) => {
-    if (total === 1) {
-      return {
-        rotate: 0,
-        x: 0,
-        y: 0,
-        scale: hovered ? 1.05 : 1,
-        zIndex: 1,
-      };
-    }
-
-    // 부채꼴 효과: 각 책이 다른 각도로 회전
-    const baseRotation = total === 2 ? 5 : total === 3 ? 6 : 7;
-    const spreadAngle = (index - (total - 1) / 2) * baseRotation;
-
-    // 호버 시 책들이 펼쳐지는 효과
-    const hoverSpread = hovered ? 1.8 : 1;
-
-    // 3D depth 효과: 뒤로 갈수록 작아짐
-    const depthScale = 1 - (index * 0.03);
-
-    // 위치 오프셋
-    const xOffset = hovered ? (index - (total - 1) / 2) * 8 : index * 2;
-    const yOffset = hovered ? 0 : index * 1.5;
-
-    return {
-      rotate: spreadAngle * hoverSpread,
-      x: xOffset,
-      y: yOffset,
-      scale: hovered ? 1 : depthScale,
-      zIndex: total - index,
-    };
-  };
-
+  // 1권: 전체 표시
   if (bookCount === 1) {
-    // 1권: 전체 표시, 살짝 떠 있는 느낌
     const book = displayBooks[0];
     return (
-      <motion.div
-        className="w-full h-full relative"
-        animate={{ y: isHovered ? -2 : 0 }}
-        transition={gentleSpring}
-      >
+      <div className="w-full h-full relative">
         {book.coverImageUrl ? (
-          <motion.img
+          <img
             src={book.coverImageUrl}
             alt={book.title}
-            className="w-full h-full object-cover rounded-md"
-            style={{
-              boxShadow: isHovered
-                ? "0 8px 20px -4px rgba(0,0,0,0.3)"
-                : "0 4px 12px -2px rgba(0,0,0,0.2)"
-            }}
+            loading="lazy"
+            className={cn(
+              "w-full h-full object-cover transition-transform duration-150",
+              isHovered && "scale-105"
+            )}
           />
         ) : (
-          <div className="w-full h-full bg-gradient-to-br from-forest-200 to-forest-400 dark:from-forest-700 dark:to-forest-900 flex items-center justify-center rounded-md">
+          <div className="w-full h-full bg-gradient-to-br from-forest-200 to-forest-400 dark:from-forest-700 dark:to-forest-900 flex items-center justify-center">
             <BookOpen className="w-4 h-4 text-forest-700 dark:text-forest-300" />
           </div>
         )}
-      </motion.div>
+      </div>
     );
   }
 
-  // 여러 권: Stacked Cards 효과
+  // 여러 권: 겹침 효과 (CSS 기반 - 성능 최적화)
   return (
-    <div className="w-full h-full relative flex items-center justify-center">
+    <div className="w-full h-full relative">
       {displayBooks.map((book, index) => {
-        const transform = getBookTransform(index, bookCount, isHovered);
+        // 뒤에서부터 렌더링 (z-index 자연스럽게)
+        const reverseIndex = bookCount - 1 - index;
+
+        // 겹침 위치 계산: 각 책이 오른쪽 아래로 살짝 밀림
+        const offset = reverseIndex * 3;
+        // 회전: 뒤 책일수록 살짝 회전
+        const rotation = (reverseIndex - 1) * 4;
 
         return (
-          <motion.div
+          <div
             key={book.bookId}
-            className="absolute rounded-md overflow-hidden"
+            className={cn(
+              "absolute inset-0 rounded-sm overflow-hidden",
+              "transition-all duration-150 ease-out",
+              // 호버 시 펼쳐지는 효과
+              isHovered && reverseIndex > 0 && "translate-x-1"
+            )}
             style={{
-              width: "85%",
-              height: "85%",
-              zIndex: transform.zIndex,
-              transformOrigin: "center bottom",
-              boxShadow: isHovered
-                ? `0 ${8 - index * 2}px ${16 - index * 3}px -${4 + index}px rgba(0,0,0,0.3)`
-                : `0 ${4 - index}px ${8 - index * 2}px -${2 + index}px rgba(0,0,0,0.2)`,
-            }}
-            initial={false}
-            animate={{
-              rotate: transform.rotate,
-              x: transform.x,
-              y: transform.y,
-              scale: transform.scale,
-            }}
-            transition={{
-              ...gentleSpring,
-              delay: isHovered ? index * 0.03 : (bookCount - 1 - index) * 0.02,
+              // 기본 겹침 효과
+              top: `${offset}px`,
+              left: `${offset}px`,
+              right: `${-offset}px`,
+              bottom: `${-offset}px`,
+              transform: isHovered
+                ? `rotate(${(reverseIndex - 1) * 6}deg) translateX(${reverseIndex * 4}px)`
+                : `rotate(${rotation}deg)`,
+              transformOrigin: 'bottom center',
+              boxShadow: `0 ${2 + reverseIndex}px ${4 + reverseIndex * 2}px rgba(0,0,0,${0.15 + reverseIndex * 0.05})`,
             }}
           >
             {book.coverImageUrl ? (
               <img
                 src={book.coverImageUrl}
                 alt={book.title}
+                loading="lazy"
                 className="w-full h-full object-cover"
               />
             ) : (
@@ -566,20 +462,15 @@ function StackedBookCovers({ books, isHovered, isSelected }: StackedBookCoversPr
                 <BookOpen className="w-3 h-3 text-slate-600 dark:text-slate-300" />
               </div>
             )}
-          </motion.div>
+          </div>
         );
       })}
 
       {/* 추가 권수 표시 */}
       {remainingCount > 0 && (
-        <motion.div
-          className="absolute top-0 right-0 bg-gradient-to-br from-forest-500 to-forest-600 text-white text-[7px] font-bold px-1.5 py-0.5 rounded-bl-md rounded-tr-md z-20"
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          transition={{ ...gentleSpring, delay: 0.1 }}
-        >
+        <div className="absolute -top-1 -right-1 bg-forest-500 text-white text-[7px] font-bold w-4 h-4 rounded-full flex items-center justify-center z-10 shadow-sm">
           +{remainingCount}
-        </motion.div>
+        </div>
       )}
     </div>
   );
@@ -597,81 +488,59 @@ function SelectedDateDetail({ date, books, onClose }: SelectedDateDetailProps) {
   return (
     <motion.div
       key={date}
-      initial={{ opacity: 0, y: 10, scale: 0.95 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, y: -10, scale: 0.95 }}
-      transition={gentleSpring}
-      className="relative overflow-hidden"
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -8 }}
+      transition={quickTransition}
+      className="relative rounded-xl overflow-hidden bg-slate-50/90 dark:bg-slate-800/90 border border-slate-200/50 dark:border-slate-700/50"
     >
-      {/* Glassmorphism 배경 */}
-      <div className="absolute inset-0 bg-gradient-to-br from-white/80 to-paper-50/80 dark:from-slate-800/80 dark:to-slate-900/80 backdrop-blur-xl rounded-2xl" />
-
-      {/* 따뜻한 글로우 효과 */}
-      <div className="absolute inset-0 bg-gradient-to-br from-amber-400/5 to-orange-400/5 rounded-2xl" />
-
-      {/* 컨텐츠 */}
-      <div className="relative p-4 space-y-3">
+      <div className="p-3 space-y-2.5">
         {/* 헤더 */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <motion.div
-              className="p-1.5 rounded-lg bg-gradient-to-br from-amber-100 to-orange-100 dark:from-amber-900/40 dark:to-orange-900/40"
-              whileHover={{ rotate: 10 }}
-            >
-              <Sparkles className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-            </motion.div>
+            <Sparkles className="w-3.5 h-3.5 text-amber-500" />
             <span className="text-sm font-semibold text-slate-800 dark:text-white">
               {formattedDate}
             </span>
-            <span className="text-xs px-2 py-0.5 rounded-full bg-forest-100 dark:bg-forest-900/40 text-forest-700 dark:text-forest-300 font-medium">
+            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-forest-100 dark:bg-forest-900/40 text-forest-700 dark:text-forest-300 font-medium">
               {books.length}권
             </span>
           </div>
-          <motion.button
+          <button
             onClick={onClose}
-            className="p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
+            className="p-1 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
           >
             <X className="w-4 h-4 text-slate-400" />
-          </motion.button>
+          </button>
         </div>
 
-        {/* 책 목록 */}
-        <div className="flex flex-wrap gap-2">
-          {books.map((book, index) => (
-            <motion.div
+        {/* 책 목록 - 가로 스크롤 */}
+        <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
+          {books.map((book) => (
+            <Link
               key={book.bookId}
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ ...gentleSpring, delay: index * 0.05 }}
+              href={`/books/${book.userBookId}`}
+              className="group flex-shrink-0 flex items-center gap-2 bg-white dark:bg-slate-700/60 rounded-lg p-1.5 pr-3 border border-slate-200/50 dark:border-slate-600/50 hover:border-forest-300 dark:hover:border-forest-600 transition-colors"
             >
-              <Link
-                href={`/books/${book.userBookId}`}
-                className="group flex items-center gap-2.5 bg-white/80 dark:bg-slate-700/60 backdrop-blur-sm rounded-xl p-2 pr-3.5 border border-slate-200/50 dark:border-slate-600/50 hover:border-forest-300 dark:hover:border-forest-600 hover:shadow-md transition-all"
-              >
-                <motion.div
-                  className="w-10 h-12 rounded-lg overflow-hidden bg-slate-200 dark:bg-slate-600 shrink-0 shadow-sm"
-                  whileHover={{ scale: 1.05, rotate: -2 }}
-                  transition={gentleSpring}
-                >
-                  {book.coverImageUrl ? (
-                    <img
-                      src={book.coverImageUrl}
-                      alt={book.title}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-forest-200 to-forest-300 dark:from-forest-700 dark:to-forest-800">
-                      <BookOpen className="w-4 h-4 text-forest-600 dark:text-forest-300" />
-                    </div>
-                  )}
-                </motion.div>
-                <span className="text-xs font-medium text-slate-700 dark:text-slate-200 truncate max-w-[100px] group-hover:text-forest-600 dark:group-hover:text-forest-400 transition-colors">
-                  {book.title}
-                </span>
-              </Link>
-            </motion.div>
+              {/* 책 표지 - 세로로 긴 비율 */}
+              <div className="w-8 h-11 rounded overflow-hidden bg-slate-200 dark:bg-slate-600 shrink-0">
+                {book.coverImageUrl ? (
+                  <img
+                    src={book.coverImageUrl}
+                    alt={book.title}
+                    loading="lazy"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-forest-200 to-forest-300 dark:from-forest-700 dark:to-forest-800">
+                    <BookOpen className="w-3 h-3 text-forest-600 dark:text-forest-300" />
+                  </div>
+                )}
+              </div>
+              <span className="text-xs font-medium text-slate-700 dark:text-slate-200 truncate max-w-[80px] group-hover:text-forest-600 dark:group-hover:text-forest-400 transition-colors">
+                {book.title}
+              </span>
+            </Link>
           ))}
         </div>
       </div>
@@ -684,46 +553,42 @@ function SelectedDateDetail({ date, books, onClose }: SelectedDateDetailProps) {
  */
 export function MonthlyBookCalendarSkeleton() {
   return (
-    <Card className="p-4 sm:p-5 bg-gradient-to-br from-paper-50/90 to-white/80 dark:from-slate-900/90 dark:to-slate-800/80 backdrop-blur-xl">
-      <div className="space-y-4">
+    <Card className="p-4 sm:p-5 bg-gradient-to-br from-paper-50/90 to-white/80 dark:from-slate-900/90 dark:to-slate-800/80">
+      <div className="space-y-3">
         {/* 헤더 스켈레톤 */}
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-slate-200 dark:bg-slate-700 animate-pulse" />
-            <div className="space-y-1">
-              <div className="h-4 w-16 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
-              <div className="h-2.5 w-20 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
-            </div>
-          </div>
           <div className="flex items-center gap-2">
-            <div className="h-6 w-14 rounded-full bg-slate-200 dark:bg-slate-700 animate-pulse" />
-            <div className="h-6 w-14 rounded-full bg-slate-200 dark:bg-slate-700 animate-pulse" />
+            <div className="w-7 h-7 rounded-lg bg-slate-200 dark:bg-slate-700 animate-pulse" />
+            <div className="h-4 w-16 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="h-5 w-12 rounded-full bg-slate-200 dark:bg-slate-700 animate-pulse" />
+            <div className="h-5 w-12 rounded-full bg-slate-200 dark:bg-slate-700 animate-pulse" />
           </div>
         </div>
 
         {/* 월 선택 스켈레톤 */}
-        <div className="flex items-center justify-between px-1">
-          <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 animate-pulse" />
-          <div className="h-5 w-24 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
-          <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 animate-pulse" />
+        <div className="flex items-center justify-between">
+          <div className="w-7 h-7 rounded-full bg-slate-200 dark:bg-slate-700 animate-pulse" />
+          <div className="h-4 w-20 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
+          <div className="w-7 h-7 rounded-full bg-slate-200 dark:bg-slate-700 animate-pulse" />
         </div>
 
         {/* 요일 헤더 스켈레톤 */}
         <div className="grid grid-cols-7 gap-1">
           {Array.from({ length: 7 }).map((_, i) => (
-            <div key={i} className="h-6 rounded-md bg-slate-200 dark:bg-slate-700 animate-pulse" />
+            <div key={i} className="h-5 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
           ))}
         </div>
 
-        {/* 캘린더 그리드 스켈레톤 */}
-        <div className="space-y-1.5">
+        {/* 캘린더 그리드 스켈레톤 - 책 비율(3:4) */}
+        <div className="space-y-1">
           {Array.from({ length: 5 }).map((_, weekIndex) => (
-            <div key={weekIndex} className="grid grid-cols-7 gap-1.5">
+            <div key={weekIndex} className="grid grid-cols-7 gap-1">
               {Array.from({ length: 7 }).map((_, dayIndex) => (
                 <div
                   key={dayIndex}
-                  className="aspect-square rounded-xl bg-slate-200 dark:bg-slate-700 animate-pulse"
-                  style={{ animationDelay: `${(weekIndex * 7 + dayIndex) * 30}ms` }}
+                  className="aspect-[3/4] rounded-lg bg-slate-200 dark:bg-slate-700 animate-pulse"
                 />
               ))}
             </div>
