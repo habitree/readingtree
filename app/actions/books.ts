@@ -217,9 +217,13 @@ export async function addBook(
       .maybeSingle();
 
     if (!mainBookshelf) {
-      // 메인 서재가 없으면 자동 생성 (RLS 우회를 위해 admin 클라이언트 사용)
-      const adminClient = createAdminSupabaseClient();
-      const { data: newBookshelf, error: createBookshelfError } = await adminClient
+      // 메인 서재가 없으면 자동 생성
+      // 먼저 일반 클라이언트로 시도, 실패 시 admin 클라이언트 사용
+      let newBookshelf = null;
+      let createBookshelfError = null;
+
+      // 1차 시도: 일반 클라이언트 (RLS 정책이 허용하면 성공)
+      const { data: regularResult, error: regularError } = await supabase
         .from("bookshelves")
         .insert({
           user_id: currentUser.id,
@@ -230,7 +234,37 @@ export async function addBook(
         .select("id")
         .single();
 
-      if (createBookshelfError || !newBookshelf) {
+      if (regularResult) {
+        newBookshelf = regularResult;
+      } else {
+        console.warn("[addBook] 일반 클라이언트로 서재 생성 실패, admin 클라이언트 시도:", regularError?.message);
+
+        // 2차 시도: admin 클라이언트 (RLS 우회)
+        try {
+          const adminClient = createAdminSupabaseClient();
+          const { data: adminResult, error: adminError } = await adminClient
+            .from("bookshelves")
+            .insert({
+              user_id: currentUser.id,
+              name: "내 서재",
+              is_main: true,
+              order: 0,
+            })
+            .select("id")
+            .single();
+
+          if (adminResult) {
+            newBookshelf = adminResult;
+          } else {
+            createBookshelfError = adminError;
+          }
+        } catch (adminClientError) {
+          console.error("[addBook] admin 클라이언트 생성 실패:", adminClientError);
+          createBookshelfError = regularError; // 원래 에러 사용
+        }
+      }
+
+      if (!newBookshelf) {
         console.error("[addBook] 메인 서재 생성 실패:", createBookshelfError);
         throw new Error("메인 서재 생성에 실패했습니다. 다시 시도해주세요.");
       }
