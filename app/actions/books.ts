@@ -19,6 +19,35 @@ const OPEN_LIBRARY_COVER_BATCH_LIMIT = 3;
 const OPEN_LIBRARY_COVER_TIMEOUT_MS = 1500;
 
 /**
+ * 날짜 문자열을 유효한 date 형식으로 정규화
+ * "2014" -> "2014-01-01", "2014-05" -> "2014-05-01", "2014-05-20" -> "2014-05-20"
+ */
+function normalizePublishedDate(dateStr: string | null | undefined): string | null {
+  if (!dateStr) return null;
+
+  const trimmed = dateStr.trim();
+  if (!trimmed) return null;
+
+  // 년도만 있는 경우 (예: "2014")
+  if (/^\d{4}$/.test(trimmed)) {
+    return `${trimmed}-01-01`;
+  }
+
+  // 년-월 형식 (예: "2014-05")
+  if (/^\d{4}-\d{2}$/.test(trimmed)) {
+    return `${trimmed}-01`;
+  }
+
+  // 이미 유효한 형식이면 그대로 반환
+  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+    return trimmed;
+  }
+
+  // 그 외 형식은 null 반환 (파싱 실패 방지)
+  return null;
+}
+
+/**
  * 책소개 가져오기 (wrapper)
  * @see app/actions/ai/summarization.ts
  */
@@ -155,7 +184,7 @@ export async function addBook(
           title: bookData.title,
           author: bookData.author,
           publisher: bookData.publisher,
-          published_date: bookData.published_date,
+          published_date: normalizePublishedDate(bookData.published_date),
           cover_image_url: bookData.cover_image_url,
           total_pages: totalPages,
         })
@@ -176,7 +205,7 @@ export async function addBook(
         title: bookData.title,
         author: bookData.author,
         publisher: bookData.publisher,
-        published_date: bookData.published_date,
+        published_date: normalizePublishedDate(bookData.published_date),
         cover_image_url: bookData.cover_image_url,
       })
       .select("id")
