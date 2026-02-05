@@ -217,9 +217,24 @@ export async function addBook(
       .maybeSingle();
 
     if (!mainBookshelf) {
-      throw new Error("메인 서재를 찾을 수 없습니다. 서재를 먼저 생성해주세요.");
+      // 메인 서재가 없으면 자동 생성
+      const { data: newBookshelf, error: createBookshelfError } = await supabase
+        .from("bookshelves")
+        .insert({
+          user_id: currentUser.id,
+          name: "내 서재",
+          is_main: true,
+        })
+        .select("id")
+        .single();
+
+      if (createBookshelfError || !newBookshelf) {
+        throw new Error("메인 서재 생성에 실패했습니다. 다시 시도해주세요.");
+      }
+      targetBookshelfId = newBookshelf.id;
+    } else {
+      targetBookshelfId = mainBookshelf.id;
     }
-    targetBookshelfId = mainBookshelf.id;
   } else {
     // 제공된 bookshelf_id가 사용자의 서재인지 확인
     const { data: bookshelf } = await supabase
