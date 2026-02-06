@@ -23,33 +23,33 @@ const quickActions: QuickActionItem[] = [
     icon: PenTool,
     label: "기록",
     sheetMode: "memo",
-    color: "text-forest-600",
-    bgColor: "bg-forest-50 dark:bg-forest-900/30",
-    description: "새 기록 작성",
+    color: "text-forest-600 dark:text-forest-400",
+    bgColor: "bg-forest-50/60 dark:bg-forest-900/20",
+    description: "생각 남기기",
   },
   {
     icon: BookPlus,
     label: "책 추가",
     href: "/books/search",
-    color: "text-blue-600",
-    bgColor: "bg-blue-50 dark:bg-blue-900/30",
-    description: "새 책 등록",
+    color: "text-forest-600 dark:text-forest-400",
+    bgColor: "bg-forest-50/60 dark:bg-forest-900/20",
+    description: "씨앗 심기",
   },
   {
     icon: Camera,
     label: "필사",
     sheetMode: "transcription",
-    color: "text-purple-600",
-    bgColor: "bg-purple-50 dark:bg-purple-900/30",
-    description: "사진으로 기록",
+    color: "text-forest-600 dark:text-forest-400",
+    bgColor: "bg-forest-50/60 dark:bg-forest-900/20",
+    description: "페이지 담기",
   },
   {
     icon: Search,
     label: "검색",
     href: "/search",
-    color: "text-orange-600",
-    bgColor: "bg-orange-50 dark:bg-orange-900/30",
-    description: "기록 검색",
+    color: "text-forest-600 dark:text-forest-400",
+    bgColor: "bg-forest-50/60 dark:bg-forest-900/20",
+    description: "정원 둘러보기",
   },
 ];
 
@@ -79,7 +79,7 @@ export function MobileQuickActions() {
             >
               <div
                 className={cn(
-                  "h-11 w-11 rounded-xl flex items-center justify-center shadow-sm",
+                  "h-11 w-11 rounded-xl flex items-center justify-center",
                   action.bgColor
                 )}
               >
@@ -101,7 +101,7 @@ export function MobileQuickActions() {
           >
             <div
               className={cn(
-                "h-11 w-11 rounded-xl flex items-center justify-center shadow-sm",
+                "h-11 w-11 rounded-xl flex items-center justify-center",
                 action.bgColor
               )}
             >
@@ -124,21 +124,21 @@ const desktopQuickActions = [
     label: "기록",
     href: "/notes/new",
     color: "text-forest-600",
-    description: "새 기록 작성",
+    description: "생각 남기기",
   },
   {
     icon: BookPlus,
     label: "책 추가",
     href: "/books/search",
-    color: "text-blue-600",
-    description: "새 책 등록",
+    color: "text-forest-600",
+    description: "씨앗 심기",
   },
   {
     icon: Camera,
     label: "필사",
     href: "/notes/new?type=transcription",
-    color: "text-purple-600",
-    description: "사진으로 기록",
+    color: "text-forest-600",
+    description: "페이지 담기",
   },
 ];
 

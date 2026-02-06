@@ -95,9 +95,9 @@ export const iconSizes = {
 // ============================================================================
 export const cardStyles = {
   /** 기본 카드 호버 */
-  hover: "hover:shadow-lg active:shadow-md transition-all",
+  hover: "hover:shadow-md transition-shadow duration-200",
   /** 선택 가능한 카드 */
-  selectable: "hover:shadow-lg active:shadow-md active:scale-[0.99] transition-all cursor-pointer",
+  selectable: "hover:shadow-md transition-shadow duration-200 cursor-pointer",
   /** 강조 카드 (게스트 안내 등) */
   highlight: "border-primary/20 bg-primary/5",
   /** 에러 카드 */

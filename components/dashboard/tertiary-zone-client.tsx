@@ -79,7 +79,7 @@ export function TertiaryZoneClient({
 
   return (
     <CollapsibleSection
-      title="더 보기"
+      title="정원 안쪽"
       storageKey="dashboard-tertiary"
       defaultOpen={false}
     >

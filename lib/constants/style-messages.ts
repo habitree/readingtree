@@ -1,7 +1,7 @@
 /**
- * 스타일 메시지 상수 (따뜻한 스타일 고정)
+ * 스타일 메시지 상수 (사유의 정원 테마)
  *
- * 친근하고 응원하는 톤앤매너의 메시지를 제공합니다.
+ * 절제된 톤으로 사용자의 사고가 자라도록 방해하지 않는 메시지를 제공합니다.
  */
 
 // =============================================================================
@@ -53,28 +53,28 @@ export interface StyleMessages {
 }
 
 // =============================================================================
-// 따뜻한 스타일 메시지 정의
+// 사유의 정원 스타일 메시지 정의
 // =============================================================================
 
 export const STYLE_MESSAGES: StyleMessages = {
   greeting: {
-    morning: "좋은 아침이에요!",
-    afternoon: "활기찬 오후예요!",
-    evening: "수고했어요!",
-    night: "편안한 밤 되세요!",
+    morning: "고요한 아침이에요",
+    afternoon: "오후의 정원에서",
+    evening: "하루가 저물고 있어요",
+    night: "조용한 밤이에요",
   },
   streak: {
-    none: "오늘부터 시작해볼까요?",
-    starting: "좋은 시작이에요!",
-    building: "{count}일 연속이에요!",
-    strong: "{count}일 연속 대단해요!",
-    exceptional: "와, {count}일째 이어가고 있어요!",
+    none: "정원이 기다리고 있어요",
+    starting: "작은 싹이 돋았어요",
+    building: "{count}일째 가꾸고 있어요",
+    strong: "{count}일째, 조용히 자라고 있어요",
+    exceptional: "{count}일의 흔적이 쌓여 있어요",
   },
   empty: {
-    noRecords: "첫 기록을 남겨볼까요?",
-    noBooks: "어떤 책을 읽어볼까요?",
-    noNotes: "오늘의 생각을 적어보세요!",
-    noGoal: "목표를 세워볼까요?",
+    noRecords: "아직 비어 있는 정원이에요",
+    noBooks: "어떤 씨앗을 심어볼까요",
+    noNotes: "여백이 기다리고 있어요",
+    noGoal: "자신만의 속도로 괜찮아요",
   },
   action: {
     addBook: "새 책 담기",
@@ -83,10 +83,10 @@ export const STYLE_MESSAGES: StyleMessages = {
     viewMore: "더 보러가기",
   },
   motivational: {
-    default: "오늘도 함께해요!",
-    quoteFocused: "마음에 남는 문장을 찾아보세요!",
-    reflectionFocused: "오늘의 생각을 적어보세요!",
-    visualFocused: "책 속 장면을 담아보세요!",
+    default: "천천히, 자유롭게",
+    quoteFocused: "어떤 문장이 머물고 있나요",
+    reflectionFocused: "떠오르는 생각이 있다면",
+    visualFocused: "눈에 담긴 장면이 있나요",
   },
 };
 
@@ -95,10 +95,10 @@ export const STYLE_MESSAGES: StyleMessages = {
 // =============================================================================
 
 export const GREETING_EMOJIS: Record<keyof TimeGreeting, string> = {
-  morning: "☀️",
-  afternoon: "📚",
-  evening: "🌅",
-  night: "🌙",
+  morning: "",
+  afternoon: "",
+  evening: "",
+  night: "",
 };
 
 // =============================================================================
