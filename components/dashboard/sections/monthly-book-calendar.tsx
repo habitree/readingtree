@@ -394,7 +394,9 @@ interface StackedBookCoversProps {
 }
 
 /**
- * StackedBookCovers 컴포넌트 - 메모이제이션으로 책 표지 겹침 효과 최적화
+ * StackedBookCovers 컴포넌트 - 부채꼴(Fan-out) 표현
+ * 여러 책이 있을 때 각 표지가 부채꼴로 펼쳐져 뒤쪽 책도 잘 보임
+ * 호버 시 더 크게 펼쳐져 모든 표지를 확인 가능
  */
 const StackedBookCovers = memo(function StackedBookCovers({ books, isHovered }: StackedBookCoversProps) {
   // 최대 3개까지 표시 (성능 최적화)
@@ -426,38 +428,52 @@ const StackedBookCovers = memo(function StackedBookCovers({ books, isHovered }: 
     );
   }
 
-  // 여러 권: 겹침 효과 (CSS 기반 - 성능 최적화)
+  // 2~3권: 부채꼴(Fan-out) 펼침 효과
+  // 각 책이 중앙 하단을 기준으로 회전하여 표지가 겹치면서도 잘 보임
+  const fanAngles: Record<number, number[]> = {
+    2: [-8, 8],      // 2권: 좌우 8도
+    3: [-12, 0, 12],  // 3권: 좌/중앙/우
+  };
+  const hoverFanAngles: Record<number, number[]> = {
+    2: [-14, 14],     // 호버: 좌우 14도 (더 벌어짐)
+    3: [-18, 0, 18],  // 호버: 좌우 18도
+  };
+  const fanTranslateX: Record<number, number[]> = {
+    2: [-3, 3],       // 2권: 좌우 3px 이동
+    3: [-5, 0, 5],    // 3권: 좌우 5px 이동
+  };
+  const hoverTranslateX: Record<number, number[]> = {
+    2: [-5, 5],       // 호버: 좌우 5px
+    3: [-8, 0, 8],    // 호버: 좌우 8px
+  };
+
+  const angles = fanAngles[bookCount] || fanAngles[3];
+  const hoverAngles = hoverFanAngles[bookCount] || hoverFanAngles[3];
+  const translateXValues = fanTranslateX[bookCount] || fanTranslateX[3];
+  const hoverTranslateXValues = hoverTranslateX[bookCount] || hoverTranslateX[3];
+
   return (
     <div className="w-full h-full relative">
       {displayBooks.map((book, index) => {
-        // 뒤에서부터 렌더링 (z-index 자연스럽게)
-        const reverseIndex = bookCount - 1 - index;
-
-        // 겹침 위치 계산: 각 책이 오른쪽 아래로 살짝 밀림
-        const offset = reverseIndex * 3;
-        // 회전: 뒤 책일수록 살짝 회전
-        const rotation = (reverseIndex - 1) * 4;
+        const angle = isHovered ? hoverAngles[index] : angles[index];
+        const tx = isHovered ? hoverTranslateXValues[index] : translateXValues[index];
+        // 첫 번째 책이 맨 뒤, 마지막 책이 맨 앞
+        const zIndex = index;
+        // 뒤쪽 책일수록 살짝 작게 (원근감)
+        const scale = 1 - (bookCount - 1 - index) * 0.04;
+        const hoverScale = isHovered ? scale + 0.02 : scale;
 
         return (
           <div
             key={book.bookId}
-            className={cn(
-              "absolute inset-0 rounded-sm overflow-hidden",
-              "transition-all duration-150 ease-out",
-              // 호버 시 펼쳐지는 효과
-              isHovered && reverseIndex > 0 && "translate-x-1"
-            )}
+            className="absolute inset-0 rounded-sm overflow-hidden transition-all duration-200 ease-out"
             style={{
-              // 기본 겹침 효과
-              top: `${offset}px`,
-              left: `${offset}px`,
-              right: `${-offset}px`,
-              bottom: `${-offset}px`,
-              transform: isHovered
-                ? `rotate(${(reverseIndex - 1) * 6}deg) translateX(${reverseIndex * 4}px)`
-                : `rotate(${rotation}deg)`,
+              zIndex,
+              transform: `rotate(${angle}deg) translateX(${tx}px) scale(${hoverScale})`,
               transformOrigin: 'bottom center',
-              boxShadow: `0 ${2 + reverseIndex}px ${4 + reverseIndex * 2}px rgba(0,0,0,${0.15 + reverseIndex * 0.05})`,
+              boxShadow: isHovered
+                ? `0 4px 12px rgba(0,0,0,${0.2 + index * 0.05})`
+                : `0 2px 6px rgba(0,0,0,${0.12 + index * 0.04})`,
             }}
           >
             {book.coverImageUrl ? (
@@ -476,12 +492,20 @@ const StackedBookCovers = memo(function StackedBookCovers({ books, isHovered }: 
         );
       })}
 
-      {/* 추가 권수 표시 */}
-      {remainingCount > 0 && (
-        <div className="absolute -top-1 -right-1 bg-forest-500 text-white text-[7px] font-bold w-4 h-4 rounded-full flex items-center justify-center z-10 shadow-sm">
-          +{remainingCount}
-        </div>
-      )}
+      {/* 책 권수 배지 (2권 이상일 때 항상 표시) */}
+      <div
+        className={cn(
+          "absolute -top-1.5 -right-1.5 text-white text-[8px] font-bold rounded-full flex items-center justify-center z-10",
+          "shadow-md border border-white/50 dark:border-slate-800/50",
+          "transition-transform duration-200",
+          isHovered && "scale-110",
+          remainingCount > 0
+            ? "w-5 h-5 bg-gradient-to-br from-amber-500 to-orange-600"
+            : "w-4 h-4 bg-gradient-to-br from-forest-500 to-forest-700"
+        )}
+      >
+        {remainingCount > 0 ? `${books.length}` : bookCount}
+      </div>
     </div>
   );
 });
