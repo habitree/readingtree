@@ -13,17 +13,21 @@ import type { NoteWithBook } from "@/types/note";
 
 interface ProgressLogListProps {
   userBookId: string;
+  initialNotes?: NoteWithBook[];
 }
 
 /**
  * 진행 로그 전용 목록 컴포넌트
  * progress 타입의 기록만 필터링하여 컴팩트하게 표시
  */
-export function ProgressLogList({ userBookId }: ProgressLogListProps) {
-  const [logs, setLogs] = useState<NoteWithBook[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+export function ProgressLogList({ userBookId, initialNotes }: ProgressLogListProps) {
+  const [logs, setLogs] = useState<NoteWithBook[]>(initialNotes || []);
+  const [isLoading, setIsLoading] = useState(!initialNotes);
 
   useEffect(() => {
+    // initialNotes가 제공된 경우 fetch 스킵
+    if (initialNotes) return;
+
     async function fetchProgressLogs() {
       try {
         const { getNotes } = await import("@/app/actions/notes");
@@ -39,7 +43,7 @@ export function ProgressLogList({ userBookId }: ProgressLogListProps) {
     }
 
     fetchProgressLogs();
-  }, [userBookId]);
+  }, [userBookId, initialNotes]);
 
   if (isLoading) {
     return <ProgressLogListSkeleton />;

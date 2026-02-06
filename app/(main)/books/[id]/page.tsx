@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { notFound } from "next/navigation";
 import { Metadata, Viewport } from "next";
 import Image from "next/image";
@@ -6,11 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BookStatusBadge } from "@/components/books/book-status-badge";
-import { getBookDetail, updateBookStatus } from "@/app/actions/books";
+import { getBookDetail } from "@/app/actions/books";
 import { getSampleBookDetail } from "@/app/actions/sample";
 import { getCurrentUser } from "@/app/actions/auth";
 import { getImageUrl } from "@/lib/utils/image";
-import { formatDate } from "@/lib/utils/date";
 import { BookStatusSelector } from "@/components/books/book-status-selector";
 import { BookDeleteButton } from "@/components/books/book-delete-button";
 import { BookInfoEditor } from "@/components/books/book-info-editor";
@@ -21,12 +21,19 @@ import type { ReadingStatus } from "@/types/book";
 import { SampleNotesList } from "@/components/notes/sample-notes-list";
 import { BookNotesTabs } from "@/components/books/book-notes-tabs";
 import { getNotes } from "@/app/actions/notes";
+import { getRelatedBooks } from "@/app/actions/book-relations";
 import { isValidUUID } from "@/lib/utils/validation";
 import { sanitizeErrorForLogging } from "@/lib/utils/validation";
 import { BookScrollHandler } from "@/components/books/book-scroll-handler";
 import { BookTitle } from "@/components/books/book-title";
 import { RelatedBooksList } from "@/components/books/related-books-list";
 import { RelatedBooksEditor } from "@/components/books/related-books-editor";
+
+// React cache()로 동일 요청 내 getBookDetail 중복 호출 방지
+// generateMetadata + BookDetailPage에서 호출해도 1번만 실행
+const getCachedBookDetail = cache(
+  (bookId: string, userId: string) => getBookDetail(bookId)
+);
 
 interface BookDetailPageProps {
   params: {
@@ -57,7 +64,7 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
     notFound();
   }
 
-  // 현재 사용자 확인
+  // 현재 사용자 확인 (1회만 호출)
   const user = await getCurrentUser();
   const isGuest = !user;
 
@@ -77,8 +84,8 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
         notFound();
       }
     } else {
-      // 로그인 사용자: 본인 데이터 조회
-      bookDetail = await getBookDetail(bookId);
+      // 로그인 사용자: 본인 데이터 조회 (cache 적용)
+      bookDetail = await getCachedBookDetail(bookId, user.id);
     }
 
     console.log("BookDetailPage: 책 상세 조회 성공", { bookId, hasBook: !!bookDetail, isSample });
@@ -96,8 +103,18 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
   const book = bookDetail.books as any;
   const userBook = bookDetail;
 
-  // 로그인 사용자의 경우 기록 목록 조회
-  const notes = !isGuest ? await getNotes(userBook.id) : [];
+  // 로그인 사용자: getNotes + getRelatedBooks를 병렬 호출 (user 전달로 내부 auth 중복 제거)
+  let notes: Awaited<ReturnType<typeof getNotes>> = [];
+  let relatedBooks: Awaited<ReturnType<typeof getRelatedBooks>> = [];
+
+  if (!isGuest) {
+    const [notesResult, relatedBooksResult] = await Promise.all([
+      getNotes(userBook.id, undefined, user),
+      getRelatedBooks(userBook.id, user).catch(() => []),
+    ]);
+    notes = notesResult;
+    relatedBooks = relatedBooksResult;
+  }
 
   // 완독 날짜 배열 계산
   let completedDates: string[] = [];
@@ -300,7 +317,7 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
           </div>
           {userBook.reading_reason ? (
             <blockquote className="text-sm sm:text-base leading-relaxed italic text-foreground/90 pl-2 border-l-2 border-primary/20">
-              "{userBook.reading_reason}"
+              &ldquo;{userBook.reading_reason}&rdquo;
             </blockquote>
           ) : (
             <p className="text-sm text-muted-foreground italic pl-2">
@@ -323,7 +340,7 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
             </div>
           </CardHeader>
           <CardContent className="pt-0">
-            <RelatedBooksList userBookId={userBook.id} />
+            <RelatedBooksList userBookId={userBook.id} initialBooks={relatedBooks} />
           </CardContent>
         </Card>
       )}
@@ -383,7 +400,12 @@ export async function generateMetadata({
   }
 
   try {
-    const bookDetail = await getBookDetail(bookId);
+    // getCurrentUser()로 user를 가져와서 cache key로 사용
+    const user = await getCurrentUser();
+    if (!user) {
+      return { title: "책 상세 | ReadTree" };
+    }
+    const bookDetail = await getCachedBookDetail(bookId, user.id);
     const book = bookDetail.books as any;
 
     return {
@@ -403,4 +425,3 @@ export async function generateViewport(): Promise<Viewport> {
     initialScale: 1,
   };
 }
-

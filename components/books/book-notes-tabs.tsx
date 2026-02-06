@@ -49,7 +49,7 @@ export function BookNotesTabs({ userBookId, notes }: BookNotesTabsProps) {
       </TabsContent>
 
       <TabsContent value="progress">
-        <ProgressLogList userBookId={userBookId} />
+        <ProgressLogList userBookId={userBookId} initialNotes={notes.filter((n) => n.type === "progress")} />
       </TabsContent>
     </Tabs>
   );

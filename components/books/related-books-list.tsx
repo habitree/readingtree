@@ -9,18 +9,22 @@ import { getImageUrl } from "@/lib/utils/image";
 
 interface RelatedBooksListProps {
   userBookId: string;
+  initialBooks?: RelatedBook[];
 }
 
 /**
  * 연결된 책 목록 컴포넌트
  * 책 상세 페이지에서 연결된 관련 도서를 표시
  */
-export function RelatedBooksList({ userBookId }: RelatedBooksListProps) {
-  const [books, setBooks] = useState<RelatedBook[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+export function RelatedBooksList({ userBookId, initialBooks }: RelatedBooksListProps) {
+  const [books, setBooks] = useState<RelatedBook[]>(initialBooks || []);
+  const [isLoading, setIsLoading] = useState(!initialBooks);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    // initialBooks가 제공된 경우 fetch 스킵
+    if (initialBooks) return;
+
     const loadRelatedBooks = async () => {
       setIsLoading(true);
       setError(null);
@@ -36,7 +40,7 @@ export function RelatedBooksList({ userBookId }: RelatedBooksListProps) {
     };
 
     loadRelatedBooks();
-  }, [userBookId]);
+  }, [userBookId, initialBooks]);
 
   if (isLoading) {
     return (

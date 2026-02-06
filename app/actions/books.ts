@@ -1470,23 +1470,27 @@ export async function getBookDetail(userBookId: string, user?: User | null) {
     throw new Error("책을 찾을 수 없습니다.");
   }
 
-  // 표지가 없고 ISBN이 있으면 Open Library Covers 폴백 1회 (타임아웃으로 병목 방지)
+  // 표지가 없고 ISBN이 있으면 Open Library Covers 폴백을 비동기(논블로킹)로 실행
+  // 페이지 렌더링을 블로킹하지 않고, 다음 접근 시 DB에서 커버 URL을 가져옴
   const bookRow = data.books as { id: string; isbn: string | null; cover_image_url: string | null } | null;
   if (bookRow && !bookRow.cover_image_url && bookRow.isbn) {
-    try {
-      const openLibUrl = await resolveOpenLibraryCoverUrl(bookRow.isbn, {
-        timeoutMs: OPEN_LIBRARY_COVER_TIMEOUT_MS,
+    const isbnForCover = bookRow.isbn;
+    const bookIdForCover = bookRow.id;
+    resolveOpenLibraryCoverUrl(isbnForCover, {
+      timeoutMs: OPEN_LIBRARY_COVER_TIMEOUT_MS,
+    })
+      .then(async (openLibUrl) => {
+        if (openLibUrl) {
+          const bgSupabase = await createServerSupabaseClient();
+          await bgSupabase
+            .from("books")
+            .update({ cover_image_url: openLibUrl })
+            .eq("id", bookIdForCover);
+        }
+      })
+      .catch(() => {
+        // 무시 - 백그라운드 처리이므로 실패해도 영향 없음
       });
-      if (openLibUrl) {
-        await supabase
-          .from("books")
-          .update({ cover_image_url: openLibUrl })
-          .eq("id", bookRow.id);
-        Object.assign(bookRow, { cover_image_url: openLibUrl });
-      }
-    } catch {
-      // 무시
-    }
   }
 
   console.log("getBookDetail: 책 상세 조회 성공", {
