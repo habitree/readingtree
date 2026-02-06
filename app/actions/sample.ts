@@ -162,12 +162,12 @@ export async function getSampleBooksWithNotes(
     .map((ub: any) => ub.books?.id)
     .filter((id: string | undefined): id is string => !!id);
 
-  // 모든 노트를 한 번에 조회
+  // 모든 노트를 한 번에 조회 (content 제외 - 내서재에서 미사용)
   let notesData: any[] = [];
   if (bookIds.length > 0) {
     const { data: allNotes } = await supabase
       .from("notes")
-      .select("id, type, content, created_at, book_id")
+      .select("id, type, created_at, book_id")
       .eq("user_id", sampleUserId)
       .in("book_id", bookIds)
       .order("created_at", { ascending: false });
@@ -185,7 +185,6 @@ export async function getSampleBooksWithNotes(
       latestNoteMap[bookId] = {
         id: note.id,
         type: note.type,
-        content: note.content,
         created_at: note.created_at,
       };
     }

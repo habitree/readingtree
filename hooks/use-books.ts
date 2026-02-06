@@ -39,7 +39,7 @@ export function useBooks(status?: ReadingStatus) {
   ) => {
     try {
       await addBook(bookData, bookStatus);
-      await fetchBooks(); // 목록 새로고침
+      await fetchBooks(); // 새 책은 ID를 알 수 없으므로 전체 새로고침
     } catch (err) {
       const error = err instanceof Error ? err : new Error("책 추가 실패");
       setError(error);
@@ -47,14 +47,28 @@ export function useBooks(status?: ReadingStatus) {
     }
   };
 
+  // Optimistic update: 즉시 UI 반영 후 서버 동기화
   const handleUpdateStatus = async (
     userBookId: string,
     newStatus: ReadingStatus
   ) => {
+    // 현재 상태 백업 (롤백용)
+    const previousBooks = books;
+
+    // 1. 즉시 로컬 상태 업데이트 (UI 반응성 향상)
+    setBooks((prev) =>
+      prev.map((book) =>
+        book.id === userBookId ? { ...book, status: newStatus } : book
+      )
+    );
+
     try {
+      // 2. 서버에 변경 요청
       await updateBookStatus(userBookId, newStatus);
-      await fetchBooks(); // 목록 새로고침
+      // 성공 시 추가 작업 없음 (이미 로컬 상태 업데이트됨)
     } catch (err) {
+      // 3. 실패 시 롤백
+      setBooks(previousBooks);
       const error = err instanceof Error ? err : new Error("상태 변경 실패");
       setError(error);
       throw error;

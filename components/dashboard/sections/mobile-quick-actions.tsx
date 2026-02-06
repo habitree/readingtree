@@ -1,5 +1,6 @@
 "use client";
 
+import { useCallback } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { PenTool, BookPlus, Camera, Search } from "lucide-react";
@@ -59,6 +60,11 @@ const quickActions: QuickActionItem[] = [
 export function MobileQuickActions() {
   const { open } = useMobileNoteSheet();
 
+  // useCallback으로 핸들러 최적화
+  const handleOpen = useCallback((mode: NoteMode) => {
+    open(mode);
+  }, [open]);
+
   return (
     <div className="grid grid-cols-4 gap-2 sm:hidden">
       {quickActions.map((action, index) => {
@@ -68,8 +74,8 @@ export function MobileQuickActions() {
             <button
               key={`action-${index}`}
               type="button"
-              onClick={() => open(action.sheetMode)}
-              className="flex flex-col items-center gap-1.5 p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 active:scale-95 transition-all"
+              onClick={() => handleOpen(action.sheetMode!)}
+              className="flex flex-col items-center gap-1.5 p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 active:scale-95 transition-transform duration-150"
             >
               <div
                 className={cn(
@@ -91,7 +97,7 @@ export function MobileQuickActions() {
           <Link
             key={action.href}
             href={action.href!}
-            className="flex flex-col items-center gap-1.5 p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 active:scale-95 transition-all"
+            className="flex flex-col items-center gap-1.5 p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 active:scale-95 transition-transform duration-150"
           >
             <div
               className={cn(

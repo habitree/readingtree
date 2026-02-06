@@ -119,12 +119,12 @@ export function BookStatsCards({ stats, className }: BookStatsCardsProps) {
           <button
             key={item.label}
             onClick={() => handleClick(item.status)}
-            className="w-full text-left cursor-pointer hover:shadow-md transition-all duration-200 active:scale-[0.98]"
+            className="w-full text-left cursor-pointer hover:shadow-md transition-[box-shadow,transform] duration-150 active:scale-[0.98]"
             aria-label={`${item.label}: ${item.value}권`}
           >
             <Card
               className={cn(
-                "border-l-4 h-full transition-all",
+                "border-l-4 h-full transition-colors duration-150",
                 colorClasses[item.color as keyof typeof colorClasses],
                 // UX 원칙 07: 선택 색상 단순화 - 핵심 포인트 컬러(primary)만 사용
                 isActive && "ring-2 ring-primary ring-offset-2 shadow-md"

@@ -127,7 +127,7 @@ function PopularBookCardComponent({
   return (
     <Card
       className={cn(
-        "group hover:shadow-md transition-all duration-200 overflow-hidden",
+        "group hover:shadow-md transition-shadow duration-150 overflow-hidden",
         variant === "compact" && "w-[140px] sm:w-[160px] shrink-0"
       )}
     >
@@ -144,7 +144,7 @@ function PopularBookCardComponent({
               src={getImageUrl(currentCoverUrl!)}
               alt={`${book.title} 표지`}
               fill
-              className="object-cover group-hover:scale-105 transition-transform duration-200"
+              className="object-cover group-hover:scale-105 transition-transform duration-150"
               sizes="(max-width: 768px) 140px, 160px"
               onError={handleImageError}
             />

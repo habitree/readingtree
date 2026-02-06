@@ -413,7 +413,7 @@ export function ReadingProgress({
           <Progress
             value={displayPercent}
             className={cn(
-              "h-2.5 transition-all",
+              "h-2.5 transition-colors duration-150",
               displayPercent >= 75 ? "[&>div]:bg-emerald-500" :
               displayPercent >= 50 ? "[&>div]:bg-amber-500" :
               displayPercent >= 25 ? "[&>div]:bg-indigo-500" :

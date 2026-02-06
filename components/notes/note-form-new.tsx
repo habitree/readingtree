@@ -372,10 +372,10 @@ export function NoteFormNew({ bookId }: NoteFormNewProps) {
             {showOptionalFields && (
               <motion.div
                 initial={{ height: 0, opacity: 0 }}
-                animate={{ height: "auto", opacity: 1 }}
+                animate={{ height: 280, opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
                 transition={{ duration: 0.2 }}
-                className="border-t border-slate-200 dark:border-slate-700"
+                className="border-t border-slate-200 dark:border-slate-700 overflow-hidden"
               >
                 <div className="p-3 space-y-4">
                   {/* 제목 입력 */}

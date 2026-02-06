@@ -338,7 +338,105 @@ app/callback/route.ts       # OAuth 콜백
 
 ---
 
-## 10. 원본 룰 파일 매핑
+## 10. 모바일 성능 규칙
+
+> 원본: `.agent/rules/mobile_performance_rule.md`
+
+### 10.1 Core Web Vitals 기준
+
+| 지표 | 기준값 |
+|------|--------|
+| LCP | < 2.5s |
+| FID | < 100ms |
+| CLS | < 0.1 |
+| INP | < 200ms |
+
+### 10.2 CSS 애니메이션 규칙
+
+```css
+/* 금지 - transition-all */
+transition: all 0.3s ease;
+
+/* 권장 - 명시적 속성 */
+transition: transform 0.15s ease, opacity 0.15s ease;
+```
+
+### 10.3 터치 최적화
+
+- 터치 타겟 최소 44x44px
+- `touch-action: manipulation` 적용
+- 300ms 터치 지연 제거
+
+---
+
+## 11. 컴포넌트 패턴 규칙
+
+> 원본: `.agent/rules/component_pattern_rule.md`
+
+### 11.1 메모이제이션 적용 기준
+
+| 케이스 | 적용 |
+|--------|------|
+| 자식에게 전달되는 함수 | `useCallback` |
+| useEffect dependency | `useCallback` |
+| 비용 큰 계산 | `useMemo` |
+| 리스트 아이템 | `React.memo` |
+
+### 11.2 리스트 렌더링
+
+```tsx
+// 금지 - key={index}
+{items.map((item, index) => <Item key={index} />)}
+
+// 권장 - 고유 ID
+{items.map((item) => <Item key={item.id} />)}
+```
+
+### 11.3 인라인 함수 금지
+
+```tsx
+// 금지
+onClick={() => handleClick(item.id)}
+
+// 권장 - useCallback 사용
+const handleItemClick = useCallback(() => {
+  handleClick(item.id);
+}, [item.id, handleClick]);
+```
+
+---
+
+## 12. 코드 리뷰 체크리스트
+
+> 원본: `.agent/rules/code_review_checklist.md`
+
+### 성능 체크
+
+- [ ] 불필요한 리렌더링 없음
+- [ ] `React.memo`/`useCallback`/`useMemo` 적절히 사용
+- [ ] `next/image` 사용
+
+### 모바일 체크
+
+- [ ] 터치 타겟 44x44px 이상
+- [ ] `transition-all` 사용 안 함
+- [ ] 애니메이션 duration 300ms 이하
+
+### 보안 체크
+
+- [ ] XSS 방지 (dangerouslySetInnerHTML 주의)
+- [ ] RLS 정책 확인
+- [ ] 민감 정보 클라이언트 노출 없음
+
+### 접근성 체크
+
+- [ ] ARIA 속성 적절히 사용
+- [ ] 키보드 접근 가능
+- [ ] 색상만으로 정보 전달 안 함
+
+---
+
+## 13. 원본 룰 파일 매핑
 
 | 이 문서 섹션 | 원본 파일 (.agent/rules/) |
 |-------------|--------------------------|
@@ -348,10 +446,13 @@ app/callback/route.ts       # OAuth 콜백
 | 5. DB/RLS 관리 | `db_rls_rule.md` |
 | 6. 데이터 모델 거버넌스 | `datarule_1.md` |
 | 7. 마이그레이션 | `migration_rule.md` |
+| 10. 모바일 성능 | `mobile_performance_rule.md` |
+| 11. 컴포넌트 패턴 | `component_pattern_rule.md` |
+| 12. 코드 리뷰 | `code_review_checklist.md` |
 
 ---
 
-## 11. 동기화 규칙
+## 14. 동기화 규칙
 
 ### `.agent/rules/` 변경 시
 
@@ -364,10 +465,11 @@ app/callback/route.ts       # OAuth 콜백
 | 날짜 | 변경 내용 | 원본 파일 |
 |------|----------|----------|
 | 2025-01-20 | 최초 생성 | 전체 |
+| 2025-02-06 | 모바일 성능, 컴포넌트 패턴, 코드 리뷰 규칙 추가 | `mobile_performance_rule.md`, `component_pattern_rule.md`, `code_review_checklist.md` |
 
 ---
 
-## 12. 참고 문서
+## 15. 참고 문서
 
 | 문서 | 경로 |
 |------|------|

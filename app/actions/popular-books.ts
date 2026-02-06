@@ -37,8 +37,8 @@ const DEFAULT_PAGE_SIZE = 10;
 /** 표지 보강할 최대 도서 수 (성능 고려) */
 const MAX_COVER_ENRICH_COUNT = 8;
 
-/** 표지 조회 타임아웃 (ms) */
-const COVER_FETCH_TIMEOUT = 3000;
+/** 표지 조회 타임아웃 (ms) - 1.5초로 단축하여 응답성 개선 */
+const COVER_FETCH_TIMEOUT = 1500;
 
 // ============================================
 // 메인 서버 액션

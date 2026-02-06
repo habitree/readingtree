@@ -1,12 +1,15 @@
 "use client";
 
+import { useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { BookOpen, ChevronRight, Play } from "lucide-react";
+import { BookOpen, ChevronRight, Play, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useHapticFeedback } from "@/components/ui/touch-feedback";
 
 interface ContinueReadingCardProps {
   userBookId: string;
@@ -33,6 +36,23 @@ export function ContinueReadingCard({
   progressPercent,
   compact = false,
 }: ContinueReadingCardProps) {
+  const router = useRouter();
+  const [isNavigating, setIsNavigating] = useState(false);
+  const { lightTap } = useHapticFeedback();
+
+  const handleClick = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    if (isNavigating) return;
+
+    setIsNavigating(true);
+    lightTap();
+
+    // 전역 네비게이션 이벤트 발생
+    window.dispatchEvent(new CustomEvent("navigation-start", { detail: { path: `/books/${userBookId}` } }));
+
+    router.push(`/books/${userBookId}`);
+  }, [router, userBookId, isNavigating, lightTap]);
+
   // compact 모드: 세로 레이아웃의 작은 카드
   if (compact) {
     return (
@@ -40,9 +60,20 @@ export function ContinueReadingCard({
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: 0.1 }}
+        whileTap={{ scale: 0.98 }}
+        onClick={handleClick}
+        className="cursor-pointer"
       >
-        <Link href={`/books/${userBookId}`} className="block group h-full">
-          <Card className="relative overflow-hidden h-full border-forest-200/50 dark:border-forest-800/50 bg-gradient-to-br from-forest-50/80 to-emerald-50/80 dark:from-forest-950/50 dark:to-emerald-950/50 hover:shadow-lg hover:border-forest-300 dark:hover:border-forest-700 transition-all duration-300">
+        <Card className={cn(
+          "relative overflow-hidden h-full border-forest-200/50 dark:border-forest-800/50 bg-gradient-to-br from-forest-50/80 to-emerald-50/80 dark:from-forest-950/50 dark:to-emerald-950/50 hover:shadow-lg hover:border-forest-300 dark:hover:border-forest-700 transition-all duration-150",
+          isNavigating && "opacity-75"
+        )}>
+          {/* 로딩 오버레이 */}
+          {isNavigating && (
+            <div className="absolute inset-0 bg-white/50 dark:bg-slate-900/50 z-10 flex items-center justify-center">
+              <Loader2 className="h-5 w-5 animate-spin text-forest-500" />
+            </div>
+          )}
             {/* 배경 장식 */}
             <div className="absolute top-0 right-0 w-16 h-16 bg-forest-200/20 dark:bg-forest-800/10 rounded-full blur-xl translate-x-1/2 -translate-y-1/2" />
 
@@ -102,13 +133,12 @@ export function ContinueReadingCard({
                     className="h-full bg-gradient-to-r from-forest-400 to-emerald-400 rounded-full"
                     initial={{ width: 0 }}
                     animate={{ width: `${progressPercent}%` }}
-                    transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
+                    transition={{ type: "spring", stiffness: 100, damping: 15, delay: 0.2 }}
                   />
                 </div>
               </div>
             </div>
           </Card>
-        </Link>
       </motion.div>
     );
   }
@@ -119,13 +149,25 @@ export function ContinueReadingCard({
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, delay: 0.1 }}
+      whileTap={{ scale: 0.98 }}
+      onClick={handleClick}
+      className="cursor-pointer group"
     >
-      <Link href={`/books/${userBookId}`} className="block group">
-        <Card className="relative overflow-hidden border-forest-200/50 dark:border-forest-800/50 bg-gradient-to-r from-forest-50/80 to-emerald-50/80 dark:from-forest-950/50 dark:to-emerald-950/50 hover:shadow-lg hover:border-forest-300 dark:hover:border-forest-700 transition-all duration-300">
-          {/* 배경 장식 */}
-          <div className="absolute top-0 right-0 w-24 h-24 bg-forest-200/20 dark:bg-forest-800/10 rounded-full blur-2xl translate-x-1/2 -translate-y-1/2" />
+      <Card className={cn(
+        "relative overflow-hidden border-forest-200/50 dark:border-forest-800/50 bg-gradient-to-r from-forest-50/80 to-emerald-50/80 dark:from-forest-950/50 dark:to-emerald-950/50 hover:shadow-lg hover:border-forest-300 dark:hover:border-forest-700 transition-all duration-150",
+        isNavigating && "opacity-75"
+      )}>
+        {/* 로딩 오버레이 */}
+        {isNavigating && (
+          <div className="absolute inset-0 bg-white/50 dark:bg-slate-900/50 z-10 flex items-center justify-center">
+            <Loader2 className="h-6 w-6 animate-spin text-forest-500" />
+          </div>
+        )}
 
-          <div className="relative p-4 flex items-center gap-4">
+        {/* 배경 장식 */}
+        <div className="absolute top-0 right-0 w-24 h-24 bg-forest-200/20 dark:bg-forest-800/10 rounded-full blur-2xl translate-x-1/2 -translate-y-1/2" />
+
+        <div className="relative p-4 flex items-center gap-4">
             {/* 책 표지 */}
             <div className="relative shrink-0">
               <motion.div
@@ -207,29 +249,33 @@ export function ContinueReadingCard({
                     className="h-full bg-gradient-to-r from-forest-400 to-emerald-400 rounded-full"
                     initial={{ width: 0 }}
                     animate={{ width: `${progressPercent}%` }}
-                    transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
+                    transition={{ type: "spring", stiffness: 100, damping: 15, delay: 0.2 }}
                   />
                 </div>
               </div>
             </div>
 
-            {/* CTA 버튼 */}
-            <div className="shrink-0">
-              <motion.div
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.95 }}
+          {/* CTA 버튼 */}
+          <div className="shrink-0">
+            <motion.div
+              whileHover={{ scale: 1.1, rotate: 5 }}
+              whileTap={{ scale: 0.95 }}
+              transition={{ type: "spring", stiffness: 400, damping: 17 }}
+            >
+              <Button
+                size="icon"
+                className="h-10 w-10 rounded-full bg-forest-500 hover:bg-forest-600 text-white shadow-md"
               >
-                <Button
-                  size="icon"
-                  className="h-10 w-10 rounded-full bg-forest-500 hover:bg-forest-600 text-white shadow-md"
-                >
+                {isNavigating ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
                   <Play className="h-4 w-4 ml-0.5" />
-                </Button>
-              </motion.div>
-            </div>
+                )}
+              </Button>
+            </motion.div>
           </div>
-        </Card>
-      </Link>
+        </div>
+      </Card>
     </motion.div>
   );
 }

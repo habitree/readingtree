@@ -727,25 +727,41 @@ export async function getUserBooks(
       );
     }
 
-    // 네이버에서도 표지를 못 찾은 책만 Open Library Covers로 보강 (배치 수 제한으로 병목/레이트리밋 방지)
+    // 네이버에서도 표지를 못 찾은 책만 Open Library Covers로 보강 (병렬 처리로 성능 최적화)
     const stillWithoutCover = (sampleBooks || []).filter(
       (b) => !b.cover_image_url && b.isbn
     );
     const toBackfill = stillWithoutCover.slice(0, OPEN_LIBRARY_COVER_BATCH_LIMIT);
-    for (const book of toBackfill) {
-      try {
-        const coverUrl = await resolveOpenLibraryCoverUrl(book.isbn!, {
-          timeoutMs: OPEN_LIBRARY_COVER_TIMEOUT_MS,
-        });
-        if (coverUrl) {
-          await supabase
+
+    // 병렬로 표지 URL 조회
+    const coverResults = await Promise.all(
+      toBackfill.map(async (book) => {
+        try {
+          const coverUrl = await resolveOpenLibraryCoverUrl(book.isbn!, {
+            timeoutMs: OPEN_LIBRARY_COVER_TIMEOUT_MS,
+          });
+          return coverUrl ? { bookId: book.id, coverUrl } : null;
+        } catch {
+          return null;
+        }
+      })
+    );
+
+    // 성공한 결과만 필터링하여 배치 업데이트
+    const validResults = coverResults.filter((r): r is { bookId: string; coverUrl: string } => r !== null);
+    if (validResults.length > 0) {
+      await Promise.all(
+        validResults.map(({ bookId, coverUrl }) =>
+          supabase
             .from("books")
             .update({ cover_image_url: coverUrl })
-            .eq("id", book.id);
-          book.cover_image_url = coverUrl;
-        }
-      } catch {
-        // 타임아웃/네트워크 실패 시 무시
+            .eq("id", bookId)
+        )
+      );
+      // 로컬 객체도 업데이트
+      for (const { bookId, coverUrl } of validResults) {
+        const book = sampleBooks?.find((b) => b.id === bookId);
+        if (book) book.cover_image_url = coverUrl;
       }
     }
 
@@ -817,23 +833,38 @@ export async function getUserBooks(
   }
 
   const list = data || [];
-  // 표지가 없는 책만 Open Library Covers로 보강 (요청당 최대 건수 제한)
+  // 표지가 없는 책만 Open Library Covers로 보강 (병렬 처리로 성능 최적화)
   const withoutCover = list.filter(
     (ub) => ub.books && !(ub.books as { cover_image_url?: string | null }).cover_image_url && (ub.books as { isbn?: string | null }).isbn
   );
   const toBackfill = withoutCover.slice(0, OPEN_LIBRARY_COVER_BATCH_LIMIT);
-  for (const ub of toBackfill) {
-    const b = ub.books as { id: string; isbn: string | null; cover_image_url: string | null };
-    try {
-      const coverUrl = await resolveOpenLibraryCoverUrl(b.isbn!, {
-        timeoutMs: OPEN_LIBRARY_COVER_TIMEOUT_MS,
-      });
-      if (coverUrl) {
-        await supabase.from("books").update({ cover_image_url: coverUrl }).eq("id", b.id);
-        b.cover_image_url = coverUrl;
+
+  // 병렬로 표지 URL 조회
+  const coverResults = await Promise.all(
+    toBackfill.map(async (ub) => {
+      const b = ub.books as { id: string; isbn: string | null; cover_image_url: string | null };
+      try {
+        const coverUrl = await resolveOpenLibraryCoverUrl(b.isbn!, {
+          timeoutMs: OPEN_LIBRARY_COVER_TIMEOUT_MS,
+        });
+        return coverUrl ? { book: b, coverUrl } : null;
+      } catch {
+        return null;
       }
-    } catch {
-      // 무시
+    })
+  );
+
+  // 성공한 결과만 필터링하여 배치 업데이트
+  const validResults = coverResults.filter((r): r is { book: { id: string; isbn: string | null; cover_image_url: string | null }; coverUrl: string } => r !== null);
+  if (validResults.length > 0) {
+    await Promise.all(
+      validResults.map(({ book, coverUrl }) =>
+        supabase.from("books").update({ cover_image_url: coverUrl }).eq("id", book.id)
+      )
+    );
+    // 로컬 객체도 업데이트
+    for (const { book, coverUrl } of validResults) {
+      book.cover_image_url = coverUrl;
     }
   }
 
@@ -873,7 +904,6 @@ export interface BookWithNotes {
   latestNote?: {
     id: string;
     type: string;
-    content: string | null;
     created_at: string;
   };
   groupBooks?: Array<{
@@ -949,7 +979,7 @@ export async function getUserBooksWithNotes(
     cachedBookshelf = bookshelf;
   }
 
-  // 검색어가 있으면 먼저 매칭 책 ID 조회
+  // 검색어가 있으면 먼저 매칭 책 ID 조회 (성능 최적화: 상위 500개 제한)
   let matchingBookIds: string[] | null = null;
   if (query && query.trim()) {
     const sanitizedQuery = query.trim();
@@ -958,7 +988,8 @@ export async function getUserBooksWithNotes(
       .select("id")
       .or(
         `title.ilike.%${sanitizedQuery}%,author.ilike.%${sanitizedQuery}%,isbn.ilike.%${sanitizedQuery}%`
-      );
+      )
+      .limit(500); // 검색 결과 제한으로 쿼리 성능 향상
 
     matchingBookIds = matchingBooks?.map((b) => b.id) || [];
 
@@ -1115,10 +1146,11 @@ export async function getUserBooksWithNotes(
         .in("book_id", bookIds)
     : Promise.resolve({ data: [] as any[] });
 
+  // 노트 조회 최적화: content 제외 (내서재에서 미사용), 최근 노트 우선
   const notesPromise = bookIds.length > 0
     ? supabase
         .from("notes")
-        .select("id, type, content, created_at, book_id")
+        .select("id, type, created_at, book_id")
         .eq("user_id", currentUser.id)
         .in("book_id", bookIds)
         .order("created_at", { ascending: false })
@@ -1180,7 +1212,6 @@ export async function getUserBooksWithNotes(
       latestNoteMap[bookId] = {
         id: note.id,
         type: note.type,
-        content: note.content,
         created_at: note.created_at,
       };
     }

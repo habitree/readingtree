@@ -1,9 +1,11 @@
+import { Suspense } from "react";
 import { Header } from "@/components/layout/header";
 import { Sidebar } from "@/components/layout/sidebar";
 import { MobileNav } from "@/components/layout/mobile-nav";
 import { Footer } from "@/components/layout/footer";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { MobileNoteSheetProvider } from "@/components/notes/mobile-note-sheet";
+import { NavigationProgress } from "@/components/ui/navigation-progress";
 
 /**
  * 메인 레이아웃
@@ -17,6 +19,10 @@ export default function MainLayout({
 }) {
   return (
     <ErrorBoundary>
+      {/* 전역 네비게이션 프로그레스 바 */}
+      <Suspense fallback={null}>
+        <NavigationProgress />
+      </Suspense>
       <div className="flex min-h-screen flex-col">
         <Header />
         <div className="flex flex-1">

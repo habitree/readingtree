@@ -207,7 +207,13 @@
     min-width: 44px;
   }
 
-  /* 터치 동작 최적화 */
+  /* 터치 동작 최적화 - 글로벌 설정 */
+  button, [role="button"], a, .touchable {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* 터치 동작 최적화 - 유틸리티 클래스 */
   .touch-manipulation {
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
@@ -576,6 +582,20 @@
   transform: scale(1.1);
 }
 
+/* ============================================
+ * Shimmer 스켈레톤 애니메이션
+ * ============================================ */
+
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer 2s infinite;
+}
+
 /* 모션 감소 선호 사용자 대응 */
 @media (prefers-reduced-motion: reduce) {
   .tree-sway,
@@ -588,7 +608,8 @@
   .glow-effect,
   .premium-shimmer,
   .particle-rise,
-  .star-twinkle {
+  .star-twinkle,
+  .animate-shimmer {
     animation: none;
   }
 

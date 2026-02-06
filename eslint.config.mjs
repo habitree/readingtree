@@ -30,9 +30,12 @@ const eslintConfig = [
       ],
       "@typescript-eslint/no-explicit-any": "warn",
 
-      // React 관련 규칙
+      // React 관련 규칙 (성능 최적화)
       "react/no-unescaped-entities": "off",
-      "react-hooks/exhaustive-deps": "warn",
+      "react-hooks/exhaustive-deps": "error", // warn → error (deps 누락은 버그 유발)
+
+      // Next.js 관련 규칙
+      "@next/next/no-img-element": "warn", // next/image 사용 강제
 
       // 일반 규칙
       "no-console": ["warn", { allow: ["warn", "error"] }],
