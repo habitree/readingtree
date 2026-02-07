@@ -221,9 +221,9 @@ function BookCardComponent({ book, userBookId, status, groupBooks, relatedBooks,
       {!isSample && (
         <div
           className={cn(
-            "absolute top-2 right-2 z-10 transition-opacity",
+            "absolute top-1 right-1 sm:top-2 sm:right-2 z-10 transition-opacity",
             // 모바일: 반투명으로 항상 표시, 터치 시 불투명
-            "opacity-60 active:opacity-100",
+            "opacity-50 active:opacity-100",
             // 데스크톱: 호버 시 표시
             "sm:opacity-0 sm:group-hover:opacity-100"
           )}

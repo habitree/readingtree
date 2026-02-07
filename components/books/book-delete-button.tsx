@@ -77,7 +77,7 @@ export function BookDeleteButton({ userBookId, bookTitle, variant = "default", s
           variant="destructive" 
           size={buttonSize}
           disabled={isDeleting}
-          className={variant === "icon" ? "h-4 w-4 p-0 shadow-md hover:shadow-lg" : ""}
+          className={variant === "icon" ? "h-3 w-3 sm:h-4 sm:w-4 p-0 shadow-sm sm:shadow-md hover:shadow-lg" : ""}
         >
           {isDeleting ? (
             <>
