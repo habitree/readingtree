@@ -1,5 +1,4 @@
-import { getCurrentUser } from "@/app/actions/auth";
-import { getPersonaDashboardData } from "@/app/actions/persona";
+import { getCachedCurrentUser, getCachedPersonaDashboardData } from "@/lib/cached";
 import {
   getReadingStats,
   getWeeklyProgress,
@@ -15,7 +14,7 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
  * 페르소나 데이터와 사용자 정보를 조회하여 클라이언트 컴포넌트에 전달
  */
 export async function HomeHeroWrapper() {
-  const user = await getCurrentUser();
+  const user = await getCachedCurrentUser();
 
   if (!user) {
     // 게스트 사용자는 기본 히어로 표시
@@ -47,7 +46,7 @@ export async function HomeHeroWrapper() {
     dailyRecordsByType,
     currentBookProgress,
   ] = await Promise.all([
-    getPersonaDashboardData().catch(() => null),
+    getCachedPersonaDashboardData().catch(() => null),
     getReadingStats(user).catch(() => null),
     getStreakAndTodayData(user.id).catch(() => ({ streak: 0, todayNotes: 0 })),
     getContinueReadingBooks(user, 4).catch(() => []),

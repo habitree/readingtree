@@ -203,7 +203,8 @@ export function useGroupRealtime({
           table: "group_members",
           filter: `group_id=eq.${groupId}`,
         },
-        (payload) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (payload: any) => {
           // 승인 상태로 변경된 경우
           if (
             payload.new?.status === "approved" &&
@@ -224,7 +225,7 @@ export function useGroupRealtime({
         },
         handleMemberDelete
       )
-      .subscribe((status) => {
+      .subscribe((status: string) => {
         const connected = status === "SUBSCRIBED";
         setIsConnected(connected);
         onConnectionChange?.(connected);
@@ -311,7 +312,8 @@ export function useMultiGroupRealtime(
             table: "group_shared_notes",
             filter: `group_id=eq.${groupId}`,
           },
-          (payload) => {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (payload: any) => {
             if (payload.new?.shared_by !== options.currentUserId) {
               handleEvent({
                 type: "INSERT",

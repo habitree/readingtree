@@ -122,7 +122,6 @@ export async function updateProfile(data: {
   // 프로필 수정 후 관련 페이지 캐시 무효화
   revalidatePath("/profile");
   revalidatePath("/");
-  revalidatePath("/dashboard");
   revalidatePath("/chat");
   revalidatePath("/", "layout"); // 레이아웃 캐시도 무효화
   return { success: true };
@@ -241,7 +240,6 @@ export async function updateProfileImage(imageFile: File) {
   // 프로필 이미지 업로드 후 관련 페이지 캐시 무효화
   revalidatePath("/profile");
   revalidatePath("/");
-  revalidatePath("/dashboard");
   revalidatePath("/", "layout"); // 레이아웃 캐시도 무효화
   return { success: true, avatarUrl: publicUrl };
 }

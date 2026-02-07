@@ -38,24 +38,6 @@ export function TimelineItem({ note }: TimelineItemProps) {
   const bookCoverImage = book?.cover_image_url;
   const hasBookCover = bookCoverImage && isValidImageUrl(bookCoverImage);
 
-  // 디버깅: 책 정보 확인 (개발 환경에서만)
-  if (process.env.NODE_ENV === 'development') {
-    if (!book) {
-      console.log('TimelineItem: 책 정보 없음', {
-        noteId: note.id,
-        book: note.book,
-        books: (note as any).books,
-        bookData
-      });
-    } else {
-      console.log('TimelineItem: 책 정보 있음', {
-        noteId: note.id,
-        bookTitle: book.title,
-        bookCoverImage: book.cover_image_url
-      });
-    }
-  }
-
   return (
     <Link href={`/notes/${note.id}`} className="group">
       <Card className="hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden border-slate-200/60 dark:border-slate-800">

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import dynamic from "next/dynamic";
 import { Coins, Flame, Sparkles } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -12,7 +13,11 @@ import {
 import { cn } from "@/lib/utils";
 import { getUserPoints } from "@/app/actions/points";
 import { LEVEL_STYLES, type UserPoints } from "@/types/points";
-import { PointsModal } from "./points-modal";
+
+const PointsModal = dynamic(
+  () => import("./points-modal").then((mod) => mod.PointsModal),
+  { ssr: false }
+);
 
 interface PointsButtonProps {
   className?: string;

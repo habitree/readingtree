@@ -187,7 +187,6 @@ export async function signInWithEmail(email: string, password: string) {
       // 프로필 생성 후 관련 페이지 캐시 무효화
       revalidatePath("/");
       revalidatePath("/profile");
-      revalidatePath("/dashboard");
     }
   } else {
     // 프로필이 있는 경우에도 캐시 무효화

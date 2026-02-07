@@ -515,11 +515,11 @@
 
 @keyframes glowPulse {
   0%, 100% {
-    filter: drop-shadow(0 0 8px currentColor);
+    box-shadow: 0 0 8px currentColor;
     opacity: 0.8;
   }
   50% {
-    filter: drop-shadow(0 0 20px currentColor);
+    box-shadow: 0 0 20px currentColor;
     opacity: 1;
   }
 }
@@ -531,10 +531,12 @@
 
 @keyframes premiumShimmer {
   0%, 100% {
-    filter: drop-shadow(0 0 10px #ffd700) brightness(1);
+    box-shadow: 0 0 10px #ffd700;
+    filter: brightness(1);
   }
   50% {
-    filter: drop-shadow(0 0 25px #ffd700) brightness(1.1);
+    box-shadow: 0 0 25px #ffd700;
+    filter: brightness(1.1);
   }
 }
 
@@ -575,7 +577,7 @@
 
 /* 레벨 뱃지 호버 효과 */
 .level-badge-hover {
-  transition: all 0.3s ease;
+  transition: transform 0.3s ease;
 }
 
 .level-badge-hover:hover {

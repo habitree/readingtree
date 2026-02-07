@@ -97,8 +97,6 @@ export function ProfileForm({ user }: ProfileFormProps) {
         });
 
         if (fileToUpload.size < originalSize) {
-          const savedPercent = Math.round((1 - fileToUpload.size / originalSize) * 100);
-          console.log(`[프로필 이미지 압축] ${formatFileSize(originalSize)} → ${formatFileSize(fileToUpload.size)} (${savedPercent}% 감소)`);
         }
       } catch (compressError) {
         console.error("이미지 압축 오류:", compressError);

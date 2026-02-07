@@ -115,18 +115,14 @@ export function SimpleShareDialog({ note }: SimpleShareDialogProps) {
       // Step 1: 모든 이미지가 로드될 때까지 대기
       const images = Array.from(targetElement.querySelectorAll("img")) as HTMLImageElement[];
 
-      console.log(`[카드 복사] ${images.length}개의 이미지 로드 대기 중...`);
-
       // 이미지 로드 확인 (타임아웃 5초) + img.decode() 추가로 디코딩 완료 보장
       await Promise.all(
         images.map((img, index) => {
           return new Promise<void>(async (resolve) => {
             // 이미 로드된 이미지 - decode()로 디코딩 완료 보장
             if (img.complete && img.naturalWidth > 0 && img.naturalHeight > 0) {
-              console.log(`[카드 복사] 이미지 ${index + 1}/${images.length} 이미 로드됨:`, img.src);
               try {
                 await img.decode();
-                console.log(`[카드 복사] 이미지 ${index + 1}/${images.length} 디코딩 완료`);
               } catch (e) {
                 console.warn(`[카드 복사] 이미지 ${index + 1}/${images.length} 디코딩 실패:`, e);
               }
@@ -134,20 +130,16 @@ export function SimpleShareDialog({ note }: SimpleShareDialogProps) {
               return;
             }
 
-            console.log(`[카드 복사] 이미지 ${index + 1}/${images.length} 로드 대기 중:`, img.src);
-
             const timeout = setTimeout(() => {
               console.warn(`[카드 복사] 이미지 ${index + 1}/${images.length} 타임아웃:`, img.src);
               resolve();
             }, 5000);
 
             img.onload = async () => {
-              console.log(`[카드 복사] 이미지 ${index + 1}/${images.length} 로드 완료:`, img.src);
               clearTimeout(timeout);
               // 디코딩 완료 보장
               try {
                 await img.decode();
-                console.log(`[카드 복사] 이미지 ${index + 1}/${images.length} 디코딩 완료`);
               } catch (e) {
                 console.warn(`[카드 복사] 이미지 ${index + 1}/${images.length} 디코딩 실패:`, e);
               }
@@ -163,12 +155,9 @@ export function SimpleShareDialog({ note }: SimpleShareDialogProps) {
         })
       );
 
-      console.log(`[카드 복사] 모든 이미지 로드 완료`);
-
       // Step 2: 렌더링 안정화 대기 (모바일은 추가 대기 시간 필요)
       const isMobileDevice = isMobile();
       const stabilizationTime = isMobileDevice ? 1500 : 1000;
-      console.log(`[카드 복사] 렌더링 안정화 대기 (${stabilizationTime}ms)...`);
       await new Promise((resolve) => setTimeout(resolve, stabilizationTime));
 
       // 모바일: 추가 RAF 사이클 대기 (렌더링 완료 보장)
@@ -183,7 +172,6 @@ export function SimpleShareDialog({ note }: SimpleShareDialogProps) {
       const TARGET_WIDTH = 2048; // PC/모바일 동일하게 2048px 출력
       const calculatedScale = TARGET_WIDTH / CARD_WIDTH; // 2.133 고정
 
-      console.log(`[카드 복사] html2canvas 시작 (${isMobileDevice ? '모바일' : 'PC'} 모드 - Scale: ${calculatedScale.toFixed(3)}, 출력 너비: ${TARGET_WIDTH}px)...`);
       const html2canvasModule = await import("html2canvas");
       const html2canvas = html2canvasModule.default as any;
 
@@ -221,14 +209,10 @@ export function SimpleShareDialog({ note }: SimpleShareDialogProps) {
             }
           });
 
-          console.log("[카드 복사] 클론 생성 완료 - 높이:", clonedElement.scrollHeight);
         }
       });
 
-      console.log("[카드 복사] 캔버스 생성 완료:", canvas.width, "x", canvas.height);
-
       // Step 4: Canvas를 Blob으로 변환 (품질 최적화)
-      console.log("[카드 복사] Blob 변환 시작... 캔버스 크기:", canvas.width, "x", canvas.height);
 
       // PNG는 무손실이므로 quality 파라미터 불필요, 더 안정적인 변환
       const blob = await new Promise<Blob>((resolve, reject) => {
@@ -236,7 +220,6 @@ export function SimpleShareDialog({ note }: SimpleShareDialogProps) {
           canvas.toBlob(
             (blob: Blob | null) => {
               if (blob && blob.size > 0) {
-                console.log("[카드 복사] Blob 변환 성공:", (blob.size / 1024 / 1024).toFixed(2), "MB");
                 resolve(blob);
               } else {
                 console.error("[카드 복사] Blob 변환 실패 - 빈 Blob");
@@ -252,12 +235,9 @@ export function SimpleShareDialog({ note }: SimpleShareDialogProps) {
       });
 
       // Step 5: 클립보드에 복사 (모바일 호환성 개선)
-      console.log("[카드 복사] 클립보드 복사 시도...");
-
       // copyImageToClipboard 유틸리티 사용 (모바일 호환성 처리 포함)
       const clipboardSuccess = await copyImageToClipboard(blob, {
         onSuccess: () => {
-          console.log("[카드 복사] 클립보드 복사 성공!");
           setCardCopied(true);
           toast.success("카드가 클립보드에 복사되었습니다!");
           setTimeout(() => {
@@ -265,13 +245,11 @@ export function SimpleShareDialog({ note }: SimpleShareDialogProps) {
           }, 2000);
         },
         onError: (error) => {
-          console.log("[카드 복사] 클립보드 복사 실패, 다운로드로 fallback:", error);
         }
       });
 
       // 클립보드 복사 실패 시 다운로드로 fallback
       if (!clipboardSuccess) {
-        console.log("[카드 복사] 다운로드로 전환");
         const filename = `readtree-card-${note.id}-${Date.now()}.png`;
         downloadImage(blob, filename);
         setCardCopied(true);
@@ -355,7 +333,6 @@ export function SimpleShareDialog({ note }: SimpleShareDialogProps) {
             }, 2000);
           },
           onError: (error) => {
-            console.log("클립보드 복사 실패, 다운로드로 fallback:", error);
           }
         });
 

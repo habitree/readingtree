@@ -8,7 +8,7 @@ import { ThemeProvider } from "@/components/theme/theme-provider";
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const notoSerifKr = Noto_Serif_KR({
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "900"],
+  weight: ["400", "700"],
   variable: "--font-noto-serif-kr"
 });
 

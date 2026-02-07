@@ -1,9 +1,9 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, useMemo, useRef } from "react";
+import { createContext, useContext, useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { signInWithKakao, signInWithGoogle, signOut as serverSignOut } from "@/app/actions/auth";
-import type { User } from "@supabase/supabase-js";
+import type { User, AuthChangeEvent, Session } from "@supabase/supabase-js";
 
 interface AuthContextType {
   user: User | null;
@@ -53,7 +53,7 @@ export function AuthProvider({ children, initialUser }: AuthProviderProps) {
     // 미들웨어에서 이미 세션을 갱신했으므로, onAuthStateChange가 즉시 세션 정보를 제공
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    } = supabase.auth.onAuthStateChange(async (_event: AuthChangeEvent, session: Session | null) => {
       // 서버 세션과 동기화
       if (session?.user) {
         setUser(session.user);
@@ -69,7 +69,7 @@ export function AuthProvider({ children, initialUser }: AuthProviderProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // supabase는 메모이제이션되어 있으므로 의존성에서 제거
 
-  const signIn = async (provider: "kakao" | "google") => {
+  const signIn = useCallback(async (provider: "kakao" | "google") => {
     // 서버 액션 호출
     if (provider === "kakao") {
       await signInWithKakao();
@@ -77,18 +77,20 @@ export function AuthProvider({ children, initialUser }: AuthProviderProps) {
       await signInWithGoogle();
     }
     // redirect()가 호출되므로 여기까지 도달하지 않음
-  };
+  }, []);
 
-  const signOut = async () => {
+  const signOut = useCallback(async () => {
     // 서버 액션 호출
     await serverSignOut();
     // redirect()가 호출되므로 여기까지 도달하지 않음
     // 하지만 안전을 위해 상태도 업데이트
     setUser(null);
-  };
+  }, []);
+
+  const value = useMemo(() => ({ user, isLoading, signIn, signOut }), [user, isLoading, signIn, signOut]);
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, signIn, signOut }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );

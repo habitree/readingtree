@@ -688,84 +688,48 @@ export async function getUserBooks(
       return [];
     }
 
-    // 샘플 데이터의 이미지가 없으면 네이버 API를 통해 가져오기
-    // 이미지가 없는 책만 필터링하여 처리 (성능 최적화)
+    // 표지 없는 책 조회를 백그라운드로 분리 (fire-and-forget)
+    // 리스트 로딩을 블로킹하지 않고, 다음 접근 시 DB에서 업데이트된 표지 URL을 가져옴
     const booksWithoutImages = (sampleBooks || []).filter(
       (book) => !book.cover_image_url && book.isbn
     );
 
-    // 이미지가 없는 책들만 네이버 API로 검색 (배치 처리)
     if (booksWithoutImages.length > 0) {
-      await Promise.all(
-        booksWithoutImages.map(async (book) => {
+      // fire-and-forget: 응답을 기다리지 않음
+      Promise.all(
+        booksWithoutImages.slice(0, OPEN_LIBRARY_COVER_BATCH_LIMIT).map(async (book) => {
           try {
+            // 네이버 API 시도
             const searchQuery = `${book.title} ${book.author || ""}`.trim();
             const naverResponse = await searchBooks({ query: searchQuery, display: 1 });
-            
             if (naverResponse.items && naverResponse.items.length > 0) {
               const naverBook = transformNaverBookItem(naverResponse.items[0]);
-              
-              // 네이버 API에서 가져온 이미지 URL로 업데이트
               if (naverBook.cover_image_url) {
                 await supabase
                   .from("books")
                   .update({ cover_image_url: naverBook.cover_image_url })
                   .eq("id", book.id);
-                
-                // 메모리상의 book 객체도 업데이트
-                book.cover_image_url = naverBook.cover_image_url;
+                return;
               }
             }
-          } catch (error) {
-            // 네이버 API 호출 실패 시 무시 (기존 이미지 없음 상태 유지)
-            // 에러 로깅은 개발 환경에서만
-            if (process.env.NODE_ENV === "development") {
-              console.error(`네이버 API 이미지 검색 실패 (${book.title}):`, error);
+            // 네이버 실패 시 Open Library 폴백
+            const coverUrl = await resolveOpenLibraryCoverUrl(book.isbn!, {
+              timeoutMs: OPEN_LIBRARY_COVER_TIMEOUT_MS,
+            });
+            if (coverUrl) {
+              await supabase
+                .from("books")
+                .update({ cover_image_url: coverUrl })
+                .eq("id", book.id);
             }
+          } catch {
+            // 무시 - 백그라운드 처리
           }
         })
-      );
+      ).catch(() => {});
     }
 
-    // 네이버에서도 표지를 못 찾은 책만 Open Library Covers로 보강 (병렬 처리로 성능 최적화)
-    const stillWithoutCover = (sampleBooks || []).filter(
-      (b) => !b.cover_image_url && b.isbn
-    );
-    const toBackfill = stillWithoutCover.slice(0, OPEN_LIBRARY_COVER_BATCH_LIMIT);
-
-    // 병렬로 표지 URL 조회
-    const coverResults = await Promise.all(
-      toBackfill.map(async (book) => {
-        try {
-          const coverUrl = await resolveOpenLibraryCoverUrl(book.isbn!, {
-            timeoutMs: OPEN_LIBRARY_COVER_TIMEOUT_MS,
-          });
-          return coverUrl ? { bookId: book.id, coverUrl } : null;
-        } catch {
-          return null;
-        }
-      })
-    );
-
-    // 성공한 결과만 필터링하여 배치 업데이트
-    const validResults = coverResults.filter((r): r is { bookId: string; coverUrl: string } => r !== null);
-    if (validResults.length > 0) {
-      await Promise.all(
-        validResults.map(({ bookId, coverUrl }) =>
-          supabase
-            .from("books")
-            .update({ cover_image_url: coverUrl })
-            .eq("id", bookId)
-        )
-      );
-      // 로컬 객체도 업데이트
-      for (const { bookId, coverUrl } of validResults) {
-        const book = sampleBooks?.find((b) => b.id === bookId);
-        if (book) book.cover_image_url = coverUrl;
-      }
-    }
-
-    // 모든 책 반환 (이미지가 업데이트된 책 포함)
+    // 즉시 반환 (표지 없는 책은 플레이스홀더로 표시)
     const booksWithImages = sampleBooks || [];
 
     // 샘플 데이터를 user_books 형식으로 변환
@@ -833,39 +797,31 @@ export async function getUserBooks(
   }
 
   const list = data || [];
-  // 표지가 없는 책만 Open Library Covers로 보강 (병렬 처리로 성능 최적화)
+
+  // 표지 없는 책의 Open Library Covers 보강을 백그라운드로 분리 (fire-and-forget)
+  // 리스트 로딩을 블로킹하지 않고, 다음 접근 시 DB에서 업데이트된 표지 URL을 가져옴
   const withoutCover = list.filter(
     (ub) => ub.books && !(ub.books as { cover_image_url?: string | null }).cover_image_url && (ub.books as { isbn?: string | null }).isbn
   );
   const toBackfill = withoutCover.slice(0, OPEN_LIBRARY_COVER_BATCH_LIMIT);
 
-  // 병렬로 표지 URL 조회
-  const coverResults = await Promise.all(
-    toBackfill.map(async (ub) => {
-      const b = ub.books as { id: string; isbn: string | null; cover_image_url: string | null };
-      try {
-        const coverUrl = await resolveOpenLibraryCoverUrl(b.isbn!, {
-          timeoutMs: OPEN_LIBRARY_COVER_TIMEOUT_MS,
-        });
-        return coverUrl ? { book: b, coverUrl } : null;
-      } catch {
-        return null;
-      }
-    })
-  );
-
-  // 성공한 결과만 필터링하여 배치 업데이트
-  const validResults = coverResults.filter((r): r is { book: { id: string; isbn: string | null; cover_image_url: string | null }; coverUrl: string } => r !== null);
-  if (validResults.length > 0) {
-    await Promise.all(
-      validResults.map(({ book, coverUrl }) =>
-        supabase.from("books").update({ cover_image_url: coverUrl }).eq("id", book.id)
-      )
-    );
-    // 로컬 객체도 업데이트
-    for (const { book, coverUrl } of validResults) {
-      book.cover_image_url = coverUrl;
-    }
+  if (toBackfill.length > 0) {
+    // fire-and-forget: 응답을 기다리지 않음
+    Promise.all(
+      toBackfill.map(async (ub) => {
+        const b = ub.books as { id: string; isbn: string | null; cover_image_url: string | null };
+        try {
+          const coverUrl = await resolveOpenLibraryCoverUrl(b.isbn!, {
+            timeoutMs: OPEN_LIBRARY_COVER_TIMEOUT_MS,
+          });
+          if (coverUrl) {
+            await supabase.from("books").update({ cover_image_url: coverUrl }).eq("id", b.id);
+          }
+        } catch {
+          // 무시 - 백그라운드 처리
+        }
+      })
+    ).catch(() => {});
   }
 
   return list;
@@ -1425,8 +1381,6 @@ export async function getBookDetail(userBookId: string, user?: User | null) {
     }
   }
 
-  console.log("getBookDetail: 책 상세 조회 시작", { userBookId, userId: currentUser.id });
-
   const { data, error } = await supabase
     .from("user_books")
     .select(
@@ -1492,15 +1446,6 @@ export async function getBookDetail(userBookId: string, user?: User | null) {
         // 무시 - 백그라운드 처리이므로 실패해도 영향 없음
       });
   }
-
-  console.log("getBookDetail: 책 상세 조회 성공", {
-    userBookId,
-    bookId: data.book_id,
-    bookTitle: data.books?.title,
-    completed_at: data.completed_at,
-    completed_dates: data.completed_dates,
-    completed_dates_type: typeof data.completed_dates,
-  });
 
   return data;
 }

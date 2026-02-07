@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { getCurrentUser } from "@/app/actions/auth";
+import { getCachedCurrentUser } from "@/lib/cached";
 import Link from "next/link";
 import { BookOpen } from "lucide-react";
 import { LoginSuccessToast } from "./login-success-toast";
@@ -27,7 +27,7 @@ import { TertiaryZoneWrapper } from "./tertiary-zone-wrapper";
  * 게스트 사용자 배너 (동기 렌더링)
  */
 async function GuestBanner() {
-  const user = await getCurrentUser();
+  const user = await getCachedCurrentUser();
   if (user) return null;
 
   return (

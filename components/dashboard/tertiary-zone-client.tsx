@@ -1,9 +1,18 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import dynamic from "next/dynamic";
 import { CollapsibleSection } from "./sections/collapsible-section";
-import { MonthlyBookCalendar } from "./sections/monthly-book-calendar";
 import { PersonaInsightCard } from "./sections/home-hero-section";
+
+const MonthlyBookCalendar = dynamic(
+  () => import("./sections/monthly-book-calendar").then((mod) => mod.MonthlyBookCalendar),
+  {
+    loading: () => (
+      <div className="h-64 rounded-lg bg-slate-100 dark:bg-slate-800 animate-pulse" />
+    ),
+  }
+);
 import { getMonthlyBookActivities } from "@/app/actions/stats";
 import type { DailyBookActivity } from "@/app/actions/stats";
 import type { UserPersona, ReadingStats } from "@/types/persona";

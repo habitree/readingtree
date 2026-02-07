@@ -197,16 +197,6 @@ export function ShareNoteCard({ note, className, isPublicView = false, hideActio
     const formattedDate = formatDate(note.created_at);
     const isProgressType = note.type === "progress";
 
-    // 디버깅: 이미지 URL 확인
-    if (note.image_url) {
-        console.log("[ShareNoteCard] 이미지 URL 확인:", {
-            originalUrl: note.image_url,
-            isValid: isValidImageUrl(note.image_url),
-            processedUrl: getImageUrl(note.image_url),
-            hasImage,
-        });
-    }
-
     // 공통 푸터 (Habitree 로고) - 한 줄로 표시
     const FooterLogo = () => (
         <div className="flex items-center gap-2 whitespace-nowrap overflow-visible">
@@ -406,9 +396,6 @@ export function ShareNoteCard({ note, className, isPublicView = false, hideActio
                                                         });
                                                     }}
                                                     onLoad={() => {
-                                                        console.log("[ShareNoteCard] 캡처용 이미지 로드 성공:", {
-                                                            url: getProxiedImageUrl(note.image_url!).substring(0, 100) + "...",
-                                                        });
                                                     }}
                                                 />
                                             ) : (
@@ -449,9 +436,6 @@ export function ShareNoteCard({ note, className, isPublicView = false, hideActio
                                                             });
                                                         }}
                                                         onLoad={() => {
-                                                            console.log("[ShareNoteCard] 이미지 로드 성공:", {
-                                                                url: getImageUrl(note.image_url!).substring(0, 100) + "...",
-                                                            });
                                                         }}
                                                     />
                                                 ) : (

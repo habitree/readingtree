@@ -265,7 +265,7 @@ export async function getReadingStats(user?: User | null) {
       .eq("status", "completed")
       .gte("completed_at", startOfYear.toISOString());
 
-    // 샘플 사용자의 가장 많이 기록한 책 (상위 5개)
+    // 샘플 사용자의 가장 많이 기록한 책 (상위 5개만 필요하므로 500건이면 충분)
     const { data: topBooksData } = await adminSupabase
       .from("notes")
       .select(
@@ -279,7 +279,8 @@ export async function getReadingStats(user?: User | null) {
         )
       `
       )
-      .eq("user_id", sampleUserId);
+      .eq("user_id", sampleUserId)
+      .limit(500);
 
     // 샘플 사용자의 최근 기록한 책 (최근 기록 기준 상위 5개)
     const { data: recentBooksData } = await adminSupabase
@@ -405,7 +406,7 @@ export async function getReadingStats(user?: User | null) {
     .eq("user_id", currentUser.id)
     .gte("created_at", startOfYear.toISOString());
 
-  // 가장 많이 기록한 책 (상위 5개)
+  // 가장 많이 기록한 책 (상위 5개만 필요하므로 50건이면 충분)
   const { data: topBooksData } = await supabase
     .from("notes")
     .select(
@@ -419,7 +420,8 @@ export async function getReadingStats(user?: User | null) {
       )
     `
     )
-    .eq("user_id", currentUser.id);
+    .eq("user_id", currentUser.id)
+    .limit(500);
 
   // 최근 기록한 책 (최근 기록 기준 상위 5개)
   const { data: recentBooksData } = await supabase
@@ -438,7 +440,7 @@ export async function getReadingStats(user?: User | null) {
     )
     .eq("user_id", currentUser.id)
     .order("created_at", { ascending: false })
-    .limit(100); // 최근 100개 기록에서 중복 제거
+    .limit(100);
 
   // 사용자의 user_books ID 가져오기 (매핑용)
   const { data: userBooksData } = await supabase

@@ -1,5 +1,4 @@
-import { getCurrentUser } from "@/app/actions/auth";
-import { getPersonaDashboardData } from "@/app/actions/persona";
+import { getCachedCurrentUser, getCachedPersonaDashboardData } from "@/lib/cached";
 import { getMonthlyBookActivities } from "@/app/actions/stats";
 import { TertiaryZoneClient } from "./tertiary-zone-client";
 import type { ReadingStats } from "@/types/persona";
@@ -9,7 +8,7 @@ import type { ReadingStats } from "@/types/persona";
  * 활동 캘린더, 최근 기록한 책, 페르소나 인사이트를 접이식으로 표시
  */
 export async function TertiaryZoneWrapper() {
-  const user = await getCurrentUser();
+  const user = await getCachedCurrentUser();
 
   if (!user) {
     // 게스트 사용자는 Tertiary Zone 숨김
@@ -23,7 +22,7 @@ export async function TertiaryZoneWrapper() {
 
   // 병렬로 데이터 조회
   const [personaData, monthlyActivities] = await Promise.all([
-    getPersonaDashboardData().catch(() => null),
+    getCachedPersonaDashboardData().catch(() => null),
     getMonthlyBookActivities(user, currentYear, currentMonth).catch(() => ({})),
   ]);
 
