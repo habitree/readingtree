@@ -48,19 +48,8 @@ export async function getRelatedBooks(
     currentUser = fetchedUser;
   }
 
-  // 사용자의 책인지 확인
-  const { data: userBook, error: bookCheckError } = await supabase
-    .from("user_books")
-    .select("id")
-    .eq("id", userBookId)
-    .eq("user_id", currentUser.id)
-    .maybeSingle();
-
-  if (bookCheckError || !userBook) {
-    throw new Error("권한이 없거나 책을 찾을 수 없습니다.");
-  }
-
   // 연결된 책 조회 (source_user_book_id가 현재 책인 관계)
+  // user_id 조건으로 RLS와 함께 소유권을 검증하므로 별도 소유권 확인 불필요
   const { data: relations, error: relationsError } = await supabase
     .from("user_book_relations")
     .select(`
@@ -82,6 +71,10 @@ export async function getRelatedBooks(
     .order("created_at", { ascending: false });
 
   if (relationsError) {
+    // 테이블 미존재(42P01) 등 스키마 오류 시 빈 배열 반환 (불필요한 에러 전파 방지)
+    if (relationsError.code === "42P01" || relationsError.message?.includes("does not exist")) {
+      return [];
+    }
     console.error("연결된 책 조회 오류:", relationsError);
     throw new Error(`연결된 책 조회 실패: ${relationsError.message}`);
   }

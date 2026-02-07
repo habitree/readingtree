@@ -29,8 +29,9 @@ import { BookTitle } from "@/components/books/book-title";
 import { RelatedBooksList } from "@/components/books/related-books-list";
 import { RelatedBooksEditor } from "@/components/books/related-books-editor";
 
-// React cache()로 동일 요청 내 getBookDetail 중복 호출 방지
+// React cache()로 동일 요청 내 중복 호출 방지
 // generateMetadata + BookDetailPage에서 호출해도 1번만 실행
+const getCachedCurrentUser = cache(() => getCurrentUser());
 const getCachedBookDetail = cache(
   (bookId: string, userId: string) => getBookDetail(bookId)
 );
@@ -64,8 +65,8 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
     notFound();
   }
 
-  // 현재 사용자 확인 (1회만 호출)
-  const user = await getCurrentUser();
+  // 현재 사용자 확인 (cache()로 generateMetadata와 중복 호출 방지)
+  const user = await getCachedCurrentUser();
   const isGuest = !user;
 
   let bookDetail;
@@ -400,8 +401,8 @@ export async function generateMetadata({
   }
 
   try {
-    // getCurrentUser()로 user를 가져와서 cache key로 사용
-    const user = await getCurrentUser();
+    // getCachedCurrentUser()로 BookDetailPage와 중복 호출 방지
+    const user = await getCachedCurrentUser();
     if (!user) {
       return { title: "책 상세 | ReadTree" };
     }

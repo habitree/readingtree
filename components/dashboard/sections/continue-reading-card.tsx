@@ -19,6 +19,7 @@ interface ContinueReadingCardProps {
   totalPages: number | null;
   progressPercent: number;
   compact?: boolean;
+  priority?: boolean;
 }
 
 /**
@@ -34,6 +35,7 @@ export function ContinueReadingCard({
   totalPages,
   progressPercent,
   compact = false,
+  priority = false,
 }: ContinueReadingCardProps) {
   const router = useRouter();
   const [isNavigating, setIsNavigating] = useState(false);
@@ -87,6 +89,7 @@ export function ContinueReadingCard({
                         fill
                         className="object-cover"
                         sizes="48px"
+                        priority={priority}
                       />
                     ) : (
                       <div className="w-full h-full bg-gradient-to-br from-forest-100 to-forest-200 dark:from-forest-800 dark:to-forest-900 flex items-center justify-center">
@@ -159,6 +162,7 @@ export function ContinueReadingCard({
                     fill
                     className="object-cover"
                     sizes="64px"
+                    priority={priority}
                   />
                 ) : (
                   <div className="w-full h-full bg-gradient-to-br from-forest-100 to-forest-200 dark:from-forest-800 dark:to-forest-900 flex items-center justify-center">

@@ -305,6 +305,7 @@ export function HomeHeroSection({
                 totalPages={book.totalPages}
                 progressPercent={book.progressPercent}
                 compact={true}
+                priority={true}
               />
             ))
           ) : (
