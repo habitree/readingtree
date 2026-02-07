@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useCallback, useEffect } from "react";
+import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
@@ -38,8 +38,14 @@ export function ContinueReadingCard({
   priority = false,
 }: ContinueReadingCardProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const [isNavigating, setIsNavigating] = useState(false);
   const { lightTap } = useHapticFeedback();
+
+  // 뒤로가기 등으로 경로가 변경되면 네비게이션 상태 리셋
+  useEffect(() => {
+    setIsNavigating(false);
+  }, [pathname]);
 
   const handleClick = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
