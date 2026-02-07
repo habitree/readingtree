@@ -25,7 +25,6 @@ import { useStyle } from "@/hooks/use-style";
 import { ContinueReadingCard, NoReadingBookCard } from "./continue-reading-card";
 import { OnboardingChecklist, type OnboardingItem } from "@/components/onboarding/onboarding-checklist";
 import type { DailyRecordByType } from "@/app/actions/stats";
-import { ReadingTree } from "./reading-tree";
 
 interface ContinueReadingData {
   userBookId: string;
@@ -77,7 +76,6 @@ interface HomeHeroSectionProps {
   weeklyProgress?: WeeklyProgressData | null;
   dailyRecordsByType?: Record<string, DailyRecordByType>;
   currentBookProgress?: CurrentBookProgressData | null;
-  level?: number;
 }
 
 /**
@@ -96,7 +94,6 @@ export function HomeHeroSection({
   weeklyProgress,
   dailyRecordsByType = {},
   currentBookProgress,
-  level = 1,
 }: HomeHeroSectionProps) {
   const [mounted, setMounted] = useState(false);
   const { greeting, getStreakMessage, getMotivationalMessage } = useStyle();
@@ -179,27 +176,19 @@ export function HomeHeroSection({
       >
         <Card className="relative overflow-hidden bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/60">
           <div className="relative p-4 sm:p-6">
-            <div className="flex justify-between items-start mb-4">
-              {/* 인사말 (간소화) */}
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-1">
-                  {displayGreeting.emoji && (
-                    <span className="text-xl sm:text-2xl">{displayGreeting.emoji}</span>
-                  )}
-                  <h1 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">
-                    {displayGreeting.text}
-                    {userName && <span className="text-forest-600 dark:text-forest-400">, {userName}님</span>}
-                  </h1>
-                </div>
-                <p className="text-sm text-slate-600 dark:text-slate-400 pr-2">
-                  {motivationalMessage}
-                </p>
+            <div className="mb-4">
+              <div className="flex items-center gap-2 mb-1">
+                {displayGreeting.emoji && (
+                  <span className="text-xl sm:text-2xl">{displayGreeting.emoji}</span>
+                )}
+                <h1 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">
+                  {displayGreeting.text}
+                  {userName && <span className="text-forest-600 dark:text-forest-400">, {userName}님</span>}
+                </h1>
               </div>
-
-              {/* 독서 나무 (배치) */}
-              <div className="shrink-0 -mt-2 -mr-2 sm:mt-0 sm:mr-0">
-                <ReadingTree level={level} className="scale-75 sm:scale-100 origin-top-right sm:origin-center" />
-              </div>
+              <p className="text-sm text-slate-600 dark:text-slate-400">
+                {motivationalMessage}
+              </p>
             </div>
 
             {/* 핵심 지표 3개: 스트릭 | 오늘 기록 | 읽은 만큼 */}
@@ -473,14 +462,11 @@ export function HomeHeroSkeleton() {
       {/* 메인 히어로 카드 스켈레톤 */}
       <Card className="relative overflow-hidden bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/60">
         <div className="p-4 sm:p-6">
-          <div className="flex justify-between items-start mb-4">
-            <div className="flex-1">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="h-6 w-40 sm:w-48 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
-              </div>
-              <div className="h-4 w-48 sm:w-56 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
+          <div className="mb-4">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="h-6 w-40 sm:w-48 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
             </div>
-            <div className="h-20 w-20 sm:h-28 sm:w-28 rounded-full bg-slate-200 dark:bg-slate-700 animate-pulse shrink-0 ml-4" />
+            <div className="h-4 w-48 sm:w-56 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
           </div>
 
           {/* 3열 퀵 스탯 스켈레톤 */}
