@@ -28,7 +28,6 @@ import { MemberList } from "./member-list";
 import { SharedNotesList } from "./shared-notes-list";
 import { GroupBooksManager } from "./group-books-manager";
 import { SharedBooksManager } from "./shared-books-manager";
-import { NextBookCandidates } from "./next-book-candidates";
 import {
   joinGroup,
   leaveGroup,
@@ -354,13 +353,6 @@ export function GroupDashboard({ groupData, currentUserId }: GroupDashboardProps
 
           <TabsContent value="books" className="space-y-6">
             <GroupBooksManager groupId={group.id} isLeader={isLeader} />
-            {/* 다음 책 후보 (지정도서 기반 추천) */}
-            {groupData.groupBooks && groupData.groupBooks.length > 0 && (
-              <NextBookCandidates
-                groupId={group.id}
-                canAddBooks={isLeader || isModerator}
-              />
-            )}
           </TabsContent>
 
           <TabsContent value="shared-library">

@@ -44,7 +44,6 @@ export async function TertiaryZoneWrapper() {
       initialMonth={currentMonth}
       persona={persona ?? null}
       readingStats={readingStats ?? null}
-      isAuthenticated={!!user}
     />
   );
 }

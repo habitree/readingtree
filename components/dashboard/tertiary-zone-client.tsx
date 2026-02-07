@@ -4,7 +4,6 @@ import { useState, useCallback } from "react";
 import { CollapsibleSection } from "./sections/collapsible-section";
 import { MonthlyBookCalendar } from "./sections/monthly-book-calendar";
 import { PersonaInsightCard } from "./sections/home-hero-section";
-import { PopularBooksSection } from "./sections/popular-books-section";
 import { getMonthlyBookActivities } from "@/app/actions/stats";
 import type { DailyBookActivity } from "@/app/actions/stats";
 import type { UserPersona, ReadingStats } from "@/types/persona";
@@ -15,8 +14,6 @@ interface TertiaryZoneClientProps {
   initialMonth: number;
   persona: UserPersona | null;
   readingStats: ReadingStats | null;
-  /** 로그인 상태 (인기 도서 서재 추가 버튼 표시 여부) */
-  isAuthenticated?: boolean;
 }
 
 /**
@@ -29,7 +26,6 @@ export function TertiaryZoneClient({
   initialMonth,
   persona,
   readingStats,
-  isAuthenticated = false,
 }: TertiaryZoneClientProps) {
   const [year, setYear] = useState(initialYear);
   const [month, setMonth] = useState(initialMonth);
@@ -91,9 +87,6 @@ export function TertiaryZoneClient({
           month={month}
           onMonthChange={handleMonthChange}
         />
-
-        {/* 인기 대출 도서 */}
-        <PopularBooksSection isAuthenticated={isAuthenticated} />
 
         {/* 페르소나 인사이트 */}
         {hasPersonaData && (

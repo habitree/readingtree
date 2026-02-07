@@ -12,8 +12,7 @@
   - **(A) 더 나은 표지/메타데이터 보강**: Open Library Covers/Books, Kakao Book Search
   - **(B) 미리보기/본문 검색**: Internet Archive(Books/검색inside), Open Library Read API
   - **(C) 리뷰/독서상태(굿리즈 대안)**: Hardcover GraphQL
-  - **(D) 트렌드/추천(대출 빅데이터)**: 도서관 정보나루(data4library)
-  - **(E) 오픈 메타데이터 보강**: Wikidata SPARQL, Crossref/OpenAlex(학술·논픽션 중심)
+  - **(D) 오픈 메타데이터 보강**: Wikidata SPARQL, Crossref/OpenAlex(학술·논픽션 중심)
 
 ---
 
@@ -341,30 +340,7 @@
 
 ---
 
-### 2.6 국내 도서관/대출 빅데이터(트렌드·추천·인기)
-
-#### (후보) 도서관 정보나루(data4library) Open API (강추: “인기 대출/추천”)
-
-- **무료/유료**: Free(승인형 키 발급)
-- **간단 요약(1줄)**: 공공도서관 대출·장서 기반으로 “인기 대출 도서/추천 도서/도서관 목록”을 제공하는 국내 특화 API.
-- **상세 기능(상세)**:
-  - 도서관(참여기관) 목록/정보 조회
-  - 도서관별 장서/대출 데이터(도서명, 저자, 출판사, ISBN, KDC 등)
-  - 인기 대출 도서 랭킹
-  - ISBN 기반 추천 도서(최대 200건 등)
-- **페이지 정보(문서/참고 링크)**:
-  - 서비스: `https://data4library.kr/`
-  - API 활용 안내: `https://www.data4library.kr/apiUtilization`
-- **이외 상세정보**:
-  - 인증: 회원가입 후 마이페이지에서 인증키 신청(승인 절차 있음)
-  - 응답 포맷: 문서상 XML 중심 안내가 많음(구현 시 파서/정규화 필요)
-  - ReadTree 반영 포인트:
-    - “오늘의 인기 대출 도서”, “대출 급상승”, “마니아 추천” 같은 탐색 UX
-    - 독서모임에서 “다음 책 후보” 추천 근거로 사용 가능(국내 사용자 체감 큼)
-
----
-
-### 2.7 도서관/기관/상용 서지 데이터(고정밀, 고비용 가능)
+### 2.6 도서관/기관/상용 서지 데이터(고정밀, 고비용 가능)
 
 > 아래는 “정확도는 높지만 계약/비용/제약이 큰” 축이라, ReadTree의 현재 단계에서는 **필요 시점에 선택적으로 도입**하는 것을 권장한다.
 
@@ -483,10 +459,7 @@
 1. **Open Library Covers API** (Free)  
    - 표지 품질/안정성 개선 체감이 가장 큼(공유 카드뉴스/책 카드에 즉시 효과)
 
-2. **도서관 정보나루(data4library) Open API** (Free, 승인형 키)  
-   - 국내 사용자에게 바로 체감되는 “인기 대출/추천” 데이터로 탐색 UX를 크게 강화
-
-3. **Open Library Books API / Search API** (Free)  
+2. **Open Library Books API / Search API** (Free)
    - 해외 도서 메타데이터 보강 + 네이버/알라딘 누락 구간 커버
 
 4. **Kakao Daum Search – 책 검색** (Free, 쿼터 문서 확인 필요)  

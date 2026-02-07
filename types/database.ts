@@ -56,54 +56,6 @@ export type Database = {
         }
         Relationships: []
       }
-      external_popular_books: {
-        Row: {
-          id: string
-          source: string
-          category: string
-          isbn13: string
-          title: string
-          author: string | null
-          publisher: string | null
-          loan_count: number | null
-          ranking: number | null
-          region_code: string | null
-          fetched_at: string
-          expires_at: string
-          metadata: Json | null
-        }
-        Insert: {
-          id?: string
-          source?: string
-          category: string
-          isbn13: string
-          title: string
-          author?: string | null
-          publisher?: string | null
-          loan_count?: number | null
-          ranking?: number | null
-          region_code?: string | null
-          fetched_at?: string
-          expires_at: string
-          metadata?: Json | null
-        }
-        Update: {
-          id?: string
-          source?: string
-          category?: string
-          isbn13?: string
-          title?: string
-          author?: string | null
-          publisher?: string | null
-          loan_count?: number | null
-          ranking?: number | null
-          region_code?: string | null
-          fetched_at?: string
-          expires_at?: string
-          metadata?: Json | null
-        }
-        Relationships: []
-      }
       book_reflections: {
         Row: {
           created_at: string | null
