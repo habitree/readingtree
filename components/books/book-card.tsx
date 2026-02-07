@@ -87,7 +87,7 @@ function BookCardComponent({ book, userBookId, status, groupBooks, relatedBooks,
                   alt={`${book.title} 표지`}
                   fill
                   className="object-cover group-hover:scale-105 transition-transform"
-                  sizes="(max-width: 768px) 25vw, (max-width: 1024px) 16vw, (max-width: 1280px) 10vw, 8vw"
+                  sizes="(max-width: 768px) 25vw, (max-width: 1024px) 16vw, 12.5vw"
                   onError={handleImageError}
                 />
               ) : (
@@ -122,12 +122,12 @@ function BookCardComponent({ book, userBookId, status, groupBooks, relatedBooks,
                 </p>
               )}
               {book.publisher && (
-                <p className="hidden xl:block text-[9px] sm:text-[10px] text-muted-foreground line-clamp-1 opacity-75">
+                <p className="hidden lg:block text-[9px] sm:text-[10px] text-muted-foreground line-clamp-1 opacity-75">
                   {book.publisher}
                 </p>
               )}
               {groupBooks && groupBooks.length > 0 && (
-                <div className="hidden xl:flex flex-wrap gap-1 mt-1">
+                <div className="hidden lg:flex flex-wrap gap-1 mt-1">
                   {groupBooks.map((gb) => (
                     <Badge
                       key={gb.group_id}
@@ -144,7 +144,7 @@ function BookCardComponent({ book, userBookId, status, groupBooks, relatedBooks,
 
               {/* 읽기 진행률 표시 (Goal Gradient Effect - 진행 시각화가 완료 가속) */}
               {book.total_pages && book.user_book?.current_page && status === "reading" && (
-                <div className="hidden xl:block mt-1 space-y-0.5">
+                <div className="hidden lg:block mt-1 space-y-0.5">
                   <Progress
                     value={(book.user_book.current_page / book.total_pages) * 100}
                     className="h-0.5 sm:h-1"
@@ -162,7 +162,7 @@ function BookCardComponent({ book, userBookId, status, groupBooks, relatedBooks,
 
               {/* PC: 연결된 책 심플 버튼 + 호버 미리보기 */}
               {relatedBooks && relatedBooks.length > 0 && (
-                <div className="hidden xl:block mt-1 pt-1 border-t border-border/50">
+                <div className="hidden lg:block mt-1 pt-1 border-t border-border/50">
                   <HoverCard openDelay={200} closeDelay={100}>
                     <HoverCardTrigger asChild>
                       <button
