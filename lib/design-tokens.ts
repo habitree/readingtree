@@ -64,8 +64,8 @@ export const typography = {
 // 그리드 레이아웃 (Grid Layouts)
 // ============================================================================
 export const grids = {
-  /** 책 목록 그리드 */
-  bookList: "grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5",
+  /** 책 목록 그리드 (모바일 4열, PC 8열) */
+  bookList: "grid grid-cols-4 gap-1.5 sm:gap-2 md:grid-cols-6 lg:grid-cols-8",
   /** 노트 목록 그리드 */
   noteList: "grid gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-3",
   /** 검색 결과 그리드 */

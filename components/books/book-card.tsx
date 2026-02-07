@@ -87,13 +87,13 @@ function BookCardComponent({ book, userBookId, status, groupBooks, relatedBooks,
                   alt={`${book.title} 표지`}
                   fill
                   className="object-cover group-hover:scale-105 transition-transform"
-                  sizes="(max-width: 768px) 33vw, (max-width: 1200px) 25vw, 20vw"
+                  sizes="(max-width: 768px) 25vw, (max-width: 1024px) 16vw, 12.5vw"
                   onError={handleImageError}
                 />
               ) : (
                 <div className="absolute inset-0 flex flex-col items-center justify-center bg-muted/50" aria-label="이미지 없음">
-                  <BookOpen className="w-8 h-8 text-muted-foreground mb-1" aria-hidden="true" />
-                  <span className="text-xs text-muted-foreground">이미지 없음</span>
+                  <BookOpen className="w-5 h-5 sm:w-8 sm:h-8 text-muted-foreground mb-0.5 sm:mb-1" aria-hidden="true" />
+                  <span className="text-[9px] sm:text-xs text-muted-foreground">이미지 없음</span>
                 </div>
               )}
               {/* 모바일: 연결된 책 미니 배지 (좌하단, 심플) */}
@@ -109,33 +109,33 @@ function BookCardComponent({ book, userBookId, status, groupBooks, relatedBooks,
                 </div>
               )}
             </div>
-            <div className="p-3 sm:p-4 space-y-1.5 sm:space-y-2">
-              <div className="flex items-start justify-between gap-1.5 sm:gap-2">
-                <h3 className="font-semibold text-xs sm:text-sm line-clamp-2 flex-1 leading-tight">
+            <div className="p-1.5 sm:p-2 space-y-0.5 sm:space-y-1">
+              <div className="flex items-start justify-between gap-0.5 sm:gap-1">
+                <h3 className="font-semibold text-[10px] sm:text-xs line-clamp-2 flex-1 leading-tight">
                   <BookTitle title={book.title} />
                 </h3>
-                <BookStatusBadge status={status} className="shrink-0 scale-75 sm:scale-90" />
+                <BookStatusBadge status={status} className="shrink-0 scale-[0.6] sm:scale-75" />
               </div>
               {book.author && (
-                <p className="text-[10px] sm:text-xs text-muted-foreground line-clamp-1">
+                <p className="text-[9px] sm:text-[10px] text-muted-foreground line-clamp-1">
                   {book.author}
                 </p>
               )}
               {book.publisher && (
-                <p className="text-[10px] sm:text-xs text-muted-foreground line-clamp-1 opacity-75">
+                <p className="hidden md:block text-[9px] sm:text-[10px] text-muted-foreground line-clamp-1 opacity-75">
                   {book.publisher}
                 </p>
               )}
               {groupBooks && groupBooks.length > 0 && (
-                <div className="flex flex-wrap gap-1 sm:gap-2 mt-1.5 sm:mt-2">
+                <div className="hidden sm:flex flex-wrap gap-1 mt-1">
                   {groupBooks.map((gb) => (
                     <Badge
                       key={gb.group_id}
                       variant="secondary"
-                      className="text-[10px] sm:text-xs px-1 sm:px-1.5 py-0.5"
+                      className="text-[9px] sm:text-[10px] px-1 py-0"
                       title={`${gb.group_name} 지정도서`}
                     >
-                      <Users className="mr-0.5 sm:mr-1 h-2 w-2 sm:h-2.5 sm:w-2.5" />
+                      <Users className="mr-0.5 h-2 w-2" />
                       <span className="line-clamp-1">{gb.group_name}</span>
                     </Badge>
                   ))}
@@ -144,16 +144,16 @@ function BookCardComponent({ book, userBookId, status, groupBooks, relatedBooks,
 
               {/* 읽기 진행률 표시 (Goal Gradient Effect - 진행 시각화가 완료 가속) */}
               {book.total_pages && book.user_book?.current_page && status === "reading" && (
-                <div className="mt-2 space-y-1">
+                <div className="hidden sm:block mt-1 space-y-0.5">
                   <Progress
                     value={(book.user_book.current_page / book.total_pages) * 100}
-                    className="h-1"
+                    className="h-0.5 sm:h-1"
                   />
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] text-muted-foreground">
+                    <span className="text-[9px] text-muted-foreground">
                       {book.user_book.current_page}/{book.total_pages}p
                     </span>
-                    <span className="text-[10px] font-medium text-primary">
+                    <span className="text-[9px] font-medium text-primary">
                       {Math.round((book.user_book.current_page / book.total_pages) * 100)}%
                     </span>
                   </div>
@@ -162,15 +162,15 @@ function BookCardComponent({ book, userBookId, status, groupBooks, relatedBooks,
 
               {/* PC: 연결된 책 심플 버튼 + 호버 미리보기 */}
               {relatedBooks && relatedBooks.length > 0 && (
-                <div className="hidden lg:block mt-2 pt-2 border-t border-border/50">
+                <div className="hidden lg:block mt-1 pt-1 border-t border-border/50">
                   <HoverCard openDelay={200} closeDelay={100}>
                     <HoverCardTrigger asChild>
                       <button
                         type="button"
-                        className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors w-full"
+                        className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-primary transition-colors w-full"
                         onClick={(e) => e.preventDefault()}
                       >
-                        <Link2 className="w-3 h-3" />
+                        <Link2 className="w-2.5 h-2.5" />
                         <span>연결 {relatedBooks.length}권</span>
                       </button>
                     </HoverCardTrigger>
