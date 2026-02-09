@@ -86,18 +86,17 @@ export function ReadingProgress({
   // 완독 상태면 100%로 표시, 드래그 중이면 드래그 값, 보류 중이면 보류 값
   const displayPercent = status === "completed" ? 100 : (isDragging ? dragPercent : (pendingPercent ?? progressPercent));
 
-  // 슬라이더 값 변경 핸들러 (드래그 중)
+  // 슬라이더 값 변경 핸들러 (드래그 중) - 페이지 기반
   const handleSliderChange = useCallback((value: number[]) => {
     if (!totalPages) return;
-    const newPage = Math.round((value[0] / 100) * totalPages);
-    setDragValue(newPage);
+    setDragValue(value[0]);
     setIsDragging(true);
   }, [totalPages]);
 
-  // 슬라이더 드래그 종료 핸들러
+  // 슬라이더 드래그 종료 핸들러 - 페이지 기반
   const handleSliderCommit = useCallback((value: number[]) => {
     if (!totalPages) return;
-    const newPage = Math.round((value[0] / 100) * totalPages);
+    const newPage = value[0];
 
     // 이전 타이머 취소
     if (saveTimeoutRef.current) {
@@ -288,10 +287,10 @@ export function ReadingProgress({
           {/* 드래그 가능한 슬라이더 */}
           <div className="relative group">
             <Slider
-              value={[isDragging ? (dragPercent || 0) : displayPercent]}
+              value={[isDragging ? dragValue : (pendingPageUpdate ?? currentPage)]}
               onValueChange={handleSliderChange}
               onValueCommit={handleSliderCommit}
-              max={100}
+              max={totalPages}
               step={1}
               disabled={isPending}
               className={cn(
