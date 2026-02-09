@@ -14,16 +14,36 @@ import { updateBookStatus } from "@/app/actions/books";
 import { moveBookToBookshelf, getBookshelves } from "@/app/actions/bookshelves";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { BookStatusBadge } from "./book-status-badge";
 import type { ReadingStatus } from "@/types/book";
 import { Bookshelf } from "@/types/bookshelf";
-import { Loader2, BookOpen } from "lucide-react";
+import {
+  Loader2,
+  BookOpen,
+  BookMarked,
+  Trophy,
+  Pause,
+  RotateCcw,
+  ChevronDown,
+  Library,
+  Check,
+} from "lucide-react";
 
 interface BookStatusSelectorProps {
   currentStatus: ReadingStatus;
   userBookId: string;
   currentBookshelfId?: string | null;
 }
+
+const statusConfig: Record<
+  ReadingStatus,
+  { label: string; icon: React.ElementType; dotColor: string }
+> = {
+  not_started: { label: "읽기전", icon: BookOpen, dotColor: "bg-gray-400" },
+  reading: { label: "읽는 중", icon: BookMarked, dotColor: "bg-blue-500" },
+  completed: { label: "완독", icon: Trophy, dotColor: "bg-emerald-500" },
+  rereading: { label: "재독", icon: RotateCcw, dotColor: "bg-purple-500" },
+  paused: { label: "중단", icon: Pause, dotColor: "bg-amber-500" },
+};
 
 /**
  * 독서 상태 변경 컴포넌트
@@ -40,7 +60,6 @@ export function BookStatusSelector({
   const [isLoadingBookshelves, setIsLoadingBookshelves] = useState(false);
 
   useEffect(() => {
-    // 컴포넌트 마운트 시 서재 목록 로드
     loadBookshelves();
   }, []);
 
@@ -82,7 +101,7 @@ export function BookStatusSelector({
     setIsUpdating(true);
     try {
       await moveBookToBookshelf(userBookId, bookshelfId);
-      toast.success("저장됨");
+      toast.success("서재가 변경되었습니다.");
       router.refresh();
     } catch (error) {
       console.error("서재 변경 오류:", error);
@@ -94,71 +113,95 @@ export function BookStatusSelector({
     }
   };
 
-  const statusOptions: Array<{ value: ReadingStatus; label: string }> = [
-    { value: "not_started", label: "읽기전" },
-    { value: "reading", label: "읽는 중" },
-    { value: "completed", label: "완독" },
-    { value: "rereading", label: "재독" },
-    { value: "paused", label: "중단" },
+  const statusOptions: ReadingStatus[] = [
+    "not_started",
+    "reading",
+    "completed",
+    "rereading",
+    "paused",
   ];
 
+  const current = statusConfig[currentStatus];
   const currentBookshelf = bookshelves.find((b) => b.id === currentBookshelfId);
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" disabled={isUpdating}>
+        <Button variant="outline" size="sm" disabled={isUpdating} className="gap-2">
           {isUpdating ? (
             <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              변경 중...
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              <span className="text-sm">변경 중...</span>
             </>
           ) : (
             <>
-              상태 변경
-              <BookStatusBadge status={currentStatus} className="ml-2" />
+              <span className={`w-2 h-2 rounded-full shrink-0 ${current.dotColor}`} />
+              <span className="text-sm">{current.label}</span>
+              <ChevronDown className="h-3.5 w-3.5 opacity-50" />
             </>
           )}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-56">
-        <DropdownMenuLabel>독서 상태</DropdownMenuLabel>
-        {statusOptions.map((option) => (
-          <DropdownMenuItem
-            key={option.value}
-            onClick={() => handleStatusChange(option.value)}
-            disabled={option.value === currentStatus || isUpdating}
-            className={option.value === currentStatus ? "bg-accent" : ""}
-          >
-            {option.label}
-            {option.value === currentStatus && " ✓"}
-          </DropdownMenuItem>
-        ))}
+      <DropdownMenuContent className="w-52" align="end">
+        {/* 독서 상태 */}
+        <DropdownMenuLabel className="text-xs text-muted-foreground font-normal">
+          독서 상태
+        </DropdownMenuLabel>
+        {statusOptions.map((value) => {
+          const config = statusConfig[value];
+          const Icon = config.icon;
+          const isActive = value === currentStatus;
+          return (
+            <DropdownMenuItem
+              key={value}
+              onClick={() => handleStatusChange(value)}
+              disabled={isActive || isUpdating}
+              className="gap-2.5"
+            >
+              <span className={`w-2 h-2 rounded-full shrink-0 ${config.dotColor}`} />
+              <Icon className="h-3.5 w-3.5 shrink-0 opacity-60" />
+              <span className="flex-1">{config.label}</span>
+              {isActive && <Check className="h-3.5 w-3.5 text-primary" />}
+            </DropdownMenuItem>
+          );
+        })}
+
+        {/* 서재 이동 */}
         <DropdownMenuSeparator />
-        <DropdownMenuLabel>서재</DropdownMenuLabel>
+        <DropdownMenuLabel className="text-xs text-muted-foreground font-normal flex items-center gap-1.5">
+          <Library className="h-3 w-3" />
+          서재 이동
+          {currentBookshelf && (
+            <span className="text-[10px] opacity-60">· 현재: {currentBookshelf.name}</span>
+          )}
+        </DropdownMenuLabel>
         {isLoadingBookshelves ? (
           <DropdownMenuItem disabled>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            로딩 중...
+            <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+            불러오는 중...
           </DropdownMenuItem>
         ) : bookshelves.length === 0 ? (
-          <DropdownMenuItem disabled>서재가 없습니다</DropdownMenuItem>
+          <DropdownMenuItem disabled className="text-xs text-muted-foreground">
+            등록된 서재가 없습니다
+          </DropdownMenuItem>
         ) : (
-          bookshelves.map((bookshelf) => (
-            <DropdownMenuItem
-              key={bookshelf.id}
-              onClick={() => handleBookshelfChange(bookshelf.id)}
-              disabled={bookshelf.id === currentBookshelfId || isUpdating}
-              className={bookshelf.id === currentBookshelfId ? "bg-accent" : ""}
-            >
-              <BookOpen className="mr-2 h-4 w-4" />
-              {bookshelf.name}
-              {bookshelf.id === currentBookshelfId && " ✓"}
-            </DropdownMenuItem>
-          ))
+          bookshelves.map((bookshelf) => {
+            const isActive = bookshelf.id === currentBookshelfId;
+            return (
+              <DropdownMenuItem
+                key={bookshelf.id}
+                onClick={() => handleBookshelfChange(bookshelf.id)}
+                disabled={isActive || isUpdating}
+                className="gap-2.5"
+              >
+                <BookOpen className="h-3.5 w-3.5 shrink-0 opacity-60" />
+                <span className="flex-1">{bookshelf.name}</span>
+                {isActive && <Check className="h-3.5 w-3.5 text-primary" />}
+              </DropdownMenuItem>
+            );
+          })
         )}
       </DropdownMenuContent>
     </DropdownMenu>
   );
 }
-

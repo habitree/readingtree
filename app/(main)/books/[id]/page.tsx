@@ -315,49 +315,41 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
             </div>
           </div>
 
-          {/* --- PC 액션바 (카드형, 2컬럼) --- */}
+          {/* --- PC 액션바 (카드형, 단일 컬럼) --- */}
           <div className="hidden lg:block">
-            <div className="rounded-xl border border-border/50 bg-card/80 shadow-sm overflow-hidden">
-              <div className="flex">
-                {/* 좌측: 진행률 + 모멘텀 */}
-                <div className="flex-1 p-5 border-r border-border/30">
-                  <ReadingProgress
-                    userBookId={userBook.id}
-                    bookId={book.id}
-                    isbn={book.isbn}
-                    bookTitle={book.title}
-                    bookAuthor={book.author}
-                    currentPage={(userBook as any).current_page || 0}
-                    totalPages={book.total_pages}
-                    status={userBook.status as string}
-                    startedAt={userBook.started_at}
-                  />
-                </div>
-                {/* 우측: 액션 버튼들 (세로 배치) */}
-                <div className="w-56 p-5 flex flex-col gap-2.5 justify-center bg-muted/10">
-                  <Button asChild size="default" className="w-full shadow-sm bg-primary hover:bg-primary/90 h-10">
-                    <Link href={`/notes/new?bookId=${userBook.id}`}>
-                      <PenTool className="mr-2 h-4 w-4" />
-                      기록 작성
-                    </Link>
-                  </Button>
-                  <div className="flex gap-2">
-                    <div className="flex-1">
-                      <BookStatusSelector
-                        currentStatus={userBook.status as ReadingStatus}
-                        userBookId={userBook.id}
-                        currentBookshelfId={(userBook as any).bookshelf_id || null}
-                      />
-                    </div>
-                    <BookInfoEditor
-                      userBookId={userBook.id}
-                      currentReadingReason={userBook.reading_reason}
-                      currentStartedAt={userBook.started_at}
-                      currentCompletedDates={completedDates.length > 0 ? completedDates : null}
-                      currentBookshelfId={(userBook as any).bookshelf_id || null}
-                    />
-                  </div>
-                </div>
+            <div className="rounded-xl border border-border/50 bg-card/80 shadow-sm p-5 space-y-4">
+              {/* 진행률 + 모멘텀 */}
+              <ReadingProgress
+                userBookId={userBook.id}
+                bookId={book.id}
+                isbn={book.isbn}
+                bookTitle={book.title}
+                bookAuthor={book.author}
+                currentPage={(userBook as any).current_page || 0}
+                totalPages={book.total_pages}
+                status={userBook.status as string}
+                startedAt={userBook.started_at}
+              />
+              {/* 버튼 가로 배치 */}
+              <div className="flex items-center gap-2 pt-1 border-t border-border/30">
+                <Button asChild size="default" className="flex-1 shadow-sm bg-primary hover:bg-primary/90 h-10">
+                  <Link href={`/notes/new?bookId=${userBook.id}`}>
+                    <PenTool className="mr-2 h-4 w-4" />
+                    기록 작성
+                  </Link>
+                </Button>
+                <BookStatusSelector
+                  currentStatus={userBook.status as ReadingStatus}
+                  userBookId={userBook.id}
+                  currentBookshelfId={(userBook as any).bookshelf_id || null}
+                />
+                <BookInfoEditor
+                  userBookId={userBook.id}
+                  currentReadingReason={userBook.reading_reason}
+                  currentStartedAt={userBook.started_at}
+                  currentCompletedDates={completedDates.length > 0 ? completedDates : null}
+                  currentBookshelfId={(userBook as any).bookshelf_id || null}
+                />
               </div>
             </div>
           </div>
