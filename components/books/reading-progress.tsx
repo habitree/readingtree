@@ -415,19 +415,6 @@ export function ReadingProgress({
             </div>
           )}
 
-          {/* 읽기 모멘텀 통계 */}
-          {!isDragging && !showInlineMemo && startedAt && currentPage > 0 && (() => {
-            const startDate = new Date(startedAt);
-            const now = new Date();
-            const daysSinceStart = Math.max(1, Math.ceil((now.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)));
-            const avgPagesPerDay = (currentPage / daysSinceStart).toFixed(1);
-            return (
-              <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-                <Calendar className="h-3 w-3" />
-                <span>읽기 시작 {daysSinceStart}일째 · 일평균 {avgPagesPerDay}p</span>
-              </div>
-            );
-          })()}
         </div>
       ) : displayPercent !== null ? (
         <div className="space-y-2">
@@ -463,6 +450,26 @@ export function ReadingProgress({
           )}
         </div>
       )}
+
+      {/* 읽기 모멘텀 통계 - 항상 표시 */}
+      {startedAt && !isDragging && !showInlineMemo && (() => {
+        const startDate = new Date(startedAt);
+        const now = new Date();
+        const daysSinceStart = Math.max(1, Math.ceil((now.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)));
+        const avgPagesPerDay = currentPage > 0 ? (currentPage / daysSinceStart).toFixed(1) : null;
+        return (
+          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+            <Calendar className="h-3 w-3 shrink-0" />
+            <span>
+              읽기 시작 {daysSinceStart}일째
+              {avgPagesPerDay && <> · 일평균 {avgPagesPerDay}p</>}
+              {avgPagesPerDay && totalPages && remainingPages > 0 && (
+                <> · 약 {Math.ceil(remainingPages / Number(avgPagesPerDay))}일 후 완독 예상</>
+              )}
+            </span>
+          </div>
+        );
+      })()}
 
       {/* 페이지 수정 UI */}
       {isEditing ? (
