@@ -84,7 +84,7 @@ export function TertiaryZoneClient({
 
   return (
     <CollapsibleSection
-      title="정원 안쪽"
+      title="비밀 정원"
       storageKey="dashboard-tertiary"
       defaultOpen={false}
     >
