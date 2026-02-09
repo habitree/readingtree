@@ -76,8 +76,13 @@ export function ReadingProgress({
     ? Math.min(Math.round((dragValue / totalPages) * 100), 100)
     : null;
 
-  // 완독 상태면 100%로 표시
-  const displayPercent = status === "completed" ? 100 : (isDragging ? dragPercent : progressPercent);
+  // 보류 중인 업데이트의 퍼센트
+  const pendingPercent = pendingPageUpdate !== null && totalPages && totalPages > 0
+    ? Math.min(Math.round((pendingPageUpdate / totalPages) * 100), 100)
+    : null;
+
+  // 완독 상태면 100%로 표시, 드래그 중이면 드래그 값, 보류 중이면 보류 값
+  const displayPercent = status === "completed" ? 100 : (isDragging ? dragPercent : (pendingPercent ?? progressPercent));
 
   // 슬라이더 값 변경 핸들러 (드래그 중)
   const handleSliderChange = useCallback((value: number[]) => {
