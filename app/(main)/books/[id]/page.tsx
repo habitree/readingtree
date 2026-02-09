@@ -328,30 +328,22 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
         </CardContent>
       </Card>
 
-      {/* 연결된 책 섹션 - 로그인 사용자만 */}
-      {!isGuest && (
-        <Card className="border-muted/50">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2 text-base font-medium">
-                <Link2 className="w-4 h-4 text-primary/70" />
-                연결된 책
-              </CardTitle>
-              <RelatedBooksEditor userBookId={userBook.id} />
+      {/* 독서 기록 영역 - 핵심 액션 영역 */}
+      <div id="reading-records" className="scroll-mt-4">
+        {/* 헤더: 제목 + 기록 작성 CTA */}
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2.5">
+            <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10">
+              <PenTool className="w-4 h-4 text-primary" />
             </div>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <RelatedBooksList userBookId={userBook.id} initialBooks={relatedBooks} />
-          </CardContent>
-        </Card>
-      )}
-
-      {/* 기록 목록 영역 - 개선된 헤더 */}
-      <div className="pt-2">
-        <div className="flex items-center justify-between mb-4 sm:mb-6">
-          <div className="flex items-center gap-2">
-            <PenTool className="w-5 h-5 text-primary/70" />
-            <h2 className="text-xl sm:text-2xl font-semibold tracking-tight">기록</h2>
+            <div>
+              <h2 className="text-lg sm:text-xl font-semibold tracking-tight">독서 기록</h2>
+              {!isGuest && notes.length > 0 && (
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  총 {notes.length}개의 기록
+                </p>
+              )}
+            </div>
           </div>
           {isGuest ? (
             <Button asChild variant="outline" size="sm" className="shadow-sm">
@@ -361,7 +353,7 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
               </Link>
             </Button>
           ) : (
-            <Button asChild size="sm" className="shadow-sm">
+            <Button asChild size="sm" className="shadow-sm bg-primary hover:bg-primary/90">
               <Link href={`/notes/new?bookId=${userBook.id}`}>
                 <PenTool className="mr-2 h-4 w-4" />
                 기록 작성
@@ -369,12 +361,37 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
             </Button>
           )}
         </div>
+
+        {/* 기록 탭/목록 */}
         {isGuest ? (
           <SampleNotesList bookId={userBook.id} />
         ) : (
           <BookNotesTabs userBookId={userBook.id} notes={notes} />
         )}
       </div>
+
+      {/* 연결된 책 섹션 - 보조 영역 (하단) */}
+      {!isGuest && (
+        <Card className="border-muted/40 bg-muted/20">
+          <CardHeader className="pb-2 pt-4 px-4 sm:px-6">
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                <Link2 className="w-3.5 h-3.5" />
+                연결된 책
+                {relatedBooks.length > 0 && (
+                  <span className="text-xs bg-muted px-1.5 py-0.5 rounded-full">
+                    {relatedBooks.length}
+                  </span>
+                )}
+              </CardTitle>
+              <RelatedBooksEditor userBookId={userBook.id} />
+            </div>
+          </CardHeader>
+          <CardContent className="pt-0 px-4 sm:px-6 pb-4">
+            <RelatedBooksList userBookId={userBook.id} initialBooks={relatedBooks} />
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
