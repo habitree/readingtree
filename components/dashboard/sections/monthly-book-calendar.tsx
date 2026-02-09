@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { ChevronLeft, ChevronRight, BookOpen, Calendar, Sparkles, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, BookOpen, Calendar, Sparkles, X, PenTool } from "lucide-react";
 import Link from "next/link";
 import type { DailyBookActivity } from "@/app/actions/stats";
 
@@ -60,6 +60,7 @@ export function MonthlyBookCalendar({
       date: string | null;
       day: number | null;
       books: DailyBookActivity["books"];
+      noteTypes: DailyBookActivity["noteTypes"] | null;
       isToday: boolean;
       isFuture: boolean;
     }>> = [];
@@ -72,6 +73,7 @@ export function MonthlyBookCalendar({
         date: null,
         day: null,
         books: [],
+        noteTypes: null,
         isToday: false,
         isFuture: false,
       });
@@ -89,6 +91,7 @@ export function MonthlyBookCalendar({
         date: dateStr,
         day,
         books: activity?.books || [],
+        noteTypes: activity?.noteTypes || null,
         isToday,
         isFuture,
       });
@@ -106,6 +109,7 @@ export function MonthlyBookCalendar({
           date: null,
           day: null,
           books: [],
+          noteTypes: null,
           isToday: false,
           isFuture: false,
         });
@@ -135,7 +139,15 @@ export function MonthlyBookCalendar({
       }
     });
 
-    return { weeks, recordedDays, totalBooks, uniqueBooks: uniqueBookIds.size };
+    // 총 기록 수 계산
+    const totalNotes = Object.values(activities)
+      .filter(a => {
+        const [y, m] = a.date.split("-").map(Number);
+        return y === year && m === month;
+      })
+      .reduce((sum, a) => sum + (a.noteTypes?.total || 0), 0);
+
+    return { weeks, recordedDays, totalBooks, uniqueBooks: uniqueBookIds.size, totalNotes };
   }, [activities, year, month]);
 
   // 선택된 날짜 정보
@@ -199,6 +211,14 @@ export function MonthlyBookCalendar({
                 {calendarData.uniqueBooks}권
               </span>
             </div>
+            {calendarData.totalNotes > 0 && (
+              <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-violet-100/80 dark:bg-violet-900/30">
+                <PenTool className="w-3 h-3 text-violet-600 dark:text-violet-400" />
+                <span className="text-xs font-medium text-violet-700 dark:text-violet-300">
+                  {calendarData.totalNotes}개
+                </span>
+              </div>
+            )}
           </div>
         </div>
 
@@ -257,6 +277,7 @@ export function MonthlyBookCalendar({
                   day={day.day}
                   date={day.date}
                   books={day.books}
+                  noteTypes={day.noteTypes}
                   isToday={day.isToday}
                   isFuture={day.isFuture}
                   isSelected={selectedDate === day.date}
@@ -277,10 +298,11 @@ export function MonthlyBookCalendar({
 
         {/* 선택된 날짜 상세 - Glassmorphism */}
         <AnimatePresence mode="wait">
-          {selectedDayInfo && selectedDayInfo.books.length > 0 && (
+          {selectedDayInfo && (selectedDayInfo.books.length > 0 || (selectedDayInfo.noteTypes && selectedDayInfo.noteTypes.total > 0)) && (
             <SelectedDateDetail
               date={selectedDate!}
               books={selectedDayInfo.books}
+              noteTypes={selectedDayInfo.noteTypes}
               onClose={() => setSelectedDate(null)}
             />
           )}
@@ -290,10 +312,19 @@ export function MonthlyBookCalendar({
   );
 }
 
+// 기록 타입별 색상 (작은 도트 인디케이터용)
+const NOTE_TYPE_COLORS = {
+  transcription: "bg-violet-400 dark:bg-violet-500",
+  photo: "bg-sky-400 dark:bg-sky-500",
+  memo: "bg-emerald-400 dark:bg-emerald-500",
+  progress: "bg-amber-400 dark:bg-amber-500",
+};
+
 interface DayCellProps {
   day: number | null;
   date: string | null;
   books: DailyBookActivity["books"];
+  noteTypes: DailyBookActivity["noteTypes"] | null;
   isToday: boolean;
   isFuture: boolean;
   isSelected: boolean;
@@ -312,6 +343,7 @@ const DayCell = memo(function DayCell({
   day,
   date,
   books,
+  noteTypes,
   isToday,
   isFuture,
   isSelected,
@@ -327,6 +359,15 @@ const DayCell = memo(function DayCell({
   }
 
   const hasBooks = books.length > 0;
+  const hasNotes = noteTypes && noteTypes.total > 0;
+
+  // 기록 타입 도트 표시용
+  const activeNoteTypes = noteTypes ? [
+    noteTypes.transcription > 0 ? "transcription" : null,
+    noteTypes.photo > 0 ? "photo" : null,
+    (noteTypes.memo > 0 || noteTypes.quote > 0) ? "memo" : null,
+    noteTypes.progress > 0 ? "progress" : null,
+  ].filter(Boolean) as (keyof typeof NOTE_TYPE_COLORS)[] : [];
 
   return (
     <div
@@ -378,6 +419,21 @@ const DayCell = memo(function DayCell({
         {hasBooks && (
           <div className="absolute bottom-0 right-0 text-[8px] font-bold px-1 py-0.5 rounded-tl bg-black/60 text-white">
             {day}
+          </div>
+        )}
+
+        {/* 기록 타입 인디케이터 도트 (왼쪽 상단) */}
+        {hasNotes && activeNoteTypes.length > 0 && (
+          <div className="absolute top-0.5 left-0.5 flex gap-[2px] z-10">
+            {activeNoteTypes.slice(0, 3).map((type) => (
+              <div
+                key={type}
+                className={cn(
+                  "w-[5px] h-[5px] rounded-full shadow-sm",
+                  NOTE_TYPE_COLORS[type]
+                )}
+              />
+            ))}
           </div>
         )}
       </div>
@@ -513,13 +569,22 @@ const StackedBookCovers = memo(function StackedBookCovers({ books, isHovered }: 
 // StackedBookCovers displayName 설정 (React DevTools 디버깅용)
 StackedBookCovers.displayName = "StackedBookCovers";
 
+// 기록 타입 라벨 정의 (상세보기용)
+const NOTE_TYPE_LABELS: Record<string, { label: string; color: string }> = {
+  transcription: { label: "필사", color: "text-violet-600 dark:text-violet-400" },
+  photo: { label: "사진", color: "text-sky-600 dark:text-sky-400" },
+  memo: { label: "기록", color: "text-emerald-600 dark:text-emerald-400" },
+  progress: { label: "진행", color: "text-amber-600 dark:text-amber-400" },
+};
+
 interface SelectedDateDetailProps {
   date: string;
   books: DailyBookActivity["books"];
+  noteTypes: DailyBookActivity["noteTypes"] | null;
   onClose: () => void;
 }
 
-function SelectedDateDetail({ date, books, onClose }: SelectedDateDetailProps) {
+function SelectedDateDetail({ date, books, noteTypes, onClose }: SelectedDateDetailProps) {
   const formattedDate = date.split("-").slice(1).map(n => parseInt(n)).join("/");
 
   return (
@@ -550,6 +615,35 @@ function SelectedDateDetail({ date, books, onClose }: SelectedDateDetailProps) {
             <X className="w-4 h-4 text-slate-400" />
           </button>
         </div>
+
+        {/* 기록 타입 요약 */}
+        {noteTypes && noteTypes.total > 0 && (
+          <div className="flex items-center gap-2 flex-wrap">
+            {noteTypes.transcription > 0 && (
+              <span className={cn("text-[11px] font-medium", NOTE_TYPE_LABELS.transcription.color)}>
+                필사 {noteTypes.transcription}
+              </span>
+            )}
+            {noteTypes.photo > 0 && (
+              <span className={cn("text-[11px] font-medium", NOTE_TYPE_LABELS.photo.color)}>
+                사진 {noteTypes.photo}
+              </span>
+            )}
+            {(noteTypes.memo > 0 || noteTypes.quote > 0) && (
+              <span className={cn("text-[11px] font-medium", NOTE_TYPE_LABELS.memo.color)}>
+                기록 {noteTypes.memo + noteTypes.quote}
+              </span>
+            )}
+            {noteTypes.progress > 0 && (
+              <span className={cn("text-[11px] font-medium", NOTE_TYPE_LABELS.progress.color)}>
+                진행 {noteTypes.progress}
+              </span>
+            )}
+            <span className="text-[10px] text-slate-400 dark:text-slate-500">
+              총 {noteTypes.total}개
+            </span>
+          </div>
+        )}
 
         {/* 책 목록 - 가로 스크롤 */}
         <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">

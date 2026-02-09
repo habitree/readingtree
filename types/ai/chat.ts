@@ -41,9 +41,10 @@ export interface ChatContext {
     reading_stats?: ReadingStats;
   };
   recentBooks?: {
-    id: string;
+    id: string;  // user_books.id (책 상세 페이지 라우팅용)
     title: string;
     author: string | null;
+    cover_image_url: string | null;
     status: string;
     started_at: string;
     completed_at: string | null;
@@ -53,7 +54,8 @@ export interface ChatContext {
     type: string;
     content: string | null;
     book_title: string;
-    book_id?: string;  // 책 페이지로 연결하기 위한 ID
+    book_id?: string;  // user_books.id (책 상세 페이지 라우팅용)
+    book_cover_image_url?: string | null;
     created_at: string;
   }[];
   readingGoal?: {

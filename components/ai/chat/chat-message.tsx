@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -16,12 +17,24 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Bot, User, Trash2, BookOpen, FileText } from "lucide-react";
+import { getImageUrl } from "@/lib/utils/image";
 import type { ChatMessage as ChatMessageType } from "@/types/ai";
+
+/** 책 메타데이터 (표지 이미지 표시용) */
+export interface BookMetadata {
+  id: string;
+  title: string;
+  cover_image_url: string | null;
+}
 
 /**
  * 메시지 내용에서 [[book:id:제목]] 및 [[note:id:타입]] 형식을 파싱하여 링크로 변환
+ * bookMetadataMap이 제공되면 책 표지 이미지도 함께 표시
  */
-function parseMessageContent(content: string): React.ReactNode[] {
+function parseMessageContent(
+  content: string,
+  bookMetadataMap?: Map<string, BookMetadata>
+): React.ReactNode[] {
   // [[book:id:제목]] 또는 [[note:id:타입]] 패턴 매칭
   const regex = /\[\[(book|note):([a-zA-Z0-9-]+):([^\]]+)\]\]/g;
   const parts: React.ReactNode[] = [];
@@ -37,20 +50,43 @@ function parseMessageContent(content: string): React.ReactNode[] {
 
     const [, type, id, label] = match;
     const href = type === "book" ? `/books/${id}` : `/notes/${id}`;
-    const Icon = type === "book" ? BookOpen : FileText;
+    const bookMeta = type === "book" ? bookMetadataMap?.get(id) : undefined;
+    const coverUrl = bookMeta?.cover_image_url;
 
-    // 링크 컴포넌트
-    parts.push(
-      <Link
-        key={`link-${keyIndex++}`}
-        href={href}
-        className="inline-flex items-center gap-1 text-primary hover:underline font-medium"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <Icon className="h-3 w-3" />
-        <span>{label}</span>
-      </Link>
-    );
+    if (type === "book" && coverUrl) {
+      // 책 표지 이미지가 있는 경우 - 카드 형태로 표시
+      parts.push(
+        <Link
+          key={`link-${keyIndex++}`}
+          href={href}
+          className="inline-flex items-center gap-2 px-2 py-1 rounded-lg bg-primary/5 hover:bg-primary/10 border border-primary/20 transition-colors align-middle"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="w-6 h-8 rounded-sm overflow-hidden shrink-0 shadow-sm">
+            <img
+              src={getImageUrl(coverUrl)}
+              alt={label}
+              className="w-full h-full object-cover"
+            />
+          </div>
+          <span className="text-primary font-medium text-sm">{label}</span>
+        </Link>
+      );
+    } else {
+      // 표지 이미지가 없는 경우 - 기존 아이콘 스타일
+      const Icon = type === "book" ? BookOpen : FileText;
+      parts.push(
+        <Link
+          key={`link-${keyIndex++}`}
+          href={href}
+          className="inline-flex items-center gap-1 text-primary hover:underline font-medium"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <Icon className="h-3 w-3" />
+          <span>{label}</span>
+        </Link>
+      );
+    }
 
     lastIndex = match.index + match[0].length;
   }
@@ -68,9 +104,10 @@ interface ChatMessageProps {
   userAvatar?: string | null;
   userName?: string;
   onDelete?: (messageId: string) => void;
+  bookMetadataMap?: Map<string, BookMetadata>;
 }
 
-export function ChatMessage({ message, userAvatar, userName, onDelete }: ChatMessageProps) {
+export function ChatMessage({ message, userAvatar, userName, onDelete, bookMetadataMap }: ChatMessageProps) {
   const isUser = message.role === "user";
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
@@ -79,8 +116,8 @@ export function ChatMessage({ message, userAvatar, userName, onDelete }: ChatMes
     if (isUser || !message.content) {
       return message.content;
     }
-    return parseMessageContent(message.content);
-  }, [message.content, isUser]);
+    return parseMessageContent(message.content, bookMetadataMap);
+  }, [message.content, isUser, bookMetadataMap]);
 
   const handleDelete = () => {
     if (onDelete) {
@@ -186,16 +223,17 @@ export function ChatMessage({ message, userAvatar, userName, onDelete }: ChatMes
 interface StreamingMessageProps {
   content: string;
   isLoading?: boolean;
+  bookMetadataMap?: Map<string, BookMetadata>;
 }
 
-export function StreamingMessage({ content, isLoading }: StreamingMessageProps) {
+export function StreamingMessage({ content, isLoading, bookMetadataMap }: StreamingMessageProps) {
   // 스트리밍 완료 후에만 링크 파싱 (스트리밍 중에는 성능을 위해 일반 텍스트로 표시)
   const parsedContent = useMemo(() => {
     if (isLoading || !content) {
       return content;
     }
-    return parseMessageContent(content);
-  }, [content, isLoading]);
+    return parseMessageContent(content, bookMetadataMap);
+  }, [content, isLoading, bookMetadataMap]);
 
   return (
     <div className="flex gap-3 p-4">

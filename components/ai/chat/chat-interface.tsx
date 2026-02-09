@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { ChatMessage, StreamingMessage } from "./chat-message";
+import type { BookMetadata } from "./chat-message";
 import { ChatInput } from "./chat-input";
 import { ChatSidebar } from "./chat-sidebar";
 import { TypingIndicator } from "./typing-indicator";
@@ -57,6 +58,32 @@ export function ChatInterface({ userId, userAvatar, userName }: ChatInterfacePro
   const [lastFailedMessage, setLastFailedMessage] = useState<string | null>(null);
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // context에서 책 메타데이터 맵 생성 (표지 이미지 표시용)
+  const bookMetadataMap = useMemo(() => {
+    const map = new Map<string, BookMetadata>();
+    if (context.recentBooks) {
+      context.recentBooks.forEach((book) => {
+        map.set(book.id, {
+          id: book.id,
+          title: book.title,
+          cover_image_url: book.cover_image_url || null,
+        });
+      });
+    }
+    if (context.recentNotes) {
+      context.recentNotes.forEach((note) => {
+        if (note.book_id && !map.has(note.book_id)) {
+          map.set(note.book_id, {
+            id: note.book_id,
+            title: note.book_title,
+            cover_image_url: note.book_cover_image_url || null,
+          });
+        }
+      });
+    }
+    return map;
+  }, [context]);
 
   // 화면 크기에 따라 사이드바 상태 초기화
   useEffect(() => {
@@ -419,6 +446,7 @@ export function ChatInterface({ userId, userAvatar, userName }: ChatInterfacePro
                     userAvatar={userAvatar}
                     userName={userName}
                     onDelete={handleDeleteMessage}
+                    bookMetadataMap={bookMetadataMap}
                   />
                 ))}
                 {/* 타이핑 인디케이터 - 응답 시작 전 표시 */}
@@ -426,7 +454,7 @@ export function ChatInterface({ userId, userAvatar, userName }: ChatInterfacePro
                   <TypingIndicator />
                 )}
                 {streamingContent && (
-                  <StreamingMessage content={streamingContent} isLoading={true} />
+                  <StreamingMessage content={streamingContent} isLoading={true} bookMetadataMap={bookMetadataMap} />
                 )}
                 {/* 에러 재시도 버튼 */}
                 {lastFailedMessage && !isLoading && (

@@ -342,7 +342,8 @@ export async function getChatContext(): Promise<ChatContext> {
       books (
         id,
         title,
-        author
+        author,
+        cover_image_url
       )
     `)
     .eq("user_id", user.id)
@@ -361,12 +362,30 @@ export async function getChatContext(): Promise<ChatContext> {
       book_id,
       books (
         id,
-        title
+        title,
+        cover_image_url
       )
     `)
     .eq("user_id", user.id)
     .order("created_at", { ascending: false })
     .limit(10);
+
+  // notes의 book_id(books 테이블) → user_books.id 매핑 조회
+  const noteBookIds = recentNotes
+    ? [...new Set(recentNotes.map((n: any) => n.book_id).filter(Boolean))]
+    : [];
+  const { data: userBooksForNotes } = noteBookIds.length > 0
+    ? await supabase
+        .from("user_books")
+        .select("id, book_id")
+        .eq("user_id", user.id)
+        .in("book_id", noteBookIds)
+    : { data: null };
+
+  const noteBookIdMap = new Map<string, string>();
+  if (userBooksForNotes) {
+    userBooksForNotes.forEach((ub: any) => noteBookIdMap.set(ub.book_id, ub.id));
+  }
 
   // 독서 목표 조회
   const { data: profile } = await supabase
@@ -400,26 +419,28 @@ export async function getChatContext(): Promise<ChatContext> {
     };
   }
 
-  // 최근 책 정보 - books.id 사용 (책 페이지 링크용)
+  // 최근 책 정보 - user_books.id 사용 (책 상세 페이지 링크: /books/[user_books.id])
   if (recentBooks && recentBooks.length > 0) {
     context.recentBooks = recentBooks.map((ub: any) => ({
-      id: ub.books?.id || ub.id,  // books 테이블의 id 사용
+      id: ub.id,  // user_books.id 사용 (책 상세 페이지 라우팅용)
       title: ub.books?.title || "알 수 없는 책",
       author: ub.books?.author || null,
+      cover_image_url: ub.books?.cover_image_url || null,
       status: ub.status,
       started_at: ub.started_at,
       completed_at: ub.completed_at,
     }));
   }
 
-  // 최근 기록 정보 - book_id 포함
+  // 최근 기록 정보 - user_books.id로 매핑하여 책 페이지 링크 정상 작동
   if (recentNotes && recentNotes.length > 0) {
     context.recentNotes = recentNotes.map((note: any) => ({
       id: note.id,
       type: note.type,
       content: note.content,
       book_title: note.books?.title || "알 수 없는 책",
-      book_id: note.book_id || note.books?.id,  // 책 페이지로 연결하기 위한 ID
+      book_id: noteBookIdMap.get(note.book_id) || note.book_id,  // user_books.id로 매핑
+      book_cover_image_url: note.books?.cover_image_url || null,
       created_at: note.created_at,
     }));
   }

@@ -1074,6 +1074,15 @@ export interface DailyBookActivity {
     title: string;
     coverImageUrl: string | null;
   }>;
+  /** 기록 타입별 카운트 */
+  noteTypes: {
+    transcription: number;
+    photo: number;
+    memo: number;
+    quote: number;
+    progress: number;
+    total: number;
+  };
 }
 
 export async function getMonthlyBookActivities(
@@ -1091,12 +1100,13 @@ export async function getMonthlyBookActivities(
   const startDate = new Date(year, month - 1, 1);
   const endDate = new Date(year, month, 0, 23, 59, 59, 999);
 
-  // 해당 월의 기록 조회 (책 정보 포함)
+  // 해당 월의 기록 조회 (책 정보 + 기록 타입 포함)
   const { data: notes, error } = await supabase
     .from("notes")
     .select(`
       id,
       book_id,
+      type,
       created_at,
       books (
         id,
@@ -1139,8 +1149,31 @@ export async function getMonthlyBookActivities(
       dailyActivities[dateKey] = {
         date: dateKey,
         books: [],
+        noteTypes: {
+          transcription: 0,
+          photo: 0,
+          memo: 0,
+          quote: 0,
+          progress: 0,
+          total: 0,
+        },
       };
     }
+
+    // 기록 타입별 카운트 집계
+    const noteType = note.type as string;
+    if (noteType === "transcription") {
+      dailyActivities[dateKey].noteTypes.transcription++;
+    } else if (noteType === "photo") {
+      dailyActivities[dateKey].noteTypes.photo++;
+    } else if (noteType === "memo") {
+      dailyActivities[dateKey].noteTypes.memo++;
+    } else if (noteType === "quote") {
+      dailyActivities[dateKey].noteTypes.quote++;
+    } else if (noteType === "progress") {
+      dailyActivities[dateKey].noteTypes.progress++;
+    }
+    dailyActivities[dateKey].noteTypes.total++;
 
     // 같은 날짜에 같은 책이 중복되지 않도록
     const existingBook = dailyActivities[dateKey].books.find(
