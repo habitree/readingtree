@@ -294,20 +294,23 @@ export function HomeHeroSection({
         <div className="space-y-2 sm:space-y-3">
           {/* 계속 읽기 (Primary CTA) */}
           {continueReadingBooks.length > 0 ? (
-            continueReadingBooks.slice(0, 2).map((book) => (
-              <ContinueReadingCard
-                key={book.userBookId}
-                userBookId={book.userBookId}
-                title={book.title}
-                author={book.author}
-                coverImageUrl={book.coverImageUrl}
-                currentPage={book.currentPage}
-                totalPages={book.totalPages}
-                progressPercent={book.progressPercent}
-                compact={true}
-                priority={true}
-              />
-            ))
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
+              {continueReadingBooks.slice(0, 6).map((book, index) => (
+                <ContinueReadingCard
+                  key={book.userBookId}
+                  userBookId={book.userBookId}
+                  title={book.title}
+                  author={book.author}
+                  coverImageUrl={book.coverImageUrl}
+                  currentPage={book.currentPage}
+                  totalPages={book.totalPages}
+                  progressPercent={book.progressPercent}
+                  compact={true}
+                  // 첫 번째 카드만 priority 로딩, 나머지는 lazy
+                  priority={index === 0}
+                />
+              ))}
+            </div>
           ) : (
             <NoReadingBookCard />
           )}

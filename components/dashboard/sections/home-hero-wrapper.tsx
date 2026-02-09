@@ -49,7 +49,8 @@ export async function HomeHeroWrapper() {
     getCachedPersonaDashboardData().catch(() => null),
     getReadingStats(user).catch(() => null),
     getStreakAndTodayData(user.id).catch(() => ({ streak: 0, todayNotes: 0 })),
-    getContinueReadingBooks(user, 4).catch(() => []),
+    // 홈 화면 진행 카드: 최대 6권까지 표시
+    getContinueReadingBooks(user, 6).catch(() => []),
     getWeeklyProgress(user).catch(() => null),
     getDailyRecordsByType(user, activityCalendarStart, today).catch(() => ({})),
     getCurrentBookProgress(user).catch(() => null),
