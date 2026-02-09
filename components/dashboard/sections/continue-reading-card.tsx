@@ -69,7 +69,7 @@ export function ContinueReadingCard({
         transition={{ duration: 0.3 }}
         whileTap={{ scale: 0.98 }}
         onClick={handleClick}
-        className="cursor-pointer"
+        className="cursor-pointer h-full"
       >
         <Card className={cn(
           "relative overflow-hidden h-full border-slate-200/60 dark:border-slate-800/60 bg-white dark:bg-slate-900 transition-colors duration-200",
@@ -82,12 +82,12 @@ export function ContinueReadingCard({
             </div>
           )}
 
-            <div className="relative p-3 flex flex-col h-full">
+            <div className="relative px-2.5 py-2 flex flex-col h-full">
               {/* 상단: 책 표지 + 제목 */}
-              <div className="flex items-start gap-3">
+              <div className="flex items-start gap-2">
                 {/* 책 표지 */}
                 <div className="relative shrink-0">
-                  <div className="relative w-12 h-[72px] rounded-md overflow-hidden shadow-sm">
+                  <div className="relative w-10 h-[60px] rounded-md overflow-hidden shadow-sm">
                     {coverImageUrl ? (
                       <Image
                         src={coverImageUrl}
@@ -107,14 +107,14 @@ export function ContinueReadingCard({
 
                 {/* 책 정보 */}
                 <div className="flex-1 min-w-0">
-                  <p className="text-[10px] font-medium text-forest-600 dark:text-forest-400 mb-0.5">
+                  <p className="text-[9px] font-medium text-forest-600 dark:text-forest-400 mb-0.5">
                     이어서
                   </p>
-                  <h3 className="text-sm font-semibold text-slate-900 dark:text-white line-clamp-2 group-hover:text-forest-700 dark:group-hover:text-forest-300 transition-colors leading-tight">
+                  <h3 className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-white line-clamp-2 group-hover:text-forest-700 dark:group-hover:text-forest-300 transition-colors leading-tight">
                     {title}
                   </h3>
                   {author && (
-                    <p className="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate mt-0.5">
                       {author}
                     </p>
                   )}
@@ -122,7 +122,7 @@ export function ContinueReadingCard({
               </div>
 
               {/* 하단: 진행률 바 (수치 제거, 바만 유지) */}
-              <div className="mt-auto pt-2">
+              <div className="mt-auto pt-1.5">
                 <div className="h-0.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
                   <div
                     className="h-full bg-forest-400/60 rounded-full"

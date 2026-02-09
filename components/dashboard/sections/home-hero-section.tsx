@@ -167,7 +167,7 @@ export function HomeHeroSection({
   const progressPercent = currentBookProgress?.progressPercent || 0;
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2 sm:space-y-3">
       {/* ======== PRIMARY ZONE: 5초 내 핵심 파악 ======== */}
       <motion.div
         initial={{ opacity: 0 }}
@@ -175,38 +175,38 @@ export function HomeHeroSection({
         transition={{ duration: 0.4 }}
       >
         <Card className="relative overflow-hidden bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/60">
-          <div className="relative p-4 sm:p-6">
-            <div className="mb-4">
-              <div className="flex items-center gap-2 mb-1">
+          <div className="relative px-3 py-3 sm:p-5">
+            <div className="mb-3 sm:mb-4">
+              <div className="flex items-center gap-2 mb-0.5 sm:mb-1">
                 {displayGreeting.emoji && (
                   <span className="text-xl sm:text-2xl">{displayGreeting.emoji}</span>
                 )}
-                <h1 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">
+                <h1 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
                   {displayGreeting.text}
                   {userName && <span className="text-forest-600 dark:text-forest-400">, {userName}님</span>}
                 </h1>
               </div>
-              <p className="text-sm text-slate-600 dark:text-slate-400">
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
                 {motivationalMessage}
               </p>
             </div>
 
             {/* 핵심 지표 3개: 스트릭 | 오늘 기록 | 읽은 만큼 */}
-            <div className="grid grid-cols-3 gap-2 sm:gap-3">
+            <div className="grid grid-cols-3 gap-1.5 sm:gap-3">
               {/* 스트릭 */}
-              <div className="rounded-lg p-2.5 sm:p-3 text-center">
+              <div className="rounded-lg p-2 sm:p-2.5 text-center">
                 <div className="flex items-center justify-center gap-1 mb-0.5">
-                  <span className="text-sm sm:text-base font-medium text-slate-700 dark:text-slate-300">
+                  <span className="text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-300">
                     {streak}
                   </span>
                 </div>
-                <p className="text-[9px] sm:text-xs text-slate-500 dark:text-slate-400">흔적</p>
+                <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400">흔적</p>
               </div>
 
               {/* 오늘 기록 */}
               <Link
                 href="/notes"
-                className="rounded-lg p-2.5 sm:p-3 text-center hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
+                className="rounded-lg p-2 sm:p-2.5 text-center hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
               >
                 <div className="flex items-center justify-center gap-1 mb-0.5">
                   {todayNotes > 0 ? (
@@ -214,36 +214,36 @@ export function HomeHeroSection({
                   ) : (
                     <PenLine className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-forest-500" />
                   )}
-                  <span className="text-sm sm:text-base font-medium text-slate-700 dark:text-slate-300">
+                  <span className="text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-300">
                     {todayNotes}
                   </span>
                 </div>
-                <p className="text-[9px] sm:text-xs text-slate-500 dark:text-slate-400">오늘의 기록</p>
+                <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400">오늘의 기록</p>
               </Link>
 
               {/* 읽은 만큼 */}
               {currentBookProgress ? (
                 <Link
                   href={`/books/${currentBookProgress.userBookId}`}
-                  className="rounded-lg p-2.5 sm:p-3 text-center hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
+                  className="rounded-lg p-2 sm:p-2.5 text-center hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
                 >
                   <div className="flex items-center justify-center gap-0.5 mb-0.5">
                     <TrendingUp className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-blue-500" />
-                    <span className="text-sm sm:text-base font-medium text-slate-700 dark:text-slate-300">
+                    <span className="text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-300">
                       {progressPercent}%
                     </span>
                   </div>
-                  <p className="text-[9px] sm:text-xs text-slate-500 dark:text-slate-400 truncate">읽은 만큼</p>
+                  <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 truncate">읽은 만큼</p>
                 </Link>
               ) : (
-                <div className="rounded-lg p-2.5 sm:p-3 text-center">
+                <div className="rounded-lg p-2 sm:p-2.5 text-center">
                   <div className="flex items-center justify-center gap-0.5 mb-0.5">
                     <TrendingUp className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-slate-400" />
-                    <span className="text-sm sm:text-base font-medium text-slate-400 dark:text-slate-500">
+                    <span className="text-xs sm:text-sm font-medium text-slate-400 dark:text-slate-500">
                       -
                     </span>
                   </div>
-                  <p className="text-[9px] sm:text-xs text-slate-400 dark:text-slate-500">읽은 만큼</p>
+                  <p className="text-[10px] sm:text-xs text-slate-400 dark:text-slate-500">읽은 만큼</p>
                 </div>
               )}
             </div>
@@ -294,7 +294,8 @@ export function HomeHeroSection({
         <div className="space-y-2 sm:space-y-3">
           {/* 계속 읽기 (Primary CTA) */}
           {continueReadingBooks.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
+            // 모바일: 2x3 그리드, 태블릿 이상: 3열 이상으로 확장
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 gap-2 sm:gap-3">
               {continueReadingBooks.slice(0, 6).map((book, index) => (
                 <ContinueReadingCard
                   key={book.userBookId}
