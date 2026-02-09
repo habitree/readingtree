@@ -450,9 +450,9 @@ interface StackedBookCoversProps {
 }
 
 /**
- * StackedBookCovers 컴포넌트 - 부채꼴(Fan-out) 표현
- * 여러 책이 있을 때 각 표지가 부채꼴로 펼쳐져 뒤쪽 책도 잘 보임
- * 호버 시 더 크게 펼쳐져 모든 표지를 확인 가능
+ * StackedBookCovers 컴포넌트 - 수평 분할(Split) 표현
+ * 여러 책이 있을 때 각 표지가 나란히 배치되어 모든 표지가 명확히 보임
+ * 호버 시 살짝 벌어져 각 표지를 더 잘 확인 가능
  */
 const StackedBookCovers = memo(function StackedBookCovers({ books, isHovered }: StackedBookCoversProps) {
   // 최대 3개까지 표시 (성능 최적화)
@@ -484,64 +484,43 @@ const StackedBookCovers = memo(function StackedBookCovers({ books, isHovered }: 
     );
   }
 
-  // 2~3권: 부채꼴(Fan-out) 펼침 효과
-  // 각 책이 중앙 하단을 기준으로 회전하여 표지가 겹치면서도 잘 보임
-  const fanAngles: Record<number, number[]> = {
-    2: [-8, 8],      // 2권: 좌우 8도
-    3: [-12, 0, 12],  // 3권: 좌/중앙/우
-  };
-  const hoverFanAngles: Record<number, number[]> = {
-    2: [-18, 18],     // 호버: 좌우 18도 (더 벌어짐)
-    3: [-22, 0, 22],  // 호버: 좌우 22도
-  };
-  const fanTranslateX: Record<number, number[]> = {
-    2: [-5, 5],       // 2권: 좌우 5px 이동
-    3: [-9, 0, 9],    // 3권: 좌우 9px 이동
-  };
-  const hoverTranslateX: Record<number, number[]> = {
-    2: [-8, 8],       // 호버: 좌우 8px
-    3: [-12, 0, 12],  // 호버: 좌우 12px
-  };
-  // 세로 방향 오프셋으로 뒤쪽 책의 상단이 더 잘 보이도록 조정
-  const fanTranslateY: Record<number, number[]> = {
-    2: [2, -2],       // 2권: 앞권은 살짝 위, 뒷권은 살짝 아래
-    3: [4, 0, -4],    // 3권: 가장 뒤 책이 가장 위, 앞 책이 가장 아래
-  };
-  const hoverTranslateY: Record<number, number[]> = {
-    2: [4, -4],       // 호버 시 세로 오프셋 확대
-    3: [6, 0, -6],
+  // 2~3권: 수평 분할 배치 - 각 표지가 나란히 보이도록
+  // 2권: 각 58% 폭, 16% 겹침 / 3권: 각 42% 폭, 13% 겹침
+  const layouts: Record<number, Array<{ left: string; width: string; rotate: number; hoverRotate: number }>> = {
+    2: [
+      { left: '0%', width: '58%', rotate: -2, hoverRotate: -4 },
+      { left: '42%', width: '58%', rotate: 2, hoverRotate: 4 },
+    ],
+    3: [
+      { left: '0%', width: '42%', rotate: -3, hoverRotate: -5 },
+      { left: '29%', width: '42%', rotate: 0, hoverRotate: 0 },
+      { left: '58%', width: '42%', rotate: 3, hoverRotate: 5 },
+    ],
   };
 
-  const angles = fanAngles[bookCount] || fanAngles[3];
-  const hoverAngles = hoverFanAngles[bookCount] || hoverFanAngles[3];
-  const translateXValues = fanTranslateX[bookCount] || fanTranslateX[3];
-  const hoverTranslateXValues = hoverTranslateX[bookCount] || hoverTranslateX[3];
-  const translateYValues = fanTranslateY[bookCount] || fanTranslateY[3];
-  const hoverTranslateYValues = hoverTranslateY[bookCount] || hoverTranslateY[3];
+  const positions = layouts[bookCount] || layouts[3];
 
   return (
     <div className="w-full h-full relative">
       {displayBooks.map((book, index) => {
-        const angle = isHovered ? hoverAngles[index] : angles[index];
-        const tx = isHovered ? hoverTranslateXValues[index] : translateXValues[index];
-        const ty = isHovered ? hoverTranslateYValues[index] : translateYValues[index];
-        // 첫 번째 책이 맨 뒤, 마지막 책이 맨 앞
-        const zIndex = index;
-        // 뒤쪽 책일수록 살짝 작게 (원근감)
-        const scale = 1 - (bookCount - 1 - index) * 0.03;
-        const hoverScale = isHovered ? scale + 0.02 : scale;
+        const pos = positions[index];
+        const rotate = isHovered ? pos.hoverRotate : pos.rotate;
 
         return (
           <div
             key={book.bookId}
-            className="absolute inset-0 rounded-sm overflow-hidden transition-all duration-200 ease-out"
+            className="absolute top-0 h-full rounded-sm overflow-hidden transition-all duration-200 ease-out"
             style={{
-              zIndex,
-              transform: `rotate(${angle}deg) translate(${tx}px, ${ty}px) scale(${hoverScale})`,
+              left: pos.left,
+              width: pos.width,
+              zIndex: index,
+              transform: `rotate(${rotate}deg)`,
               transformOrigin: 'bottom center',
-              boxShadow: isHovered
-                ? `0 4px 12px rgba(0,0,0,${0.2 + index * 0.05})`
-                : `0 2px 6px rgba(0,0,0,${0.12 + index * 0.04})`,
+              boxShadow: index > 0
+                ? (isHovered
+                  ? `-3px 0 8px rgba(0,0,0,0.25)`
+                  : `-2px 0 6px rgba(0,0,0,0.18)`)
+                : `0 1px 3px rgba(0,0,0,0.1)`,
             }}
           >
             {book.coverImageUrl ? (
@@ -552,7 +531,14 @@ const StackedBookCovers = memo(function StackedBookCovers({ books, isHovered }: 
                 className="w-full h-full object-cover"
               />
             ) : (
-              <div className="w-full h-full bg-gradient-to-br from-slate-200 to-slate-400 dark:from-slate-600 dark:to-slate-800 flex items-center justify-center">
+              <div className={cn(
+                "w-full h-full flex items-center justify-center",
+                index === 0
+                  ? "bg-gradient-to-br from-forest-200 to-forest-400 dark:from-forest-700 dark:to-forest-900"
+                  : index === 1
+                    ? "bg-gradient-to-br from-indigo-200 to-indigo-400 dark:from-indigo-700 dark:to-indigo-900"
+                    : "bg-gradient-to-br from-amber-200 to-amber-400 dark:from-amber-700 dark:to-amber-900"
+              )}>
                 <BookOpen className="w-3 h-3 text-slate-600 dark:text-slate-300" />
               </div>
             )}
@@ -658,29 +644,29 @@ function SelectedDateDetail({ date, books, noteTypes, onClose }: SelectedDateDet
         )}
 
         {/* 책 목록 - 가로 스크롤 */}
-        <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
+        <div className="flex gap-2.5 overflow-x-auto pb-1 -mx-1 px-1">
           {books.map((book) => (
             <Link
               key={book.bookId}
               href={`/books/${book.userBookId}`}
-              className="group flex-shrink-0 flex items-center gap-2 bg-white dark:bg-slate-700/60 rounded-lg p-1.5 pr-3 border border-slate-200/50 dark:border-slate-600/50 hover:border-forest-300 dark:hover:border-forest-600 transition-colors"
+              className="group flex-shrink-0 flex flex-col items-center gap-1.5 bg-white dark:bg-slate-700/60 rounded-lg p-2 border border-slate-200/50 dark:border-slate-600/50 hover:border-forest-300 dark:hover:border-forest-600 hover:shadow-md transition-all"
             >
-              {/* 책 표지 - 세로로 긴 비율 */}
-              <div className="w-8 h-11 rounded overflow-hidden bg-slate-200 dark:bg-slate-600 shrink-0">
+              {/* 책 표지 - 크게 표시 */}
+              <div className="w-12 h-16 rounded overflow-hidden bg-slate-200 dark:bg-slate-600 shrink-0 shadow-sm">
                 {book.coverImageUrl ? (
                   <img
                     src={book.coverImageUrl}
                     alt={book.title}
                     loading="lazy"
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-150"
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-forest-200 to-forest-300 dark:from-forest-700 dark:to-forest-800">
-                    <BookOpen className="w-3 h-3 text-forest-600 dark:text-forest-300" />
+                    <BookOpen className="w-4 h-4 text-forest-600 dark:text-forest-300" />
                   </div>
                 )}
               </div>
-              <span className="text-xs font-medium text-slate-700 dark:text-slate-200 truncate max-w-[80px] group-hover:text-forest-600 dark:group-hover:text-forest-400 transition-colors">
+              <span className="text-[10px] font-medium text-slate-700 dark:text-slate-200 truncate max-w-[56px] group-hover:text-forest-600 dark:group-hover:text-forest-400 transition-colors text-center leading-tight">
                 {book.title}
               </span>
             </Link>
