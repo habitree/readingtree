@@ -5,7 +5,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BookStatusBadge } from "@/components/books/book-status-badge";
 import { getBookDetail } from "@/app/actions/books";
 import { getSampleBookDetail } from "@/app/actions/sample";
@@ -15,7 +14,7 @@ import { BookStatusSelector } from "@/components/books/book-status-selector";
 import { BookDeleteButton } from "@/components/books/book-delete-button";
 import { BookInfoEditor } from "@/components/books/book-info-editor";
 import { ReadingProgress } from "@/components/books/reading-progress";
-import { PenTool, LogIn, BookOpen, Quote, Sparkles, Trophy, Link2 } from "lucide-react";
+import { PenTool, LogIn, Quote, Sparkles, Trophy, Link2, ChevronDown, Info } from "lucide-react";
 import { BookMetaInfo } from "@/components/books/book-meta-info";
 import type { ReadingStatus } from "@/types/book";
 import { SampleNotesList } from "@/components/notes/sample-notes-list";
@@ -147,166 +146,116 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
     <div className="space-y-4 sm:space-y-6 lg:space-y-8 pb-8">
       <BookScrollHandler />
 
-      {/* 게스트 사용자 안내 - 더 눈에 띄는 디자인 */}
+      {/* 게스트 사용자 안내 */}
       {isGuest && (
-        <Card className="border-primary/30 bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5 overflow-hidden relative">
-          <div className="absolute inset-0 bg-grid-pattern opacity-5" />
-          <CardContent className="py-4 sm:py-5">
-            <div className="flex items-center justify-between flex-wrap gap-3">
-              <div className="flex items-center gap-3">
-                <Badge variant="secondary" className="bg-white/80 dark:bg-slate-800/80 shadow-sm">
-                  <Sparkles className="w-3 h-3 mr-1" />
-                  샘플
-                </Badge>
-                <p className="text-sm text-muted-foreground">
-                  로그인하여 나만의 서재를 만들어보세요!
-                </p>
-              </div>
-              <Button asChild size="sm" className="shadow-sm">
-                <Link href="/login">
-                  <LogIn className="mr-2 h-4 w-4" />
-                  시작하기
-                </Link>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="flex items-center justify-between flex-wrap gap-3 px-3 py-3 rounded-lg border border-primary/30 bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5">
+          <div className="flex items-center gap-3">
+            <Badge variant="secondary" className="bg-white/80 dark:bg-slate-800/80 shadow-sm">
+              <Sparkles className="w-3 h-3 mr-1" />
+              샘플
+            </Badge>
+            <p className="text-sm text-muted-foreground">
+              로그인하여 나만의 서재를 만들어보세요!
+            </p>
+          </div>
+          <Button asChild size="sm" className="shadow-sm">
+            <Link href="/login">
+              <LogIn className="mr-2 h-4 w-4" />
+              시작하기
+            </Link>
+          </Button>
+        </div>
       )}
 
-      {/* Hero Section - 책 표지 + 기본 정보 */}
+      {/* 1. 컴팩트 히어로 섹션 - 항상 수평 레이아웃, 정체성만 표시 */}
       <div id="book-info" className={`relative rounded-xl sm:rounded-2xl overflow-hidden scroll-mt-4 bg-gradient-to-br ${theme.bg}`}>
         {/* 장식 요소 */}
         <div className="absolute top-0 right-0 w-32 h-32 sm:w-64 sm:h-64 bg-gradient-to-bl from-white/40 dark:from-white/10 to-transparent rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
 
         <div className="relative p-4 sm:p-6 lg:p-8">
-          {/* 모바일: 세로 레이아웃 / PC: 가로 레이아웃 */}
-          <div className="flex flex-col lg:flex-row gap-4 sm:gap-6 lg:gap-8">
-            {/* 책 표지 - 모바일에서 중앙, PC에서 왼쪽 */}
-            <div className="flex flex-col items-center lg:items-start shrink-0">
-              <div className="relative w-36 h-48 sm:w-44 sm:h-60 lg:w-48 lg:h-64 overflow-hidden rounded-lg sm:rounded-xl shadow-xl ring-1 ring-black/5 dark:ring-white/10 transition-transform hover:scale-[1.02]">
+          {/* 항상 수평 레이아웃 */}
+          <div className="flex flex-row gap-3 sm:gap-5 lg:gap-8">
+            {/* 책 표지 - 반응형 크기 */}
+            <div className="shrink-0">
+              <div className="relative w-20 h-28 sm:w-28 sm:h-40 md:w-36 md:h-48 lg:w-48 lg:h-64 overflow-hidden rounded-lg sm:rounded-xl shadow-xl ring-1 ring-black/5 dark:ring-white/10 transition-transform hover:scale-[1.02]">
                 <Image
                   src={getImageUrl(book.cover_image_url)}
                   alt={book.title}
                   fill
                   className="object-cover"
-                  sizes="(max-width: 640px) 144px, (max-width: 1024px) 176px, 192px"
+                  sizes="(max-width: 640px) 80px, (max-width: 768px) 112px, (max-width: 1024px) 144px, 192px"
                   loading="eager"
                   priority={true}
                 />
                 {/* 완독 배지 오버레이 */}
                 {userBook.status === "completed" && (
-                  <div className="absolute inset-0 bg-gradient-to-t from-emerald-600/20 to-transparent flex items-end justify-center pb-3">
-                    <Badge className="bg-emerald-600 text-white shadow-lg">
-                      <Trophy className="w-3 h-3 mr-1" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-emerald-600/20 to-transparent flex items-end justify-center pb-2 sm:pb-3">
+                    <Badge className="bg-emerald-600 text-white shadow-lg text-[10px] sm:text-xs">
+                      <Trophy className="w-2.5 h-2.5 sm:w-3 sm:h-3 mr-0.5 sm:mr-1" />
                       완독
                     </Badge>
                   </div>
                 )}
               </div>
-
-              {/* 상태 배지 - 모바일에서 표지 아래 */}
-              <div className="mt-3 flex lg:hidden">
-                <BookStatusBadge status={userBook.status as ReadingStatus} />
-              </div>
             </div>
 
-            {/* 책 정보 */}
-            <div className="flex-1 flex flex-col text-center lg:text-left min-w-0">
-              {/* 상태 배지 - PC에서만 */}
-              <div className="hidden lg:flex mb-3">
+            {/* 책 정보 - 항상 좌측 정렬 */}
+            <div className="flex-1 flex flex-col text-left min-w-0">
+              {/* 상태 배지 - 제목 위 인라인 */}
+              <div className="mb-1.5 sm:mb-2">
                 <BookStatusBadge status={userBook.status as ReadingStatus} />
               </div>
 
               {/* 제목 & 저자 */}
-              <div className="mb-4">
-                <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight leading-tight">
+              <div>
+                <h1 className="text-base sm:text-lg md:text-xl lg:text-3xl font-bold tracking-tight leading-tight">
                   <BookTitle
                     title={book.title}
-                    mainTitleClassName="text-xl sm:text-2xl lg:text-3xl"
-                    subtitleClassName="text-base sm:text-lg lg:text-xl text-muted-foreground mt-1 font-normal"
+                    mainTitleClassName="text-base sm:text-lg md:text-xl lg:text-3xl line-clamp-2"
+                    subtitleClassName="text-sm sm:text-base lg:text-xl text-muted-foreground mt-0.5 sm:mt-1 font-normal line-clamp-1"
                   />
                 </h1>
                 {book.author && (
-                  <p className="text-base sm:text-lg text-muted-foreground mt-2 flex items-center justify-center lg:justify-start gap-1.5">
-                    <span>{book.author}</span>
+                  <p className="text-sm sm:text-base text-muted-foreground mt-1 sm:mt-2 line-clamp-1">
+                    {book.author}
                   </p>
                 )}
               </div>
-
-              {/* 메타 정보 그리드 - PC에서만 표시 */}
-              <BookMetaInfo
-                publisher={book.publisher}
-                isbn={book.isbn}
-                startedAt={userBook.started_at}
-                completedDates={completedDates}
-                className="hidden lg:grid mb-4"
-              />
-
-              {/* 읽기 진행률 - 로그인 사용자만 */}
-              {!isGuest && (
-                <div className="mb-4">
-                  <Card className={`border ${theme.border} bg-white/60 dark:bg-slate-900/60 backdrop-blur-sm shadow-sm`}>
-                    <CardContent className="p-3 sm:p-4">
-                      <ReadingProgress
-                        userBookId={userBook.id}
-                        bookId={book.id}
-                        isbn={book.isbn}
-                        bookTitle={book.title}
-                        bookAuthor={book.author}
-                        currentPage={(userBook as any).current_page || 0}
-                        totalPages={book.total_pages}
-                        status={userBook.status as string}
-                      />
-                    </CardContent>
-                  </Card>
-                </div>
-              )}
-
-              {/* 액션 버튼 - 로그인 사용자만 */}
-              {!isGuest && (
-                <div className="flex gap-2 flex-wrap justify-center lg:justify-start mt-auto">
-                  <BookStatusSelector
-                    currentStatus={userBook.status as ReadingStatus}
-                    userBookId={userBook.id}
-                    currentBookshelfId={(userBook as any).bookshelf_id || null}
-                  />
-                  <BookDeleteButton
-                    userBookId={userBook.id}
-                    bookTitle={book.title}
-                  />
-                </div>
-              )}
             </div>
           </div>
         </div>
       </div>
 
-      {/* 모바일 전용 메타 정보 */}
-      <div className="lg:hidden">
-        <Card className="border-muted/50">
-          <CardContent className="p-4">
-            <BookMetaInfo
-              publisher={book.publisher}
+      {/* 2. 스티키 액션바 - 진행률 + 기록작성 CTA (로그인 사용자만) */}
+      {!isGuest && (
+        <div className="sticky top-12 sm:top-14 z-20 -mx-2 sm:-mx-4 px-2 sm:px-4 py-3 bg-background/95 backdrop-blur-sm border-b border-border/50 lg:relative lg:top-0 lg:mx-0 lg:px-0 lg:py-0 lg:bg-transparent lg:backdrop-blur-none lg:border-b-0">
+          <div className="lg:rounded-xl lg:border lg:border-border/50 lg:bg-card/80 lg:backdrop-blur-sm lg:p-4 lg:shadow-sm space-y-3">
+            {/* 진행률 */}
+            <ReadingProgress
+              userBookId={userBook.id}
+              bookId={book.id}
               isbn={book.isbn}
+              bookTitle={book.title}
+              bookAuthor={book.author}
+              currentPage={(userBook as any).current_page || 0}
+              totalPages={book.total_pages}
+              status={userBook.status as string}
               startedAt={userBook.started_at}
-              completedDates={completedDates}
             />
-          </CardContent>
-        </Card>
-      </div>
 
-      {/* 읽는 이유 카드 - 감성적 디자인 */}
-      <Card className="border-none bg-gradient-to-br from-slate-50 to-slate-100/50 dark:from-slate-900 dark:to-slate-800/50 overflow-hidden relative group">
-        <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-primary via-primary/60 to-primary/20" />
-        <div className="absolute -top-10 -right-10 w-32 h-32 bg-primary/5 rounded-full blur-2xl group-hover:bg-primary/10 transition-colors" />
-
-        <CardContent className="p-4 sm:p-5 pl-5 sm:pl-6">
-          <div className="flex items-start justify-between gap-2 mb-2">
+            {/* 액션 버튼 그룹 */}
             <div className="flex items-center gap-2">
-              <Quote className="w-4 h-4 text-primary/60" />
-              <p className="text-sm font-medium text-muted-foreground">읽는 이유</p>
-            </div>
-            {!isGuest && (
+              <Button asChild size="sm" className="flex-1 shadow-sm bg-primary hover:bg-primary/90 h-9 sm:h-10">
+                <Link href={`/notes/new?bookId=${userBook.id}`}>
+                  <PenTool className="mr-2 h-4 w-4" />
+                  기록 작성
+                </Link>
+              </Button>
+              <BookStatusSelector
+                currentStatus={userBook.status as ReadingStatus}
+                userBookId={userBook.id}
+                currentBookshelfId={(userBook as any).bookshelf_id || null}
+              />
               <BookInfoEditor
                 userBookId={userBook.id}
                 currentReadingReason={userBook.reading_reason}
@@ -314,49 +263,29 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
                 currentCompletedDates={completedDates.length > 0 ? completedDates : null}
                 currentBookshelfId={(userBook as any).bookshelf_id || null}
               />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 3. 독서 기록 영역 */}
+      <div id="reading-records" className="scroll-mt-4">
+        {/* 헤더: 제목 + 기록 개수 */}
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <PenTool className="w-4 h-4 text-primary" />
+            <h2 className="text-lg sm:text-xl font-semibold tracking-tight">독서 기록</h2>
+            {!isGuest && notes.length > 0 && (
+              <span className="text-xs bg-muted px-1.5 py-0.5 rounded-full text-muted-foreground">
+                {notes.length}
+              </span>
             )}
           </div>
-          {userBook.reading_reason ? (
-            <blockquote className="text-sm sm:text-base leading-relaxed italic text-foreground/90 pl-2 border-l-2 border-primary/20">
-              &ldquo;{userBook.reading_reason}&rdquo;
-            </blockquote>
-          ) : (
-            <p className="text-sm text-muted-foreground italic pl-2">
-              {isGuest ? "읽는 이유가 등록되지 않았습니다." : "이 책을 읽기로 한 이유를 기록해보세요."}
-            </p>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* 독서 기록 영역 - 핵심 액션 영역 */}
-      <div id="reading-records" className="scroll-mt-4">
-        {/* 헤더: 제목 + 기록 작성 CTA */}
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2.5">
-            <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10">
-              <PenTool className="w-4 h-4 text-primary" />
-            </div>
-            <div>
-              <h2 className="text-lg sm:text-xl font-semibold tracking-tight">독서 기록</h2>
-              {!isGuest && notes.length > 0 && (
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  총 {notes.length}개의 기록
-                </p>
-              )}
-            </div>
-          </div>
-          {isGuest ? (
+          {isGuest && (
             <Button asChild variant="outline" size="sm" className="shadow-sm">
               <Link href="/login">
                 <LogIn className="mr-2 h-4 w-4" />
                 <span className="hidden sm:inline">로그인하고 </span>기록 작성
-              </Link>
-            </Button>
-          ) : (
-            <Button asChild size="sm" className="shadow-sm bg-primary hover:bg-primary/90">
-              <Link href={`/notes/new?bookId=${userBook.id}`}>
-                <PenTool className="mr-2 h-4 w-4" />
-                기록 작성
               </Link>
             </Button>
           )}
@@ -370,28 +299,85 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
         )}
       </div>
 
-      {/* 연결된 책 섹션 - 보조 영역 (하단) */}
-      {!isGuest && (
-        <Card className="border-muted/40 bg-muted/20">
-          <CardHeader className="pb-2 pt-4 px-4 sm:px-6">
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                <Link2 className="w-3.5 h-3.5" />
-                연결된 책
-                {relatedBooks.length > 0 && (
-                  <span className="text-xs bg-muted px-1.5 py-0.5 rounded-full">
-                    {relatedBooks.length}
-                  </span>
-                )}
-              </CardTitle>
-              <RelatedBooksEditor userBookId={userBook.id} />
+      {/* 4. 읽는 이유 - 컴팩트 인라인 */}
+      <div className="rounded-lg bg-muted/20 p-3 sm:p-4">
+        <div className="flex items-start gap-2 sm:gap-3">
+          <Quote className="w-4 h-4 text-primary/60 shrink-0 mt-0.5" />
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-medium text-muted-foreground mb-1">읽는 이유</p>
+            {userBook.reading_reason ? (
+              <p className="text-sm sm:text-base leading-relaxed text-foreground/90">
+                &ldquo;{userBook.reading_reason}&rdquo;
+              </p>
+            ) : (
+              <p className="text-sm text-muted-foreground italic">
+                {isGuest
+                  ? "읽는 이유가 등록되지 않았습니다."
+                  : `'${book.title}'을 읽기로 한 계기를 기록해보세요`}
+              </p>
+            )}
+          </div>
+          {!isGuest && (
+            <BookInfoEditor
+              userBookId={userBook.id}
+              currentReadingReason={userBook.reading_reason}
+              currentStartedAt={userBook.started_at}
+              currentCompletedDates={completedDates.length > 0 ? completedDates : null}
+              currentBookshelfId={(userBook as any).bookshelf_id || null}
+            />
+          )}
+        </div>
+      </div>
+
+      {/* 5. 도서 정보 접이식 섹션 (메타 + 연결된 책 + 삭제) */}
+      <details className="group rounded-lg border border-border/50 bg-card/50 overflow-hidden">
+        <summary className="flex items-center justify-between cursor-pointer p-3 sm:p-4 hover:bg-muted/30 transition-colors list-none [&::-webkit-details-marker]:hidden">
+          <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+            <Info className="w-4 h-4" />
+            도서 정보
+          </div>
+          <ChevronDown className="w-4 h-4 text-muted-foreground transition-transform duration-200 group-open:rotate-180" />
+        </summary>
+
+        <div className="border-t border-border/50 p-3 sm:p-4 space-y-4">
+          {/* 메타 정보 */}
+          <BookMetaInfo
+            publisher={book.publisher}
+            isbn={book.isbn}
+            startedAt={userBook.started_at}
+            completedDates={completedDates}
+          />
+
+          {/* 연결된 책 */}
+          {!isGuest && (
+            <div className="pt-3 border-t border-border/30">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                  <Link2 className="w-3.5 h-3.5" />
+                  연결된 책
+                  {relatedBooks.length > 0 && (
+                    <span className="text-xs bg-muted px-1.5 py-0.5 rounded-full">
+                      {relatedBooks.length}
+                    </span>
+                  )}
+                </div>
+                <RelatedBooksEditor userBookId={userBook.id} />
+              </div>
+              <RelatedBooksList userBookId={userBook.id} initialBooks={relatedBooks} />
             </div>
-          </CardHeader>
-          <CardContent className="pt-0 px-4 sm:px-6 pb-4">
-            <RelatedBooksList userBookId={userBook.id} initialBooks={relatedBooks} />
-          </CardContent>
-        </Card>
-      )}
+          )}
+
+          {/* 책 삭제 - 최하단 */}
+          {!isGuest && (
+            <div className="pt-3 border-t border-border/30">
+              <BookDeleteButton
+                userBookId={userBook.id}
+                bookTitle={book.title}
+              />
+            </div>
+          )}
+        </div>
+      </details>
     </div>
   );
 }

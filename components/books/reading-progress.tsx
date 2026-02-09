@@ -6,7 +6,7 @@ import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { BookOpen, Check, Loader2, Settings2, Flame, Target, Trophy, Sparkles, TrendingUp, GripHorizontal, PenLine, X, Send } from "lucide-react";
+import { BookOpen, Check, Loader2, Settings2, Flame, Target, Trophy, Sparkles, TrendingUp, GripHorizontal, PenLine, X, Send, Calendar } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { updateBookProgress } from "@/app/actions/books";
 import { toast } from "sonner";
@@ -23,6 +23,7 @@ interface ReadingProgressProps {
   currentPage: number;
   totalPages: number | null | undefined;
   status: string;
+  startedAt?: string | null;
   onUpdate?: (newPage: number) => void;
   onTotalPagesUpdate?: (newTotalPages: number | null) => void;
   onRecordCreated?: () => void;
@@ -40,6 +41,7 @@ export function ReadingProgress({
   currentPage: initialPage,
   totalPages: initialTotalPages,
   status,
+  startedAt,
   onUpdate,
   onTotalPagesUpdate,
   onRecordCreated,
@@ -412,6 +414,20 @@ export function ReadingProgress({
               <span className="font-medium">{motivation.message}</span>
             </div>
           )}
+
+          {/* 읽기 모멘텀 통계 */}
+          {!isDragging && !showInlineMemo && startedAt && currentPage > 0 && (() => {
+            const startDate = new Date(startedAt);
+            const now = new Date();
+            const daysSinceStart = Math.max(1, Math.ceil((now.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)));
+            const avgPagesPerDay = (currentPage / daysSinceStart).toFixed(1);
+            return (
+              <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                <Calendar className="h-3 w-3" />
+                <span>읽기 시작 {daysSinceStart}일째 · 일평균 {avgPagesPerDay}p</span>
+              </div>
+            );
+          })()}
         </div>
       ) : displayPercent !== null ? (
         <div className="space-y-2">
