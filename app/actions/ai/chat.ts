@@ -18,7 +18,7 @@ type ChatMessageRow = Database["public"]["Tables"]["chat_messages"]["Row"];
 export async function createChatSession(title?: string): Promise<ChatSession> {
   const user = await getCurrentUser();
   if (!user) {
-    throw new Error("로그인이 필요합니다.");
+    throw new Error("로그인이 필요합니다..");
   }
 
   const supabase = await createServerSupabaseClient();
