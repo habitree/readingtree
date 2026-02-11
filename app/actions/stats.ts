@@ -7,6 +7,35 @@ import type { User } from "@supabase/supabase-js";
 
 export type TimelineSortBy = "latest" | "oldest" | "book";
 
+/** UTC Date를 KST(UTC+9) 기준 YYYY-MM-DD 문자열로 변환 */
+function toKSTDateKey(date: Date): string {
+  const kst = new Date(date.getTime() + 9 * 60 * 60 * 1000);
+  return `${kst.getUTCFullYear()}-${String(kst.getUTCMonth() + 1).padStart(2, "0")}-${String(kst.getUTCDate()).padStart(2, "0")}`;
+}
+
+/** KST 기준 현재 날짜의 자정(00:00:00) UTC Date 반환 */
+function getKSTToday(): Date {
+  const now = new Date();
+  const kst = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+  return new Date(Date.UTC(kst.getUTCFullYear(), kst.getUTCMonth(), kst.getUTCDate()) - 9 * 60 * 60 * 1000);
+}
+
+/** KST 기준 지정 날짜의 자정(00:00:00) UTC Date 반환 */
+function toKSTMidnight(year: number, month: number, day: number): Date {
+  return new Date(Date.UTC(year, month - 1, day) - 9 * 60 * 60 * 1000);
+}
+
+/** KST 기준 Date의 연/월/일 컴포넌트 반환 */
+function getKSTComponents(date: Date): { year: number; month: number; day: number; dayOfWeek: number } {
+  const kst = new Date(date.getTime() + 9 * 60 * 60 * 1000);
+  return {
+    year: kst.getUTCFullYear(),
+    month: kst.getUTCMonth() + 1,
+    day: kst.getUTCDate(),
+    dayOfWeek: kst.getUTCDay(),
+  };
+}
+
 /**
  * 샘플 사용자(관리자) ID를 동적으로 조회
  */
@@ -661,11 +690,10 @@ export async function getDailyRecordsForCalendar(
     return {};
   }
 
-  // 날짜별로 그룹화
+  // 날짜별로 그룹화 (KST 기준)
   const dailyRecords: Record<string, number> = {};
   notes.forEach((note) => {
-    const date = new Date(note.created_at);
-    const dateKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+    const dateKey = toKSTDateKey(new Date(note.created_at));
     dailyRecords[dateKey] = (dailyRecords[dateKey] || 0) + 1;
   });
 
@@ -708,12 +736,11 @@ export async function getDailyRecordsByType(
     return {};
   }
 
-  // 날짜별, 타입별로 그룹화
+  // 날짜별, 타입별로 그룹화 (KST 기준)
   const dailyRecords: Record<string, DailyRecordByType> = {};
 
   notes.forEach((note) => {
-    const date = new Date(note.created_at);
-    const dateKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+    const dateKey = toKSTDateKey(new Date(note.created_at));
 
     if (!dailyRecords[dateKey]) {
       dailyRecords[dateKey] = {
@@ -765,17 +792,16 @@ export async function getWeeklyProgress(user: User | null): Promise<{
   streak: number;
   streakStatus: "active" | "at_risk" | "none";
 }> {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  // KST 기준 오늘
+  const kstNow = getKSTComponents(new Date());
+  const kstTodayMidnight = toKSTMidnight(kstNow.year, kstNow.month, kstNow.day);
+  const kstTodayKey = `${kstNow.year}-${String(kstNow.month).padStart(2, "0")}-${String(kstNow.day).padStart(2, "0")}`;
 
-  // 이번 주 시작일 (일요일)
-  const startOfWeek = new Date(today);
-  startOfWeek.setDate(today.getDate() - today.getDay());
+  // 이번 주 시작일 (일요일, KST 기준)
+  const startOfWeek = new Date(kstTodayMidnight.getTime() - kstNow.dayOfWeek * 24 * 60 * 60 * 1000);
 
-  // 이번 주 종료일 (토요일)
-  const endOfWeek = new Date(startOfWeek);
-  endOfWeek.setDate(startOfWeek.getDate() + 6);
-  endOfWeek.setHours(23, 59, 59, 999);
+  // 이번 주 종료일 (토요일 23:59:59 KST)
+  const endOfWeek = new Date(startOfWeek.getTime() + 7 * 24 * 60 * 60 * 1000 - 1);
 
   const dayLabels = ["일", "월", "화", "수", "목", "금", "토"];
 
@@ -783,17 +809,17 @@ export async function getWeeklyProgress(user: User | null): Promise<{
   if (!user) {
     const days = [];
     for (let i = 0; i < 7; i++) {
-      const date = new Date(startOfWeek);
-      date.setDate(startOfWeek.getDate() + i);
-      const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+      const dayTime = startOfWeek.getTime() + i * 24 * 60 * 60 * 1000;
+      const dayComponents = getKSTComponents(new Date(dayTime));
+      const dateStr = `${dayComponents.year}-${String(dayComponents.month).padStart(2, "0")}-${String(dayComponents.day).padStart(2, "0")}`;
       days.push({
         date: dateStr,
         dayOfWeek: i,
         dayLabel: dayLabels[i],
         hasRecord: false,
         count: 0,
-        isToday: date.getTime() === today.getTime(),
-        isFuture: date.getTime() > today.getTime(),
+        isToday: dateStr === kstTodayKey,
+        isFuture: dayTime > kstTodayMidnight.getTime(),
       });
     }
     return { days, recordedDays: 0, totalDays: 7, streak: 0, streakStatus: "none" };
@@ -809,23 +835,22 @@ export async function getWeeklyProgress(user: User | null): Promise<{
     .gte("created_at", startOfWeek.toISOString())
     .lte("created_at", endOfWeek.toISOString());
 
-  // 날짜별 기록 수 계산
+  // 날짜별 기록 수 계산 (KST 기준)
   const dailyCounts: Record<string, number> = {};
   if (notes && !error) {
     notes.forEach((note) => {
-      const date = new Date(note.created_at);
-      const dateKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+      const dateKey = toKSTDateKey(new Date(note.created_at));
       dailyCounts[dateKey] = (dailyCounts[dateKey] || 0) + 1;
     });
   }
 
-  // 주간 일별 데이터 생성
+  // 주간 일별 데이터 생성 (KST 기준)
   const days = [];
   let recordedDays = 0;
   for (let i = 0; i < 7; i++) {
-    const date = new Date(startOfWeek);
-    date.setDate(startOfWeek.getDate() + i);
-    const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+    const dayTime = startOfWeek.getTime() + i * 24 * 60 * 60 * 1000;
+    const dayComponents = getKSTComponents(new Date(dayTime));
+    const dateStr = `${dayComponents.year}-${String(dayComponents.month).padStart(2, "0")}-${String(dayComponents.day).padStart(2, "0")}`;
     const count = dailyCounts[dateStr] || 0;
     const hasRecord = count > 0;
     if (hasRecord) recordedDays++;
@@ -836,14 +861,13 @@ export async function getWeeklyProgress(user: User | null): Promise<{
       dayLabel: dayLabels[i],
       hasRecord,
       count,
-      isToday: date.getTime() === today.getTime(),
-      isFuture: date.getTime() > today.getTime(),
+      isToday: dateStr === kstTodayKey,
+      isFuture: dayTime > kstTodayMidnight.getTime(),
     });
   }
 
-  // 스트릭 계산 (최근 30일 기준)
-  const thirtyDaysAgo = new Date(today);
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  // 스트릭 계산 (최근 30일 기준, KST)
+  const thirtyDaysAgo = new Date(kstTodayMidnight.getTime() - 30 * 24 * 60 * 60 * 1000);
 
   const { data: streakNotes } = await supabase
     .from("notes")
@@ -856,14 +880,12 @@ export async function getWeeklyProgress(user: User | null): Promise<{
   if (streakNotes && streakNotes.length > 0) {
     const recordedDates = new Set<string>();
     streakNotes.forEach((note) => {
-      const date = new Date(note.created_at);
-      recordedDates.add(`${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`);
+      recordedDates.add(toKSTDateKey(new Date(note.created_at)));
     });
 
     for (let i = 0; i < 30; i++) {
-      const checkDate = new Date(today);
-      checkDate.setDate(checkDate.getDate() - i);
-      const dateKey = `${checkDate.getFullYear()}-${checkDate.getMonth()}-${checkDate.getDate()}`;
+      const checkTime = kstTodayMidnight.getTime() - i * 24 * 60 * 60 * 1000;
+      const dateKey = toKSTDateKey(new Date(checkTime));
 
       if (recordedDates.has(dateKey)) {
         streak++;
@@ -874,8 +896,7 @@ export async function getWeeklyProgress(user: User | null): Promise<{
   }
 
   // 스트릭 상태 결정
-  const todayKey = `${today.getFullYear()}-${today.getMonth()}-${today.getDate()}`;
-  const todayRecorded = dailyCounts[days.find(d => d.isToday)?.date || ""] > 0;
+  const todayRecorded = dailyCounts[kstTodayKey] > 0;
 
   let streakStatus: "active" | "at_risk" | "none" = "none";
   if (streak >= 1) {
@@ -1137,12 +1158,11 @@ export async function getMonthlyBookActivities(
     userBooksData.forEach((ub) => userBookIdMap.set(ub.book_id, ub.id));
   }
 
-  // 날짜별로 그룹화
+  // 날짜별로 그룹화 (KST 기준)
   const dailyActivities: Record<string, DailyBookActivity> = {};
 
   notes.forEach((note: any) => {
-    const date = new Date(note.created_at);
-    const dateKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+    const dateKey = toKSTDateKey(new Date(note.created_at));
     const book = Array.isArray(note.books) ? note.books[0] : note.books;
 
     if (!dailyActivities[dateKey]) {
