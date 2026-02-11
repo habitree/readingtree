@@ -64,7 +64,10 @@ async function getAuthToken(): Promise<string | null> {
       } catch (parseError) {
         const parseErrorMessage = parseError instanceof Error ? parseError.message : "알 수 없는 오류";
         console.error("[Cloud Run OCR] 서비스 계정 키 파싱 실패:", parseErrorMessage);
-        throw new Error(`GOOGLE_SERVICE_ACCOUNT_KEY 환경 변수가 유효한 JSON 형식이 아닙니다: ${parseErrorMessage}`);
+        const hint = parseErrorMessage.includes("control character")
+          ? " 환경 변수에는 한 줄로 만든 JSON을 넣어야 합니다. 서비스 계정 JSON을 복사할 때 줄바꿈을 제거하고, private_key 값 안의 줄바꿈은 반드시 \\n (역슬래시+n) 두 글자로 넣으세요. Vercel/로컬에서는 한 줄(minified) JSON으로 저장하세요."
+          : "";
+        throw new Error(`GOOGLE_SERVICE_ACCOUNT_KEY 환경 변수가 유효한 JSON 형식이 아닙니다: ${parseErrorMessage}.${hint}`);
       }
 
       // Google Auth 클라이언트 생성 및 ID 토큰 생성

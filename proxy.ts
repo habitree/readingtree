@@ -1,7 +1,11 @@
 import { type NextRequest } from "next/server";
 import { updateSession } from "@/lib/supabase/middleware";
 
-export async function middleware(request: NextRequest) {
+/**
+ * Next.js 16+: "middleware" 파일 규칙이 "proxy"로 변경됨.
+ * 요청 전에 세션 갱신 등 실행 (Supabase 인증).
+ */
+export async function proxy(request: NextRequest) {
   return await updateSession(request);
 }
 
@@ -18,4 +22,3 @@ export const config = {
     "/((?!_next/static|_next/image|favicon.ico|manifest.json|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|json)$).*)",
   ],
 };
-

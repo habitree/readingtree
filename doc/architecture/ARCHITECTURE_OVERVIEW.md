@@ -169,7 +169,7 @@ readingtree_v4.0.0/
 ├── contexts/                     # React Context
 │   └── auth-context.tsx          # 인증 컨텍스트
 │
-├── middleware.ts                 # Next.js 미들웨어
+├── proxy.ts                      # Next.js 16+ Proxy (세션 갱신, 구 middleware)
 │
 ├── doc/                          # 문서
 │   ├── architecture/             # 아키텍처 문서
