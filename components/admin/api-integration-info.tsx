@@ -16,9 +16,12 @@ import {
   Globe,
   ExternalLink,
   BookOpen,
-  Library
+  Library,
+  Link2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ConnectionStructureDiagram } from "./connection-structure-diagram";
+import { ConnectionDocsLinks } from "./connection-docs-links";
 
 interface ApiIntegrationInfoProps {
   apiInfo: {
@@ -217,6 +220,41 @@ export function ApiIntegrationInfo({ apiInfo, ocrMonthlyUsage, ocrTotalStats, oc
         <p className="text-muted-foreground">
           ReadingTree 서비스의 모든 외부 API 연동 현황 및 설정 정보
         </p>
+      </div>
+
+      {/* 연결 구조: 도식 + 요약 + 문서 링크 */}
+      <div className="space-y-4">
+        <ConnectionStructureDiagram />
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Link2 className="h-4 w-4" />
+              연결 요약
+            </CardTitle>
+            <CardDescription>현재 앱 기준 URL 및 인증·데이터·API 설정 상태</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="text-sm">
+              <span className="font-medium text-muted-foreground">앱 기준 URL: </span>
+              <span className="font-mono text-xs break-all">{app.appUrl}</span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Badge variant={supabase.enabled ? "default" : "secondary"} className="text-xs">
+                Supabase {supabase.enabled ? "활성" : "미설정"}
+              </Badge>
+              <Badge variant={kakaoSdk.enabled ? "default" : "secondary"} className="text-xs">
+                Kakao SDK {kakaoSdk.enabled ? "활성" : "미설정"}
+              </Badge>
+              <Badge variant={naver.enabled ? "default" : "secondary"} className="text-xs">
+                Naver 검색 {naver.enabled ? "활성" : "미설정"}
+              </Badge>
+              <Badge variant={cloudRunOcr.enabled ? "default" : "secondary"} className="text-xs">
+                OCR {cloudRunOcr.enabled ? "활성" : "미설정"}
+              </Badge>
+            </div>
+          </CardContent>
+        </Card>
+        <ConnectionDocsLinks />
       </div>
 
       {/* 요약 카드 */}
