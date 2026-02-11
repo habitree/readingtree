@@ -30,11 +30,9 @@ export async function HomeHeroWrapper() {
     );
   }
 
-  // 30일 활동 캘린더용 날짜 범위
-  const today = new Date();
-  const activityCalendarStart = new Date(today);
-  activityCalendarStart.setDate(today.getDate() - 29);
-  activityCalendarStart.setHours(0, 0, 0, 0);
+  // 30일 활동 캘린더용 날짜 범위 (KST 기준)
+  const today = getKSTToday();
+  const activityCalendarStart = new Date(today.getTime() - 29 * 24 * 60 * 60 * 1000);
 
   // 병렬로 데이터 조회
   const [
@@ -52,7 +50,7 @@ export async function HomeHeroWrapper() {
     // 홈 화면 진행 카드: 최대 6권까지 표시
     getContinueReadingBooks(user, 6).catch(() => []),
     getWeeklyProgress(user).catch(() => null),
-    getDailyRecordsByType(user, activityCalendarStart, today).catch(() => ({})),
+    getDailyRecordsByType(user, activityCalendarStart, new Date(today.getTime() + 24 * 60 * 60 * 1000 - 1)).catch(() => ({})),
     getCurrentBookProgress(user).catch(() => null),
   ]);
 
@@ -71,16 +69,32 @@ export async function HomeHeroWrapper() {
   );
 }
 
+/** UTC Date를 KST(UTC+9) 기준 YYYY-MM-DD 문자열로 변환 */
+function toKSTDateKey(date: Date): string {
+  const kst = new Date(date.getTime() + 9 * 60 * 60 * 1000);
+  return `${kst.getUTCFullYear()}-${String(kst.getUTCMonth() + 1).padStart(2, "0")}-${String(kst.getUTCDate()).padStart(2, "0")}`;
+}
+
+/** KST 기준 현재 날짜의 자정(00:00:00) UTC Date 반환 */
+function getKSTToday(): Date {
+  const now = new Date();
+  const kst = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+  return new Date(Date.UTC(kst.getUTCFullYear(), kst.getUTCMonth(), kst.getUTCDate()) - 9 * 60 * 60 * 1000);
+}
+
 /**
- * 연속 기록 일수 및 오늘 기록 수 조회
+ * 연속 기록 일수 및 오늘 기록 수 조회 (KST 기준)
  */
 async function getStreakAndTodayData(userId: string): Promise<{ streak: number; todayNotes: number }> {
   try {
     const supabase = await createServerSupabaseClient();
 
+    // KST 기준 오늘 자정
+    const kstTodayMidnight = getKSTToday();
+    const kstTodayKey = toKSTDateKey(kstTodayMidnight);
+
     // 최근 30일간의 기록 날짜 조회
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const thirtyDaysAgo = new Date(kstTodayMidnight.getTime() - 30 * 24 * 60 * 60 * 1000);
 
     const { data: notes, error } = await supabase
       .from("notes")
@@ -93,32 +107,26 @@ async function getStreakAndTodayData(userId: string): Promise<{ streak: number; 
       return { streak: 0, todayNotes: 0 };
     }
 
-    // 날짜별로 그룹화 및 오늘 기록 수 계산
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const todayKey = `${today.getFullYear()}-${today.getMonth()}-${today.getDate()}`;
-
+    // 날짜별로 그룹화 및 오늘 기록 수 계산 (KST 기준)
     const dateCountMap = new Map<string, number>();
     let todayNotes = 0;
 
     notes.forEach((note) => {
-      const date = new Date(note.created_at);
-      const dateKey = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+      const dateKey = toKSTDateKey(new Date(note.created_at));
 
-      if (dateKey === todayKey) {
+      if (dateKey === kstTodayKey) {
         todayNotes++;
       }
 
       dateCountMap.set(dateKey, (dateCountMap.get(dateKey) || 0) + 1);
     });
 
-    // 연속 일수 계산
+    // 연속 일수 계산 (KST 기준)
     let streak = 0;
 
     for (let i = 0; i < 30; i++) {
-      const checkDate = new Date(today);
-      checkDate.setDate(checkDate.getDate() - i);
-      const dateKey = `${checkDate.getFullYear()}-${checkDate.getMonth()}-${checkDate.getDate()}`;
+      const checkTime = kstTodayMidnight.getTime() - i * 24 * 60 * 60 * 1000;
+      const dateKey = toKSTDateKey(new Date(checkTime));
 
       if (dateCountMap.has(dateKey)) {
         streak++;
