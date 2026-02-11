@@ -7,13 +7,20 @@ import { Badge } from "@/components/ui/badge";
 import { getImageUrl, getProxiedImageUrl, isValidImageUrl } from "@/lib/utils/image";
 import { parseNoteContentFields, getNoteTypeLabel } from "@/lib/utils/note";
 import type { NoteWithBook } from "@/types/note";
-import { Quote, BookOpen, Calendar, ChevronDown, ChevronUp, Trees, TrendingUp, Sparkles } from "lucide-react";
+import { Quote, BookOpen, Calendar, ChevronDown, ChevronUp, Trees, TrendingUp, Sparkles, Link2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ImageLightbox } from "@/components/notes/image-lightbox";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { BookLinkRenderer } from "@/components/notes/book-link-renderer";
 import { BookTitle } from "@/components/books/book-title";
+
+export interface RelatedBookInfo {
+    id: string; // user_books.id
+    title: string;
+    author: string | null;
+    coverImageUrl: string | null;
+}
 
 interface ShareNoteCardProps {
     note: NoteWithBook;
@@ -27,6 +34,7 @@ interface ShareNoteCardProps {
         name: string;
         avatar_url: string | null;
     } | null; // 사용자 정보
+    relatedBooks?: RelatedBookInfo[]; // 연결된 책 정보
 }
 
 /**
@@ -182,7 +190,7 @@ const formatDateTime = (dateStr: string) => {
  * - [v4.0] 모든 케이스(이미지 유/무)에 대해 '좌우 분할' 단일 레이아웃 적용
  * - 표준 너비: max-w-[960px]
  */
-export function ShareNoteCard({ note, className, isPublicView = false, hideActions = false, showTimestamp = true, fixedHorizontal = false, user }: ShareNoteCardProps) {
+export function ShareNoteCard({ note, className, isPublicView = false, hideActions = false, showTimestamp = true, fixedHorizontal = false, user, relatedBooks }: ShareNoteCardProps) {
     // [데이터 매핑 수정] Supabase 쿼리 결과인 'books' 필드와 'book' 필드 모두를 지원하도록 정규화
     const book = note.book || (note as any).books;
 
@@ -280,7 +288,7 @@ export function ShareNoteCard({ note, className, isPublicView = false, hideActio
                             </div>
                         </div>
 
-                        {/* 메모 (있는 경우) + 푸터 */}
+                        {/* 메모 (있는 경우) + 연결된 책 + 푸터 */}
                         <div className="p-6 space-y-4">
                             {hasMemo && (
                                 <div className="bg-slate-50 dark:bg-slate-900 rounded-lg p-4">
@@ -288,6 +296,11 @@ export function ShareNoteCard({ note, className, isPublicView = false, hideActio
                                         {memo}
                                     </p>
                                 </div>
+                            )}
+
+                            {/* 연결된 책 */}
+                            {relatedBooks && relatedBooks.length > 0 && (
+                                <RelatedBooksSection books={relatedBooks} hideActions={hideActions} />
                             )}
 
                             {/* 푸터: 날짜 + 로고 + 사용자 */}
@@ -606,6 +619,13 @@ export function ShareNoteCard({ note, className, isPublicView = false, hideActio
                     </div>
                 </div>
 
+                {/* 연결된 책 - 카드 하단 전체 너비로 표시 */}
+                {relatedBooks && relatedBooks.length > 0 && (
+                    <div className="border-t border-slate-100 dark:border-slate-800 px-6 py-4 md:px-10 md:py-5">
+                        <RelatedBooksSection books={relatedBooks} hideActions={hideActions} />
+                    </div>
+                )}
+
                 {/* AI 텍스트 인식 - 카드 하단 전체 너비로 표시 */}
                 {hasAiAnalysis && (
                     <div className="border-t border-slate-100 dark:border-slate-800">
@@ -617,5 +637,68 @@ export function ShareNoteCard({ note, className, isPublicView = false, hideActio
                 )}
             </CardContent>
         </Card>
+    );
+}
+
+/**
+ * 연결된 책 섹션 - 카드 내부에 표시
+ * 캡처 모드에서도 정상 렌더링 (img 태그 사용)
+ */
+function RelatedBooksSection({
+    books,
+    hideActions = false,
+}: {
+    books: RelatedBookInfo[];
+    hideActions?: boolean;
+}) {
+    return (
+        <div className="space-y-2.5">
+            <div className="flex items-center gap-1.5">
+                <Link2 className="w-3.5 h-3.5 text-slate-400" />
+                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                    연결된 책
+                </span>
+                <span className="text-[10px] text-slate-300 font-medium">{books.length}</span>
+            </div>
+            <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-hide">
+                {books.map((book) => (
+                    <div
+                        key={book.id}
+                        className="flex items-center gap-2 shrink-0 px-2.5 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800"
+                    >
+                        {hideActions ? (
+                            <div className="relative w-7 h-10 shrink-0 rounded overflow-hidden bg-slate-200 dark:bg-slate-700">
+                                <img
+                                    src={getProxiedImageUrl(book.coverImageUrl || "/placeholder-book.png")}
+                                    alt={book.title}
+                                    className="absolute inset-0 w-full h-full object-cover"
+                                    crossOrigin="anonymous"
+                                />
+                            </div>
+                        ) : (
+                            <div className="relative w-7 h-10 shrink-0 rounded overflow-hidden bg-slate-200 dark:bg-slate-700">
+                                <Image
+                                    src={getImageUrl(book.coverImageUrl || "/placeholder-book.png")}
+                                    alt={book.title}
+                                    fill
+                                    className="object-cover"
+                                    sizes="28px"
+                                />
+                            </div>
+                        )}
+                        <div className="min-w-0 max-w-[120px]">
+                            <p className="text-xs font-medium text-slate-700 dark:text-slate-300 truncate leading-tight">
+                                {book.title}
+                            </p>
+                            {book.author && (
+                                <p className="text-[10px] text-slate-400 truncate leading-tight">
+                                    {book.author}
+                                </p>
+                            )}
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </div>
     );
 }

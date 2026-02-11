@@ -16,6 +16,8 @@ import type { NoteWithBook } from "@/types/note";
 import { getUserById } from "@/app/actions/profile";
 import { RelatedBooksManager, RelatedBooksDisplay } from "@/components/notes/related-books-manager";
 import { OcrTextViewer } from "@/components/notes/ocr-text-viewer";
+import { getUserBooks } from "@/app/actions/books";
+import type { RelatedBookInfo } from "@/components/share/share-note-card";
 
 interface NoteDetailPageProps {
   params: {
@@ -70,6 +72,25 @@ export default async function NoteDetailPage({ params }: NoteDetailPageProps) {
       transcription = await getTranscription(noteWithBook.id);
     } catch (error) {
       console.error("필사 데이터 조회 오류:", error);
+    }
+  }
+
+  // 연결된 책 정보 로드 (카드 내부 표시용)
+  let relatedBooksForCard: RelatedBookInfo[] = [];
+  if (noteWithBook.related_user_book_ids && noteWithBook.related_user_book_ids.length > 0) {
+    try {
+      const allBooks = await getUserBooks();
+      const ids = noteWithBook.related_user_book_ids;
+      relatedBooksForCard = (allBooks || [])
+        .filter((ub: any) => ids.includes(ub.id))
+        .map((ub: any) => ({
+          id: ub.id,
+          title: ub.books?.title || "알 수 없는 책",
+          author: ub.books?.author || null,
+          coverImageUrl: ub.books?.cover_image_url || null,
+        }));
+    } catch {
+      // 연결된 책 로드 실패 시 무시
     }
   }
 
@@ -144,6 +165,7 @@ export default async function NoteDetailPage({ params }: NoteDetailPageProps) {
         <ShareNoteCard
           note={noteWithBook}
           user={user}
+          relatedBooks={relatedBooksForCard}
           className="shadow-xl sm:shadow-2xl border border-slate-100/80 dark:border-slate-800/80 backdrop-blur-sm"
         />
       </div>

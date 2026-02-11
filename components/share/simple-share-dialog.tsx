@@ -16,10 +16,11 @@ import { cn } from "@/lib/utils";
 import { getImageUrl } from "@/lib/utils/image";
 import { isClipboardSupported, isMobile, isIOS, downloadImage } from "@/lib/utils/device";
 import { copyImageToClipboard, isMobileClipboardSupported } from "@/lib/utils/clipboard";
-import { ShareNoteCard } from "./share-note-card";
+import { ShareNoteCard, type RelatedBookInfo } from "./share-note-card";
 import type { NoteWithBook } from "@/types/note";
 import { getUserById } from "@/app/actions/profile";
 import { addStampToBlob } from "@/lib/utils/stamp";
+import { getUserBooks } from "@/app/actions/books";
 
 interface SimpleShareDialogProps {
   note: NoteWithBook;
@@ -38,10 +39,11 @@ export function SimpleShareDialog({ note }: SimpleShareDialogProps) {
   const [photoCopied, setPhotoCopied] = useState(false);
   const [isCapturing, setIsCapturing] = useState(false);
   const [user, setUser] = useState<{ id: string; name: string; avatar_url: string | null } | null>(null);
+  const [relatedBooks, setRelatedBooks] = useState<RelatedBookInfo[]>([]);
   const cardRef = useRef<HTMLDivElement>(null);
   const captureRef = useRef<HTMLDivElement>(null); // 캡처 전용 Hidden 요소 Ref
 
-  // 사용자 정보 가져오기
+  // 사용자 정보 + 연결된 책 정보 가져오기
   useEffect(() => {
     if (open && note.user_id) {
       getUserById(note.user_id).then((userData) => {
@@ -50,7 +52,27 @@ export function SimpleShareDialog({ note }: SimpleShareDialogProps) {
         }
       });
     }
-  }, [open, note.user_id]);
+
+    // 연결된 책 정보 로드
+    if (open && note.related_user_book_ids && note.related_user_book_ids.length > 0) {
+      getUserBooks().then((allBooks) => {
+        const ids = note.related_user_book_ids!;
+        const matched = (allBooks || [])
+          .filter((ub: any) => ids.includes(ub.id))
+          .map((ub: any) => ({
+            id: ub.id,
+            title: ub.books?.title || "알 수 없는 책",
+            author: ub.books?.author || null,
+            coverImageUrl: ub.books?.cover_image_url || null,
+          }));
+        setRelatedBooks(matched);
+      }).catch(() => {
+        // 연결된 책 로드 실패 시 무시
+      });
+    } else if (open) {
+      setRelatedBooks([]);
+    }
+  }, [open, note.user_id, note.related_user_book_ids]);
 
   // 이미지가 있는지 확인 (필사/사진 타입)
   const hasImage =
@@ -451,7 +473,7 @@ export function SimpleShareDialog({ note }: SimpleShareDialogProps) {
             <div className="mb-6 group bg-slate-50 dark:bg-slate-900/50 p-4 sm:p-6 rounded-[2rem] border border-slate-100 dark:border-slate-800">
               {/* 중복 UI 제거하고 ShareNoteCard 재사용 (표준 규격 적용) - 화면 표시용 (반응형) */}
               <div ref={cardRef} className="rounded-3xl overflow-hidden shadow-2xl ring-1 ring-slate-200 dark:ring-slate-800 bg-white">
-                <ShareNoteCard note={note} hideActions={isCapturing} showTimestamp={false} user={user} />
+                <ShareNoteCard note={note} hideActions={isCapturing} showTimestamp={false} user={user} relatedBooks={relatedBooks} />
               </div>
             </div>
 
@@ -484,7 +506,7 @@ export function SimpleShareDialog({ note }: SimpleShareDialogProps) {
                 }}
               >
                 {/* fixedHorizontal=true로 가로 강제, hideActions=true로 버튼 숨김 */}
-                <ShareNoteCard note={note} hideActions={true} showTimestamp={false} user={user} fixedHorizontal={true} />
+                <ShareNoteCard note={note} hideActions={true} showTimestamp={false} user={user} fixedHorizontal={true} relatedBooks={relatedBooks} />
               </div>
             </div>
 
