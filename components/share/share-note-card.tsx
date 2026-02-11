@@ -686,15 +686,10 @@ function RelatedBooksSection({
                                 />
                             </div>
                         )}
-                        <div className="min-w-0 max-w-[120px]">
-                            <p className="text-xs font-medium text-slate-700 dark:text-slate-300 truncate leading-normal">
+                        <div className="min-w-0 max-w-[140px]">
+                            <p className="text-xs font-medium text-slate-700 dark:text-slate-300 truncate leading-relaxed">
                                 {book.title}
                             </p>
-                            {book.author && (
-                                <p className="text-[10px] text-slate-400 truncate leading-normal pb-px">
-                                    {book.author}
-                                </p>
-                            )}
                         </div>
                     </div>
                 ))}
