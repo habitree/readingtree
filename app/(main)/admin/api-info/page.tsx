@@ -1,5 +1,5 @@
 import { getApiIntegrationInfo, getOcrMonthlyUsage, getOcrTotalStats, testOcrConnection, getTranscriptionStats } from "@/app/actions/admin";
-import { ApiIntegrationInfo } from "@/components/admin/api-integration-info";
+import { ApiInfoDashboard } from "@/components/admin/api-info/api-info-dashboard";
 import { Metadata } from "next";
 import { isAdmin } from "@/app/actions/auth";
 import { redirect } from "next/navigation";
@@ -29,7 +29,7 @@ export default async function ApiInfoPage() {
 
     return (
         <div className="container py-8 max-w-7xl mx-auto">
-            <ApiIntegrationInfo
+            <ApiInfoDashboard
                 apiInfo={apiInfo}
                 ocrMonthlyUsage={ocrMonthlyUsage}
                 ocrTotalStats={ocrTotalStats}
