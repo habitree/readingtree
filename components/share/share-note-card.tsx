@@ -660,11 +660,11 @@ function RelatedBooksSection({
                 </span>
                 <span className="text-[10px] text-slate-300 font-medium">{books.length}</span>
             </div>
-            <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-hide">
+            <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
                 {books.map((book) => (
                     <div
                         key={book.id}
-                        className="flex items-center gap-2 shrink-0 px-2.5 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800"
+                        className="flex items-center gap-2.5 shrink-0 px-2.5 py-2 rounded-lg bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800"
                     >
                         {hideActions ? (
                             <div className="relative w-7 h-10 shrink-0 rounded overflow-hidden bg-slate-200 dark:bg-slate-700">
@@ -687,11 +687,11 @@ function RelatedBooksSection({
                             </div>
                         )}
                         <div className="min-w-0 max-w-[120px]">
-                            <p className="text-xs font-medium text-slate-700 dark:text-slate-300 truncate leading-tight">
+                            <p className="text-xs font-medium text-slate-700 dark:text-slate-300 truncate leading-normal">
                                 {book.title}
                             </p>
                             {book.author && (
-                                <p className="text-[10px] text-slate-400 truncate leading-tight">
+                                <p className="text-[10px] text-slate-400 truncate leading-normal pb-px">
                                     {book.author}
                                 </p>
                             )}
