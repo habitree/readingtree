@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback } from "react";
 import { createNote } from "@/app/actions/notes";
+import type { NoteType } from "@/types/note";
 import { smartCompressImage, formatFileSize, validateImageType } from "@/lib/utils/image";
 import { addStampToImage } from "@/lib/utils/stamp";
 import { toast } from "sonner";
@@ -269,11 +270,16 @@ export function useNoteForm(options: UseNoteFormOptions): UseNoteFormReturn {
         throw new Error("인상깊은 구절, 내 생각, 또는 이미지 중 최소 하나는 입력해주세요.");
       }
 
-      // type 결정: 업로드가 있으면 업로드 타입, 없으면 memo
+      // type 결정: 이미지 기반 > 콘텐츠 기반 > 기본 memo
       const currentUploadType = uploadType || (images.length > 0 ? "photo" : undefined);
-      const noteType = images.length > 0
-        ? (currentUploadType === "photo" ? "photo" : "transcription")
-        : "memo";
+      let noteType: NoteType;
+      if (images.length > 0) {
+        noteType = currentUploadType === "photo" ? "photo" : "transcription";
+      } else if (hasQuote && !hasMemo) {
+        noteType = "quote";
+      } else {
+        noteType = "memo";
+      }
 
       // 페이지 번호 (텍스트로 저장)
       const pageNumber = data.pageNumbers?.trim() || undefined;

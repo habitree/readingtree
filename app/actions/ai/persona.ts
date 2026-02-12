@@ -94,10 +94,10 @@ async function analyzeReadingData(userId: string): Promise<PersonaAnalysisResult
     `)
     .eq("user_id", userId);
 
-  // 2. 사용자의 모든 기록 조회
+  // 2. 사용자의 모든 기록 조회 (content 포함: 인용구 카운팅용)
   const { data: notes } = await supabase
     .from("notes")
-    .select("id, type, created_at")
+    .select("id, type, content, created_at")
     .eq("user_id", userId);
 
   // 3. 그룹 참여 정보 조회
@@ -169,8 +169,21 @@ async function analyzeReadingData(userId: string): Promise<PersonaAnalysisResult
   };
 
   notes?.forEach((note: any) => {
+    // 기본 type 카운팅
     if (note.type in noteTypeDistribution) {
       noteTypeDistribution[note.type as keyof typeof noteTypeDistribution]++;
+    }
+
+    // 필사/사진 타입에서 인용구 content가 있으면 quote도 추가 카운팅
+    if ((note.type === "transcription" || note.type === "photo") && note.content) {
+      try {
+        const parsed = JSON.parse(note.content);
+        if (parsed.quote && typeof parsed.quote === "string" && parsed.quote.trim().length > 0) {
+          noteTypeDistribution.quote++;
+        }
+      } catch {
+        // JSON 파싱 실패 시 무시
+      }
     }
   });
 

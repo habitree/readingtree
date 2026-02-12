@@ -150,8 +150,17 @@ export async function createNote(data: CreateNoteInput, user?: User | null) {
     content = data.content;
   }
 
-  // type 결정: 업로드 타입이 있으면 해당 타입, 없으면 memo
-  const noteType = data.type || (data.image_url ? (data.upload_type === "photo" ? "photo" : "transcription") : "memo");
+  // type 결정: 명시적 type > 이미지 기반 > 콘텐츠 기반 > 기본 memo
+  let noteType = data.type;
+  if (!noteType) {
+    if (data.image_url) {
+      noteType = data.upload_type === "photo" ? "photo" : "transcription";
+    } else if (data.quote_content?.trim() && !data.memo_content?.trim()) {
+      noteType = "quote";
+    } else {
+      noteType = "memo";
+    }
+  }
 
   // 기록 생성
   // notes.book_id는 books.id를 참조하므로 userBook.book_id를 사용

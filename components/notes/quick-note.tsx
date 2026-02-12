@@ -141,7 +141,7 @@ export function QuickNote({
     try {
       await createNote({
         book_id: selectedBookId,
-        type: "memo",
+        type: mode === "quote" ? "quote" : "memo",
         quote_content: mode === "quote" ? content.trim() : undefined,
         memo_content: mode === "memo" ? content.trim() : undefined,
         is_public: true,
