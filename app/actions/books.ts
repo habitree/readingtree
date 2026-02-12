@@ -132,11 +132,14 @@ export async function addBook(
 
   // 프로필이 없으면 생성 (Foreign Key Constraint 방지)
   if (!userProfile) {
+    // 카카오 등 외부 프로필 이미지 HTTP→HTTPS 변환
+    const rawAvatar = currentUser.user_metadata?.avatar_url || null;
+    const safeAvatar = rawAvatar?.startsWith("http://") ? rawAvatar.replace("http://", "https://") : rawAvatar;
     const { error: insertProfileError } = await supabase.from("users").insert({
       id: currentUser.id,
       email: currentUser.email,
       name: currentUser.user_metadata?.name || currentUser.email?.split("@")[0] || "사용자",
-      avatar_url: currentUser.user_metadata?.avatar_url || null,
+      avatar_url: safeAvatar,
       reading_goal: 12, // 기본값
     });
 

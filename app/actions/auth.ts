@@ -167,11 +167,14 @@ export async function signInWithEmail(email: string, password: string) {
 
   // 프로필이 없으면 수동 생성 시도
   if (!profile) {
+    // 카카오 등 외부 프로필 이미지 HTTP→HTTPS 변환
+    const rawAvatar = data.user.user_metadata?.avatar_url || null;
+    const safeAvatar = rawAvatar?.startsWith("http://") ? rawAvatar.replace("http://", "https://") : rawAvatar;
     const { error: insertError } = await supabase.from("users").insert({
       id: data.user.id,
       email: data.user.email,
       name: data.user.user_metadata?.name || data.user.email?.split("@")[0] || "사용자",
-      avatar_url: data.user.user_metadata?.avatar_url || null,
+      avatar_url: safeAvatar,
       reading_goal: 12,
       terms_agreed: false,
       privacy_agreed: false,

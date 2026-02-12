@@ -128,11 +128,14 @@ export async function GET(request: NextRequest) {
 
     // 프로필이 여전히 없으면 수동 생성 시도
     if (!profile) {
+      // 카카오 등 외부 프로필 이미지 HTTP→HTTPS 변환
+      const rawAvatarUrl = user.user_metadata?.avatar_url || null;
+      const avatarUrl = rawAvatarUrl?.startsWith("http://") ? rawAvatarUrl.replace("http://", "https://") : rawAvatarUrl;
       const { error: insertError } = await supabase.from("users").insert({
         id: user.id,
         email: user.email,
         name: user.user_metadata?.name || user.email?.split("@")[0] || "사용자",
-        avatar_url: user.user_metadata?.avatar_url || null,
+        avatar_url: avatarUrl,
         reading_goal: 12, // 기본값
         terms_agreed: false, // 약관 동의는 별도 페이지에서 처리
         privacy_agreed: false, // 약관 동의는 별도 페이지에서 처리

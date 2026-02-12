@@ -23,13 +23,18 @@ Avatar.displayName = AvatarPrimitive.Root.displayName
 const AvatarImage = React.forwardRef<
   React.ElementRef<typeof AvatarPrimitive.Image>,
   React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Image>
->(({ className, ...props }, ref) => (
-  <AvatarPrimitive.Image
-    ref={ref}
-    className={cn("aspect-square h-full w-full object-cover", className)}
-    {...props}
-  />
-))
+>(({ className, src, ...props }, ref) => {
+  // HTTP URL을 HTTPS로 자동 변환 (카카오 등 외부 프로필 이미지 지원)
+  const safeSrc = typeof src === "string" && src.startsWith("http://") ? src.replace("http://", "https://") : src;
+  return (
+    <AvatarPrimitive.Image
+      ref={ref}
+      src={safeSrc}
+      className={cn("aspect-square h-full w-full object-cover", className)}
+      {...props}
+    />
+  );
+})
 AvatarImage.displayName = AvatarPrimitive.Image.displayName
 
 const AvatarFallback = React.forwardRef<
