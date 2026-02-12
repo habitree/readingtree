@@ -117,14 +117,16 @@ export function MonthlyBookCalendar({
       weeks.push(currentWeek);
     }
 
-    // 통계 계산
+    // 통계 계산 (date 방어 처리 포함)
     const recordedDays = Object.keys(activities).filter(date => {
+      if (!date) return false;
       const [y, m] = date.split("-").map(Number);
-      return y === year && m === month && activities[date].books.length > 0;
+      return y === year && m === month && activities[date]?.books?.length > 0;
     }).length;
 
     const totalBooks = Object.values(activities)
       .filter(a => {
+        if (!a?.date) return false;
         const [y, m] = a.date.split("-").map(Number);
         return y === year && m === month;
       })
@@ -133,6 +135,7 @@ export function MonthlyBookCalendar({
     // 유니크한 책 수 계산
     const uniqueBookIds = new Set<string>();
     Object.values(activities).forEach(a => {
+      if (!a?.date) return;
       const [y, m] = a.date.split("-").map(Number);
       if (y === year && m === month) {
         a.books.forEach(book => uniqueBookIds.add(book.bookId));
@@ -142,6 +145,7 @@ export function MonthlyBookCalendar({
     // 총 기록 수 계산
     const totalNotes = Object.values(activities)
       .filter(a => {
+        if (!a?.date) return false;
         const [y, m] = a.date.split("-").map(Number);
         return y === year && m === month;
       })
@@ -583,7 +587,7 @@ interface SelectedDateDetailProps {
 }
 
 function SelectedDateDetail({ date, books, noteTypes, onClose }: SelectedDateDetailProps) {
-  const formattedDate = date.split("-").slice(1).map(n => parseInt(n)).join("/");
+  const formattedDate = date ? date.split("-").slice(1).map(n => parseInt(n)).join("/") : "";
 
   return (
     <motion.div
