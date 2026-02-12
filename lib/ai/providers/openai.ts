@@ -63,7 +63,8 @@ export async function callOpenAI(
   systemPrompt: string,
   chatHistory: { role: string; content: string }[],
   message: string,
-  settings: OpenAIChatSettings
+  settings: OpenAIChatSettings,
+  signal?: AbortSignal
 ): Promise<ReadableStream> {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
@@ -92,6 +93,7 @@ export async function callOpenAI(
       temperature: settings.temperature,
       stream: true,
     }),
+    signal,
   });
 
   if (!response.ok) {

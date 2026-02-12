@@ -72,7 +72,7 @@ export function NoteCard({ note, showDeleteButton = false, onDelete }: NoteCardP
   if (isProgressType) {
     return (
       <Link href={`/notes/${note.id}`} className="block">
-        <Card className="hover:shadow-md active:scale-[0.99] transition-all cursor-pointer relative group border-teal-200/50 dark:border-teal-800/50 bg-gradient-to-r from-teal-50/50 to-transparent dark:from-teal-950/30">
+        <Card className="hover:shadow-md active:scale-[0.99] transition-shadow cursor-pointer relative group border-teal-200/50 dark:border-teal-800/50 bg-gradient-to-r from-teal-50/50 to-transparent dark:from-teal-950/30">
           <CardContent className="p-3 sm:p-4">
             <div className="flex items-center gap-3">
               {/* 아이콘 */}
@@ -138,7 +138,7 @@ export function NoteCard({ note, showDeleteButton = false, onDelete }: NoteCardP
         }
       }}
     >
-      <Card className="hover:shadow-lg active:shadow-md active:scale-[0.99] transition-all cursor-pointer h-full relative group overflow-hidden">
+      <Card className="hover:shadow-lg active:shadow-md active:scale-[0.99] transition-shadow cursor-pointer h-full relative group overflow-hidden">
         <CardContent className="p-0">
           <div className="flex">
             {/* 좌측: 이미지/표지 + 책 정보 통합 영역 */}

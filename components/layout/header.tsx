@@ -201,6 +201,8 @@ export function Header() {
                   <DropdownMenuItem
                     onClick={async () => {
                       try {
+                        // 로그아웃 전 클라이언트 로컬 데이터 정리
+                        localStorage.removeItem("onboarding_tutorial_completed");
                         await signOut();
                       } catch (error) {
                         console.error("로그아웃 오류:", error);

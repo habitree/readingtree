@@ -40,7 +40,7 @@ export function TimelineItem({ note }: TimelineItemProps) {
 
   return (
     <Link href={`/notes/${note.id}`} className="group">
-      <Card className="hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden border-slate-200/60 dark:border-slate-800">
+      <Card className="hover:shadow-lg transition-shadow duration-300 cursor-pointer overflow-hidden border-slate-200/60 dark:border-slate-800">
         <CardContent className="p-4">
           <div className="flex gap-4">
             {/* 책 표지 이미지와 기록 이미지 겹치기 - UX 원칙 05: 깊이감 부여 */}

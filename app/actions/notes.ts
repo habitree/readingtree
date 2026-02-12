@@ -203,7 +203,7 @@ export async function createNote(data: CreateNoteInput, user?: User | null) {
     }
 
     // 포인트 시스템 호출 (실패해도 무시)
-    Promise.all([
+    await Promise.all([
       updateStreak(currentUser).catch(() => null),
       earnPoints(pointActionType, {
         user: currentUser,
@@ -232,6 +232,16 @@ export async function createNote(data: CreateNoteInput, user?: User | null) {
  */
 export async function updateNote(noteId: string, data: UpdateNoteInput, user?: User | null) {
   const supabase = await createServerSupabaseClient();
+
+  // noteId UUID 검증
+  if (!isValidUUID(noteId)) {
+    throw new Error("유효하지 않은 기록 ID입니다.");
+  }
+
+  // 태그 검증
+  if (data.tags && !isValidTags(data.tags, 10, 50)) {
+    throw new Error("태그는 최대 10개까지, 각 태그는 50자 이하여야 합니다.");
+  }
 
   // 현재 사용자 확인
   let currentUser = user;
@@ -747,6 +757,11 @@ export async function getPublicNote(noteId: string, userId?: string) {
 
   // 로그인한 사용자인 경우 본인 기록도 조회 가능
   if (userId) {
+    // userId가 유효한 UUID인지 검증 (PostgREST 필터 주입 방지)
+    const { isValidUUID } = await import("@/lib/utils/validation");
+    if (!isValidUUID(userId)) {
+      throw new Error("유효하지 않은 사용자 ID입니다.");
+    }
     query = query.or(`is_public.eq.true,user_id.eq.${userId}`);
   } else {
     // 비로그인 사용자는 공개 기록만 조회 가능

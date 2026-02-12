@@ -14,11 +14,21 @@ import { generateDynamicSystemPrompt } from "@/lib/ai/prompts/chat-prompts";
 import { getAISettingsForChat } from "@/app/actions/ai/settings";
 import { callOpenAI, parseOpenAIStream } from "@/lib/ai/providers/openai";
 import { callAnthropic, parseAnthropicStream } from "@/lib/ai/providers/anthropic";
+import { checkRateLimit } from "@/lib/middleware/rate-limit";
 import type { ChatContext } from "@/types/ai/chat";
 import type { AIProvider } from "@/types/ai/settings";
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate Limiting (분당 20회 - AI API 비용 보호)
+    const rateLimitResult = await checkRateLimit(request, 20);
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        { error: "요청이 너무 많습니다. 잠시 후 다시 시도해주세요." },
+        { status: 429 }
+      );
+    }
+
     const body = await request.json();
     const { sessionId, message, context } = body as {
       sessionId: string;
@@ -107,6 +117,9 @@ export async function POST(request: NextRequest) {
     const encoder = new TextEncoder();
     let fullResponse = "";
 
+    // 클라이언트 연결 해제 시 AI API 스트림을 중단하기 위한 AbortController
+    const abortController = new AbortController();
+
     const stream = new ReadableStream({
       async start(controller) {
         const sendData = (data: any) => {
@@ -147,6 +160,9 @@ export async function POST(request: NextRequest) {
             const result = await chat.sendMessageStream(message);
 
             for await (const chunk of result.stream) {
+              // 클라이언트 연결 해제 시 스트림 반복 중단
+              if (abortController.signal.aborted) break;
+
               const chunkText = chunk.text();
               if (chunkText) {
                 fullResponse += chunkText;
@@ -163,7 +179,8 @@ export async function POST(request: NextRequest) {
               {
                 temperature: generationSettings.temperature,
                 maxOutputTokens: generationSettings.maxOutputTokens,
-              }
+              },
+              abortController.signal
             );
 
             await parseOpenAIStream(
@@ -187,7 +204,8 @@ export async function POST(request: NextRequest) {
               {
                 temperature: generationSettings.temperature,
                 maxOutputTokens: generationSettings.maxOutputTokens,
-              }
+              },
+              abortController.signal
             );
 
             await parseAnthropicStream(
@@ -237,6 +255,13 @@ export async function POST(request: NextRequest) {
           });
           controller.close();
         } catch (error) {
+          // AbortError는 클라이언트 연결 해제로 인한 정상 중단이므로 무시
+          if (error instanceof Error && error.name === "AbortError") {
+            console.log("클라이언트 연결 해제로 AI 스트림 중단");
+            controller.close();
+            return;
+          }
+
           console.error("스트리밍 오류:", error);
           sendData({
             type: "error",
@@ -244,6 +269,11 @@ export async function POST(request: NextRequest) {
           });
           controller.close();
         }
+      },
+
+      // 클라이언트 연결 해제 시 호출 (브라우저 탭 닫기 등)
+      cancel() {
+        abortController.abort();
       },
     });
 

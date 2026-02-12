@@ -70,7 +70,11 @@ export function sanitizeSearchQuery(query: string | null | undefined, maxLength:
   if (trimmed.length === 0) return null;
   if (trimmed.length > maxLength) return null;
   // SQL 특수 문자 이스케이프 (%와 _는 ILIKE에서 와일드카드)
-  return trimmed.replace(/%/g, "\\%").replace(/_/g, "\\_");
+  // PostgREST 필터 구분 문자 제거 (,  .  (  )  " 로 필터 주입 방지)
+  return trimmed
+    .replace(/%/g, "\\%")
+    .replace(/_/g, "\\_")
+    .replace(/[,.()"'\\]/g, "");
 }
 
 /**

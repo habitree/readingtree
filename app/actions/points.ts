@@ -15,6 +15,27 @@ import type {
 } from "@/types/points";
 
 /**
+ * KST 기준 오늘 날짜 반환 (YYYY-MM-DD)
+ */
+function getKSTToday(): string {
+  const now = new Date();
+  const kstOffset = 9 * 60 * 60 * 1000;
+  const kstDate = new Date(now.getTime() + kstOffset);
+  return kstDate.toISOString().split("T")[0];
+}
+
+/**
+ * KST 기준 어제 날짜 반환 (YYYY-MM-DD)
+ */
+function getKSTYesterday(): string {
+  const now = new Date();
+  const kstOffset = 9 * 60 * 60 * 1000;
+  const kstDate = new Date(now.getTime() + kstOffset);
+  kstDate.setDate(kstDate.getDate() - 1);
+  return kstDate.toISOString().split("T")[0];
+}
+
+/**
  * 사용자 포인트 정보 조회
  */
 export async function getUserPoints(user?: User | null): Promise<UserPoints | null> {
@@ -102,16 +123,17 @@ export async function earnPoints(
       return { success: false, points_earned: 0, new_total: 0, error: "유효하지 않은 액션입니다." };
     }
 
-    // 2. 일일 제한 확인
+    // 2. 일일 제한 확인 (KST 기준)
     if (actionConfig.daily_limit) {
-      const today = new Date().toISOString().split("T")[0];
+      const today = getKSTToday();
+      // KST 기준 오늘 00:00 ~ 23:59 → UTC로 변환 (KST-9h)
       const { count } = await supabase
         .from("point_transactions")
         .select("*", { count: "exact", head: true })
         .eq("user_id", currentUser.id)
         .eq("action_type", actionType)
-        .gte("created_at", `${today}T00:00:00`)
-        .lte("created_at", `${today}T23:59:59`);
+        .gte("created_at", `${today}T00:00:00+09:00`)
+        .lte("created_at", `${today}T23:59:59+09:00`);
 
       if (count && count >= actionConfig.daily_limit) {
         return { success: false, points_earned: 0, new_total: 0, error: "일일 획득 한도에 도달했습니다." };
@@ -132,20 +154,20 @@ export async function earnPoints(
       }
     }
 
-    // 4. 사용자 포인트 정보 조회/생성
+    // 4. 사용자 포인트 정보 조회/생성 (upsert로 중복 INSERT 방지)
     let userPoints = await getUserPoints(currentUser);
     if (!userPoints) {
-      // 새 사용자 포인트 레코드 생성
+      // 새 사용자 포인트 레코드 생성 (동시 요청 시 중복 방지)
       const { data: newPoints, error: createError } = await supabase
         .from("user_points")
-        .insert({
+        .upsert({
           user_id: currentUser.id,
           total_points: 0,
           lifetime_points: 0,
           current_level: 1,
           current_streak: 0,
           longest_streak: 0,
-        })
+        }, { onConflict: "user_id" })
         .select()
         .single();
 
@@ -310,7 +332,7 @@ export async function updateStreak(user?: User | null): Promise<{
     return { streak: 0, isNewDay: false };
   }
 
-  const today = new Date().toISOString().split("T")[0];
+  const today = getKSTToday();
   const lastActivity = userPoints.last_activity_date;
 
   // 이미 오늘 활동한 경우
@@ -318,10 +340,8 @@ export async function updateStreak(user?: User | null): Promise<{
     return { streak: userPoints.current_streak, isNewDay: false };
   }
 
-  // 어제 활동했는지 확인
-  const yesterday = new Date();
-  yesterday.setDate(yesterday.getDate() - 1);
-  const yesterdayStr = yesterday.toISOString().split("T")[0];
+  // 어제 활동했는지 확인 (KST 기준)
+  const yesterdayStr = getKSTYesterday();
 
   let newStreak: number;
   let streakBonus: EarnPointsResult | undefined;
@@ -501,7 +521,7 @@ export async function getDailyMissions(user?: User | null): Promise<MissionWithD
     currentUser = fetchedUser;
   }
 
-  const today = new Date().toISOString().split("T")[0];
+  const today = getKSTToday();
 
   // 오늘의 미션 상태 조회
   const { data: existingMissions } = await supabase
@@ -510,14 +530,14 @@ export async function getDailyMissions(user?: User | null): Promise<MissionWithD
     .eq("user_id", currentUser.id)
     .eq("date", today);
 
-  // 오늘 활동 데이터 조회
+  // 오늘 활동 데이터 조회 (KST 기준)
   const [todayNotes, userPoints] = await Promise.all([
     supabase
       .from("notes")
       .select("id")
       .eq("user_id", currentUser.id)
-      .gte("created_at", `${today}T00:00:00`)
-      .lte("created_at", `${today}T23:59:59`),
+      .gte("created_at", `${today}T00:00:00+09:00`)
+      .lte("created_at", `${today}T23:59:59+09:00`),
 
     getUserPoints(currentUser),
   ]);

@@ -14,7 +14,7 @@ function toKSTDateKey(date: Date): string {
 }
 
 /** KST 기준 현재 날짜의 자정(00:00:00) UTC Date 반환 */
-function getKSTToday(): Date {
+export function getKSTToday(): Date {
   const now = new Date();
   const kst = new Date(now.getTime() + 9 * 60 * 60 * 1000);
   return new Date(Date.UTC(kst.getUTCFullYear(), kst.getUTCMonth(), kst.getUTCDate()) - 9 * 60 * 60 * 1000);
@@ -512,7 +512,7 @@ export async function getReadingStats(user?: User | null) {
     }));
 
   // 최근 기록한 책 (중복 제거, 최신순)
-  const recentBooksMap = new Map<string, { book: any; latestDate: string }>();
+  const recentBooksMap = new Map<string, { book: any; latestDate: string; bookId: string }>();
   if (recentBooksData) {
     recentBooksData.forEach((note) => {
       const bookId = note.book_id;
@@ -521,11 +521,12 @@ export async function getReadingStats(user?: User | null) {
         const userBookId = userBookIdMap.get(bookId) || bookId;
         const bookWithUserBookId = { ...book, id: userBookId };
         const existing = recentBooksMap.get(bookId);
-        
+
         if (!existing || new Date(note.created_at) > new Date(existing.latestDate)) {
           recentBooksMap.set(bookId, {
             book: bookWithUserBookId,
             latestDate: note.created_at,
+            bookId, // 원래 books.id 보존 (bookCounts 조회용)
           });
         }
       }
@@ -538,7 +539,7 @@ export async function getReadingStats(user?: User | null) {
     .slice(0, 5)
     .map((item) => ({
       book: item.book,
-      noteCount: bookCounts.get(item.book.id)?.count || 1, // 기록 수 표시용
+      noteCount: bookCounts.get(item.bookId)?.count || 1, // 원래 bookId로 조회
     }));
 
   return {
@@ -1255,5 +1256,68 @@ export async function getCurrentBookProgress(
     totalPages,
     progressPercent,
   };
+}
+
+/**
+ * 연속 기록 일수 및 오늘 기록 수 조회 (KST 기준)
+ * @param userId 사용자 ID
+ * @returns { streak: number, todayNotes: number }
+ */
+export async function getStreakAndTodayData(userId: string): Promise<{ streak: number; todayNotes: number }> {
+  try {
+    const supabase = await createServerSupabaseClient();
+
+    // KST 기준 오늘 자정
+    const kstTodayMidnight = getKSTToday();
+    const kstTodayKey = toKSTDateKey(kstTodayMidnight);
+
+    // 최근 30일간의 기록 날짜 조회
+    const thirtyDaysAgo = new Date(kstTodayMidnight.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+    const { data: notes, error } = await supabase
+      .from("notes")
+      .select("created_at")
+      .eq("user_id", userId)
+      .gte("created_at", thirtyDaysAgo.toISOString())
+      .order("created_at", { ascending: false });
+
+    if (error || !notes || notes.length === 0) {
+      return { streak: 0, todayNotes: 0 };
+    }
+
+    // 날짜별로 그룹화 및 오늘 기록 수 계산 (KST 기준)
+    const dateCountMap = new Map<string, number>();
+    let todayNotes = 0;
+
+    notes.forEach((note) => {
+      const dateKey = toKSTDateKey(new Date(note.created_at));
+
+      if (dateKey === kstTodayKey) {
+        todayNotes++;
+      }
+
+      dateCountMap.set(dateKey, (dateCountMap.get(dateKey) || 0) + 1);
+    });
+
+    // 연속 일수 계산 (KST 기준)
+    let streak = 0;
+
+    for (let i = 0; i < 30; i++) {
+      const checkTime = kstTodayMidnight.getTime() - i * 24 * 60 * 60 * 1000;
+      const dateKey = toKSTDateKey(new Date(checkTime));
+
+      if (dateCountMap.has(dateKey)) {
+        streak++;
+      } else if (i > 0) {
+        // 오늘은 아직 기록 안 해도 어제까지 연속이면 유지
+        break;
+      }
+    }
+
+    return { streak, todayNotes };
+  } catch (error) {
+    console.error("스트릭 조회 오류:", error);
+    return { streak: 0, todayNotes: 0 };
+  }
 }
 

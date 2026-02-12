@@ -137,9 +137,8 @@ export async function searchNotes(params: SearchParams, user?: User | null): Pro
     supabaseQuery = supabaseQuery.gte("created_at", params.startDate);
   }
   if (params.endDate) {
-    // 종료일은 하루 끝까지 포함
-    const endDateTime = new Date(params.endDate);
-    endDateTime.setHours(23, 59, 59, 999);
+    // 종료일은 KST 기준 하루 끝까지 포함
+    const endDateTime = new Date(params.endDate + "T23:59:59+09:00");
     supabaseQuery = supabaseQuery.lte("created_at", endDateTime.toISOString());
   }
 

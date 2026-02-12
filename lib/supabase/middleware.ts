@@ -74,6 +74,9 @@ export async function updateSession(request: NextRequest) {
     "/notes/new",
     "/books/search", // 책 검색 및 추가는 인증 필요
     "/groups/new", // 모임 생성은 인증 필요
+    "/admin", // 관리자 페이지는 인증 필수
+    "/chat", // AI 채팅은 인증 필요
+    "/feature-requests/new", // 기능 요청 생성은 인증 필요
   ];
   const isStrictProtectedPath = strictProtectedPaths.some((path) =>
     request.nextUrl.pathname.startsWith(path)

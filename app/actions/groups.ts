@@ -8,14 +8,16 @@ export type MemberRole = "leader" | "moderator" | "member";
 export type MemberStatus = "pending" | "approved" | "rejected";
 
 /**
- * 현재 주의 시작일(월요일) 계산
+ * 현재 주의 시작일(월요일) 계산 (KST 기준)
  */
 function getWeekStart(date: Date = new Date()): string {
-  const d = new Date(date);
-  const day = d.getDay();
-  const diff = d.getDate() - day + (day === 0 ? -6 : 1); // 월요일로 조정
-  d.setDate(diff);
-  d.setHours(0, 0, 0, 0);
+  // KST 기준으로 변환
+  const kstOffset = 9 * 60 * 60 * 1000;
+  const d = new Date(date.getTime() + kstOffset);
+  const day = d.getUTCDay();
+  const diff = d.getUTCDate() - day + (day === 0 ? -6 : 1); // 월요일로 조정
+  d.setUTCDate(diff);
+  d.setUTCHours(0, 0, 0, 0);
   return d.toISOString().split("T")[0]; // YYYY-MM-DD 형식
 }
 
@@ -307,12 +309,13 @@ export async function approveMember(groupId: string, userId: string) {
     throw new Error("멤버 승인 권한이 없습니다.");
   }
 
-  // 멤버 승인
+  // 멤버 승인 (pending 상태인 경우에만)
   const { error: updateError } = await supabase
     .from("group_members")
     .update({ status: "approved" })
     .eq("group_id", groupId)
-    .eq("user_id", userId);
+    .eq("user_id", userId)
+    .eq("status", "pending");
 
   if (updateError) {
     throw new Error(`승인 실패: ${updateError.message}`);

@@ -230,6 +230,9 @@ export async function signOut() {
     throw new Error(`로그아웃 실패: ${error.message}`);
   }
 
+  // 서버 캐시 무효화 (로그아웃 후 이전 데이터 잔존 방지)
+  revalidatePath("/", "layout");
+
   // 세션 삭제 후 로그인 페이지로 리다이렉트
   // 쿠키 삭제는 createServerSupabaseClient가 자동 처리
   redirect("/login");

@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { summarizeWithGemini } from "@/lib/ai/providers/gemini";
 import { summarizeWithOpenAI } from "@/lib/ai/providers/openai";
+import { checkRateLimit } from "@/lib/middleware/rate-limit";
 
 // 요약 요청 타입
 interface SummarizeRequest {
@@ -32,6 +33,15 @@ interface SummarizeResponse {
  */
 export async function POST(request: NextRequest): Promise<NextResponse<SummarizeResponse>> {
   try {
+    // Rate Limiting (분당 30회)
+    const rateLimitResult = await checkRateLimit(request, 30);
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        { success: false, error: "요청이 너무 많습니다. 잠시 후 다시 시도해주세요." },
+        { status: 429 }
+      );
+    }
+
     // 인증 확인
     const supabase = await createServerSupabaseClient();
     const {

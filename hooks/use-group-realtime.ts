@@ -80,7 +80,7 @@ export function useGroupRealtime({
 
       const event: RealtimeEvent = {
         type: "INSERT",
-        table: "group_shared_notes",
+        table: "group_notes",
         payload: payload.new,
         timestamp: new Date(),
       };
@@ -178,7 +178,7 @@ export function useGroupRealtime({
         {
           event: "INSERT",
           schema: "public",
-          table: "group_shared_notes",
+          table: "group_notes",
           filter: `group_id=eq.${groupId}`,
         },
         handleSharedNoteInsert
@@ -309,7 +309,7 @@ export function useMultiGroupRealtime(
           {
             event: "INSERT",
             schema: "public",
-            table: "group_shared_notes",
+            table: "group_notes",
             filter: `group_id=eq.${groupId}`,
           },
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -317,7 +317,7 @@ export function useMultiGroupRealtime(
             if (payload.new?.shared_by !== options.currentUserId) {
               handleEvent({
                 type: "INSERT",
-                table: "group_shared_notes",
+                table: "group_notes",
                 payload: { ...payload.new, group_id: groupId },
                 timestamp: new Date(),
               });

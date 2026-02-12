@@ -195,18 +195,21 @@ export async function GET(request: NextRequest) {
     redirectUrl.searchParams.set("login", "success"); // 로그인 성공 표시
     return NextResponse.redirect(redirectUrl);
   } catch (error) {
+    // NEXT_REDIRECT는 Next.js의 정상적인 리다이렉트 메커니즘이므로 re-throw
+    if (error instanceof Error && error.message.includes("NEXT_REDIRECT")) {
+      throw error;
+    }
+
     console.error("OAuth 콜백 처리 중 예외 발생:", {
       error: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined,
     });
-    
+
     // 사용자 친화적인 에러 메시지
-    const errorMessage = error instanceof Error 
-      ? (error.message.includes("NEXT_REDIRECT") 
-          ? "리다이렉트 처리 중..." 
-          : "로그인 처리 중 오류가 발생했습니다. 다시 시도해주세요.")
+    const errorMessage = error instanceof Error
+      ? "로그인 처리 중 오류가 발생했습니다. 다시 시도해주세요."
       : "알 수 없는 오류가 발생했습니다. 다시 시도해주세요.";
-    
+
     // getAppUrl()을 사용하여 올바른 프로덕션 URL로 리다이렉트
     const baseUrl = getAppUrl();
     return NextResponse.redirect(

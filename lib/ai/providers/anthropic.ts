@@ -84,7 +84,8 @@ export async function callAnthropic(
   systemPrompt: string,
   chatHistory: { role: string; content: string }[],
   message: string,
-  settings: AnthropicChatSettings
+  settings: AnthropicChatSettings,
+  signal?: AbortSignal
 ): Promise<ReadableStream> {
   const apiKey = getAnthropicApiKey();
 
@@ -111,6 +112,7 @@ export async function callAnthropic(
       temperature: settings.temperature,
       stream: true,
     }),
+    signal,
   });
 
   if (!response.ok) {

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { verifyNoteOwnership, createTranscriptionInitial } from "@/app/actions/notes";
+import { checkRateLimit } from "@/lib/middleware/rate-limit";
 
 /**
  * OCR 처리 요청 API
@@ -11,6 +12,15 @@ export async function POST(request: NextRequest) {
   console.log("[OCR] 요청 수신 시작");
   
   try {
+    // Rate Limiting (분당 15회 - OCR API 비용 보호)
+    const rateLimitResult = await checkRateLimit(request, 15);
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        { error: "요청이 너무 많습니다. 잠시 후 다시 시도해주세요." },
+        { status: 429 }
+      );
+    }
+
     const supabase = await createServerSupabaseClient();
     console.log("[OCR] Supabase 클라이언트 생성 완료");
 

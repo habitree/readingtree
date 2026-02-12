@@ -410,7 +410,7 @@ export async function ensureBook(bookData: AddBookInput): Promise<{ bookId: stri
           title: bookData.title,
           author: bookData.author,
           publisher: bookData.publisher,
-          published_date: bookData.published_date,
+          published_date: normalizePublishedDate(bookData.published_date),
           cover_image_url: bookData.cover_image_url,
           total_pages: totalPages,
         })
@@ -431,7 +431,7 @@ export async function ensureBook(bookData: AddBookInput): Promise<{ bookId: stri
         title: bookData.title,
         author: bookData.author,
         publisher: bookData.publisher,
-        published_date: bookData.published_date,
+        published_date: normalizePublishedDate(bookData.published_date),
         cover_image_url: bookData.cover_image_url,
       })
       .select("id")
@@ -1563,7 +1563,20 @@ export async function deleteBook(userBookId: string, user?: User | null) {
     await Promise.all(deletePromises);
   }
 
-  // user_books에서 삭제 (CASCADE로 notes도 자동 삭제됨)
+  // 해당 사용자의 notes 레코드 명시적 삭제
+  // (notes는 books.id를 참조하므로 user_books 삭제 시 CASCADE 되지 않음)
+  const { error: deleteNotesError } = await supabase
+    .from("notes")
+    .delete()
+    .eq("book_id", userBook.book_id)
+    .eq("user_id", currentUser.id);
+
+  if (deleteNotesError) {
+    console.error("기록 삭제 오류:", deleteNotesError);
+    // 기록 삭제 실패해도 책 삭제는 진행
+  }
+
+  // user_books에서 삭제
   const { error } = await supabase
     .from("user_books")
     .delete()
@@ -1617,16 +1630,23 @@ export async function updateBookProgress(
     throw new Error("페이지 수는 0 이상이어야 합니다.");
   }
 
-  // 사용자의 책인지 확인
+  // 사용자의 책인지 확인 (total_pages도 함께 조회)
   const { data: userBook } = await supabase
     .from("user_books")
-    .select("id")
+    .select("id, books(total_pages)")
     .eq("id", userBookId)
     .eq("user_id", currentUser.id)
     .single();
 
   if (!userBook) {
     throw new Error("권한이 없습니다.");
+  }
+
+  // total_pages가 있으면 상한 체크
+  const booksData = userBook.books as unknown as { total_pages: number | null } | null;
+  const totalPages = booksData?.total_pages;
+  if (totalPages && currentPage > totalPages) {
+    throw new Error(`페이지 수는 전체 페이지(${totalPages})를 초과할 수 없습니다.`);
   }
 
   // 진행률 업데이트
