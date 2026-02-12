@@ -6,6 +6,10 @@ import {
   getCurrentBookProgress,
 } from "@/app/actions/stats";
 import { getContinueReadingBooks } from "@/app/actions/books";
+import {
+  getSampleDashboardStats,
+  getSampleContinueReadingBooks,
+} from "@/app/actions/sample";
 import { HomeHeroSection } from "./home-hero-section";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
@@ -17,15 +21,21 @@ export async function HomeHeroWrapper() {
   const user = await getCachedCurrentUser();
 
   if (!user) {
-    // 게스트 사용자는 기본 히어로 표시
+    // 게스트 사용자: 샘플 데이터 조회
+    const [sampleStats, sampleBooks] = await Promise.all([
+      getSampleDashboardStats().catch(() => ({ streak: 0, todayNotes: 0, weeklyNotes: 0 })),
+      getSampleContinueReadingBooks(6).catch(() => []),
+    ]);
+
     return (
       <HomeHeroSection
         userName={null}
         persona={null}
-        streak={0}
-        todayNotes={0}
-        weeklyNotes={0}
-        continueReadingBooks={[]}
+        streak={sampleStats.streak}
+        todayNotes={sampleStats.todayNotes}
+        weeklyNotes={sampleStats.weeklyNotes}
+        continueReadingBooks={sampleBooks}
+        isGuest={true}
       />
     );
   }

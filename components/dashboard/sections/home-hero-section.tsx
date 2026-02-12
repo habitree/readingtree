@@ -76,6 +76,8 @@ interface HomeHeroSectionProps {
   weeklyProgress?: WeeklyProgressData | null;
   dailyRecordsByType?: Record<string, DailyRecordByType>;
   currentBookProgress?: CurrentBookProgressData | null;
+  /** 게스트 모드 (샘플 데이터 표시) */
+  isGuest?: boolean;
 }
 
 /**
@@ -94,6 +96,7 @@ export function HomeHeroSection({
   weeklyProgress,
   dailyRecordsByType = {},
   currentBookProgress,
+  isGuest = false,
 }: HomeHeroSectionProps) {
   const [mounted, setMounted] = useState(false);
   const { greeting, getStreakMessage, getMotivationalMessage } = useStyle();
@@ -290,7 +293,7 @@ export function HomeHeroSection({
       </motion.div>
 
       {/* ======== SECONDARY ZONE: 액션 유도 ======== */}
-      {userName && (
+      {(userName || (isGuest && continueReadingBooks.length > 0)) && (
         <div className="space-y-2 sm:space-y-3">
           {/* 계속 읽기 (Primary CTA) */}
           {continueReadingBooks.length > 0 ? (

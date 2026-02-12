@@ -1,5 +1,6 @@
 import { getCachedCurrentUser, getCachedPersonaDashboardData } from "@/lib/cached";
 import { getMonthlyBookActivities } from "@/app/actions/stats";
+import { getSampleMonthlyActivities } from "@/app/actions/sample";
 import { TertiaryZoneClient } from "./tertiary-zone-client";
 import type { ReadingStats } from "@/types/persona";
 
@@ -10,16 +11,31 @@ import type { ReadingStats } from "@/types/persona";
 export async function TertiaryZoneWrapper() {
   const user = await getCachedCurrentUser();
 
-  if (!user) {
-    // 게스트 사용자는 Tertiary Zone 숨김
-    return null;
-  }
-
   // 현재 월의 독서 활동 조회 (KST 기준)
   const now = new Date();
   const kst = new Date(now.getTime() + 9 * 60 * 60 * 1000);
   const currentYear = kst.getUTCFullYear();
   const currentMonth = kst.getUTCMonth() + 1;
+
+  if (!user) {
+    // 게스트 사용자: 샘플 월별 활동 데이터 조회
+    const sampleActivities = await getSampleMonthlyActivities(currentYear, currentMonth).catch(() => ({}));
+
+    const hasActivityData = Object.keys(sampleActivities || {}).length > 0;
+    if (!hasActivityData) {
+      return null;
+    }
+
+    return (
+      <TertiaryZoneClient
+        monthlyActivities={sampleActivities}
+        initialYear={currentYear}
+        initialMonth={currentMonth}
+        persona={null}
+        readingStats={null}
+      />
+    );
+  }
 
   // 병렬로 데이터 조회
   const [personaData, monthlyActivities] = await Promise.all([

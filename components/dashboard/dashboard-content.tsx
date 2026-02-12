@@ -84,8 +84,10 @@ export default async function DashboardContent() {
           <HomeHeroWrapper />
         </Suspense>
 
-        {/* 모바일 퀵 액션 버튼 */}
-        <MobileQuickActions />
+        {/* 모바일 퀵 액션 버튼 (로그인 사용자만) */}
+        <Suspense fallback={null}>
+          <AuthenticatedQuickActions />
+        </Suspense>
 
         {/* ======== TERTIARY ZONE (접이식) ======== */}
         {/* 활동 캘린더, 최근 기록한 책, 페르소나 인사이트 */}
@@ -95,6 +97,15 @@ export default async function DashboardContent() {
       </div>
     </>
   );
+}
+
+/**
+ * 인증된 사용자만 퀵 액션 표시
+ */
+async function AuthenticatedQuickActions() {
+  const user = await getCachedCurrentUser();
+  if (!user) return null;
+  return <MobileQuickActions />;
 }
 
 /**

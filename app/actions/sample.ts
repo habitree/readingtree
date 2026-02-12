@@ -646,3 +646,246 @@ export async function getSampleAllNotes(): Promise<NoteWithBook[]> {
     };
   }) as NoteWithBook[];
 }
+
+// =============================================================================
+// 대시보드 샘플 데이터 (게스트 사용자용)
+// =============================================================================
+
+/**
+ * 샘플 사용자의 대시보드 통계 조회 (게스트 대시보드용)
+ * - 연속 기록 일수 (streak)
+ * - 오늘 기록 수
+ * - 이번 주 기록 수
+ */
+export async function getSampleDashboardStats(): Promise<{
+  streak: number;
+  todayNotes: number;
+  weeklyNotes: number;
+}> {
+  try {
+    const sampleUserId = await getSampleUserId();
+    const supabase = createAdminSupabaseClient();
+
+    // KST 기준 오늘
+    const now = new Date();
+    const kst = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+    const kstToday = new Date(Date.UTC(kst.getUTCFullYear(), kst.getUTCMonth(), kst.getUTCDate()) - 9 * 60 * 60 * 1000);
+    const kstTodayKey = `${kst.getUTCFullYear()}-${String(kst.getUTCMonth() + 1).padStart(2, "0")}-${String(kst.getUTCDate()).padStart(2, "0")}`;
+
+    // 최근 30일 기록 조회
+    const thirtyDaysAgo = new Date(kstToday.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+    const { data: notes } = await supabase
+      .from("notes")
+      .select("created_at")
+      .eq("user_id", sampleUserId)
+      .gte("created_at", thirtyDaysAgo.toISOString())
+      .order("created_at", { ascending: false });
+
+    if (!notes || notes.length === 0) {
+      return { streak: 0, todayNotes: 0, weeklyNotes: 0 };
+    }
+
+    // 날짜별 그룹화
+    const dateCountMap = new Map<string, number>();
+    let todayNotes = 0;
+
+    for (const note of notes) {
+      const noteKst = new Date(new Date(note.created_at).getTime() + 9 * 60 * 60 * 1000);
+      const dateKey = `${noteKst.getUTCFullYear()}-${String(noteKst.getUTCMonth() + 1).padStart(2, "0")}-${String(noteKst.getUTCDate()).padStart(2, "0")}`;
+
+      if (dateKey === kstTodayKey) {
+        todayNotes++;
+      }
+      dateCountMap.set(dateKey, (dateCountMap.get(dateKey) || 0) + 1);
+    }
+
+    // 연속 일수 계산
+    let streak = 0;
+    for (let i = 0; i < 30; i++) {
+      const checkTime = kstToday.getTime() - i * 24 * 60 * 60 * 1000;
+      const checkKst = new Date(checkTime + 9 * 60 * 60 * 1000);
+      const dateKey = `${checkKst.getUTCFullYear()}-${String(checkKst.getUTCMonth() + 1).padStart(2, "0")}-${String(checkKst.getUTCDate()).padStart(2, "0")}`;
+
+      if (dateCountMap.has(dateKey)) {
+        streak++;
+      } else if (i > 0) {
+        break;
+      }
+    }
+
+    // 이번 주 기록 수 (KST 기준 월요일~오늘)
+    const dayOfWeek = kst.getUTCDay();
+    const mondayOffset = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+    const weekStart = new Date(kstToday.getTime() - mondayOffset * 24 * 60 * 60 * 1000);
+
+    let weeklyNotes = 0;
+    for (const note of notes) {
+      if (new Date(note.created_at) >= weekStart) {
+        weeklyNotes++;
+      }
+    }
+
+    return { streak, todayNotes, weeklyNotes };
+  } catch {
+    return { streak: 0, todayNotes: 0, weeklyNotes: 0 };
+  }
+}
+
+/**
+ * 샘플 사용자의 "계속 읽기" 책 목록 (게스트 대시보드용)
+ */
+export async function getSampleContinueReadingBooks(maxCount: number = 6): Promise<Array<{
+  userBookId: string;
+  bookId: string;
+  title: string;
+  author: string | null;
+  coverImageUrl: string | null;
+  currentPage: number;
+  totalPages: number | null;
+  progressPercent: number;
+  lastActivityAt: string;
+}>> {
+  try {
+    const sampleUserId = await getSampleUserId();
+    const supabase = createAdminSupabaseClient();
+
+    // 읽는 중인 책 조회
+    const { data: readingBooks } = await supabase
+      .from("user_books")
+      .select(`
+        id,
+        book_id,
+        current_page,
+        updated_at,
+        books (
+          id,
+          title,
+          author,
+          cover_image_url,
+          total_pages
+        )
+      `)
+      .eq("user_id", sampleUserId)
+      .in("status", ["reading", "rereading"])
+      .order("updated_at", { ascending: false })
+      .limit(10);
+
+    if (!readingBooks || readingBooks.length === 0) {
+      return [];
+    }
+
+    // 각 책의 최근 노트 작성일 조회
+    const bookIds = readingBooks.map((rb: any) => rb.book_id).filter(Boolean);
+
+    const { data: recentNotes } = await supabase
+      .from("notes")
+      .select("book_id, created_at")
+      .eq("user_id", sampleUserId)
+      .in("book_id", bookIds)
+      .order("created_at", { ascending: false });
+
+    const noteActivityMap: Record<string, string> = {};
+    for (const note of recentNotes || []) {
+      if (!noteActivityMap[note.book_id]) {
+        noteActivityMap[note.book_id] = note.created_at;
+      }
+    }
+
+    const booksWithActivity = readingBooks.map((book: any) => {
+      const bookData = book.books as any;
+      if (!bookData) return null;
+
+      const noteActivity = noteActivityMap[book.book_id];
+      const bookActivity = book.updated_at;
+      const latestActivity = noteActivity && noteActivity > bookActivity ? noteActivity : bookActivity;
+
+      const currentPage = book.current_page || 0;
+      const totalPages = bookData.total_pages || null;
+      const progressPercent = totalPages && totalPages > 0
+        ? Math.min(Math.round((currentPage / totalPages) * 100), 100)
+        : 0;
+
+      return {
+        userBookId: book.id,
+        bookId: book.book_id,
+        title: bookData.title,
+        author: bookData.author,
+        coverImageUrl: bookData.cover_image_url,
+        currentPage,
+        totalPages,
+        progressPercent,
+        lastActivityAt: latestActivity,
+      };
+    }).filter((item): item is NonNullable<typeof item> => item !== null);
+
+    return booksWithActivity
+      .sort((a, b) => new Date(b.lastActivityAt).getTime() - new Date(a.lastActivityAt).getTime())
+      .slice(0, maxCount);
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * 샘플 사용자의 월별 독서 활동 조회 (게스트 Tertiary Zone용)
+ */
+export async function getSampleMonthlyActivities(
+  year: number,
+  month: number
+): Promise<Record<string, any>> {
+  try {
+    const sampleUserId = await getSampleUserId();
+    const supabase = createAdminSupabaseClient();
+
+    // 월 시작/끝 계산 (KST 기준)
+    const startDate = new Date(Date.UTC(year, month - 1, 1) - 9 * 60 * 60 * 1000);
+    const endDate = new Date(Date.UTC(year, month, 0, 23, 59, 59) - 9 * 60 * 60 * 1000);
+
+    // 해당 월의 노트 조회
+    const { data: notes } = await supabase
+      .from("notes")
+      .select("created_at, type, book_id, books(title)")
+      .eq("user_id", sampleUserId)
+      .gte("created_at", startDate.toISOString())
+      .lte("created_at", endDate.toISOString())
+      .order("created_at", { ascending: false });
+
+    if (!notes || notes.length === 0) {
+      return {};
+    }
+
+    // 날짜별로 그룹화
+    const activities: Record<string, { count: number; books: Set<string>; types: Set<string> }> = {};
+    for (const note of notes) {
+      const noteKst = new Date(new Date(note.created_at).getTime() + 9 * 60 * 60 * 1000);
+      const dateKey = `${noteKst.getUTCFullYear()}-${String(noteKst.getUTCMonth() + 1).padStart(2, "0")}-${String(noteKst.getUTCDate()).padStart(2, "0")}`;
+
+      if (!activities[dateKey]) {
+        activities[dateKey] = { count: 0, books: new Set(), types: new Set() };
+      }
+      activities[dateKey].count++;
+      const book = Array.isArray(note.books) ? note.books[0] : note.books;
+      if ((book as any)?.title) {
+        activities[dateKey].books.add((book as any).title);
+      }
+      if (note.type) {
+        activities[dateKey].types.add(note.type);
+      }
+    }
+
+    // Set을 배열로 변환
+    const result: Record<string, any> = {};
+    for (const [key, value] of Object.entries(activities)) {
+      result[key] = {
+        count: value.count,
+        books: Array.from(value.books),
+        types: Array.from(value.types),
+      };
+    }
+
+    return result;
+  } catch {
+    return {};
+  }
+}
