@@ -2,7 +2,6 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -27,15 +26,21 @@ export interface BookMetadata {
   cover_image_url: string | null;
 }
 
+/** 메시지에서 참조된 책 정보 */
+interface ReferencedBook {
+  id: string;
+  label: string;
+  coverUrl: string | null;
+}
+
 /**
  * 메시지 내용에서 [[book:id:제목]] 및 [[note:id:타입]] 형식을 파싱하여 링크로 변환
- * bookMetadataMap이 제공되면 책 표지 이미지도 함께 표시
+ * 인라인에서는 텍스트 링크로만 표시하고, 표지 카드는 하단에 별도 표시
  */
 function parseMessageContent(
   content: string,
   bookMetadataMap?: Map<string, BookMetadata>
 ): React.ReactNode[] {
-  // [[book:id:제목]] 또는 [[note:id:타입]] 패턴 매칭
   const regex = /\[\[(book|note):([a-zA-Z0-9-]+):([^\]]+)\]\]/g;
   const parts: React.ReactNode[] = [];
   let lastIndex = 0;
@@ -43,60 +48,75 @@ function parseMessageContent(
   let keyIndex = 0;
 
   while ((match = regex.exec(content)) !== null) {
-    // 링크 전의 일반 텍스트
     if (match.index > lastIndex) {
       parts.push(content.slice(lastIndex, match.index));
     }
 
     const [, type, id, label] = match;
     const href = type === "book" ? `/books/${id}` : `/notes/${id}`;
-    const bookMeta = type === "book" ? bookMetadataMap?.get(id) : undefined;
-    const coverUrl = bookMeta?.cover_image_url;
+    const Icon = type === "book" ? BookOpen : FileText;
 
-    if (type === "book" && coverUrl) {
-      // 책 표지 이미지가 있는 경우 - 카드 형태로 표시
-      parts.push(
-        <Link
-          key={`link-${keyIndex++}`}
-          href={href}
-          className="inline-flex items-center gap-2 px-2 py-1 rounded-lg bg-primary/5 hover:bg-primary/10 border border-primary/20 transition-colors align-middle"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <div className="w-6 h-8 rounded-sm overflow-hidden shrink-0 shadow-sm">
-            <img
-              src={getImageUrl(coverUrl)}
-              alt={label}
-              className="w-full h-full object-cover"
-            />
-          </div>
-          <span className="text-primary font-medium text-sm">{label}</span>
-        </Link>
-      );
-    } else {
-      // 표지 이미지가 없는 경우 - 기존 아이콘 스타일
-      const Icon = type === "book" ? BookOpen : FileText;
-      parts.push(
-        <Link
-          key={`link-${keyIndex++}`}
-          href={href}
-          className="inline-flex items-center gap-1 text-primary hover:underline font-medium"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <Icon className="h-3 w-3" />
-          <span>{label}</span>
-        </Link>
-      );
-    }
+    // 인라인에서는 항상 텍스트 링크로 표시 (표지는 하단 카드에서)
+    parts.push(
+      <Link
+        key={`link-${keyIndex++}`}
+        href={href}
+        className="inline-flex items-center gap-1 text-primary hover:underline font-medium"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <Icon className="h-3 w-3" />
+        <span>{label}</span>
+      </Link>
+    );
 
     lastIndex = match.index + match[0].length;
   }
 
-  // 마지막 일반 텍스트
   if (lastIndex < content.length) {
     parts.push(content.slice(lastIndex));
   }
 
   return parts.length > 0 ? parts : [content];
+}
+
+/**
+ * 메시지에서 참조된 모든 책 정보를 추출 (표지 카드 표시용)
+ */
+function extractReferencedBooks(
+  content: string,
+  bookMetadataMap?: Map<string, BookMetadata>
+): ReferencedBook[] {
+  const regex = /\[\[book:([a-zA-Z0-9-]+):([^\]]+)\]\]/g;
+  const books: ReferencedBook[] = [];
+  const seen = new Set<string>();
+  let match;
+
+  while ((match = regex.exec(content)) !== null) {
+    const [, id, label] = match;
+    if (seen.has(id)) continue;
+    seen.add(id);
+
+    const meta = bookMetadataMap?.get(id);
+    books.push({
+      id,
+      label,
+      coverUrl: meta?.cover_image_url || null,
+    });
+  }
+
+  return books;
+}
+
+/**
+ * 스트리밍 중 [[book:...]] / [[note:...]] 패턴을 깔끔한 텍스트로 치환
+ */
+function cleanStreamingContent(content: string): string {
+  return content.replace(
+    /\[\[(book|note):([a-zA-Z0-9-]+):([^\]]+)\]\]/g,
+    (_, type, _id, label) => {
+      return type === "book" ? `${label}` : `${label}`;
+    }
+  );
 }
 
 interface ChatMessageProps {
@@ -117,6 +137,12 @@ export function ChatMessage({ message, userAvatar, userName, onDelete, bookMetad
       return message.content;
     }
     return parseMessageContent(message.content, bookMetadataMap);
+  }, [message.content, isUser, bookMetadataMap]);
+
+  // 완료된 AI 메시지에서 참조된 책 추출 (표지 카드용)
+  const referencedBooks = useMemo(() => {
+    if (isUser || !message.content) return [];
+    return extractReferencedBooks(message.content, bookMetadataMap);
   }, [message.content, isUser, bookMetadataMap]);
 
   const handleDelete = () => {
@@ -151,10 +177,10 @@ export function ChatMessage({ message, userAvatar, userName, onDelete, bookMetad
         </Avatar>
 
         {/* 메시지 내용 */}
-        <div className="flex flex-col gap-1">
+        <div className="flex flex-col gap-1 max-w-[80%]">
           <div
             className={cn(
-              "max-w-[80%] rounded-2xl px-4 py-2",
+              "rounded-2xl px-4 py-2",
               isUser
                 ? "bg-primary text-primary-foreground"
                 : "bg-muted"
@@ -175,7 +201,42 @@ export function ChatMessage({ message, userAvatar, userName, onDelete, bookMetad
               })}
             </div>
           </div>
-          
+
+          {/* 참고한 책 표지 카드 (AI 메시지 완료 후 표시) */}
+          {!isUser && referencedBooks.length > 0 && (
+            <div className="flex gap-2 mt-1 overflow-x-auto pb-1">
+              {referencedBooks.map((book) => (
+                <Link
+                  key={book.id}
+                  href={`/books/${book.id}`}
+                  className="flex-shrink-0 group/card"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="w-16 rounded-lg overflow-hidden border border-border/50 hover:border-primary/40 transition-all hover:shadow-md">
+                    {book.coverUrl ? (
+                      <div className="w-16 h-22 aspect-[2/3]">
+                        <img
+                          src={getImageUrl(book.coverUrl)}
+                          alt={book.label}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    ) : (
+                      <div className="w-16 aspect-[2/3] bg-muted flex items-center justify-center">
+                        <BookOpen className="h-5 w-5 text-muted-foreground/40" />
+                      </div>
+                    )}
+                    <div className="px-1 py-1">
+                      <p className="text-[10px] leading-tight text-muted-foreground group-hover/card:text-primary line-clamp-2 transition-colors">
+                        {book.label.replace(/[「」]/g, "")}
+                      </p>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
+
           {/* 삭제 버튼 - 호버 시 표시 */}
           {onDelete && !message.id.startsWith('temp-') && (
             <div className={cn(
@@ -227,10 +288,12 @@ interface StreamingMessageProps {
 }
 
 export function StreamingMessage({ content, isLoading, bookMetadataMap }: StreamingMessageProps) {
-  // 스트리밍 완료 후에만 링크 파싱 (스트리밍 중에는 성능을 위해 일반 텍스트로 표시)
-  const parsedContent = useMemo(() => {
-    if (isLoading || !content) {
-      return content;
+  // 스트리밍 중: [[book:...]] 패턴을 깔끔한 텍스트로 치환
+  // 스트리밍 완료 후: 링크로 파싱
+  const displayContent = useMemo(() => {
+    if (!content) return content;
+    if (isLoading) {
+      return cleanStreamingContent(content);
     }
     return parseMessageContent(content, bookMetadataMap);
   }, [content, isLoading, bookMetadataMap]);
@@ -245,13 +308,26 @@ export function StreamingMessage({ content, isLoading, bookMetadataMap }: Stream
       </Avatar>
 
       {/* 메시지 내용 */}
-      <div className="max-w-[80%] rounded-2xl bg-muted px-4 py-2">
-        <div className="whitespace-pre-wrap text-sm leading-relaxed">
-          {parsedContent}
-          {isLoading && (
-            <span className="ml-1 inline-block h-4 w-1 animate-pulse bg-primary" />
-          )}
+      <div className="max-w-[80%] flex flex-col gap-1.5">
+        <div className="rounded-2xl bg-muted px-4 py-2">
+          <div className="whitespace-pre-wrap text-sm leading-relaxed">
+            {displayContent}
+            {isLoading && (
+              <span className="ml-1 inline-block h-4 w-1 animate-pulse bg-primary rounded-sm" />
+            )}
+          </div>
         </div>
+
+        {/* 스트리밍 진행중 표시 */}
+        {isLoading && (
+          <div className="flex items-center gap-1.5 px-2 text-xs text-muted-foreground">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary/60 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-primary/80" />
+            </span>
+            <span>독서친구가 답변을 작성하고 있어요...</span>
+          </div>
+        )}
       </div>
     </div>
   );
