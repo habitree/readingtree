@@ -14,6 +14,7 @@ const MonthlyBookCalendar = dynamic(
   }
 );
 import { getMonthlyBookActivities } from "@/app/actions/stats";
+import { getSampleMonthlyActivities } from "@/app/actions/sample";
 import type { DailyBookActivity } from "@/app/actions/stats";
 import type { UserPersona, ReadingStats } from "@/types/persona";
 
@@ -23,6 +24,7 @@ interface TertiaryZoneClientProps {
   initialMonth: number;
   persona: UserPersona | null;
   readingStats: ReadingStats | null;
+  isGuest?: boolean;
 }
 
 /**
@@ -35,6 +37,7 @@ export function TertiaryZoneClient({
   initialMonth,
   persona,
   readingStats,
+  isGuest = false,
 }: TertiaryZoneClientProps) {
   const [year, setYear] = useState(initialYear);
   const [month, setMonth] = useState(initialMonth);
@@ -60,7 +63,9 @@ export function TertiaryZoneClient({
     // 없으면 서버에서 조회
     setIsLoading(true);
     try {
-      const newActivities = await getMonthlyBookActivities(null, newYear, newMonth);
+      const newActivities = isGuest
+        ? await getSampleMonthlyActivities(newYear, newMonth)
+        : await getMonthlyBookActivities(null, newYear, newMonth);
       setCachedData(prev => ({
         ...prev,
         [cacheKey]: newActivities,
@@ -73,7 +78,7 @@ export function TertiaryZoneClient({
     } finally {
       setIsLoading(false);
     }
-  }, [cachedData]);
+  }, [cachedData, isGuest]);
 
   const hasActivityData = Object.keys(activities).length > 0 || isLoading;
   const hasPersonaData = persona && readingStats;

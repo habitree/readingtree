@@ -829,6 +829,7 @@ export async function getSampleContinueReadingBooks(maxCount: number = 6): Promi
 
 /**
  * 샘플 사용자의 월별 독서 활동 조회 (게스트 Tertiary Zone용)
+ * DailyBookActivity 형식으로 반환하여 MonthlyBookCalendar와 호환
  */
 export async function getSampleMonthlyActivities(
   year: number,
@@ -842,49 +843,78 @@ export async function getSampleMonthlyActivities(
     const startDate = new Date(Date.UTC(year, month - 1, 1) - 9 * 60 * 60 * 1000);
     const endDate = new Date(Date.UTC(year, month, 0, 23, 59, 59) - 9 * 60 * 60 * 1000);
 
-    // 해당 월의 노트 조회
+    // 해당 월의 노트 조회 (표지 이미지 포함)
     const { data: notes } = await supabase
       .from("notes")
-      .select("created_at, type, book_id, books(title)")
+      .select("created_at, type, book_id, books(id, title, cover_image_url)")
       .eq("user_id", sampleUserId)
       .gte("created_at", startDate.toISOString())
       .lte("created_at", endDate.toISOString())
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: true });
 
     if (!notes || notes.length === 0) {
       return {};
     }
 
-    // 날짜별로 그룹화
-    const activities: Record<string, { count: number; books: Set<string>; types: Set<string> }> = {};
+    // user_books ID 매핑 조회
+    const bookIds = [...new Set(notes.map((n) => n.book_id))];
+    const { data: userBooksData } = await supabase
+      .from("user_books")
+      .select("id, book_id")
+      .eq("user_id", sampleUserId)
+      .in("book_id", bookIds);
+
+    const userBookIdMap = new Map<string, string>();
+    if (userBooksData) {
+      userBooksData.forEach((ub) => userBookIdMap.set(ub.book_id, ub.id));
+    }
+
+    // DailyBookActivity 형식으로 날짜별 그룹화
+    const dailyActivities: Record<string, any> = {};
+
     for (const note of notes) {
       const noteKst = new Date(new Date(note.created_at).getTime() + 9 * 60 * 60 * 1000);
       const dateKey = `${noteKst.getUTCFullYear()}-${String(noteKst.getUTCMonth() + 1).padStart(2, "0")}-${String(noteKst.getUTCDate()).padStart(2, "0")}`;
 
-      if (!activities[dateKey]) {
-        activities[dateKey] = { count: 0, books: new Set(), types: new Set() };
+      if (!dailyActivities[dateKey]) {
+        dailyActivities[dateKey] = {
+          date: dateKey,
+          books: [],
+          noteTypes: {
+            transcription: 0,
+            photo: 0,
+            memo: 0,
+            quote: 0,
+            progress: 0,
+            total: 0,
+          },
+        };
       }
-      activities[dateKey].count++;
+
+      // 기록 타입별 카운트
+      const noteType = note.type as string;
+      if (noteType in dailyActivities[dateKey].noteTypes && noteType !== "total") {
+        dailyActivities[dateKey].noteTypes[noteType]++;
+      }
+      dailyActivities[dateKey].noteTypes.total++;
+
+      // 같은 날짜에 같은 책 중복 방지
       const book = Array.isArray(note.books) ? note.books[0] : note.books;
-      if ((book as any)?.title) {
-        activities[dateKey].books.add((book as any).title);
-      }
-      if (note.type) {
-        activities[dateKey].types.add(note.type);
+      const existingBook = dailyActivities[dateKey].books.find(
+        (b: any) => b.bookId === note.book_id
+      );
+
+      if (!existingBook && book) {
+        dailyActivities[dateKey].books.push({
+          bookId: note.book_id,
+          userBookId: userBookIdMap.get(note.book_id) || note.book_id,
+          title: (book as any)?.title || "알 수 없는 책",
+          coverImageUrl: (book as any)?.cover_image_url || null,
+        });
       }
     }
 
-    // Set을 배열로 변환
-    const result: Record<string, any> = {};
-    for (const [key, value] of Object.entries(activities)) {
-      result[key] = {
-        count: value.count,
-        books: Array.from(value.books),
-        types: Array.from(value.types),
-      };
-    }
-
-    return result;
+    return dailyActivities;
   } catch {
     return {};
   }

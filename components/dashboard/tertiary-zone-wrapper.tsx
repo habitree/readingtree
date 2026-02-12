@@ -33,6 +33,7 @@ export async function TertiaryZoneWrapper() {
         initialMonth={currentMonth}
         persona={null}
         readingStats={null}
+        isGuest
       />
     );
   }
