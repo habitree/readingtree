@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import {
   Dialog,
   DialogContent,
@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/dialog";
 import Image from "next/image";
 import { getImageUrl } from "@/lib/utils/image";
-import { X } from "lucide-react";
+import { X, ImageOff } from "lucide-react";
 
 interface ImageLightboxProps {
   src: string;
@@ -23,6 +23,8 @@ interface ImageLightboxProps {
  */
 export function ImageLightbox({ src, alt, children }: ImageLightboxProps) {
   const [open, setOpen] = useState(false);
+  const [imgError, setImgError] = useState(false);
+  const handleImgError = useCallback(() => setImgError(true), []);
 
   return (
     <>
@@ -59,14 +61,22 @@ export function ImageLightbox({ src, alt, children }: ImageLightboxProps) {
               <X className="h-8 w-8" />
             </button>
             <div className="relative w-full h-full flex items-center justify-center">
-              <Image
-                src={getImageUrl(src)}
-                alt={alt}
-                fill
-                className="object-contain"
-                sizes="95vw"
-                priority
-              />
+              {imgError ? (
+                <div className="flex flex-col items-center gap-3 text-white/60">
+                  <ImageOff className="h-12 w-12" />
+                  <p className="text-sm">이미지를 불러올 수 없습니다</p>
+                </div>
+              ) : (
+                <Image
+                  src={getImageUrl(src)}
+                  alt={alt}
+                  fill
+                  className="object-contain"
+                  sizes="95vw"
+                  priority
+                  onError={handleImgError}
+                />
+              )}
             </div>
           </div>
         </DialogContent>

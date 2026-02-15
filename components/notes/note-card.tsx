@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Card, CardContent } from "@/components/ui/card";
@@ -39,6 +39,9 @@ interface NoteCardProps {
  * 심리적/디자인적/기능적 관점에서 최적화된 레이아웃
  */
 export function NoteCard({ note, showDeleteButton = false, onDelete }: NoteCardProps) {
+  const [imgError, setImgError] = useState(false);
+  const handleImgError = useCallback(() => setImgError(true), []);
+
   const typeIcons = {
     quote: FileText,
     transcription: PenTool,
@@ -145,13 +148,14 @@ export function NoteCard({ note, showDeleteButton = false, onDelete }: NoteCardP
             <div className="shrink-0 w-20 sm:w-24 bg-muted/30">
               {/* 이미지 또는 책 표지 */}
               <div className="relative w-full aspect-[3/4] overflow-hidden">
-                {note.image_url ? (
+                {note.image_url && !imgError ? (
                   <Image
                     src={getImageUrl(note.image_url)}
                     alt={note.type}
                     fill
                     className="object-cover"
                     sizes="(max-width: 640px) 80px, 96px"
+                    onError={handleImgError}
                   />
                 ) : note.book?.cover_image_url ? (
                   <Image

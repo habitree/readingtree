@@ -89,8 +89,8 @@ export async function POST(request: NextRequest) {
       try {
         const buffer = await file.arrayBuffer();
         const compressed = await sharp(Buffer.from(buffer))
-          .resize(1920, 1920, { fit: "inside", withoutEnlargement: true })
-          .jpeg({ quality: 80 })
+          .resize(1200, 1200, { fit: "inside", withoutEnlargement: true })
+          .jpeg({ quality: 60 })
           .toBuffer();
 
         fileToUpload = new File([new Uint8Array(compressed)], file.name.replace(/\.[^.]+$/, ".jpg"), {
