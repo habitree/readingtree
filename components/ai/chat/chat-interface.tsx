@@ -283,11 +283,12 @@ export function ChatInterface({ userId, userAvatar, userName }: ChatInterfacePro
                 setStreamingContent(fullContent);
               } else if (data.type === "done") {
                 // 스트리밍 완료 - AI 메시지 추가
+                // processedContent가 있으면 사용 (추천 책 링크 치환된 버전)
                 const assistantMessage: ChatMessageType = {
                   id: data.messageId || `assistant-${Date.now()}`,
                   session_id: sessionId!,
                   role: "assistant",
-                  content: fullContent,
+                  content: data.processedContent || fullContent,
                   context_books: null,
                   context_notes: null,
                   created_at: new Date().toISOString(),

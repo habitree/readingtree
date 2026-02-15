@@ -15,6 +15,7 @@ import { getAISettingsForChat } from "@/app/actions/ai/settings";
 import { callOpenAI, parseOpenAIStream } from "@/lib/ai/providers/openai";
 import { callAnthropic, parseAnthropicStream } from "@/lib/ai/providers/anthropic";
 import { checkRateLimit } from "@/lib/middleware/rate-limit";
+import { processRecommendedBooks } from "@/lib/ai/utils/book-registration";
 import type { ChatContext } from "@/types/ai/chat";
 import type { AIProvider } from "@/types/ai/settings";
 
@@ -223,13 +224,21 @@ export async function POST(request: NextRequest) {
             throw new Error(`지원하지 않는 AI 제공자: ${provider}`);
           }
 
-          // AI 응답 저장
+          // 추천 책 자동 등록 처리 ([[recommend:...]] → [[book:...]])
+          let processedResponse = fullResponse;
+          try {
+            processedResponse = await processRecommendedBooks(fullResponse, user.id);
+          } catch (error) {
+            console.error("추천 책 처리 실패 (원본 저장):", error);
+          }
+
+          // AI 응답 저장 (처리된 버전)
           const { data: assistantMessage, error: assistantError } = await supabase
             .from("chat_messages")
             .insert({
               session_id: sessionId,
               role: "assistant",
-              content: fullResponse,
+              content: processedResponse,
             })
             .select()
             .single();
@@ -248,10 +257,11 @@ export async function POST(request: NextRequest) {
             })
             .eq("id", sessionId);
 
-          // 완료 신호
+          // 완료 신호 (processedContent 포함)
           sendData({
             type: "done",
             messageId: assistantMessage?.id,
+            processedContent: processedResponse !== fullResponse ? processedResponse : undefined,
           });
           controller.close();
         } catch (error) {

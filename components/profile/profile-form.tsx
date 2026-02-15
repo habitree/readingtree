@@ -9,8 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { updateProfile, updateProfileImage } from "@/app/actions/profile";
 import { toast } from "sonner";
-import { Switch } from "@/components/ui/switch";
-import { Loader2, Upload, User, Bot } from "lucide-react";
+import { Loader2, Upload, User } from "lucide-react";
 import { getImageUrl, getProxiedImageUrl, smartCompressImage, formatFileSize } from "@/lib/utils/image";
 import type { User as UserType } from "@/types/user";
 
@@ -30,7 +29,6 @@ export function ProfileForm({ user }: ProfileFormProps) {
   const [formData, setFormData] = useState({
     name: user.name,
     reading_goal: user.reading_goal,
-    ai_enabled: user.ai_enabled ?? false,
   });
   const [avatarUrl, setAvatarUrl] = useState(user.avatar_url);
 
@@ -48,7 +46,6 @@ export function ProfileForm({ user }: ProfileFormProps) {
       await updateProfile({
         name: formData.name,
         reading_goal: formData.reading_goal,
-        ai_enabled: formData.ai_enabled,
       });
 
       toast.success("저장됨");
@@ -227,29 +224,6 @@ export function ProfileForm({ user }: ProfileFormProps) {
               <p className="text-xs text-muted-foreground">
                 1-100 사이의 숫자를 입력하세요
               </p>
-            </div>
-
-            {/* AI 기능 활성화 토글 */}
-            <div className="flex items-center justify-between rounded-lg border p-4">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-                  <Bot className="h-5 w-5 text-primary" />
-                </div>
-                <div className="space-y-0.5">
-                  <Label htmlFor="ai_enabled" className="cursor-pointer">AI 독서 도우미</Label>
-                  <p className="text-xs text-muted-foreground">
-                    AI와 대화하며 책 추천, 독서 조언을 받아보세요
-                  </p>
-                </div>
-              </div>
-              <Switch
-                id="ai_enabled"
-                checked={formData.ai_enabled}
-                onCheckedChange={(checked) =>
-                  setFormData({ ...formData, ai_enabled: checked })
-                }
-                disabled={isSubmitting || isUploading}
-              />
             </div>
 
             <div className="flex flex-col gap-2 pt-4">

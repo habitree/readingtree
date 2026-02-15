@@ -34,14 +34,14 @@ interface ReferencedBook {
 }
 
 /**
- * 메시지 내용에서 [[book:id:제목]] 및 [[note:id:타입]] 형식을 파싱하여 링크로 변환
+ * 메시지 내용에서 [[book:id:제목]], [[note:id:타입]], [[recommend:제목:저자]] 형식을 파싱하여 변환
  * 인라인에서는 텍스트 링크로만 표시하고, 표지 카드는 하단에 별도 표시
  */
 function parseMessageContent(
   content: string,
   bookMetadataMap?: Map<string, BookMetadata>
 ): React.ReactNode[] {
-  const regex = /\[\[(book|note):([a-zA-Z0-9-]+):([^\]]+)\]\]/g;
+  const regex = /\[\[(book|note|recommend):([^\]]+?):([^\]]+)\]\]/g;
   const parts: React.ReactNode[] = [];
   let lastIndex = 0;
   let match;
@@ -52,22 +52,37 @@ function parseMessageContent(
       parts.push(content.slice(lastIndex, match.index));
     }
 
-    const [, type, id, label] = match;
-    const href = type === "book" ? `/books/${id}` : `/notes/${id}`;
-    const Icon = type === "book" ? BookOpen : FileText;
+    const [, type, idOrTitle, label] = match;
 
-    // 인라인에서는 항상 텍스트 링크로 표시 (표지는 하단 카드에서)
-    parts.push(
-      <Link
-        key={`link-${keyIndex++}`}
-        href={href}
-        className="inline-flex items-center gap-1 text-primary hover:underline font-medium"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <Icon className="h-3 w-3" />
-        <span>{label}</span>
-      </Link>
-    );
+    if (type === "recommend") {
+      // [[recommend:「제목」:저자]] fallback: 링크 없이 스타일링된 텍스트로 표시
+      parts.push(
+        <span
+          key={`recommend-${keyIndex++}`}
+          className="inline-flex items-center gap-1 font-medium text-muted-foreground"
+        >
+          <BookOpen className="h-3 w-3" />
+          <span>{idOrTitle} ({label})</span>
+        </span>
+      );
+    } else {
+      const id = idOrTitle;
+      const href = type === "book" ? `/books/${id}` : `/notes/${id}`;
+      const Icon = type === "book" ? BookOpen : FileText;
+
+      // 인라인에서는 항상 텍스트 링크로 표시 (표지는 하단 카드에서)
+      parts.push(
+        <Link
+          key={`link-${keyIndex++}`}
+          href={href}
+          className="inline-flex items-center gap-1 text-primary hover:underline font-medium"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <Icon className="h-3 w-3" />
+          <span>{label}</span>
+        </Link>
+      );
+    }
 
     lastIndex = match.index + match[0].length;
   }
@@ -108,15 +123,20 @@ function extractReferencedBooks(
 }
 
 /**
- * 스트리밍 중 [[book:...]] / [[note:...]] 패턴을 깔끔한 텍스트로 치환
+ * 스트리밍 중 [[book:...]] / [[note:...]] / [[recommend:...]] 패턴을 깔끔한 텍스트로 치환
  */
 function cleanStreamingContent(content: string): string {
-  return content.replace(
-    /\[\[(book|note):([a-zA-Z0-9-]+):([^\]]+)\]\]/g,
-    (_, type, _id, label) => {
-      return type === "book" ? `${label}` : `${label}`;
-    }
-  );
+  return content
+    .replace(
+      /\[\[(book|note):([a-zA-Z0-9-]+):([^\]]+)\]\]/g,
+      (_, type, _id, label) => {
+        return type === "book" ? `${label}` : `${label}`;
+      }
+    )
+    .replace(
+      /\[\[recommend:([^\]]+):([^\]]+)\]\]/g,
+      (_, title, author) => `${title} (${author} 추천)`
+    );
 }
 
 interface ChatMessageProps {
