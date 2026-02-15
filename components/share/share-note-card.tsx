@@ -1,13 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import Image from "next/image";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { getImageUrl, getProxiedImageUrl, isValidImageUrl } from "@/lib/utils/image";
 import { parseNoteContentFields, getNoteTypeLabel } from "@/lib/utils/note";
 import type { NoteWithBook } from "@/types/note";
-import { Quote, BookOpen, Calendar, ChevronDown, ChevronUp, Trees, TrendingUp, Sparkles, Link2 } from "lucide-react";
+import { Quote, BookOpen, Calendar, ChevronDown, ChevronUp, Trees, TrendingUp, Sparkles, Link2, ImageOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ImageLightbox } from "@/components/notes/image-lightbox";
@@ -191,6 +191,9 @@ const formatDateTime = (dateStr: string) => {
  * - 표준 너비: max-w-[960px]
  */
 export function ShareNoteCard({ note, className, isPublicView = false, hideActions = false, showTimestamp = true, fixedHorizontal = false, user, relatedBooks }: ShareNoteCardProps) {
+    const [imgError, setImgError] = useState(false);
+    const handleImgError = useCallback(() => setImgError(true), []);
+
     // [데이터 매핑 수정] Supabase 쿼리 결과인 'books' 필드와 'book' 필드 모두를 지원하도록 정규화
     const book = note.book || (note as any).books;
 
@@ -396,29 +399,18 @@ export function ShareNoteCard({ note, className, isPublicView = false, hideActio
                                     {hideActions ? (
                                         // 캡처 시: html2canvas 호환을 위해 일반 img 태그 사용
                                         <div className="relative w-full flex-1 min-h-[350px] rounded-xl overflow-hidden shadow-sm bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
-                                            {isValidImageUrl(note.image_url!) ? (
+                                            {isValidImageUrl(note.image_url!) && !imgError ? (
                                                 <img
                                                     src={getProxiedImageUrl(note.image_url!)}
                                                     alt="Captured Moment"
                                                     className="absolute inset-0 w-full h-full object-contain"
                                                     crossOrigin="anonymous"
-                                                    onError={(e) => {
-                                                        console.error("[ShareNoteCard] 캡처용 이미지 로드 실패:", {
-                                                            url: getProxiedImageUrl(note.image_url!),
-                                                            originalUrl: note.image_url,
-                                                        });
-                                                    }}
-                                                    onLoad={() => {
-                                                    }}
+                                                    onError={handleImgError}
                                                 />
                                             ) : (
-                                                <div className="absolute inset-0 flex items-center justify-center bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400">
-                                                    <div className="text-center">
-                                                        <p className="text-sm font-medium">이미지를 불러올 수 없습니다</p>
-                                                        <p className="text-xs mt-1 text-slate-400 dark:text-slate-500">
-                                                            {note.image_url?.substring(0, 50)}...
-                                                        </p>
-                                                    </div>
+                                                <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400">
+                                                    <ImageOff className="h-10 w-10 mb-2 text-slate-400" />
+                                                    <p className="text-sm font-medium">이미지를 불러올 수 없습니다</p>
                                                 </div>
                                             )}
                                             {showTimestamp && (
@@ -433,7 +425,7 @@ export function ShareNoteCard({ note, className, isPublicView = false, hideActio
                                         // 일반 화면
                                         <ImageLightbox src={note.image_url!} alt="Captured Moment">
                                             <div className="relative w-full flex-1 min-h-[350px] rounded-xl overflow-hidden shadow-sm bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 group cursor-zoom-in">
-                                                {isValidImageUrl(note.image_url!) ? (
+                                                {isValidImageUrl(note.image_url!) && !imgError ? (
                                                     <Image
                                                         src={getImageUrl(note.image_url!)}
                                                         alt="Captured Moment"
@@ -442,23 +434,12 @@ export function ShareNoteCard({ note, className, isPublicView = false, hideActio
                                                         sizes="(max-width: 768px) 100vw, 400px"
                                                         priority={true}
                                                         unoptimized={true}
-                                                        onError={(e) => {
-                                                            console.error("[ShareNoteCard] 이미지 로드 실패:", {
-                                                                url: getImageUrl(note.image_url!),
-                                                                originalUrl: note.image_url,
-                                                            });
-                                                        }}
-                                                        onLoad={() => {
-                                                        }}
+                                                        onError={handleImgError}
                                                     />
                                                 ) : (
-                                                    <div className="absolute inset-0 flex items-center justify-center bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400">
-                                                        <div className="text-center">
-                                                            <p className="text-sm font-medium">이미지를 불러올 수 없습니다</p>
-                                                            <p className="text-xs mt-1 text-slate-400 dark:text-slate-500">
-                                                                {note.image_url?.substring(0, 50)}...
-                                                            </p>
-                                                        </div>
+                                                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400">
+                                                        <ImageOff className="h-10 w-10 mb-2 text-slate-400" />
+                                                        <p className="text-sm font-medium">이미지를 불러올 수 없습니다</p>
                                                     </div>
                                                 )}
                                                 {showTimestamp && (
