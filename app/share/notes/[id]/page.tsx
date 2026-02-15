@@ -31,7 +31,7 @@ export async function generateMetadata({
   const supabase = await createServerSupabaseClient();
   const { data: note } = await supabase
     .from("notes")
-    .select(`*, books (id, title, author, cover_image_url)`)
+    .select(`*, books (id, title, author, cover_image_url), transcriptions (extracted_text, raw_extracted_text, status)`)
     .eq("id", noteId)
     .eq("is_public", true)
     .single();
@@ -44,20 +44,11 @@ export async function generateMetadata({
   const bookTitle = book?.title || "제목 없음";
   const { quote, memo } = parseNoteContentFields(note.content);
 
-  // 필사(transcription) 타입일 때 OCR 보정 텍스트 조회
-  let transcriptionText: string | null = null;
-  if (note.type === "transcription") {
-    const { data: transcription } = await supabase
-      .from("transcriptions")
-      .select("extracted_text")
-      .eq("note_id", noteId)
-      .eq("status", "completed")
-      .maybeSingle();
-
-    if (transcription?.extracted_text) {
-      transcriptionText = transcription.extracted_text;
-    }
-  }
+  // 필사(transcription) 타입일 때 OCR 보정 텍스트 사용 (JOIN으로 이미 조회됨)
+  const transcription = (note as any).transcriptions;
+  const transcriptionText = (note.type === "transcription" && transcription?.extracted_text)
+    ? transcription.extracted_text
+    : null;
 
   const baseUrl = getAppUrl();
   const shareUrl = `${baseUrl}/share/notes/${note.id}`;
@@ -116,7 +107,7 @@ export default async function ShareNotePage({
   const supabase = await createServerSupabaseClient();
   const { data: note, error } = await supabase
     .from("notes")
-    .select(`*, books (id, title, author, cover_image_url)`)
+    .select(`*, books (id, title, author, cover_image_url), transcriptions (extracted_text, raw_extracted_text, status)`)
     .eq("id", noteId)
     .eq("is_public", true)
     .single();
@@ -125,21 +116,13 @@ export default async function ShareNotePage({
     notFound();
   }
 
-  const noteWithBook = note as NoteWithBook;
-
-  // 필사(transcription) 타입일 때 OCR 보정 텍스트 조회
-  if (note.type === "transcription") {
-    const { data: transcription } = await supabase
-      .from("transcriptions")
-      .select("extracted_text, raw_extracted_text")
-      .eq("note_id", noteId)
-      .eq("status", "completed")
-      .maybeSingle();
-
-    if (transcription) {
-      noteWithBook.transcription = transcription;
-    }
-  }
+  // Supabase 조인 결과 정규화: transcriptions → transcription (단수)
+  const { transcriptions, books, ...restNote } = note as any;
+  const noteWithBook: NoteWithBook = {
+    ...restNote,
+    book: Array.isArray(books) ? books[0] : (books || undefined),
+    transcription: transcriptions || undefined,
+  };
 
   // 사용자 정보 가져오기
   const user = note.user_id ? await getUserById(note.user_id) : null;

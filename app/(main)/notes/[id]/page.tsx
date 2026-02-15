@@ -3,7 +3,7 @@ import { Metadata, Viewport } from "next";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { getNoteDetail, getTranscription } from "@/app/actions/notes";
+import { getNoteDetail } from "@/app/actions/notes";
 import { SimpleShareDialog } from "@/components/share/simple-share-dialog";
 import { NoteDeleteButton } from "@/components/notes/note-delete-button";
 import { Edit, ChevronLeft, ShieldCheck, ShieldAlert, BookOpen } from "lucide-react";
@@ -65,15 +65,8 @@ export default async function NoteDetailPage({ params }: NoteDetailPageProps) {
     ? `/books/${noteWithBook.user_book_id}#book-info`
     : "/notes";
 
-  // 필사 데이터 상세 조회 (있을 경우)
-  let transcription = null;
-  if (noteWithBook.type === "transcription" && noteWithBook.image_url) {
-    try {
-      transcription = await getTranscription(noteWithBook.id);
-    } catch (error) {
-      console.error("필사 데이터 조회 오류:", error);
-    }
-  }
+  // 필사 데이터는 getNoteDetail()의 transcriptions JOIN으로 이미 포함됨
+  const transcription = noteWithBook.transcription || null;
 
   // 연결된 책 정보 로드 (카드 내부 표시용)
   let relatedBooksForCard: RelatedBookInfo[] = [];

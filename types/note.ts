@@ -40,6 +40,7 @@ export interface NoteWithBook extends Note {
   transcription?: {
     extracted_text: string; // GPT 보정된 OCR 텍스트
     raw_extracted_text: string | null; // 원본 OCR 텍스트
+    status: OCRStatus; // OCR 처리 상태
   };
 }
 

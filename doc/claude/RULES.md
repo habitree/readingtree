@@ -434,6 +434,15 @@ const handleItemClick = useCallback(() => {
 - [ ] 키보드 접근 가능
 - [ ] 색상만으로 정보 전달 안 함
 
+### Supabase JOIN 정합성 체크 (CRITICAL)
+
+> **2026-02-16 발견**: notes 조회 시 transcriptions JOIN 누락으로 필사 데이터 미표시 버그
+
+- [ ] **1:1 관계 테이블 JOIN 필수**: notes ↔ transcriptions 처럼 별도 테이블에 데이터가 저장되는 경우, 조회 함수에서 반드시 JOIN 포함
+- [ ] **타입 ↔ 쿼리 ↔ 매핑 3단 일치**: `NoteWithBook.transcription` 타입이 존재하면, SELECT 쿼리에 `transcriptions (...)` JOIN이 있어야 하고, 매핑 코드에서 `transcriptions → transcription` 변환 필수
+- [ ] **새 테이블 추가 시 체크**: 기존 테이블과 1:1/1:N 관계의 신규 테이블 생성 시, 해당 데이터를 사용하는 모든 조회 함수에 JOIN 추가 여부 확인
+- [ ] **content fallback**: `notes.content`가 null일 수 있는 타입(transcription 등)은 관련 테이블 데이터로 fallback 표시
+
 ---
 
 ## 13. 원본 룰 파일 매핑
@@ -466,6 +475,7 @@ const handleItemClick = useCallback(() => {
 |------|----------|----------|
 | 2025-01-20 | 최초 생성 | 전체 |
 | 2025-02-06 | 모바일 성능, 컴포넌트 패턴, 코드 리뷰 규칙 추가 | `mobile_performance_rule.md`, `component_pattern_rule.md`, `code_review_checklist.md` |
+| 2026-02-16 | Supabase JOIN 정합성 체크 규칙 추가 (transcriptions JOIN 누락 이슈) | `code_review_checklist.md` |
 
 ---
 

@@ -205,12 +205,22 @@ export function NoteCard({ note, showDeleteButton = false, onDelete }: NoteCardP
 
               {/* 내용 미리보기 - 핵심 영역 */}
               <div className="flex-1 min-h-0">
-                <NoteContentViewer
-                  content={note.content}
-                  pageNumber={null}
-                  maxLength={100}
-                  compact
-                />
+                {note.content ? (
+                  <NoteContentViewer
+                    content={note.content}
+                    pageNumber={null}
+                    maxLength={100}
+                    compact
+                  />
+                ) : note.type === "transcription" && note.transcription?.extracted_text ? (
+                  <div className="pl-2.5 border-l-2 border-amber-400/60">
+                    <p className="text-xs sm:text-sm text-foreground/80 line-clamp-3 leading-relaxed">
+                      {note.transcription.extracted_text.length > 100
+                        ? note.transcription.extracted_text.substring(0, 100) + "..."
+                        : note.transcription.extracted_text}
+                    </p>
+                  </div>
+                ) : null}
               </div>
 
               {/* 하단: 태그 + 날짜 */}

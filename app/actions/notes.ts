@@ -536,8 +536,8 @@ export async function getNotes(bookId?: string, type?: NoteType, user?: User | n
   // 게스트 사용자인 경우 샘플 데이터 반환
   if (authError || !currentUser) {
     const selectQuery = includeBook
-      ? `*, books (id, title, author, cover_image_url)`
-      : `*`;
+      ? `*, books (id, title, author, cover_image_url), transcriptions (extracted_text, raw_extracted_text, status)`
+      : `*, transcriptions (extracted_text, raw_extracted_text, status)`;
 
     let query = supabase
       .from("notes")
@@ -565,10 +565,13 @@ export async function getNotes(bookId?: string, type?: NoteType, user?: User | n
     const notes = (sampleNotes || []).map((note: any) => {
       // books가 배열인 경우 첫 번째 요소 사용, 객체인 경우 그대로 사용
       const book = Array.isArray(note.books) ? note.books[0] : (note.books || note.book);
-      const { books, ...restNote } = note; // books 키 제거
+      // transcriptions: UNIQUE 제약조건으로 단일 객체 반환 (1:1 관계)
+      const transcription = note.transcriptions || undefined;
+      const { books, transcriptions, ...restNote } = note; // books, transcriptions 키 제거
       return {
         ...restNote,
-        book: book || undefined, // book (단수)로 변환, 없으면 undefined
+        book: book || undefined,
+        transcription: transcription || undefined,
       };
     }) as NoteWithBook[];
 
@@ -578,8 +581,8 @@ export async function getNotes(bookId?: string, type?: NoteType, user?: User | n
   // 인증된 사용자는 기존 로직 사용
   // bookId 변환과 notes 쿼리 준비를 병렬로 시작
   const selectQuery = includeBook
-    ? `*, books (id, title, author, cover_image_url)`
-    : `*`;
+    ? `*, books (id, title, author, cover_image_url), transcriptions (extracted_text, raw_extracted_text, status)`
+    : `*, transcriptions (extracted_text, raw_extracted_text, status)`;
 
   const [userBookResult] = await Promise.all([
     // bookId가 user_books.id인 경우, books.id를 조회
@@ -627,10 +630,13 @@ export async function getNotes(bookId?: string, type?: NoteType, user?: User | n
   const notes = (data || []).map((note: any) => {
     // books가 배열인 경우 첫 번째 요소 사용, 객체인 경우 그대로 사용
     const book = Array.isArray(note.books) ? note.books[0] : (note.books || note.book);
-    const { books, ...restNote } = note; // books 키 제거
+    // transcriptions: UNIQUE 제약조건으로 단일 객체 반환 (1:1 관계)
+    const transcription = note.transcriptions || undefined;
+    const { books, transcriptions, ...restNote } = note; // books, transcriptions 키 제거
     return {
       ...restNote,
-      book: book || undefined, // book (단수)로 변환, 없으면 undefined
+      book: book || undefined,
+      transcription: transcription || undefined,
     };
   }) as NoteWithBook[];
 
@@ -669,6 +675,11 @@ export async function getNoteDetail(noteId: string, user?: User | null) {
         title,
         author,
         cover_image_url
+      ),
+      transcriptions (
+        extracted_text,
+        raw_extracted_text,
+        status
       )
     `
     )
@@ -700,8 +711,14 @@ export async function getNoteDetail(noteId: string, user?: User | null) {
     }
   }
 
+  // Supabase 조인 결과 정규화: transcriptions → transcription (단수)
+  const { transcriptions, books, ...restData } = data as any;
+  const book = Array.isArray(books) ? books[0] : books;
+
   return {
-    ...data,
+    ...restData,
+    book: book || undefined,
+    transcription: transcriptions || undefined,
     user_book_id: userBookId,
   };
 }
