@@ -58,6 +58,12 @@ export const typography = {
   small: "text-xs sm:text-sm",
   /** 매우 작은 텍스트 */
   tiny: "text-[10px] sm:text-xs",
+  /** 도움말 텍스트 */
+  helper: "text-xs text-muted-foreground",
+  /** 에러 텍스트 */
+  errorText: "text-xs text-destructive font-medium",
+  /** 링크 텍스트 */
+  link: "text-primary hover:underline underline-offset-4",
 } as const;
 
 // ============================================================================
@@ -87,7 +93,7 @@ export const iconSizes = {
   /** 중간 아이콘 (버튼 내) */
   lg: "w-5 h-5",
   /** 큰 아이콘 (빈 상태) */
-  xl: "w-8 h-8 sm:w-10 sm:w-10",
+  xl: "w-8 h-8 sm:w-10 sm:h-10",
 } as const;
 
 // ============================================================================
@@ -118,6 +124,72 @@ export const backgrounds = {
   transcription: "bg-purple-50/50 dark:bg-purple-950/20 border-purple-200 dark:border-purple-800",
   /** 사진 버튼 */
   photo: "bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800",
+} as const;
+
+// ============================================================================
+// 그림자/높이감 (Elevation)
+// ============================================================================
+export const elevation = {
+  /** 그림자 없음 */
+  none: "shadow-none",
+  /** 아주 약한 그림자 (버튼 기본) */
+  xs: "shadow-sm",
+  /** 기본 그림자 (카드 기본) */
+  sm: "shadow-md",
+  /** 중간 그림자 (카드 호버) */
+  md: "shadow-lg",
+  /** 큰 그림자 (모달, 드롭다운) */
+  lg: "shadow-xl",
+  /** 최대 그림자 (풀스크린 오버레이) */
+  xl: "shadow-2xl",
+} as const;
+
+// ============================================================================
+// 테두리 둥글기 (Border Radius)
+// ============================================================================
+export const radius = {
+  /** 둥글기 없음 */
+  none: "rounded-none",
+  /** 작은 둥글기 (버튼, 배지) */
+  sm: "rounded-md",
+  /** 기본 둥글기 (카드, 입력 필드) */
+  md: "rounded-lg",
+  /** 큰 둥글기 (모달) */
+  lg: "rounded-xl",
+  /** 완전 둥글기 (아바타) */
+  full: "rounded-full",
+} as const;
+
+// ============================================================================
+// 트랜지션 (Transition) - 성능 최적화: 명시적 속성만 전환
+// ============================================================================
+export const transition = {
+  /** 빠른 전환 (150ms) - 호버, 포커스 */
+  fast: "transition-[transform,opacity] duration-150 ease-out",
+  /** 기본 전환 (200ms) - 카드 호버, 버튼 */
+  base: "transition-[transform,opacity,box-shadow] duration-200 ease-in-out",
+  /** 느린 전환 (300ms) - 모달, 패널 */
+  slow: "transition-[transform,opacity] duration-300 ease-in-out",
+  /** 색상 전환 (200ms) - 테마 변경 */
+  colors: "transition-colors duration-200 ease-in-out",
+} as const;
+
+// ============================================================================
+// Z-Index 레이어
+// ============================================================================
+export const zIndex = {
+  /** 기본 레이어 */
+  base: "z-0",
+  /** 드롭다운 */
+  dropdown: "z-10",
+  /** 스티키 헤더 */
+  sticky: "z-20",
+  /** 오버레이 배경 */
+  overlay: "z-40",
+  /** 모달 */
+  modal: "z-50",
+  /** 토스트 알림 */
+  toast: "z-[60]",
 } as const;
 
 // ============================================================================
