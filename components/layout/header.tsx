@@ -205,6 +205,10 @@ export function Header() {
                         localStorage.removeItem("onboarding_tutorial_completed");
                         await signOut();
                       } catch (error) {
+                        // NEXT_REDIRECT는 Next.js의 정상적인 리다이렉트 메커니즘이므로 무시
+                        if (error instanceof Error && error.message.includes("NEXT_REDIRECT")) {
+                          return;
+                        }
                         console.error("로그아웃 오류:", error);
                       }
                     }}

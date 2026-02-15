@@ -65,18 +65,18 @@ export function getAppUrl(): string {
     // VERCEL_ENV가 production이면 프로덕션 URL 사용
     if (process.env.VERCEL_ENV === "production") {
       console.log("[getAppUrl] VERCEL_ENV=production, 프로덕션 URL 사용");
-      return "https://readingtree.vercel.app";
+      return "https://readingtree-tan.vercel.app";
     }
     
     // Preview 환경이어도 프로덕션 URL 사용 (OAuth 리다이렉트를 위해)
     console.log("[getAppUrl] VERCEL 환경 (Preview), 프로덕션 URL 사용");
-    return "https://readingtree.vercel.app";
+    return "https://readingtree-tan.vercel.app";
   }
 
   // 3. VERCEL_ENV가 production이면 무조건 프로덕션 URL 사용 (이중 체크)
   if (process.env.VERCEL_ENV === "production") {
     console.log("[getAppUrl] VERCEL_ENV=production (이중 체크), 프로덕션 URL 사용");
-    return "https://readingtree.vercel.app";
+    return "https://readingtree-tan.vercel.app";
   }
 
   // 4. 빌드 타임에 주입되는 Vercel URL
@@ -120,6 +120,6 @@ export function getAppUrl(): string {
   // 안전을 위해 localhost 대신 프로덕션 도메인을 기본값으로 사용
   // 이렇게 하면 Vercel 환경에서 환경 변수가 없어도 프로덕션 URL을 반환
   console.log("[getAppUrl] 기본값 사용 (프로덕션 URL)");
-  return "https://readingtree.vercel.app";
+  return "https://readingtree-tan.vercel.app";
 }
 

@@ -16,7 +16,7 @@ const notoSerifKr = Noto_Serif_KR({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://readtree.vercel.app"),
+  metadataBase: new URL("https://readingtree-tan.vercel.app"),
   title: {
     default: "ReadTree",
     template: "%s | ReadTree",
@@ -40,7 +40,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "ko_KR",
-    url: "https://readtree.vercel.app",
+    url: "https://readingtree-tan.vercel.app",
     siteName: "ReadTree",
     title: "ReadTree - 독서 기록 및 공유 플랫폼",
     description: "책 관리, 독서 노트, AI 독서 도우미와 함께하는 나만의 독서 여정",

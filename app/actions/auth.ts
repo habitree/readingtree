@@ -198,20 +198,19 @@ export async function signInWithEmail(email: string, password: string) {
     revalidatePath("/dashboard");
   }
 
-  const appUrl = getAppUrl();
-
   // 약관 동의 여부 확인 (최우선)
+  // 서버 액션 redirect는 상대 경로 사용 (절대 URL은 도메인 불일치 위험)
   if (!profile || !profile.terms_agreed || !profile.privacy_agreed) {
-    redirect(`${appUrl}/onboarding/consent`);
+    redirect("/onboarding/consent");
   }
 
   // 온보딩 완료 여부 확인
   if (!profile || !profile.reading_goal || profile.reading_goal === 0) {
-    redirect(`${appUrl}/onboarding/goal`);
+    redirect("/onboarding/goal");
   }
 
   // 온보딩 완료 시 메인으로 리다이렉트
-  redirect(`${appUrl}/`);
+  redirect("/");
 }
 
 /**
