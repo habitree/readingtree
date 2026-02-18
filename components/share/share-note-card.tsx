@@ -334,7 +334,7 @@ export function ShareNoteCard({ note, className, isPublicView = false, hideActio
     return (
         <Card className={cn("overflow-hidden border-none shadow-2xl bg-white dark:bg-slate-950 w-full max-w-[960px] mx-auto", className)}>
             <CardContent className="p-0">
-                <div className={cn("flex min-h-[560px]", fixedHorizontal ? "flex-row" : "flex-col md:flex-row")}>
+                <div className={cn("flex", fixedHorizontal ? "flex-row" : "flex-col md:flex-row min-h-[560px]")}>
                     {/* 좌측 섹션: 이미지 유무에 따라 너비 조정 (이미지 없음 -> 50%, 이미지 있음 -> 400px) */}
                     <div className={cn(
                         "bg-slate-50 dark:bg-slate-900/50 p-6 md:p-10 flex flex-col border-b md:border-b-0 md:border-r border-slate-100 dark:border-slate-800 transition-all duration-300",

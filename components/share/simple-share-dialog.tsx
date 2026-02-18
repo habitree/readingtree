@@ -24,6 +24,53 @@ import { getUserBooks } from "@/app/actions/books";
 import { loadKakaoSdk, isKakaoShareAvailable } from "@/lib/kakao/sdk";
 import { parseNoteContentFields } from "@/lib/utils/note";
 
+/**
+ * 캔버스 하단 여백을 트리밍하여 빈 화면을 제거하는 유틸 함수
+ * 중앙 영역을 스캔하여 마지막 콘텐츠 행을 찾고, 적절한 패딩을 남긴 채 하단을 잘라냄
+ */
+function trimCanvasBottom(canvas: HTMLCanvasElement, paddingPx = 80): HTMLCanvasElement {
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return canvas;
+
+  const { width, height } = canvas;
+  // 둥근 모서리 영역을 피해 중앙 60% 영역만 샘플링
+  const sampleX = Math.floor(width * 0.2);
+  const sampleW = Math.floor(width * 0.6);
+  const imageData = ctx.getImageData(sampleX, 0, sampleW, height);
+  const pixels = imageData.data;
+
+  let lastContentRow = height - 1;
+  for (let y = height - 1; y >= 0; y--) {
+    for (let x = 0; x < sampleW; x++) {
+      const idx = (y * sampleW + x) * 4;
+      const r = pixels[idx];
+      const g = pixels[idx + 1];
+      const b = pixels[idx + 2];
+      const a = pixels[idx + 3];
+      // 흰색/거의 흰색이 아닌 픽셀 발견
+      if (a > 10 && (r < 248 || g < 248 || b < 248)) {
+        lastContentRow = y;
+        break;
+      }
+    }
+    if (lastContentRow < height - 1) break;
+  }
+
+  const newHeight = Math.min(height, lastContentRow + paddingPx);
+
+  // 트리밍할 양이 미미하면(5% 미만) 원본 반환
+  if (newHeight > height * 0.95) return canvas;
+
+  const trimmed = document.createElement("canvas");
+  trimmed.width = width;
+  trimmed.height = newHeight;
+  const tCtx = trimmed.getContext("2d");
+  if (!tCtx) return canvas;
+
+  tCtx.drawImage(canvas, 0, 0, width, newHeight, 0, 0, width, newHeight);
+  return trimmed;
+}
+
 interface SimpleShareDialogProps {
   note: NoteWithBook;
 }
@@ -237,12 +284,15 @@ export function SimpleShareDialog({ note }: SimpleShareDialogProps) {
         }
       });
 
-      // Step 4: Canvas를 Blob으로 변환 (품질 최적화)
+      // Step 4: 캔버스 하단 여백 트리밍 (빈 화면 제거)
+      const trimmedCanvas = trimCanvasBottom(canvas);
+
+      // Step 5: Canvas를 Blob으로 변환 (품질 최적화)
 
       // PNG는 무손실이므로 quality 파라미터 불필요, 더 안정적인 변환
       const blob = await new Promise<Blob>((resolve, reject) => {
         try {
-          canvas.toBlob(
+          trimmedCanvas.toBlob(
             (blob: Blob | null) => {
               if (blob && blob.size > 0) {
                 resolve(blob);
@@ -259,7 +309,7 @@ export function SimpleShareDialog({ note }: SimpleShareDialogProps) {
         }
       });
 
-      // Step 5: 클립보드에 복사 (모바일 호환성 개선)
+      // Step 6: 클립보드에 복사 (모바일 호환성 개선)
       // copyImageToClipboard 유틸리티 사용 (모바일 호환성 처리 포함)
       const clipboardSuccess = await copyImageToClipboard(blob, {
         onSuccess: () => {
@@ -609,7 +659,6 @@ export function SimpleShareDialog({ note }: SimpleShareDialogProps) {
                   width: "960px",
                   minWidth: "960px",
                   maxWidth: "960px",
-                  minHeight: "620px",
                   backgroundColor: "#ffffff",
                   borderRadius: "24px",
                   overflow: "hidden",
