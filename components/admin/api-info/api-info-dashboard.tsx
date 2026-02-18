@@ -78,6 +78,15 @@ function buildServiceNodes(
       scrollTarget: "service-pageCount",
     },
     {
+      id: "ai-chatbot",
+      name: "AI 챗봇",
+      description: "독서 AI 어시스턴트",
+      enabled: apiInfo.aiServices.enabled,
+      icon: "bot",
+      category: "ai",
+      scrollTarget: "service-ai",
+    },
+    {
       id: "vercel",
       name: "Vercel",
       description: "배포 플랫폼",

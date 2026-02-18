@@ -23,7 +23,7 @@ interface RecommendationsAccordionProps {
   recommendations: Recommendation[];
 }
 
-const CATEGORY_ORDER = ["인증", "검색", "OCR", "페이지수"] as const;
+const CATEGORY_ORDER = ["인증", "검색", "OCR", "AI", "페이지수"] as const;
 
 const ICON_MAP: Record<string, React.ElementType> = {
   success: CheckCircle2,

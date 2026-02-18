@@ -16,7 +16,7 @@ export function BentoGrid({
   ocrConnectionTest,
   transcriptionStats,
 }: BentoGridProps) {
-  const { supabase, kakaoSdk, naver, cloudRunOcr, pageCountApis } = apiInfo;
+  const { supabase, kakaoSdk, naver, cloudRunOcr, aiServices, pageCountApis } = apiInfo;
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -117,6 +117,71 @@ export function BentoGrid({
           transcriptionStats={transcriptionStats}
         />
       </div>
+
+      {/* AI 챗봇 서비스 - 대형 */}
+      <ServiceCard
+        id="service-ai"
+        icon="bot"
+        provider="AI 챗봇 서비스"
+        enabled={aiServices.enabled}
+        category="ai"
+        previewBadges={["멀티 프로바이더", "스트리밍", "독서 AI"]}
+        className="md:col-span-2"
+      >
+        <div className="space-y-3">
+          {/* 현재 활성 프로바이더 */}
+          <div className="p-2.5 bg-pink-500/5 rounded-lg border border-pink-500/20">
+            <div className="text-xs font-medium mb-1">현재 활성 설정</div>
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <div>
+                <span className="text-muted-foreground">프로바이더: </span>
+                <span className="font-semibold">{aiServices.activeProvider}</span>
+              </div>
+              <div>
+                <span className="text-muted-foreground">모델: </span>
+                <span className="font-mono text-[11px]">{aiServices.activeModel}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* 프로바이더별 키 상태 */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            {(Object.entries(aiServices.providers) as [string, typeof aiServices.providers.openai][]).map(([key, p]) => (
+              <div key={key} className="p-2 rounded-lg border bg-muted/30">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs font-semibold">{p.provider}</span>
+                  <span className="relative flex h-2 w-2">
+                    <span
+                      className={`absolute inline-flex h-full w-full rounded-full opacity-75 ${
+                        p.enabled ? "animate-ping bg-green-400" : "bg-red-400"
+                      }`}
+                    />
+                    <span
+                      className={`relative inline-flex h-2 w-2 rounded-full ${
+                        p.enabled ? "bg-green-500" : "bg-red-500"
+                      }`}
+                    />
+                  </span>
+                </div>
+                <div className="text-[10px] text-muted-foreground">키: {p.keyStatus}</div>
+                <div className="flex flex-wrap gap-0.5 mt-1">
+                  {p.models.slice(0, 2).map((m) => (
+                    <Badge key={m} variant="outline" className="text-[9px] px-1 py-0">
+                      {m}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* 기능 목록 */}
+          <div>
+            <div className="text-xs font-medium mb-1.5">주요 기능</div>
+            <FeatureList features={aiServices.features} />
+          </div>
+        </div>
+      </ServiceCard>
 
       {/* Kakao SDK - 소형 */}
       <ServiceCard

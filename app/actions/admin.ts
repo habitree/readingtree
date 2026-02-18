@@ -896,7 +896,63 @@ export async function getApiIntegrationInfo() {
         },
     };
     
-    // ========== 4. 도서 페이지 수 조회 API ==========
+    // ========== 4. AI 서비스 ==========
+    const openaiKey = process.env.OPENAI_API_KEY;
+    const geminiKey = process.env.GEMINI_API_KEY;
+    const anthropicKey = process.env.ANTHROPIC_API_KEY;
+
+    // DB에서 활성 AI 설정 조회
+    const supabase = await createServerSupabaseClient();
+    const { data: activeAISetting } = await supabase
+        .from("ai_settings")
+        .select("provider, model_id")
+        .eq("is_active", true)
+        .maybeSingle();
+
+    const aiServicesInfo = {
+        activeProvider: activeAISetting?.provider || "미설정",
+        activeModel: activeAISetting?.model_id || "미설정",
+        providers: {
+            openai: {
+                provider: "OpenAI",
+                enabled: !!openaiKey,
+                keyStatus: openaiKey
+                    ? `설정됨 (${openaiKey.substring(0, 10)}...)`
+                    : "미설정",
+                models: ["GPT-4o", "GPT-4o Mini", "GPT-4 Turbo", "GPT-3.5 Turbo"],
+                apiReference: "https://platform.openai.com/docs",
+            },
+            google: {
+                provider: "Google AI (Gemini)",
+                enabled: !!geminiKey,
+                keyStatus: geminiKey
+                    ? `설정됨 (${geminiKey.substring(0, 10)}...)`
+                    : "미설정",
+                models: ["Gemini 2.0 Flash", "Gemini 1.5 Pro", "Gemini 2.0 Flash Thinking"],
+                apiReference: "https://ai.google.dev/docs",
+            },
+            anthropic: {
+                provider: "Anthropic (Claude)",
+                enabled: !!anthropicKey,
+                keyStatus: anthropicKey
+                    ? `설정됨 (${anthropicKey.substring(0, 10)}...)`
+                    : "미설정",
+                models: ["Claude 3.5 Sonnet", "Claude 3 Opus", "Claude 3 Haiku"],
+                apiReference: "https://docs.anthropic.com",
+            },
+        },
+        features: [
+            "독서 AI 어시스턴트 (챗봇)",
+            "책 추천 및 독서 코칭",
+            "독서 기록 분석 및 인사이트",
+            "멀티 프로바이더 지원 (폴백)",
+            "스트리밍 응답 (SSE)",
+        ],
+        notes: "독서친구 AI 챗봇 서비스. 3개 프로바이더 중 1개 이상 설정 필요",
+        enabled: !!(openaiKey || geminiKey || anthropicKey),
+    };
+
+    // ========== 5. 도서 페이지 수 조회 API ==========
     const nlSeojiKey = process.env.NL_SEOJI_CERT_KEY;
     const aladinKey = process.env.ALADIN_TTB_KEY;
     const googleBooksKey = process.env.GOOGLE_BOOKS_API_KEY;
@@ -963,13 +1019,13 @@ export async function getApiIntegrationInfo() {
         fallbackChain: "국립중앙도서관 → 알라딘 → Google Books",
     };
 
-    // ========== 5. 기타 설정 ==========
+    // ========== 6. 기타 설정 ==========
     const appInfo = {
         appUrl: appUrl || "미설정",
         notes: "앱 기본 URL (OAuth 리다이렉트 등에 사용)",
     };
     
-    // ========== 권장 설정 ==========
+    // ========== 7. 권장 설정 ==========
     const recommendations = [];
     
     // 인증 관련
@@ -1056,6 +1112,34 @@ export async function getApiIntegrationInfo() {
         });
     }
     
+    // AI 서비스 관련
+    const aiKeyCount = [!!openaiKey, !!geminiKey, !!anthropicKey].filter(Boolean).length;
+    if (aiKeyCount === 0) {
+        recommendations.push({
+            type: "warning",
+            message: "AI 챗봇 API 키가 설정되지 않았습니다.",
+            action: "OPENAI_API_KEY, GEMINI_API_KEY, ANTHROPIC_API_KEY 중 하나 이상을 설정하세요.",
+            priority: "보통",
+            category: "AI",
+        });
+    } else if (aiKeyCount < 3) {
+        recommendations.push({
+            type: "info",
+            message: `AI 프로바이더 일부 설정됨 (${aiKeyCount}/3)`,
+            action: `현재 활성: ${aiServicesInfo.activeProvider}. 폴백을 위해 추가 프로바이더 설정을 권장합니다.`,
+            priority: "보통",
+            category: "AI",
+        });
+    } else {
+        recommendations.push({
+            type: "success",
+            message: "AI 챗봇 프로바이더가 모두 설정되었습니다!",
+            action: `현재 활성: ${aiServicesInfo.activeProvider} (${aiServicesInfo.activeModel})`,
+            priority: "정상",
+            category: "AI",
+        });
+    }
+
     // ========== 요약 통계 ==========
     const allApis = [
         { name: "Supabase Auth", enabled: supabaseInfo.enabled },
@@ -1065,6 +1149,7 @@ export async function getApiIntegrationInfo() {
         { name: "국립중앙도서관", enabled: nlSeojiInfo.enabled },
         { name: "알라딘", enabled: aladinInfo.enabled },
         { name: "Google Books", enabled: googleBooksInfo.enabled },
+        { name: "AI 챗봇", enabled: aiServicesInfo.enabled },
     ];
     
     const enabledApis = allApis.filter(api => api.enabled).length;
@@ -1084,6 +1169,9 @@ export async function getApiIntegrationInfo() {
 
         // OCR
         cloudRunOcr: cloudRunOcrInfo,
+
+        // AI 서비스
+        aiServices: aiServicesInfo,
 
         // 페이지 수 조회 API
         pageCountApis: {
