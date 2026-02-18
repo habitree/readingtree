@@ -4,6 +4,8 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { getNoteDetail } from "@/app/actions/notes";
+import { getCurrentUser } from "@/app/actions/auth";
+import { getSampleNoteDetail } from "@/app/actions/sample";
 import { SimpleShareDialog } from "@/components/share/simple-share-dialog";
 import { NoteDeleteButton } from "@/components/notes/note-delete-button";
 import { Edit, ChevronLeft, ShieldCheck, ShieldAlert, BookOpen } from "lucide-react";
@@ -39,10 +41,23 @@ export default async function NoteDetailPage({ params }: NoteDetailPageProps) {
     notFound();
   }
 
+  // 2. 사용자 확인 (게스트 여부)
+  const currentUser = await getCurrentUser();
+  const isGuest = !currentUser;
+
   let note;
   try {
-    // 2. 데이터 소유권 및 접근 권한 검증 (Server Action 내부에서 수행)
-    note = await getNoteDetail(noteId);
+    if (isGuest) {
+      // 게스트: 샘플 사용자의 노트만 조회 가능
+      const sampleNote = await getSampleNoteDetail(noteId);
+      if (!sampleNote) {
+        notFound();
+      }
+      note = sampleNote;
+    } else {
+      // 로그인 사용자: 자신의 노트 조회
+      note = await getNoteDetail(noteId);
+    }
   } catch (error: any) {
     // 404 또는 권한 없음 에러인 경우 조용히 처리
     if (error?.message === "기록을 찾을 수 없거나 권한이 없습니다." || error?.message?.includes("참조 무결성")) {
@@ -68,9 +83,9 @@ export default async function NoteDetailPage({ params }: NoteDetailPageProps) {
   // 필사 데이터는 getNoteDetail()의 transcriptions JOIN으로 이미 포함됨
   const transcription = noteWithBook.transcription || null;
 
-  // 연결된 책 정보 로드 (카드 내부 표시용)
+  // 연결된 책 정보 로드 (카드 내부 표시용 - 로그인 사용자만)
   let relatedBooksForCard: RelatedBookInfo[] = [];
-  if (noteWithBook.related_user_book_ids && noteWithBook.related_user_book_ids.length > 0) {
+  if (!isGuest && noteWithBook.related_user_book_ids && noteWithBook.related_user_book_ids.length > 0) {
     try {
       const allBooks = await getUserBooks();
       const ids = noteWithBook.related_user_book_ids;
@@ -131,22 +146,24 @@ export default async function NoteDetailPage({ params }: NoteDetailPageProps) {
           </div>
         </div>
 
-        {/* 액션 버튼들 - 모바일에서 개선된 스크롤 */}
-        <div className="flex items-center gap-2 mt-3 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide sm:justify-end">
-          <SimpleShareDialog note={noteWithBook} />
-          <RelatedBooksManager
-            noteId={noteWithBook.id}
-            currentRelatedBookIds={noteWithBook.related_user_book_ids || null}
-            mainBookId={noteWithBook.user_book_id || ""}
-          />
-          <Button variant="outline" size="sm" asChild className="gap-1.5 h-9 px-3 shrink-0 shadow-sm">
-            <Link href={`/notes/${noteWithBook.id}/edit`}>
-              <Edit className="h-4 w-4" />
-              <span className="text-sm">수정</span>
-            </Link>
-          </Button>
-          <NoteDeleteButton noteId={noteWithBook.id} />
-        </div>
+        {/* 액션 버튼들 - 게스트는 읽기 전용 */}
+        {!isGuest && (
+          <div className="flex items-center gap-2 mt-3 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide sm:justify-end">
+            <SimpleShareDialog note={noteWithBook} />
+            <RelatedBooksManager
+              noteId={noteWithBook.id}
+              currentRelatedBookIds={noteWithBook.related_user_book_ids || null}
+              mainBookId={noteWithBook.user_book_id || ""}
+            />
+            <Button variant="outline" size="sm" asChild className="gap-1.5 h-9 px-3 shrink-0 shadow-sm">
+              <Link href={`/notes/${noteWithBook.id}/edit`}>
+                <Edit className="h-4 w-4" />
+                <span className="text-sm">수정</span>
+              </Link>
+            </Button>
+            <NoteDeleteButton noteId={noteWithBook.id} />
+          </div>
+        )}
       </div>
 
       {/* 2. 메인 리딩 카드 (통합 디자인) - 개선된 장식 */}
@@ -197,7 +214,16 @@ export async function generateMetadata({
   }
 
   try {
-    const note = await getNoteDetail(noteId);
+    const user = await getCurrentUser();
+    let note;
+    if (!user) {
+      note = await getSampleNoteDetail(noteId);
+    } else {
+      note = await getNoteDetail(noteId);
+    }
+    if (!note) {
+      return { title: "기록 상세 | ReadingTree" };
+    }
     return {
       title: `${note.type === 'quote' ? '인상깊은 구절' : '독서 기록'} | ReadingTree`,
       description: note.book?.title || "기록 상세 정보",

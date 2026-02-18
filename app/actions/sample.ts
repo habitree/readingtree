@@ -622,6 +622,69 @@ export async function getSampleNotes(userBookId: string): Promise<NoteWithBook[]
 }
 
 /**
+ * 샘플 사용자의 특정 노트 상세 조회 (게스트 기록 상세 페이지용)
+ * 샘플 사용자의 노트만 조회 가능
+ */
+export async function getSampleNoteDetail(noteId: string) {
+  const sampleUserId = await getSampleUserId();
+  const supabase = createAdminSupabaseClient();
+
+  const { data, error } = await supabase
+    .from("notes")
+    .select(`
+      *,
+      books (
+        id,
+        title,
+        author,
+        cover_image_url
+      ),
+      transcriptions (
+        extracted_text,
+        raw_extracted_text,
+        status
+      )
+    `)
+    .eq("id", noteId)
+    .eq("user_id", sampleUserId)
+    .maybeSingle();
+
+  if (error && error.code !== "PGRST116") {
+    throw new Error(`샘플 노트 조회 실패: ${error.message}`);
+  }
+
+  if (!data) {
+    return null;
+  }
+
+  // user_books.id 조회 (책 상세 페이지 링크용)
+  let userBookId = null;
+  if (data.book_id) {
+    const { data: userBook } = await supabase
+      .from("user_books")
+      .select("id")
+      .eq("book_id", data.book_id)
+      .eq("user_id", sampleUserId)
+      .maybeSingle();
+
+    if (userBook) {
+      userBookId = userBook.id;
+    }
+  }
+
+  // Supabase 조인 결과 정규화
+  const { transcriptions, books, ...restData } = data as any;
+  const book = Array.isArray(books) ? books[0] : books;
+
+  return {
+    ...restData,
+    book: book || undefined,
+    transcription: transcriptions || undefined,
+    user_book_id: userBookId,
+  };
+}
+
+/**
  * 샘플 사용자의 전체 노트 목록 조회 (기록 페이지용)
  */
 export async function getSampleAllNotes(): Promise<NoteWithBook[]> {
