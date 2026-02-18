@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import {
   Dialog,
   DialogContent,
@@ -21,6 +21,8 @@ import type { NoteWithBook } from "@/types/note";
 import { getUserById } from "@/app/actions/profile";
 import { addStampToBlob } from "@/lib/utils/stamp";
 import { getUserBooks } from "@/app/actions/books";
+import { loadKakaoSdk, isKakaoShareAvailable } from "@/lib/kakao/sdk";
+import { parseNoteContentFields } from "@/lib/utils/note";
 
 interface SimpleShareDialogProps {
   note: NoteWithBook;
@@ -38,6 +40,7 @@ export function SimpleShareDialog({ note }: SimpleShareDialogProps) {
   const [cardCopied, setCardCopied] = useState(false);
   const [photoCopied, setPhotoCopied] = useState(false);
   const [isCapturing, setIsCapturing] = useState(false);
+  const [kakaoShared, setKakaoShared] = useState(false);
   const [user, setUser] = useState<{ id: string; name: string; avatar_url: string | null } | null>(null);
   const [relatedBooks, setRelatedBooks] = useState<RelatedBookInfo[]>([]);
   const cardRef = useRef<HTMLDivElement>(null);
@@ -386,6 +389,77 @@ export function SimpleShareDialog({ note }: SimpleShareDialogProps) {
     }
   };
 
+  // 카카오 공유 가능 여부
+  const showKakao = isKakaoShareAvailable();
+
+  // 4. 카카오톡 공유
+  const handleKakaoShare = useCallback(async () => {
+    if (!note.is_public) {
+      toast.error("공개 기록만 공유할 수 있습니다.");
+      return;
+    }
+
+    try {
+      const kakao = await loadKakaoSdk();
+      if (!kakao) {
+        toast.error("카카오 SDK를 불러올 수 없습니다.");
+        return;
+      }
+
+      const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
+      const shareUrl = `${baseUrl}/share/notes/${note.id}`;
+
+      // description 결정: 필사 OCR > 인용구 > 메모 > 기본 문구
+      let description = "ReadTree에서 기록한 독서 메모입니다.";
+      if (note.transcription?.extracted_text) {
+        description = note.transcription.extracted_text;
+      } else if (note.content) {
+        const { quote, memo } = parseNoteContentFields(note.content);
+        if (quote) {
+          description = quote;
+        } else if (memo) {
+          description = memo;
+        }
+      }
+      // 100자 제한
+      if (description.length > 100) {
+        description = description.slice(0, 97) + "...";
+      }
+
+      const imageUrl = note.image_url || note.book?.cover_image_url || undefined;
+      const bookTitle = note.book?.title || "독서 기록";
+
+      kakao.Share.sendDefault({
+        objectType: "feed",
+        content: {
+          title: `"${bookTitle}" 독서 기록 - ReadTree`,
+          description,
+          imageUrl,
+          link: {
+            mobileWebUrl: shareUrl,
+            webUrl: shareUrl,
+          },
+        },
+        buttons: [
+          {
+            title: "기록 보러가기",
+            link: {
+              mobileWebUrl: shareUrl,
+              webUrl: shareUrl,
+            },
+          },
+        ],
+      });
+
+      setKakaoShared(true);
+      toast.success("카카오톡 공유가 시작되었습니다.");
+      setTimeout(() => setKakaoShared(false), 2000);
+    } catch (error) {
+      console.error("카카오 공유 실패:", error);
+      toast.error("카카오톡 공유에 실패했습니다.");
+    }
+  }, [note]);
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -404,8 +478,11 @@ export function SimpleShareDialog({ note }: SimpleShareDialogProps) {
           </DialogHeader>
 
           <div className="flex-1 overflow-y-auto p-4 sm:p-8 pt-2">
-            {/* 개편된 3버튼 체계 (상단으로 이동, 슬림하게 변경) */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
+            {/* 공유 버튼 그리드 */}
+            <div className={cn(
+              "grid gap-3 mb-6",
+              showKakao ? "grid-cols-2 md:grid-cols-4" : "grid-cols-1 md:grid-cols-3"
+            )}>
               {/* 1. 링크 공유 */}
               <Button
                 onClick={handleCopyLink}
@@ -427,7 +504,41 @@ export function SimpleShareDialog({ note }: SimpleShareDialogProps) {
                 )}
               </Button>
 
-              {/* 2. 카드 복사 */}
+              {/* 2. 카카오톡 공유 */}
+              {showKakao && (
+                <Button
+                  onClick={handleKakaoShare}
+                  variant={kakaoShared ? "success" : "kakao"}
+                  size="sm"
+                  className="h-11 rounded-xl gap-2 font-semibold transition-all duration-300"
+                  disabled={!note.is_public}
+                >
+                  {kakaoShared ? (
+                    <>
+                      <Check className="h-4 w-4" />
+                      공유 완료
+                    </>
+                  ) : (
+                    <>
+                      <svg
+                        width="18"
+                        height="18"
+                        viewBox="0 0 18 18"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          d="M9 0C4.03 0 0 3.27 0 7.3c0 2.55 1.7 4.8 4.25 6.05L3.5 17.5l4.5-2.45c.5.05 1 .1 1.5.1 4.97 0 9-3.27 9-7.3S13.97 0 9 0z"
+                          fill="#3C1E1E"
+                        />
+                      </svg>
+                      카카오톡
+                    </>
+                  )}
+                </Button>
+              )}
+
+              {/* 3. 카드 복사 */}
               <Button
                 onClick={handleCopyCardImage}
                 variant={cardCopied ? "success" : "outline"}
@@ -447,7 +558,7 @@ export function SimpleShareDialog({ note }: SimpleShareDialogProps) {
                 )}
               </Button>
 
-              {/* 3. 이미지 복사 (필사/사진 이미지가 있는 경우에만) */}
+              {/* 4. 이미지 복사 (필사/사진 이미지가 있는 경우에만) */}
               {hasImage && (
                 <Button
                   onClick={handleCopyPhotoOnly}
