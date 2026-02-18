@@ -1,6 +1,4 @@
 import { ImageResponse } from "next/og";
-import { readFile } from "fs/promises";
-import { join } from "path";
 
 export const runtime = "edge";
 export const alt = "ReadTree - 독서 기록 및 공유 플랫폼";

@@ -426,7 +426,8 @@ export function SimpleShareDialog({ note }: SimpleShareDialogProps) {
         description = description.slice(0, 97) + "...";
       }
 
-      const imageUrl = note.image_url || note.book?.cover_image_url || undefined;
+      // OG 이미지 URL 사용 (동적 생성 이미지)
+      const ogImageUrl = `${baseUrl}/share/notes/${note.id}/opengraph-image`;
       const bookTitle = note.book?.title || "독서 기록";
 
       kakao.Share.sendDefault({
@@ -434,7 +435,9 @@ export function SimpleShareDialog({ note }: SimpleShareDialogProps) {
         content: {
           title: `"${bookTitle}" 독서 기록 - ReadTree`,
           description,
-          imageUrl,
+          imageUrl: ogImageUrl,
+          imageWidth: 1200,
+          imageHeight: 630,
           link: {
             mobileWebUrl: shareUrl,
             webUrl: shareUrl,
