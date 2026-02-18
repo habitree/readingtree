@@ -1,7 +1,6 @@
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
-import { getImageUrl } from "@/lib/utils/image";
 import { getAppUrl } from "@/lib/utils/url";
 import { parseNoteContentFields } from "@/lib/utils/note";
 import { isValidUUID } from "@/lib/utils/validation";
@@ -57,6 +56,9 @@ export async function generateMetadata({
   let description = transcriptionText || quote || memo || "기록 내용을 확인해보세요.";
   if (description.length > 100) description = description.substring(0, 97) + "...";
 
+  // OG 이미지: 해당 링크 페이지 화면과 동일한 레이아웃의 동적 이미지 사용
+  const ogImageUrl = `${baseUrl}/share/notes/${note.id}/opengraph-image`;
+
   return {
     title: `${bookTitle} - 독서 기록`,
     description: description,
@@ -65,16 +67,14 @@ export async function generateMetadata({
       description: description,
       type: "article",
       url: shareUrl,
-      images: book?.cover_image_url
-        ? [
-          {
-            url: book.cover_image_url,
-            width: 1200,
-            height: 630,
-            alt: `${bookTitle} - ${book.author || ""}`,
-          },
-        ]
-        : [],
+      images: [
+        {
+          url: ogImageUrl,
+          width: 1200,
+          height: 630,
+          alt: `${bookTitle} - ${book?.author || ""}`.trim() || "독서 기록",
+        },
+      ],
       siteName: "ReadTree",
       locale: "ko_KR",
     },
@@ -82,7 +82,7 @@ export async function generateMetadata({
       card: "summary_large_image",
       title: `${bookTitle} - 독서 기록`,
       description: description,
-      images: book?.cover_image_url ? [book.cover_image_url] : [],
+      images: [ogImageUrl],
     },
   };
 }
