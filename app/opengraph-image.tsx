@@ -12,7 +12,7 @@ export default async function Image() {
   // 폰트 + 아이콘 이미지 병렬 로드
   const [fontResult, iconResult] = await Promise.allSettled([
     fetch(
-      new URL("https://github.com/google/fonts/raw/main/ofl/notosanskr/NotoSansKR-SemiBold.otf", import.meta.url)
+      new URL("../public/fonts/NotoSansKR-SemiBold.otf", import.meta.url)
     ).then((res) => {
       if (!res.ok) throw new Error("Failed to fetch font");
       return res.arrayBuffer();

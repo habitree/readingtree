@@ -26,9 +26,17 @@ function createServiceSupabaseClient() {
   });
 }
 
-/** 한글 폰트 로드 (Noto Sans KR) */
+/** 한글 폰트 로드 (로컬 파일 우선, 실패 시 외부 fetch) */
 async function loadKoreanFont(): Promise<ArrayBuffer | null> {
   try {
+    // 로컬 폰트 파일 사용 (빠르고 안정적)
+    const res = await fetch(
+      new URL("../../../../public/fonts/NotoSansKR-SemiBold.otf", import.meta.url)
+    );
+    if (res.ok) return res.arrayBuffer();
+  } catch {}
+  try {
+    // fallback: 외부 fetch
     const res = await fetch(
       "https://github.com/google/fonts/raw/main/ofl/notosanskr/NotoSansKR-SemiBold.otf"
     );
