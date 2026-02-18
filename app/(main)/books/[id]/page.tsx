@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { BookStatusBadge } from "@/components/books/book-status-badge";
 import { getBookDetail } from "@/app/actions/books";
-import { getSampleBookDetail } from "@/app/actions/sample";
+import { getSampleBookDetail, getSampleNotes } from "@/app/actions/sample";
 import { getCurrentUser } from "@/app/actions/auth";
 import { getImageUrl } from "@/lib/utils/image";
 import { BookStatusSelector } from "@/components/books/book-status-selector";
@@ -96,7 +96,10 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
   let notes: Awaited<ReturnType<typeof getNotes>> = [];
   let relatedBooks: Awaited<ReturnType<typeof getRelatedBooks>> = [];
 
-  if (!isGuest) {
+  if (isGuest) {
+    // 게스트: 샘플 사용자의 노트 데이터를 그대로 표시
+    notes = await getSampleNotes(userBook.id).catch(() => []);
+  } else {
     const [notesResult, relatedBooksResult] = await Promise.all([
       getNotes(userBook.id, undefined, user),
       getRelatedBooks(userBook.id, user).catch(() => []),
