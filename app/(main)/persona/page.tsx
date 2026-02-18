@@ -71,7 +71,7 @@ async function GuestPersonaContent() {
       <PersonaCard
         persona={data.persona}
         needsAnalysis={false}
-        analysisAge={null}
+        analysisAge={0}
       />
       <ReadingStats persona={data.persona} />
 
