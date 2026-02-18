@@ -310,7 +310,7 @@ export function ShareNoteCard({ note, className, isPublicView = false, hideActio
                             <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800">
                                 <div className="flex items-center gap-2 text-xs text-slate-400">
                                     <Calendar className="w-3.5 h-3.5" />
-                                    <span>{formattedDate}</span>
+                                    <span suppressHydrationWarning>{formattedDate}</span>
                                 </div>
                                 <div className="flex items-center gap-3">
                                     <FooterLogo />
@@ -415,7 +415,7 @@ export function ShareNoteCard({ note, className, isPublicView = false, hideActio
                                             )}
                                             {showTimestamp && (
                                                 <div className="absolute bottom-3 left-3 z-20">
-                                                    <p className="text-[11px] font-bold text-white drop-shadow-md bg-black/20 backdrop-blur-sm px-2 py-0.5 rounded-full">
+                                                    <p className="text-[11px] font-bold text-white drop-shadow-md bg-black/20 backdrop-blur-sm px-2 py-0.5 rounded-full" suppressHydrationWarning>
                                                         {formatDateTime(note.created_at)}
                                                     </p>
                                                 </div>
@@ -444,7 +444,7 @@ export function ShareNoteCard({ note, className, isPublicView = false, hideActio
                                                 )}
                                                 {showTimestamp && (
                                                     <div className="absolute bottom-3 left-3 z-20">
-                                                        <p className="text-[11px] font-bold text-white drop-shadow-md bg-black/20 backdrop-blur-sm px-2 py-0.5 rounded-full">
+                                                        <p className="text-[11px] font-bold text-white drop-shadow-md bg-black/20 backdrop-blur-sm px-2 py-0.5 rounded-full" suppressHydrationWarning>
                                                             {formatDateTime(note.created_at)}
                                                         </p>
                                                     </div>
@@ -497,7 +497,7 @@ export function ShareNoteCard({ note, className, isPublicView = false, hideActio
                                 </Badge>
                                 <div className="h-6 leading-6 overflow-visible">
                                     <Calendar className="w-3.5 h-3.5 text-forest-500 shrink-0 inline-block align-middle mr-2" />
-                                    <span className="text-xs font-bold text-slate-400 whitespace-nowrap inline-block align-middle">
+                                    <span className="text-xs font-bold text-slate-400 whitespace-nowrap inline-block align-middle" suppressHydrationWarning>
                                         {formattedDate}
                                     </span>
                                 </div>

@@ -1,22 +1,26 @@
 import { ImageResponse } from "next/og";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { createClient } from "@supabase/supabase-js";
 import { parseNoteContentFields } from "@/lib/utils/note";
 import { getImageUrl, isValidImageUrl } from "@/lib/utils/image";
 import { isValidUUID } from "@/lib/utils/validation";
 
-export const runtime = "edge";
 export const alt = "ReadTree 독서 기록 공유";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
+
+/** 공개 데이터 조회용 익명 Supabase 클라이언트 (cookies 불필요) */
+function createAnonSupabaseClient() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
+}
 
 /** 한글 폰트 로드 (Noto Sans KR) */
 async function loadKoreanFont(): Promise<ArrayBuffer | null> {
   try {
     const res = await fetch(
-      new URL(
-        "https://github.com/google/fonts/raw/main/ofl/notosanskr/NotoSansKR-SemiBold.otf",
-        import.meta.url
-      )
+      "https://github.com/google/fonts/raw/main/ofl/notosanskr/NotoSansKR-SemiBold.otf"
     );
     if (!res.ok) throw new Error("Failed to fetch font");
     return res.arrayBuffer();
@@ -58,7 +62,7 @@ export default async function OgImage({
     return fallbackImageResponse(fontOptions);
   }
 
-  const supabase = await createServerSupabaseClient();
+  const supabase = createAnonSupabaseClient();
   const { data: note } = await supabase
     .from("notes")
     .select(
