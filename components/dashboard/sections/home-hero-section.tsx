@@ -25,6 +25,7 @@ import { useStyle } from "@/hooks/use-style";
 import { ContinueReadingCard, NoReadingBookCard } from "./continue-reading-card";
 import { OnboardingChecklist, type OnboardingItem } from "@/components/onboarding/onboarding-checklist";
 import type { DailyRecordByType } from "@/app/actions/stats";
+import { GrowthTree } from "./growth-tree";
 
 interface ContinueReadingData {
   userBookId: string;
@@ -169,6 +170,9 @@ export function HomeHeroSection({
   // 진행률 계산 (현재 읽는 책 기준)
   const progressPercent = currentBookProgress?.progressPercent || 0;
 
+  // 나무 성장 레벨 계산
+  const treeLevel = Math.min(5, Math.floor((streak || 0) / 3) + (todayNotes > 0 ? 1 : 0));
+
   return (
     <div className="space-y-2 sm:space-y-3">
       {/* ======== PRIMARY ZONE: 5초 내 핵심 파악 ======== */}
@@ -179,7 +183,13 @@ export function HomeHeroSection({
       >
         <Card className="relative overflow-hidden bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/60">
           <div className="relative px-3 py-3 sm:p-5">
-            <div className="mb-3 sm:mb-4">
+            {/* 나무 장식 (우상단) */}
+            <GrowthTree
+              level={treeLevel}
+              className="absolute right-3 top-3 sm:right-4 sm:top-4"
+            />
+
+            <div className="mb-3 sm:mb-4 pr-10">
               <div className="flex items-center gap-2 mb-0.5 sm:mb-1">
                 {displayGreeting.emoji && (
                   <span className="text-xl sm:text-2xl">{displayGreeting.emoji}</span>
@@ -196,20 +206,38 @@ export function HomeHeroSection({
 
             {/* 핵심 지표 3개: 스트릭 | 오늘 기록 | 읽은 만큼 */}
             <div className="grid grid-cols-3 gap-1.5 sm:gap-3">
-              {/* 스트릭 */}
-              <div className="rounded-lg p-2 sm:p-2.5 text-center">
+              {/* 스트릭 — 배경 + weeklyProgress 7일 바 */}
+              <div className="rounded-xl p-2 sm:p-2.5 text-center bg-forest-50/80 dark:bg-forest-900/20">
                 <div className="flex items-center justify-center gap-1 mb-0.5">
-                  <span className="text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-300">
+                  <span className="text-xs sm:text-sm font-semibold text-forest-700 dark:text-forest-300">
                     {streak}
                   </span>
                 </div>
-                <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400">흔적</p>
+                <p className="text-[10px] sm:text-xs text-forest-600/70 dark:text-forest-400/70 mb-1">흔적</p>
+                {/* 미니 7일 바 차트 */}
+                {weeklyProgress && (
+                  <div className="flex items-end justify-center gap-px h-2.5">
+                    {weeklyProgress.days.map((day) => (
+                      <div
+                        key={day.date}
+                        className={cn(
+                          "w-1 rounded-full",
+                          day.hasRecord
+                            ? "bg-forest-500 dark:bg-forest-400 h-2.5"
+                            : day.isFuture
+                              ? "bg-forest-200/50 dark:bg-forest-700/30 h-1"
+                              : "bg-forest-200 dark:bg-forest-700/50 h-1.5"
+                        )}
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
 
-              {/* 오늘 기록 */}
+              {/* 오늘 기록 — 배경 + 아이콘 */}
               <Link
                 href="/notes"
-                className="rounded-lg p-2 sm:p-2.5 text-center hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
+                className="rounded-xl p-2 sm:p-2.5 text-center bg-paper-50/80 dark:bg-slate-800/50 hover:bg-paper-100/80 dark:hover:bg-slate-800/70 transition-colors"
               >
                 <div className="flex items-center justify-center gap-1 mb-0.5">
                   {todayNotes > 0 ? (
@@ -217,32 +245,39 @@ export function HomeHeroSection({
                   ) : (
                     <PenLine className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-forest-500" />
                   )}
-                  <span className="text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-300">
+                  <span className="text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-300">
                     {todayNotes}
                   </span>
                 </div>
                 <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400">오늘의 기록</p>
               </Link>
 
-              {/* 읽은 만큼 */}
+              {/* 읽은 만큼 — 배경 + 미니 프로그레스 */}
               {currentBookProgress ? (
                 <Link
                   href={`/books/${currentBookProgress.userBookId}`}
-                  className="rounded-lg p-2 sm:p-2.5 text-center hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
+                  className="rounded-xl p-2 sm:p-2.5 text-center bg-paper-50/80 dark:bg-slate-800/50 hover:bg-paper-100/80 dark:hover:bg-slate-800/70 transition-colors"
                 >
                   <div className="flex items-center justify-center gap-0.5 mb-0.5">
                     <TrendingUp className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-blue-500" />
-                    <span className="text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-300">
+                    <span className="text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-300">
                       {progressPercent}%
                     </span>
                   </div>
-                  <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 truncate">읽은 만큼</p>
+                  <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 truncate mb-1">읽은 만큼</p>
+                  {/* 미니 프로그레스 바 */}
+                  <div className="h-1 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-blue-500 dark:bg-blue-400"
+                      style={{ width: `${progressPercent}%` }}
+                    />
+                  </div>
                 </Link>
               ) : (
-                <div className="rounded-lg p-2 sm:p-2.5 text-center">
+                <div className="rounded-xl p-2 sm:p-2.5 text-center bg-slate-50/80 dark:bg-slate-800/30">
                   <div className="flex items-center justify-center gap-0.5 mb-0.5">
                     <TrendingUp className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-slate-400" />
-                    <span className="text-xs sm:text-sm font-medium text-slate-400 dark:text-slate-500">
+                    <span className="text-xs sm:text-sm font-semibold text-slate-400 dark:text-slate-500">
                       -
                     </span>
                   </div>
@@ -251,7 +286,7 @@ export function HomeHeroSection({
               )}
             </div>
 
-            {/* 주간 진행 바 (인라인) */}
+            {/* 주간 진행 바 (나뭇잎 버전) */}
             {userName && weeklyProgress && (
               <div className="mt-4 pt-3 border-t border-slate-200/50 dark:border-slate-700/50">
                 <div className="flex items-center justify-between mb-2">
@@ -278,7 +313,7 @@ export function HomeHeroSection({
                       >
                         {day.dayLabel}
                       </span>
-                      <InlineDayIndicator
+                      <LeafDayIndicator
                         hasRecord={day.hasRecord}
                         isToday={day.isToday}
                         isFuture={day.isFuture}
@@ -338,42 +373,57 @@ export function HomeHeroSection({
 }
 
 /**
- * 인라인 요일 지표 컴포넌트 (컴팩트 버전)
+ * 나뭇잎 요일 지표 컴포넌트
+ * hasRecord → forest-500 나뭇잎 / isToday (no record) → forest-400 테두리 나뭇잎
+ * past no record → slate-200 작은 나뭇잎 / future → slate-200 작은 원
  */
-interface InlineDayIndicatorProps {
+interface LeafDayIndicatorProps {
   hasRecord: boolean;
   isToday: boolean;
   isFuture: boolean;
 }
 
-function InlineDayIndicator({ hasRecord, isToday, isFuture }: InlineDayIndicatorProps) {
+const LEAF_RADIUS = "60% 40% 50% 30%";
+
+function LeafDayIndicator({ hasRecord, isToday, isFuture }: LeafDayIndicatorProps) {
   if (isFuture) {
     return (
       <div className="h-5 w-5 flex items-center justify-center">
-        <Circle className="h-2.5 w-2.5 text-slate-200 dark:text-slate-700" strokeWidth={1} />
+        <div className="h-2 w-2 rounded-full bg-slate-200 dark:bg-slate-700" />
       </div>
     );
   }
 
   if (hasRecord) {
     return (
-      <div className="h-5 w-5 rounded-full flex items-center justify-center bg-forest-500 text-white">
-        <Check className="h-3 w-3" strokeWidth={3} />
+      <div className="h-5 w-5 flex items-center justify-center">
+        <div
+          className="h-4 w-4 bg-forest-500 dark:bg-forest-400 flex items-center justify-center"
+          style={{ borderRadius: LEAF_RADIUS }}
+        >
+          <Check className="h-2.5 w-2.5 text-white" strokeWidth={3} />
+        </div>
       </div>
     );
   }
 
   if (isToday) {
     return (
-      <div className="h-5 w-5 rounded-full border-2 border-dashed flex items-center justify-center border-forest-400 dark:border-forest-500">
-        <Circle className="h-1.5 w-1.5 text-forest-400" fill="currentColor" />
+      <div className="h-5 w-5 flex items-center justify-center">
+        <div
+          className="h-4 w-4 border-2 border-forest-400 dark:border-forest-500"
+          style={{ borderRadius: LEAF_RADIUS }}
+        />
       </div>
     );
   }
 
   return (
     <div className="h-5 w-5 flex items-center justify-center">
-      <div className="h-3.5 w-3.5 rounded-full bg-slate-200 dark:bg-slate-700" />
+      <div
+        className="h-3 w-3 bg-slate-200 dark:bg-slate-700"
+        style={{ borderRadius: LEAF_RADIUS }}
+      />
     </div>
   );
 }
@@ -470,24 +520,38 @@ export function HomeHeroSkeleton() {
       {/* 메인 히어로 카드 스켈레톤 */}
       <Card className="relative overflow-hidden bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/60">
         <div className="p-4 sm:p-6">
-          <div className="mb-4">
+          {/* 나무 장식 스켈레톤 */}
+          <div className="absolute right-3 top-3 sm:right-4 sm:top-4">
+            <div className="w-9 h-11 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
+          </div>
+
+          <div className="mb-4 pr-10">
             <div className="flex items-center gap-2 mb-2">
               <div className="h-6 w-40 sm:w-48 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
             </div>
             <div className="h-4 w-48 sm:w-56 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
           </div>
 
-          {/* 3열 퀵 스탯 스켈레톤 */}
-          <div className="grid grid-cols-3 gap-2 sm:gap-3">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="rounded-lg p-3 space-y-2">
+          {/* 3열 퀵 스탯 스켈레톤 (배경 포함) */}
+          <div className="grid grid-cols-3 gap-1.5 sm:gap-3">
+            <div className="rounded-xl p-3 space-y-2 bg-forest-50/50 dark:bg-forest-900/10">
+              <div className="h-5 w-10 mx-auto rounded bg-forest-200/60 dark:bg-forest-700/40 animate-pulse" />
+              <div className="h-3 w-12 mx-auto rounded bg-forest-200/60 dark:bg-forest-700/40 animate-pulse" />
+              <div className="flex items-end justify-center gap-px h-2.5">
+                {Array.from({ length: 7 }).map((_, i) => (
+                  <div key={i} className="w-1 h-1.5 rounded-full bg-forest-200/60 dark:bg-forest-700/40 animate-pulse" />
+                ))}
+              </div>
+            </div>
+            {Array.from({ length: 2 }).map((_, i) => (
+              <div key={i} className="rounded-xl p-3 space-y-2 bg-slate-50/80 dark:bg-slate-800/30">
                 <div className="h-5 w-10 mx-auto rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
                 <div className="h-3 w-12 mx-auto rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
               </div>
             ))}
           </div>
 
-          {/* 인라인 주간 바 스켈레톤 */}
+          {/* 나뭇잎 주간 바 스켈레톤 */}
           <div className="mt-4 pt-3 border-t border-slate-200/50 dark:border-slate-700/50">
             <div className="flex items-center justify-between mb-2">
               <div className="h-3 w-16 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
@@ -497,7 +561,7 @@ export function HomeHeroSkeleton() {
               {Array.from({ length: 7 }).map((_, i) => (
                 <div key={i} className="flex flex-col items-center gap-1 flex-1">
                   <div className="h-2.5 w-3 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
-                  <div className="h-5 w-5 rounded-full bg-slate-200 dark:bg-slate-700 animate-pulse" />
+                  <div className="h-4 w-4 animate-pulse bg-slate-200 dark:bg-slate-700" style={{ borderRadius: "60% 40% 50% 30%" }} />
                 </div>
               ))}
             </div>

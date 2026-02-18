@@ -2,12 +2,14 @@
 
 import { useCallback } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { PenTool, BookPlus, Camera, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useMobileNoteSheet, type NoteMode } from "@/hooks/use-mobile-note-sheet";
 import { useLoginPrompt } from "@/hooks/use-login-prompt";
 import { LoginPromptModal } from "@/components/ui/login-prompt-modal";
+import { useMediaQuery } from "@/hooks/use-media-query";
 
 interface QuickActionItem {
   icon: React.ElementType;
@@ -15,6 +17,8 @@ interface QuickActionItem {
   href?: string;
   /** 클릭 시 바텀시트를 열기 위한 모드 (href 대신 사용) */
   sheetMode?: NoteMode;
+  /** 데스크톱에서 sheetMode 대신 이동할 URL */
+  desktopHref?: string;
   color: string;
   bgColor: string;
   description: string;
@@ -25,6 +29,7 @@ const quickActions: QuickActionItem[] = [
     icon: PenTool,
     label: "기록",
     sheetMode: "memo",
+    desktopHref: "/notes/new",
     color: "text-forest-600 dark:text-forest-400",
     bgColor: "bg-forest-50/60 dark:bg-forest-900/20",
     description: "생각 남기기",
@@ -41,6 +46,7 @@ const quickActions: QuickActionItem[] = [
     icon: Camera,
     label: "사진 필사",
     sheetMode: "transcription",
+    desktopHref: "/notes/new?type=transcription",
     color: "text-forest-600 dark:text-forest-400",
     bgColor: "bg-forest-50/60 dark:bg-forest-900/20",
     description: "페이지 담기",
@@ -56,21 +62,31 @@ const quickActions: QuickActionItem[] = [
 ];
 
 /**
- * 모바일 퀵 액션 버튼 섹션
- * 심리학적 관점: 즉각적인 행동 유도 (Fogg 행동 모델의 '촉발' 요소)
+ * 퀵 액션 버튼 섹션
+ * 모바일: 바텀시트 / 데스크톱: URL 네비게이션
  */
 export function MobileQuickActions() {
   const { open } = useMobileNoteSheet();
   const { isOpen, setIsOpen, title, description, requireLogin } = useLoginPrompt();
+  const isDesktop = useMediaQuery("(min-width: 640px)");
+  const router = useRouter();
 
-  // useCallback으로 핸들러 최적화
-  const handleOpen = useCallback((mode: NoteMode) => {
+  const handleSheetAction = useCallback((action: QuickActionItem) => {
     if (requireLogin({
       title: "기록을 작성하려면",
       description: "로그인 후 독서 기록을 작성할 수 있어요.",
     })) return;
-    open(mode);
-  }, [open, requireLogin]);
+
+    // 데스크톱에서는 URL 네비게이션
+    if (isDesktop && action.desktopHref) {
+      router.push(action.desktopHref);
+      return;
+    }
+    // 모바일에서는 바텀시트
+    if (action.sheetMode) {
+      open(action.sheetMode);
+    }
+  }, [open, requireLogin, isDesktop, router]);
 
   const handleLinkClick = useCallback((e: React.MouseEvent, action: QuickActionItem) => {
     if (requireLogin({
@@ -85,7 +101,7 @@ export function MobileQuickActions() {
 
   return (
     <>
-      <div className="grid grid-cols-4 gap-2 sm:hidden">
+      <div className="grid grid-cols-4 gap-2">
         {quickActions.map((action, index) => {
           // 바텀시트를 여는 액션인 경우 버튼으로 렌더링
           if (action.sheetMode) {
@@ -93,7 +109,7 @@ export function MobileQuickActions() {
               <button
                 key={`action-${index}`}
                 type="button"
-                onClick={() => handleOpen(action.sheetMode!)}
+                onClick={() => handleSheetAction(action)}
                 className="flex flex-col items-center gap-1.5 p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 active:scale-95 transition-transform duration-150"
               >
                 <div

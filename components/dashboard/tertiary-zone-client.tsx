@@ -4,6 +4,7 @@ import { useState, useCallback } from "react";
 import dynamic from "next/dynamic";
 import { CollapsibleSection } from "./sections/collapsible-section";
 import { PersonaInsightCard } from "./sections/home-hero-section";
+import { MonthlySummaryCard } from "./sections/monthly-summary-card";
 
 const MonthlyBookCalendar = dynamic(
   () => import("./sections/monthly-book-calendar").then((mod) => mod.MonthlyBookCalendar),
@@ -28,8 +29,49 @@ interface TertiaryZoneClientProps {
 }
 
 /**
+ * Tertiary Zone 내부 컨텐츠 (중복 방지용)
+ */
+function TertiaryContent({
+  activities,
+  year,
+  month,
+  onMonthChange,
+  persona,
+  readingStats,
+}: {
+  activities: Record<string, DailyBookActivity>;
+  year: number;
+  month: number;
+  onMonthChange: (year: number, month: number) => void;
+  persona: UserPersona | null;
+  readingStats: ReadingStats | null;
+}) {
+  const hasPersonaData = persona && readingStats;
+
+  return (
+    <div className="space-y-4">
+      {/* 월간 요약 */}
+      <MonthlySummaryCard activities={activities} year={year} month={month} />
+
+      {/* 월별 책 표지 캘린더 */}
+      <MonthlyBookCalendar
+        activities={activities}
+        year={year}
+        month={month}
+        onMonthChange={onMonthChange}
+      />
+
+      {/* 페르소나 인사이트 */}
+      {hasPersonaData && (
+        <PersonaInsightCard persona={persona} stats={readingStats} />
+      )}
+    </div>
+  );
+}
+
+/**
  * Tertiary Zone 클라이언트 컴포넌트
- * 접이식 섹션으로 추가 정보 표시
+ * 모바일: 접이식 섹션 / 데스크톱: 항상 표시 + sticky
  */
 export function TertiaryZoneClient({
   monthlyActivities: initialActivities,
@@ -88,25 +130,44 @@ export function TertiaryZoneClient({
   }
 
   return (
-    <CollapsibleSection
-      title="비밀 정원"
-      storageKey="dashboard-tertiary"
-      defaultOpen={false}
-    >
-      <div className="space-y-6">
-        {/* 월별 책 표지 캘린더 */}
-        <MonthlyBookCalendar
-          activities={activities}
-          year={year}
-          month={month}
-          onMonthChange={handleMonthChange}
-        />
-
-        {/* 페르소나 인사이트 */}
-        {hasPersonaData && (
-          <PersonaInsightCard persona={persona} stats={readingStats} />
-        )}
+    <>
+      {/* 모바일: 기존 접이식 */}
+      <div className="lg:hidden">
+        <CollapsibleSection
+          title="비밀 정원"
+          storageKey="dashboard-tertiary"
+          defaultOpen={false}
+        >
+          <TertiaryContent
+            activities={activities}
+            year={year}
+            month={month}
+            onMonthChange={handleMonthChange}
+            persona={persona}
+            readingStats={readingStats}
+          />
+        </CollapsibleSection>
       </div>
-    </CollapsibleSection>
+
+      {/* 데스크톱: 항상 표시 + sticky */}
+      <div className="hidden lg:block lg:sticky lg:top-20">
+        <div className="space-y-4">
+          {/* 섹션 헤더 */}
+          <div className="flex items-center gap-2 text-sm font-medium text-slate-600 dark:text-slate-400">
+            <span>비밀 정원</span>
+            <div className="flex-1 h-px bg-slate-200 dark:bg-slate-700" />
+          </div>
+
+          <TertiaryContent
+            activities={activities}
+            year={year}
+            month={month}
+            onMonthChange={handleMonthChange}
+            persona={persona}
+            readingStats={readingStats}
+          />
+        </div>
+      </div>
+    </>
   );
 }

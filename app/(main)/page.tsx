@@ -6,7 +6,7 @@ import DashboardContent from "@/components/dashboard/dashboard-content";
  */
 export default function HomePage() {
   return (
-    <div className="container max-w-5xl mx-auto px-2 sm:px-4 py-4 sm:py-6 md:py-10">
+    <div className="container max-w-7xl mx-auto px-2 sm:px-4 py-4 sm:py-6 md:py-8">
       <DashboardContent />
     </div>
   );
