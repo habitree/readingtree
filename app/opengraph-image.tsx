@@ -1,6 +1,7 @@
 import { ImageResponse } from "next/og";
+import { readFile } from "fs/promises";
+import { join } from "path";
 
-// 이미지 메타데이터
 export const runtime = "edge";
 export const alt = "ReadTree - 독서 기록 및 공유 플랫폼";
 export const size = {
@@ -10,22 +11,28 @@ export const size = {
 export const contentType = "image/png";
 
 export default async function Image() {
-  // 한글 폰트 로드 (Noto Sans KR)
-  // Vercel Edge Runtime에서 외부 폰트 로드를 위해 fetch 사용
-  // 실패 시 기본 폰트 사용을 위해 예외 처리 추가
-  let notoSansKrSemiBold: ArrayBuffer | null = null;
-
-  try {
-    notoSansKrSemiBold = await fetch(
+  // 폰트 + 아이콘 이미지 병렬 로드
+  const [fontResult, iconResult] = await Promise.allSettled([
+    fetch(
       new URL("https://github.com/google/fonts/raw/main/ofl/notosanskr/NotoSansKR-SemiBold.otf", import.meta.url)
     ).then((res) => {
-      if (!res.ok) throw new Error('Failed to fetch font');
+      if (!res.ok) throw new Error("Failed to fetch font");
       return res.arrayBuffer();
-    });
-  } catch (e) {
-    console.error('Font fetch failed:', e);
-    // 폰트 로드 실패 시 별도 처리 없이 기본 폰트 사용
-  }
+    }),
+    fetch(new URL("./icon.png", import.meta.url)).then((res) => {
+      if (!res.ok) throw new Error("Failed to fetch icon");
+      return res.arrayBuffer();
+    }),
+  ]);
+
+  const notoSansKrSemiBold =
+    fontResult.status === "fulfilled" ? fontResult.value : null;
+  const iconData =
+    iconResult.status === "fulfilled" ? iconResult.value : null;
+
+  const iconSrc = iconData
+    ? `data:image/png;base64,${Buffer.from(iconData).toString("base64")}`
+    : null;
 
   return new ImageResponse(
     (
@@ -35,13 +42,20 @@ export default async function Image() {
           width: "100%",
           display: "flex",
           flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          backgroundColor: "#f0fdf4",
-          backgroundImage: "radial-gradient(circle at 20% 20%, #dcfce7 0%, transparent 50%), radial-gradient(circle at 80% 80%, #bbf7d0 0%, transparent 50%)",
+          backgroundColor: "#FDFBF7",
+          fontFamily: '"NotoSansKR", sans-serif',
         }}
       >
-        {/* 배경 패턴 */}
+        {/* 상단 포레스트 악센트 바 */}
+        <div
+          style={{
+            width: "100%",
+            height: 5,
+            background: "linear-gradient(90deg, #1d6b4d, #36a678, #5ec496, #36a678, #1d6b4d)",
+          }}
+        />
+
+        {/* 미묘한 텍스처 패턴 */}
         <div
           style={{
             position: "absolute",
@@ -49,68 +63,92 @@ export default async function Image() {
             left: 0,
             right: 0,
             bottom: 0,
-            backgroundImage: "radial-gradient(#16a34a 1px, transparent 1px)",
-            backgroundSize: "30px 30px",
-            opacity: 0.1,
+            backgroundImage: "radial-gradient(#1d6b4d 0.6px, transparent 0.6px)",
+            backgroundSize: "32px 32px",
+            opacity: 0.025,
           }}
         />
 
-        {/* 메인 카드 */}
+        {/* 따뜻한 그라데이션 오버레이 */}
+        <div
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundImage:
+              "radial-gradient(ellipse at 20% 50%, rgba(29, 107, 77, 0.04) 0%, transparent 60%), radial-gradient(ellipse at 80% 50%, rgba(94, 196, 150, 0.03) 0%, transparent 60%)",
+          }}
+        />
+
+        {/* 메인 콘텐츠 */}
         <div
           style={{
             display: "flex",
+            flex: 1,
             flexDirection: "column",
             alignItems: "center",
             justifyContent: "center",
-            backgroundColor: "rgba(255, 255, 255, 0.95)",
-            borderRadius: 40,
-            padding: "60px 100px",
-            boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.15)",
-            border: "2px solid rgba(255, 255, 255, 0.8)",
             gap: 24,
+            padding: "0 80px",
           }}
         >
-          {/* 아이콘 */}
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              width: 120,
-              height: 120,
-              borderRadius: 30,
-              backgroundColor: "#16a34a",
-              marginBottom: 10,
-              boxShadow: "0 10px 15px -3px rgba(22, 163, 74, 0.3)",
-            }}
-          >
-            {/* 나무 아이콘 */}
-            <svg
-              width="70"
-              height="70"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="white"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
+          {/* HABITREE 로고 이미지 */}
+          {iconSrc ? (
+            <img
+              src={iconSrc}
+              alt=""
+              width={150}
+              height={150}
+              style={{
+                borderRadius: 32,
+                boxShadow:
+                  "0 16px 32px -8px rgba(29, 107, 77, 0.2), 0 0 0 1px rgba(29, 107, 77, 0.08)",
+              }}
+            />
+          ) : (
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                width: 150,
+                height: 150,
+                borderRadius: 32,
+                backgroundColor: "#24855e",
+                boxShadow:
+                  "0 16px 32px -8px rgba(29, 107, 77, 0.3)",
+              }}
             >
-              <path d="M12 22v-7M9 22h6" />
-              <path d="M17 7A5 5 0 0 0 7 7" />
-              <path d="M12 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z" />
-              <path d="M12 5V2" />
-            </svg>
-          </div>
+              <svg
+                width="80"
+                height="80"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="white"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M12 22v-7M9 22h6" />
+                <path d="M17 7A5 5 0 0 0 7 7" />
+                <path d="M12 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z" />
+                <path d="M12 5V2" />
+              </svg>
+            </div>
+          )}
 
           {/* 브랜드명 */}
           <div
             style={{
-              fontSize: 72,
+              fontSize: 80,
               fontWeight: 800,
-              color: "#14532d",
+              color: "#1F2933",
               letterSpacing: "-0.03em",
               lineHeight: 1,
               fontFamily: '"NotoSansKR", sans-serif',
+              marginTop: 4,
             }}
           >
             ReadTree
@@ -119,89 +157,88 @@ export default async function Image() {
           {/* 태그라인 */}
           <div
             style={{
-              fontSize: 32,
+              fontSize: 28,
               fontWeight: 600,
-              color: "#4b5563",
+              color: "#24855e",
               fontFamily: '"NotoSansKR", sans-serif',
               textAlign: "center",
-              marginBottom: 20,
             }}
           >
             독서 기록 및 공유 플랫폼
           </div>
 
-          {/* 키워드 태그 */}
-          <div style={{ display: "flex", gap: 16 }}>
+          {/* 구분선 + 키워드 */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 20,
+              marginTop: 8,
+            }}
+          >
             <div
               style={{
-                padding: "10px 24px",
-                backgroundColor: "#f0fdf4",
-                border: "1px solid #dcfce7",
-                borderRadius: "9999px",
-                color: "#166534",
-                fontSize: 20,
+                width: 56,
+                height: 2,
+                backgroundColor: "#c3eed4",
+                borderRadius: 1,
+              }}
+            />
+            <div
+              style={{
+                fontSize: 21,
                 fontWeight: 600,
+                color: "#7B8794",
                 fontFamily: '"NotoSansKR", sans-serif',
+                letterSpacing: "0.01em",
               }}
             >
-              책 관리
+              책 관리 · 독서 노트 · AI 도우미
             </div>
             <div
               style={{
-                padding: "10px 24px",
-                backgroundColor: "#f0fdf4",
-                border: "1px solid #dcfce7",
-                borderRadius: "9999px",
-                color: "#166534",
-                fontSize: 20,
-                fontWeight: 600,
-                fontFamily: '"NotoSansKR", sans-serif',
+                width: 56,
+                height: 2,
+                backgroundColor: "#c3eed4",
+                borderRadius: 1,
               }}
-            >
-              독서 노트
-            </div>
-            <div
-              style={{
-                padding: "10px 24px",
-                backgroundColor: "#f0fdf4",
-                border: "1px solid #dcfce7",
-                borderRadius: "9999px",
-                color: "#166534",
-                fontSize: 20,
-                fontWeight: 600,
-                fontFamily: '"NotoSansKR", sans-serif',
-              }}
-            >
-              AI 도우미
-            </div>
+            />
           </div>
         </div>
 
-        {/* 하단 도메인 표시 */}
+        {/* 하단 도메인 */}
         <div
           style={{
-            position: "absolute",
-            bottom: 40,
-            fontSize: 20,
-            color: "#6b7280",
-            fontWeight: 500,
-            fontFamily: '"NotoSansKR", sans-serif',
+            display: "flex",
+            justifyContent: "center",
+            paddingBottom: 32,
           }}
         >
-          readingtree-tan.vercel.app
+          <div
+            style={{
+              fontSize: 18,
+              color: "#9AA5B1",
+              fontWeight: 500,
+              fontFamily: '"NotoSansKR", sans-serif',
+            }}
+          >
+            readingtree.app
+          </div>
         </div>
       </div>
     ),
     {
       ...size,
-      fonts: notoSansKrSemiBold ? [
-        {
-          name: "NotoSansKR",
-          data: notoSansKrSemiBold,
-          style: "normal",
-          weight: 600,
-        },
-      ] : undefined,
+      fonts: notoSansKrSemiBold
+        ? [
+            {
+              name: "NotoSansKR",
+              data: notoSansKrSemiBold,
+              style: "normal",
+              weight: 600,
+            },
+          ]
+        : undefined,
     }
   );
 }
