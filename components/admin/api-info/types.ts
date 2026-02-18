@@ -61,6 +61,20 @@ export interface ApiIntegrationInfoProps {
       };
     };
 
+    // AI 서비스
+    aiServices: {
+      activeProvider: string;
+      activeModel: string;
+      providers: {
+        openai: { provider: string; enabled: boolean; keyStatus: string; models: string[]; apiReference: string; };
+        google: { provider: string; enabled: boolean; keyStatus: string; models: string[]; apiReference: string; };
+        anthropic: { provider: string; enabled: boolean; keyStatus: string; models: string[]; apiReference: string; };
+      };
+      features: string[];
+      notes: string;
+      enabled: boolean;
+    };
+
     // 기타
     app: {
       appUrl: string;
@@ -173,7 +187,7 @@ export interface ServiceNodeConfig {
   description: string;
   enabled: boolean;
   icon: string;
-  category: "auth" | "search" | "ocr" | "pageCount" | "deploy";
+  category: "auth" | "search" | "ocr" | "pageCount" | "deploy" | "ai";
   externalUrl?: string;
   scrollTarget?: string;
 }

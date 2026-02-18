@@ -12,6 +12,7 @@ import {
   Cloud,
   Users,
   ExternalLink,
+  Bot,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ServiceNodeConfig } from "./types";
@@ -29,6 +30,7 @@ const ICON_MAP: Record<string, React.ElementType> = {
   bookOpen: BookOpen,
   zap: Zap,
   cloud: Cloud,
+  bot: Bot,
 };
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -37,6 +39,7 @@ const CATEGORY_COLORS: Record<string, string> = {
   ocr: "from-purple-500/20 to-purple-500/5 border-purple-500/30",
   pageCount: "from-amber-500/20 to-amber-500/5 border-amber-500/30",
   deploy: "from-sky-500/20 to-sky-500/5 border-sky-500/30",
+  ai: "from-pink-500/20 to-pink-500/5 border-pink-500/30",
 };
 
 const CATEGORY_ICON_COLORS: Record<string, string> = {
@@ -45,6 +48,7 @@ const CATEGORY_ICON_COLORS: Record<string, string> = {
   ocr: "text-purple-600 dark:text-purple-400",
   pageCount: "text-amber-600 dark:text-amber-400",
   deploy: "text-sky-600 dark:text-sky-400",
+  ai: "text-pink-600 dark:text-pink-400",
 };
 
 function ServiceNode({
@@ -119,6 +123,7 @@ export function ConnectionGraph({ services }: ConnectionGraphProps) {
   const searchServices = services.filter((s) => s.category === "search");
   const ocrServices = services.filter((s) => s.category === "ocr");
   const pageCountServices = services.filter((s) => s.category === "pageCount");
+  const aiServices = services.filter((s) => s.category === "ai");
   const deployServices = services.filter((s) => s.category === "deploy");
 
   return (
@@ -185,7 +190,7 @@ export function ConnectionGraph({ services }: ConnectionGraphProps) {
             <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider px-1">
               외부 서비스
             </div>
-            {[...searchServices, ...ocrServices].map((s, i) => (
+            {[...searchServices, ...ocrServices, ...aiServices].map((s, i) => (
               <ServiceNode key={s.id} service={s} index={i + 2} />
             ))}
           </div>
@@ -251,6 +256,7 @@ export function ConnectionGraph({ services }: ConnectionGraphProps) {
             { label: "인증", items: authServices },
             { label: "검색", items: searchServices },
             { label: "OCR", items: ocrServices },
+            { label: "AI", items: aiServices },
             { label: "페이지 수 조회", items: pageCountServices },
             { label: "배포", items: deployServices },
           ]
