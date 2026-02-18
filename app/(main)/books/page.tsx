@@ -11,6 +11,8 @@ import { BookshelfPageContent } from "@/components/books/bookshelf-page-content"
 import { MobileBookshelfSelector } from "@/components/books/mobile-bookshelf-selector";
 import type { ReadingStatus } from "@/types/book";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "내 서재 | ReadTree",
   description: "내가 읽고 있는 책들을 관리하세요",

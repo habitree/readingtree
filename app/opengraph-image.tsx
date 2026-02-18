@@ -1,6 +1,5 @@
 import { ImageResponse } from "next/og";
 
-export const runtime = "edge";
 export const alt = "ReadTree - 독서 기록 및 공유 플랫폼";
 export const size = {
   width: 1200,
