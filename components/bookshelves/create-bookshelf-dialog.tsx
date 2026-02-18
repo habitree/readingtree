@@ -40,7 +40,7 @@ export function CreateBookshelfDialog() {
         name: name.trim(),
         description: description.trim() || null,
       });
-      toast.success("생성됨");
+      toast.success("서재가 만들어졌어요");
       setOpen(false);
       setName("");
       setDescription("");
@@ -108,7 +108,7 @@ export function CreateBookshelfDialog() {
               취소
             </Button>
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "생성 중..." : "생성"}
+              {isSubmitting ? "만드는 중..." : "만들기"}
             </Button>
           </DialogFooter>
         </form>

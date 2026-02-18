@@ -38,11 +38,11 @@ const statusConfig: Record<
   ReadingStatus,
   { label: string; icon: React.ElementType; dotColor: string }
 > = {
-  not_started: { label: "읽기전", icon: BookOpen, dotColor: "bg-gray-400" },
+  not_started: { label: "읽을 예정", icon: BookOpen, dotColor: "bg-gray-400" },
   reading: { label: "읽는 중", icon: BookMarked, dotColor: "bg-blue-500" },
   completed: { label: "완독", icon: Trophy, dotColor: "bg-emerald-500" },
   rereading: { label: "재독", icon: RotateCcw, dotColor: "bg-purple-500" },
-  paused: { label: "중단", icon: Pause, dotColor: "bg-amber-500" },
+  paused: { label: "쉬는 중", icon: Pause, dotColor: "bg-amber-500" },
 };
 
 /**
@@ -81,12 +81,12 @@ export function BookStatusSelector({
     setIsUpdating(true);
     try {
       await updateBookStatus(userBookId, status);
-      toast.success("상태가 변경되었습니다.");
+      toast.success("상태가 변경됐어요.");
       router.refresh();
     } catch (error) {
       console.error("상태 변경 오류:", error);
       toast.error(
-        error instanceof Error ? error.message : "상태 변경에 실패했습니다."
+        error instanceof Error ? error.message : "상태 변경에 실패했어요."
       );
     } finally {
       setIsUpdating(false);
@@ -101,12 +101,12 @@ export function BookStatusSelector({
     setIsUpdating(true);
     try {
       await moveBookToBookshelf(userBookId, bookshelfId);
-      toast.success("서재가 변경되었습니다.");
+      toast.success("서재가 변경됐어요.");
       router.refresh();
     } catch (error) {
       console.error("서재 변경 오류:", error);
       toast.error(
-        error instanceof Error ? error.message : "서재 변경에 실패했습니다."
+        error instanceof Error ? error.message : "서재 변경에 실패했어요."
       );
     } finally {
       setIsUpdating(false);

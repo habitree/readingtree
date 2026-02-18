@@ -137,7 +137,7 @@ export function ChatInterface({ userId, userAvatar, userName }: ChatInterfacePro
       setCurrentSession(session);
       setMessages([]);
     } catch (error) {
-      toast.error("새 대화 생성에 실패했습니다.");
+      toast.error("새 대화를 만들지 못했어요.");
     }
   };
 
@@ -150,7 +150,7 @@ export function ChatInterface({ userId, userAvatar, userName }: ChatInterfacePro
         setMessages(data.messages);
       }
     } catch (error) {
-      toast.error("대화를 불러오는데 실패했습니다.");
+      toast.error("대화를 불러오지 못했어요.");
     }
   };
 
@@ -163,9 +163,9 @@ export function ChatInterface({ userId, userAvatar, userName }: ChatInterfacePro
         setCurrentSession(null);
         setMessages([]);
       }
-      toast.success("대화가 삭제되었습니다.");
+      toast.success("대화가 삭제됐어요.");
     } catch (error) {
-      toast.error("대화 삭제에 실패했습니다.");
+      toast.error("대화 삭제에 실패했어요.");
     }
   };
 
@@ -176,9 +176,9 @@ export function ChatInterface({ userId, userAvatar, userName }: ChatInterfacePro
       setSessions([]);
       setCurrentSession(null);
       setMessages([]);
-      toast.success(`${result.deletedCount}개의 대화가 삭제되었습니다.`);
+      toast.success(`${result.deletedCount}개의 대화가 삭제됐어요.`);
     } catch (error) {
-      toast.error("대화 삭제에 실패했습니다.");
+      toast.error("대화 삭제에 실패했어요.");
     }
   };
 
@@ -187,9 +187,9 @@ export function ChatInterface({ userId, userAvatar, userName }: ChatInterfacePro
     try {
       await deleteChatMessage(messageId);
       setMessages((prev) => prev.filter((m) => m.id !== messageId));
-      toast.success("메시지가 삭제되었습니다.");
+      toast.success("메시지가 삭제됐어요.");
     } catch (error) {
-      toast.error("메시지 삭제에 실패했습니다.");
+      toast.error("메시지 삭제에 실패했어요.");
     }
   };
 
@@ -213,7 +213,7 @@ export function ChatInterface({ userId, userAvatar, userName }: ChatInterfacePro
         // 첫 메시지로 제목 생성
         await generateSessionTitle(sessionId, message);
       } catch (error) {
-        toast.error("새 대화 생성에 실패했습니다.");
+        toast.error("새 대화를 만들지 못했어요.");
         setLastFailedMessage(message);
         return;
       }
@@ -310,7 +310,7 @@ export function ChatInterface({ userId, userAvatar, userName }: ChatInterfacePro
       }
     } catch (error) {
       console.error("메시지 전송 오류:", error);
-      toast.error("메시지 전송에 실패했습니다. 재시도해 주세요.");
+      toast.error("메시지 전송에 실패했어요. 재시도해 주세요.");
       setStreamingContent("");
       setIsTyping(false);
       setLastFailedMessage(message);

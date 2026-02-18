@@ -129,7 +129,7 @@ export function ReadingProgress({
       setShowInlineMemo(false);
       setPendingPageUpdate(null);
     } catch (error) {
-      toast.error("진행률 업데이트에 실패했습니다.");
+      toast.error("진행률 업데이트에 실패했어요.");
     } finally {
       setIsInlineSaving(false);
     }
@@ -163,12 +163,12 @@ export function ReadingProgress({
       setDragValue(pendingPageUpdate);
       onUpdate?.(pendingPageUpdate);
       onRecordCreated?.();
-      toast.success("진행 기록이 저장되었습니다");
+      toast.success("진행 기록이 저장됐어요");
       setShowInlineMemo(false);
       setPendingPageUpdate(null);
       setInlineMemo("");
     } catch (error) {
-      toast.error("저장에 실패했습니다.");
+      toast.error("저장에 실패했어요.");
     } finally {
       setIsInlineSaving(false);
     }
@@ -197,9 +197,9 @@ export function ReadingProgress({
         setDragValue(newPage);
         setIsEditing(false);
         onUpdate?.(newPage);
-        toast.success("진행률이 업데이트되었습니다.");
+        toast.success("진행률이 업데이트됐어요.");
       } catch (error) {
-        toast.error("진행률 업데이트에 실패했습니다.");
+        toast.error("진행률 업데이트에 실패했어요.");
       }
     });
   };
@@ -249,7 +249,7 @@ export function ReadingProgress({
           <div className="absolute inset-0 bg-gradient-to-r from-emerald-400 to-emerald-600 rounded-full" />
         </div>
         <p className="text-xs text-center text-emerald-600/80 dark:text-emerald-400/80 font-medium">
-          축하합니다! 책을 완독하셨어요
+          축하해요. 책을 완독했어요
         </p>
       </div>
     );

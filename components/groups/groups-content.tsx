@@ -35,7 +35,7 @@ export function GroupsContent() {
       setMyGroups(data as any);
     } catch (error) {
       console.error("내 모임 로드 오류:", error);
-      toast.error("모임 목록을 불러오는데 실패했습니다.");
+      toast.error("모임 목록을 불러오지 못했어요.");
     } finally {
       setIsLoading(false);
     }
@@ -48,7 +48,7 @@ export function GroupsContent() {
       setPublicGroups(data as any);
     } catch (error) {
       console.error("공개 모임 로드 오류:", error);
-      toast.error("공개 모임 목록을 불러오는데 실패했습니다.");
+      toast.error("공개 모임 목록을 불러오지 못했어요.");
     } finally {
       setIsLoading(false);
     }

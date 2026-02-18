@@ -74,9 +74,9 @@ export function FeatureRequestComments({
 
       if (result.success) {
         setNewComment("");
-        toast.success("댓글이 등록되었습니다.");
+        toast.success("댓글이 등록됐어요.");
       } else {
-        toast.error(result.error || "댓글 등록에 실패했습니다.");
+        toast.error(result.error || "댓글 등록에 실패했어요.");
       }
     });
   };
@@ -94,9 +94,9 @@ export function FeatureRequestComments({
 
       if (result.success) {
         setEditingId(null);
-        toast.success("댓글이 수정되었습니다.");
+        toast.success("댓글이 수정됐어요.");
       } else {
-        toast.error(result.error || "댓글 수정에 실패했습니다.");
+        toast.error(result.error || "댓글 수정에 실패했어요.");
       }
     });
   };
@@ -108,9 +108,9 @@ export function FeatureRequestComments({
       const result = await deleteComment(commentId);
 
       if (result.success) {
-        toast.success("댓글이 삭제되었습니다.");
+        toast.success("댓글이 삭제됐어요.");
       } else {
-        toast.error(result.error || "댓글 삭제에 실패했습니다.");
+        toast.error(result.error || "댓글 삭제에 실패했어요.");
       }
     });
   };
@@ -262,7 +262,7 @@ export function FeatureRequestComments({
           </div>
         ) : (
           <div className="text-center py-8 text-muted-foreground">
-            아직 댓글이 없습니다. 첫 댓글을 남겨보세요!
+            아직 댓글이 없어요. 첫 댓글을 남겨보세요.
           </div>
         )}
       </CardContent>

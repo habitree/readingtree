@@ -91,11 +91,11 @@ export default function GroupSettingsPage({ params }: PageProps) {
         description: formData.description,
         isPublic: formData.isPublic,
       });
-      toast.success("모임 설정이 저장되었습니다.");
+      toast.success("모임 설정이 저장됐어요.");
       router.push(`/groups/${groupId}`);
     } catch (err) {
       console.error("모임 수정 오류:", err);
-      toast.error(err instanceof Error ? err.message : "모임 수정에 실패했습니다.");
+      toast.error(err instanceof Error ? err.message : "모임 수정에 실패했어요.");
     } finally {
       setIsSaving(false);
     }
@@ -108,11 +108,11 @@ export default function GroupSettingsPage({ params }: PageProps) {
     try {
       await navigator.clipboard.writeText(inviteLink);
       setIsCopied(true);
-      toast.success("초대 링크가 복사되었습니다.");
+      toast.success("초대 링크가 복사됐어요.");
       setTimeout(() => setIsCopied(false), 2000);
     } catch (err) {
       console.error("링크 복사 오류:", err);
-      toast.error("링크 복사에 실패했습니다.");
+      toast.error("링크 복사에 실패했어요.");
     }
   };
 
@@ -122,11 +122,11 @@ export default function GroupSettingsPage({ params }: PageProps) {
     setIsDeleting(true);
     try {
       await deleteGroup(groupId);
-      toast.success("모임이 삭제되었습니다.");
+      toast.success("모임이 삭제됐어요.");
       router.push("/groups");
     } catch (err) {
       console.error("모임 삭제 오류:", err);
-      toast.error(err instanceof Error ? err.message : "모임 삭제에 실패했습니다.");
+      toast.error(err instanceof Error ? err.message : "모임 삭제에 실패했어요.");
     } finally {
       setIsDeleting(false);
     }

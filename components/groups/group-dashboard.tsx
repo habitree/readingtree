@@ -124,7 +124,7 @@ export function GroupDashboard({ groupData, currentUserId }: GroupDashboardProps
     setIsLeaving(true);
     try {
       await leaveGroup(group.id);
-      toast.success("모임에서 나왔습니다.");
+      toast.success("모임에서 나왔어요.");
       router.push("/groups");
     } catch (error) {
       toast.error(
@@ -140,7 +140,7 @@ export function GroupDashboard({ groupData, currentUserId }: GroupDashboardProps
     setIsDeleting(true);
     try {
       await deleteGroup(group.id);
-      toast.success("모임이 삭제되었습니다.");
+      toast.success("모임이 삭제됐어요.");
       router.push("/groups");
     } catch (error) {
       toast.error(

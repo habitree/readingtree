@@ -548,7 +548,7 @@ export function AISettingsPanel({
                     <div>
                       <span className="font-medium">최근 기록</span>
                       <p className="text-xs text-muted-foreground">
-                        인용구, 메모, 필사 등 독서 기록
+                        인용구, 메모, 사진 필사 등 독서 기록
                       </p>
                     </div>
                     <Switch

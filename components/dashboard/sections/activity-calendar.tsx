@@ -20,7 +20,7 @@ const TYPE_COLORS = {
     base: "bg-violet-400/90 dark:bg-violet-500/80",
     light: "bg-violet-200 dark:bg-violet-800/50",
     text: "text-violet-600 dark:text-violet-400",
-    label: "필사",
+    label: "사진 필사",
   },
   photo: {
     base: "bg-sky-400/90 dark:bg-sky-500/80",
@@ -274,7 +274,7 @@ export function ActivityCalendar({
                     <>
                       {selectedDayInfo.records.transcription > 0 && (
                         <span className="text-violet-600 dark:text-violet-400">
-                          필사 {selectedDayInfo.records.transcription}
+                          사진 필사 {selectedDayInfo.records.transcription}
                         </span>
                       )}
                       {selectedDayInfo.records.photo > 0 && (

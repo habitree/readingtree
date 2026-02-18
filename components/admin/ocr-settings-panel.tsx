@@ -193,7 +193,7 @@ export function OcrSettingsPanel({
         responseTime: result.responseTime,
       });
       if (result.success) {
-        toast.success("연결 테스트 성공!");
+        toast.success("연결 테스트 성공.");
       } else {
         toast.error(`연결 테스트 실패: ${result.error}`);
       }

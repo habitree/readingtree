@@ -77,7 +77,7 @@ export function TutorialStep({ onComplete, onBack, isLoading }: TutorialStepProp
           <Sparkles className="w-8 h-8 text-primary" />
         </div>
         <div>
-          <h2 className="text-xl font-bold">사용법</h2>
+          <h2 className="text-xl font-bold">ReadTree 시작하기</h2>
         </div>
       </div>
 

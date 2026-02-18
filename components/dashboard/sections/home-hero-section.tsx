@@ -118,7 +118,7 @@ export function HomeHeroSection({
     } else if (hour >= 12 && hour < 14) {
       return "잠시 쉬어가도 좋아요";
     } else if (hour >= 14 && hour < 18) {
-      return "오후의 여백";
+      return "오후의 여유";
     } else if (hour >= 18 && hour < 21) {
       return "하루가 마무리되고 있어요";
     } else {
@@ -163,7 +163,7 @@ export function HomeHeroSection({
     quote: { icon: Quote, label: "인용구", color: "text-blue-500" },
     memo: { icon: FileText, label: "메모", color: "text-green-500" },
     photo: { icon: Camera, label: "사진", color: "text-orange-500" },
-    transcription: { icon: PenTool, label: "필사", color: "text-purple-500" },
+    transcription: { icon: PenTool, label: "사진 필사", color: "text-purple-500" },
   };
 
   // 진행률 계산 (현재 읽는 책 기준)
@@ -401,7 +401,7 @@ export function PersonaInsightCard({
     quote: { label: "인용구" },
     memo: { label: "메모" },
     photo: { label: "사진" },
-    transcription: { label: "필사" },
+    transcription: { label: "사진 필사" },
   };
 
   if (!persona || !stats || totalNotes === 0) {

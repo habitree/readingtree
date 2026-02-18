@@ -59,7 +59,7 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   // 게스트 접근 가능한 경로 (읽기 전용)
-  const guestAccessiblePaths = ["/", "/books", "/notes", "/timeline", "/groups", "/search", "/persona", "/sample"];
+  const guestAccessiblePaths = ["/", "/books", "/bookshelves", "/notes", "/timeline", "/groups", "/search", "/persona", "/sample", "/chat"];
   const isGuestAccessiblePath = guestAccessiblePaths.some((path) => {
     // 루트 경로는 정확히 일치해야 함
     if (path === "/") {
@@ -75,7 +75,7 @@ export async function updateSession(request: NextRequest) {
     "/books/search", // 책 검색 및 추가는 인증 필요
     "/groups/new", // 모임 생성은 인증 필요
     "/admin", // 관리자 페이지는 인증 필수
-    "/chat", // AI 채팅은 인증 필요
+    // /chat은 게스트 접근 가능 (UI만 표시, 입력 시 로그인 유도)
     "/feature-requests/new", // 기능 요청 생성은 인증 필요
   ];
   const isStrictProtectedPath = strictProtectedPaths.some((path) =>

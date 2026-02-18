@@ -40,21 +40,21 @@ export function BookDeleteButton({ userBookId, bookTitle, variant = "default", s
   const handleDelete = async () => {
     // 제목이 정확히 일치하는지 확인
     if (confirmTitle.trim() !== bookTitle.trim()) {
-      toast.error("책 제목이 일치하지 않습니다. 정확히 입력해주세요.");
+      toast.error("책 제목이 일치하지 않아요. 정확히 입력해주세요.");
       return;
     }
 
     setIsDeleting(true);
     try {
       await deleteBook(userBookId);
-      toast.success("책이 삭제되었습니다.");
+      toast.success("책이 삭제됐어요.");
       setIsOpen(false);
       setConfirmTitle("");
       router.push("/books");
     } catch (error) {
       console.error("책 삭제 오류:", error);
       toast.error(
-        error instanceof Error ? error.message : "책 삭제에 실패했습니다."
+        error instanceof Error ? error.message : "책 삭제에 실패했어요."
       );
     } finally {
       setIsDeleting(false);

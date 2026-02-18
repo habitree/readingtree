@@ -2,7 +2,6 @@ import { Suspense } from "react";
 import { Metadata } from "next";
 import { NoteList } from "@/components/notes/note-list";
 import { getNotes } from "@/app/actions/notes";
-import { GuestAlert } from "@/components/ui/guest-alert";
 import { getCurrentUser } from "@/app/actions/auth";
 import type { NoteType } from "@/types/note";
 import { typography } from "@/lib/design-tokens";
@@ -31,19 +30,12 @@ export default async function NotesPage({ searchParams }: NotesPageProps) {
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      {/* 게스트 사용자 안내 */}
-      {isGuest && (
-        <GuestAlert message="현재 샘플 기록 목록을 보고 계십니다. 로그인하여 나만의 기록을 작성해보세요!" />
-      )}
-
       <div>
         <h1 className={typography.pageTitle}>
-          {isGuest ? "기록 둘러보기" : "기록 목록"}
+          기록 목록
         </h1>
         <p className={typography.pageDescription}>
-          {isGuest
-            ? "샘플 기록 목록을 확인해보세요"
-            : "내가 작성한 모든 기록을 확인하세요"}
+          내가 작성한 모든 기록을 확인하세요
         </p>
       </div>
 

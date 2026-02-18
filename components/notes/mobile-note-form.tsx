@@ -83,7 +83,7 @@ export function MobileNoteForm({
     },
     onError: (error) => {
       // 에러 발생 시 사용자에게 토스트로 알림
-      toast.error(error.message || "기록 저장에 실패했습니다. 다시 시도해주세요.");
+      toast.error(error.message || "기록 저장에 실패했어요. 다시 시도해주세요.");
     },
   });
 
@@ -199,7 +199,7 @@ export function MobileNoteForm({
             )}
           >
             <PenTool className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
-            <span className="text-[11px] font-medium text-purple-700 dark:text-purple-300">필사</span>
+            <span className="text-[11px] font-medium text-purple-700 dark:text-purple-300">사진 필사</span>
           </label>
 
           {/* 사진 버튼 */}

@@ -66,7 +66,7 @@ export function RelatedBooksManager({
       setAvailableBooks(filtered);
     } catch (error) {
       console.error("책 목록 로드 오류:", error);
-      toast.error("책 목록을 불러오는데 실패했습니다.");
+      toast.error("책 목록을 불러오지 못했어요.");
     } finally {
       setIsLoadingBooks(false);
     }
@@ -89,7 +89,7 @@ export function RelatedBooksManager({
         related_user_book_ids: selectedBookIds.length > 0 ? selectedBookIds : [],
       });
 
-      toast.success("관련 책이 업데이트되었습니다.");
+      toast.success("관련 책이 업데이트됐어요.");
       
       // 부모 컴포넌트에 업데이트된 목록 전달
       if (onUpdate) {
@@ -100,7 +100,7 @@ export function RelatedBooksManager({
       router.refresh();
     } catch (error: any) {
       console.error("관련 책 업데이트 오류:", error);
-      toast.error(error.message || "관련 책 업데이트에 실패했습니다.");
+      toast.error(error.message || "관련 책 업데이트에 실패했어요.");
     } finally {
       setIsUpdating(false);
     }

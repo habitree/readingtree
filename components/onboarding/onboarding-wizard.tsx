@@ -25,8 +25,8 @@ interface OnboardingWizardProps {
 
 const STEPS = [
   { id: "consent", title: "약관 동의" },
-  { id: "goal", title: "목표 설정" },
-  { id: "tutorial", title: "사용법" },
+  { id: "goal", title: "연간 목표" },
+  { id: "tutorial", title: "ReadTree 시작하기" },
 ];
 
 /**

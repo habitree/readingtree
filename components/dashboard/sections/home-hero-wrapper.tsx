@@ -36,7 +36,7 @@ export async function HomeHeroWrapper() {
 
     return (
       <HomeHeroSection
-        userName={null}
+        userName="독서가"
         persona={null}
         streak={sampleStats.streak}
         todayNotes={sampleStats.todayNotes}

@@ -49,7 +49,7 @@ export function GoalStep({ onNext, onBack, isLoading }: GoalStepProps) {
           <Target className="w-8 h-8 text-primary" />
         </div>
         <div>
-          <h2 className="text-xl font-bold">목표</h2>
+          <h2 className="text-xl font-bold">연간 목표</h2>
         </div>
       </div>
 

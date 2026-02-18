@@ -5,7 +5,7 @@ export function SolutionSection() {
         <section className="py-32 bg-paper-100 text-charcoal-900 overflow-hidden">
             <div className="container px-4 md:px-6">
                 <div className="text-center mb-20 max-w-2xl mx-auto">
-                    <span className="text-forest-600 font-bold tracking-wider uppercase text-sm mb-4 block">Process</span>
+                    <span className="text-forest-600 font-bold tracking-wider uppercase text-sm mb-4 block">이렇게 해결합니다</span>
                     <h2 className="text-4xl md:text-5xl font-serif font-bold mb-6 break-keep">
                         독서 기록 시스템
                     </h2>
@@ -38,7 +38,7 @@ export function SolutionSection() {
                                         <div className="h-2 bg-charcoal-200 rounded w-full animate-pulse" />
                                         <div className="h-2 bg-charcoal-200 rounded w-3/4 animate-pulse delay-75" />
                                         <div className="flex gap-2 mt-2">
-                                            <span className="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Scanned</span>
+                                            <span className="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full">인식 완료</span>
                                         </div>
                                     </div>
                                 </div>

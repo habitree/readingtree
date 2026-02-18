@@ -198,7 +198,8 @@ export default function SearchPage() {
 
   // 기록 유형 라벨
   const getTypeLabel = (type: string) => {
-    if (type.includes("quote") || type.includes("transcription")) return "필사";
+    if (type.includes("transcription")) return "사진 필사";
+    if (type.includes("quote")) return "인용구";
     if (type === "photo") return "사진";
     if (type === "memo") return "기록";
     return type;
@@ -353,7 +354,7 @@ export default function SearchPage() {
               ? "검색 중입니다..."
               : isInitialState
               ? "검색어를 입력하거나 필터를 사용하세요."
-              : `${total}개의 검색 결과가 있습니다.`}
+              : `${total}개의 검색 결과가 있어요.`}
           </div>
 
           {error && (
@@ -366,7 +367,7 @@ export default function SearchPage() {
             <>
               {total > 0 && (
                 <p className="text-sm text-muted-foreground">
-                  총 {total}개의 결과를 찾았습니다.
+                  총 {total}개의 결과를 찾았어요.
                 </p>
               )}
 

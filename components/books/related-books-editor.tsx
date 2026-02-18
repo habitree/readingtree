@@ -57,7 +57,7 @@ export function RelatedBooksEditor({ userBookId }: RelatedBooksEditorProps) {
         setAllBooks(booksResult.books);
       } catch (error) {
         console.error("데이터 로드 실패:", error);
-        toast.error("데이터를 불러오는데 실패했습니다.");
+        toast.error("데이터를 불러오지 못했어요.");
       } finally {
         setIsLoading(false);
       }
@@ -99,7 +99,7 @@ export function RelatedBooksEditor({ userBookId }: RelatedBooksEditorProps) {
       // 목록 갱신
       const updated = await getRelatedBooks(userBookId);
       setRelatedBooks(updated);
-      toast.success("책이 연결되었습니다.");
+      toast.success("책이 연결됐어요.");
       router.refresh();
     } catch (error) {
       toast.error(
@@ -119,7 +119,7 @@ export function RelatedBooksEditor({ userBookId }: RelatedBooksEditorProps) {
       setRelatedBooks((prev) =>
         prev.filter((b) => b.userBookId !== targetUserBookId)
       );
-      toast.success("책 연결이 해제되었습니다.");
+      toast.success("책 연결이 해제됐어요.");
       router.refresh();
     } catch (error) {
       toast.error(

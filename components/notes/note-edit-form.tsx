@@ -165,7 +165,7 @@ export function NoteEditForm({ note }: NoteEditFormProps) {
     setImages(newImages);
     setUploading(false);
     setUploadProgress({});
-    toast.success("이미지가 업로드되었습니다.");
+    toast.success("이미지가 업로드됐어요.");
   };
 
   const removeImage = (index: number) => {
@@ -278,11 +278,11 @@ export function NoteEditForm({ note }: NoteEditFormProps) {
             }
           >
             <SelectTrigger className="h-10 sm:h-11">
-              <SelectValue placeholder="사진 또는 필사 선택" />
+              <SelectValue placeholder="사진 또는 사진 필사 선택" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="photo">사진</SelectItem>
-              <SelectItem value="transcription">필사</SelectItem>
+              <SelectItem value="transcription">사진 필사</SelectItem>
             </SelectContent>
           </Select>
           {uploadType && (

@@ -96,99 +96,86 @@ export function MobileMenuSheet({ open, onOpenChange }: MobileMenuSheetProps) {
         </SheetHeader>
 
         <div className="space-y-1 px-4 pb-6">
-          {/* 타임라인, 독서모임, 페르소나 (로그인 사용자만) */}
-          {user && (
-            <>
-              <SheetClose asChild>
-                <Link href="/timeline" onClick={handleMenuClick}>
-                  <Button
-                    variant={pathname === "/timeline" ? "secondary" : "ghost"}
-                    className={cn(
-                      "w-full justify-start gap-3 h-12",
-                      pathname === "/timeline" && "bg-secondary font-medium"
-                    )}
-                  >
-                    <Clock className="h-5 w-5" />
-                    <span>타임라인</span>
-                  </Button>
-                </Link>
-              </SheetClose>
-
-              <SheetClose asChild>
-                <Link href="/groups" onClick={handleMenuClick}>
-                  <Button
-                    variant={pathname === "/groups" ? "secondary" : "ghost"}
-                    className={cn(
-                      "w-full justify-start gap-3 h-12",
-                      pathname === "/groups" && "bg-secondary font-medium"
-                    )}
-                  >
-                    <Users className="h-5 w-5" />
-                    <span>독서모임</span>
-                  </Button>
-                </Link>
-              </SheetClose>
-
-              <SheetClose asChild>
-                <Link href="/persona" onClick={handleMenuClick}>
-                  <Button
-                    variant={pathname === "/persona" ? "secondary" : "ghost"}
-                    className={cn(
-                      "w-full justify-start gap-3 h-12",
-                      pathname === "/persona" && "bg-secondary font-medium"
-                    )}
-                  >
-                    <Sparkles className="h-5 w-5" />
-                    <span>내 페르소나</span>
-                  </Button>
-                </Link>
-              </SheetClose>
-
-              {/* 관리자 (관리자만) */}
-              {isAdmin && (
-                <SheetClose asChild>
-                  <Link href="/admin" onClick={handleMenuClick}>
-                    <Button
-                      variant={
-                        pathname.startsWith("/admin") ? "secondary" : "ghost"
-                      }
-                      className={cn(
-                        "w-full justify-start gap-3 h-12",
-                        pathname.startsWith("/admin") &&
-                          "bg-secondary font-medium"
-                      )}
-                    >
-                      <Trees className="h-5 w-5" />
-                      <span>관리자</span>
-                    </Button>
-                  </Link>
-                </SheetClose>
-              )}
-
-              <Separator className="my-3" />
-            </>
-          )}
-
-          {/* 비로그인 사용자용 로그인 링크 */}
+          {/* 비로그인 사용자용 인라인 배너 */}
           {!user && (
-            <>
-              <SheetClose asChild>
-                <Link href="/login" onClick={handleMenuClick}>
-                  <Button
-                    variant={pathname === "/login" ? "secondary" : "ghost"}
-                    className={cn(
-                      "w-full justify-start gap-3 h-12",
-                      pathname === "/login" && "bg-secondary font-medium"
-                    )}
-                  >
-                    <User className="h-5 w-5" />
-                    <span>로그인</span>
-                  </Button>
-                </Link>
-              </SheetClose>
-              <Separator className="my-3" />
-            </>
+            <SheetClose asChild>
+              <Link href="/login" onClick={handleMenuClick}>
+                <div className="flex items-center justify-between px-3 py-2 mb-2 rounded-lg bg-primary/5 border border-primary/10">
+                  <span className="text-sm text-muted-foreground">ReadTree를 체험 중이에요</span>
+                  <span className="text-sm font-medium text-primary">로그인</span>
+                </div>
+              </Link>
+            </SheetClose>
           )}
+
+          {/* 타임라인, 독서모임, 독서 성향 (모든 사용자) */}
+          <SheetClose asChild>
+            <Link href="/timeline" onClick={handleMenuClick}>
+              <Button
+                variant={pathname === "/timeline" ? "secondary" : "ghost"}
+                className={cn(
+                  "w-full justify-start gap-3 h-12",
+                  pathname === "/timeline" && "bg-secondary font-medium"
+                )}
+              >
+                <Clock className="h-5 w-5" />
+                <span>타임라인</span>
+              </Button>
+            </Link>
+          </SheetClose>
+
+          <SheetClose asChild>
+            <Link href="/groups" onClick={handleMenuClick}>
+              <Button
+                variant={pathname === "/groups" ? "secondary" : "ghost"}
+                className={cn(
+                  "w-full justify-start gap-3 h-12",
+                  pathname === "/groups" && "bg-secondary font-medium"
+                )}
+              >
+                <Users className="h-5 w-5" />
+                <span>독서모임</span>
+              </Button>
+            </Link>
+          </SheetClose>
+
+          <SheetClose asChild>
+            <Link href="/persona" onClick={handleMenuClick}>
+              <Button
+                variant={pathname === "/persona" ? "secondary" : "ghost"}
+                className={cn(
+                  "w-full justify-start gap-3 h-12",
+                  pathname === "/persona" && "bg-secondary font-medium"
+                )}
+              >
+                <Sparkles className="h-5 w-5" />
+                <span>독서 성향</span>
+              </Button>
+            </Link>
+          </SheetClose>
+
+          {/* 관리자 (관리자만) */}
+          {isAdmin && (
+            <SheetClose asChild>
+              <Link href="/admin" onClick={handleMenuClick}>
+                <Button
+                  variant={
+                    pathname.startsWith("/admin") ? "secondary" : "ghost"
+                  }
+                  className={cn(
+                    "w-full justify-start gap-3 h-12",
+                    pathname.startsWith("/admin") &&
+                      "bg-secondary font-medium"
+                  )}
+                >
+                  <Trees className="h-5 w-5" />
+                  <span>관리자</span>
+                </Button>
+              </Link>
+            </SheetClose>
+          )}
+
+          <Separator className="my-3" />
 
           {/* 설정 섹션 */}
           <div className="flex items-center justify-between h-12 px-4 rounded-lg hover:bg-accent transition-colors">

@@ -319,7 +319,7 @@ export function CreateTemplateDialog({
     setQuotePrompt("");
     setMemoPrompt("");
     onOpenChange(false);
-    toast.success("템플릿이 저장되었습니다.");
+    toast.success("템플릿이 저장됐어요.");
   };
 
   return (

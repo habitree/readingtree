@@ -38,10 +38,10 @@ export function FeatureRequestForm({
           const result = await createFeatureRequest({ title, description });
 
           if (result.success && result.id) {
-            toast.success("기능 요청이 등록되었습니다!");
+            toast.success("기능 요청이 등록됐어요.");
             router.push(`/feature-requests/${result.id}`);
           } else {
-            toast.error(result.error || "등록에 실패했습니다.");
+            toast.error(result.error || "등록에 실패했어요.");
           }
         } else if (mode === "edit" && initialData) {
           const result = await updateFeatureRequest(initialData.id, {
@@ -50,14 +50,14 @@ export function FeatureRequestForm({
           });
 
           if (result.success) {
-            toast.success("수정되었습니다!");
+            toast.success("수정됐어요.");
             router.push(`/feature-requests/${initialData.id}`);
           } else {
-            toast.error(result.error || "수정에 실패했습니다.");
+            toast.error(result.error || "수정에 실패했어요.");
           }
         }
       } catch (error) {
-        toast.error("오류가 발생했습니다.");
+        toast.error("오류가 발생했어요.");
       }
     });
   };

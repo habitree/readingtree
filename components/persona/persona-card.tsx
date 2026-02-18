@@ -44,7 +44,7 @@ export function PersonaCard({
     setIsAnalyzing(true);
     try {
       await analyzeAndSavePersona();
-      toast.success("페르소나 분석이 완료되었습니다!");
+      toast.success("독서 성향 분석이 완료됐어요.");
       // 서버 컴포넌트 새로고침
       router.refresh();
       onRefresh?.();

@@ -573,7 +573,7 @@ StackedBookCovers.displayName = "StackedBookCovers";
 
 // 기록 타입 라벨 정의 (상세보기용)
 const NOTE_TYPE_LABELS: Record<string, { label: string; color: string }> = {
-  transcription: { label: "필사", color: "text-violet-600 dark:text-violet-400" },
+  transcription: { label: "사진 필사", color: "text-violet-600 dark:text-violet-400" },
   photo: { label: "사진", color: "text-sky-600 dark:text-sky-400" },
   memo: { label: "기록", color: "text-emerald-600 dark:text-emerald-400" },
   progress: { label: "진행", color: "text-amber-600 dark:text-amber-400" },
@@ -623,7 +623,7 @@ function SelectedDateDetail({ date, books, noteTypes, onClose }: SelectedDateDet
           <div className="flex items-center gap-2 flex-wrap">
             {noteTypes.transcription > 0 && (
               <span className={cn("text-[11px] font-medium", NOTE_TYPE_LABELS.transcription.color)}>
-                필사 {noteTypes.transcription}
+                사진 필사 {noteTypes.transcription}
               </span>
             )}
             {noteTypes.photo > 0 && (

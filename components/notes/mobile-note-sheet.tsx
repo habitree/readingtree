@@ -96,7 +96,7 @@ export function MobileNoteSheet() {
                     <PenTool className="h-5 w-5 text-forest-600" />
                   )}
                   <span>
-                    {mode === "transcription" ? "필사할" : "기록할"} 책 선택
+                    {mode === "transcription" ? "사진 필사할" : "기록할"} 책 선택
                   </span>
                 </>
               ) : (

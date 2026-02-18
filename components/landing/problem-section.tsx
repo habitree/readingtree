@@ -7,7 +7,7 @@ export function ProblemSection() {
                 <div className="grid lg:grid-cols-2 gap-12 items-center">
                     <div className="space-y-8">
                         <div>
-                            <span className="text-forest-600 font-bold tracking-wider uppercase text-sm mb-4 block">The Problem</span>
+                            <span className="text-forest-600 font-bold tracking-wider uppercase text-sm mb-4 block">이런 경험, 있으신가요?</span>
                             <h2 className="text-3xl md:text-5xl font-bold tracking-tight leading-tight font-serif break-keep">
                                 좋아서 읽었지만<br />
                                 남는 건 <span className="text-forest-600 italic font-serif">피로감</span>뿐이라면?

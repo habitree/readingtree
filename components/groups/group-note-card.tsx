@@ -84,7 +84,7 @@ const noteTypeConfig = {
   },
   transcription: {
     icon: ScanText,
-    label: "필사",
+    label: "사진 필사",
     color: "text-purple-600",
     bgColor: "bg-purple-50 dark:bg-purple-950/30",
     borderColor: "border-l-purple-400",

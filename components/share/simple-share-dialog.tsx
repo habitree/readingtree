@@ -103,14 +103,14 @@ export function SimpleShareDialog({ note }: SimpleShareDialogProps) {
     try {
       await navigator.clipboard.writeText(shareUrl);
       setLinkCopied(true);
-      toast.success("링크가 클립보드에 복사되었습니다.");
+      toast.success("링크가 클립보드에 복사됐어요.");
 
       setTimeout(() => {
         setLinkCopied(false);
       }, 2000);
     } catch (error) {
       console.error("링크 복사 실패:", error);
-      toast.error("링크 복사에 실패했습니다.");
+      toast.error("링크 복사에 실패했어요.");
     }
   };
 
@@ -264,7 +264,7 @@ export function SimpleShareDialog({ note }: SimpleShareDialogProps) {
       const clipboardSuccess = await copyImageToClipboard(blob, {
         onSuccess: () => {
           setCardCopied(true);
-          toast.success("카드가 클립보드에 복사되었습니다!");
+          toast.success("카드가 클립보드에 복사됐어요.");
           setTimeout(() => {
             setCardCopied(false);
           }, 2000);
@@ -281,8 +281,8 @@ export function SimpleShareDialog({ note }: SimpleShareDialogProps) {
         const isMobileDevice = isMobile();
         toast.success(
           isMobileDevice
-            ? "카드 이미지가 다운로드되었습니다. 갤러리에서 확인하세요."
-            : "카드 이미지가 다운로드되었습니다."
+            ? "카드 이미지가 다운로드됐어요. 갤러리에서 확인하세요."
+            : "카드 이미지가 다운로드됐어요."
         );
         setTimeout(() => {
           setCardCopied(false);
@@ -290,7 +290,7 @@ export function SimpleShareDialog({ note }: SimpleShareDialogProps) {
       }
     } catch (error) {
       console.error("카드 복사 오류:", error);
-      toast.error("카드 복사에 실패했습니다. 다시 시도해주세요.");
+      toast.error("카드 복사에 실패했어요. 다시 시도해주세요.");
     } finally {
       setIsCapturing(false);
     }
@@ -352,7 +352,7 @@ export function SimpleShareDialog({ note }: SimpleShareDialogProps) {
         const clipboardSuccess = await copyImageToClipboard(finalBlob, {
           onSuccess: () => {
             setPhotoCopied(true);
-            toast.success("원본 이미지가 클립보드에 복사되었습니다.");
+            toast.success("원본 이미지가 클립보드에 복사됐어요.");
             setTimeout(() => {
               setPhotoCopied(false);
             }, 2000);
@@ -370,8 +370,8 @@ export function SimpleShareDialog({ note }: SimpleShareDialogProps) {
             const isMobileDevice = isMobile();
             toast.success(
               isMobileDevice
-                ? "원본 이미지가 다운로드되었습니다. 갤러리에서 확인하세요."
-                : "원본 이미지가 다운로드되었습니다."
+                ? "원본 이미지가 다운로드됐어요. 갤러리에서 확인하세요."
+                : "원본 이미지가 다운로드됐어요."
             );
 
             setTimeout(() => {
@@ -379,13 +379,13 @@ export function SimpleShareDialog({ note }: SimpleShareDialogProps) {
             }, 2000);
           } catch (downloadError) {
             console.error("다운로드도 실패:", downloadError);
-            toast.error("이미지 복사에 실패했습니다. 브라우저를 확인해주세요.");
+            toast.error("이미지 복사에 실패했어요. 브라우저를 확인해주세요.");
           }
         }
       }, "image/png");
     } catch (error) {
       console.error("이미지 처리 실패:", error);
-      toast.error("이미지 처리에 실패했습니다.");
+      toast.error("이미지 처리에 실패했어요.");
     }
   };
 
@@ -455,11 +455,11 @@ export function SimpleShareDialog({ note }: SimpleShareDialogProps) {
       });
 
       setKakaoShared(true);
-      toast.success("카카오톡 공유가 시작되었습니다.");
+      toast.success("카카오톡 공유가 시작됐어요.");
       setTimeout(() => setKakaoShared(false), 2000);
     } catch (error) {
       console.error("카카오 공유 실패:", error);
-      toast.error("카카오톡 공유에 실패했습니다.");
+      toast.error("카카오톡 공유에 실패했어요.");
     }
   }, [note]);
 

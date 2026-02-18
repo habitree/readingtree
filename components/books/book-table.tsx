@@ -219,12 +219,12 @@ export function BookTable({ books }: BookTableProps) {
     setUpdatingStatus((prev) => ({ ...prev, [userBookId]: true }));
     try {
       await updateBookStatus(userBookId, newStatus);
-      toast.success("상태가 변경되었습니다.");
+      toast.success("상태가 변경됐어요.");
       router.refresh();
     } catch (error) {
       console.error("상태 변경 오류:", error);
       toast.error(
-        error instanceof Error ? error.message : "상태 변경에 실패했습니다."
+        error instanceof Error ? error.message : "상태 변경에 실패했어요."
       );
     } finally {
       setUpdatingStatus((prev) => ({ ...prev, [userBookId]: false }));
@@ -247,7 +247,7 @@ export function BookTable({ books }: BookTableProps) {
     } catch (error) {
       console.error("서재 변경 오류:", error);
       toast.error(
-        error instanceof Error ? error.message : "서재 변경에 실패했습니다."
+        error instanceof Error ? error.message : "서재 변경에 실패했어요."
       );
     } finally {
       setUpdatingBookshelf((prev) => ({ ...prev, [userBookId]: false }));
@@ -261,14 +261,14 @@ export function BookTable({ books }: BookTableProps) {
 
   const handleDeleteConfirm = async (userBookId: string, bookTitle: string) => {
     if (confirmDeleteTitle[userBookId]?.trim() !== bookTitle.trim()) {
-      toast.error("책 제목이 일치하지 않습니다. 정확히 입력해주세요.");
+      toast.error("책 제목이 일치하지 않아요. 정확히 입력해주세요.");
       return;
     }
 
     setDeletingBookId(userBookId);
     try {
       await deleteBook(userBookId);
-      toast.success("책이 삭제되었습니다.");
+      toast.success("책이 삭제됐어요.");
       setDeleteDialogOpen((prev) => ({ ...prev, [userBookId]: false }));
       setConfirmDeleteTitle((prev) => {
         const next = { ...prev };
@@ -279,7 +279,7 @@ export function BookTable({ books }: BookTableProps) {
     } catch (error) {
       console.error("책 삭제 오류:", error);
       toast.error(
-        error instanceof Error ? error.message : "책 삭제에 실패했습니다."
+        error instanceof Error ? error.message : "책 삭제에 실패했어요."
       );
     } finally {
       setDeletingBookId(null);
@@ -482,11 +482,11 @@ export function BookTable({ books }: BookTableProps) {
                                 disabled={updatingStatus[item.id]}
                               >
                                 <span className="truncate">
-                                  {item.status === "not_started" && "읽기전"}
+                                  {item.status === "not_started" && "읽을 예정"}
                                   {item.status === "reading" && "읽는 중"}
                                   {item.status === "completed" && "완독"}
                                   {item.status === "rereading" && "재독"}
-                                  {item.status === "paused" && "중단"}
+                                  {item.status === "paused" && "쉬는 중"}
                                 </span>
                               </Button>
                             </DropdownMenuTrigger>
@@ -497,7 +497,7 @@ export function BookTable({ books }: BookTableProps) {
                                 disabled={item.status === "not_started" || updatingStatus[item.id]}
                                 className={item.status === "not_started" ? "bg-accent" : ""}
                               >
-                                읽기전
+                                읽을 예정
                                 {item.status === "not_started" && " ✓"}
                               </DropdownMenuItem>
                               <DropdownMenuItem
@@ -529,7 +529,7 @@ export function BookTable({ books }: BookTableProps) {
                                 disabled={item.status === "paused" || updatingStatus[item.id]}
                                 className={item.status === "paused" ? "bg-accent" : ""}
                               >
-                                중단
+                                쉬는 중
                                 {item.status === "paused" && " ✓"}
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />

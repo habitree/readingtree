@@ -6,10 +6,8 @@ import { getCurrentUser } from "@/app/actions/auth";
 import { BookshelfPageContent } from "@/components/books/bookshelf-page-content";
 import { MobileBookshelfSelector } from "@/components/books/mobile-bookshelf-selector";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
-import { ArrowLeft, Settings, Plus, LogIn } from "lucide-react";
+import { ArrowLeft, Settings, Plus } from "lucide-react";
 import type { ReadingStatus } from "@/types/book";
 
 interface BookshelfDetailPageProps {
@@ -77,28 +75,6 @@ export default async function BookshelfDetailPage({
 
     return (
       <div className="space-y-4 sm:space-y-6">
-        {/* 게스트 사용자 안내 */}
-        {isGuest && (
-          <Card className="border-primary/20 bg-primary/5">
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between flex-wrap gap-3">
-                <div className="flex items-center gap-3">
-                  <Badge variant="secondary">샘플 데이터</Badge>
-                  <p className="text-sm text-muted-foreground">
-                    현재 샘플 서재를 보고 계십니다. 로그인하여 나만의 서재를 만들어보세요!
-                  </p>
-                </div>
-                <Button asChild size="sm">
-                  <Link href="/login">
-                    <LogIn className="mr-2 h-4 w-4" />
-                    로그인
-                  </Link>
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
         {/* 헤더 */}
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 min-w-0">
@@ -112,30 +88,28 @@ export default async function BookshelfDetailPage({
                 {bookshelf.name}
               </h1>
               <p className="text-xs sm:text-sm text-muted-foreground hidden sm:block truncate">
-                {bookshelf.description || (isGuest ? "샘플 서재입니다" : "내가 읽고 있는 책들을 관리하세요")}
+                {bookshelf.description || "내가 읽고 있는 책들을 관리하세요"}
               </p>
             </div>
-            {/* 모바일 서재 선택기 (로그인 사용자만) */}
-            {!isGuest && <MobileBookshelfSelector currentBookshelfId={bookshelfId} />}
+            {/* 모바일 서재 선택기 */}
+            <MobileBookshelfSelector currentBookshelfId={bookshelfId} />
           </div>
-          {!isGuest && (
-            <div className="flex items-center gap-1 shrink-0">
-              {!bookshelf.is_main && (
-                <Button variant="outline" size="icon" asChild className="hidden sm:inline-flex h-9 w-9 sm:w-auto sm:px-3">
-                  <Link href={`/bookshelves/${bookshelfId}/edit`}>
-                    <Settings className="h-4 w-4 sm:mr-1" />
-                    <span className="hidden sm:inline">설정</span>
-                  </Link>
-                </Button>
-              )}
-              <Button asChild size="icon" className="h-9 w-9 sm:h-10 sm:w-auto sm:px-4">
-                <Link href="/books/search">
-                  <Plus className="h-4 w-4 sm:mr-1" />
-                  <span className="hidden sm:inline">추가</span>
+          <div className="flex items-center gap-1 shrink-0">
+            {!bookshelf.is_main && (
+              <Button variant="outline" size="icon" asChild className="hidden sm:inline-flex h-9 w-9 sm:w-auto sm:px-3">
+                <Link href={`/bookshelves/${bookshelfId}/edit`}>
+                  <Settings className="h-4 w-4 sm:mr-1" />
+                  <span className="hidden sm:inline">설정</span>
                 </Link>
               </Button>
-            </div>
-          )}
+            )}
+            <Button asChild size="icon" className="h-9 w-9 sm:h-10 sm:w-auto sm:px-4">
+              <Link href="/books/search">
+                <Plus className="h-4 w-4 sm:mr-1" />
+                <span className="hidden sm:inline">추가</span>
+              </Link>
+            </Button>
+          </div>
         </div>
 
         {/* 공통 컨텐츠 컴포넌트 */}

@@ -67,7 +67,7 @@ export function TotalPagesEditor({
     const newPages = parseInt(inputValue, 10);
 
     if (isNaN(newPages) || newPages < 1 || newPages > 10000) {
-      toast.error("페이지 수는 1~10,000 사이여야 합니다.");
+      toast.error("페이지 수는 1~10,000 사이여야 해요.");
       return;
     }
 
@@ -79,13 +79,13 @@ export function TotalPagesEditor({
           setTotalPages(newPages);
           setLastSource("manual");
           onUpdate?.(newPages);
-          toast.success("페이지 수가 저장되었습니다.");
+          toast.success("페이지 수가 저장됐어요.");
           setIsOpen(false);
         } else {
-          toast.error(result.error || "저장에 실패했습니다.");
+          toast.error(result.error || "저장에 실패했어요.");
         }
       } catch (error) {
-        toast.error("저장 중 오류가 발생했습니다.");
+        toast.error("저장 중 오류가 생겼어요.");
       }
     });
   };
@@ -93,7 +93,7 @@ export function TotalPagesEditor({
   // API에서 자동 조회
   const handleRefresh = async () => {
     if (!isbn) {
-      toast.error("ISBN이 없어 자동 조회가 불가능합니다.");
+      toast.error("ISBN이 없어 자동 조회가 불가능해요.");
       return;
     }
 
@@ -115,12 +115,12 @@ export function TotalPagesEditor({
         };
         const sourceName = result.source ? sourceNames[result.source] || result.source : "알 수 없음";
 
-        toast.success(`페이지 수를 찾았습니다: ${result.pageCount}p (${sourceName})`);
+        toast.success(`페이지 수를 찾았어요: ${result.pageCount}p (${sourceName})`);
       } else {
-        toast.error(result.error || "페이지 수를 찾을 수 없습니다.");
+        toast.error(result.error || "페이지 수를 찾을 수 없어요.");
       }
     } catch (error) {
-      toast.error("조회 중 오류가 발생했습니다.");
+      toast.error("조회 중 오류가 생겼어요.");
     } finally {
       setIsRefreshing(false);
     }
@@ -310,7 +310,7 @@ export function RefreshPageCountButton({
 
   const handleRefresh = async () => {
     if (!isbn) {
-      toast.error("ISBN이 없어 조회할 수 없습니다.");
+      toast.error("ISBN이 없어 조회할 수 없어요.");
       return;
     }
 

@@ -159,7 +159,7 @@ export function useNoteForm(options: UseNoteFormOptions): UseNoteFormReturn {
             });
           } catch (stampError) {
             console.error("[useNoteForm] 스탬프 적용 오류:", stampError);
-            toast.warning("스탬프 적용에 실패했습니다. 원본 이미지를 업로드합니다.");
+            toast.warning("스탬프 적용에 실패했어요. 원본 이미지를 업로드합니다.");
           }
         }
 
@@ -190,7 +190,7 @@ export function useNoteForm(options: UseNoteFormOptions): UseNoteFormReturn {
 
         if (!data.url) {
           console.error("[useNoteForm] URL이 응답에 없습니다:", data);
-          toast.error(`${file.name} 업로드는 성공했지만 URL을 받지 못했습니다.`);
+          toast.error(`${file.name} 업로드는 됐지만 URL을 받지 못했어요.`);
           continue;
         }
 
@@ -199,7 +199,7 @@ export function useNoteForm(options: UseNoteFormOptions): UseNoteFormReturn {
         console.log("[useNoteForm] 업로드 성공:", { fileName: file.name, index: i });
       } catch (error) {
         console.error("[useNoteForm] 이미지 업로드 오류:", error);
-        toast.error(`${file.name} 업로드에 실패했습니다.`);
+        toast.error(`${file.name} 업로드에 실패했어요.`);
       }
     }
 
@@ -210,7 +210,7 @@ export function useNoteForm(options: UseNoteFormOptions): UseNoteFormReturn {
 
     if (newImages.length > 0) {
       setImages((prev) => [...prev, ...newImages]);
-      toast.success(`${newImages.length}개의 이미지가 업로드되었습니다.`);
+      toast.success(`${newImages.length}개의 이미지가 업로드됐어요.`);
     }
 
     setUploading(false);
@@ -332,7 +332,7 @@ export function useNoteForm(options: UseNoteFormOptions): UseNoteFormReturn {
 
       // 성공 메시지
       if (createdCount > 1) {
-        toast.success(`${createdCount}개의 기록이 저장되었습니다.`);
+        toast.success(`${createdCount}개의 기록이 저장됐어요.`);
       } else {
         toast.success("저장됨");
       }
@@ -378,7 +378,7 @@ async function requestOCR(noteId: string, imageUrl: string): Promise<void> {
   try {
     console.log("[useNoteForm] OCR 요청 시작:", { noteId, imageUrl: imageUrl.substring(0, 50) + "..." });
 
-    toast.info("필사 이미지에서 텍스트를 추출하는 중입니다...", {
+    toast.info("사진에서 텍스트를 추출하는 중이에요...", {
       description: "OCR 처리가 완료되면 자동으로 저장됩니다.",
       duration: 5000,
     });
@@ -395,19 +395,19 @@ async function requestOCR(noteId: string, imageUrl: string): Promise<void> {
     });
 
     if (ocrResponse.ok) {
-      toast.success("OCR 처리가 시작되었습니다.", {
+      toast.success("OCR 처리가 시작됐어요.", {
         description: "처리가 완료되면 자동으로 업데이트됩니다.",
         duration: 3000,
       });
     } else {
       const errorData = await ocrResponse.json().catch(() => ({}));
       console.error("[useNoteForm] OCR 요청 실패:", errorData);
-      toast.warning("OCR 처리 요청에 실패했습니다.", {
+      toast.warning("OCR 처리 요청에 실패했어요.", {
         description: errorData.error || "나중에 다시 시도해주세요.",
       });
     }
   } catch (error) {
     console.error("[useNoteForm] OCR 요청 오류:", error);
-    toast.error("OCR 처리 요청 중 오류가 발생했습니다.");
+    toast.error("OCR 처리 중 오류가 생겼어요.");
   }
 }

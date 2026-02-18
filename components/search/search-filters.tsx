@@ -371,7 +371,7 @@ export function SearchFilters({ onBooksLoaded }: SearchFiltersProps) {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">전체</SelectItem>
-            <SelectItem value="transcription">필사</SelectItem>
+            <SelectItem value="transcription">사진 필사</SelectItem>
             <SelectItem value="photo">사진</SelectItem>
             <SelectItem value="memo">기록</SelectItem>
           </SelectContent>

@@ -131,7 +131,7 @@ export function BookSearch({ onBookAdded, onSelectBook, excludeBookIds, showAlre
           duration: 3000,
         });
       } else {
-        toast.error(errorMessage || "책 검색에 실패했습니다. 다시 시도해주세요.", {
+        toast.error(errorMessage || "책 검색에 실패했어요. 다시 시도해주세요.", {
           description: "문제가 계속되면 다른 검색어로 시도해보세요.",
           duration: 5000,
         });
@@ -209,7 +209,7 @@ export function BookSearch({ onBookAdded, onSelectBook, excludeBookIds, showAlre
       } else {
         // 기존 동작: 내 서재에 추가
         const result = await addBook(book, "reading");
-        toast.success("책이 추가되었습니다!");
+        toast.success("책이 추가됐어요.");
         setQuery("");
         setResults([]);
         onBookAdded?.();
@@ -219,7 +219,7 @@ export function BookSearch({ onBookAdded, onSelectBook, excludeBookIds, showAlre
     } catch (error) {
       console.error("책 추가 오류:", error);
       toast.error(
-        error instanceof Error ? error.message : "책 추가에 실패했습니다."
+        error instanceof Error ? error.message : "책 추가에 실패했어요."
       );
     } finally {
       setIsAdding(null);

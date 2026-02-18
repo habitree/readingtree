@@ -33,7 +33,7 @@ export function BookStatsCards({ stats, className }: BookStatsCardsProps) {
       status: null,
     },
     {
-      label: "읽기전",
+      label: "읽을 예정",
       value: stats.not_started,
       icon: BookX,
       color: "gray",

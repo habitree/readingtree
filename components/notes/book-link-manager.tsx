@@ -73,7 +73,7 @@ export function BookLinkManager({ noteId, content, onUpdate }: BookLinkManagerPr
         memo_content: newMemo.trim() || undefined,
       });
 
-      toast.success("책 링크가 제거되었습니다.");
+      toast.success("책 링크가 제거됐어요.");
       setOpen(false);
       if (onUpdate) {
         onUpdate();
@@ -82,7 +82,7 @@ export function BookLinkManager({ noteId, content, onUpdate }: BookLinkManagerPr
       }
     } catch (error) {
       console.error("책 링크 제거 오류:", error);
-      toast.error("책 링크 제거에 실패했습니다.");
+      toast.error("책 링크 제거에 실패했어요.");
     } finally {
       setIsUpdating(false);
     }

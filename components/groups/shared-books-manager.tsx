@@ -61,7 +61,7 @@ export function SharedBooksManager({ groupId }: SharedBooksManagerProps) {
     try {
       setIsSharing(true);
       await shareUserBookToGroup(groupId, userBook.id);
-      toast.success(`'${userBook.books?.title}'이(가) 공유되었습니다!`);
+      toast.success(`'${userBook.books?.title}'이(가) 공유됐어요.`);
       loadData();
     } catch (error) {
       toast.error(
@@ -75,7 +75,7 @@ export function SharedBooksManager({ groupId }: SharedBooksManagerProps) {
   const handleUnshareBook = async (userBookId: string) => {
     try {
       await unshareUserBookFromGroup(groupId, userBookId);
-      toast.success("공유가 해제되었습니다.");
+      toast.success("공유가 해제됐어요.");
       setUnsharingBookId(null);
       loadData();
     } catch (error) {

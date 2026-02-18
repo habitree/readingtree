@@ -156,7 +156,7 @@ export function MemberList({
     setActionLoading(userId);
     try {
       await approveMember(groupId, userId);
-      toast.success("멤버가 승인되었습니다.");
+      toast.success("멤버가 승인됐어요.");
       setPendingMembers((prev) => prev.filter((m) => m.user_id !== userId));
       router.refresh();
     } catch (error) {
@@ -172,7 +172,7 @@ export function MemberList({
     setActionLoading(userId);
     try {
       await rejectMember(groupId, userId);
-      toast.success("멤버 신청이 거절되었습니다.");
+      toast.success("멤버 신청이 거절됐어요.");
       setPendingMembers((prev) => prev.filter((m) => m.user_id !== userId));
       router.refresh();
     } catch (error) {
@@ -188,7 +188,7 @@ export function MemberList({
     setActionLoading("all");
     try {
       const result = await approveAllPendingMembers(groupId);
-      toast.success(`${result.count}명의 멤버가 승인되었습니다.`);
+      toast.success(`${result.count}명의 멤버가 승인됐어요.`);
       setPendingMembers([]);
       router.refresh();
     } catch (error) {
@@ -205,7 +205,7 @@ export function MemberList({
     setActionLoading(confirmDialog.userId);
     try {
       await removeMember(groupId, confirmDialog.userId);
-      toast.success(`${confirmDialog.userName}님이 모임에서 제외되었습니다.`);
+      toast.success(`${confirmDialog.userName}님이 모임에서 제외됐어요.`);
       setConfirmDialog({ open: false, type: null, userId: "", userName: "" });
       router.refresh();
     } catch (error) {
@@ -226,7 +226,7 @@ export function MemberList({
       toast.success(
         `${confirmDialog.userName}님의 역할이 ${
           confirmDialog.newRole === "moderator" ? "부리더" : "멤버"
-        }로 변경되었습니다.`
+        }로 변경됐어요.`
       );
       setConfirmDialog({ open: false, type: null, userId: "", userName: "" });
       router.refresh();
@@ -244,7 +244,7 @@ export function MemberList({
     setActionLoading(confirmDialog.userId);
     try {
       await transferLeadership(groupId, confirmDialog.userId);
-      toast.success(`${confirmDialog.userName}님에게 리더가 위임되었습니다.`);
+      toast.success(`${confirmDialog.userName}님에게 리더가 위임됐어요.`);
       setConfirmDialog({ open: false, type: null, userId: "", userName: "" });
       router.refresh();
     } catch (error) {

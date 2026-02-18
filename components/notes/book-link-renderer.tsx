@@ -26,7 +26,7 @@ export function BookLinkRenderer({ text, className }: BookLinkRendererProps) {
     
     // 이미 유효하지 않은 링크로 표시된 경우 클릭 방지
     if (invalidLinks.has(userBookId)) {
-      toast.error("이 책은 삭제되었거나 더 이상 접근할 수 없습니다.");
+      toast.error("이 책은 삭제됐거나 더 이상 접근할 수 없어요.");
       return;
     }
 

@@ -151,12 +151,12 @@ export function ReadingStats({ persona }: ReadingStatsProps) {
                 />
               </div>
 
-              {/* 필사 */}
+              {/* 사진 필사 */}
               <div className="space-y-1">
                 <div className="flex items-center justify-between text-sm">
                   <div className="flex items-center gap-2">
                     <FileSignature className="h-4 w-4 text-muted-foreground" />
-                    <span>필사</span>
+                    <span>사진 필사</span>
                   </div>
                   <span className="text-muted-foreground">
                     {stats.noteTypeDistribution.transcription}개

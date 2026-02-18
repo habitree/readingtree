@@ -91,7 +91,7 @@ export function useGroupRealtime({
 
       // 토스트 알림
       if (showToast && payload.new) {
-        toast.info("새 기록이 공유되었습니다!", {
+        toast.info("새 기록이 공유됐어요.", {
           description: "모임에서 새로운 독서 기록을 확인해보세요.",
           duration: 5000,
         });
@@ -125,7 +125,7 @@ export function useGroupRealtime({
 
       // 토스트 알림
       if (showToast) {
-        toast.info("새 멤버가 모임에 참여했습니다!", {
+        toast.info("새 멤버가 모임에 참여했어요.", {
           duration: 4000,
         });
       }

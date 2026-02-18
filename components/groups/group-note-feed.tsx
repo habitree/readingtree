@@ -39,7 +39,7 @@ const noteTypeFilters: {
   { type: "quote", label: "인용구", icon: Quote, color: "text-amber-600" },
   { type: "memo", label: "메모", icon: FileText, color: "text-green-600" },
   { type: "photo", label: "사진", icon: Camera, color: "text-blue-600" },
-  { type: "transcription", label: "필사", icon: ScanText, color: "text-purple-600" },
+  { type: "transcription", label: "사진 필사", icon: ScanText, color: "text-purple-600" },
 ];
 
 function FeedSkeleton() {
@@ -85,7 +85,7 @@ export function GroupNoteFeed({
       setNotes(data);
     } catch (error) {
       console.error("기록 조회 오류:", error);
-      toast.error("기록을 불러오는데 실패했습니다.");
+      toast.error("기록을 불러오지 못했어요.");
     } finally {
       setIsLoading(false);
     }
@@ -98,7 +98,7 @@ export function GroupNoteFeed({
   const handleUnshare = async (noteId: string) => {
     try {
       await unshareNoteFromGroup(noteId, groupId);
-      toast.success("공유가 해제되었습니다.");
+      toast.success("공유가 해제됐어요.");
       loadNotes();
     } catch (error) {
       toast.error(

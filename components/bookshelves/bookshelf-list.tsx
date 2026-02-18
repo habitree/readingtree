@@ -25,7 +25,7 @@ export function BookshelfList({ bookshelves, isLoading, isGuest = false }: Books
     return (
       <div className="text-center py-12">
         <p className="text-muted-foreground">
-          {isGuest ? "샘플 서재가 없습니다." : "서재가 없습니다. 새 서재를 만들어보세요."}
+          {isGuest ? "체험 서재가 없어요." : "서재가 없습니다. 새 서재를 만들어보세요."}
         </p>
       </div>
     );

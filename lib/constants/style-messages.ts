@@ -59,7 +59,7 @@ export interface StyleMessages {
 export const STYLE_MESSAGES: StyleMessages = {
   greeting: {
     morning: "고요한 아침이에요",
-    afternoon: "오후의 정원에서",
+    afternoon: "조용한 오후에요",
     evening: "하루가 저물고 있어요",
     night: "조용한 밤이에요",
   },
@@ -68,7 +68,7 @@ export const STYLE_MESSAGES: StyleMessages = {
     starting: "작은 싹이 돋았어요",
     building: "{count}일째 가꾸고 있어요",
     strong: "{count}일째, 조용히 자라고 있어요",
-    exceptional: "{count}일의 흔적이 쌓여 있어요",
+    exceptional: "{count}일의 흔적이 쌓이고 있어요",
   },
   empty: {
     noRecords: "아직 비어 있는 정원이에요",

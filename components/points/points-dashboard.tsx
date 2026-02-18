@@ -168,7 +168,7 @@ function TransactionItem({ transaction }: { transaction: PointTransaction }) {
     note_quote: "인용구 기록",
     note_memo: "메모 작성",
     note_photo: "사진 기록",
-    note_transcription: "필사 기록",
+    note_transcription: "사진 필사 기록",
     book_add: "책 추가",
     book_complete: "책 완독",
     book_progress_update: "진행률 업데이트",

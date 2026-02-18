@@ -253,7 +253,7 @@ export function NoteFormNew({ bookId }: NoteFormNewProps) {
                 }`}
               >
                 <PenTool className="h-4 w-4 text-purple-600 dark:text-purple-400" />
-                <span className="font-medium text-sm text-purple-700 dark:text-purple-300">필사</span>
+                <span className="font-medium text-sm text-purple-700 dark:text-purple-300">사진 필사</span>
               </div>
             </label>
             <label
@@ -311,7 +311,7 @@ export function NoteFormNew({ bookId }: NoteFormNewProps) {
                           unoptimized={true}
                           onError={() => {
                             console.error("[이미지 표시] 로드 실패:", { url: imageUrl.substring(0, 100), index });
-                            toast.error(`이미지 ${index + 1} 로드에 실패했습니다.`);
+                            toast.error(`이미지 ${index + 1} 로드에 실패했어요.`);
                           }}
                         />
                       ) : (
@@ -340,7 +340,7 @@ export function NoteFormNew({ bookId }: NoteFormNewProps) {
             </div>
             {uploadType && (
               <p className="text-xs text-muted-foreground">
-                타입: {uploadType === "photo" ? "이미지" : "필사"}
+                타입: {uploadType === "photo" ? "이미지" : "사진 필사"}
               </p>
             )}
           </div>

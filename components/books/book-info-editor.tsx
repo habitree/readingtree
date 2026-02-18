@@ -109,14 +109,14 @@ export function BookInfoEditor({
         await moveBookToBookshelf(userBookId, selectedBookshelfId);
       }
 
-      toast.success("책 정보가 업데이트되었습니다.");
+      toast.success("책 정보가 업데이트됐어요.");
       setOpen(false);
       router.refresh();
     } catch (error) {
       toast.error(
         error instanceof Error
           ? error.message
-          : "책 정보 업데이트에 실패했습니다."
+          : "책 정보 업데이트에 실패했어요."
       );
     } finally {
       setIsLoading(false);

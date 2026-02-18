@@ -14,7 +14,7 @@ export function LoginSuccessToast() {
 
   useEffect(() => {
     if (searchParams.get("login") === "success") {
-      toast.success("로그인에 성공했습니다!", {
+      toast.success("로그인했어요.", {
         description: "독서 여정을 시작해보세요.",
         duration: 3000,
       });

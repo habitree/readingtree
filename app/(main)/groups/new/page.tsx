@@ -36,12 +36,12 @@ export default function NewGroupPage() {
         isPublic: formData.isPublic,
       });
 
-      toast.success("모임이 생성되었습니다.");
+      toast.success("모임이 만들어졌어요.");
       router.push(`/groups/${result.groupId}`);
     } catch (error) {
       console.error("모임 생성 오류:", error);
       toast.error(
-        error instanceof Error ? error.message : "모임 생성에 실패했습니다."
+        error instanceof Error ? error.message : "모임 만들기에 실패했어요."
       );
     } finally {
       setIsSubmitting(false);

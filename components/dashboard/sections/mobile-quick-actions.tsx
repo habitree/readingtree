@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { PenTool, BookPlus, Camera, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useMobileNoteSheet, type NoteMode } from "@/hooks/use-mobile-note-sheet";
+import { useLoginPrompt } from "@/hooks/use-login-prompt";
+import { LoginPromptModal } from "@/components/ui/login-prompt-modal";
 
 interface QuickActionItem {
   icon: React.ElementType;
@@ -37,7 +39,7 @@ const quickActions: QuickActionItem[] = [
   },
   {
     icon: Camera,
-    label: "필사",
+    label: "사진 필사",
     sheetMode: "transcription",
     color: "text-forest-600 dark:text-forest-400",
     bgColor: "bg-forest-50/60 dark:bg-forest-900/20",
@@ -59,22 +61,62 @@ const quickActions: QuickActionItem[] = [
  */
 export function MobileQuickActions() {
   const { open } = useMobileNoteSheet();
+  const { isOpen, setIsOpen, title, description, requireLogin } = useLoginPrompt();
 
   // useCallback으로 핸들러 최적화
   const handleOpen = useCallback((mode: NoteMode) => {
+    if (requireLogin({
+      title: "기록을 작성하려면",
+      description: "로그인 후 독서 기록을 작성할 수 있어요.",
+    })) return;
     open(mode);
-  }, [open]);
+  }, [open, requireLogin]);
+
+  const handleLinkClick = useCallback((e: React.MouseEvent, action: QuickActionItem) => {
+    if (requireLogin({
+      title: action.label === "검색" ? "검색하려면" : "책을 추가하려면",
+      description: action.label === "검색"
+        ? "로그인 후 내 기록을 검색할 수 있어요."
+        : "로그인 후 서재에 책을 추가할 수 있어요.",
+    })) {
+      e.preventDefault();
+    }
+  }, [requireLogin]);
 
   return (
-    <div className="grid grid-cols-4 gap-2 sm:hidden">
-      {quickActions.map((action, index) => {
-        // 바텀시트를 여는 액션인 경우 버튼으로 렌더링
-        if (action.sheetMode) {
+    <>
+      <div className="grid grid-cols-4 gap-2 sm:hidden">
+        {quickActions.map((action, index) => {
+          // 바텀시트를 여는 액션인 경우 버튼으로 렌더링
+          if (action.sheetMode) {
+            return (
+              <button
+                key={`action-${index}`}
+                type="button"
+                onClick={() => handleOpen(action.sheetMode!)}
+                className="flex flex-col items-center gap-1.5 p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 active:scale-95 transition-transform duration-150"
+              >
+                <div
+                  className={cn(
+                    "h-11 w-11 rounded-xl flex items-center justify-center",
+                    action.bgColor
+                  )}
+                >
+                  <action.icon className={cn("h-5 w-5", action.color)} />
+                </div>
+                <span className="text-[11px] font-medium text-slate-700 dark:text-slate-300">
+                  {action.label}
+                </span>
+              </button>
+            );
+          }
+
+          // 기존 Link 방식
           return (
-            <button
-              key={`action-${index}`}
-              type="button"
-              onClick={() => handleOpen(action.sheetMode!)}
+            <Link
+              key={action.href}
+              href={action.href!}
+              onClick={(e) => handleLinkClick(e, action)}
               className="flex flex-col items-center gap-1.5 p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 active:scale-95 transition-transform duration-150"
             >
               <div
@@ -88,32 +130,12 @@ export function MobileQuickActions() {
               <span className="text-[11px] font-medium text-slate-700 dark:text-slate-300">
                 {action.label}
               </span>
-            </button>
+            </Link>
           );
-        }
-
-        // 기존 Link 방식
-        return (
-          <Link
-            key={action.href}
-            href={action.href!}
-            className="flex flex-col items-center gap-1.5 p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 active:scale-95 transition-transform duration-150"
-          >
-            <div
-              className={cn(
-                "h-11 w-11 rounded-xl flex items-center justify-center",
-                action.bgColor
-              )}
-            >
-              <action.icon className={cn("h-5 w-5", action.color)} />
-            </div>
-            <span className="text-[11px] font-medium text-slate-700 dark:text-slate-300">
-              {action.label}
-            </span>
-          </Link>
-        );
-      })}
-    </div>
+        })}
+      </div>
+      <LoginPromptModal open={isOpen} onOpenChange={setIsOpen} title={title} description={description} />
+    </>
   );
 }
 
@@ -135,7 +157,7 @@ const desktopQuickActions = [
   },
   {
     icon: Camera,
-    label: "필사",
+    label: "사진 필사",
     href: "/notes/new?type=transcription",
     color: "text-forest-600",
     description: "페이지 담기",

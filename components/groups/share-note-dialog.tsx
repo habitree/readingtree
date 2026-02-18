@@ -38,7 +38,7 @@ const noteTypeLabels = {
   quote: "인용구",
   photo: "사진",
   memo: "메모",
-  transcription: "필사",
+  transcription: "사진 필사",
 };
 
 export function ShareNoteDialog({
@@ -61,7 +61,7 @@ export function ShareNoteDialog({
       setNotes(data);
     } catch (error) {
       console.error("기록 조회 오류:", error);
-      toast.error("기록을 불러오는데 실패했습니다.");
+      toast.error("기록을 불러오지 못했어요.");
     } finally {
       setIsLoading(false);
     }
@@ -106,7 +106,7 @@ export function ShareNoteDialog({
         Array.from(selectedNoteIds),
         groupId
       );
-      toast.success(`${result.sharedCount}개의 기록이 공유되었습니다.`);
+      toast.success(`${result.sharedCount}개의 기록이 공유됐어요.`);
       onOpenChange(false);
       onSuccess?.();
     } catch (error) {

@@ -50,7 +50,7 @@ export function SocialProofSection() {
 
             <div className="container px-4 md:px-6 relative z-10">
                 <div className="text-center mb-20 max-w-3xl mx-auto">
-                    <span className="text-forest-600 font-bold tracking-wider uppercase text-sm mb-4 block">Use Cases</span>
+                    <span className="text-forest-600 font-bold tracking-wider uppercase text-sm mb-4 block">활용 사례</span>
                     <h2 className="text-4xl md:text-5xl font-bold tracking-tight mb-6 font-serif text-charcoal-900 break-keep">
                         ReadTree와 함께<br />
                         당신의 독서가 변화합니다

@@ -220,7 +220,7 @@ export function Header() {
             ) : (
               <div className="flex items-center gap-2">
                 <Button asChild variant="outline" size="sm">
-                  <Link href="/sample">샘플보기</Link>
+                  <Link href="/sample">체험하기</Link>
                 </Button>
                 <Button asChild variant="default" size="sm">
                   <Link href="/login">로그인</Link>

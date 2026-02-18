@@ -23,11 +23,11 @@ export function BookStatusBadge({ status, className, size = "default" }: BookSta
       className: "bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20",
     },
     paused: {
-      label: "중단",
+      label: "쉬는 중",
       className: "bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-500/20",
     },
     not_started: {
-      label: "읽기전",
+      label: "읽을 예정",
       className: "bg-gray-500/10 text-gray-700 dark:text-gray-400 border-gray-500/20",
     },
     rereading: {

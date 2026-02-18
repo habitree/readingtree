@@ -1,10 +1,12 @@
 "use server";
 
+import { cache } from "react";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import type { ReadingStatus } from "@/types/book";
 import type { BookWithNotes, BookStats } from "@/app/actions/books";
 import type { BookshelfWithStats } from "@/types/bookshelf";
 import type { NoteWithBook } from "@/types/note";
+import type { UserPersona } from "@/types/persona";
 
 /**
  * 관리자(샘플 사용자) ID를 동적으로 조회
@@ -919,3 +921,35 @@ export async function getSampleMonthlyActivities(
     return {};
   }
 }
+
+/**
+ * 샘플 사용자의 페르소나 대시보드 데이터 (게스트 독서 성향 페이지용)
+ */
+export const getSamplePersonaDashboardData = cache(async (): Promise<{
+  persona: UserPersona | null;
+  needsAnalysis: boolean;
+  analysisAge: number | null;
+}> => {
+  try {
+    const sampleUserId = await getSampleUserId();
+    const supabase = createAdminSupabaseClient();
+
+    const { data: persona } = await supabase
+      .from("user_personas")
+      .select("*")
+      .eq("user_id", sampleUserId)
+      .maybeSingle();
+
+    return {
+      persona: persona as UserPersona | null,
+      needsAnalysis: false,
+      analysisAge: null,
+    };
+  } catch {
+    return {
+      persona: null,
+      needsAnalysis: false,
+      analysisAge: null,
+    };
+  }
+});

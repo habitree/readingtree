@@ -170,7 +170,7 @@ export function QuickNote({
       }, 1500);
     } catch (error) {
       console.error("기록 저장 실패:", error);
-      toast.error("기록 저장에 실패했습니다.");
+      toast.error("기록 저장에 실패했어요.");
     } finally {
       setIsLoading(false);
     }

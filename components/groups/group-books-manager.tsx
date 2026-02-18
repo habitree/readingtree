@@ -89,7 +89,7 @@ export function GroupBooksManager({ groupId, isLeader }: GroupBooksManagerProps)
   const handleAddBook = async (bookId: string) => {
     try {
       await addGroupBook(groupId, bookId);
-      toast.success("지정도서가 추가되었습니다.");
+      toast.success("지정도서가 추가됐어요.");
       setIsAdding(false);
       loadGroupBooks();
     } catch (error) {
@@ -102,7 +102,7 @@ export function GroupBooksManager({ groupId, isLeader }: GroupBooksManagerProps)
   const handleAddToMyLibrary = async (bookId: string) => {
     try {
       await addGroupBookToMyLibrary(groupId, bookId, "reading");
-      toast.success("내 서재에 추가되었습니다.");
+      toast.success("내 서재에 추가됐어요.");
       loadGroupBooks();
       router.refresh();
     } catch (error) {
@@ -115,7 +115,7 @@ export function GroupBooksManager({ groupId, isLeader }: GroupBooksManagerProps)
   const handleRemoveBook = async (bookId: string) => {
     try {
       await removeGroupBook(groupId, bookId);
-      toast.success("지정도서가 삭제되었습니다.");
+      toast.success("지정도서가 삭제됐어요.");
       setDeletingBookId(null);
       loadGroupBooks();
     } catch (error) {

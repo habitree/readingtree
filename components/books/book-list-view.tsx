@@ -37,7 +37,7 @@ interface BookListViewProps {
 function getStatusLabel(status: ReadingStatus): string {
   switch (status) {
     case "not_started":
-      return "읽기전";
+      return "읽을 예정";
     case "reading":
       return "읽는 중";
     case "completed":
@@ -45,7 +45,7 @@ function getStatusLabel(status: ReadingStatus): string {
     case "rereading":
       return "재독";
     case "paused":
-      return "중단";
+      return "쉬는 중";
     default:
       return status;
   }

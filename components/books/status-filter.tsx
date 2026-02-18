@@ -48,8 +48,8 @@ export function StatusFilter({ currentStatus, basePath: propBasePath }: StatusFi
         <SelectItem value="all">전체</SelectItem>
         <SelectItem value="reading">읽는 중</SelectItem>
         <SelectItem value="completed">완독</SelectItem>
-        <SelectItem value="paused">중단</SelectItem>
-        <SelectItem value="not_started">읽기전</SelectItem>
+        <SelectItem value="paused">쉬는 중</SelectItem>
+        <SelectItem value="not_started">읽을 예정</SelectItem>
         <SelectItem value="rereading">재독</SelectItem>
       </SelectContent>
     </Select>

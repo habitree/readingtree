@@ -79,9 +79,9 @@ export function TagInput({ value, onChange, placeholder = "태그 입력", label
       
       if (result.success) {
         if (result.updatedCount > 0) {
-          toast.success(`태그 "${tag}"가 ${result.updatedCount}개의 기록에서 삭제되었습니다.`);
+          toast.success(`태그 "${tag}"가 ${result.updatedCount}개의 기록에서 삭제됐어요.`);
         } else {
-          toast.info(`태그 "${tag}"가 삭제되었습니다. (사용된 기록이 없습니다.)`);
+          toast.info(`태그 "${tag}"가 삭제됐어요. (사용된 기록이 없어요.)`);
         }
         
         // 태그 목록 새로고침
@@ -100,7 +100,7 @@ export function TagInput({ value, onChange, placeholder = "태그 입력", label
     } catch (error) {
       console.error("태그 삭제 오류:", error);
       toast.error(
-        error instanceof Error ? error.message : "태그 삭제에 실패했습니다."
+        error instanceof Error ? error.message : "태그 삭제에 실패했어요."
       );
     }
   };
@@ -155,15 +155,15 @@ export function TagInput({ value, onChange, placeholder = "태그 입력", label
 
       if (successCount > 0) {
         toast.success(
-          `${successCount}개의 태그가 삭제되었습니다. (총 ${totalUpdatedCount}개 기록에서 제거됨)`
+          `${successCount}개의 태그가 삭제됐어요. (총 ${totalUpdatedCount}개 기록에서 제거됨)`
         );
       }
       if (failCount > 0) {
-        toast.error(`${failCount}개의 태그 삭제에 실패했습니다.`);
+        toast.error(`${failCount}개의 태그 삭제에 실패했어요.`);
       }
     } catch (error) {
       console.error("태그 일괄 삭제 오류:", error);
-      toast.error("태그 삭제에 실패했습니다.");
+      toast.error("태그 삭제에 실패했어요.");
     }
   };
 
@@ -190,7 +190,7 @@ export function TagInput({ value, onChange, placeholder = "태그 입력", label
     
     // 태그 개수 제한 (10개)
     if (currentTags.length > 10) {
-      toast.error("태그는 최대 10개까지 입력할 수 있습니다.");
+      toast.error("태그는 최대 10개까지 입력할 수 있어요.");
       // 10개까지만 유지
       const limitedTags = currentTags.slice(0, 10);
       const limitedValue = limitedTags.join(", ") + (newValue.endsWith(",") ? ", " : "");
@@ -231,7 +231,7 @@ export function TagInput({ value, onChange, placeholder = "태그 입력", label
     
     // 태그 개수 제한 확인
     if (currentTags.length >= 10) {
-      toast.error("태그는 최대 10개까지 입력할 수 있습니다.");
+      toast.error("태그는 최대 10개까지 입력할 수 있어요.");
       setShowSuggestions(false);
       return;
     }
@@ -262,7 +262,7 @@ export function TagInput({ value, onChange, placeholder = "태그 입력", label
     
     // 태그 개수 제한 확인
     if (currentTags.length >= 10) {
-      toast.error("태그는 최대 10개까지 입력할 수 있습니다.");
+      toast.error("태그는 최대 10개까지 입력할 수 있어요.");
       return;
     }
     
@@ -521,7 +521,7 @@ export function TagInput({ value, onChange, placeholder = "태그 입력", label
           </div>
           {currentTags.length >= 10 && (
             <p className="text-xs text-destructive font-medium">
-              태그는 최대 10개까지 입력할 수 있습니다.
+              태그는 최대 10개까지 입력할 수 있어요.
             </p>
           )}
         </div>

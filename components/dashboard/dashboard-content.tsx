@@ -1,7 +1,4 @@
 import { Suspense } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { getCachedCurrentUser } from "@/lib/cached";
 import Link from "next/link";
 import { BookOpen } from "lucide-react";
@@ -24,37 +21,22 @@ import {
 import { TertiaryZoneWrapper } from "./tertiary-zone-wrapper";
 
 /**
- * 게스트 사용자 배너 (동기 렌더링)
+ * 게스트 사용자 미니 인라인 배너
  */
 async function GuestBanner() {
   const user = await getCachedCurrentUser();
   if (user) return null;
 
   return (
-    <Card className="border-primary/30 bg-primary/5 shadow-sm">
-      <CardContent className="pt-6">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="flex items-start gap-4 flex-1">
-            <div className="rounded-full bg-primary/10 p-2 shrink-0">
-              <BookOpen className="h-5 w-5 text-primary" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-2">
-                <Badge variant="secondary" className="gap-1">
-                  샘플 데이터
-                </Badge>
-              </div>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                샘플 데이터를 확인 중입니다. 로그인하여 나만의 독서 기록을 시작하세요.
-              </p>
-            </div>
-          </div>
-          <Button asChild fullWidth className="sm:w-auto sm:min-w-[120px]">
-            <Link href="/login">로그인</Link>
-          </Button>
+    <Link href="/login" className="block">
+      <div className="flex items-center justify-between px-4 py-2 rounded-lg bg-primary/5 border border-primary/10 hover:bg-primary/10 transition-colors">
+        <div className="flex items-center gap-2">
+          <BookOpen className="h-4 w-4 text-primary shrink-0" />
+          <span className="text-sm text-muted-foreground">ReadTree를 체험 중이에요</span>
         </div>
-      </CardContent>
-    </Card>
+        <span className="text-sm font-medium text-primary shrink-0">로그인</span>
+      </div>
+    </Link>
   );
 }
 
@@ -100,11 +82,9 @@ export default async function DashboardContent() {
 }
 
 /**
- * 인증된 사용자만 퀵 액션 표시
+ * 퀵 액션 표시 (로그인/게스트 공통, 게스트는 클릭 시 로그인 유도)
  */
 async function AuthenticatedQuickActions() {
-  const user = await getCachedCurrentUser();
-  if (!user) return null;
   return <MobileQuickActions />;
 }
 

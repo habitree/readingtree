@@ -1,11 +1,14 @@
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { LogIn, Sparkles } from "lucide-react";
+import { LogIn, Sparkles, X, BookOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-type GuestAlertVariant = "default" | "compact" | "hero";
+type GuestAlertVariant = "default" | "compact" | "hero" | "inline-banner";
 
 interface GuestAlertProps {
   /** 표시할 메시지 */
@@ -23,27 +26,62 @@ interface GuestAlertProps {
 /**
  * 게스트 사용자 안내 컴포넌트
  *
- * 비로그인 사용자에게 샘플 데이터임을 알리고 로그인을 유도합니다.
- *
  * @example
  * ```tsx
- * // 기본 사용
- * {isGuest && <GuestAlert message="샘플 책 목록을 보고 계십니다" />}
- *
- * // 컴팩트 스타일
- * {isGuest && <GuestAlert variant="compact" />}
- *
- * // 히어로 스타일 (책 상세 페이지)
- * {isGuest && <GuestAlert variant="hero" message="로그인하여 나만의 서재를 만들어보세요!" />}
+ * {isGuest && <GuestAlert variant="inline-banner" />}
  * ```
  */
 export function GuestAlert({
-  message = "현재 샘플 데이터를 보고 계십니다. 로그인하여 시작해보세요!",
+  message = "ReadTree를 미리 둘러보고 있어요",
   variant = "default",
   className,
   loginLabel = "로그인",
   loginHref = "/login",
 }: GuestAlertProps) {
+  const [dismissed, setDismissed] = useState(() => {
+    if (typeof window !== "undefined" && variant === "inline-banner") {
+      return sessionStorage.getItem("guest-banner-dismissed") === "true";
+    }
+    return false;
+  });
+
+  if (variant === "inline-banner") {
+    if (dismissed) return null;
+
+    return (
+      <div
+        className={cn(
+          "flex items-center justify-between gap-2 px-3 py-2 rounded-lg",
+          "bg-primary/5 border border-primary/10",
+          className
+        )}
+      >
+        <div className="flex items-center gap-2 min-w-0">
+          <BookOpen className="h-3.5 w-3.5 text-primary shrink-0" />
+          <span className="text-sm text-muted-foreground truncate">체험 중이에요</span>
+          <Link
+            href={loginHref}
+            className="text-sm font-medium text-primary hover:underline shrink-0"
+          >
+            {loginLabel}
+          </Link>
+        </div>
+        <button
+          onClick={() => {
+            setDismissed(true);
+            if (typeof window !== "undefined") {
+              sessionStorage.setItem("guest-banner-dismissed", "true");
+            }
+          }}
+          className="shrink-0 p-1 rounded hover:bg-primary/10 transition-colors"
+          aria-label="닫기"
+        >
+          <X className="h-3.5 w-3.5 text-muted-foreground" />
+        </button>
+      </div>
+    );
+  }
+
   if (variant === "compact") {
     return (
       <div
@@ -56,7 +94,7 @@ export function GuestAlert({
         <div className="flex items-center gap-2">
           <Badge variant="secondary" className="text-xs">
             <Sparkles className="w-3 h-3 mr-1" />
-            샘플
+            체험하기
           </Badge>
           <span className="text-sm text-muted-foreground">{message}</span>
         </div>
@@ -87,7 +125,7 @@ export function GuestAlert({
                 className="bg-white/80 dark:bg-slate-800/80 shadow-sm"
               >
                 <Sparkles className="w-3 h-3 mr-1" />
-                샘플
+                체험하기
               </Badge>
               <p className="text-sm text-muted-foreground">{message}</p>
             </div>
@@ -109,7 +147,7 @@ export function GuestAlert({
       <CardContent className="pt-6">
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-3">
-            <Badge variant="secondary">샘플 데이터</Badge>
+            <Badge variant="secondary">체험하기</Badge>
             <p className="text-sm text-muted-foreground">{message}</p>
           </div>
           <Button asChild size="sm">

@@ -5,7 +5,7 @@ export function BenefitsSection() {
         {
             icon: <Layers className="w-10 h-10 text-primary" />,
             title: "완벽한 기록 통합",
-            description: "필사, 메모, 사진이 책 한 권에 자동으로 모입니다. 파편화된 기록의 스트레스에서 해방되세요.",
+            description: "인용구, 메모, 사진 필사가 책 한 권에 자동으로 모입니다. 파편화된 기록의 스트레스에서 해방되세요.",
             highlight: "정리의 자동화"
         },
         {

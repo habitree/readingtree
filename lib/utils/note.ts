@@ -18,14 +18,14 @@ export function getNoteTypeLabel(
     return "사진";
   }
 
-  // 이미지가 있고 type이 transcription이면 "필사"
+  // 이미지가 있고 type이 transcription이면 "사진 필사"
   if (hasImage && type === "transcription") {
-    return "필사";
+    return "사진 필사";
   }
 
-  // type이 quote면 "필사"
+  // type이 quote면 "인용구"
   if (type === "quote") {
-    return "필사";
+    return "인용구";
   }
 
   // 그 외는 모두 "기록"

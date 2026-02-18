@@ -216,7 +216,7 @@ export const POINT_ACTION_DEFAULTS: Record<PointActionType, { base_points: numbe
   note_quote: { base_points: 15, description: "인용구 기록", category: "reading" },
   note_memo: { base_points: 10, description: "메모 작성", category: "reading" },
   note_photo: { base_points: 12, description: "사진 기록", category: "reading" },
-  note_transcription: { base_points: 15, description: "필사 기록", category: "reading" },
+  note_transcription: { base_points: 15, description: "사진 필사 기록", category: "reading" },
   note_progress: { base_points: 5, description: "진행 기록", category: "reading" },
   book_add: { base_points: 8, description: "책 추가", category: "reading" },
   book_complete: { base_points: 60, description: "책 완독", category: "reading" },

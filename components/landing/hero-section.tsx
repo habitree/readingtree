@@ -12,7 +12,7 @@ export function HeroSection() {
                 <div className="flex flex-col items-start text-left space-y-8 max-w-2xl">
                     <div className="inline-flex items-center rounded-full border border-charcoal-200 bg-paper-100 px-4 py-1.5 text-sm font-medium text-charcoal-600 shadow-sm transition-colors hover:bg-paper-200 cursor-default">
                         <span className="flex h-2 w-2 rounded-full bg-forest-500 mr-2 animate-pulse" />
-                        Reading Asset Management
+                        독서 기록 관리 플랫폼
                     </div>
 
                     <h1 className="text-4xl sm:text-5xl md:text-7xl lg:text-7xl font-serif font-bold text-charcoal-900 leading-[1.2] tracking-tight break-keep">
@@ -100,7 +100,7 @@ export function HeroSection() {
                             {/* Scanner Overlay UI */}
                             <div className="absolute bottom-8 right-8 bg-charcoal-900/90 backdrop-blur text-white px-4 py-2 rounded-full text-sm flex items-center shadow-lg transform translate-y-2 opacity-0 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300">
                                 <Highlighter className="w-4 h-4 mr-2" />
-                                OCR Scanning...
+                                텍스트 추출 중...
                             </div>
                         </div>
                     </div>
