@@ -64,7 +64,7 @@ export default async function BookshelvesPage() {
               책을 분류하여 관리할 수 있는 서재를 만들어보세요
             </p>
           </div>
-          <CreateBookshelfDialog />
+          {!isGuest && <CreateBookshelfDialog />}
         </div>
 
         <BookshelfList bookshelves={sortedBookshelves} isGuest={isGuest} />

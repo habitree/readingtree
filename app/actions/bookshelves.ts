@@ -1,6 +1,7 @@
 "use server";
 
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { revalidatePath } from "next/cache";
 import type {
   Bookshelf,
@@ -459,4 +460,86 @@ export async function updateBookshelfOrder(
 
   revalidatePath("/bookshelves");
   revalidatePath("/books");
+}
+
+/**
+ * 공개 서재 조회 (책 목록 + 소유자 정보 포함)
+ * Admin Client 사용으로 RLS 우회 - is_public = true인 서재만 조회
+ */
+export async function getPublicBookshelfWithBooks(bookshelfId: string): Promise<{
+  bookshelf: Bookshelf;
+  books: Array<{
+    id: string;
+    title: string;
+    author: string | null;
+    cover_image_url: string | null;
+    status: string;
+  }>;
+  owner: {
+    id: string;
+    name: string | null;
+    avatar_url: string | null;
+  } | null;
+} | null> {
+  const supabase = createAdminSupabaseClient();
+
+  // 공개 서재 조회
+  const { data: bookshelf, error: bookshelfError } = await supabase
+    .from("bookshelves")
+    .select("*")
+    .eq("id", bookshelfId)
+    .eq("is_public", true)
+    .maybeSingle();
+
+  if (bookshelfError || !bookshelf) {
+    return null;
+  }
+
+  // 서재에 속한 책 목록 조회
+  const { data: userBooks, error: booksError } = await supabase
+    .from("user_books")
+    .select(`
+      id,
+      status,
+      books (
+        id,
+        title,
+        author,
+        cover_image_url
+      )
+    `)
+    .eq("bookshelf_id", bookshelfId)
+    .order("created_at", { ascending: false });
+
+  if (booksError) {
+    return null;
+  }
+
+  const books = (userBooks || []).map((ub: any) => ({
+    id: ub.books?.id || "",
+    title: ub.books?.title || "제목 없음",
+    author: ub.books?.author || null,
+    cover_image_url: ub.books?.cover_image_url || null,
+    status: ub.status || "not_started",
+  }));
+
+  // 소유자 정보 조회
+  let owner: { id: string; name: string | null; avatar_url: string | null } | null = null;
+  if (bookshelf.user_id) {
+    const { data: userData } = await supabase
+      .from("users")
+      .select("id, name, avatar_url")
+      .eq("id", bookshelf.user_id)
+      .maybeSingle();
+
+    if (userData) {
+      owner = userData;
+    }
+  }
+
+  return {
+    bookshelf: bookshelf as unknown as Bookshelf,
+    books,
+    owner,
+  };
 }

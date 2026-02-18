@@ -14,10 +14,12 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils/cn";
 import { getBookshelves } from "@/app/actions/bookshelves";
+import { getSampleBookshelves } from "@/app/actions/sample";
 import type { Bookshelf } from "@/types/bookshelf";
 
 interface MobileBookshelfSelectorProps {
   currentBookshelfId?: string;
+  isGuest?: boolean;
 }
 
 /**
@@ -27,6 +29,7 @@ interface MobileBookshelfSelectorProps {
  */
 export function MobileBookshelfSelector({
   currentBookshelfId,
+  isGuest = false,
 }: MobileBookshelfSelectorProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -36,8 +39,15 @@ export function MobileBookshelfSelector({
   useEffect(() => {
     async function loadBookshelves() {
       try {
-        const data = await getBookshelves();
-        setBookshelves(data);
+        if (isGuest) {
+          const data = await getSampleBookshelves();
+          setBookshelves(data.map(({ id, user_id, name, description, is_main, order, is_public, created_at, updated_at }) => ({
+            id, user_id, name, description, is_main, order, is_public, created_at, updated_at,
+          })));
+        } else {
+          const data = await getBookshelves();
+          setBookshelves(data);
+        }
       } catch (error) {
         console.error("서재 목록 조회 오류:", error);
       } finally {
@@ -45,7 +55,7 @@ export function MobileBookshelfSelector({
       }
     }
     loadBookshelves();
-  }, []);
+  }, [isGuest]);
 
   if (isLoading) {
     return (

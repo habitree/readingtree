@@ -19,6 +19,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { updateBookshelf, deleteBookshelf } from "@/app/actions/bookshelves";
 import { BookshelfWithStats } from "@/types/bookshelf";
 import { toast } from "sonner";
+import { Switch } from "@/components/ui/switch";
 import { Trash2, Save } from "lucide-react";
 
 interface BookshelfEditFormProps {
@@ -29,6 +30,7 @@ export function BookshelfEditForm({ bookshelf }: BookshelfEditFormProps) {
   const router = useRouter();
   const [name, setName] = useState(bookshelf.name);
   const [description, setDescription] = useState(bookshelf.description || "");
+  const [isPublic, setIsPublic] = useState(bookshelf.is_public);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -46,6 +48,7 @@ export function BookshelfEditForm({ bookshelf }: BookshelfEditFormProps) {
       await updateBookshelf(bookshelf.id, {
         name: name.trim(),
         description: description.trim() || null,
+        is_public: isPublic,
       });
       toast.success("저장됨");
       router.push(`/bookshelves/${bookshelf.id}`);
@@ -105,6 +108,19 @@ export function BookshelfEditForm({ bookshelf }: BookshelfEditFormProps) {
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="서재에 대한 설명을 입력하세요."
                 rows={3}
+              />
+            </div>
+            <div className="flex items-center justify-between rounded-lg border p-4">
+              <div className="space-y-0.5">
+                <Label htmlFor="is-public" className="text-sm font-medium cursor-pointer">서재 공개</Label>
+                <p className="text-xs text-muted-foreground">
+                  공개하면 링크를 통해 누구나 이 서재를 볼 수 있습니다.
+                </p>
+              </div>
+              <Switch
+                id="is-public"
+                checked={isPublic}
+                onCheckedChange={setIsPublic}
               />
             </div>
             <div className="flex items-center justify-between pt-4">

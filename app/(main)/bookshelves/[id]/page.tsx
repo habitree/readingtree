@@ -7,6 +7,7 @@ import { BookshelfPageContent } from "@/components/books/bookshelf-page-content"
 import { MobileBookshelfSelector } from "@/components/books/mobile-bookshelf-selector";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { BookshelfShareButton } from "@/components/bookshelves/bookshelf-share-button";
 import { ArrowLeft, Settings, Plus } from "lucide-react";
 import type { ReadingStatus } from "@/types/book";
 
@@ -25,18 +26,37 @@ export async function generateMetadata({
   params,
 }: BookshelfDetailPageProps): Promise<Metadata> {
   const resolvedParams = await params;
-  const bookshelf = await getBookshelfWithStats(resolvedParams.id);
 
-  if (!bookshelf) {
+  try {
+    const bookshelf = await getBookshelfWithStats(resolvedParams.id);
+
+    if (!bookshelf) {
+      return {
+        title: "서재를 찾을 수 없습니다 | ReadTree",
+      };
+    }
+
     return {
-      title: "서재를 찾을 수 없습니다 | ReadTree",
+      title: `${bookshelf.name} | ReadTree`,
+      description: bookshelf.description || `${bookshelf.name} 서재`,
+    };
+  } catch {
+    // 게스트 사용자일 때 getBookshelfWithStats가 실패할 수 있음
+    try {
+      const sampleBookshelf = await getSampleBookshelfWithStats(resolvedParams.id);
+      if (sampleBookshelf) {
+        return {
+          title: `${sampleBookshelf.name} | ReadTree`,
+          description: sampleBookshelf.description || `${sampleBookshelf.name} 서재`,
+        };
+      }
+    } catch {
+      // fallback
+    }
+    return {
+      title: "서재 | ReadTree",
     };
   }
-
-  return {
-    title: `${bookshelf.name} | ReadTree`,
-    description: bookshelf.description || `${bookshelf.name} 서재`,
-  };
 }
 
 /**
@@ -92,24 +112,31 @@ export default async function BookshelfDetailPage({
               </p>
             </div>
             {/* 모바일 서재 선택기 */}
-            <MobileBookshelfSelector currentBookshelfId={bookshelfId} />
+            <MobileBookshelfSelector currentBookshelfId={bookshelfId} isGuest={isGuest} />
           </div>
-          <div className="flex items-center gap-1 shrink-0">
-            {!bookshelf.is_main && (
-              <Button variant="outline" size="icon" asChild className="hidden sm:inline-flex h-9 w-9 sm:w-auto sm:px-3">
-                <Link href={`/bookshelves/${bookshelfId}/edit`}>
-                  <Settings className="h-4 w-4 sm:mr-1" />
-                  <span className="hidden sm:inline">설정</span>
+          {!isGuest && (
+            <div className="flex items-center gap-1 shrink-0">
+              <BookshelfShareButton
+                bookshelfId={bookshelfId}
+                bookshelfName={bookshelf.name}
+                isPublic={bookshelf.is_public}
+              />
+              {!bookshelf.is_main && (
+                <Button variant="outline" size="icon" asChild className="hidden sm:inline-flex h-9 w-9 sm:w-auto sm:px-3">
+                  <Link href={`/bookshelves/${bookshelfId}/edit`}>
+                    <Settings className="h-4 w-4 sm:mr-1" />
+                    <span className="hidden sm:inline">설정</span>
+                  </Link>
+                </Button>
+              )}
+              <Button asChild size="icon" className="h-9 w-9 sm:h-10 sm:w-auto sm:px-4">
+                <Link href="/books/search">
+                  <Plus className="h-4 w-4 sm:mr-1" />
+                  <span className="hidden sm:inline">추가</span>
                 </Link>
               </Button>
-            )}
-            <Button asChild size="icon" className="h-9 w-9 sm:h-10 sm:w-auto sm:px-4">
-              <Link href="/books/search">
-                <Plus className="h-4 w-4 sm:mr-1" />
-                <span className="hidden sm:inline">추가</span>
-              </Link>
-            </Button>
-          </div>
+            </div>
+          )}
         </div>
 
         {/* 공통 컨텐츠 컴포넌트 */}
