@@ -47,21 +47,29 @@ export default async function OgImage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const { id: noteId } = await params;
+  // 전체를 try-catch로 감싸서 어떤 에러든 fallback 이미지 반환
+  let fontOptions: Record<string, any> = {};
 
-  const fontData = await loadKoreanFont();
-  const fontOptions = fontData
-    ? {
-        fonts: [
-          {
-            name: "NotoSansKR",
-            data: fontData,
-            style: "normal" as const,
-            weight: 600 as const,
-          },
-        ],
-      }
-    : {};
+  try {
+    const fontData = await loadKoreanFont();
+    fontOptions = fontData
+      ? {
+          fonts: [
+            {
+              name: "NotoSansKR",
+              data: fontData,
+              style: "normal" as const,
+              weight: 600 as const,
+            },
+          ],
+        }
+      : {};
+  } catch {
+    // 폰트 로드 실패 시 기본 폰트 사용
+  }
+
+  try {
+  const { id: noteId } = await params;
 
   if (!noteId || typeof noteId !== "string" || !isValidUUID(noteId)) {
     return fallbackImageResponse(fontOptions);
@@ -69,7 +77,7 @@ export default async function OgImage({
 
   // 노트 조회 (anon client - is_public=true 노트는 RLS 허용)
   const supabase = createAnonSupabaseClient();
-  const { data: note } = await supabase
+  const { data: note, error: noteError } = await supabase
     .from("notes")
     .select(
       `id, content, type, page_number, user_id, created_at, books (id, title, author, cover_image_url), transcriptions (extracted_text)`
@@ -78,7 +86,7 @@ export default async function OgImage({
     .eq("is_public", true)
     .single();
 
-  if (!note) {
+  if (!note || noteError) {
     return fallbackImageResponse(fontOptions);
   }
 
@@ -86,17 +94,21 @@ export default async function OgImage({
   let userName: string | null = null;
   let userAvatarUrl: string | null = null;
 
-  const serviceClient = createServiceSupabaseClient();
-  if (serviceClient && note.user_id) {
-    const { data: user } = await serviceClient
-      .from("users")
-      .select("name, avatar_url")
-      .eq("id", note.user_id)
-      .single();
-    if (user) {
-      userName = user.name;
-      userAvatarUrl = user.avatar_url;
+  try {
+    const serviceClient = createServiceSupabaseClient();
+    if (serviceClient && note.user_id) {
+      const { data: user } = await serviceClient
+        .from("users")
+        .select("name, avatar_url")
+        .eq("id", note.user_id)
+        .single();
+      if (user) {
+        userName = user.name;
+        userAvatarUrl = user.avatar_url;
+      }
     }
+  } catch {
+    // user 조회 실패 시 무시 (익명으로 표시)
   }
 
   const rawBooks = (note as any).books;
@@ -492,6 +504,11 @@ export default async function OgImage({
     ),
     { ...size, ...fontOptions }
   );
+
+  } catch (e) {
+    console.error("[OG Image] Unexpected error:", e);
+    return fallbackImageResponse(fontOptions);
+  }
 }
 
 /** 기록을 찾을 수 없거나 비공개일 때 기본 OG 이미지 */
