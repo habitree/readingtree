@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { getNoteDetail } from "@/app/actions/notes";
 import { getCurrentUser } from "@/app/actions/auth";
-import { getSampleNoteDetail } from "@/app/actions/sample";
+import { getSampleNoteDetail, getSampleUserBooksByIds } from "@/app/actions/sample";
 import { SimpleShareDialog } from "@/components/share/simple-share-dialog";
 import { NoteDeleteButton } from "@/components/notes/note-delete-button";
 import { Edit, ChevronLeft, ShieldCheck, ShieldAlert, BookOpen } from "lucide-react";
@@ -83,20 +83,24 @@ export default async function NoteDetailPage({ params }: NoteDetailPageProps) {
   // 필사 데이터는 getNoteDetail()의 transcriptions JOIN으로 이미 포함됨
   const transcription = noteWithBook.transcription || null;
 
-  // 연결된 책 정보 로드 (카드 내부 표시용 - 로그인 사용자만)
+  // 연결된 책 정보 로드 (카드 내부 표시용)
   let relatedBooksForCard: RelatedBookInfo[] = [];
-  if (!isGuest && noteWithBook.related_user_book_ids && noteWithBook.related_user_book_ids.length > 0) {
+  let relatedBooksRaw: any[] = [];
+  if (noteWithBook.related_user_book_ids && noteWithBook.related_user_book_ids.length > 0) {
     try {
-      const allBooks = await getUserBooks();
       const ids = noteWithBook.related_user_book_ids;
-      relatedBooksForCard = (allBooks || [])
-        .filter((ub: any) => ids.includes(ub.id))
-        .map((ub: any) => ({
-          id: ub.id,
-          title: ub.books?.title || "알 수 없는 책",
-          author: ub.books?.author || null,
-          coverImageUrl: ub.books?.cover_image_url || null,
-        }));
+      if (isGuest) {
+        relatedBooksRaw = await getSampleUserBooksByIds(ids);
+      } else {
+        const allBooks = await getUserBooks();
+        relatedBooksRaw = (allBooks || []).filter((ub: any) => ids.includes(ub.id));
+      }
+      relatedBooksForCard = relatedBooksRaw.map((ub: any) => ({
+        id: ub.id,
+        title: ub.books?.title || "알 수 없는 책",
+        author: ub.books?.author || null,
+        coverImageUrl: ub.books?.cover_image_url || null,
+      }));
     } catch {
       // 연결된 책 로드 실패 시 무시
     }
@@ -146,24 +150,26 @@ export default async function NoteDetailPage({ params }: NoteDetailPageProps) {
           </div>
         </div>
 
-        {/* 액션 버튼들 - 게스트는 읽기 전용 */}
-        {!isGuest && (
-          <div className="flex items-center gap-2 mt-3 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide sm:justify-end">
-            <SimpleShareDialog note={noteWithBook} />
-            <RelatedBooksManager
-              noteId={noteWithBook.id}
-              currentRelatedBookIds={noteWithBook.related_user_book_ids || null}
-              mainBookId={noteWithBook.user_book_id || ""}
-            />
-            <Button variant="outline" size="sm" asChild className="gap-1.5 h-9 px-3 shrink-0 shadow-sm">
-              <Link href={`/notes/${noteWithBook.id}/edit`}>
-                <Edit className="h-4 w-4" />
-                <span className="text-sm">수정</span>
-              </Link>
-            </Button>
-            <NoteDeleteButton noteId={noteWithBook.id} />
-          </div>
-        )}
+        {/* 액션 버튼들 */}
+        <div className="flex items-center gap-2 mt-3 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide sm:justify-end">
+          <SimpleShareDialog note={noteWithBook} />
+          {!isGuest && (
+            <>
+              <RelatedBooksManager
+                noteId={noteWithBook.id}
+                currentRelatedBookIds={noteWithBook.related_user_book_ids || null}
+                mainBookId={noteWithBook.user_book_id || ""}
+              />
+              <Button variant="outline" size="sm" asChild className="gap-1.5 h-9 px-3 shrink-0 shadow-sm">
+                <Link href={`/notes/${noteWithBook.id}/edit`}>
+                  <Edit className="h-4 w-4" />
+                  <span className="text-sm">수정</span>
+                </Link>
+              </Button>
+              <NoteDeleteButton noteId={noteWithBook.id} />
+            </>
+          )}
+        </div>
       </div>
 
       {/* 2. 메인 리딩 카드 (통합 디자인) - 개선된 장식 */}
@@ -187,6 +193,7 @@ export default async function NoteDetailPage({ params }: NoteDetailPageProps) {
             <RelatedBooksDisplay
               relatedBookIds={noteWithBook.related_user_book_ids}
               mainBookId={noteWithBook.user_book_id || ""}
+              initialBooks={isGuest ? relatedBooksRaw : undefined}
             />
           </CardContent>
         </Card>

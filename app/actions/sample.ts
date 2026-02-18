@@ -685,6 +685,33 @@ export async function getSampleNoteDetail(noteId: string) {
 }
 
 /**
+ * 샘플 사용자의 특정 user_book ID 목록으로 책 정보 조회 (게스트 연결된 책 표시용)
+ */
+export async function getSampleUserBooksByIds(userBookIds: string[]) {
+  if (!userBookIds || userBookIds.length === 0) return [];
+
+  const sampleUserId = await getSampleUserId();
+  const supabase = createAdminSupabaseClient();
+
+  const { data, error } = await supabase
+    .from("user_books")
+    .select(`
+      id,
+      books (
+        id,
+        title,
+        author,
+        cover_image_url
+      )
+    `)
+    .eq("user_id", sampleUserId)
+    .in("id", userBookIds);
+
+  if (error || !data) return [];
+  return data;
+}
+
+/**
  * 샘플 사용자의 전체 노트 목록 조회 (기록 페이지용)
  */
 export async function getSampleAllNotes(): Promise<NoteWithBook[]> {

@@ -290,17 +290,19 @@ export function RelatedBooksManager({
 interface RelatedBooksDisplayProps {
   relatedBookIds: string[] | null;
   mainBookId: string;
+  initialBooks?: any[];
 }
 
 export function RelatedBooksDisplay({
   relatedBookIds,
   mainBookId,
+  initialBooks,
 }: RelatedBooksDisplayProps) {
-  const [relatedBooks, setRelatedBooks] = useState<any[]>([]);
+  const [relatedBooks, setRelatedBooks] = useState<any[]>(initialBooks || []);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    if (relatedBookIds && relatedBookIds.length > 0) {
+    if (!initialBooks && relatedBookIds && relatedBookIds.length > 0) {
       loadRelatedBooks();
     }
   }, [relatedBookIds]);
@@ -311,7 +313,6 @@ export function RelatedBooksDisplay({
     setIsLoading(true);
     try {
       const result = await getUserBooks();
-      // getUserBooks는 배열을 반환하므로 직접 사용
       const filtered = (result || []).filter((book: any) =>
         relatedBookIds.includes(book.id)
       );
