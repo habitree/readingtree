@@ -303,6 +303,7 @@ export async function getSampleBookDetail(userBookId: string) {
         publisher,
         published_date,
         cover_image_url,
+        total_pages,
         description_summary,
         summary
       )
@@ -582,7 +583,7 @@ export async function getSampleNotes(userBookId: string): Promise<NoteWithBook[]
     return [];
   }
 
-  // 샘플 사용자의 해당 책 노트 조회
+  // 샘플 사용자의 해당 책 노트 조회 (transcriptions JOIN 포함)
   const { data: notes, error: notesError } = await supabase
     .from("notes")
     .select(`
@@ -592,6 +593,11 @@ export async function getSampleNotes(userBookId: string): Promise<NoteWithBook[]
         title,
         author,
         cover_image_url
+      ),
+      transcriptions (
+        extracted_text,
+        raw_extracted_text,
+        status
       )
     `)
     .eq("user_id", sampleUserId)
@@ -602,13 +608,15 @@ export async function getSampleNotes(userBookId: string): Promise<NoteWithBook[]
     return [];
   }
 
-  // NoteWithBook 형태로 변환
+  // NoteWithBook 형태로 변환 (transcription 포함)
   return notes.map((note: any) => {
     const book = Array.isArray(note.books) ? note.books[0] : note.books;
-    const { books, ...restNote } = note;
+    const transcription = note.transcriptions || undefined;
+    const { books, transcriptions, ...restNote } = note;
     return {
       ...restNote,
       book: book || undefined,
+      transcription: transcription || undefined,
     };
   }) as NoteWithBook[];
 }

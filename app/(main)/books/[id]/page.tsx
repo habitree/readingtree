@@ -98,7 +98,12 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
 
   if (isGuest) {
     // 게스트: 샘플 사용자의 노트 데이터를 그대로 표시
-    notes = await getSampleNotes(userBook.id).catch(() => []);
+    try {
+      notes = await getSampleNotes(userBook.id);
+    } catch (e) {
+      console.error("게스트 노트 조회 실패:", e);
+      notes = [];
+    }
   } else {
     const [notesResult, relatedBooksResult] = await Promise.all([
       getNotes(userBook.id, undefined, user),
@@ -245,98 +250,7 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
                 </p>
               )}
             </div>
-            <BookInfoEditor
-              userBookId={userBook.id}
-              currentReadingReason={userBook.reading_reason}
-              currentStartedAt={userBook.started_at}
-              currentCompletedDates={completedDates.length > 0 ? completedDates : null}
-              currentBookshelfId={(userBook as any).bookshelf_id || null}
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* ===== 2. 액션바 ===== */}
-      {/* --- 모바일 액션바 (sticky) --- */}
-      <div className="lg:hidden sticky top-12 sm:top-14 z-20 -mx-2 sm:-mx-4 px-2 sm:px-4 py-2.5 bg-background/95 backdrop-blur-sm border-b border-border/40">
-        <div className="space-y-2.5">
-          {/* 진행률 */}
-          <ReadingProgress
-            userBookId={userBook.id}
-            bookId={book.id}
-            isbn={book.isbn}
-            bookTitle={book.title}
-            bookAuthor={book.author}
-            currentPage={(userBook as any).current_page || 0}
-            totalPages={book.total_pages}
-            status={userBook.status as string}
-            startedAt={userBook.started_at}
-          />
-          {/* 버튼 그룹 */}
-          <div className="flex items-center gap-2">
-            <Button asChild size="sm" className="flex-1 shadow-sm bg-primary hover:bg-primary/90 h-9">
-              <Link href={`/notes/new?bookId=${userBook.id}`}>
-                <PenTool className="mr-2 h-4 w-4" />
-                기록 작성
-              </Link>
-            </Button>
-            <BookStatusSelector
-              currentStatus={userBook.status as ReadingStatus}
-              userBookId={userBook.id}
-              currentBookshelfId={(userBook as any).bookshelf_id || null}
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* --- PC 액션바 (카드형, 단일 컬럼) --- */}
-      <div className="hidden lg:block">
-        <div className="rounded-xl border border-border/50 bg-card/80 shadow-sm p-5 space-y-4">
-          {/* 진행률 + 모멘텀 */}
-          <ReadingProgress
-            userBookId={userBook.id}
-            bookId={book.id}
-            isbn={book.isbn}
-            bookTitle={book.title}
-            bookAuthor={book.author}
-            currentPage={(userBook as any).current_page || 0}
-            totalPages={book.total_pages}
-            status={userBook.status as string}
-            startedAt={userBook.started_at}
-          />
-          {/* 버튼 가로 배치 */}
-          <div className="flex items-center gap-2 pt-1 border-t border-border/30">
-            <Button asChild size="default" className="flex-1 shadow-sm bg-primary hover:bg-primary/90 h-10">
-              <Link href={`/notes/new?bookId=${userBook.id}`}>
-                <PenTool className="mr-2 h-4 w-4" />
-                기록 작성
-              </Link>
-            </Button>
-            <BookStatusSelector
-              currentStatus={userBook.status as ReadingStatus}
-              userBookId={userBook.id}
-              currentBookshelfId={(userBook as any).bookshelf_id || null}
-            />
-            <BookInfoEditor
-              userBookId={userBook.id}
-              currentReadingReason={userBook.reading_reason}
-              currentStartedAt={userBook.started_at}
-              currentCompletedDates={completedDates.length > 0 ? completedDates : null}
-              currentBookshelfId={(userBook as any).bookshelf_id || null}
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* PC: 읽는 이유 (액션바 아래, 독서기록 위) - 이유가 없는 경우에만 입력 유도 */}
-      {!userBook.reading_reason && (
-        <div className="hidden lg:block">
-          <div className="rounded-lg bg-muted/15 border border-dashed border-border/40 p-4">
-            <div className="flex items-center gap-3">
-              <Quote className="w-4 h-4 text-primary/40 shrink-0" />
-              <p className="text-sm text-muted-foreground flex-1">
-                &apos;{book.title}&apos;을 읽기로 한 계기를 기록해보세요
-              </p>
+            {!isGuest && (
               <BookInfoEditor
                 userBookId={userBook.id}
                 currentReadingReason={userBook.reading_reason}
@@ -344,9 +258,106 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
                 currentCompletedDates={completedDates.length > 0 ? completedDates : null}
                 currentBookshelfId={(userBook as any).bookshelf_id || null}
               />
-            </div>
+            )}
           </div>
         </div>
+      </div>
+
+      {/* ===== 2. 액션바 ===== */}
+      {!isGuest && (
+        <>
+          {/* --- 모바일 액션바 (sticky) --- */}
+          <div className="lg:hidden sticky top-12 sm:top-14 z-20 -mx-2 sm:-mx-4 px-2 sm:px-4 py-2.5 bg-background/95 backdrop-blur-sm border-b border-border/40">
+            <div className="space-y-2.5">
+              {/* 진행률 */}
+              <ReadingProgress
+                userBookId={userBook.id}
+                bookId={book.id}
+                isbn={book.isbn}
+                bookTitle={book.title}
+                bookAuthor={book.author}
+                currentPage={(userBook as any).current_page || 0}
+                totalPages={book.total_pages}
+                status={userBook.status as string}
+                startedAt={userBook.started_at}
+              />
+              {/* 버튼 그룹 */}
+              <div className="flex items-center gap-2">
+                <Button asChild size="sm" className="flex-1 shadow-sm bg-primary hover:bg-primary/90 h-9">
+                  <Link href={`/notes/new?bookId=${userBook.id}`}>
+                    <PenTool className="mr-2 h-4 w-4" />
+                    기록 작성
+                  </Link>
+                </Button>
+                <BookStatusSelector
+                  currentStatus={userBook.status as ReadingStatus}
+                  userBookId={userBook.id}
+                  currentBookshelfId={(userBook as any).bookshelf_id || null}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* --- PC 액션바 (카드형, 단일 컬럼) --- */}
+          <div className="hidden lg:block">
+            <div className="rounded-xl border border-border/50 bg-card/80 shadow-sm p-5 space-y-4">
+              {/* 진행률 + 모멘텀 */}
+              <ReadingProgress
+                userBookId={userBook.id}
+                bookId={book.id}
+                isbn={book.isbn}
+                bookTitle={book.title}
+                bookAuthor={book.author}
+                currentPage={(userBook as any).current_page || 0}
+                totalPages={book.total_pages}
+                status={userBook.status as string}
+                startedAt={userBook.started_at}
+              />
+              {/* 버튼 가로 배치 */}
+              <div className="flex items-center gap-2 pt-1 border-t border-border/30">
+                <Button asChild size="default" className="flex-1 shadow-sm bg-primary hover:bg-primary/90 h-10">
+                  <Link href={`/notes/new?bookId=${userBook.id}`}>
+                    <PenTool className="mr-2 h-4 w-4" />
+                    기록 작성
+                  </Link>
+                </Button>
+                <BookStatusSelector
+                  currentStatus={userBook.status as ReadingStatus}
+                  userBookId={userBook.id}
+                  currentBookshelfId={(userBook as any).bookshelf_id || null}
+                />
+                <BookInfoEditor
+                  userBookId={userBook.id}
+                  currentReadingReason={userBook.reading_reason}
+                  currentStartedAt={userBook.started_at}
+                  currentCompletedDates={completedDates.length > 0 ? completedDates : null}
+                  currentBookshelfId={(userBook as any).bookshelf_id || null}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* PC: 읽는 이유 (액션바 아래, 독서기록 위) - 이유가 없는 경우에만 입력 유도 */}
+          {!userBook.reading_reason && (
+            <div className="hidden lg:block">
+              <div className="rounded-lg bg-muted/15 border border-dashed border-border/40 p-4">
+                <div className="flex items-center gap-3">
+                  <Quote className="w-4 h-4 text-primary/40 shrink-0" />
+                  <p className="text-sm text-muted-foreground flex-1">
+                    &apos;{book.title}&apos;을 읽기로 한 계기를 기록해보세요
+                  </p>
+                  <BookInfoEditor
+                    userBookId={userBook.id}
+                    currentReadingReason={userBook.reading_reason}
+                    currentStartedAt={userBook.started_at}
+                    currentCompletedDates={completedDates.length > 0 ? completedDates : null}
+                    currentBookshelfId={(userBook as any).bookshelf_id || null}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       {/* ===== 3. 독서 기록 영역 ===== */}
@@ -387,28 +398,32 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
             completedDates={completedDates}
           />
 
-          <div className="pt-3 border-t border-border/30">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                <Link2 className="w-3.5 h-3.5" />
-                연결된 책
-                {relatedBooks.length > 0 && (
-                  <span className="text-xs bg-muted px-1.5 py-0.5 rounded-full">
-                    {relatedBooks.length}
-                  </span>
-                )}
+          {!isGuest && (
+            <div className="pt-3 border-t border-border/30">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                  <Link2 className="w-3.5 h-3.5" />
+                  연결된 책
+                  {relatedBooks.length > 0 && (
+                    <span className="text-xs bg-muted px-1.5 py-0.5 rounded-full">
+                      {relatedBooks.length}
+                    </span>
+                  )}
+                </div>
+                <RelatedBooksEditor userBookId={userBook.id} />
               </div>
-              <RelatedBooksEditor userBookId={userBook.id} />
+              <RelatedBooksList userBookId={userBook.id} initialBooks={relatedBooks} />
             </div>
-            <RelatedBooksList userBookId={userBook.id} initialBooks={relatedBooks} />
-          </div>
+          )}
 
-          <div className="pt-3 border-t border-border/30">
-            <BookDeleteButton
-              userBookId={userBook.id}
-              bookTitle={book.title}
-            />
-          </div>
+          {!isGuest && (
+            <div className="pt-3 border-t border-border/30">
+              <BookDeleteButton
+                userBookId={userBook.id}
+                bookTitle={book.title}
+              />
+            </div>
+          )}
         </div>
       </details>
     </div>
