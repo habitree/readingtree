@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { motion } from "framer-motion";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -15,8 +16,7 @@ import {
   PenLine,
   CheckCircle2,
   Check,
-  Circle,
-  TrendingUp,
+  Flame,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { UserPersona } from "@/types/persona";
@@ -25,7 +25,6 @@ import { useStyle } from "@/hooks/use-style";
 import { ContinueReadingCard, NoReadingBookCard } from "./continue-reading-card";
 import { OnboardingChecklist, type OnboardingItem } from "@/components/onboarding/onboarding-checklist";
 import type { DailyRecordByType } from "@/app/actions/stats";
-import { GrowthTree } from "./growth-tree";
 
 interface ContinueReadingData {
   userBookId: string;
@@ -77,13 +76,17 @@ interface HomeHeroSectionProps {
   weeklyProgress?: WeeklyProgressData | null;
   dailyRecordsByType?: Record<string, DailyRecordByType>;
   currentBookProgress?: CurrentBookProgressData | null;
+  /** 사용자 나무 레벨 (1~10) */
+  userLevel?: number;
+  /** 나무 레벨 이름 (예: "씨앗", "새싹") */
+  levelTitle?: string;
   /** 게스트 모드 (샘플 데이터 표시) */
   isGuest?: boolean;
 }
 
 /**
- * 홈 히어로 섹션 - 5초 규칙 기반 정보 계층 구조
- * Primary Zone: 인사말 + 핵심 지표 3개 + 주간 진행 바
+ * 홈 히어로 섹션 - Stitch 디자인 기반
+ * Primary Zone: 인사말 + 나무 일러스트 + 핵심 지표 + 주간 진행
  */
 export function HomeHeroSection({
   userName,
@@ -97,6 +100,8 @@ export function HomeHeroSection({
   weeklyProgress,
   dailyRecordsByType = {},
   currentBookProgress,
+  userLevel = 1,
+  levelTitle,
   isGuest = false,
 }: HomeHeroSectionProps) {
   const [mounted, setMounted] = useState(false);
@@ -167,165 +172,170 @@ export function HomeHeroSection({
     transcription: { icon: PenTool, label: "사진 필사", color: "text-purple-500" },
   };
 
-  // 진행률 계산 (현재 읽는 책 기준)
-  const progressPercent = currentBookProgress?.progressPercent || 0;
-
-  // 나무 성장 레벨 계산
-  const treeLevel = Math.min(5, Math.floor((streak || 0) / 3) + (todayNotes > 0 ? 1 : 0));
+  // 나무 이미지 레벨
+  const safeLevel = Math.max(1, Math.min(10, userLevel));
 
   return (
     <div className="space-y-2 sm:space-y-3">
-      {/* ======== PRIMARY ZONE: 5초 내 핵심 파악 ======== */}
+      {/* ======== PRIMARY ZONE: 히어로 카드 (Stitch 스타일) ======== */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.4 }}
       >
-        <Card className="relative overflow-hidden bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/60">
-          <div className="relative px-3 py-3 sm:p-5">
-            {/* 나무 장식 (우상단) */}
-            <GrowthTree
-              level={treeLevel}
-              className="absolute right-3 top-3 sm:right-4 sm:top-4"
-            />
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-b from-[#eafdf5] to-[#f4fbf8] dark:from-forest-950/40 dark:to-slate-900 border border-forest-200/40 dark:border-forest-800/30 shadow-sm">
+          {/* 장식 배경 원 */}
+          <div className="absolute top-0 right-0 w-32 h-32 bg-forest-500/5 dark:bg-forest-400/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+          <div className="absolute bottom-0 left-0 w-24 h-24 bg-amber-400/10 dark:bg-amber-400/5 rounded-full blur-2xl translate-y-1/2 -translate-x-1/2" />
 
-            <div className="mb-3 sm:mb-4 pr-10">
-              <div className="flex items-center gap-2 mb-0.5 sm:mb-1">
-                {displayGreeting.emoji && (
-                  <span className="text-xl sm:text-2xl">{displayGreeting.emoji}</span>
-                )}
-                <h1 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
-                  {displayGreeting.text}
-                  {userName && <span className="text-forest-600 dark:text-forest-400">, {userName}님</span>}
-                </h1>
-              </div>
-              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
-                {motivationalMessage}
-              </p>
-            </div>
-
-            {/* 핵심 지표 3개: 스트릭 | 오늘 기록 | 읽은 만큼 */}
-            <div className="grid grid-cols-3 gap-1.5 sm:gap-3">
-              {/* 스트릭 — 배경 + weeklyProgress 7일 바 */}
-              <div className="rounded-xl p-2 sm:p-2.5 text-center bg-forest-50/80 dark:bg-forest-900/20">
-                <div className="flex items-center justify-center gap-1 mb-0.5">
-                  <span className="text-xs sm:text-sm font-semibold text-forest-700 dark:text-forest-300">
-                    {streak}
-                  </span>
-                </div>
-                <p className="text-[10px] sm:text-xs text-forest-600/70 dark:text-forest-400/70 mb-1">흔적</p>
-                {/* 미니 7일 바 차트 */}
-                {weeklyProgress && (
-                  <div className="flex items-end justify-center gap-px h-2.5">
-                    {weeklyProgress.days.map((day) => (
-                      <div
-                        key={day.date}
-                        className={cn(
-                          "w-1 rounded-full",
-                          day.hasRecord
-                            ? "bg-forest-500 dark:bg-forest-400 h-2.5"
-                            : day.isFuture
-                              ? "bg-forest-200/50 dark:bg-forest-700/30 h-1"
-                              : "bg-forest-200 dark:bg-forest-700/50 h-1.5"
-                        )}
-                      />
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* 오늘 기록 — 배경 + 아이콘 */}
-              <Link
-                href="/notes"
-                className="rounded-xl p-2 sm:p-2.5 text-center bg-paper-50/80 dark:bg-slate-800/50 hover:bg-paper-100/80 dark:hover:bg-slate-800/70 transition-colors"
-              >
-                <div className="flex items-center justify-center gap-1 mb-0.5">
-                  {todayNotes > 0 ? (
-                    <CheckCircle2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-green-500" />
-                  ) : (
-                    <PenLine className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-forest-500" />
+          <div className="relative px-4 py-4 sm:px-6 sm:py-5">
+            <div className="flex items-start justify-between gap-3">
+              {/* 좌측: 인사말 + 레벨 뱃지 */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-0.5 sm:mb-1">
+                  {displayGreeting.emoji && (
+                    <span className="text-xl sm:text-2xl">{displayGreeting.emoji}</span>
                   )}
-                  <span className="text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-300">
-                    {todayNotes}
-                  </span>
+                  <h1 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white leading-tight">
+                    {displayGreeting.text}
+                    {userName && <span className="text-forest-700 dark:text-forest-400">, {userName}님</span>}
+                  </h1>
                 </div>
-                <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400">오늘의 기록</p>
-              </Link>
+                <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mb-3">
+                  {motivationalMessage}
+                </p>
 
-              {/* 읽은 만큼 — 배경 + 미니 프로그레스 */}
-              {currentBookProgress ? (
-                <Link
-                  href={`/books/${currentBookProgress.userBookId}`}
-                  className="rounded-xl p-2 sm:p-2.5 text-center bg-paper-50/80 dark:bg-slate-800/50 hover:bg-paper-100/80 dark:hover:bg-slate-800/70 transition-colors"
-                >
-                  <div className="flex items-center justify-center gap-0.5 mb-0.5">
-                    <TrendingUp className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-blue-500" />
-                    <span className="text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-300">
-                      {progressPercent}%
+                {/* 레벨 뱃지 */}
+                {levelTitle && (
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white/70 dark:bg-white/10 rounded-full shadow-sm border border-forest-200/40 dark:border-forest-700/30 mb-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-forest-500 animate-pulse" />
+                    <span className="text-[10px] sm:text-xs font-semibold text-forest-700 dark:text-forest-300">
+                      Lv.{safeLevel} {levelTitle}
                     </span>
                   </div>
-                  <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 truncate mb-1">읽은 만큼</p>
-                  {/* 미니 프로그레스 바 */}
-                  <div className="h-1 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
-                    <div
-                      className="h-full rounded-full bg-blue-500 dark:bg-blue-400"
-                      style={{ width: `${progressPercent}%` }}
-                    />
-                  </div>
-                </Link>
-              ) : (
-                <div className="rounded-xl p-2 sm:p-2.5 text-center bg-slate-50/80 dark:bg-slate-800/30">
-                  <div className="flex items-center justify-center gap-0.5 mb-0.5">
-                    <TrendingUp className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-slate-400" />
-                    <span className="text-xs sm:text-sm font-semibold text-slate-400 dark:text-slate-500">
-                      -
-                    </span>
-                  </div>
-                  <p className="text-[10px] sm:text-xs text-slate-400 dark:text-slate-500">읽은 만큼</p>
-                </div>
-              )}
+                )}
+              </div>
+
+              {/* 우측: 나무 이미지 영역 */}
+              <div className="relative w-24 h-24 sm:w-28 sm:h-28 shrink-0">
+                <Image
+                  src={`/images/trees/level-${safeLevel}.webp`}
+                  alt={`독서나무 레벨 ${safeLevel}`}
+                  fill
+                  className="object-contain drop-shadow-md"
+                  priority
+                />
+              </div>
             </div>
+          </div>
+        </div>
+      </motion.div>
 
-            {/* 주간 진행 바 (나뭇잎 버전) */}
-            {userName && weeklyProgress && (
-              <div className="mt-4 pt-3 border-t border-slate-200/50 dark:border-slate-700/50">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-medium text-slate-600 dark:text-slate-400">
-                    이번 주의 흐름
-                  </span>
-                  <span className="text-xs text-slate-500">
-                    {weeklyProgress.recordedDays}일
-                  </span>
-                </div>
-                <div className="flex justify-between gap-1">
-                  {weeklyProgress.days.map((day) => (
-                    <div
-                      key={day.date}
-                      className="flex flex-col items-center gap-1 flex-1"
-                    >
-                      <span
-                        className={cn(
-                          "text-[9px] sm:text-[10px] font-medium",
-                          day.isToday
-                            ? "text-forest-600 dark:text-forest-400"
-                            : "text-slate-400 dark:text-slate-500"
-                        )}
-                      >
-                        {day.dayLabel}
-                      </span>
-                      <LeafDayIndicator
-                        hasRecord={day.hasRecord}
-                        isToday={day.isToday}
-                        isFuture={day.isFuture}
-                      />
-                    </div>
-                  ))}
-                </div>
+      {/* ======== 통계 카드 2개: 연속 기록 + 오늘의 기록 ======== */}
+      <div className="grid grid-cols-2 gap-2 sm:gap-3">
+        {/* 연속 기록 */}
+        <Card className="p-3 sm:p-4 border-slate-200/60 dark:border-slate-800/60 bg-white dark:bg-slate-900">
+          <div className="flex items-center gap-1.5 mb-1.5">
+            <Flame className="h-4 w-4 text-orange-500" />
+            <span className="text-[10px] sm:text-xs font-semibold text-slate-500 dark:text-slate-400">연속 기록</span>
+          </div>
+          <div className="flex items-baseline gap-1 mb-2">
+            <span className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">{streak}</span>
+            <span className="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400">일</span>
+          </div>
+          {/* 미니 스파크라인 바 */}
+          {weeklyProgress && (
+            <div className="flex items-end gap-0.5 h-4 opacity-60">
+              {weeklyProgress.days.map((day) => (
+                <div
+                  key={day.date}
+                  className={cn(
+                    "flex-1 rounded-t-sm",
+                    day.hasRecord
+                      ? "bg-orange-400 dark:bg-orange-400 h-full"
+                      : day.isFuture
+                        ? "bg-orange-100 dark:bg-orange-900/30 h-1/4"
+                        : "bg-orange-200 dark:bg-orange-800/40 h-2/5"
+                  )}
+                />
+              ))}
+            </div>
+          )}
+        </Card>
+
+        {/* 오늘의 기록 */}
+        <Link href="/notes">
+          <Card className="p-3 sm:p-4 border-slate-200/60 dark:border-slate-800/60 bg-white dark:bg-slate-900 hover:shadow-md transition-shadow duration-200 h-full">
+            <div className="flex items-center gap-1.5 mb-1.5">
+              {todayNotes > 0 ? (
+                <CheckCircle2 className="h-4 w-4 text-forest-500" />
+              ) : (
+                <PenLine className="h-4 w-4 text-forest-500" />
+              )}
+              <span className="text-[10px] sm:text-xs font-semibold text-slate-500 dark:text-slate-400">오늘의 기록</span>
+            </div>
+            <div className="flex items-baseline gap-1 mb-2">
+              <span className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">{todayNotes}</span>
+              <span className="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400">개</span>
+            </div>
+            {/* 미니 스파크라인 바 */}
+            {weeklyProgress && (
+              <div className="flex items-end gap-0.5 h-4 opacity-60">
+                {weeklyProgress.days.map((day) => (
+                  <div
+                    key={day.date}
+                    className={cn(
+                      "flex-1 rounded-t-sm",
+                      day.hasRecord
+                        ? "bg-forest-400 dark:bg-forest-400"
+                        : "bg-forest-100 dark:bg-forest-900/30",
+                      day.hasRecord
+                        ? day.count >= 3 ? "h-full" : day.count >= 1 ? "h-3/5" : "h-2/5"
+                        : "h-1/4"
+                    )}
+                  />
+                ))}
               </div>
             )}
+          </Card>
+        </Link>
+      </div>
+
+      {/* ======== 주간 진행 (나뭇잎 버전) ======== */}
+      {userName && weeklyProgress && (
+        <Card className="px-4 py-3 sm:px-5 sm:py-4 border-slate-200/60 dark:border-slate-800/60 bg-white dark:bg-slate-900">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-sm font-bold text-slate-900 dark:text-white">이번 주 달성</span>
+            <span className="text-[10px] sm:text-xs font-medium text-forest-600 dark:text-forest-400 bg-forest-50 dark:bg-forest-900/30 px-2 py-0.5 rounded-md">
+              {weeklyProgress.recordedDays}/{weeklyProgress.totalDays}일
+            </span>
+          </div>
+          <div className="flex justify-between items-center">
+            {weeklyProgress.days.map((day) => (
+              <div
+                key={day.date}
+                className="flex flex-col items-center gap-1.5 flex-1"
+              >
+                <span
+                  className={cn(
+                    "text-[9px] sm:text-[10px] font-bold uppercase",
+                    day.isToday
+                      ? "text-forest-600 dark:text-forest-400"
+                      : "text-slate-400 dark:text-slate-500"
+                  )}
+                >
+                  {day.dayLabel}
+                </span>
+                <LeafDayIndicator
+                  hasRecord={day.hasRecord}
+                  isToday={day.isToday}
+                  isFuture={day.isFuture}
+                />
+              </div>
+            ))}
           </div>
         </Card>
-      </motion.div>
+      )}
 
       {/* ======== SECONDARY ZONE: 액션 유도 ======== */}
       {(userName || (isGuest && continueReadingBooks.length > 0)) && (
@@ -383,47 +393,34 @@ interface LeafDayIndicatorProps {
   isFuture: boolean;
 }
 
-const LEAF_RADIUS = "60% 40% 50% 30%";
-
 function LeafDayIndicator({ hasRecord, isToday, isFuture }: LeafDayIndicatorProps) {
   if (isFuture) {
     return (
-      <div className="h-5 w-5 flex items-center justify-center">
-        <div className="h-2 w-2 rounded-full bg-slate-200 dark:bg-slate-700" />
+      <div className="h-8 w-8 rounded-full bg-slate-100 dark:bg-slate-800/60 flex items-center justify-center border border-dashed border-slate-300 dark:border-slate-600">
+        <div className="h-2 w-2 rounded-full bg-slate-300 dark:bg-slate-600 opacity-50" />
       </div>
     );
   }
 
   if (hasRecord) {
     return (
-      <div className="h-5 w-5 flex items-center justify-center">
-        <div
-          className="h-4 w-4 bg-forest-500 dark:bg-forest-400 flex items-center justify-center"
-          style={{ borderRadius: LEAF_RADIUS }}
-        >
-          <Check className="h-2.5 w-2.5 text-white" strokeWidth={3} />
-        </div>
+      <div className="h-8 w-8 rounded-full bg-forest-500 dark:bg-forest-500 flex items-center justify-center shadow-sm">
+        <Check className="h-4 w-4 text-white" strokeWidth={3} />
       </div>
     );
   }
 
   if (isToday) {
     return (
-      <div className="h-5 w-5 flex items-center justify-center">
-        <div
-          className="h-4 w-4 border-2 border-forest-400 dark:border-forest-500"
-          style={{ borderRadius: LEAF_RADIUS }}
-        />
+      <div className="h-8 w-8 rounded-full bg-slate-100 dark:bg-slate-800/60 flex items-center justify-center border-2 border-dashed border-forest-400 dark:border-forest-500">
+        <div className="h-2 w-2 rounded-full bg-forest-400 dark:bg-forest-500" />
       </div>
     );
   }
 
   return (
-    <div className="h-5 w-5 flex items-center justify-center">
-      <div
-        className="h-3 w-3 bg-slate-200 dark:bg-slate-700"
-        style={{ borderRadius: LEAF_RADIUS }}
-      />
+    <div className="h-8 w-8 rounded-full bg-slate-100 dark:bg-slate-800/60 flex items-center justify-center border border-dashed border-slate-300 dark:border-slate-600">
+      <div className="h-2.5 w-2.5 rounded-full bg-slate-300 dark:bg-slate-600" />
     </div>
   );
 }
@@ -516,56 +513,53 @@ export function PersonaInsightCard({
  */
 export function HomeHeroSkeleton() {
   return (
-    <div className="space-y-3">
-      {/* 메인 히어로 카드 스켈레톤 */}
-      <Card className="relative overflow-hidden bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/60">
-        <div className="p-4 sm:p-6">
-          {/* 나무 장식 스켈레톤 */}
-          <div className="absolute right-3 top-3 sm:right-4 sm:top-4">
-            <div className="w-9 h-11 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
-          </div>
-
-          <div className="mb-4 pr-10">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="h-6 w-40 sm:w-48 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
+    <div className="space-y-2 sm:space-y-3">
+      {/* 히어로 카드 스켈레톤 */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-b from-[#eafdf5] to-[#f4fbf8] dark:from-forest-950/40 dark:to-slate-900 border border-forest-200/40 dark:border-forest-800/30">
+        <div className="px-4 py-4 sm:px-6 sm:py-5">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex-1 space-y-3">
+              <div className="space-y-2">
+                <div className="h-6 w-48 rounded bg-forest-200/40 dark:bg-forest-700/30 animate-pulse" />
+                <div className="h-4 w-40 rounded bg-forest-200/30 dark:bg-forest-700/20 animate-pulse" />
+              </div>
+              <div className="h-6 w-24 rounded-full bg-white/50 dark:bg-white/10 animate-pulse" />
             </div>
-            <div className="h-4 w-48 sm:w-56 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
+            <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-lg bg-forest-200/30 dark:bg-forest-700/20 animate-pulse shrink-0" />
           </div>
+        </div>
+      </div>
 
-          {/* 3열 퀵 스탯 스켈레톤 (배경 포함) */}
-          <div className="grid grid-cols-3 gap-1.5 sm:gap-3">
-            <div className="rounded-xl p-3 space-y-2 bg-forest-50/50 dark:bg-forest-900/10">
-              <div className="h-5 w-10 mx-auto rounded bg-forest-200/60 dark:bg-forest-700/40 animate-pulse" />
-              <div className="h-3 w-12 mx-auto rounded bg-forest-200/60 dark:bg-forest-700/40 animate-pulse" />
-              <div className="flex items-end justify-center gap-px h-2.5">
-                {Array.from({ length: 7 }).map((_, i) => (
-                  <div key={i} className="w-1 h-1.5 rounded-full bg-forest-200/60 dark:bg-forest-700/40 animate-pulse" />
+      {/* 2열 통계 카드 스켈레톤 */}
+      <div className="grid grid-cols-2 gap-2 sm:gap-3">
+        {Array.from({ length: 2 }).map((_, i) => (
+          <Card key={i} className="p-3 sm:p-4 border-slate-200/60 dark:border-slate-800/60">
+            <div className="space-y-2">
+              <div className="h-3 w-16 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
+              <div className="h-6 w-12 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
+              <div className="flex items-end gap-0.5 h-4">
+                {Array.from({ length: 7 }).map((_, j) => (
+                  <div key={j} className="flex-1 h-2 rounded-t-sm bg-slate-200 dark:bg-slate-700 animate-pulse" />
                 ))}
               </div>
             </div>
-            {Array.from({ length: 2 }).map((_, i) => (
-              <div key={i} className="rounded-xl p-3 space-y-2 bg-slate-50/80 dark:bg-slate-800/30">
-                <div className="h-5 w-10 mx-auto rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
-                <div className="h-3 w-12 mx-auto rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
-              </div>
-            ))}
-          </div>
+          </Card>
+        ))}
+      </div>
 
-          {/* 나뭇잎 주간 바 스켈레톤 */}
-          <div className="mt-4 pt-3 border-t border-slate-200/50 dark:border-slate-700/50">
-            <div className="flex items-center justify-between mb-2">
-              <div className="h-3 w-16 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
-              <div className="h-3 w-10 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
+      {/* 주간 달성 스켈레톤 */}
+      <Card className="px-4 py-3 sm:px-5 sm:py-4 border-slate-200/60 dark:border-slate-800/60">
+        <div className="flex items-center justify-between mb-3">
+          <div className="h-4 w-20 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
+          <div className="h-4 w-12 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
+        </div>
+        <div className="flex justify-between items-center">
+          {Array.from({ length: 7 }).map((_, i) => (
+            <div key={i} className="flex flex-col items-center gap-1.5 flex-1">
+              <div className="h-2.5 w-3 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
+              <div className="h-8 w-8 rounded-full bg-slate-200 dark:bg-slate-700 animate-pulse" />
             </div>
-            <div className="flex justify-between gap-1">
-              {Array.from({ length: 7 }).map((_, i) => (
-                <div key={i} className="flex flex-col items-center gap-1 flex-1">
-                  <div className="h-2.5 w-3 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
-                  <div className="h-4 w-4 animate-pulse bg-slate-200 dark:bg-slate-700" style={{ borderRadius: "60% 40% 50% 30%" }} />
-                </div>
-              ))}
-            </div>
-          </div>
+          ))}
         </div>
       </Card>
 

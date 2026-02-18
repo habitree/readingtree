@@ -6,6 +6,7 @@ import {
   getCurrentBookProgress,
   getStreakAndTodayData,
 } from "@/app/actions/stats";
+import { getPointsDashboardData } from "@/app/actions/points";
 
 /** KST 기준 현재 날짜의 자정(00:00:00) UTC Date 반환 */
 function getKSTToday(): Date {
@@ -60,6 +61,7 @@ export async function HomeHeroWrapper() {
     weeklyProgress,
     dailyRecordsByType,
     currentBookProgress,
+    pointsData,
   ] = await Promise.all([
     getCachedPersonaDashboardData().catch(() => null),
     getReadingStats(user).catch(() => null),
@@ -69,6 +71,7 @@ export async function HomeHeroWrapper() {
     getWeeklyProgress(user).catch(() => null),
     getDailyRecordsByType(user, activityCalendarStart, new Date(today.getTime() + 24 * 60 * 60 * 1000 - 1)).catch(() => ({})),
     getCurrentBookProgress(user).catch(() => null),
+    getPointsDashboardData(user).catch(() => null),
   ]);
 
   return (
@@ -82,6 +85,8 @@ export async function HomeHeroWrapper() {
       weeklyProgress={weeklyProgress}
       dailyRecordsByType={dailyRecordsByType}
       currentBookProgress={currentBookProgress}
+      userLevel={pointsData?.currentLevel?.level ?? 1}
+      levelTitle={pointsData?.currentLevel?.title}
     />
   );
 }
