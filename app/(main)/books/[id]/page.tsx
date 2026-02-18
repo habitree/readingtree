@@ -146,8 +146,22 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
   };
 
   return (
-    <div className="space-y-4 sm:space-y-5 lg:space-y-6 pb-8">
+    <div className="space-y-4 sm:space-y-5 lg:space-y-6 pb-20 lg:pb-8">
       <BookScrollHandler />
+
+      {/* 게스트: 하단 고정 가입 유도 CTA */}
+      {isGuest && (
+        <div className="fixed bottom-14 sm:bottom-16 lg:bottom-0 left-0 right-0 z-30 border-t bg-background/95 backdrop-blur-sm p-3 sm:p-4 lg:ml-64">
+          <div className="container max-w-7xl mx-auto flex items-center justify-between gap-3">
+            <p className="text-sm text-muted-foreground">
+              이 책의 기록을 남기고 싶다면?
+            </p>
+            <Button asChild size="sm" className="shrink-0">
+              <Link href="/login">로그인하고 시작하기</Link>
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* ===== 1. 히어로 섹션 ===== */}
       <div id="book-info" className={`relative rounded-xl sm:rounded-2xl overflow-hidden scroll-mt-4 bg-gradient-to-br ${theme.bg}`}>

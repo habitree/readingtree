@@ -1,7 +1,13 @@
+import type { Metadata } from "next";
 import { getCurrentUser } from "@/app/actions/auth";
 import { ChatInterface } from "@/components/chat/chat-interface";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { GuestChatPlaceholder } from "./guest-chat-placeholder";
+
+export const metadata: Metadata = {
+  title: "AI 도우미",
+  description: "AI 독서 파트너와 대화하며 읽고 있는 책에 대해 이야기하세요",
+};
 
 /**
  * AI 독서 도우미 채팅 페이지

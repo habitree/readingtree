@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, ChevronDown } from "lucide-react";
 import Link from "next/link";
 
 const loginFormSchema = z.object({
@@ -28,6 +28,7 @@ type LoginFormValues = z.infer<typeof loginFormSchema>;
  */
 export function LoginForm() {
   const [isLoading, setIsLoading] = useState<"kakao" | "google" | "email" | null>(null);
+  const [showEmailLogin, setShowEmailLogin] = useState(false);
 
   const {
     register,
@@ -72,64 +73,73 @@ export function LoginForm() {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* 소셜 로그인 버튼 */}
-        <SocialLoginButtons />
-
-        <div className="relative">
-          <div className="absolute inset-0 flex items-center">
-            <Separator />
-          </div>
-          <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-background px-2 text-muted-foreground">또는</span>
-          </div>
+        {/* 소셜 로그인 버튼 (최우선) */}
+        <div className="space-y-3">
+          <SocialLoginButtons />
+          <p className="text-xs text-center text-muted-foreground">
+            가장 빠르게 시작할 수 있어요
+          </p>
         </div>
 
-        {/* 이메일 로그인 폼 */}
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="email">이메일</Label>
-            <Input
-              id="email"
-              type="email"
-              placeholder="example@email.com"
-              disabled={isLoading !== null}
-              {...register("email")}
-            />
-            {errors.email && (
-              <p className="text-xs text-destructive">{errors.email.message}</p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="password">비밀번호</Label>
-            <Input
-              id="password"
-              type="password"
-              placeholder="비밀번호"
-              disabled={isLoading !== null}
-              {...register("password")}
-            />
-            {errors.password && (
-              <p className="text-xs text-destructive">{errors.password.message}</p>
-            )}
-          </div>
-
-          <Button
-            type="submit"
-            fullWidth
-            size="lg"
-            disabled={isLoading !== null}
+        {/* 이메일 로그인 접이식 */}
+        <div>
+          <button
+            type="button"
+            onClick={() => setShowEmailLogin(!showEmailLogin)}
+            className="flex items-center justify-center gap-1.5 w-full text-sm text-muted-foreground hover:text-foreground transition-colors duration-200 py-2"
           >
-            {isLoading === "email" ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                로그인 중...
-              </>
-            ) : (
-              "로그인"
-            )}
-          </Button>
-        </form>
+            <span>다른 방법으로 로그인</span>
+            <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${showEmailLogin ? "rotate-180" : ""}`} />
+          </button>
+
+          {showEmailLogin && (
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 mt-3">
+              <div className="space-y-2">
+                <Label htmlFor="email">이메일</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="example@email.com"
+                  disabled={isLoading !== null}
+                  {...register("email")}
+                />
+                {errors.email && (
+                  <p className="text-xs text-destructive">{errors.email.message}</p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="password">비밀번호</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="비밀번호"
+                  disabled={isLoading !== null}
+                  {...register("password")}
+                />
+                {errors.password && (
+                  <p className="text-xs text-destructive">{errors.password.message}</p>
+                )}
+              </div>
+
+              <Button
+                type="submit"
+                fullWidth
+                size="lg"
+                disabled={isLoading !== null}
+              >
+                {isLoading === "email" ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    로그인 중...
+                  </>
+                ) : (
+                  "로그인"
+                )}
+              </Button>
+            </form>
+          )}
+        </div>
 
         <p className="text-xs text-center text-muted-foreground">
           로그인 시 이용약관 및 개인정보처리방침에 동의한 것으로 간주됩니다.

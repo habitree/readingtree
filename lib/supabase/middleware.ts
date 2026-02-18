@@ -47,13 +47,8 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
-  // 세션 갱신 (명시적 처리)
-  // getSession()과 getUser()를 호출하면 @supabase/ssr가 자동으로 세션을 갱신합니다
-  // 쿠키 업데이트는 createServerClient의 setAll 콜백을 통해 자동 처리됩니다
-  // session 변수는 사용하지 않지만, 호출 자체가 세션 갱신을 트리거합니다
-  await supabase.auth.getSession();
-  
-  // 사용자 정보 조회 (세션 갱신 후)
+  // getUser()는 세션 갱신 + 사용자 정보 조회를 동시에 처리
+  // getSession()은 불필요 (getUser()가 세션 토큰 검증/갱신을 포함)
   const {
     data: { user },
   } = await supabase.auth.getUser();

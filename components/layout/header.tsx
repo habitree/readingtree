@@ -1,6 +1,6 @@
 "use client";
 
-import { Megaphone, User, Trees, Moon, Sun } from "lucide-react";
+import { User, Trees, Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -25,7 +25,6 @@ import { getCurrentUserProfile } from "@/app/actions/profile";
 import { getProxiedImageUrl } from "@/lib/utils/image";
 import { useEffect, useState, useRef, useCallback } from "react";
 import { usePathname } from "next/navigation";
-import { PointsButton } from "@/components/points";
 
 /**
  * 헤더 컴포넌트
@@ -112,30 +111,6 @@ export function Header() {
         {/* 우측 메뉴 */}
         <div className="flex items-center gap-1.5 sm:gap-2 ml-auto shrink-0">
           <TooltipProvider>
-            {/* 새로운 소식 (보도자료) */}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="relative h-8 w-8 sm:h-10 sm:w-10"
-                  asChild
-                  aria-label="새로운 소식"
-                >
-                  <Link
-                    href="https://habitree.github.io/habitree_pr/#press-release"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    <Megaphone className="h-4 w-4 sm:h-5 sm:w-5" />
-                  </Link>
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>새로운 소식</p>
-              </TooltipContent>
-            </Tooltip>
-
             {/* 테마 토글 */}
             <Tooltip>
               <TooltipTrigger asChild>
@@ -157,9 +132,6 @@ export function Header() {
                 <p>{mounted && isDarkMode ? "라이트 모드" : "다크 모드"}</p>
               </TooltipContent>
             </Tooltip>
-
-            {/* 포인트 버튼 (로그인 시에만 표시) */}
-            {user && <PointsButton />}
 
             {/* 프로필 메뉴 */}
             {user ? (
@@ -218,14 +190,9 @@ export function Header() {
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              <div className="flex items-center gap-2">
-                <Button asChild variant="outline" size="sm">
-                  <Link href="/sample">체험하기</Link>
-                </Button>
-                <Button asChild variant="default" size="sm">
-                  <Link href="/login">로그인</Link>
-                </Button>
-              </div>
+              <Button asChild variant="default" size="sm">
+                <Link href="/login">로그인</Link>
+              </Button>
             )}
           </TooltipProvider>
         </div>

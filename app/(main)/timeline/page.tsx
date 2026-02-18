@@ -1,7 +1,13 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
 import { TimelineContent } from "@/components/timeline/timeline-content";
 import { Skeleton } from "@/components/ui/skeleton";
 import { typography } from "@/lib/design-tokens";
+
+export const metadata: Metadata = {
+  title: "타임라인",
+  description: "시간순으로 정리된 독서 기록을 확인하세요 - 구절, 메모, 사진, 필사 모아보기",
+};
 
 /**
  * 타임라인 페이지

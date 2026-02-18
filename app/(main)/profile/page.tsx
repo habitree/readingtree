@@ -1,8 +1,14 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
 import { ProfileContent } from "@/components/profile/profile-content";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { typography } from "@/lib/design-tokens";
+
+export const metadata: Metadata = {
+  title: "프로필",
+  description: "프로필 정보를 관리하고 독서 통계를 확인하세요",
+};
 
 /**
  * 프로필 페이지

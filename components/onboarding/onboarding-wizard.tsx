@@ -39,14 +39,19 @@ export function OnboardingWizard({ initialStep = 0 }: OnboardingWizardProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [data, setData] = useState<Partial<OnboardingData>>({});
 
-  // 약관 동의 처리
+  // 약관 동의 처리 → 바로 대시보드로 이동 (목표/튜토리얼 스킵)
   const handleConsentNext = useCallback(
     async (consentData: { termsAgreed: boolean; privacyAgreed: boolean }) => {
       setIsLoading(true);
       try {
         await agreeToTerms(consentData.termsAgreed, consentData.privacyAgreed);
         setData((prev) => ({ ...prev, ...consentData }));
-        setCurrentStep(1);
+        // 약관 동의 후 바로 대시보드로 이동 (단순화된 플로우)
+        if (typeof window !== "undefined") {
+          localStorage.setItem("onboarding_tutorial_completed", "true");
+        }
+        toast.success("환영합니다! ReadTree를 시작하세요.");
+        router.push("/");
       } catch (error) {
         toast.error(
           error instanceof Error ? error.message : "약관 동의에 실패했습니다."
@@ -55,10 +60,10 @@ export function OnboardingWizard({ initialStep = 0 }: OnboardingWizardProps) {
         setIsLoading(false);
       }
     },
-    []
+    [router]
   );
 
-  // 목표 설정 처리
+  // 목표 설정 처리 (프로필 페이지에서 접근 시 사용)
   const handleGoalNext = useCallback(
     async (goalData: { goal: number }) => {
       setIsLoading(true);
@@ -79,7 +84,6 @@ export function OnboardingWizard({ initialStep = 0 }: OnboardingWizardProps) {
 
   // 온보딩 완료 처리
   const handleComplete = useCallback(() => {
-    // 로컬 스토리지에 튜토리얼 완료 저장
     if (typeof window !== "undefined") {
       localStorage.setItem("onboarding_tutorial_completed", "true");
     }

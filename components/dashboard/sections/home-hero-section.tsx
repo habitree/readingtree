@@ -231,6 +231,32 @@ export function HomeHeroSection({
         </div>
       </motion.div>
 
+      {/* ======== 계속 읽기 (Primary CTA - 최우선) ======== */}
+      {(userName || (isGuest && continueReadingBooks.length > 0)) && (
+        <div className="space-y-2 sm:space-y-3">
+          {continueReadingBooks.length > 0 ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 gap-2 sm:gap-3">
+              {continueReadingBooks.slice(0, 6).map((book, index) => (
+                <ContinueReadingCard
+                  key={book.userBookId}
+                  userBookId={book.userBookId}
+                  title={book.title}
+                  author={book.author}
+                  coverImageUrl={book.coverImageUrl}
+                  currentPage={book.currentPage}
+                  totalPages={book.totalPages}
+                  progressPercent={book.progressPercent}
+                  compact={true}
+                  priority={index === 0}
+                />
+              ))}
+            </div>
+          ) : (
+            <NoReadingBookCard />
+          )}
+        </div>
+      )}
+
       {/* ======== 통계 카드 2개: 연속 기록 + 오늘의 기록 ======== */}
       <div className="grid grid-cols-2 gap-2 sm:gap-3">
         {/* 연속 기록 */}
@@ -243,7 +269,6 @@ export function HomeHeroSection({
             <span className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">{streak}</span>
             <span className="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400">일</span>
           </div>
-          {/* 미니 스파크라인 바 */}
           {weeklyProgress && (
             <div className="flex items-end gap-0.5 h-4 opacity-60">
               {weeklyProgress.days.map((day) => (
@@ -278,7 +303,6 @@ export function HomeHeroSection({
               <span className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">{todayNotes}</span>
               <span className="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400">개</span>
             </div>
-            {/* 미니 스파크라인 바 */}
             {weeklyProgress && (
               <div className="flex items-end gap-0.5 h-4 opacity-60">
                 {weeklyProgress.days.map((day) => (
@@ -335,35 +359,6 @@ export function HomeHeroSection({
             ))}
           </div>
         </Card>
-      )}
-
-      {/* ======== SECONDARY ZONE: 액션 유도 ======== */}
-      {(userName || (isGuest && continueReadingBooks.length > 0)) && (
-        <div className="space-y-2 sm:space-y-3">
-          {/* 계속 읽기 (Primary CTA) */}
-          {continueReadingBooks.length > 0 ? (
-            // 모바일: 2x3 그리드, 태블릿 이상: 3열 이상으로 확장
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 gap-2 sm:gap-3">
-              {continueReadingBooks.slice(0, 6).map((book, index) => (
-                <ContinueReadingCard
-                  key={book.userBookId}
-                  userBookId={book.userBookId}
-                  title={book.title}
-                  author={book.author}
-                  coverImageUrl={book.coverImageUrl}
-                  currentPage={book.currentPage}
-                  totalPages={book.totalPages}
-                  progressPercent={book.progressPercent}
-                  compact={true}
-                  // 첫 번째 카드만 priority 로딩, 나머지는 lazy
-                  priority={index === 0}
-                />
-              ))}
-            </div>
-          ) : (
-            <NoReadingBookCard />
-          )}
-        </div>
       )}
 
       {/* 온보딩 체크리스트 (새 사용자용) */}

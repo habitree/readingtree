@@ -232,26 +232,53 @@ export function ContinueReadingCardSkeleton() {
 
 /**
  * 읽을 책이 없을 때 표시하는 빈 상태 카드
+ * 단계별 가이드 + CTA로 첫 행동 유도
  */
 export function NoReadingBookCard() {
   return (
-    <Link href="/books" className="block group">
-      <Card className="p-4 border-dashed border-2 border-slate-200 dark:border-slate-700 hover:border-forest-300 dark:hover:border-forest-600 transition-colors duration-200">
-        <div className="flex items-center gap-4">
-          <div className="w-16 h-24 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
-            <BookOpen className="h-6 w-6 text-slate-400" />
+    <Card className="p-5 sm:p-6 border-slate-200/60 dark:border-slate-800/60 bg-white dark:bg-slate-900">
+      <div className="text-center space-y-4">
+        {/* 일러스트 아이콘 */}
+        <div className="flex justify-center">
+          <div className="w-16 h-16 rounded-2xl bg-forest-50 dark:bg-forest-900/30 flex items-center justify-center">
+            <BookOpen className="h-8 w-8 text-forest-500" />
           </div>
-          <div className="flex-1">
-            <p className="text-sm font-medium text-slate-600 dark:text-slate-300">
-              아직 비어 있어요
-            </p>
-            <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
-              씨앗을 심어볼까요
-            </p>
-          </div>
-          <ChevronRight className="h-5 w-5 text-slate-400 group-hover:text-forest-500 transition-colors" />
         </div>
-      </Card>
-    </Link>
+
+        {/* 메시지 */}
+        <div>
+          <p className="text-base font-semibold text-slate-900 dark:text-white">
+            독서나무에 첫 씨앗을 심어보세요
+          </p>
+          <p className="text-sm text-muted-foreground mt-1">
+            책을 추가하면 여기에 읽는 중인 책이 표시돼요
+          </p>
+        </div>
+
+        {/* 단계별 가이드 */}
+        <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-forest-50 dark:bg-forest-900/30 text-forest-700 dark:text-forest-400">
+            1. 책 검색
+          </span>
+          <ChevronRight className="h-3 w-3 text-slate-400" />
+          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+            2. 서재에 추가
+          </span>
+          <ChevronRight className="h-3 w-3 text-slate-400" />
+          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+            3. 기록 시작
+          </span>
+        </div>
+
+        {/* CTA 버튼 */}
+        <Link
+          href="/books/search"
+          className="inline-flex items-center justify-center gap-2 rounded-lg bg-forest-600 hover:bg-forest-700 text-white px-6 py-2.5 text-sm font-medium transition-colors duration-200 shadow-sm"
+        >
+          <BookOpen className="h-4 w-4" />
+          첫 책 추가하기
+        </Link>
+      </div>
+    </Card>
   );
 }

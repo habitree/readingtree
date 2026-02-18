@@ -4,13 +4,14 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  User,
-  Clock,
+  Search,
   Users,
+  Bot,
   Sparkles,
   Trees,
   Moon,
   Sun,
+  User,
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import {
@@ -108,18 +109,33 @@ export function MobileMenuSheet({ open, onOpenChange }: MobileMenuSheetProps) {
             </SheetClose>
           )}
 
-          {/* 타임라인, 독서모임, 독서 성향 (모든 사용자) */}
+          {/* 검색, 프로필, 독서모임, AI 도우미 */}
           <SheetClose asChild>
-            <Link href="/timeline" onClick={handleMenuClick}>
+            <Link href="/search" onClick={handleMenuClick}>
               <Button
-                variant={pathname === "/timeline" ? "secondary" : "ghost"}
+                variant={pathname === "/search" ? "secondary" : "ghost"}
                 className={cn(
                   "w-full justify-start gap-3 h-12",
-                  pathname === "/timeline" && "bg-secondary font-medium"
+                  pathname === "/search" && "bg-secondary font-medium"
                 )}
               >
-                <Clock className="h-5 w-5" />
-                <span>타임라인</span>
+                <Search className="h-5 w-5" />
+                <span>검색</span>
+              </Button>
+            </Link>
+          </SheetClose>
+
+          <SheetClose asChild>
+            <Link href="/profile" onClick={handleMenuClick}>
+              <Button
+                variant={pathname === "/profile" ? "secondary" : "ghost"}
+                className={cn(
+                  "w-full justify-start gap-3 h-12",
+                  pathname === "/profile" && "bg-secondary font-medium"
+                )}
+              >
+                <User className="h-5 w-5" />
+                <span>프로필</span>
               </Button>
             </Link>
           </SheetClose>
@@ -140,16 +156,16 @@ export function MobileMenuSheet({ open, onOpenChange }: MobileMenuSheetProps) {
           </SheetClose>
 
           <SheetClose asChild>
-            <Link href="/persona" onClick={handleMenuClick}>
+            <Link href="/chat" onClick={handleMenuClick}>
               <Button
-                variant={pathname === "/persona" ? "secondary" : "ghost"}
+                variant={pathname === "/chat" ? "secondary" : "ghost"}
                 className={cn(
                   "w-full justify-start gap-3 h-12",
-                  pathname === "/persona" && "bg-secondary font-medium"
+                  pathname === "/chat" && "bg-secondary font-medium"
                 )}
               >
-                <Sparkles className="h-5 w-5" />
-                <span>독서 성향</span>
+                <Bot className="h-5 w-5" />
+                <span>AI 도우미</span>
               </Button>
             </Link>
           </SheetClose>

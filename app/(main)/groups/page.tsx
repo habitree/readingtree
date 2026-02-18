@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
 import { GroupsContent } from "@/components/groups/groups-content";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -5,6 +6,11 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { Plus } from "lucide-react";
 import { typography } from "@/lib/design-tokens";
+
+export const metadata: Metadata = {
+  title: "독서모임",
+  description: "함께 읽고 기록을 공유하는 독서모임에 참여하세요",
+};
 
 /**
  * 모임 목록 페이지

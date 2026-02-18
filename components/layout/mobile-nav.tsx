@@ -3,13 +3,14 @@
 import { useState, useCallback } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Library, Search, Bot, Menu } from "lucide-react";
+import { Home, Library, Clock, Plus, Menu } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import { useLoginPrompt } from "@/hooks/use-login-prompt";
 import { LoginPromptModal } from "@/components/ui/login-prompt-modal";
 import { MobileMenuSheet } from "./mobile-menu-sheet";
+import { useMobileNoteSheet } from "@/hooks/use-mobile-note-sheet";
 
 /**
  * 모바일 네비게이션 아이템 타입
@@ -18,19 +19,22 @@ interface MobileNavItem {
   icon: React.ComponentType<{ className?: string }>;
   label: string;
   href?: string;
-  action?: "menu";
+  action?: "menu" | "note";
   /** 게스트에게 로그인 유도가 필요한 항목 */
   requiresAuth?: boolean;
+  /** FAB 스타일 (중앙 기록 버튼) */
+  isFab?: boolean;
 }
 
 /**
- * 모바일 네비게이션 아이템 목록 (로그인/비로그인 공통)
+ * 모바일 네비게이션 아이템 목록
+ * 홈, 서재, +기록(FAB), 타임라인, 더보기
  */
 const mobileNavItemsList: MobileNavItem[] = [
   { icon: Home, label: "홈", href: "/" },
   { icon: Library, label: "서재", href: "/books" },
-  { icon: Bot, label: "AI", href: "/chat", requiresAuth: true },
-  { icon: Search, label: "검색", href: "/search" },
+  { icon: Plus, label: "기록", action: "note", requiresAuth: true, isFab: true },
+  { icon: Clock, label: "타임라인", href: "/timeline" },
   { icon: Menu, label: "더보기", action: "menu" },
 ];
 
@@ -43,6 +47,18 @@ export function MobileNav() {
   const { user, isLoading } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { isOpen, setIsOpen, title, description, requireLogin } = useLoginPrompt();
+  const noteSheet = useMobileNoteSheet();
+
+  const handleNoteAction = useCallback(() => {
+    if (!user) {
+      requireLogin({
+        title: "기록을 남기려면",
+        description: "로그인 후 독서 기록을 남길 수 있어요.",
+      });
+      return;
+    }
+    noteSheet.open();
+  }, [user, requireLogin, noteSheet]);
 
   return (
     <>
@@ -58,7 +74,7 @@ export function MobileNav() {
               : false;
             const key = item.href || `action-${item.action}-${index}`;
 
-            // action이 있는 경우 버튼으로 처리
+            // 더보기 메뉴 버튼
             if (item.action === "menu") {
               return (
                 <button
@@ -82,26 +98,20 @@ export function MobileNav() {
               );
             }
 
-            // 게스트에게 로그인 유도가 필요한 항목
-            if (item.requiresAuth && !user) {
+            // 중앙 FAB 스타일 기록 버튼
+            if (item.isFab) {
               return (
                 <button
                   key={key}
-                  onClick={() => requireLogin({
-                    title: "AI 채팅을 사용하려면",
-                    description: "로그인 후 AI 독서 파트너와 대화할 수 있어요.",
-                  })}
-                  className="flex-1 min-h-[44px]"
+                  onClick={handleNoteAction}
+                  className="flex-1 min-h-[44px] flex items-center justify-center"
                   aria-label={item.label}
                 >
-                  <div
-                    className={cn(
-                      "w-full flex flex-col items-center justify-center h-full gap-0.5 sm:gap-1 rounded-none touch-manipulation",
-                      "hover:bg-accent hover:text-accent-foreground"
-                    )}
-                  >
-                    <Icon className="h-4 w-4 sm:h-5 sm:w-5" aria-hidden="true" />
-                    <span className="text-[10px] sm:text-xs leading-tight">
+                  <div className="flex flex-col items-center gap-0.5 sm:gap-1 touch-manipulation">
+                    <div className="flex items-center justify-center w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-primary text-primary-foreground shadow-md -mt-3">
+                      <Icon className="h-5 w-5 sm:h-6 sm:w-6" aria-hidden="true" />
+                    </div>
+                    <span className="text-[10px] sm:text-xs leading-tight font-medium text-primary">
                       {item.label}
                     </span>
                   </div>

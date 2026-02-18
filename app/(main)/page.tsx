@@ -1,4 +1,10 @@
+import type { Metadata } from "next";
 import DashboardContent from "@/components/dashboard/dashboard-content";
+
+export const metadata: Metadata = {
+  title: "홈",
+  description: "나만의 독서 대시보드 - 읽고 있는 책, 기록, 독서 통계를 한눈에 확인하세요",
+};
 
 /**
  * 메인 페이지 (대시보드)
