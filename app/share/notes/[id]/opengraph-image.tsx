@@ -4,9 +4,29 @@ import { parseNoteContentFields } from "@/lib/utils/note";
 import { getImageUrl, isValidImageUrl } from "@/lib/utils/image";
 import { isValidUUID } from "@/lib/utils/validation";
 
+export const runtime = "edge";
 export const alt = "ReadTree 독서 기록 공유";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
+
+/** 한글 폰트 로드 (Noto Sans KR) */
+async function loadKoreanFont(): Promise<ArrayBuffer | null> {
+  try {
+    const res = await fetch(
+      new URL(
+        "https://github.com/google/fonts/raw/main/ofl/notosanskr/NotoSansKR-SemiBold.otf",
+        import.meta.url
+      )
+    );
+    if (!res.ok) throw new Error("Failed to fetch font");
+    return res.arrayBuffer();
+  } catch (e) {
+    console.error("[OG Image] Font fetch failed:", e);
+    return null;
+  }
+}
+
+const FONT_FAMILY = '"NotoSansKR", sans-serif';
 
 /**
  * 공유 페이지(/share/notes/[id])와 동일한 화면 구성의 OG 이미지 생성
@@ -19,8 +39,23 @@ export default async function OgImage({
 }) {
   const { id: noteId } = await params;
 
+  // 폰트를 먼저 로드
+  const fontData = await loadKoreanFont();
+  const fontOptions = fontData
+    ? {
+        fonts: [
+          {
+            name: "NotoSansKR",
+            data: fontData,
+            style: "normal" as const,
+            weight: 600 as const,
+          },
+        ],
+      }
+    : {};
+
   if (!noteId || typeof noteId !== "string" || !isValidUUID(noteId)) {
-    return fallbackImageResponse();
+    return fallbackImageResponse(fontOptions);
   }
 
   const supabase = await createServerSupabaseClient();
@@ -34,7 +69,7 @@ export default async function OgImage({
     .single();
 
   if (!note) {
-    return fallbackImageResponse();
+    return fallbackImageResponse(fontOptions);
   }
 
   const rawBooks = (note as any).books;
@@ -76,7 +111,7 @@ export default async function OgImage({
           alignItems: "center",
           justifyContent: "center",
           backgroundColor: "#f8fafc",
-          fontFamily: "system-ui, sans-serif",
+          fontFamily: FONT_FAMILY,
         }}
       >
         {/* 공유 페이지와 동일: 상단 뱃지 느낌 */}
@@ -97,6 +132,7 @@ export default async function OgImage({
             color: "#94a3b8",
             letterSpacing: "0.05em",
             textTransform: "uppercase",
+            fontFamily: FONT_FAMILY,
           }}
         >
           <div
@@ -116,7 +152,7 @@ export default async function OgImage({
             display: "flex",
             flexDirection: "row",
             width: 1040,
-            minHeight: 480,
+            height: 480,
             backgroundColor: "white",
             borderRadius: 24,
             boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.15)",
@@ -133,7 +169,7 @@ export default async function OgImage({
               gap: 24,
               backgroundColor: "#f8fafc",
               borderRight: "1px solid #e2e8f0",
-              flex: "0 0 420px",
+              width: 420,
             }}
           >
             {/* 책 표지 */}
@@ -164,50 +200,50 @@ export default async function OgImage({
                   fontSize: 14,
                   color: "#64748b",
                   fontWeight: 600,
+                  fontFamily: FONT_FAMILY,
                 }}
               >
                 표지 없음
               </div>
             )}
-            <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", flex: 1, minWidth: 0 }}>
-              <h1
+            <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", flex: 1 }}>
+              <div
                 style={{
                   fontSize: 28,
                   fontWeight: 800,
                   color: "#0f172a",
                   lineHeight: 1.3,
-                  margin: 0,
                   marginBottom: 8,
-                  display: "-webkit-box",
-                  WebkitLineClamp: 2,
-                  WebkitBoxOrient: "vertical",
                   overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  fontFamily: FONT_FAMILY,
                 }}
               >
                 {bookTitle}
-              </h1>
-              <p
+              </div>
+              <div
                 style={{
                   fontSize: 18,
                   fontWeight: 700,
                   color: "#15803d",
-                  margin: 0,
+                  fontFamily: FONT_FAMILY,
                 }}
               >
                 {bookAuthor}
-              </p>
+              </div>
               {note.page_number && (
-                <p
+                <div
                   style={{
                     fontSize: 12,
                     color: "#94a3b8",
                     marginTop: 12,
                     fontWeight: 700,
                     letterSpacing: "0.05em",
+                    fontFamily: FONT_FAMILY,
                   }}
                 >
                   {note.page_number}P Record
-                </p>
+                </div>
               )}
             </div>
           </div>
@@ -220,24 +256,20 @@ export default async function OgImage({
               flexDirection: "column",
               padding: 40,
               justifyContent: "space-between",
-              minWidth: 0,
             }}
           >
-            <p
+            <div
               style={{
                 fontSize: 22,
                 lineHeight: 1.6,
                 color: "#334155",
-                margin: 0,
-                display: "-webkit-box",
-                WebkitLineClamp: 8,
-                WebkitBoxOrient: "vertical",
                 overflow: "hidden",
-                whiteSpace: "pre-wrap",
+                textOverflow: "ellipsis",
+                fontFamily: FONT_FAMILY,
               }}
             >
               {bodyTruncated}
-            </p>
+            </div>
 
             {/* 푸터: ReadTree 로고 (ShareNoteCard 푸터와 동일) */}
             <div
@@ -281,6 +313,7 @@ export default async function OgImage({
                     color: "#0f172a",
                     fontStyle: "italic",
                     letterSpacing: "-0.02em",
+                    fontFamily: FONT_FAMILY,
                   }}
                 >
                   ReadTree
@@ -292,6 +325,7 @@ export default async function OgImage({
                     color: "#94a3b8",
                     textTransform: "uppercase",
                     letterSpacing: "0.02em",
+                    fontFamily: FONT_FAMILY,
                   }}
                 >
                   Your Intelligence Forest
@@ -309,18 +343,19 @@ export default async function OgImage({
             fontSize: 16,
             color: "#94a3b8",
             fontWeight: 500,
+            fontFamily: FONT_FAMILY,
           }}
         >
           readingtree-tan.vercel.app
         </div>
       </div>
     ),
-    { ...size }
+    { ...size, ...fontOptions }
   );
 }
 
 /** 기록을 찾을 수 없거나 비공개일 때 기본 OG 이미지 */
-function fallbackImageResponse() {
+function fallbackImageResponse(fontOptions: Record<string, any> = {}) {
   return new ImageResponse(
     (
       <div
@@ -332,7 +367,7 @@ function fallbackImageResponse() {
           alignItems: "center",
           justifyContent: "center",
           backgroundColor: "#f8fafc",
-          fontFamily: "system-ui, sans-serif",
+          fontFamily: FONT_FAMILY,
         }}
       >
         <div
@@ -341,7 +376,9 @@ function fallbackImageResponse() {
             backgroundColor: "white",
             borderRadius: 24,
             boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.1)",
-            textAlign: "center",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
           }}
         >
           <div
@@ -353,7 +390,7 @@ function fallbackImageResponse() {
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              margin: "0 auto 24px",
+              marginBottom: 24,
             }}
           >
             <svg
@@ -367,15 +404,15 @@ function fallbackImageResponse() {
               <path d="M12 22v-7M9 22h6M12 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zM12 5V2" />
             </svg>
           </div>
-          <p style={{ fontSize: 28, fontWeight: 700, color: "#0f172a", margin: 0 }}>
+          <div style={{ fontSize: 28, fontWeight: 700, color: "#0f172a", fontFamily: FONT_FAMILY }}>
             ReadTree
-          </p>
-          <p style={{ fontSize: 16, color: "#64748b", marginTop: 8 }}>
+          </div>
+          <div style={{ fontSize: 16, color: "#64748b", marginTop: 8, fontFamily: FONT_FAMILY }}>
             이 기록을 찾을 수 없거나 비공개입니다.
-          </p>
+          </div>
         </div>
       </div>
     ),
-    { ...size }
+    { ...size, ...fontOptions }
   );
 }
