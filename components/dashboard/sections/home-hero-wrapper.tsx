@@ -93,6 +93,7 @@ export async function HomeHeroWrapper() {
       currentBookProgress={currentBookProgress}
       userLevel={pointsData?.currentLevel?.level ?? 1}
       levelTitle={pointsData?.currentLevel?.title}
+      totalPoints={pointsData?.userPoints?.total_points ?? 0}
       hasFirstNote={firstNoteData.hasFirstNote}
     />
   );

@@ -82,6 +82,8 @@ interface HomeHeroSectionProps {
   userLevel?: number;
   /** 나무 레벨 이름 (예: "씨앗", "새싹") */
   levelTitle?: string;
+  /** 총 포인트 */
+  totalPoints?: number;
   /** 게스트 모드 (샘플 데이터 표시) */
   isGuest?: boolean;
   /** 첫 기록 작성 여부 (false이면 CTA 표시) */
@@ -106,6 +108,7 @@ export function HomeHeroSection({
   currentBookProgress,
   userLevel = 1,
   levelTitle,
+  totalPoints = 0,
   isGuest = false,
   hasFirstNote = true,
 }: HomeHeroSectionProps) {
@@ -232,15 +235,22 @@ export function HomeHeroSection({
                 </div>
               </div>
 
-              {/* 우측: 나무 이미지 영역 */}
-              <div className="relative w-24 h-24 sm:w-28 sm:h-28 shrink-0">
-                <Image
-                  src={`/images/trees/level-${safeLevel}.webp`}
-                  alt={`ReadingTree Lv.${safeLevel}`}
-                  fill
-                  className="object-contain drop-shadow-md"
-                  priority
-                />
+              {/* 우측: 나무 이미지 + 포인트 */}
+              <div className="flex flex-col items-center shrink-0 gap-1">
+                <div className="relative w-24 h-24 sm:w-28 sm:h-28">
+                  <Image
+                    src={`/images/trees/level-${safeLevel}.webp`}
+                    alt={`ReadingTree Lv.${safeLevel}`}
+                    fill
+                    className="object-contain drop-shadow-md"
+                    priority
+                  />
+                </div>
+                <div className="text-center">
+                  <span className="text-[10px] sm:text-xs font-bold text-forest-700 dark:text-forest-300">
+                    {totalPoints.toLocaleString()}P
+                  </span>
+                </div>
               </div>
             </div>
           </div>
