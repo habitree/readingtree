@@ -116,45 +116,46 @@ export function SharedNotesList({ notes, groupId }: SharedNotesListProps) {
                 <CardContent className="p-0">
                   <div className="flex">
                     {/* 책 표지 이미지 */}
-                    {book?.cover_image_url && isValidImageUrl(book.cover_image_url) && (
-                      <div className="relative w-16 sm:w-20 shrink-0 bg-muted">
+                    <div className="relative w-20 sm:w-24 shrink-0 bg-muted">
+                      {book?.cover_image_url && isValidImageUrl(book.cover_image_url) ? (
                         <Image
                           src={getImageUrl(book.cover_image_url)}
-                          alt={book.title || t("books.book")}
+                          alt={book?.title || t("books.book")}
                           fill
                           className="object-cover"
-                          sizes="80px"
+                          sizes="96px"
                         />
+                      ) : (
+                        <div className="flex items-center justify-center h-full">
+                          <BookOpen className="h-6 w-6 text-muted-foreground" />
+                        </div>
+                      )}
+                      {/* 기록 유형 배지 (표지 위 오버레이) */}
+                      <div className="absolute top-1 right-1">
+                        <div className={`p-1 rounded-full ${config.bgColor}`}>
+                          <TypeIcon className={`h-3 w-3 ${config.color}`} />
+                        </div>
                       </div>
-                    )}
+                    </div>
 
                     {/* 기록 내용 */}
-                    <div className="flex-1 p-4 min-w-0">
-                      {/* 헤더: 책 정보 + 기록 유형 */}
-                      <div className="flex items-start justify-between gap-2 mb-2">
-                        <div className="min-w-0 flex-1">
-                          {book && (
-                            <p className="text-sm font-medium text-primary truncate mb-0.5">
-                              {book.title}
-                            </p>
-                          )}
-                          {book?.author && (
-                            <p className="text-xs text-muted-foreground truncate">
-                              {book.author}
-                            </p>
-                          )}
-                        </div>
-                        <Badge
-                          variant="secondary"
-                          className={`shrink-0 ${config.bgColor} ${config.color} border-0 text-xs`}
-                        >
-                          <TypeIcon className="mr-1 h-3 w-3" />
-                          {getNoteTypeLabel(note.type, !!note.image_url)}
-                        </Badge>
+                    <div className="flex-1 p-3 sm:p-4 min-w-0">
+                      {/* 헤더: 책 정보 */}
+                      <div className="mb-2">
+                        {book && (
+                          <p className="text-sm font-medium truncate">
+                            {book.title}
+                          </p>
+                        )}
+                        {book?.author && (
+                          <p className="text-xs text-muted-foreground truncate">
+                            {book.author}
+                          </p>
+                        )}
                       </div>
 
                       {/* 기록 내용 미리보기 */}
-                      <div className={`mb-3 ${note.type === "quote" ? "border-l-2 border-amber-400 pl-3 italic" : ""}`}>
+                      <div className={`mb-2 ${note.type === "quote" ? "border-l-2 border-amber-400 pl-3 italic" : ""}`}>
                         <NoteContentViewer
                           content={note.content}
                           pageNumber={parsePageNumber(note.page_number)}

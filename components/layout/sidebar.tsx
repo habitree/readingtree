@@ -11,7 +11,7 @@ import {
   User,
   Trees,
   Bot,
-  BarChart3,
+  Sparkles,
   ChevronDown,
   type LucideIcon,
 } from "lucide-react";
@@ -55,7 +55,7 @@ export function Sidebar() {
 
   const secondaryItems: SidebarItem[] = [
     { icon: Users, label: t("nav.groups"), href: "/groups" },
-    { icon: BarChart3, label: t("nav.stats"), href: "/stats" },
+    { icon: Sparkles, label: t("persona.pageTitle"), href: "/stats" },
     { icon: Bot, label: t("nav.aiChat"), href: "/chat" },
     { icon: Trees, label: t("nav.admin"), href: "/admin", adminOnly: true },
   ];

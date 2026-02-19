@@ -1,6 +1,8 @@
+import { Suspense } from "react";
 import { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getCachedCurrentUser } from "@/lib/cached";
+import { getCurrentUser } from "@/app/actions/auth";
 import {
   getReadingStats,
   getMonthlyStats,
@@ -9,16 +11,20 @@ import {
 } from "@/app/actions/stats";
 import { getUserTagsWithCount } from "@/app/actions/notes";
 import { getDailyRecordsForCalendar } from "@/app/actions/stats";
+import { getPersonaDashboardData } from "@/app/actions/persona";
+import { getSamplePersonaDashboardData } from "@/app/actions/sample";
 import { PageHeader } from "@/components/layout/page-header";
 import { StatsContent } from "@/components/stats/stats-content";
+import { PersonaCard, PersonaCardSkeleton } from "@/components/persona/persona-card";
+import { ReadingStats, ReadingStatsSkeleton } from "@/components/persona/reading-stats";
 
 export const metadata: Metadata = {
-  title: "통계 | ReadTree",
-  description: "나의 독서 통계를 한눈에 확인하세요",
+  title: "독서성향 | ReadTree",
+  description: "나의 독서 성향과 통계를 한눈에 확인하세요",
 };
 
 export default async function StatsPage() {
-  const user = await getCachedCurrentUser();
+  const user = await getCurrentUser();
   if (!user) redirect("/login");
 
   // 12주(약 3개월)치 캘린더 데이터
@@ -26,8 +32,8 @@ export default async function StatsPage() {
   const startDate = new Date();
   startDate.setDate(startDate.getDate() - 84); // 12주
 
-  // 병렬 데이터 로드
-  const [readingStats, monthlyStats, weeklyProgress, goalProgress, topTags, dailyRecords] =
+  // 병렬 데이터 로드 (통계 + 페르소나)
+  const [readingStats, monthlyStats, weeklyProgress, goalProgress, topTags, dailyRecords, personaData] =
     await Promise.all([
       getReadingStats(user),
       getMonthlyStats(user),
@@ -35,11 +41,22 @@ export default async function StatsPage() {
       getGoalProgress(user),
       getUserTagsWithCount(user),
       getDailyRecordsForCalendar(user, startDate, endDate),
+      getPersonaDashboardData(),
     ]);
 
   return (
     <div className="space-y-6">
-      <PageHeader titleKey="stats.pageTitle" descriptionKey="stats.pageDescription" />
+      <PageHeader titleKey="persona.pageTitle" descriptionKey="persona.pageDesc" />
+
+      {/* 독서 페르소나 섹션 */}
+      <PersonaCard
+        persona={personaData.persona}
+        needsAnalysis={personaData.needsAnalysis}
+        analysisAge={personaData.analysisAge}
+      />
+      <ReadingStats persona={personaData.persona} />
+
+      {/* 통계 섹션 */}
       <StatsContent
         readingStats={readingStats}
         monthlyStats={monthlyStats}

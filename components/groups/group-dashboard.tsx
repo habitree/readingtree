@@ -47,6 +47,9 @@ import {
   MoreVertical,
   Shield,
   Crown,
+  BookOpen,
+  PenLine,
+  Library,
 } from "lucide-react";
 import { formatSmartDate } from "@/lib/utils/date";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -300,47 +303,162 @@ export function GroupDashboard({ groupData, currentUserId }: GroupDashboardProps
           </TabsList>
 
           <TabsContent value="overview" className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>{t("groups.membersCardTitle")}</CardTitle>
-                  <CardDescription>{t("groups.membersCardDesc")}</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold">{t("groups.memberCount").replace("{count}", String(members.length))}</div>
+            {/* 컴팩트 통계 요약 */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+              <Card className="hover:bg-muted/50 transition-colors cursor-pointer" onClick={() => {
+                const tab = document.querySelector('[value="members"]') as HTMLElement;
+                tab?.click();
+              }}>
+                <CardContent className="pt-4 pb-3 px-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="p-1.5 rounded-lg bg-blue-50 dark:bg-blue-950/30">
+                      <Users className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                    </div>
+                    <span className="text-xs text-muted-foreground">{t("groups.membersCardTitle")}</span>
+                  </div>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-2xl font-bold">{members.length}</span>
+                    <span className="text-sm text-muted-foreground">{t("stats.unitCount")}</span>
+                  </div>
                 </CardContent>
               </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle>{t("groups.sharedNotesCardTitle")}</CardTitle>
-                  <CardDescription>{t("groups.sharedNotesCardDesc")}</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold">{t("groups.noteCountLabel").replace("{count}", String(sharedNotes.length))}</div>
+              <Card className="hover:bg-muted/50 transition-colors cursor-pointer" onClick={() => {
+                const tab = document.querySelector('[value="notes"]') as HTMLElement;
+                tab?.click();
+              }}>
+                <CardContent className="pt-4 pb-3 px-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="p-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/30">
+                      <PenLine className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                    </div>
+                    <span className="text-xs text-muted-foreground">{t("groups.sharedNotesCardTitle")}</span>
+                  </div>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-2xl font-bold">{sharedNotes.length}</span>
+                    <span className="text-sm text-muted-foreground">{t("stats.unitCount")}</span>
+                  </div>
                 </CardContent>
               </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle>{t("groups.designatedBooksCardTitle")}</CardTitle>
-                  <CardDescription>{t("groups.designatedBooksCardDesc")}</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold">{groupData.groupBooks?.length || 0}</div>
+              <Card className="hover:bg-muted/50 transition-colors cursor-pointer" onClick={() => {
+                const tab = document.querySelector('[value="books"]') as HTMLElement;
+                tab?.click();
+              }}>
+                <CardContent className="pt-4 pb-3 px-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="p-1.5 rounded-lg bg-orange-50 dark:bg-orange-950/30">
+                      <BookOpen className="h-4 w-4 text-orange-600 dark:text-orange-400" />
+                    </div>
+                    <span className="text-xs text-muted-foreground">{t("groups.designatedBooksCardTitle")}</span>
+                  </div>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-2xl font-bold">{groupData.groupBooks?.length || 0}</span>
+                    <span className="text-sm text-muted-foreground">{t("stats.unitBooks")}</span>
+                  </div>
                 </CardContent>
               </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle>{t("groups.sharedLibraryCardTitle")}</CardTitle>
-                  <CardDescription>{t("groups.sharedLibraryCardDesc")}</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold">{groupData.sharedBooks?.length || 0}</div>
+              <Card className="hover:bg-muted/50 transition-colors cursor-pointer" onClick={() => {
+                const tab = document.querySelector('[value="shared-library"]') as HTMLElement;
+                tab?.click();
+              }}>
+                <CardContent className="pt-4 pb-3 px-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="p-1.5 rounded-lg bg-purple-50 dark:bg-purple-950/30">
+                      <Library className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                    </div>
+                    <span className="text-xs text-muted-foreground">{t("groups.sharedLibraryCardTitle")}</span>
+                  </div>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-2xl font-bold">{groupData.sharedBooks?.length || 0}</span>
+                    <span className="text-sm text-muted-foreground">{t("stats.unitBooks")}</span>
+                  </div>
                 </CardContent>
               </Card>
             </div>
+
+            {/* 최근 공유 기록 미리보기 */}
+            {sharedNotes.length > 0 && (
+              <Card>
+                <CardHeader className="pb-2">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-base">{t("groups.sharedNotesCardTitle")}</CardTitle>
+                    <button
+                      className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                      onClick={() => {
+                        const tab = document.querySelector('[value="notes"]') as HTMLElement;
+                        tab?.click();
+                      }}
+                    >
+                      {t("stats.viewAllBooks")} →
+                    </button>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  {sharedNotes.slice(0, 3).map((item: any) => {
+                    const note = item.notes;
+                    const noteUser = note?.users;
+                    const noteBook = note?.books || note?.book;
+                    return (
+                      <div key={item.id} className="flex items-center gap-3 py-1.5 px-2 -mx-2 rounded-lg hover:bg-muted/50 transition-colors">
+                        {noteUser && (
+                          <Avatar className="h-6 w-6 shrink-0">
+                            <AvatarImage src={noteUser.avatar_url || undefined} />
+                            <AvatarFallback className="text-[10px]">{noteUser.name?.[0] || "?"}</AvatarFallback>
+                          </Avatar>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm truncate">
+                            <span className="font-medium">{noteUser?.name}</span>
+                            {noteBook && (
+                              <span className="text-muted-foreground"> · {noteBook.title}</span>
+                            )}
+                          </p>
+                          <p className="text-xs text-muted-foreground truncate">
+                            {note?.content?.slice(0, 50) || ""}
+                          </p>
+                        </div>
+                        <span className="text-[10px] text-muted-foreground shrink-0">
+                          {formatSmartDate(item.shared_at)}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </CardContent>
+              </Card>
+            )}
+
+            {/* 구성원 미리보기 */}
+            <Card>
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base">{t("groups.membersCardTitle")}</CardTitle>
+                  <button
+                    className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                    onClick={() => {
+                      const tab = document.querySelector('[value="members"]') as HTMLElement;
+                      tab?.click();
+                    }}
+                  >
+                    {t("stats.viewAllBooks")} →
+                  </button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-1">
+                  {members.slice(0, 8).map((member: any) => (
+                    <Avatar key={member.id} className="h-8 w-8 ring-2 ring-background -ml-1 first:ml-0">
+                      <AvatarImage src={member.users?.avatar_url || undefined} />
+                      <AvatarFallback className="text-xs">{member.users?.name?.[0] || "?"}</AvatarFallback>
+                    </Avatar>
+                  ))}
+                  {members.length > 8 && (
+                    <span className="text-xs text-muted-foreground ml-2">+{members.length - 8}</span>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="members">

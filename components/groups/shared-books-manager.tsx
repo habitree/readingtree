@@ -136,7 +136,7 @@ export function SharedBooksManager({ groupId }: SharedBooksManagerProps) {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2 sm:gap-3">
           {sharedBooks.map((sharedBook) => {
             const userBook = sharedBook.user_books;
             if (!userBook || !userBook.books) return null;
@@ -146,61 +146,56 @@ export function SharedBooksManager({ groupId }: SharedBooksManagerProps) {
             const isMyBook = userBook.user_id === user?.id;
 
             return (
-              <Card key={sharedBook.id} className="overflow-hidden">
-                <div className="relative aspect-[3/4] w-full bg-muted">
-                  {isValidImageUrl(book.cover_image_url) ? (
-                    <Image
-                      src={getImageUrl(book.cover_image_url)}
-                      alt={book.title}
-                      fill
-                      className="object-cover"
-                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                    />
-                  ) : (
-                    <div className="flex items-center justify-center h-full">
-                      <BookOpen className="h-12 w-12 text-muted-foreground" />
-                    </div>
-                  )}
-                </div>
-                <CardContent className="p-4">
-                  <div className="space-y-2">
-                    <h4 className="font-semibold line-clamp-2">{book.title}</h4>
-                    {book.author && (
-                      <p className="text-sm text-muted-foreground">
-                        {book.author}
-                      </p>
+              <div key={sharedBook.id} className="relative group">
+                <Card className="overflow-hidden h-full">
+                  <div className="relative aspect-[3/4] w-full bg-muted">
+                    {isValidImageUrl(book.cover_image_url) ? (
+                      <Image
+                        src={getImageUrl(book.cover_image_url)}
+                        alt={book.title}
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 768px) 33vw, (max-width: 1024px) 20vw, 16vw"
+                      />
+                    ) : (
+                      <div className="flex items-center justify-center h-full">
+                        <BookOpen className="h-6 w-6 text-muted-foreground" />
+                      </div>
                     )}
-                    
-                    <div className="flex items-center gap-2">
-                      <Avatar className="h-6 w-6">
+                    {/* 공유자 아바타 오버레이 */}
+                    <div className="absolute bottom-1 left-1">
+                      <Avatar className="h-5 w-5 ring-1 ring-background">
                         <AvatarImage src={user?.avatar_url || undefined} />
-                        <AvatarFallback className="text-xs">
+                        <AvatarFallback className="text-[8px]">
                           {user?.name?.[0] || "?"}
                         </AvatarFallback>
                       </Avatar>
-                      <span className="text-xs text-muted-foreground">
-                        {user?.name || t("groups.unknownUser")}
-                      </span>
                     </div>
-
-                    {userBook.status && (
-                      <BookStatusBadge status={userBook.status} />
-                    )}
-
-                    {isMyBook && (
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        className="w-full"
-                        onClick={() => setUnsharingBookId(userBook.id)}
-                      >
-                        <X className="mr-2 h-4 w-4" />
-                        {t("groups.unshareBook")}
-                      </Button>
-                    )}
                   </div>
-                </CardContent>
-              </Card>
+                  <div className="p-1.5 sm:p-2">
+                    <h4 className="font-semibold text-[10px] sm:text-xs line-clamp-2 leading-tight">{book.title}</h4>
+                    {book.author && (
+                      <p className="text-[9px] sm:text-[10px] text-muted-foreground line-clamp-1 mt-0.5">
+                        {book.author}
+                      </p>
+                    )}
+                    <div className="flex items-center gap-1 mt-1">
+                      {userBook.status && (
+                        <BookStatusBadge status={userBook.status} className="scale-[0.7] origin-left" />
+                      )}
+                    </div>
+                  </div>
+                </Card>
+                {isMyBook && (
+                  <button
+                    className="absolute top-0.5 right-0.5 z-10 p-1 rounded-full bg-destructive/80 text-destructive-foreground opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={() => setUnsharingBookId(userBook.id)}
+                    title={t("groups.unshareBook")}
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                )}
+              </div>
             );
           })}
         </div>

@@ -12,6 +12,7 @@ import {
   Moon,
   Sun,
   User,
+  BarChart3,
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import {
@@ -153,6 +154,21 @@ export function MobileMenuSheet({ open, onOpenChange }: MobileMenuSheetProps) {
               >
                 <Users className="h-5 w-5" />
                 <span>{t("nav.groups")}</span>
+              </Button>
+            </Link>
+          </SheetClose>
+
+          <SheetClose asChild>
+            <Link href="/stats" onClick={handleMenuClick}>
+              <Button
+                variant={pathname === "/stats" ? "secondary" : "ghost"}
+                className={cn(
+                  "w-full justify-start gap-3 h-12",
+                  pathname === "/stats" && "bg-secondary font-medium"
+                )}
+              >
+                <BarChart3 className="h-5 w-5" />
+                <span>{t("persona.pageTitle")}</span>
               </Button>
             </Link>
           </SheetClose>
