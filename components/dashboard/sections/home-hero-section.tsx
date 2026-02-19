@@ -212,15 +212,24 @@ export function HomeHeroSection({
                   {motivationalMessage}
                 </p>
 
-                {/* 레벨 뱃지 */}
-                {levelTitle && (
-                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white/70 dark:bg-white/10 rounded-full shadow-sm border border-forest-200/40 dark:border-forest-700/30 mb-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-forest-500 animate-pulse" />
-                    <span className="text-[10px] sm:text-xs font-semibold text-forest-700 dark:text-forest-300">
-                      Lv.{safeLevel} {levelTitle}
-                    </span>
-                  </div>
-                )}
+                {/* 레벨 뱃지 + 기록 버튼 */}
+                <div className="flex items-center gap-2 flex-wrap">
+                  {levelTitle && (
+                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white/70 dark:bg-white/10 rounded-full shadow-sm border border-forest-200/40 dark:border-forest-700/30">
+                      <span className="w-1.5 h-1.5 rounded-full bg-forest-500 animate-pulse" />
+                      <span className="text-[10px] sm:text-xs font-semibold text-forest-700 dark:text-forest-300">
+                        Lv.{safeLevel} {levelTitle}
+                      </span>
+                    </div>
+                  )}
+                  <Link
+                    href="/notes/new"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-forest-600 hover:bg-forest-700 text-white rounded-full shadow-sm text-[10px] sm:text-xs font-semibold transition-colors"
+                  >
+                    <PenTool className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                    {t("notes.writeNoteHeroCta")}
+                  </Link>
+                </div>
               </div>
 
               {/* 우측: 나무 이미지 영역 */}

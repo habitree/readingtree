@@ -52,7 +52,8 @@ export function QuickBookSelector({ onSelect, excludeUserBookIds = [] }: QuickBo
     return filtered.filter(
       (book) =>
         book.books.title.toLowerCase().includes(query) ||
-        book.books.author?.toLowerCase().includes(query)
+        book.books.author?.toLowerCase().includes(query) ||
+        book.books.publisher?.toLowerCase().includes(query)
     );
   }, [books, searchQuery, excludeSet]);
 
@@ -119,19 +120,34 @@ export function QuickBookSelector({ onSelect, excludeUserBookIds = [] }: QuickBo
     );
   }
 
+  const isSearchActive = searchQuery.trim().length > 0;
+  const searchResultCount = isSearchActive ? filteredBooks.length : 0;
+
   return (
     <div className="flex flex-col h-full">
       {/* 검색 입력 */}
-      <div className="relative mb-4">
+      <div className="relative mb-2">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
           type="text"
           placeholder={t("books.searchBooksPlaceholder")}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-9 h-11"
+          className="pl-9 pr-9 h-11"
         />
+        {isSearchActive && (
+          <div className="absolute right-3 top-1/2 -translate-y-1/2">
+            <Loader2 className="h-4 w-4 animate-spin text-forest-500" />
+          </div>
+        )}
       </div>
+
+      {/* 검색 결과 건수 표시 */}
+      {isSearchActive && (
+        <p className="text-xs text-muted-foreground px-1 mb-2">
+          {searchResultCount}{t("search.resultsCount")}
+        </p>
+      )}
 
       <div className="flex-1 overflow-y-auto space-y-4">
         {/* 검색 중이 아닐 때만 최근 기록한 책 표시 */}
