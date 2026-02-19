@@ -174,8 +174,8 @@ export function AISettingsPanel({
       setTestResult({
         success: result.success,
         message: result.success
-          ? t("admin.aiSettings.connectionSuccess", { response: result.testResponse })
-          : t("admin.aiSettings.connectionFailed", { error: result.error }),
+          ? t("admin.aiSettings.connectionSuccess", { response: result.testResponse ?? "" })
+          : t("admin.aiSettings.connectionFailed", { error: result.error ?? "" }),
         responseTime: result.responseTime,
       });
     } catch (error) {
