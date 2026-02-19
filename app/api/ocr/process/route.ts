@@ -6,6 +6,9 @@ import { recordOcrSuccess, recordOcrFailure } from "@/app/actions/ocr";
 import { correctOcrText, isOcrCorrectionAvailable } from "@/lib/ai/ocr-correction";
 import type { User } from "@supabase/supabase-js";
 
+// OCR 처리는 이미지 다운로드 + Cloud Run 호출 + AI 보정으로 시간 소요
+export const maxDuration = 60;
+
 /**
  * OCR 실제 처리 API
  * Queue에서 호출되어 실제 OCR 처리를 수행합니다.

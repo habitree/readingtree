@@ -1,15 +1,18 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef, memo } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { Card } from "@/components/ui/card";
-import { BookOpen, ChevronRight, Loader2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { BookOpen, ChevronRight, Loader2, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useHapticFeedback } from "@/components/ui/touch-feedback";
 import { useTranslation } from "@/lib/i18n";
+import { updateBookProgress } from "@/app/actions/books";
+import { toast } from "sonner";
 
 interface ContinueReadingCardProps {
   userBookId: string;
@@ -25,9 +28,9 @@ interface ContinueReadingCardProps {
 
 /**
  * 계속 읽기 카드 - 마지막 읽던 책으로 바로 이동하는 CTA
- * compact 모드: 여러 책이 있을 때 작은 카드로 표시
+ * compact 모드: 여러 책이 있을 때 작은 카드로 표시 + 인라인 진행률 업데이트
  */
-export function ContinueReadingCard({
+export const ContinueReadingCard = memo(function ContinueReadingCard({
   userBookId,
   title,
   author,
@@ -41,6 +44,12 @@ export function ContinueReadingCard({
   const router = useRouter();
   const pathname = usePathname();
   const [isNavigating, setIsNavigating] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [pageInput, setPageInput] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+  const [localPage, setLocalPage] = useState(currentPage);
+  const [localProgress, setLocalProgress] = useState(progressPercent);
+  const inputRef = useRef<HTMLInputElement>(null);
   const { lightTap } = useHapticFeedback();
   const { t } = useTranslation();
 
@@ -51,7 +60,7 @@ export function ContinueReadingCard({
 
   const handleClick = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
-    if (isNavigating) return;
+    if (isNavigating || isEditing) return;
 
     setIsNavigating(true);
     lightTap();
@@ -60,18 +69,60 @@ export function ContinueReadingCard({
     window.dispatchEvent(new CustomEvent("navigation-start", { detail: { path: `/books/${userBookId}` } }));
 
     router.push(`/books/${userBookId}`);
-  }, [router, userBookId, isNavigating, lightTap]);
+  }, [router, userBookId, isNavigating, isEditing, lightTap]);
 
-  // compact 모드: 세로 레이아웃의 작은 카드
+  // 진행률 바 클릭 → 인라인 편집 모드
+  const handleProgressClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    setIsEditing(true);
+    setPageInput(String(localPage || ""));
+    setTimeout(() => inputRef.current?.focus(), 50);
+  }, [localPage]);
+
+  // 진행률 저장
+  const handleSavePage = useCallback(async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    e?.stopPropagation();
+    const page = parseInt(pageInput, 10);
+    if (isNaN(page) || page < 0) {
+      setIsEditing(false);
+      return;
+    }
+    if (totalPages && page > totalPages) {
+      setIsEditing(false);
+      return;
+    }
+
+    setIsSaving(true);
+    // 낙관적 업데이트
+    setLocalPage(page);
+    const newProgress = totalPages ? Math.round((page / totalPages) * 100) : localProgress;
+    setLocalProgress(newProgress);
+
+    try {
+      await updateBookProgress(userBookId, page);
+      toast.success(t("dashboard.updatePageSuccess"));
+    } catch {
+      // 롤백
+      setLocalPage(currentPage);
+      setLocalProgress(progressPercent);
+    } finally {
+      setIsSaving(false);
+      setIsEditing(false);
+    }
+  }, [pageInput, totalPages, localProgress, userBookId, t, currentPage, progressPercent]);
+
+  // compact 모드: 세로 레이아웃의 작은 카드 + 인라인 진행률
   if (compact) {
     return (
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.3 }}
-        whileTap={{ scale: 0.98 }}
-        onClick={handleClick}
-        className="cursor-pointer h-full"
+        whileTap={isEditing ? undefined : { scale: 0.98 }}
+        onClick={isEditing ? undefined : handleClick}
+        className={cn("h-full", !isEditing && "cursor-pointer")}
       >
         <Card className={cn(
           "relative overflow-hidden h-full border-slate-200/60 dark:border-slate-800/60 bg-white dark:bg-slate-900 transition-colors duration-200",
@@ -123,14 +174,49 @@ export function ContinueReadingCard({
                 </div>
               </div>
 
-              {/* 하단: 진행률 바 (수치 제거, 바만 유지) */}
+              {/* 하단: 클릭 가능한 진행률 바 + 인라인 편집 */}
               <div className="mt-auto pt-1.5">
-                <div className="h-0.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-forest-400/60 rounded-full"
-                    style={{ width: `${progressPercent}%` }}
-                  />
-                </div>
+                {isEditing ? (
+                  <form
+                    onSubmit={handleSavePage}
+                    onClick={(e) => e.stopPropagation()}
+                    className="flex items-center gap-1"
+                  >
+                    <Input
+                      ref={inputRef}
+                      type="number"
+                      min={0}
+                      max={totalPages || undefined}
+                      value={pageInput}
+                      onChange={(e) => setPageInput(e.target.value)}
+                      onBlur={() => handleSavePage()}
+                      placeholder={t("dashboard.updatePagePlaceholder")}
+                      className="h-6 text-[10px] px-1.5 w-full"
+                      disabled={isSaving}
+                    />
+                    {totalPages && (
+                      <span className="text-[9px] text-slate-400 shrink-0">/{totalPages}</span>
+                    )}
+                  </form>
+                ) : (
+                  <button
+                    onClick={handleProgressClick}
+                    className="w-full text-left group/progress"
+                    aria-label={t("dashboard.updatePagePlaceholder")}
+                  >
+                    <div className="flex items-center justify-between mb-0.5">
+                      <span className="text-[9px] text-slate-400 group-hover/progress:text-forest-500 transition-colors">
+                        {localPage}{totalPages ? `/${totalPages}` : ""}p
+                      </span>
+                    </div>
+                    <div className="h-1 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden group-hover/progress:bg-slate-300 dark:group-hover/progress:bg-slate-600 transition-colors">
+                      <div
+                        className="h-full bg-forest-400 rounded-full transition-all duration-300"
+                        style={{ width: `${localProgress}%` }}
+                      />
+                    </div>
+                  </button>
+                )}
               </div>
             </div>
           </Card>
@@ -194,12 +280,17 @@ export function ContinueReadingCard({
                 </p>
               )}
 
-              {/* 진행률 바 (수치 제거, 바만 유지) */}
+              {/* 진행률 바 */}
               <div className="mt-2">
-                <div className="h-0.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                <div className="flex items-center justify-between mb-0.5">
+                  <span className="text-[10px] text-slate-400">
+                    {localPage}{totalPages ? `/${totalPages}` : ""}p
+                  </span>
+                </div>
+                <div className="h-1 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-forest-400/60 rounded-full"
-                    style={{ width: `${progressPercent}%` }}
+                    className="h-full bg-forest-400 rounded-full transition-all duration-300"
+                    style={{ width: `${localProgress}%` }}
                   />
                 </div>
               </div>
@@ -211,7 +302,7 @@ export function ContinueReadingCard({
       </Card>
     </motion.div>
   );
-}
+});
 
 /**
  * 계속 읽기 카드 스켈레톤

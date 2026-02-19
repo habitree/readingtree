@@ -1,7 +1,7 @@
 import { ImageResponse } from "next/og";
 import { createClient } from "@supabase/supabase-js";
 import { parseNoteContentFields } from "@/lib/utils/note";
-import { getImageUrl, isValidImageUrl } from "@/lib/utils/image";
+import { isValidImageUrl } from "@/lib/utils/image";
 import { isValidUUID } from "@/lib/utils/validation";
 
 export const alt = "ReadTree 독서 기록 공유";
@@ -142,9 +142,10 @@ export default async function OgImage({
 
   const isQuoteType = note.type === "quote" || (quote && !memo);
 
+  // OG 이미지는 서버사이드 렌더링이므로 HTTP URL 직접 사용 (HTTPS 강제 변환 불필요)
   const coverUrl =
     book?.cover_image_url && isValidImageUrl(book.cover_image_url)
-      ? getImageUrl(book.cover_image_url)
+      ? book.cover_image_url
       : null;
   const useCoverImage =
     typeof coverUrl === "string" && coverUrl.startsWith("http");

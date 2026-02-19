@@ -1,7 +1,7 @@
 import { ImageResponse } from "next/og";
 import { createClient } from "@supabase/supabase-js";
 import { isValidUUID } from "@/lib/utils/validation";
-import { getImageUrl, isValidImageUrl } from "@/lib/utils/image";
+import { isValidImageUrl } from "@/lib/utils/image";
 
 export const alt = "ReadTree 서재 공유";
 export const size = { width: 1200, height: 630 };
@@ -110,9 +110,10 @@ export default async function OgImage({
           ? {
               title: book.title || "제목 없음",
               author: book.author || "",
+              // OG 이미지는 서버사이드 렌더링이므로 HTTP URL 직접 사용
               coverUrl:
                 book.cover_image_url && isValidImageUrl(book.cover_image_url)
-                  ? getImageUrl(book.cover_image_url)
+                  ? book.cover_image_url
                   : null,
             }
           : null;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Home, Library, Clock, Plus, Menu } from "lucide-react";
@@ -12,6 +12,7 @@ import { LoginPromptModal } from "@/components/ui/login-prompt-modal";
 import { MobileMenuSheet } from "./mobile-menu-sheet";
 import { useMobileNoteSheet } from "@/hooks/use-mobile-note-sheet";
 import { useTranslation, type TranslationKey } from "@/lib/i18n";
+import { getContinueReadingBooks } from "@/app/actions/books";
 
 /**
  * 모바일 네비게이션 아이템 타입
@@ -55,6 +56,33 @@ export function MobileNav() {
   const { isOpen, setIsOpen, title, description, requireLogin } = useLoginPrompt();
   const noteSheet = useMobileNoteSheet();
 
+  // 이어읽기 책 캐시 (FAB 원탭 진입용)
+  const [continueBook, setContinueBook] = useState<{
+    id: string;
+    bookId: string;
+    title: string;
+    author: string | null;
+    coverImageUrl: string | null;
+  } | null>(null);
+
+  useEffect(() => {
+    if (!user) return;
+    getContinueReadingBooks(undefined, 1)
+      .then((books) => {
+        if (books.length > 0) {
+          const b = books[0];
+          setContinueBook({
+            id: b.userBookId,
+            bookId: b.bookId,
+            title: b.title,
+            author: b.author,
+            coverImageUrl: b.coverImageUrl,
+          });
+        }
+      })
+      .catch(() => {});
+  }, [user]);
+
   const handleNoteAction = useCallback(() => {
     if (!user) {
       requireLogin({
@@ -63,8 +91,13 @@ export function MobileNav() {
       });
       return;
     }
-    noteSheet.open();
-  }, [user, requireLogin, noteSheet]);
+    // 원탭 진입: 이어읽기 책이 있으면 자동 선택 → 바로 입력
+    if (continueBook) {
+      noteSheet.openWithBook(continueBook);
+    } else {
+      noteSheet.open();
+    }
+  }, [user, requireLogin, noteSheet, continueBook]);
 
   return (
     <>

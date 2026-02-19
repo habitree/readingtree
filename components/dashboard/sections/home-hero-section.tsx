@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, memo } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
@@ -17,6 +17,8 @@ import {
   CheckCircle2,
   Check,
   Flame,
+  Target,
+  Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { UserPersona } from "@/types/persona";
@@ -91,10 +93,10 @@ interface HomeHeroSectionProps {
 }
 
 /**
- * 홈 히어로 섹션 - Stitch 디자인 기반
- * Primary Zone: 인사말 + 나무 일러스트 + 핵심 지표 + 주간 진행
+ * 홈 히어로 섹션 - "오늘의 할 일" 중심 설계
+ * Primary Zone: 오늘의 할 일 CTA + 인사말 + 나무 + 이어읽기
  */
-export function HomeHeroSection({
+export const HomeHeroSection = memo(function HomeHeroSection({
   userName,
   persona,
   streak = 0,
@@ -185,9 +187,63 @@ export function HomeHeroSection({
   // 나무 이미지 레벨
   const safeLevel = Math.max(1, Math.min(10, userLevel));
 
+  // 오늘의 할 일 결정
+  const todayAction = useMemo(() => {
+    if (!userName || isGuest) return null;
+    if (!hasFirstNote && continueReadingBooks.length === 0) {
+      return { type: "first" as const, label: t("dashboard.todayMissionFirst"), href: "/books/search" };
+    }
+    if (todayNotes === 0 && continueReadingBooks.length > 0) {
+      return { type: "read" as const, label: t("dashboard.todayMissionRead"), href: `/books/${continueReadingBooks[0].userBookId}` };
+    }
+    if (todayNotes === 0) {
+      return { type: "note" as const, label: t("dashboard.todayMissionNote"), href: "/notes/new" };
+    }
+    return { type: "done" as const, label: t("dashboard.todayMissionDone"), href: "" };
+  }, [userName, isGuest, hasFirstNote, todayNotes, continueReadingBooks, t]);
+
   return (
     <div className="space-y-2 sm:space-y-3">
-      {/* ======== PRIMARY ZONE: 히어로 카드 (Stitch 스타일) ======== */}
+      {/* ======== 오늘의 할 일 (최우선 CTA — 로그인 유저만) ======== */}
+      {todayAction && todayAction.type !== "done" && (
+        <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
+          <Link href={todayAction.href}>
+            <Card className="p-3 sm:p-4 border-forest-200/60 dark:border-forest-700/40 bg-gradient-to-r from-forest-50 to-emerald-50 dark:from-forest-950/50 dark:to-emerald-950/30 hover:shadow-md transition-shadow">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-forest-500 text-white shadow-sm shrink-0">
+                  <Target className="h-5 w-5" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[10px] sm:text-xs font-semibold text-forest-600 dark:text-forest-400">{t("dashboard.todayMission")}</p>
+                  <p className="text-sm sm:text-base font-bold text-slate-900 dark:text-white truncate">{todayAction.label}</p>
+                </div>
+                <ChevronRight className="h-5 w-5 text-forest-400 shrink-0" />
+              </div>
+            </Card>
+          </Link>
+        </motion.div>
+      )}
+
+      {/* ======== 오늘의 기록 완료 상태 ======== */}
+      {todayAction?.type === "done" && (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
+          <Card className="p-3 sm:p-4 border-forest-200/60 dark:border-forest-700/40 bg-gradient-to-r from-forest-50/50 to-emerald-50/50 dark:from-forest-950/30 dark:to-emerald-950/20">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-forest-100 dark:bg-forest-900/50 shrink-0">
+                <CheckCircle2 className="h-5 w-5 text-forest-500" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold text-forest-700 dark:text-forest-300">{todayAction.label}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">{todayNotes}{t("common.count")} {t("dashboard.todayNotes")}</p>
+              </div>
+              <Flame className={cn("h-5 w-5 shrink-0", streak > 0 ? "text-orange-500" : "text-slate-300")} />
+              {streak > 0 && <span className="text-sm font-bold text-orange-500">{streak}</span>}
+            </div>
+          </Card>
+        </motion.div>
+      )}
+
+      {/* ======== PRIMARY ZONE: 히어로 카드 ======== */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -260,7 +316,7 @@ export function HomeHeroSection({
       {/* ======== 첫 기록 CTA (기록이 없는 유저에게만 표시) ======== */}
       {userName && !isGuest && !hasFirstNote && <FirstNotePrompt />}
 
-      {/* ======== 계속 읽기 (Primary CTA - 최우선) ======== */}
+      {/* ======== 계속 읽기 (이어읽기 카드 — 인라인 진행률 포함) ======== */}
       {(userName || (isGuest && continueReadingBooks.length > 0)) && (
         <div className="space-y-2 sm:space-y-3">
           {continueReadingBooks.length > 0 ? (
@@ -397,14 +453,9 @@ export function HomeHeroSection({
           onDismiss={onDismissOnboarding}
         />
       )}
-
-      {/* ======== TERTIARY ZONE: 추가 정보 (접이식으로 dashboard-content에서 처리) ======== */}
-      {/* 30일 활동 캘린더는 접이식 영역으로 이동 */}
-
-      {/* 페르소나 인사이트 미니 카드는 접이식 영역으로 이동 */}
     </div>
   );
-}
+});
 
 /**
  * 나뭇잎 요일 지표 컴포넌트

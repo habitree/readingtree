@@ -108,6 +108,25 @@ const nextConfig = {
           { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
         ],
       },
+      // OG 이미지 캐싱 (카카오톡/SNS 스크래퍼 최적화)
+      {
+        source: '/opengraph-image',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=3600, s-maxage=86400, stale-while-revalidate=604800' },
+        ],
+      },
+      {
+        source: '/twitter-image',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=3600, s-maxage=86400, stale-while-revalidate=604800' },
+        ],
+      },
+      {
+        source: '/share/:path*/opengraph-image',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=600, s-maxage=3600, stale-while-revalidate=86400' },
+        ],
+      },
     ];
 
     // 개발 환경 CSP (Turbopack HMR을 위해 완화된 정책)

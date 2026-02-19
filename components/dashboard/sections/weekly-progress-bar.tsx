@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import { motion } from "framer-motion";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -33,7 +34,7 @@ interface WeeklyProgressBarProps {
  * - Progress Illusion: 진행률 바로 완료 동기 부여
  * - Loss Aversion: 스트릭 위험 시 경고로 끊기 방지
  */
-export function WeeklyProgressBar({
+export const WeeklyProgressBar = memo(function WeeklyProgressBar({
   days,
   recordedDays,
   totalDays,
@@ -151,7 +152,7 @@ export function WeeklyProgressBar({
       </div>
     </Card>
   );
-}
+});
 
 interface DayIndicatorProps {
   hasRecord: boolean;

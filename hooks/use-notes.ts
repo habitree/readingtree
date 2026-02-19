@@ -7,7 +7,7 @@ import type { CreateNoteInput, UpdateNoteInput } from "@/types/note";
 
 /**
  * 기록 관련 커스텀 훅
- * 기록 목록 조회, 생성, 수정, 삭제 기능 제공
+ * 낙관적 업데이트 + useCallback 메모이제이션 적용
  */
 export function useNotes(bookId?: string, type?: NoteType) {
   const [notes, setNotes] = useState<NoteWithBook[]>([]);
@@ -33,39 +33,56 @@ export function useNotes(bookId?: string, type?: NoteType) {
     fetchNotes();
   }, [fetchNotes]);
 
-  const handleCreateNote = async (data: CreateNoteInput) => {
+  const handleCreateNote = useCallback(async (data: CreateNoteInput) => {
     try {
       const result = await createNote(data);
-      await fetchNotes(); // 목록 새로고침
+      // 백그라운드에서 전체 목록 동기화 (생성 결과는 noteId만 포함)
+      fetchNotes().catch(() => {});
       return result;
     } catch (err) {
       const error = err instanceof Error ? err : new Error("기록 생성 실패");
       setError(error);
       throw error;
     }
-  };
+  }, [fetchNotes]);
 
-  const handleUpdateNote = async (noteId: string, data: UpdateNoteInput) => {
+  const handleUpdateNote = useCallback(async (noteId: string, data: UpdateNoteInput) => {
+    // 낙관적 업데이트: 즉시 UI 반영
+    const previousNotes = notes;
+    setNotes((prev) =>
+      prev.map((note) =>
+        note.id === noteId ? { ...note, ...data } as NoteWithBook : note
+      )
+    );
+
     try {
       await updateNote(noteId, data);
-      await fetchNotes(); // 목록 새로고침
+      // 백그라운드 동기화
+      fetchNotes().catch(() => {});
     } catch (err) {
+      // 실패 시 롤백
+      setNotes(previousNotes);
       const error = err instanceof Error ? err : new Error("기록 수정 실패");
       setError(error);
       throw error;
     }
-  };
+  }, [notes, fetchNotes]);
 
-  const handleDeleteNote = async (noteId: string) => {
+  const handleDeleteNote = useCallback(async (noteId: string) => {
+    // 낙관적 업데이트: 즉시 목록에서 제거
+    const previousNotes = notes;
+    setNotes((prev) => prev.filter((note) => note.id !== noteId));
+
     try {
       await deleteNote(noteId);
-      await fetchNotes(); // 목록 새로고침
     } catch (err) {
+      // 실패 시 롤백
+      setNotes(previousNotes);
       const error = err instanceof Error ? err : new Error("기록 삭제 실패");
       setError(error);
       throw error;
     }
-  };
+  }, [notes]);
 
   return {
     notes,

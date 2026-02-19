@@ -35,7 +35,7 @@ const quickTransition = { duration: 0.15 };
  * - Micro-animations (마이크로 애니메이션)
  * - Warm Colors (따뜻한 색상)
  */
-export function MonthlyBookCalendar({
+export const MonthlyBookCalendar = memo(function MonthlyBookCalendar({
   activities,
   year,
   month,
@@ -314,7 +314,7 @@ export function MonthlyBookCalendar({
       </div>
     </Card>
   );
-}
+});
 
 // 기록 타입별 색상 (작은 도트 인디케이터용)
 const NOTE_TYPE_COLORS = {

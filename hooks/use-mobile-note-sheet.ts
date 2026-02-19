@@ -23,8 +23,10 @@ interface MobileNoteSheetState {
   /** 현재 스텝 (1: 책 선택, 2: 내용 입력) */
   currentStep: number;
 
-  /** 시트 열기 */
+  /** 시트 열기 (책 정보 전달 시 바로 Step 2로 진입) */
   open: (mode?: NoteMode) => void;
+  /** 이어읽기 책으로 바로 열기 (원탭 진입) */
+  openWithBook: (book: SelectedBook, mode?: NoteMode) => void;
   /** 시트 닫기 */
   close: () => void;
   /** 모드 변경 */
@@ -59,6 +61,14 @@ export const useMobileNoteSheet = create<MobileNoteSheetState>((set) => ({
       mode,
       currentStep: 1,
       selectedBook: null,
+    }),
+
+  openWithBook: (book, mode = "memo") =>
+    set({
+      isOpen: true,
+      mode,
+      selectedBook: book,
+      currentStep: 2,
     }),
 
   close: () =>

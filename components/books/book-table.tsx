@@ -29,7 +29,7 @@ import { BookNotesPreview } from "./book-notes-preview";
 import { BookDeleteButton } from "./book-delete-button";
 import { getImageUrl, isValidImageUrl } from "@/lib/utils/image";
 import { BookOpen, FileText, Loader2, Users, BookOpen as BookOpenIcon, Trash2 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, memo } from "react";
 import { useRouter } from "next/navigation";
 import { updateBookStatus, getBookDescriptionSummary } from "@/app/actions/books";
 import { moveBookToBookshelf, getBookshelves } from "@/app/actions/bookshelves";
@@ -76,7 +76,7 @@ function removePublisherFromTitle(title: string, publisher: string | null): stri
  * 테이블 형태 책 목록 컴포넌트
  * habitree.io/search 페이지의 테이블 형태와 유사한 구조
  */
-export function BookTable({ books }: BookTableProps) {
+export const BookTable = memo(function BookTable({ books }: BookTableProps) {
   const { t } = useTranslation();
   const router = useRouter();
   const [expandedBookId, setExpandedBookId] = useState<string | null>(null);
@@ -732,5 +732,5 @@ export function BookTable({ books }: BookTableProps) {
       })}
     </div>
   );
-}
+});
 

@@ -39,7 +39,6 @@ export const metadata: Metadata = {
     ],
   },
   // Open Graph 설정 (Facebook, LinkedIn, 카카오톡 등)
-  // 주의: images는 지정하지 않음 - opengraph-image.tsx가 자동으로 메타태그 생성
   openGraph: {
     type: "website",
     locale: "ko_KR",
@@ -47,14 +46,23 @@ export const metadata: Metadata = {
     siteName: "ReadTree",
     title: "ReadTree - 독서 기록 및 공유 플랫폼",
     description: "책 관리, 독서 노트, AI 독서 도우미와 함께하는 나만의 독서 여정",
+    images: [
+      {
+        url: "/opengraph-image",
+        width: 1200,
+        height: 630,
+        alt: "ReadTree - 독서 기록 및 공유 플랫폼",
+        type: "image/png",
+      },
+    ],
   },
   // Twitter 카드 설정
-  // 주의: images는 지정하지 않음 - twitter-image.tsx가 자동으로 메타태그 생성
   twitter: {
     card: "summary_large_image",
     title: "ReadTree - 독서 기록 및 공유 플랫폼",
     description: "책 관리, 독서 노트, AI 독서 도우미와 함께하는 나만의 독서 여정",
     creator: "@readtree",
+    images: ["/opengraph-image"],
   },
   // 로봇 설정
   robots: {
@@ -101,7 +109,7 @@ export const viewport: Viewport = {
  *
  * 테마: next-themes를 통한 동적 테마 지원
  * - light, dark, forest, forest-dark 4가지 테마
- * - 기본값: forest (숲 테마)
+ * - 기본값: dark (밤 테마)
  */
 export default function RootLayout({
   children,
@@ -133,7 +141,7 @@ export default function RootLayout({
       <body className={`${inter.variable} ${notoSerifKr.variable} font-sans`}>
         <ThemeProvider
           attribute="class"
-          defaultTheme="forest"
+          defaultTheme="dark"
           themes={["light", "dark", "forest", "forest-dark"]}
           enableSystem={false}
           disableTransitionOnChange

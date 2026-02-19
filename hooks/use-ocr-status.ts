@@ -31,7 +31,7 @@ export function useOCRStatus({
   const onCompleteRef = useRef(onComplete);
   const isFirstCheckRef = useRef(true); // 첫 번째 확인인지 추적
   const wasProcessingRef = useRef(false); // processing 상태였는지 추적
-  const maxPolls = 20; // 최대 20회 (약 1분)
+  const maxPolls = 40; // 최대 40회 (약 2분)
   const TIMEOUT_MINUTES = 10; // 10분 타임아웃
   const TIMEOUT_MS = TIMEOUT_MINUTES * 60 * 1000; // 10분을 밀리초로 변환
 

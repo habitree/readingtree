@@ -1,16 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
+import { after } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { verifyNoteOwnership, createTranscriptionInitial } from "@/app/actions/notes";
 import { checkRateLimit } from "@/lib/middleware/rate-limit";
 
 /**
  * OCR 처리 요청 API
- * 즉시 응답하고 백그라운드에서 OCR 처리를 시작합니다.
+ * 즉시 응답하고 after()로 백그라운드 OCR 처리를 보장합니다.
  * 실제 OCR 처리는 /api/ocr/process에서 수행됩니다.
  */
 export async function POST(request: NextRequest) {
   console.log("[OCR] 요청 수신 시작");
-  
+
   try {
     // Rate Limiting (분당 15회 - OCR API 비용 보호)
     const rateLimitResult = await checkRateLimit(request, 15);
@@ -46,7 +47,7 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
     const { noteId, imageUrl } = body;
-    
+
     console.log("[OCR] 요청 본문 파싱 완료:", {
       noteId,
       hasImageUrl: !!imageUrl,
@@ -82,40 +83,41 @@ export async function POST(request: NextRequest) {
       // 초기 상태 생성 실패해도 OCR 처리는 계속 진행 (이미 존재할 수 있음)
     }
 
-    // 백그라운드에서 OCR 처리 시작
-    // 실제 프로덕션에서는 Queue 시스템(Vercel Queue, Supabase Edge Functions 등)을 사용
-    // 여기서는 fetch로 비동기 처리하되, 실제로는 Queue 시스템으로 변경 가능
-    // 내부 API 호출 시 쿠키를 전달하여 인증 정보 유지
+    // after()로 백그라운드 OCR 처리 시작
+    // Next.js after()는 응답 전송 후에도 실행이 보장됨 (Vercel 서버리스 호환)
+    const origin = request.nextUrl.origin;
     const cookies = request.headers.get("cookie");
-    fetch(`${request.nextUrl.origin}/api/ocr/process`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...(cookies && { Cookie: cookies }), // 쿠키 전달 (인증 정보 유지)
-      },
-      body: JSON.stringify({ noteId, imageUrl }),
-    })
-      .then(async (response) => {
+
+    after(async () => {
+      try {
+        console.log(`[OCR after()] 백그라운드 처리 시작: noteId=${noteId}`);
+        const response = await fetch(`${origin}/api/ocr/process`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(cookies && { Cookie: cookies }),
+          },
+          body: JSON.stringify({ noteId, imageUrl }),
+        });
+
         if (!response.ok) {
           const errorText = await response.text().catch(() => "");
-          console.error("[OCR] 처리 요청 실패:", {
+          console.error("[OCR after()] 처리 요청 실패:", {
             status: response.status,
             statusText: response.statusText,
             error: errorText,
             noteId,
           });
         } else {
-          console.log(`[OCR] 처리 요청 성공: noteId=${noteId}`);
+          console.log(`[OCR after()] 처리 요청 성공: noteId=${noteId}`);
         }
-      })
-      .catch((error) => {
-        console.error("[OCR] 처리 요청 오류:", {
+      } catch (error) {
+        console.error("[OCR after()] 처리 요청 오류:", {
           error: error instanceof Error ? error.message : String(error),
           noteId,
-          stack: error instanceof Error ? error.stack : undefined,
         });
-        // 실패해도 사용자에게는 즉시 응답 반환 (비동기 처리이므로)
-      });
+      }
+    });
 
     // 즉시 응답 반환
     return NextResponse.json({ success: true, noteId });
@@ -133,4 +135,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-
