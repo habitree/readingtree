@@ -22,7 +22,6 @@ import { useTheme } from "next-themes";
 import { useAuth } from "@/hooks/use-auth";
 import { signOut } from "@/app/actions/auth";
 import { getCurrentUserProfile } from "@/app/actions/profile";
-import { getProxiedImageUrl } from "@/lib/utils/image";
 import { useEffect, useState, useRef, useCallback } from "react";
 import { usePathname } from "next/navigation";
 import { useTranslation } from "@/lib/i18n";
@@ -152,7 +151,7 @@ export function Header() {
                       >
                         <Avatar className="h-8 w-8 sm:h-10 sm:w-10 border-2 border-background">
                           <AvatarImage
-                            src={userAvatar ? getProxiedImageUrl(userAvatar) : undefined}
+                            src={userAvatar || undefined}
                             alt={userName}
                             className="object-cover"
                           />

@@ -2,7 +2,6 @@ import { notFound } from "next/navigation";
 import { getUserById } from "@/app/actions/profile";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { getProxiedImageUrl } from "@/lib/utils/image";
 import { User } from "lucide-react";
 import { UserProfilePageHeader, ProfileInfoCardTitle } from "@/components/profile/user-profile-page-header";
 
@@ -35,7 +34,7 @@ export default async function UserProfilePage({ params }: ProfilePageProps) {
           <div className="flex items-center gap-4">
             <Avatar className="h-16 w-16">
               <AvatarImage
-                src={user.avatar_url ? getProxiedImageUrl(user.avatar_url) : undefined}
+                src={user.avatar_url || undefined}
                 alt={user.name}
               />
               <AvatarFallback>

@@ -30,6 +30,7 @@ const AvatarImage = React.forwardRef<
     <AvatarPrimitive.Image
       ref={ref}
       src={safeSrc}
+      referrerPolicy="no-referrer"
       className={cn("aspect-square h-full w-full object-cover", className)}
       {...props}
     />

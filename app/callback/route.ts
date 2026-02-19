@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { revalidatePath } from "next/cache";
 import { getAppUrl } from "@/lib/utils/url";
+import { copySocialAvatarToStorage } from "@/lib/supabase/copy-social-avatar";
 
 /**
  * OAuth 및 이메일 인증 콜백 처리
@@ -128,9 +129,12 @@ export async function GET(request: NextRequest) {
 
     // 프로필이 여전히 없으면 수동 생성 시도
     if (!profile) {
-      // 카카오 등 외부 프로필 이미지 HTTP→HTTPS 변환
+      // 소셜 프로필 이미지를 Supabase Storage에 복사 (URL 만료 방지)
       const rawAvatarUrl = user.user_metadata?.avatar_url || null;
-      const avatarUrl = rawAvatarUrl?.startsWith("http://") ? rawAvatarUrl.replace("http://", "https://") : rawAvatarUrl;
+      let avatarUrl: string | null = null;
+      if (rawAvatarUrl) {
+        avatarUrl = await copySocialAvatarToStorage(supabase, user.id, rawAvatarUrl);
+      }
       const { error: insertError } = await supabase.from("users").insert({
         id: user.id,
         email: user.email,

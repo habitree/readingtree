@@ -2327,6 +2327,10 @@ export const en: Dictionary = {
     likeFailed: "Failed to process like.",
     emptyState: "No public notes yet. Be the first to share!",
     anonymous: "Anonymous",
+    likeAria: "Like",
+    unlikeAria: "Unlike",
+    allTags: "All",
+    goToExplore: "Explore",
   },
 
   bookshelves: {

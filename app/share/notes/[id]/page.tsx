@@ -9,7 +9,7 @@ import { ShareCtaSection } from "@/components/share/share-cta-section";
 import type { NoteWithBook } from "@/types/note";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, Compass } from "lucide-react";
 import { getUserById } from "@/app/actions/profile";
 
 /**
@@ -133,12 +133,20 @@ export default async function ShareNotePage({
       <div className="container mx-auto px-4 py-12 md:py-20 max-w-5xl">
         {/* 상단 액션 바 */}
         <div className="flex items-center justify-between mb-10">
-          <Button variant="ghost" size="sm" asChild className="text-muted-foreground hover:text-primary">
-            <Link href="/">
-              <ChevronLeft className="w-4 h-4 mr-1" />
-              메인으로
-            </Link>
-          </Button>
+          <div className="flex items-center gap-1">
+            <Button variant="ghost" size="sm" asChild className="text-muted-foreground hover:text-primary">
+              <Link href="/">
+                <ChevronLeft className="w-4 h-4 mr-1" />
+                메인으로
+              </Link>
+            </Button>
+            <Button variant="ghost" size="sm" asChild className="text-muted-foreground hover:text-primary">
+              <Link href="/explore">
+                <Compass className="w-4 h-4 mr-1" />
+                탐색으로
+              </Link>
+            </Button>
+          </div>
           <div className="flex items-center gap-2">
             <div className="px-3 py-1 bg-white dark:bg-slate-900 rounded-full border border-slate-200 dark:border-slate-800 text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
               <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />

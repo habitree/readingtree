@@ -98,7 +98,42 @@ export async function getPublicNotes(options?: {
 }
 
 /**
- * 좋아요 토글
+ * 인기 태그 조회
+ * 공개 노트에서 태그 빈도 상위 N개 반환
+ */
+export async function getExploreTags(limit = 15): Promise<string[]> {
+  const supabase = await createServerSupabaseClient();
+
+  const { data: notes, error } = await supabase
+    .from("notes")
+    .select("tags")
+    .eq("is_public", true)
+    .neq("type", "progress")
+    .not("tags", "is", null);
+
+  if (error || !notes) {
+    console.error("[Explore] 태그 조회 오류:", error);
+    return [];
+  }
+
+  // 클라이언트 집계: 태그별 빈도 계산
+  const tagCounts = new Map<string, number>();
+  for (const note of notes) {
+    if (Array.isArray(note.tags)) {
+      for (const tag of note.tags) {
+        tagCounts.set(tag, (tagCounts.get(tag) || 0) + 1);
+      }
+    }
+  }
+
+  return [...tagCounts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, limit)
+    .map(([tag]) => tag);
+}
+
+/**
+ * 좋아요 토글 (원자적 RPC)
  */
 export async function toggleNoteLike(noteId: string): Promise<{
   liked: boolean;
@@ -108,39 +143,18 @@ export async function toggleNoteLike(noteId: string): Promise<{
   const user = await getCurrentUser();
   if (!user) throw new Error("로그인이 필요합니다.");
 
-  // 노트가 공개인지 확인
-  const { data: note } = await supabase
-    .from("notes")
-    .select("id, is_public, like_count")
-    .eq("id", noteId)
-    .single();
+  const { data, error } = await supabase.rpc("toggle_note_like", {
+    p_note_id: noteId,
+    p_user_id: user.id,
+  });
 
-  if (!note || !note.is_public) {
-    throw new Error("공개 노트만 좋아요할 수 있습니다.");
+  if (error) {
+    console.error("[Explore] 좋아요 토글 오류:", error);
+    throw new Error("좋아요 처리에 실패했습니다.");
   }
 
-  // 기존 좋아요 확인
-  const { data: existing } = await supabase
-    .from("note_likes")
-    .select("id")
-    .eq("note_id", noteId)
-    .eq("user_id", user.id)
-    .maybeSingle();
-
-  if (existing) {
-    // 좋아요 취소
-    await supabase.from("note_likes").delete().eq("id", existing.id);
-    const newCount = Math.max((note.like_count || 0) - 1, 0);
-    await supabase.from("notes").update({ like_count: newCount }).eq("id", noteId);
-    return { liked: false, likeCount: newCount };
-  } else {
-    // 좋아요 추가
-    await supabase.from("note_likes").insert({
-      note_id: noteId,
-      user_id: user.id,
-    });
-    const newCount = (note.like_count || 0) + 1;
-    await supabase.from("notes").update({ like_count: newCount }).eq("id", noteId);
-    return { liked: true, likeCount: newCount };
-  }
+  return {
+    liked: data.liked,
+    likeCount: data.like_count,
+  };
 }

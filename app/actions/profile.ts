@@ -205,7 +205,7 @@ export async function updateProfileImage(imageFile: File) {
   const { data: uploadData, error: uploadError } = await supabase.storage
     .from("images")
     .upload(filePath, fileToUpload, {
-      cacheControl: "3600",
+      cacheControl: "31536000",
       upsert: false,
     });
 

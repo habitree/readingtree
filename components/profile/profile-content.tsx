@@ -7,7 +7,6 @@ import { DeleteAccountSection } from "./delete-account-section";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { getProxiedImageUrl } from "@/lib/utils/image";
 import { formatSmartDate } from "@/lib/utils/date";
 import { useTranslation } from "@/lib/i18n";
 import { User, AlertCircle, RefreshCw, Loader2 } from "lucide-react";
@@ -103,7 +102,7 @@ export function ProfileContent() {
           <div className="flex items-center gap-4">
             <Avatar className="h-16 w-16">
               <AvatarImage
-                src={user.avatar_url ? getProxiedImageUrl(user.avatar_url) : undefined}
+                src={user.avatar_url || undefined}
                 alt={user.name}
               />
               <AvatarFallback>

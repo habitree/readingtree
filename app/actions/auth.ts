@@ -7,6 +7,7 @@ import {
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { getAppUrl } from "@/lib/utils/url";
+import { copySocialAvatarToStorage } from "@/lib/supabase/copy-social-avatar";
 
 /**
  * 카카오톡 OAuth 로그인
@@ -167,14 +168,17 @@ export async function signInWithEmail(email: string, password: string) {
 
   // 프로필이 없으면 수동 생성 시도
   if (!profile) {
-    // 카카오 등 외부 프로필 이미지 HTTP→HTTPS 변환
+    // 소셜 프로필 이미지를 Supabase Storage에 복사 (URL 만료 방지)
     const rawAvatar = data.user.user_metadata?.avatar_url || null;
-    const safeAvatar = rawAvatar?.startsWith("http://") ? rawAvatar.replace("http://", "https://") : rawAvatar;
+    let avatarUrl: string | null = null;
+    if (rawAvatar) {
+      avatarUrl = await copySocialAvatarToStorage(supabase, data.user.id, rawAvatar);
+    }
     const { error: insertError } = await supabase.from("users").insert({
       id: data.user.id,
       email: data.user.email,
       name: data.user.user_metadata?.name || data.user.email?.split("@")[0] || "사용자",
-      avatar_url: safeAvatar,
+      avatar_url: avatarUrl,
       reading_goal: 12,
       terms_agreed: false,
       privacy_agreed: false,

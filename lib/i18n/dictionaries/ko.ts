@@ -2327,6 +2327,10 @@ export const ko = {
     likeFailed: "좋아요 처리에 실패했어요.",
     emptyState: "아직 공개된 문장이 없어요. 첫 공유를 시작해보세요!",
     anonymous: "익명",
+    likeAria: "좋아요",
+    unlikeAria: "좋아요 취소",
+    allTags: "전체",
+    goToExplore: "탐색으로",
   },
 
   bookshelves: {

@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Heart, Loader2, BookOpen, Quote, MessageSquare, User } from "lucide-react";
-import { getPublicNotes, toggleNoteLike } from "@/app/actions/explore";
+import { getPublicNotes, toggleNoteLike, getExploreTags } from "@/app/actions/explore";
 import type { ExploreNote } from "@/app/actions/explore";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -26,12 +27,18 @@ export function ExploreContent({ initialNotes, initialHasMore }: ExploreContentP
   const [page, setPage] = useState(1);
   const [sortBy, setSortBy] = useState<"recent" | "popular">("recent");
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedTag, setSelectedTag] = useState<string | null>(null);
+  const [popularTags, setPopularTags] = useState<string[]>([]);
+
+  useEffect(() => {
+    getExploreTags(15).then(setPopularTags).catch(() => {});
+  }, []);
 
   const loadMore = useCallback(async () => {
     setIsLoading(true);
     try {
       const nextPage = page + 1;
-      const result = await getPublicNotes({ sortBy, page: nextPage });
+      const result = await getPublicNotes({ sortBy, page: nextPage, tag: selectedTag || undefined });
       setNotes((prev) => [...prev, ...result.notes]);
       setHasMore(result.hasMore);
       setPage(nextPage);
@@ -40,7 +47,7 @@ export function ExploreContent({ initialNotes, initialHasMore }: ExploreContentP
     } finally {
       setIsLoading(false);
     }
-  }, [page, sortBy, t]);
+  }, [page, sortBy, selectedTag, t]);
 
   const handleSortChange = useCallback(
     async (newSort: string) => {
@@ -48,7 +55,7 @@ export function ExploreContent({ initialNotes, initialHasMore }: ExploreContentP
       setSortBy(sort);
       setIsLoading(true);
       try {
-        const result = await getPublicNotes({ sortBy: sort, page: 1 });
+        const result = await getPublicNotes({ sortBy: sort, page: 1, tag: selectedTag || undefined });
         setNotes(result.notes);
         setHasMore(result.hasMore);
         setPage(1);
@@ -58,7 +65,25 @@ export function ExploreContent({ initialNotes, initialHasMore }: ExploreContentP
         setIsLoading(false);
       }
     },
-    [t]
+    [t, selectedTag]
+  );
+
+  const handleTagSelect = useCallback(
+    async (tag: string | null) => {
+      setSelectedTag(tag);
+      setIsLoading(true);
+      try {
+        const result = await getPublicNotes({ sortBy, page: 1, tag: tag || undefined });
+        setNotes(result.notes);
+        setHasMore(result.hasMore);
+        setPage(1);
+      } catch {
+        toast.error(t("explore.loadFailed"));
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [sortBy, t]
   );
 
   const handleLike = useCallback(
@@ -105,8 +130,62 @@ export function ExploreContent({ initialNotes, initialHasMore }: ExploreContentP
         </TabsList>
       </Tabs>
 
+      {/* 태그 필터 */}
+      {popularTags.length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          <button
+            onClick={() => handleTagSelect(null)}
+            className={cn(
+              "px-3 py-1 rounded-full text-xs font-medium transition-colors",
+              selectedTag === null
+                ? "bg-primary text-primary-foreground"
+                : "bg-muted text-muted-foreground hover:bg-muted/80"
+            )}
+          >
+            {t("explore.allTags")}
+          </button>
+          {popularTags.map((tag) => (
+            <button
+              key={tag}
+              onClick={() => handleTagSelect(tag)}
+              className={cn(
+                "px-3 py-1 rounded-full text-xs font-medium transition-colors",
+                selectedTag === tag
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-muted-foreground hover:bg-muted/80"
+              )}
+            >
+              #{tag}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* 카드 그리드 */}
-      {notes.length > 0 ? (
+      {isLoading && page === 1 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="border rounded-xl p-4 bg-card space-y-3">
+              <div className="flex items-center gap-2">
+                <Skeleton className="w-6 h-6 rounded-full" />
+                <Skeleton className="h-3 w-20" />
+                <Skeleton className="h-3 w-24" />
+              </div>
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-3/4" />
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="flex gap-1">
+                  <Skeleton className="h-4 w-12 rounded-full" />
+                  <Skeleton className="h-4 w-10 rounded-full" />
+                </div>
+                <Skeleton className="h-6 w-12 rounded-full" />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : notes.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {notes.map((note) => {
             const { quoteText, memoText } = parseContent(note);
@@ -117,22 +196,35 @@ export function ExploreContent({ initialNotes, initialHasMore }: ExploreContentP
               >
                 {/* 작성자 정보 */}
                 <div className="flex items-center gap-2 mb-3">
-                  <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center overflow-hidden">
-                    {note.author?.avatar_url ? (
-                      <Image
-                        src={note.author.avatar_url}
-                        alt=""
-                        width={24}
-                        height={24}
-                        className="object-cover"
-                      />
-                    ) : (
-                      <User className="w-3.5 h-3.5 text-muted-foreground" />
-                    )}
-                  </div>
-                  <span className="text-xs text-muted-foreground">
-                    {note.author?.display_name || t("explore.anonymous")}
-                  </span>
+                  {note.author?.id ? (
+                    <Link href={`/profile/${note.author.id}`} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+                      <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center overflow-hidden">
+                        {note.author.avatar_url ? (
+                          <Image
+                            src={note.author.avatar_url}
+                            alt=""
+                            width={24}
+                            height={24}
+                            className="object-cover"
+                          />
+                        ) : (
+                          <User className="w-3.5 h-3.5 text-muted-foreground" />
+                        )}
+                      </div>
+                      <span className="text-xs text-muted-foreground">
+                        {note.author.display_name || t("explore.anonymous")}
+                      </span>
+                    </Link>
+                  ) : (
+                    <>
+                      <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center overflow-hidden">
+                        <User className="w-3.5 h-3.5 text-muted-foreground" />
+                      </div>
+                      <span className="text-xs text-muted-foreground">
+                        {t("explore.anonymous")}
+                      </span>
+                    </>
+                  )}
                   {note.book && (
                     <>
                       <span className="text-xs text-muted-foreground/50">·</span>
@@ -193,8 +285,10 @@ export function ExploreContent({ initialNotes, initialHasMore }: ExploreContentP
                   </div>
                   <button
                     onClick={() => handleLike(note.id)}
+                    aria-label={note.is_liked ? t("explore.unlikeAria") : t("explore.likeAria")}
+                    aria-pressed={note.is_liked}
                     className={cn(
-                      "flex items-center gap-1 text-xs transition-colors px-2 py-1 rounded-full",
+                      "flex items-center gap-1 text-xs transition-colors px-2 py-1 rounded-full min-h-[44px] min-w-[44px] justify-center",
                       note.is_liked
                         ? "text-red-500 bg-red-50 dark:bg-red-950/30"
                         : "text-muted-foreground hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30"
