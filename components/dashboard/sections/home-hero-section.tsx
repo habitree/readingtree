@@ -26,6 +26,7 @@ import type { ReadingStats } from "@/types/persona";
 import { useStyle } from "@/hooks/use-style";
 import { useTranslation } from "@/lib/i18n";
 import { ContinueReadingCard, NoReadingBookCard } from "./continue-reading-card";
+import { CollapsibleSection } from "./collapsible-section";
 import { OnboardingChecklist, type OnboardingItem } from "@/components/onboarding/onboarding-checklist";
 import { FirstNotePrompt } from "@/components/onboarding/first-note-prompt";
 import type { DailyRecordByType } from "@/app/actions/stats";
@@ -342,51 +343,23 @@ export const HomeHeroSection = memo(function HomeHeroSection({
         </div>
       )}
 
-      {/* ======== 통계 카드 2개: 연속 기록 + 오늘의 기록 ======== */}
-      <div className="grid grid-cols-2 gap-2 sm:gap-3">
-        {/* 연속 기록 */}
-        <Card className="p-3 sm:p-4 border-slate-200/60 dark:border-slate-800/60 bg-white dark:bg-slate-900">
-          <div className="flex items-center gap-1.5 mb-1.5">
-            <Flame className="h-4 w-4 text-orange-500" />
-            <span className="text-[10px] sm:text-xs font-semibold text-slate-500 dark:text-slate-400">{t("dashboard.streak")}</span>
-          </div>
-          <div className="flex items-baseline gap-1 mb-2">
-            <span className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">{streak}</span>
-            <span className="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400">{t("common.day")}</span>
-          </div>
-          {weeklyProgress && (
-            <div className="flex items-end gap-0.5 h-4 opacity-60">
-              {weeklyProgress.days.map((day) => (
-                <div
-                  key={day.date}
-                  className={cn(
-                    "flex-1 rounded-t-sm",
-                    day.hasRecord
-                      ? "bg-orange-400 dark:bg-orange-400 h-full"
-                      : day.isFuture
-                        ? "bg-orange-100 dark:bg-orange-900/30 h-1/4"
-                        : "bg-orange-200 dark:bg-orange-800/40 h-2/5"
-                  )}
-                />
-              ))}
-            </div>
-          )}
-        </Card>
-
-        {/* 오늘의 기록 */}
-        <Link href="/notes">
-          <Card className="p-3 sm:p-4 border-slate-200/60 dark:border-slate-800/60 bg-white dark:bg-slate-900 hover:shadow-md transition-shadow duration-200 h-full">
+      {/* ======== 통계 + 주간 진행 (접이식 — 핵심 CTA 아래 정보 밀도 조절) ======== */}
+      <CollapsibleSection
+        title={t("dashboard.weeklyStatus")}
+        storageKey="hero-weekly-stats"
+        defaultOpen={false}
+      >
+        {/* 통계 카드 2개: 연속 기록 + 오늘의 기록 */}
+        <div className="grid grid-cols-2 gap-2 sm:gap-3">
+          {/* 연속 기록 */}
+          <Card className="p-3 sm:p-4 border-slate-200/60 dark:border-slate-800/60 bg-white dark:bg-slate-900">
             <div className="flex items-center gap-1.5 mb-1.5">
-              {todayNotes > 0 ? (
-                <CheckCircle2 className="h-4 w-4 text-forest-500" />
-              ) : (
-                <PenLine className="h-4 w-4 text-forest-500" />
-              )}
-              <span className="text-[10px] sm:text-xs font-semibold text-slate-500 dark:text-slate-400">{t("dashboard.todayNotes")}</span>
+              <Flame className="h-4 w-4 text-orange-500" />
+              <span className="text-[10px] sm:text-xs font-semibold text-slate-500 dark:text-slate-400">{t("dashboard.streak")}</span>
             </div>
             <div className="flex items-baseline gap-1 mb-2">
-              <span className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">{todayNotes}</span>
-              <span className="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400">{t("common.count")}</span>
+              <span className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">{streak}</span>
+              <span className="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400">{t("common.day")}</span>
             </div>
             {weeklyProgress && (
               <div className="flex items-end gap-0.5 h-4 opacity-60">
@@ -396,55 +369,90 @@ export const HomeHeroSection = memo(function HomeHeroSection({
                     className={cn(
                       "flex-1 rounded-t-sm",
                       day.hasRecord
-                        ? "bg-forest-400 dark:bg-forest-400"
-                        : "bg-forest-100 dark:bg-forest-900/30",
-                      day.hasRecord
-                        ? day.count >= 3 ? "h-full" : day.count >= 1 ? "h-3/5" : "h-2/5"
-                        : "h-1/4"
+                        ? "bg-orange-400 dark:bg-orange-400 h-full"
+                        : day.isFuture
+                          ? "bg-orange-100 dark:bg-orange-900/30 h-1/4"
+                          : "bg-orange-200 dark:bg-orange-800/40 h-2/5"
                     )}
                   />
                 ))}
               </div>
             )}
           </Card>
-        </Link>
-      </div>
 
-      {/* ======== 주간 진행 (나뭇잎 버전) ======== */}
-      {userName && weeklyProgress && (
-        <Card className="px-4 py-3 sm:px-5 sm:py-4 border-slate-200/60 dark:border-slate-800/60 bg-white dark:bg-slate-900">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-sm font-bold text-slate-900 dark:text-white">{t("dashboard.weeklyAchievement")}</span>
-            <span className="text-[10px] sm:text-xs font-medium text-forest-600 dark:text-forest-400 bg-forest-50 dark:bg-forest-900/30 px-2 py-0.5 rounded-md">
-              {weeklyProgress.recordedDays}/{weeklyProgress.totalDays}{t("common.day")}
-            </span>
-          </div>
-          <div className="flex justify-between items-center">
-            {weeklyProgress.days.map((day) => (
-              <div
-                key={day.date}
-                className="flex flex-col items-center gap-1.5 flex-1"
-              >
-                <span
-                  className={cn(
-                    "text-[9px] sm:text-[10px] font-bold uppercase",
-                    day.isToday
-                      ? "text-forest-600 dark:text-forest-400"
-                      : "text-slate-400 dark:text-slate-500"
-                  )}
-                >
-                  {day.dayLabel}
-                </span>
-                <LeafDayIndicator
-                  hasRecord={day.hasRecord}
-                  isToday={day.isToday}
-                  isFuture={day.isFuture}
-                />
+          {/* 오늘의 기록 */}
+          <Link href="/notes">
+            <Card className="p-3 sm:p-4 border-slate-200/60 dark:border-slate-800/60 bg-white dark:bg-slate-900 hover:shadow-md transition-shadow duration-200 h-full">
+              <div className="flex items-center gap-1.5 mb-1.5">
+                {todayNotes > 0 ? (
+                  <CheckCircle2 className="h-4 w-4 text-forest-500" />
+                ) : (
+                  <PenLine className="h-4 w-4 text-forest-500" />
+                )}
+                <span className="text-[10px] sm:text-xs font-semibold text-slate-500 dark:text-slate-400">{t("dashboard.todayNotes")}</span>
               </div>
-            ))}
-          </div>
-        </Card>
-      )}
+              <div className="flex items-baseline gap-1 mb-2">
+                <span className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">{todayNotes}</span>
+                <span className="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400">{t("common.count")}</span>
+              </div>
+              {weeklyProgress && (
+                <div className="flex items-end gap-0.5 h-4 opacity-60">
+                  {weeklyProgress.days.map((day) => (
+                    <div
+                      key={day.date}
+                      className={cn(
+                        "flex-1 rounded-t-sm",
+                        day.hasRecord
+                          ? "bg-forest-400 dark:bg-forest-400"
+                          : "bg-forest-100 dark:bg-forest-900/30",
+                        day.hasRecord
+                          ? day.count >= 3 ? "h-full" : day.count >= 1 ? "h-3/5" : "h-2/5"
+                          : "h-1/4"
+                      )}
+                    />
+                  ))}
+                </div>
+              )}
+            </Card>
+          </Link>
+        </div>
+
+        {/* 주간 진행 (나뭇잎 버전) */}
+        {userName && weeklyProgress && (
+          <Card className="px-4 py-3 sm:px-5 sm:py-4 border-slate-200/60 dark:border-slate-800/60 bg-white dark:bg-slate-900">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-sm font-bold text-slate-900 dark:text-white">{t("dashboard.weeklyAchievement")}</span>
+              <span className="text-[10px] sm:text-xs font-medium text-forest-600 dark:text-forest-400 bg-forest-50 dark:bg-forest-900/30 px-2 py-0.5 rounded-md">
+                {weeklyProgress.recordedDays}/{weeklyProgress.totalDays}{t("common.day")}
+              </span>
+            </div>
+            <div className="flex justify-between items-center">
+              {weeklyProgress.days.map((day) => (
+                <div
+                  key={day.date}
+                  className="flex flex-col items-center gap-1.5 flex-1"
+                >
+                  <span
+                    className={cn(
+                      "text-[9px] sm:text-[10px] font-bold uppercase",
+                      day.isToday
+                        ? "text-forest-600 dark:text-forest-400"
+                        : "text-slate-400 dark:text-slate-500"
+                    )}
+                  >
+                    {day.dayLabel}
+                  </span>
+                  <LeafDayIndicator
+                    hasRecord={day.hasRecord}
+                    isToday={day.isToday}
+                    isFuture={day.isFuture}
+                  />
+                </div>
+              ))}
+            </div>
+          </Card>
+        )}
+      </CollapsibleSection>
 
       {/* 온보딩 체크리스트 (새 사용자용) */}
       {userName && onboardingItems && onboardingItems.length > 0 && (

@@ -18,12 +18,13 @@ function getKSTToday(): Date {
   const kst = new Date(now.getTime() + 9 * 60 * 60 * 1000);
   return new Date(Date.UTC(kst.getUTCFullYear(), kst.getUTCMonth(), kst.getUTCDate()) - 9 * 60 * 60 * 1000);
 }
-import { getContinueReadingBooks } from "@/app/actions/books";
+import { getContinueReadingBooks, getPopularBooks } from "@/app/actions/books";
 import {
   getSampleDashboardStats,
   getSampleContinueReadingBooks,
 } from "@/app/actions/sample";
 import { HomeHeroSection } from "./home-hero-section";
+import { PopularBooksWidget } from "./popular-books-widget";
 
 /**
  * 홈 히어로 섹션 서버 래퍼
@@ -80,21 +81,30 @@ export async function HomeHeroWrapper() {
     getCachedCheckHasFirstNote().catch(() => ({ hasFirstNote: true })),
   ]);
 
+  // 책 0권 사용자에게 인기 도서 위젯 표시
+  const hasNoBooks = (!continueReadingBooks || continueReadingBooks.length === 0);
+  const popularBooks = hasNoBooks ? await getPopularBooks(10).catch(() => []) : [];
+
   return (
-    <HomeHeroSection
-      userName={user.user_metadata?.name || user.email?.split("@")[0]}
-      persona={personaData?.persona ?? null}
-      streak={streakAndTodayData.streak}
-      todayNotes={streakAndTodayData.todayNotes}
-      weeklyNotes={readingStats?.thisWeek?.notes ?? 0}
-      continueReadingBooks={continueReadingBooks || []}
-      weeklyProgress={weeklyProgress}
-      dailyRecordsByType={dailyRecordsByType}
-      currentBookProgress={currentBookProgress}
-      userLevel={pointsData?.currentLevel?.level ?? 1}
-      levelTitle={pointsData?.currentLevel?.title}
-      totalPoints={pointsData?.userPoints?.total_points ?? 0}
-      hasFirstNote={firstNoteData.hasFirstNote}
-    />
+    <>
+      <HomeHeroSection
+        userName={user.user_metadata?.name || user.email?.split("@")[0]}
+        persona={personaData?.persona ?? null}
+        streak={streakAndTodayData.streak}
+        todayNotes={streakAndTodayData.todayNotes}
+        weeklyNotes={readingStats?.thisWeek?.notes ?? 0}
+        continueReadingBooks={continueReadingBooks || []}
+        weeklyProgress={weeklyProgress}
+        dailyRecordsByType={dailyRecordsByType}
+        currentBookProgress={currentBookProgress}
+        userLevel={pointsData?.currentLevel?.level ?? 1}
+        levelTitle={pointsData?.currentLevel?.title}
+        totalPoints={pointsData?.userPoints?.total_points ?? 0}
+        hasFirstNote={firstNoteData.hasFirstNote}
+      />
+      {hasNoBooks && popularBooks.length > 0 && (
+        <PopularBooksWidget books={popularBooks} />
+      )}
+    </>
   );
 }

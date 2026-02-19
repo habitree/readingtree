@@ -52,16 +52,20 @@ export const ONBOARDING_CHECKLIST: Omit<OnboardingItem, "completed" | "title" | 
     href: "/notes/new",
   },
   {
-    id: "water_tree",
-    reward: 10,
-    icon: "water",
-    href: "/tree",
-  },
-  {
     id: "set_goal",
     reward: 20,
     icon: "goal",
     href: "/profile",
+  },
+];
+
+/** Advanced 온보딩 항목 (핵심 3개 완료 후 표시) */
+export const ONBOARDING_ADVANCED: Omit<OnboardingItem, "completed" | "title" | "description">[] = [
+  {
+    id: "water_tree",
+    reward: 10,
+    icon: "water",
+    href: "/tree",
   },
   {
     id: "explore_persona",

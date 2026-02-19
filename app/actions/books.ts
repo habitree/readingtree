@@ -2158,3 +2158,76 @@ export async function batchUpdatePageCounts(
   return { updated, failed, results };
 }
 
+export interface PopularBook {
+  bookId: string;
+  title: string;
+  author: string | null;
+  coverImageUrl: string | null;
+  isbn: string | null;
+  readerCount: number;
+}
+
+/**
+ * 인기 도서 조회 (user_books 기준 가장 많이 등록된 책)
+ * Cold Start 사용자에게 책 발견 경험을 제공
+ * @param limit 조회할 최대 개수 (기본값: 10)
+ */
+export async function getPopularBooks(limit: number = 10): Promise<PopularBook[]> {
+  const supabase = await createServerSupabaseClient();
+
+  // user_books에서 book_id별 사용자 수 집계 (RPC 없이 단순 쿼리)
+  const { data: userBooks, error } = await supabase
+    .from("user_books")
+    .select("book_id")
+    .order("created_at", { ascending: false })
+    .limit(500);
+
+  if (error || !userBooks) {
+    return [];
+  }
+
+  // book_id별 카운트 집계
+  const bookCountMap = new Map<string, number>();
+  for (const ub of userBooks) {
+    bookCountMap.set(ub.book_id, (bookCountMap.get(ub.book_id) || 0) + 1);
+  }
+
+  // 상위 N개 book_id 추출 (2명 이상 읽는 책만)
+  const topBookIds = [...bookCountMap.entries()]
+    .filter(([, count]) => count >= 2)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, limit)
+    .map(([bookId]) => bookId);
+
+  if (topBookIds.length === 0) {
+    return [];
+  }
+
+  // 책 정보 조회
+  const { data: books, error: booksError } = await supabase
+    .from("books")
+    .select("id, title, author, cover_image_url, isbn")
+    .in("id", topBookIds);
+
+  if (booksError || !books) {
+    return [];
+  }
+
+  // 결과 매핑 및 정렬
+  const bookMap = new Map(books.map((b) => [b.id, b]));
+  return topBookIds
+    .map((bookId) => {
+      const book = bookMap.get(bookId);
+      if (!book) return null;
+      return {
+        bookId: book.id,
+        title: book.title,
+        author: book.author,
+        coverImageUrl: book.cover_image_url,
+        isbn: book.isbn,
+        readerCount: bookCountMap.get(bookId) || 0,
+      };
+    })
+    .filter((item): item is PopularBook => item !== null);
+}
+

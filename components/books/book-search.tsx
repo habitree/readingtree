@@ -1,17 +1,19 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Search, Loader2, BookOpen } from "lucide-react";
+import { Search, Loader2, BookOpen, Users, Heart } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import Image from "next/image";
 import { getImageUrl, isValidImageUrl } from "@/lib/utils/image";
-import { addBook } from "@/app/actions/books";
+import { addBook, getPopularBooks } from "@/app/actions/books";
+import type { PopularBook } from "@/app/actions/books";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { useTranslation } from "@/lib/i18n";
+import { cn } from "@/lib/utils";
 
 interface SearchResult {
   isbn: string | null;
@@ -40,9 +42,21 @@ export function BookSearch({ onBookAdded, onSelectBook, excludeBookIds, showAlre
   const [results, setResults] = useState<SearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [isAdding, setIsAdding] = useState<string | null>(null);
+  const [popularBooks, setPopularBooks] = useState<PopularBook[]>([]);
+  const [isLoadingPopular, setIsLoadingPopular] = useState(true);
+  const [wantToReadIds, setWantToReadIds] = useState<Set<string>>(new Set());
+  const [addingWantToRead, setAddingWantToRead] = useState<string | null>(null);
 
   // IME 조합 상태 추적
   const isComposingRef = useRef(false);
+
+  // 초기 로드 시 인기 도서 조회
+  useEffect(() => {
+    getPopularBooks(8)
+      .then(setPopularBooks)
+      .catch(() => setPopularBooks([]))
+      .finally(() => setIsLoadingPopular(false));
+  }, []);
 
   // 디바운싱을 위한 검색 함수
   const performSearch = useCallback(async (searchQuery: string) => {
@@ -285,20 +299,53 @@ export function BookSearch({ onBookAdded, onSelectBook, excludeBookIds, showAlre
                       </p>
                     )}
                   </div>
-                  <Button
-                    size="sm"
-                    onClick={() => handleAddBook(book)}
-                    disabled={isAdding === (book.isbn || book.title)}
-                  >
-                    {isAdding === (book.isbn || book.title) ? (
-                      <>
-                        <Loader2 className="mr-2 h-3 w-3 animate-spin" />
-                        {t("books.addingBook")}
-                      </>
-                    ) : (
-                      t("books.addButton")
+                  <div className="flex flex-col gap-1 shrink-0">
+                    <Button
+                      size="sm"
+                      onClick={() => handleAddBook(book)}
+                      disabled={isAdding === (book.isbn || book.title)}
+                    >
+                      {isAdding === (book.isbn || book.title) ? (
+                        <>
+                          <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                          {t("books.addingBook")}
+                        </>
+                      ) : (
+                        t("books.addButton")
+                      )}
+                    </Button>
+                    {!onSelectBook && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-[10px] h-7 gap-1"
+                        onClick={async () => {
+                          const key = book.isbn || book.title;
+                          if (isAdding === `want-${key}`) return;
+                          setIsAdding(`want-${key}`);
+                          try {
+                            await addBook(book, "not_started");
+                            toast.success(t("dashboard.wantToReadAdded"));
+                            router.refresh();
+                          } catch (error) {
+                            toast.error(error instanceof Error ? error.message : t("books.bookAddFailed"));
+                          } finally {
+                            setIsAdding(null);
+                          }
+                        }}
+                        disabled={isAdding === `want-${book.isbn || book.title}`}
+                      >
+                        {isAdding === `want-${book.isbn || book.title}` ? (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : (
+                          <>
+                            <Heart className="h-3 w-3" />
+                            {t("dashboard.wantToRead")}
+                          </>
+                        )}
+                      </Button>
                     )}
-                  </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -310,6 +357,109 @@ export function BookSearch({ onBookAdded, onSelectBook, excludeBookIds, showAlre
       {query && !isSearching && results.length === 0 && (
         <div className="text-center py-8 text-muted-foreground">
           {t("books.noResults")}
+        </div>
+      )}
+
+      {/* 검색어 없을 때: 인기 도서 표시 */}
+      {!query && !isSearching && results.length === 0 && (
+        <div className="space-y-4">
+          <div>
+            <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+              {t("dashboard.popularBooksTitle")}
+            </h3>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {t("dashboard.popularBooksDesc")}
+            </p>
+          </div>
+
+          {isLoadingPopular ? (
+            <div className="flex justify-center py-8">
+              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            </div>
+          ) : popularBooks.length > 0 ? (
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {popularBooks.map((book) => {
+                const isAdded = wantToReadIds.has(book.bookId);
+                const isAddingThis = addingWantToRead === book.bookId;
+
+                return (
+                  <div key={book.bookId} className="flex flex-col items-center text-center">
+                    <div className="relative w-20 h-28 rounded-lg overflow-hidden shadow-sm mb-2">
+                      {book.coverImageUrl ? (
+                        <Image
+                          src={book.coverImageUrl}
+                          alt={book.title}
+                          fill
+                          className="object-cover"
+                          sizes="80px"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-forest-100 to-forest-200 dark:from-forest-800 dark:to-forest-900 flex items-center justify-center">
+                          <BookOpen className="h-5 w-5 text-forest-500" />
+                        </div>
+                      )}
+                    </div>
+                    <p className="text-xs font-medium text-slate-900 dark:text-white line-clamp-2 leading-tight mb-0.5">
+                      {book.title}
+                    </p>
+                    {book.author && (
+                      <p className="text-[10px] text-muted-foreground line-clamp-1 mb-1">
+                        {book.author}
+                      </p>
+                    )}
+                    <div className="flex items-center gap-0.5 text-[10px] text-muted-foreground mb-1.5">
+                      <Users className="h-2.5 w-2.5" />
+                      <span>{t("dashboard.readersCount", { count: book.readerCount })}</span>
+                    </div>
+                    <button
+                      onClick={async () => {
+                        if (isAdded || isAddingThis) return;
+                        setAddingWantToRead(book.bookId);
+                        try {
+                          await addBook(
+                            {
+                              title: book.title,
+                              author: book.author,
+                              cover_image_url: book.coverImageUrl,
+                              isbn: book.isbn,
+                            },
+                            "not_started"
+                          );
+                          setWantToReadIds((prev) => new Set(prev).add(book.bookId));
+                          toast.success(t("dashboard.wantToReadAdded"));
+                        } catch (error) {
+                          toast.error(error instanceof Error ? error.message : t("books.bookAddFailed"));
+                        } finally {
+                          setAddingWantToRead(null);
+                        }
+                      }}
+                      disabled={isAddingThis || isAdded}
+                      className={cn(
+                        "w-full py-1 px-2 rounded-md text-[10px] font-medium transition-all",
+                        isAdded
+                          ? "bg-forest-50 dark:bg-forest-900/30 text-forest-600 dark:text-forest-400 border border-forest-200 dark:border-forest-700"
+                          : "bg-forest-600 hover:bg-forest-700 text-white shadow-sm"
+                      )}
+                    >
+                      {isAddingThis ? (
+                        <Loader2 className="h-3 w-3 animate-spin mx-auto" />
+                      ) : isAdded ? (
+                        <span className="flex items-center justify-center gap-0.5">
+                          <Heart className="h-2.5 w-2.5 fill-current" />
+                          {t("dashboard.wantToReadAdded")}
+                        </span>
+                      ) : (
+                        <span className="flex items-center justify-center gap-0.5">
+                          <Heart className="h-2.5 w-2.5" />
+                          {t("dashboard.wantToRead")}
+                        </span>
+                      )}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          ) : null}
         </div>
       )}
     </div>

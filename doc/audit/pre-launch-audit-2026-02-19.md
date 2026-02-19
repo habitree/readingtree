@@ -136,5 +136,5 @@ ReadTree는 Next.js 15 + Supabase + Vercel 기반의 독서 기록/공유 플랫
 - [x] P3: 접근성 개선 (aria-expanded, focus ring)
 - [ ] P3: 서버 console.log 정리 (향후)
 - [x] 최종 빌드 확인: `npm run build` ✅
-- [ ] SEO 검증: `/robots.txt`, `/sitemap.xml` (배포 후 확인)
-- [ ] 기능 테스트: 공유 카드 캡처, 인증 플로우 (배포 후 확인)
+- [x] SEO 검증: `/robots.txt` 정상, `/sitemap.xml` 498개 URL 확인 ✅
+- [ ] 기능 테스트: 공유 카드 캡처, 인증 플로우 (수동 확인 필요)

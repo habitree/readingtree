@@ -7,7 +7,7 @@ import Image from "next/image";
 import { motion } from "framer-motion";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { BookOpen, ChevronRight, Loader2, Check } from "lucide-react";
+import { BookOpen, ChevronRight, Loader2, Check, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useHapticFeedback } from "@/components/ui/touch-feedback";
 import { useTranslation } from "@/lib/i18n";
@@ -364,14 +364,23 @@ export function NoReadingBookCard() {
           </span>
         </div>
 
-        {/* CTA 버튼 */}
-        <Link
-          href="/books/search"
-          className="inline-flex items-center justify-center gap-2 rounded-lg bg-forest-600 hover:bg-forest-700 text-white px-6 py-2.5 text-sm font-medium transition-colors duration-200 shadow-sm"
-        >
-          <BookOpen className="h-4 w-4" />
-          {t("dashboard.addFirstBookCta")}
-        </Link>
+        {/* CTA 버튼 2개 병렬 배치 */}
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-2">
+          <Link
+            href="/books/search"
+            className="inline-flex items-center justify-center gap-2 rounded-lg bg-forest-600 hover:bg-forest-700 text-white px-6 py-2.5 text-sm font-medium transition-colors duration-200 shadow-sm w-full sm:w-auto"
+          >
+            <BookOpen className="h-4 w-4" />
+            {t("dashboard.addFirstBookCta")}
+          </Link>
+          <Link
+            href="/books/search"
+            className="inline-flex items-center justify-center gap-2 rounded-lg border border-forest-300 dark:border-forest-700 bg-white dark:bg-slate-800 hover:bg-forest-50 dark:hover:bg-forest-900/20 text-forest-700 dark:text-forest-300 px-6 py-2.5 text-sm font-medium transition-colors duration-200 w-full sm:w-auto"
+          >
+            <Search className="h-4 w-4" />
+            {t("dashboard.findBooksToRead")}
+          </Link>
+        </div>
       </div>
     </Card>
   );
