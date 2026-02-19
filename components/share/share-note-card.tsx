@@ -252,17 +252,17 @@ export function ShareNoteCard({ note, className, isPublicView = false, hideActio
                                 {hideActions ? (
                                     <div className="relative w-20 h-28 shrink-0 shadow-lg rounded-md overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800">
                                         <img
-                                            src={getProxiedImageUrl(book?.cover_image_url || "/placeholder-book.png")}
+                                            src={getProxiedImageUrl(book?.cover_image_url || "")}
                                             alt={book?.title || "책 표지"}
                                             className="absolute inset-0 w-full h-full object-cover"
                                             crossOrigin="anonymous"
                                         />
                                     </div>
                                 ) : (
-                                    <ImageLightbox src={book?.cover_image_url || "/placeholder-book.png"} alt={book?.title || "책 표지"}>
+                                    <ImageLightbox src={book?.cover_image_url || ""} alt={book?.title || "책 표지"}>
                                         <div className="relative w-20 h-28 shrink-0 shadow-lg rounded-md overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800">
                                             <Image
-                                                src={getImageUrl(book?.cover_image_url || "/placeholder-book.png")}
+                                                src={getImageUrl(book?.cover_image_url || "")}
                                                 alt={book?.title || "책 표지"}
                                                 fill
                                                 className="object-cover"
@@ -358,7 +358,7 @@ export function ShareNoteCard({ note, className, isPublicView = false, hideActio
                                 // 캡처 시: html2canvas 호환을 위해 일반 img 태그 사용
                                 <div className="relative w-16 h-24 shrink-0 shadow-md rounded-sm overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 aspect-[2/3]">
                                     <img
-                                        src={getProxiedImageUrl(book?.cover_image_url || "/placeholder-book.png")}
+                                        src={getProxiedImageUrl(book?.cover_image_url || "")}
                                         alt={book?.title || "책 표지"}
                                         className="absolute inset-0 w-full h-full object-cover"
                                         crossOrigin="anonymous"
@@ -366,10 +366,10 @@ export function ShareNoteCard({ note, className, isPublicView = false, hideActio
                                 </div>
                             ) : (
                                 // 일반 화면: ImageLightbox 사용
-                                <ImageLightbox src={book?.cover_image_url || "/placeholder-book.png"} alt={book?.title || "책 표지"}>
+                                <ImageLightbox src={book?.cover_image_url || ""} alt={book?.title || "책 표지"}>
                                     <div className="relative w-16 h-24 shrink-0 shadow-md rounded-sm overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 aspect-[2/3]">
                                         <Image
-                                            src={getImageUrl(book?.cover_image_url || "/placeholder-book.png")}
+                                            src={getImageUrl(book?.cover_image_url || "")}
                                             alt={book?.title || "책 표지"}
                                             fill
                                             className="object-cover"
@@ -661,7 +661,7 @@ function RelatedBooksSection({
                         {hideActions ? (
                             <div className="relative w-7 h-10 shrink-0 rounded overflow-hidden bg-slate-200 dark:bg-slate-700">
                                 <img
-                                    src={getProxiedImageUrl(book.coverImageUrl || "/placeholder-book.png")}
+                                    src={getProxiedImageUrl(book.coverImageUrl || "")}
                                     alt={book.title}
                                     className="absolute inset-0 w-full h-full object-cover"
                                     crossOrigin="anonymous"
@@ -670,7 +670,7 @@ function RelatedBooksSection({
                         ) : (
                             <div className="relative w-7 h-10 shrink-0 rounded overflow-hidden bg-slate-200 dark:bg-slate-700">
                                 <Image
-                                    src={getImageUrl(book.coverImageUrl || "/placeholder-book.png")}
+                                    src={getImageUrl(book.coverImageUrl || "")}
                                     alt={book.title}
                                     fill
                                     className="object-cover"

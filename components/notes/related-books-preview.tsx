@@ -84,7 +84,7 @@ export function RelatedBooksPreview({
               <CardContent className="p-0 h-full">
                 <div className="relative w-full h-full">
                   <Image
-                    src={getImageUrl(book.books?.cover_image_url || "/placeholder-book.png")}
+                    src={getImageUrl(book.books?.cover_image_url || "")}
                     alt={book.books?.title || t("notes.bookAlt")}
                     fill
                     className="object-cover"
