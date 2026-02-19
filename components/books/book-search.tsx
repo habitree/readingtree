@@ -230,7 +230,7 @@ export function BookSearch({ onBookAdded, onSelectBook, excludeBookIds, showAlre
         setQuery("");
         setResults([]);
         onBookAdded?.();
-        router.push("/books");
+        router.push(`/books/${result.userBookId}`);
         router.refresh();
       }
     } catch (error) {
