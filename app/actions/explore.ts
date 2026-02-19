@@ -106,6 +106,7 @@ export async function toggleNoteLike(noteId: string): Promise<{
 }> {
   const supabase = await createServerSupabaseClient();
   const user = await getCurrentUser();
+  if (!user) throw new Error("로그인이 필요합니다.");
 
   // 노트가 공개인지 확인
   const { data: note } = await supabase
