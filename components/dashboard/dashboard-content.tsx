@@ -5,7 +5,6 @@ import { GuestBannerClient } from "./guest-banner-client";
 
 // Streaming SSR 섹션 컴포넌트
 import {
-  RecentBooksSection,
   HomeHeroWrapper,
   MobileQuickActions,
   MonthlyBookCalendarSkeleton,
@@ -13,7 +12,6 @@ import {
 
 // 스켈레톤 컴포넌트
 import {
-  RecentBooksSkeleton,
   HomeHeroSkeleton,
 } from "./skeletons";
 

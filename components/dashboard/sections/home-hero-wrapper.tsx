@@ -1,13 +1,16 @@
-import { getCachedCurrentUser, getCachedPersonaDashboardData } from "@/lib/cached";
 import {
-  getReadingStats,
+  getCachedCurrentUser,
+  getCachedPersonaDashboardData,
+  getCachedReadingStats,
+  getCachedStreakAndTodayData,
+  getCachedPointsDashboardData,
+  getCachedCheckHasFirstNote,
+} from "@/lib/cached";
+import {
   getWeeklyProgress,
   getDailyRecordsByType,
   getCurrentBookProgress,
-  getStreakAndTodayData,
 } from "@/app/actions/stats";
-import { getPointsDashboardData } from "@/app/actions/points";
-import { checkHasFirstNote } from "@/app/actions/onboarding";
 
 /** KST 기준 현재 날짜의 자정(00:00:00) UTC Date 반환 */
 function getKSTToday(): Date {
@@ -66,15 +69,15 @@ export async function HomeHeroWrapper() {
     firstNoteData,
   ] = await Promise.all([
     getCachedPersonaDashboardData().catch(() => null),
-    getReadingStats(user).catch(() => null),
-    getStreakAndTodayData(user.id).catch(() => ({ streak: 0, todayNotes: 0 })),
+    getCachedReadingStats(user).catch(() => null),
+    getCachedStreakAndTodayData(user.id).catch(() => ({ streak: 0, todayNotes: 0 })),
     // 홈 화면 진행 카드: 최대 6권까지 표시
     getContinueReadingBooks(user, 6).catch(() => []),
     getWeeklyProgress(user).catch(() => null),
     getDailyRecordsByType(user, activityCalendarStart, new Date(today.getTime() + 24 * 60 * 60 * 1000 - 1)).catch(() => ({})),
     getCurrentBookProgress(user).catch(() => null),
-    getPointsDashboardData(user).catch(() => null),
-    checkHasFirstNote().catch(() => ({ hasFirstNote: true })),
+    getCachedPointsDashboardData(user).catch(() => null),
+    getCachedCheckHasFirstNote().catch(() => ({ hasFirstNote: true })),
   ]);
 
   return (

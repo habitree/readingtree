@@ -272,69 +272,74 @@ export async function getReadingStats(user?: User | null) {
     const now = new Date();
     const startOfYear = new Date(now.getFullYear(), 0, 1);
 
-    // 샘플 사용자의 이번 주 기록 수
-    const { count: thisWeekNotes } = await adminSupabase
-      .from("notes")
-      .select("*", { count: "exact", head: true })
-      .eq("user_id", sampleUserId)
-      .gte("created_at", new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString());
-
-    // 샘플 사용자의 올해 기록 수
-    const { count: thisYearNotes } = await adminSupabase
-      .from("notes")
-      .select("*", { count: "exact", head: true })
-      .eq("user_id", sampleUserId)
-      .gte("created_at", startOfYear.toISOString());
-
-    // 샘플 사용자의 올해 완독 책 수
-    const { count: completedBooks } = await adminSupabase
-      .from("user_books")
-      .select("*", { count: "exact", head: true })
-      .eq("user_id", sampleUserId)
-      .eq("status", "completed")
-      .gte("completed_at", startOfYear.toISOString());
-
-    // 샘플 사용자의 가장 많이 기록한 책 (상위 5개만 필요하므로 500건이면 충분)
-    const { data: topBooksData } = await adminSupabase
-      .from("notes")
-      .select(
+    // 6개 쿼리를 병렬 실행
+    const [
+      { count: thisWeekNotes },
+      { count: thisYearNotes },
+      { count: completedBooks },
+      { data: topBooksData },
+      { data: recentBooksData },
+      { data: userBooksData },
+    ] = await Promise.all([
+      // 샘플 사용자의 이번 주 기록 수
+      adminSupabase
+        .from("notes")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", sampleUserId)
+        .gte("created_at", new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString()),
+      // 샘플 사용자의 올해 기록 수
+      adminSupabase
+        .from("notes")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", sampleUserId)
+        .gte("created_at", startOfYear.toISOString()),
+      // 샘플 사용자의 올해 완독 책 수
+      adminSupabase
+        .from("user_books")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", sampleUserId)
+        .eq("status", "completed")
+        .gte("completed_at", startOfYear.toISOString()),
+      // 샘플 사용자의 가장 많이 기록한 책 (상위 5개만 필요하므로 500건이면 충분)
+      adminSupabase
+        .from("notes")
+        .select(
+          `
+          book_id,
+          books (
+            id,
+            title,
+            author,
+            cover_image_url
+          )
         `
-        book_id,
-        books (
-          id,
-          title,
-          author,
-          cover_image_url
         )
-      `
-      )
-      .eq("user_id", sampleUserId)
-      .limit(500);
-
-    // 샘플 사용자의 최근 기록한 책 (최근 기록 기준 상위 5개)
-    const { data: recentBooksData } = await adminSupabase
-      .from("notes")
-      .select(
+        .eq("user_id", sampleUserId)
+        .limit(500),
+      // 샘플 사용자의 최근 기록한 책 (최근 기록 기준 상위 5개)
+      adminSupabase
+        .from("notes")
+        .select(
+          `
+          book_id,
+          created_at,
+          books (
+            id,
+            title,
+            author,
+            cover_image_url
+          )
         `
-        book_id,
-        created_at,
-        books (
-          id,
-          title,
-          author,
-          cover_image_url
         )
-      `
-      )
-      .eq("user_id", sampleUserId)
-      .order("created_at", { ascending: false })
-      .limit(100);
-
-    // user_books ID 매핑
-    const { data: userBooksData } = await adminSupabase
-      .from("user_books")
-      .select("id, book_id")
-      .eq("user_id", sampleUserId);
+        .eq("user_id", sampleUserId)
+        .order("created_at", { ascending: false })
+        .limit(100),
+      // user_books ID 매핑
+      adminSupabase
+        .from("user_books")
+        .select("id, book_id")
+        .eq("user_id", sampleUserId),
+    ]);
 
     const userBookIdMap = new Map<string, string>();
     if (userBooksData) {
@@ -414,68 +419,73 @@ export async function getReadingStats(user?: User | null) {
   const now = new Date();
   const startOfYear = new Date(now.getFullYear(), 0, 1);
 
-  // 이번 주 기록 수 (데이터베이스 함수 활용)
-  const { data: thisWeekNotesData, error: weekError } = await supabase.rpc(
-    "get_user_notes_count_this_week",
-    { p_user_id: currentUser.id }
-  );
+  // 6개 쿼리를 병렬 실행
+  const [
+    { data: thisWeekNotesData, error: weekError },
+    { data: thisYearCompletedData, error: yearError },
+    { count: thisYearNotes },
+    { data: topBooksData },
+    { data: recentBooksData },
+    { data: userBooksData },
+  ] = await Promise.all([
+    // 이번 주 기록 수 (데이터베이스 함수 활용)
+    supabase.rpc("get_user_notes_count_this_week", {
+      p_user_id: currentUser.id,
+    }),
+    // 올해 완독한 책 수 (데이터베이스 함수 활용)
+    supabase.rpc("get_user_completed_books_count", {
+      p_user_id: currentUser.id,
+      p_year: now.getFullYear(),
+    }),
+    // 올해 작성한 기록 수
+    supabase
+      .from("notes")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", currentUser.id)
+      .gte("created_at", startOfYear.toISOString()),
+    // 가장 많이 기록한 책 (상위 5개만 필요하므로 500건이면 충분)
+    supabase
+      .from("notes")
+      .select(
+        `
+        book_id,
+        books (
+          id,
+          title,
+          author,
+          cover_image_url
+        )
+      `
+      )
+      .eq("user_id", currentUser.id)
+      .limit(500),
+    // 최근 기록한 책 (최근 기록 기준 상위 5개)
+    supabase
+      .from("notes")
+      .select(
+        `
+        book_id,
+        created_at,
+        books (
+          id,
+          title,
+          author,
+          cover_image_url
+        )
+      `
+      )
+      .eq("user_id", currentUser.id)
+      .order("created_at", { ascending: false })
+      .limit(100),
+    // 사용자의 user_books ID 가져오기 (매핑용)
+    supabase
+      .from("user_books")
+      .select("id, book_id")
+      .eq("user_id", currentUser.id),
+  ]);
+
   const thisWeekNotes = weekError ? 0 : (thisWeekNotesData || 0);
-
-  // 올해 완독한 책 수 (데이터베이스 함수 활용)
-  const { data: thisYearCompletedData, error: yearError } = await supabase.rpc(
-    "get_user_completed_books_count",
-    { p_user_id: currentUser.id, p_year: now.getFullYear() }
-  );
   const thisYearCompleted = yearError ? 0 : (thisYearCompletedData || 0);
-
-  // 올해 작성한 기록 수
-  const { count: thisYearNotes } = await supabase
-    .from("notes")
-    .select("*", { count: "exact", head: true })
-    .eq("user_id", currentUser.id)
-    .gte("created_at", startOfYear.toISOString());
-
-  // 가장 많이 기록한 책 (상위 5개만 필요하므로 50건이면 충분)
-  const { data: topBooksData } = await supabase
-    .from("notes")
-    .select(
-      `
-      book_id,
-      books (
-        id,
-        title,
-        author,
-        cover_image_url
-      )
-    `
-    )
-    .eq("user_id", currentUser.id)
-    .limit(500);
-
-  // 최근 기록한 책 (최근 기록 기준 상위 5개)
-  const { data: recentBooksData } = await supabase
-    .from("notes")
-    .select(
-      `
-      book_id,
-      created_at,
-      books (
-        id,
-        title,
-        author,
-        cover_image_url
-      )
-    `
-    )
-    .eq("user_id", currentUser.id)
-    .order("created_at", { ascending: false })
-    .limit(100);
-
-  // 사용자의 user_books ID 가져오기 (매핑용)
-  const { data: userBooksData } = await supabase
-    .from("user_books")
-    .select("id, book_id")
-    .eq("user_id", currentUser.id);
 
   const userBookIdMap = new Map<string, string>();
   if (userBooksData) {

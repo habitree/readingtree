@@ -1,6 +1,9 @@
 import { cache } from "react";
 import { getCurrentUser } from "@/app/actions/auth";
 import { getPersonaDashboardData } from "@/app/actions/persona";
+import { getReadingStats, getStreakAndTodayData } from "@/app/actions/stats";
+import { getPointsDashboardData } from "@/app/actions/points";
+import { checkHasFirstNote } from "@/app/actions/onboarding";
 
 /**
  * React cache() 래퍼 - 동일 렌더 트리(요청) 내 중복 호출 제거
@@ -17,3 +20,15 @@ export const getCachedCurrentUser = cache(getCurrentUser);
  * cache()로 1회로 통합
  */
 export const getCachedPersonaDashboardData = cache(getPersonaDashboardData);
+
+/** getReadingStats — HomeHeroWrapper + RecentBooksSection에서 중복 호출 제거 */
+export const getCachedReadingStats = cache(getReadingStats);
+
+/** getStreakAndTodayData — 동일 요청 내 중복 제거 */
+export const getCachedStreakAndTodayData = cache(getStreakAndTodayData);
+
+/** getPointsDashboardData — 동일 요청 내 중복 제거 */
+export const getCachedPointsDashboardData = cache(getPointsDashboardData);
+
+/** checkHasFirstNote — 동일 요청 내 중복 제거 */
+export const getCachedCheckHasFirstNote = cache(checkHasFirstNote);

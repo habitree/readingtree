@@ -13,7 +13,8 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const notoSerifKr = Noto_Serif_KR({
   subsets: ["latin"],
   weight: ["400", "700"],
-  variable: "--font-noto-serif-kr"
+  variable: "--font-noto-serif-kr",
+  display: "swap",
 });
 
 export const metadata: Metadata = {

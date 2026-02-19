@@ -23,7 +23,7 @@ import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/use-auth";
 import { BookshelfTree } from "./bookshelf-tree";
 import { getCurrentUserProfile } from "@/app/actions/profile";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useTranslation } from "@/lib/i18n";
 
 /**
@@ -65,15 +65,19 @@ export function Sidebar() {
   ];
   const [userProfile, setUserProfile] = useState<{ is_admin?: boolean } | null>(null);
   const [isMoreOpen, setIsMoreOpen] = useState(false);
+  const profileFetchedRef = useRef(false);
 
   const fetchProfile = useCallback(async () => {
     if (!user) {
       setUserProfile(null);
+      profileFetchedRef.current = false;
       return;
     }
+    if (profileFetchedRef.current) return;
     try {
       const profile = await getCurrentUserProfile();
       setUserProfile(profile || null);
+      profileFetchedRef.current = true;
     } catch (error) {
       console.error("프로필 조회 오류:", error);
       setUserProfile(null);
