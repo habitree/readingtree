@@ -174,17 +174,15 @@ export function TagInput({ value, onChange, placeholder, label, noteContent }: T
       let successCount = 0;
       let failCount = 0;
 
-      for (const tag of tagsToDelete) {
-        try {
-          const result = await deleteTag(tag);
-          if (result.success) {
-            totalUpdatedCount += result.updatedCount || 0;
-            successCount++;
-          } else {
-            failCount++;
-          }
-        } catch (error) {
-          console.error(`태그 "${tag}" 삭제 오류:`, error);
+      const results = await Promise.allSettled(
+        tagsToDelete.map((tag) => deleteTag(tag))
+      );
+
+      for (const result of results) {
+        if (result.status === "fulfilled" && result.value.success) {
+          totalUpdatedCount += result.value.updatedCount || 0;
+          successCount++;
+        } else {
           failCount++;
         }
       }

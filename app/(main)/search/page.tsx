@@ -3,11 +3,12 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
-import { Search, X, BookOpen, Calendar, Tag, FileText } from "lucide-react";
+import { Search, X, BookOpen, Calendar, Tag, FileText, Clock, Trash2 } from "lucide-react";
 import { SearchFilters } from "@/components/search/search-filters";
 import { SearchResults } from "@/components/search/search-results";
 import { Pagination } from "@/components/search/pagination";
 import { useSearch } from "@/hooks/use-search";
+import { useSearchHistory } from "@/hooks/use-search-history";
 import { Loader2, Filter, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -24,8 +25,9 @@ export default function SearchPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { search, isLoading, error } = useSearch();
-  const isInitialMount = useRef(true);
+  const { history, addQuery: addToHistory, removeQuery: removeFromHistory, clearHistory } = useSearchHistory();
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const prevParamsRef = useRef<string>("");
 
   // 초기 검색어는 URL에서 가져오기
   const [query, setQuery] = useState(() => searchParams.get("q") || "");
@@ -47,9 +49,15 @@ export default function SearchPage() {
   const types = searchParams.get("types");
   const urlPage = parseInt(searchParams.get("page") || "1", 10);
 
-  // 검색 실행 함수 (디바운싱)
-  const performSearch = useCallback(async (searchQuery: string) => {
-    // 검색어나 필터가 하나라도 있으면 검색 실행
+  // URL에서 페이지 동기화
+  useEffect(() => {
+    if (urlPage !== currentPage) {
+      setCurrentPage(urlPage);
+    }
+  }, [urlPage]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // 검색 실행 함수
+  const executeSearch = useCallback(async (searchQuery: string, page: number) => {
     const hasQuery = searchQuery.trim().length > 0;
     const hasBookFilter = !!bookId;
     const hasDateFilter = !!startDate || !!endDate;
@@ -71,97 +79,61 @@ export default function SearchPage() {
       if (endDate) params.set("endDate", endDate);
       if (tags) params.set("tags", tags);
       if (types) params.set("types", types);
-      params.set("page", currentPage.toString());
+      params.set("page", page.toString());
 
-      // URL 업데이트 (검색 실행과 함께)
+      // URL 업데이트
       router.replace(`/search?${params.toString()}`, { scroll: false });
 
       const data = await search(params);
       setResults(data.results || []);
       setTotal(data.total || 0);
       setTotalPages(data.totalPages || 0);
+
+      // 검색 성공 + 결과 있으면 히스토리에 추가
+      if (searchQuery.trim() && (data.total || 0) > 0) {
+        addToHistory(searchQuery.trim());
+      }
     } catch (err) {
       console.error("검색 오류:", err);
       setResults([]);
       setTotal(0);
       setTotalPages(0);
     }
-  }, [bookId, startDate, endDate, tags, types, currentPage, search, router]);
+  }, [bookId, startDate, endDate, tags, types, search, router]);
 
-  // 초기 마운트 시 URL 파라미터에서 검색어 가져오기 및 검색 실행
+  // 단일 useEffect: 모든 검색 조건 변경에 대응
   useEffect(() => {
-    if (isInitialMount.current) {
-      const urlQuery = searchParams.get("q") || "";
-      const hasQuery = urlQuery.trim().length > 0;
-      const hasBookFilter = !!bookId;
-      const hasDateFilter = !!startDate || !!endDate;
-      const hasTagFilter = !!tags;
-      const hasTypeFilter = !!types;
+    // 파라미터 직렬화로 중복 실행 방지
+    const paramsKey = `${query}|${bookId}|${startDate}|${endDate}|${tags}|${types}|${currentPage}`;
+    if (paramsKey === prevParamsRef.current) return;
+    prevParamsRef.current = paramsKey;
 
-      // 초기 마운트 시 검색 실행 (URL에 검색어나 필터가 있는 경우)
-      if (hasQuery || hasBookFilter || hasDateFilter || hasTagFilter || hasTypeFilter) {
-        // URL 파라미터를 직접 사용하여 검색 실행
-        const params = new URLSearchParams();
-        if (urlQuery.trim()) params.set("q", urlQuery.trim());
-        if (bookId) params.set("bookId", bookId);
-        if (startDate) params.set("startDate", startDate);
-        if (endDate) params.set("endDate", endDate);
-        if (tags) params.set("tags", tags);
-        if (types) params.set("types", types);
-        params.set("page", urlPage.toString());
-
-        search(params)
-          .then((data) => {
-            setResults(data.results || []);
-            setTotal(data.total || 0);
-            setTotalPages(data.totalPages || 0);
-          })
-          .catch((err) => {
-            console.error("초기 검색 오류:", err);
-            setResults([]);
-            setTotal(0);
-            setTotalPages(0);
-          });
-      }
-
-      isInitialMount.current = false;
-    }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // URL 파라미터 변경 시 페이지 번호 업데이트 (외부에서 URL 변경 시)
-  useEffect(() => {
-    if (urlPage !== currentPage && !isInitialMount.current) {
-      setCurrentPage(urlPage);
-    }
-  }, [urlPage]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // 검색어 또는 필터 변경 시 검색 실행 (디바운싱)
-  useEffect(() => {
-    // 초기 마운트 시에는 검색 실행하지 않음 (위의 useEffect에서 처리)
-    if (isInitialMount.current) {
-      return;
-    }
-
-    // 이전 타이머 취소
     if (searchTimeoutRef.current) {
       clearTimeout(searchTimeoutRef.current);
     }
 
+    // 검색어 변경만 디바운스, 나머지는 즉시 실행
+    const delay = query !== (searchParams.get("q") || "") ? 300 : 0;
+
     searchTimeoutRef.current = setTimeout(() => {
-      performSearch(query);
-    }, 300);
+      executeSearch(query, currentPage);
+    }, delay);
 
     return () => {
       if (searchTimeoutRef.current) {
         clearTimeout(searchTimeoutRef.current);
       }
     };
-  }, [query, bookId, startDate, endDate, tags, types, currentPage, performSearch]);
+  }, [query, bookId, startDate, endDate, tags, types, currentPage, executeSearch]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleQueryChange = useCallback((value: string) => {
     setQuery(value);
     setCurrentPage(1);
-    // URL 업데이트와 검색 실행은 performSearch의 useEffect에서 처리
+  }, []);
+
+  const handleHistorySelect = useCallback((historyQuery: string) => {
+    setQuery(historyQuery);
+    setCurrentPage(1);
   }, []);
 
   // 필터 칩에서 책 목록 받아오기
@@ -371,6 +343,47 @@ export default function SearchPage() {
                 <p className="text-sm text-muted-foreground">
                   {t("search.foundResults").replace("{total}", String(total))}
                 </p>
+              )}
+
+              {/* 최근 검색어 (초기 상태일 때만) */}
+              {isInitialState && history.length > 0 && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                      <Clock className="h-3.5 w-3.5" />
+                      <span>{t("search.recentSearches")}</span>
+                    </div>
+                    <button
+                      onClick={clearHistory}
+                      className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                      {t("search.clearHistory")}
+                    </button>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {history.map((q) => (
+                      <Badge
+                        key={q}
+                        variant="outline"
+                        className="cursor-pointer hover:bg-accent gap-1 pr-1"
+                        onClick={() => handleHistorySelect(q)}
+                      >
+                        <span className="max-w-[150px] truncate">{q}</span>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removeFromHistory(q);
+                          }}
+                          className="ml-0.5 rounded-full hover:bg-destructive hover:text-destructive-foreground p-0.5"
+                          aria-label={`${t("search.removeHistoryItem")} ${q}`}
+                        >
+                          <X className="h-2.5 w-2.5" />
+                        </button>
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
               )}
 
               <SearchResults

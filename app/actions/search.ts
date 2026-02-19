@@ -1,6 +1,7 @@
 "use server";
 
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "./auth";
 import { sanitizeSearchQuery, sanitizeErrorMessage, sanitizeErrorForLogging } from "@/lib/utils/validation";
 import type { Database } from "@/types/database";
 import type { User } from "@supabase/supabase-js";
@@ -38,15 +39,10 @@ export async function searchNotes(params: SearchParams, user?: User | null): Pro
   // 현재 사용자 확인
   let currentUser = user;
   if (!currentUser) {
-    const {
-      data: { user: fetchedUser },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !fetchedUser) {
+    currentUser = await getCurrentUser();
+    if (!currentUser) {
       throw new Error("로그인이 필요합니다.");
     }
-    currentUser = fetchedUser;
   }
 
   // 검색어 필터 (한글 지원을 위해 ILIKE 사용)

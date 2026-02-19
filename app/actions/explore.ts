@@ -25,6 +25,7 @@ export async function getPublicNotes(options?: {
   page?: number;
   limit?: number;
   tag?: string;
+  tags?: string[];
 }): Promise<{ notes: ExploreNote[]; hasMore: boolean }> {
   const supabase = await createServerSupabaseClient();
   const user = await getCurrentUser().catch(() => null);
@@ -48,8 +49,10 @@ export async function getPublicNotes(options?: {
     .neq("type", "progress")
     .range(offset, offset + limit - 1);
 
-  // 태그 필터
-  if (options?.tag) {
+  // 태그 필터 (다중 태그: AND 로직)
+  if (options?.tags && options.tags.length > 0) {
+    query = query.contains("tags", options.tags);
+  } else if (options?.tag) {
     query = query.contains("tags", [options.tag]);
   }
 
@@ -104,32 +107,16 @@ export async function getPublicNotes(options?: {
 export async function getExploreTags(limit = 15): Promise<string[]> {
   const supabase = await createServerSupabaseClient();
 
-  const { data: notes, error } = await supabase
-    .from("notes")
-    .select("tags")
-    .eq("is_public", true)
-    .neq("type", "progress")
-    .not("tags", "is", null);
+  const { data, error } = await supabase.rpc("get_explore_tags", {
+    p_limit: limit,
+  });
 
-  if (error || !notes) {
+  if (error || !data) {
     console.error("[Explore] 태그 조회 오류:", error);
     return [];
   }
 
-  // 클라이언트 집계: 태그별 빈도 계산
-  const tagCounts = new Map<string, number>();
-  for (const note of notes) {
-    if (Array.isArray(note.tags)) {
-      for (const tag of note.tags) {
-        tagCounts.set(tag, (tagCounts.get(tag) || 0) + 1);
-      }
-    }
-  }
-
-  return [...tagCounts.entries()]
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, limit)
-    .map(([tag]) => tag);
+  return data.map((row: { tag: string; cnt: number }) => row.tag);
 }
 
 /**

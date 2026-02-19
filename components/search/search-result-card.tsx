@@ -122,13 +122,23 @@ export function SearchResultCard({ note, searchQuery }: SearchResultCardProps) {
                 <div className="space-y-1 pb-1 border-b">
                   {book && (
                     <>
-                      <p className="text-base font-bold line-clamp-1 text-foreground">
-                        {book.title || t("books.noTitle")}
-                      </p>
+                      <p
+                        className="text-base font-bold line-clamp-1 text-foreground"
+                        dangerouslySetInnerHTML={{
+                          __html: searchQuery
+                            ? highlightText(book.title || t("books.noTitle"), searchQuery)
+                            : (book.title || t("books.noTitle")),
+                        }}
+                      />
                       {book.author && (
-                        <p className="text-sm text-muted-foreground line-clamp-1">
-                          {book.author}
-                        </p>
+                        <p
+                          className="text-sm text-muted-foreground line-clamp-1"
+                          dangerouslySetInnerHTML={{
+                            __html: searchQuery
+                              ? highlightText(book.author, searchQuery)
+                              : book.author,
+                          }}
+                        />
                       )}
                     </>
                   )}
@@ -139,9 +149,14 @@ export function SearchResultCard({ note, searchQuery }: SearchResultCardProps) {
                         <Badge variant="outline" className="text-xs">{t("search.readingReason")}</Badge>
                         <span className="text-xs text-primary font-medium">{t("search.searchMatch")}</span>
                       </div>
-                      <p className="text-sm text-foreground line-clamp-2 bg-primary/10 p-2 rounded border border-primary/20">
-                        {readingReason}
-                      </p>
+                      <p
+                        className="text-sm text-foreground line-clamp-2 bg-primary/10 p-2 rounded border border-primary/20"
+                        dangerouslySetInnerHTML={{
+                          __html: searchQuery
+                            ? highlightText(readingReason, searchQuery)
+                            : readingReason,
+                        }}
+                      />
                     </div>
                   )}
                   {/* 읽는이유가 있지만 검색어와 매칭되지 않은 경우 (선택적 표시) */}
@@ -168,9 +183,16 @@ export function SearchResultCard({ note, searchQuery }: SearchResultCardProps) {
               {note.tags && note.tags.length > 0 && (
                 <div className="flex flex-wrap gap-1">
                   {note.tags.slice(0, 3).map((tag: string, index: number) => (
-                    <Badge key={`${tag}-${index}`} variant="outline" className="text-xs">
-                      {tag}
-                    </Badge>
+                    <Badge
+                      key={`${tag}-${index}`}
+                      variant="outline"
+                      className="text-xs"
+                      dangerouslySetInnerHTML={{
+                        __html: searchQuery
+                          ? highlightText(tag, searchQuery)
+                          : tag,
+                      }}
+                    />
                   ))}
                 </div>
               )}

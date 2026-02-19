@@ -11,6 +11,7 @@ import type {
 } from "@/types/note";
 import { isValidUUID, isValidLength, isValidTags, sanitizeErrorMessage, sanitizeErrorForLogging } from "@/lib/utils/validation";
 import type { User } from "@supabase/supabase-js";
+import { getCurrentUser } from "./auth";
 import { earnPoints, updateStreak } from "./points";
 import type { PointActionType } from "@/types/points";
 
@@ -811,48 +812,19 @@ export async function getPublicNote(noteId: string, userId?: string) {
 export async function getUserTags(user?: User | null): Promise<string[]> {
   const supabase = await createServerSupabaseClient();
 
-  // 현재 사용자 확인
-  let currentUser = user;
-  if (!currentUser) {
-    const {
-      data: { user: fetchedUser },
-      error: authError,
-    } = await supabase.auth.getUser();
+  const currentUser = user || await getCurrentUser();
+  if (!currentUser) throw new Error("로그인이 필요합니다.");
 
-    if (authError || !fetchedUser) {
-      throw new Error("로그인이 필요합니다.");
-    }
-    currentUser = fetchedUser;
-  }
-
-  // 사용자의 모든 기록에서 태그 조회
-  const { data: notes, error } = await supabase
-    .from("notes")
-    .select("tags")
-    .eq("user_id", currentUser.id)
-    .not("tags", "is", null);
+  const { data, error } = await supabase.rpc("get_user_tags", {
+    p_user_id: currentUser.id,
+  });
 
   if (error) {
     console.error("태그 조회 오류:", sanitizeErrorForLogging(error));
     return [];
   }
 
-  // 모든 태그를 하나의 배열로 합치고 중복 제거
-  const allTags = new Set<string>();
-  if (notes) {
-    notes.forEach((note) => {
-      if (note.tags && Array.isArray(note.tags)) {
-        note.tags.forEach((tag) => {
-          if (tag && typeof tag === "string" && tag.trim()) {
-            allTags.add(tag.trim());
-          }
-        });
-      }
-    });
-  }
-
-  // 알파벳/한글 순으로 정렬
-  return Array.from(allTags).sort((a, b) => a.localeCompare(b, "ko"));
+  return (data || []).map((row: { tag: string }) => row.tag);
 }
 
 /**
@@ -861,36 +833,19 @@ export async function getUserTags(user?: User | null): Promise<string[]> {
 export async function getUserTagsWithCount(user?: User | null): Promise<{ tag: string; count: number }[]> {
   const supabase = await createServerSupabaseClient();
 
-  let currentUser = user;
-  if (!currentUser) {
-    const { data: { user: fetchedUser }, error: authError } = await supabase.auth.getUser();
-    if (authError || !fetchedUser) throw new Error("로그인이 필요합니다.");
-    currentUser = fetchedUser;
-  }
+  const currentUser = user || await getCurrentUser();
+  if (!currentUser) throw new Error("로그인이 필요합니다.");
 
-  const { data: notes, error } = await supabase
-    .from("notes")
-    .select("tags")
-    .eq("user_id", currentUser.id)
-    .not("tags", "is", null);
-
-  if (error || !notes) return [];
-
-  const tagCounts = new Map<string, number>();
-  notes.forEach((note) => {
-    if (note.tags && Array.isArray(note.tags)) {
-      note.tags.forEach((tag) => {
-        if (tag && typeof tag === "string" && tag.trim()) {
-          const t = tag.trim();
-          tagCounts.set(t, (tagCounts.get(t) || 0) + 1);
-        }
-      });
-    }
+  const { data, error } = await supabase.rpc("get_user_tags_with_count", {
+    p_user_id: currentUser.id,
   });
 
-  return Array.from(tagCounts.entries())
-    .map(([tag, count]) => ({ tag, count }))
-    .sort((a, b) => b.count - a.count);
+  if (error || !data) return [];
+
+  return data.map((row: { tag: string; cnt: number }) => ({
+    tag: row.tag,
+    count: Number(row.cnt),
+  }));
 }
 
 /**
@@ -903,19 +858,8 @@ export async function getUserTagsWithCount(user?: User | null): Promise<{ tag: s
 export async function getTagUsageCount(tag: string, user?: User | null): Promise<number> {
   const supabase = await createServerSupabaseClient();
 
-  // 현재 사용자 확인
-  let currentUser = user;
-  if (!currentUser) {
-    const {
-      data: { user: fetchedUser },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !fetchedUser) {
-      throw new Error("로그인이 필요합니다.");
-    }
-    currentUser = fetchedUser;
-  }
+  const currentUser = user || await getCurrentUser();
+  if (!currentUser) throw new Error("로그인이 필요합니다.");
 
   // 해당 태그를 가진 기록 수 조회
   const { data: notes, error } = await supabase
@@ -941,65 +885,16 @@ export async function getTagUsageCount(tag: string, user?: User | null): Promise
 export async function deleteTag(tag: string, user?: User | null) {
   const supabase = await createServerSupabaseClient();
 
-  // 현재 사용자 확인
-  let currentUser = user;
-  if (!currentUser) {
-    const {
-      data: { user: fetchedUser },
-      error: authError,
-    } = await supabase.auth.getUser();
+  const currentUser = user || await getCurrentUser();
+  if (!currentUser) throw new Error("로그인이 필요합니다.");
 
-    if (authError || !fetchedUser) {
-      throw new Error("로그인이 필요합니다.");
-    }
-    currentUser = fetchedUser;
-  }
+  const { data: updatedCount, error } = await supabase.rpc("delete_tag_from_notes", {
+    p_user_id: currentUser.id,
+    p_tag: tag,
+  });
 
-  // 해당 태그를 가진 모든 기록 조회
-  const { data: notes, error: fetchError } = await supabase
-    .from("notes")
-    .select("id, tags")
-    .eq("user_id", currentUser.id)
-    .contains("tags", [tag]);
-
-  if (fetchError) {
-    throw new Error(`태그 조회 실패: ${sanitizeErrorMessage(fetchError)}`);
-  }
-
-  if (!notes || notes.length === 0) {
-    return { success: true, updatedCount: 0 };
-  }
-
-  // 각 기록에서 태그 제거
-  let updatedCount = 0;
-  let errorCount = 0;
-
-  for (const note of notes) {
-    if (note.tags && Array.isArray(note.tags)) {
-      // 태그 배열에서 해당 태그 제거
-      const updatedTags = note.tags.filter((t) => t !== tag);
-
-      // 태그가 모두 제거되면 null로 설정, 아니면 업데이트된 배열 사용
-      const tagsToUpdate = updatedTags.length > 0 ? updatedTags : null;
-
-      const { error: updateError } = await supabase
-        .from("notes")
-        .update({ tags: tagsToUpdate })
-        .eq("id", note.id);
-
-      if (updateError) {
-        console.error(`기록 ${note.id} 태그 업데이트 오류:`, sanitizeErrorForLogging(updateError));
-        errorCount++;
-        continue;
-      }
-
-      updatedCount++;
-    }
-  }
-
-  // 일부 기록에서 오류가 발생한 경우 경고
-  if (errorCount > 0) {
-    console.warn(`${errorCount}개의 기록에서 태그 삭제 중 오류가 발생했습니다.`);
+  if (error) {
+    throw new Error(`태그 삭제 실패: ${sanitizeErrorMessage(error)}`);
   }
 
   // 캐시 갱신
@@ -1008,7 +903,7 @@ export async function deleteTag(tag: string, user?: User | null) {
   revalidatePath("/search");
   revalidatePath("/");
 
-  return { success: true, updatedCount };
+  return { success: true, updatedCount: updatedCount || 0 };
 }
 
 /**
