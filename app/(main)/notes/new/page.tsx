@@ -1,5 +1,6 @@
 import { Metadata } from "next";
 import { NoteFormNew } from "@/components/notes/note-form-new";
+import { NoteCreationFlow } from "@/components/notes/note-creation-flow";
 import { redirect } from "next/navigation";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { isValidUUID } from "@/lib/utils/validation";
@@ -24,6 +25,7 @@ interface NewNotePageProps {
  * 기록 작성 페이지
  * - bookId 있으면 책 연결 기록
  * - quickstart=true 이면 책 없이 바로 폼 표시
+ * - 둘 다 없으면 책 선택 통합 플로우 표시
  */
 export default async function NewNotePage({ searchParams }: NewNotePageProps) {
   const resolvedSearchParams = await (searchParams instanceof Promise ? searchParams : Promise.resolve(searchParams));
@@ -49,9 +51,9 @@ export default async function NewNotePage({ searchParams }: NewNotePageProps) {
     );
   }
 
-  // bookId 검증 (한 번에 처리)
+  // bookId 없으면 통합 플로우 표시 (리다이렉트 대신)
   if (!bookId || typeof bookId !== 'string' || !isValidUUID(bookId)) {
-    redirect("/books");
+    return <NoteCreationFlow />;
   }
 
   // Supabase 클라이언트 생성 (한 번만)

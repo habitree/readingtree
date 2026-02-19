@@ -800,6 +800,11 @@ export const en: Dictionary = {
     imageUploadFailed: "Image upload failed",
     noNotesStartJourney: "Write your first note and start your reading journey!",
     startWriting: "Start writing",
+    // note-creation-flow
+    selectBookOrFree: "Select a book or write freely",
+    writeWithoutBook: "Write without a book",
+    changeBook: "Change book",
+    selectedBook: "Selected book",
     // notes/new page
     writeNotePageTitle: "Write Note",
     writeNotePageDesc: "Write a note about this book",

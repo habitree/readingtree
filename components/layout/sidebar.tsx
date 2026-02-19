@@ -15,15 +15,19 @@ import {
   BarChart3,
   Compass,
   ChevronDown,
+  PenTool,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/use-auth";
+import { useLoginPrompt } from "@/hooks/use-login-prompt";
+import { LoginPromptModal } from "@/components/ui/login-prompt-modal";
 import { BookshelfTree } from "./bookshelf-tree";
 import { getCurrentUserProfile } from "@/app/actions/profile";
 import { useEffect, useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { useTranslation } from "@/lib/i18n";
 
 /**
@@ -44,8 +48,15 @@ interface SidebarItem {
  */
 export function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
   const { user } = useAuth();
   const { t } = useTranslation();
+  const { isOpen: loginOpen, setIsOpen: setLoginOpen, title: loginTitle, description: loginDesc, requireLogin } = useLoginPrompt();
+
+  const handleWriteNote = useCallback(() => {
+    if (requireLogin({ title: t("nav.writeNoteLoginTitle"), description: t("nav.writeNoteLoginDesc") })) return;
+    router.push("/notes/new");
+  }, [requireLogin, router, t]);
 
   const primaryItems: SidebarItem[] = [
     { icon: Home, label: t("nav.home"), href: "/" },
@@ -155,6 +166,15 @@ export function Sidebar() {
           {/* 핵심 메뉴 */}
           {primaryItems.map(renderNavItem)}
 
+          {/* 기록 CTA 버튼 */}
+          <Button
+            onClick={handleWriteNote}
+            className="w-full justify-start gap-3 h-11 bg-forest-600 hover:bg-forest-700 text-white mt-1"
+          >
+            <PenTool className="h-5 w-5" />
+            <span>{t("nav.writeNote")}</span>
+          </Button>
+
           {/* 서재 트리 (로그인 사용자만) */}
           {user && <BookshelfTree />}
 
@@ -183,6 +203,7 @@ export function Sidebar() {
           )}
         </nav>
       </div>
+      <LoginPromptModal open={loginOpen} onOpenChange={setLoginOpen} title={loginTitle} description={loginDesc} />
     </aside>
   );
 }

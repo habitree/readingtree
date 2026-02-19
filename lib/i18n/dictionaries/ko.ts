@@ -800,6 +800,11 @@ export const ko = {
     imageUploadFailed: "이미지 업로드 실패",
     noNotesStartJourney: "첫 번째 기록을 작성하고 독서 여정을 시작해보세요!",
     startWriting: "기록 작성하기",
+    // note-creation-flow
+    selectBookOrFree: "책을 선택하거나 자유롭게 기록하세요",
+    writeWithoutBook: "책 없이 기록하기",
+    changeBook: "다른 책 선택",
+    selectedBook: "선택된 책",
     // notes/new page
     writeNotePageTitle: "기록 작성",
     writeNotePageDesc: "책에 대한 기록을 작성하세요",
