@@ -36,6 +36,7 @@ import { moveBookToBookshelf, getBookshelves } from "@/app/actions/bookshelves";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { formatDate, formatDateWithDashes } from "@/lib/utils/date";
+import { useTranslation } from "@/lib/i18n";
 import type { BookWithNotes } from "@/app/actions/books";
 import type { ReadingStatus } from "@/types/book";
 import { Bookshelf } from "@/types/bookshelf";
@@ -76,6 +77,7 @@ function removePublisherFromTitle(title: string, publisher: string | null): stri
  * habitree.io/search 페이지의 테이블 형태와 유사한 구조
  */
 export function BookTable({ books }: BookTableProps) {
+  const { t } = useTranslation();
   const router = useRouter();
   const [expandedBookId, setExpandedBookId] = useState<string | null>(null);
   const [bookNotes, setBookNotes] = useState<Record<string, any[]>>({});
@@ -219,12 +221,12 @@ export function BookTable({ books }: BookTableProps) {
     setUpdatingStatus((prev) => ({ ...prev, [userBookId]: true }));
     try {
       await updateBookStatus(userBookId, newStatus);
-      toast.success("상태가 변경됐어요.");
+      toast.success(t("books.statusChangedSuccess"));
       router.refresh();
     } catch (error) {
       console.error("상태 변경 오류:", error);
       toast.error(
-        error instanceof Error ? error.message : "상태 변경에 실패했어요."
+        error instanceof Error ? error.message : t("books.statusChangeFailed")
       );
     } finally {
       setUpdatingStatus((prev) => ({ ...prev, [userBookId]: false }));
@@ -242,12 +244,12 @@ export function BookTable({ books }: BookTableProps) {
     setUpdatingBookshelf((prev) => ({ ...prev, [userBookId]: true }));
     try {
       await moveBookToBookshelf(userBookId, bookshelfId);
-      toast.success("저장됨");
+      toast.success(t("books.savedLabel"));
       router.refresh();
     } catch (error) {
       console.error("서재 변경 오류:", error);
       toast.error(
-        error instanceof Error ? error.message : "서재 변경에 실패했어요."
+        error instanceof Error ? error.message : t("books.shelfChangeFailed")
       );
     } finally {
       setUpdatingBookshelf((prev) => ({ ...prev, [userBookId]: false }));
@@ -261,14 +263,14 @@ export function BookTable({ books }: BookTableProps) {
 
   const handleDeleteConfirm = async (userBookId: string, bookTitle: string) => {
     if (confirmDeleteTitle[userBookId]?.trim() !== bookTitle.trim()) {
-      toast.error("책 제목이 일치하지 않아요. 정확히 입력해주세요.");
+      toast.error(t("books.titleMismatchError"));
       return;
     }
 
     setDeletingBookId(userBookId);
     try {
       await deleteBook(userBookId);
-      toast.success("책이 삭제됐어요.");
+      toast.success(t("books.bookDeletedSuccess"));
       setDeleteDialogOpen((prev) => ({ ...prev, [userBookId]: false }));
       setConfirmDeleteTitle((prev) => {
         const next = { ...prev };
@@ -279,7 +281,7 @@ export function BookTable({ books }: BookTableProps) {
     } catch (error) {
       console.error("책 삭제 오류:", error);
       toast.error(
-        error instanceof Error ? error.message : "책 삭제에 실패했어요."
+        error instanceof Error ? error.message : t("books.bookDeleteFailed")
       );
     } finally {
       setDeletingBookId(null);
@@ -301,7 +303,7 @@ export function BookTable({ books }: BookTableProps) {
   if (!books || books.length === 0) {
     return (
       <div className="text-center py-12 text-muted-foreground">
-        등록된 책이 없습니다.
+        {t("books.noBooksRegistered")}
       </div>
     );
   }
@@ -313,19 +315,19 @@ export function BookTable({ books }: BookTableProps) {
           <thead className="bg-muted/50">
             <tr>
               <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground" style={{ width: '120px', minWidth: '120px' }}>
-                표지
+                {t("books.tableHeaderCover")}
               </th>
               <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground" style={{ width: '320px', minWidth: '320px' }}>
-                제목
+                {t("books.tableHeaderTitle")}
               </th>
               <th className="hidden lg:table-cell px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground" style={{ width: 'auto', minWidth: '300px' }}>
-                책소개
+                {t("books.tableHeaderDescription")}
               </th>
               <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground" style={{ width: '180px', minWidth: '180px' }}>
-                상태/기록
+                {t("books.tableHeaderStatusRecord")}
               </th>
               <th className="hidden lg:table-cell px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground" style={{ width: '200px', minWidth: '200px' }}>
-                책정보
+                {t("books.tableHeaderBookInfo")}
               </th>
             </tr>
           </thead>
@@ -355,7 +357,7 @@ export function BookTable({ books }: BookTableProps) {
                           {hasValidImage ? (
                             <Image
                               src={getImageUrl(book.cover_image_url)}
-                              alt={`${book.title} 표지`}
+                              alt={t("books.bookCover", { title: book.title })}
                               fill
                               className="object-cover hover:scale-105 transition-transform duration-500"
                               sizes="(max-width: 640px) 80px, (max-width: 1024px) 96px, 128px"
@@ -414,7 +416,7 @@ export function BookTable({ books }: BookTableProps) {
                               key={gb.group_id}
                               variant="outline"
                               className="text-[10px] px-1.5 py-0.5 border-primary/20 text-primary/80"
-                              title={`${gb.group_name} 지정도서`}
+                              title={t("books.groupDesignatedBook", { name: gb.group_name })}
                             >
                               <Users className="mr-0.5 h-2 w-2" />
                               {gb.group_name}
@@ -439,7 +441,7 @@ export function BookTable({ books }: BookTableProps) {
                       {loadingDescriptions[book.id] ? (
                         <div className="flex items-center gap-1.5 text-muted-foreground">
                           <Loader2 className="w-3 h-3 animate-spin" />
-                          <span className="text-[11px]">요약 중...</span>
+                          <span className="text-[11px]">{t("books.summarizing")}</span>
                         </div>
                       ) : book.description_summary || book.summary || bookDescriptions[book.id] ? (
                         <div 
@@ -482,22 +484,22 @@ export function BookTable({ books }: BookTableProps) {
                                 disabled={updatingStatus[item.id]}
                               >
                                 <span className="truncate">
-                                  {item.status === "not_started" && "읽을 예정"}
-                                  {item.status === "reading" && "읽는 중"}
-                                  {item.status === "completed" && "완독"}
-                                  {item.status === "rereading" && "재독"}
-                                  {item.status === "paused" && "쉬는 중"}
+                                  {item.status === "not_started" && t("books.statusNotStarted")}
+                                  {item.status === "reading" && t("books.statusReading")}
+                                  {item.status === "completed" && t("books.statusCompleted")}
+                                  {item.status === "rereading" && t("books.statusRereading")}
+                                  {item.status === "paused" && t("books.statusPaused")}
                                 </span>
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="start" className="w-[160px]" style={{ zIndex: 100 }}>
-                              <DropdownMenuLabel className="text-xs">읽기 상태</DropdownMenuLabel>
+                              <DropdownMenuLabel className="text-xs">{t("books.readingStatusLabel")}</DropdownMenuLabel>
                               <DropdownMenuItem
                                 onClick={() => handleStatusChange(item.id, "not_started")}
                                 disabled={item.status === "not_started" || updatingStatus[item.id]}
                                 className={item.status === "not_started" ? "bg-accent" : ""}
                               >
-                                읽을 예정
+                                {t("books.statusNotStarted")}
                                 {item.status === "not_started" && " ✓"}
                               </DropdownMenuItem>
                               <DropdownMenuItem
@@ -505,7 +507,7 @@ export function BookTable({ books }: BookTableProps) {
                                 disabled={item.status === "reading" || updatingStatus[item.id]}
                                 className={item.status === "reading" ? "bg-accent" : ""}
                               >
-                                읽는 중
+                                {t("books.statusReading")}
                                 {item.status === "reading" && " ✓"}
                               </DropdownMenuItem>
                               <DropdownMenuItem
@@ -513,7 +515,7 @@ export function BookTable({ books }: BookTableProps) {
                                 disabled={item.status === "completed" || updatingStatus[item.id]}
                                 className={item.status === "completed" ? "bg-accent" : ""}
                               >
-                                완독
+                                {t("books.statusCompleted")}
                                 {item.status === "completed" && " ✓"}
                               </DropdownMenuItem>
                               <DropdownMenuItem
@@ -521,7 +523,7 @@ export function BookTable({ books }: BookTableProps) {
                                 disabled={item.status === "rereading" || updatingStatus[item.id]}
                                 className={item.status === "rereading" ? "bg-accent" : ""}
                               >
-                                재독
+                                {t("books.statusRereading")}
                                 {item.status === "rereading" && " ✓"}
                               </DropdownMenuItem>
                               <DropdownMenuItem
@@ -529,18 +531,18 @@ export function BookTable({ books }: BookTableProps) {
                                 disabled={item.status === "paused" || updatingStatus[item.id]}
                                 className={item.status === "paused" ? "bg-accent" : ""}
                               >
-                                쉬는 중
+                                {t("books.statusPaused")}
                                 {item.status === "paused" && " ✓"}
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
-                              <DropdownMenuLabel className="text-xs">서재 이동</DropdownMenuLabel>
+                              <DropdownMenuLabel className="text-xs">{t("books.moveToShelfLabel")}</DropdownMenuLabel>
                               {isLoadingBookshelves ? (
                                 <DropdownMenuItem disabled>
                                   <Loader2 className="mr-2 h-3 w-3 animate-spin" />
-                                  <span className="text-xs">로딩 중...</span>
+                                  <span className="text-xs">{t("books.loadingText")}</span>
                                 </DropdownMenuItem>
                               ) : bookshelves.length === 0 ? (
-                                <DropdownMenuItem disabled className="text-xs">서재가 없습니다</DropdownMenuItem>
+                                <DropdownMenuItem disabled className="text-xs">{t("books.noShelvesAvailable")}</DropdownMenuItem>
                               ) : (
                                 bookshelves.map((bookshelf) => {
                                   const currentBookshelfId = (item as any).bookshelf_id;
@@ -568,7 +570,7 @@ export function BookTable({ books }: BookTableProps) {
                         <Link href={`/books/${item.id}#book-info`} className="flex-1">
                           <Button variant="ghost" size="sm" className="w-full h-7 text-[11px] text-foreground hover:text-primary hover:bg-muted justify-center px-2.5">
                             <FileText className="w-3 h-3 mr-1.5" aria-hidden="true" />
-                            기록
+                            {t("books.recordLabel")}
                             {item.noteCount > 0 && (
                               <span className="ml-1 text-muted-foreground">({item.noteCount})</span>
                             )}
@@ -585,10 +587,10 @@ export function BookTable({ books }: BookTableProps) {
                             handleDeleteClick(item.id);
                           }}
                           disabled={deletingBookId === item.id}
-                          title="책 삭제"
+                          title={t("books.deleteBook")}
                         >
                           <Trash2 className="h-3.5 w-3.5" />
-                          <span className="sr-only">삭제</span>
+                          <span className="sr-only">{t("books.deleteLabel")}</span>
                         </Button>
                       </div>
                     </div>
@@ -599,13 +601,13 @@ export function BookTable({ books }: BookTableProps) {
                     <div className="space-y-1.5 text-xs">
                       {book.author && (
                         <div className="flex gap-2.5 items-start">
-                          <span className="text-[11px] text-muted-foreground min-w-[3.5rem] shrink-0">저자</span>
+                          <span className="text-[11px] text-muted-foreground min-w-[3.5rem] shrink-0">{t("books.authorLabel")}</span>
                           <span className="text-xs text-foreground leading-relaxed break-words">{book.author.replace(/\^/g, ' / ')}</span>
                         </div>
                       )}
                       {book.publisher && (
                         <div className="flex gap-2.5 items-start">
-                          <span className="text-[11px] text-muted-foreground min-w-[3.5rem] shrink-0">출판사</span>
+                          <span className="text-[11px] text-muted-foreground min-w-[3.5rem] shrink-0">{t("books.publisherLabel")}</span>
                           <span className="text-xs text-foreground leading-relaxed break-words">{book.publisher}</span>
                         </div>
                       )}
@@ -626,7 +628,7 @@ export function BookTable({ books }: BookTableProps) {
                         }
                         return dates.length > 0 ? (
                           <div className="flex gap-2.5 items-start">
-                            <span className="text-[11px] text-muted-foreground min-w-[3.5rem] shrink-0">완독일</span>
+                            <span className="text-[11px] text-muted-foreground min-w-[3.5rem] shrink-0">{t("books.completedDateLabel")}</span>
                             <div className="flex flex-col gap-1">
                               {dates.map((date: string, index: number) => {
                                 try {
@@ -636,7 +638,7 @@ export function BookTable({ books }: BookTableProps) {
                                   const day = dateObj.getDate();
                                   return (
                                     <div key={index} className="text-xs text-foreground leading-relaxed">
-                                      {year}년 {month}월 {day}일
+                                      {t("books.dateFormat", { year, month, day })}
                                     </div>
                                   );
                                 } catch {
@@ -674,16 +676,16 @@ export function BookTable({ books }: BookTableProps) {
           >
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>책 삭제 확인</AlertDialogTitle>
+                <AlertDialogTitle>{t("books.deleteBookConfirmTitle")}</AlertDialogTitle>
                 <AlertDialogDescription className="space-y-4">
                   <p>
-                    정말로 이 책을 삭제하시겠습니까?
+                    {t("books.deleteBookConfirmMessage")}
                     <br />
-                    이 책의 모든 기록도 함께 삭제되며, 이 작업은 되돌릴 수 없습니다.
+                    {t("books.deleteBookConfirmDetail")}
                   </p>
                   <div className="space-y-2 pt-2">
                     <Label htmlFor={`confirm-title-${item.id}`} className="text-sm font-medium">
-                      삭제를 확인하려면 책 제목을 정확히 입력하세요:
+                      {t("books.deleteConfirmInputLabel")}
                     </Label>
                     <p className="text-sm font-semibold text-foreground bg-muted p-2 rounded">
                       {book.title}
@@ -697,7 +699,7 @@ export function BookTable({ books }: BookTableProps) {
                           [item.id]: e.target.value,
                         }))
                       }
-                      placeholder="책 제목 입력"
+                      placeholder={t("books.deleteConfirmPlaceholder")}
                       disabled={deletingBookId === item.id}
                       className="mt-2"
                     />
@@ -705,7 +707,7 @@ export function BookTable({ books }: BookTableProps) {
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel disabled={deletingBookId === item.id}>취소</AlertDialogCancel>
+                <AlertDialogCancel disabled={deletingBookId === item.id}>{t("books.cancelLabel")}</AlertDialogCancel>
                 <AlertDialogAction
                   onClick={() => handleDeleteConfirm(item.id, book.title)}
                   disabled={
@@ -717,10 +719,10 @@ export function BookTable({ books }: BookTableProps) {
                   {deletingBookId === item.id ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      삭제 중...
+                      {t("books.deletingBook")}
                     </>
                   ) : (
-                    "삭제"
+                    t("books.deleteLabel")
                   )}
                 </AlertDialogAction>
               </AlertDialogFooter>

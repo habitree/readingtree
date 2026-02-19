@@ -1,25 +1,30 @@
+"use client";
+
 import { Layers, Search, Share2 } from "lucide-react";
+import { useTranslation } from "@/lib/i18n";
 
 export function BenefitsSection() {
+    const { t } = useTranslation();
+
     const benefits = [
         {
             icon: <Layers className="w-10 h-10 text-primary" />,
-            title: "완벽한 기록 통합",
-            description: "인용구, 메모, 사진 필사가 책 한 권에 자동으로 모입니다. 파편화된 기록의 스트레스에서 해방되세요.",
-            highlight: "정리의 자동화"
+            title: t("landing.benefits.benefit1Title"),
+            description: t("landing.benefits.benefit1Desc"),
+            highlight: t("landing.benefits.benefit1Highlight"),
         },
         {
             icon: <Search className="w-10 h-10 text-primary" />,
-            title: "1초 만에 문장 소환",
-            description: "3년 전에 읽은 책의 구절도 키워드 하나면 즉시 찾습니다. 당신의 독서 이력이 거대한 지식 데이터베이스가 됩니다.",
-            highlight: "지식의 자산화"
+            title: t("landing.benefits.benefit2Title"),
+            description: t("landing.benefits.benefit2Desc"),
+            highlight: t("landing.benefits.benefit2Highlight"),
         },
         {
             icon: <Share2 className="w-10 h-10 text-primary" />,
-            title: "감각적인 공유",
-            description: "혼자 보기 아까운 문장을 디자이너급 카드뉴스로 변환하세요. 인스타그램, 독서모임에 즉시 공유할 수 있습니다.",
-            highlight: "영향력의 확장"
-        }
+            title: t("landing.benefits.benefit3Title"),
+            description: t("landing.benefits.benefit3Desc"),
+            highlight: t("landing.benefits.benefit3Highlight"),
+        },
     ];
 
     return (
@@ -27,7 +32,7 @@ export function BenefitsSection() {
             <div className="container px-4 md:px-6">
                 <div className="text-center mb-16">
                     <h2 className="text-3xl md:text-4xl font-bold tracking-tight mb-4 break-keep font-serif text-charcoal-900">
-                        독서의 모든 과정이<br className="md:hidden" /> 하나의 흐름으로 완성됩니다
+                        {t("landing.benefits.headline")}
                     </h2>
                 </div>
 

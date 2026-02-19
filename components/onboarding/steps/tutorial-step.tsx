@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Library, PenTool, Search, Share2, ArrowRight, ArrowLeft, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/lib/i18n";
 
 interface TutorialStepProps {
   onComplete: () => void;
@@ -11,42 +12,43 @@ interface TutorialStepProps {
   isLoading?: boolean;
 }
 
-const tutorialSlides = [
-  {
-    icon: Library,
-    title: "책 추가",
-    description: "검색으로 책 추가",
-    color: "text-blue-600",
-    bgColor: "bg-blue-100",
-  },
-  {
-    icon: PenTool,
-    title: "기록 작성",
-    description: "문장, 사진을 기록",
-    color: "text-amber-600",
-    bgColor: "bg-amber-100",
-  },
-  {
-    icon: Search,
-    title: "기록 검색",
-    description: "저장한 기록을 검색",
-    color: "text-emerald-600",
-    bgColor: "bg-emerald-100",
-  },
-  {
-    icon: Share2,
-    title: "기록 공유",
-    description: "카드뉴스로 공유",
-    color: "text-purple-600",
-    bgColor: "bg-purple-100",
-  },
-];
-
 /**
  * 튜토리얼 스텝
  * 서비스 주요 기능을 소개하는 단계
  */
 export function TutorialStep({ onComplete, onBack, isLoading }: TutorialStepProps) {
+  const { t } = useTranslation();
+
+  const tutorialSlides = [
+    {
+      icon: Library,
+      title: t("onboarding.tutorialAddBook"),
+      description: t("onboarding.tutorialAddBookDesc"),
+      color: "text-blue-600",
+      bgColor: "bg-blue-100",
+    },
+    {
+      icon: PenTool,
+      title: t("onboarding.tutorialWriteNote"),
+      description: t("onboarding.tutorialWriteNoteDesc"),
+      color: "text-amber-600",
+      bgColor: "bg-amber-100",
+    },
+    {
+      icon: Search,
+      title: t("onboarding.tutorialSearchNote"),
+      description: t("onboarding.tutorialSearchNoteDesc"),
+      color: "text-emerald-600",
+      bgColor: "bg-emerald-100",
+    },
+    {
+      icon: Share2,
+      title: t("onboarding.tutorialShareNote"),
+      description: t("onboarding.tutorialShareNoteDesc"),
+      color: "text-purple-600",
+      bgColor: "bg-purple-100",
+    },
+  ];
   const [currentSlide, setCurrentSlide] = useState(0);
 
   const isLastSlide = currentSlide === tutorialSlides.length - 1;
@@ -77,7 +79,7 @@ export function TutorialStep({ onComplete, onBack, isLoading }: TutorialStepProp
           <Sparkles className="w-8 h-8 text-primary" />
         </div>
         <div>
-          <h2 className="text-xl font-bold">ReadTree 시작하기</h2>
+          <h2 className="text-xl font-bold">{t("onboarding.tutorialStep")}</h2>
         </div>
       </div>
 
@@ -138,7 +140,7 @@ export function TutorialStep({ onComplete, onBack, isLoading }: TutorialStepProp
           className="flex-1"
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
-          이전
+          {t("common.prev")}
         </Button>
         <Button
           onClick={handleNext}
@@ -146,15 +148,15 @@ export function TutorialStep({ onComplete, onBack, isLoading }: TutorialStepProp
           className="flex-1"
         >
           {isLoading ? (
-            "완료 중..."
+            t("onboarding.completing")
           ) : isLastSlide ? (
             <>
-              시작하기
+              {t("onboarding.getStarted")}
               <Sparkles className="w-4 h-4 ml-2" />
             </>
           ) : (
             <>
-              다음
+              {t("common.next")}
               <ArrowRight className="w-4 h-4 ml-2" />
             </>
           )}
@@ -170,7 +172,7 @@ export function TutorialStep({ onComplete, onBack, isLoading }: TutorialStepProp
           disabled={isLoading}
           className="w-full text-muted-foreground"
         >
-          건너뛰기
+          {t("onboarding.skip")}
         </Button>
       )}
     </div>

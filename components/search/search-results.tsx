@@ -1,9 +1,12 @@
+"use client";
+
 import { motion } from "framer-motion";
 import { SearchResultCard } from "./search-result-card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
 import { SearchX, Lightbulb } from "lucide-react";
 import type { NoteWithBook } from "@/types/note";
+import { useTranslation } from "@/lib/i18n";
 
 interface SearchResultsProps {
   results: NoteWithBook[];
@@ -25,6 +28,7 @@ export function SearchResults({
   isInitialState,
   onClearFilters,
 }: SearchResultsProps) {
+  const { t } = useTranslation();
   if (isLoading) {
     return (
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -50,10 +54,10 @@ export function SearchResults({
     return (
       <EmptyState
         icon={Lightbulb}
-        title="무엇을 찾고 있나요?"
-        description="책 제목, 저자, 기록 내용으로 검색할 수 있어요"
+        title={t("search.whatToFind")}
+        description={t("search.searchHint")}
         variant="encouraging"
-        nextStepHint="위 검색창에 검색어를 입력하거나 필터를 사용해보세요"
+        nextStepHint={t("search.searchTip")}
       />
     );
   }
@@ -63,18 +67,18 @@ export function SearchResults({
     return (
       <EmptyState
         icon={SearchX}
-        title="검색 결과가 없어요"
+        title={t("search.noResults")}
         description={
           searchQuery
-            ? `"${searchQuery}"와 일치하는 기록을 찾지 못했어요`
-            : "조건에 맞는 기록을 찾지 못했어요"
+            ? t("search.noResultsFor").replace("{query}", searchQuery)
+            : t("search.noResultsFiltered")
         }
         variant="curious"
-        nextStepHint="검색어를 더 짧게 입력하거나 다른 필터를 사용해보세요"
+        nextStepHint={t("search.shorterHint")}
         action={
           onClearFilters
             ? {
-                label: "필터 초기화",
+                label: t("search.filterReset"),
                 onClick: onClearFilters,
               }
             : undefined

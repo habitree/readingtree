@@ -1,6 +1,9 @@
+"use client";
+
 import { Badge } from "@/components/ui/badge";
 import type { ReadingStatus } from "@/types/book";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/lib/i18n";
 
 interface BookStatusBadgeProps {
   status: ReadingStatus;
@@ -13,25 +16,26 @@ interface BookStatusBadgeProps {
  * UX 원칙 03: 색상을 활용한 시각적 구분 적용
  */
 export function BookStatusBadge({ status, className, size = "default" }: BookStatusBadgeProps) {
+  const { t } = useTranslation();
   const statusConfig = {
     reading: {
-      label: "읽는 중",
+      label: t("books.badgeReading"),
       className: "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20",
     },
     completed: {
-      label: "완독",
+      label: t("books.badgeCompleted"),
       className: "bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20",
     },
     paused: {
-      label: "쉬는 중",
+      label: t("books.badgePaused"),
       className: "bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-500/20",
     },
     not_started: {
-      label: "읽을 예정",
+      label: t("books.badgeNotStarted"),
       className: "bg-gray-500/10 text-gray-700 dark:text-gray-400 border-gray-500/20",
     },
     rereading: {
-      label: "재독",
+      label: t("books.badgeRereading"),
       className: "bg-purple-500/10 text-purple-700 dark:text-purple-400 border-purple-500/20",
     },
   };

@@ -11,6 +11,7 @@ import {
   Calendar,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/lib/i18n";
 import type { PointsDashboardData, PointTransaction } from "@/types/points";
 
 interface PointsDashboardProps {
@@ -18,6 +19,7 @@ interface PointsDashboardProps {
 }
 
 export function PointsDashboard({ data }: PointsDashboardProps) {
+  const { t } = useTranslation();
   const {
     userPoints,
     recentTransactions,
@@ -33,7 +35,7 @@ export function PointsDashboard({ data }: PointsDashboardProps) {
         <div className="p-4 bg-gradient-to-br from-forest-500 to-emerald-600 text-white">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-forest-100 opacity-90">총 포인트</p>
+              <p className="text-sm text-forest-100 opacity-90">{t("points.totalPoints")}</p>
               <motion.p
                 className="text-3xl font-bold"
                 initial={{ scale: 0.5, opacity: 0 }}
@@ -50,7 +52,7 @@ export function PointsDashboard({ data }: PointsDashboardProps) {
 
           {/* 누적 포인트 */}
           <div className="mt-3 text-sm text-forest-100 opacity-90">
-            누적 {(userPoints?.lifetime_points || 0).toLocaleString()}P
+            {t("points.lifetimePointsShort", { count: (userPoints?.lifetime_points || 0).toLocaleString() })}
           </div>
         </div>
 
@@ -58,19 +60,19 @@ export function PointsDashboard({ data }: PointsDashboardProps) {
         <div className="grid grid-cols-3 divide-x divide-slate-100 dark:divide-slate-800">
           <StatItem
             icon={Zap}
-            label="오늘"
+            label={t("points.today")}
             value={todayEarned}
             color="text-amber-500"
           />
           <StatItem
             icon={Calendar}
-            label="이번 주"
+            label={t("points.thisWeek")}
             value={weeklyEarned}
             color="text-blue-500"
           />
           <StatItem
             icon={TrendingUp}
-            label="이번 달"
+            label={t("points.thisMonth")}
             value={monthlyEarned}
             color="text-green-500"
           />
@@ -101,19 +103,19 @@ export function PointsDashboard({ data }: PointsDashboardProps) {
               </div>
               <div>
                 <p className="text-sm text-slate-500 dark:text-slate-400">
-                  연속 스트릭
+                  {t("points.continuousStreak")}
                 </p>
                 <p className="text-xl font-bold text-slate-900 dark:text-white">
-                  {userPoints.current_streak}일
+                  {t("points.daysUnit", { count: userPoints.current_streak })}
                 </p>
               </div>
             </div>
             <div className="text-right">
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                최장 기록
+                {t("points.longestRecord")}
               </p>
               <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                {userPoints.longest_streak}일
+                {t("points.daysUnit", { count: userPoints.longest_streak })}
               </p>
             </div>
           </div>
@@ -126,7 +128,7 @@ export function PointsDashboard({ data }: PointsDashboardProps) {
         <Card>
           <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-800">
             <h3 className="font-semibold text-sm text-slate-900 dark:text-white">
-              최근 활동
+              {t("points.recentActivity")}
             </h3>
           </div>
           <div className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -163,31 +165,33 @@ function StatItem({
 }
 
 function TransactionItem({ transaction }: { transaction: PointTransaction }) {
+  const { t, locale } = useTranslation();
+
   const actionLabels: Record<string, string> = {
-    note_create: "노트 작성",
-    note_quote: "인용구 기록",
-    note_memo: "메모 작성",
-    note_photo: "사진 기록",
-    note_transcription: "사진 필사 기록",
-    book_add: "책 추가",
-    book_complete: "책 완독",
-    book_progress_update: "진행률 업데이트",
-    daily_first_activity: "오늘 첫 활동",
-    streak_3_days: "3일 연속 달성",
-    streak_7_days: "7일 연속 달성",
-    streak_14_days: "14일 연속 달성",
-    streak_30_days: "30일 연속 달성",
-    streak_100_days: "100일 연속 달성",
-    streak_365_days: "365일 연속 달성",
-    mission_complete: "미션 완료",
-    all_missions_complete: "모든 미션 완료",
-    first_book: "첫 책 등록",
-    first_note: "첫 노트 작성",
+    note_create: t("points.noteCreate"),
+    note_quote: t("points.noteQuote"),
+    note_memo: t("points.noteMemo"),
+    note_photo: t("points.notePhoto"),
+    note_transcription: t("points.noteTranscription"),
+    book_add: t("points.bookAdd"),
+    book_complete: t("points.bookComplete"),
+    book_progress_update: t("points.bookProgressUpdate"),
+    daily_first_activity: t("points.dailyFirstActivity"),
+    streak_3_days: t("points.streak3Days"),
+    streak_7_days: t("points.streak7Days"),
+    streak_14_days: t("points.streak14Days"),
+    streak_30_days: t("points.streak30Days"),
+    streak_100_days: t("points.streak100Days"),
+    streak_365_days: t("points.streak365Days"),
+    mission_complete: t("points.missionComplete"),
+    all_missions_complete: t("points.allMissionsComplete"),
+    first_book: t("points.firstBook"),
+    first_note: t("points.firstNote"),
   };
 
-  const label = actionLabels[transaction.action_type] || transaction.description || "활동";
+  const label = actionLabels[transaction.action_type] || transaction.description || t("points.activity");
   const date = new Date(transaction.created_at);
-  const timeAgo = getTimeAgo(date);
+  const timeAgo = getTimeAgo(date, t, locale);
 
   return (
     <div className="px-4 py-3 flex items-center justify-between">
@@ -215,24 +219,28 @@ function TransactionItem({ transaction }: { transaction: PointTransaction }) {
   );
 }
 
-function getTimeAgo(date: Date): string {
+function getTimeAgo(
+  date: Date,
+  t: (key: any, params?: Record<string, string | number>) => string,
+  locale: string
+): string {
   const now = new Date();
   const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
 
   if (diffInSeconds < 60) {
-    return "방금 전";
+    return t("points.justNow");
   }
   if (diffInSeconds < 3600) {
-    return `${Math.floor(diffInSeconds / 60)}분 전`;
+    return t("points.minutesAgo", { count: Math.floor(diffInSeconds / 60) });
   }
   if (diffInSeconds < 86400) {
-    return `${Math.floor(diffInSeconds / 3600)}시간 전`;
+    return t("points.hoursAgo", { count: Math.floor(diffInSeconds / 3600) });
   }
   if (diffInSeconds < 604800) {
-    return `${Math.floor(diffInSeconds / 86400)}일 전`;
+    return t("points.daysAgo", { count: Math.floor(diffInSeconds / 86400) });
   }
 
-  return date.toLocaleDateString("ko-KR", {
+  return date.toLocaleDateString(locale === "ko" ? "ko-KR" : "en-US", {
     month: "short",
     day: "numeric",
   });

@@ -3,6 +3,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/lib/i18n";
 
 interface OCRStatusBadgeProps {
   status: "processing" | "completed" | "failed" | null;
@@ -13,25 +14,27 @@ interface OCRStatusBadgeProps {
  * OCR 처리 상태 배지 컴포넌트
  */
 export function OCRStatusBadge({ status, className }: OCRStatusBadgeProps) {
+  const { t } = useTranslation();
+
   if (!status) {
     return null;
   }
 
   const statusConfig = {
     processing: {
-      label: "OCR 처리 중",
+      label: t("notes.ocrProcessing"),
       icon: Loader2,
       variant: "secondary" as const,
       className: "animate-spin",
     },
     completed: {
-      label: "OCR 완료",
+      label: t("notes.ocrCompleted"),
       icon: CheckCircle2,
       variant: "default" as const,
       className: "",
     },
     failed: {
-      label: "OCR 실패",
+      label: t("notes.ocrFailed"),
       icon: AlertCircle,
       variant: "destructive" as const,
       className: "",

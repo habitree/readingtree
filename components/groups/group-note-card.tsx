@@ -37,6 +37,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import type { NoteType } from "@/types/group";
+import { useTranslation } from "@/lib/i18n";
 
 interface GroupNoteCardProps {
   note: {
@@ -60,31 +61,31 @@ interface GroupNoteCardProps {
   onUnshare?: (noteId: string) => void;
 }
 
-const noteTypeConfig = {
+const noteTypeConfigBase = {
   quote: {
     icon: Quote,
-    label: "인용구",
+    labelKey: "groups.noteTypeQuote" as const,
     color: "text-amber-600",
     bgColor: "bg-amber-50 dark:bg-amber-950/30",
     borderColor: "border-l-amber-400",
   },
   photo: {
     icon: Camera,
-    label: "사진",
+    labelKey: "groups.noteTypePhoto" as const,
     color: "text-blue-600",
     bgColor: "bg-blue-50 dark:bg-blue-950/30",
     borderColor: "border-l-blue-400",
   },
   memo: {
     icon: FileText,
-    label: "메모",
+    labelKey: "groups.noteTypeMemo" as const,
     color: "text-green-600",
     bgColor: "bg-green-50 dark:bg-green-950/30",
     borderColor: "border-l-green-400",
   },
   transcription: {
     icon: ScanText,
-    label: "사진 필사",
+    labelKey: "groups.noteTypeTranscription" as const,
     color: "text-purple-600",
     bgColor: "bg-purple-50 dark:bg-purple-950/30",
     borderColor: "border-l-purple-400",
@@ -99,10 +100,11 @@ export function GroupNoteCard({
   currentUserId,
   onUnshare,
 }: GroupNoteCardProps) {
+  const { t } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(false);
   const [showUnshareDialog, setShowUnshareDialog] = useState(false);
 
-  const config = noteTypeConfig[note.type];
+  const config = noteTypeConfigBase[note.type];
   const TypeIcon = config.icon;
   const isOwner = currentUserId === note.user_id;
 
@@ -140,7 +142,7 @@ export function GroupNoteCard({
                   {note.users.name}
                 </Link>
                 <p className="text-xs text-muted-foreground">
-                  {formatSmartDate(sharedAt)} 공유
+                  {t("groups.sharedAt").replace("{date}", formatSmartDate(sharedAt))}
                 </p>
               </div>
             </div>
@@ -150,7 +152,7 @@ export function GroupNoteCard({
                 className={`${config.bgColor} ${config.color} border-0`}
               >
                 <TypeIcon className="mr-1 h-3 w-3" />
-                <span className="hidden sm:inline">{config.label}</span>
+                <span className="hidden sm:inline">{t(config.labelKey)}</span>
               </Badge>
               {isOwner && onUnshare && (
                 <DropdownMenu>
@@ -167,7 +169,7 @@ export function GroupNoteCard({
                     <DropdownMenuItem asChild>
                       <Link href={`/notes/${note.id}`}>
                         <ExternalLink className="mr-2 h-4 w-4" />
-                        기록 보기
+                        {t("groups.viewNote")}
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem
@@ -175,7 +177,7 @@ export function GroupNoteCard({
                       className="text-destructive focus:text-destructive"
                     >
                       <Trash2 className="mr-2 h-4 w-4" />
-                      공유 해제
+                      {t("groups.unshare")}
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -193,7 +195,7 @@ export function GroupNoteCard({
             <div className="relative aspect-video w-full rounded-lg overflow-hidden bg-muted">
               <Image
                 src={getImageUrl(note.image_url)}
-                alt="기록 이미지"
+                alt={t("notes.noteContent")}
                 fill
                 className="object-cover"
                 sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 600px"
@@ -222,12 +224,12 @@ export function GroupNoteCard({
                   {isExpanded ? (
                     <>
                       <ChevronUp className="mr-1 h-3 w-3" />
-                      접기
+                      {t("common.showLess")}
                     </>
                   ) : (
                     <>
                       <ChevronDown className="mr-1 h-3 w-3" />
-                      더 보기
+                      {t("common.seeMore")}
                     </>
                   )}
                 </Button>
@@ -258,7 +260,7 @@ export function GroupNoteCard({
               </div>
             )}
             <span className="ml-auto">
-              {formatSmartDate(note.created_at)} 작성
+              {t("groups.writtenAtDate").replace("{date}", formatSmartDate(note.created_at))}
             </span>
           </div>
         </CardContent>
@@ -267,18 +269,18 @@ export function GroupNoteCard({
       <AlertDialog open={showUnshareDialog} onOpenChange={setShowUnshareDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>공유를 해제하시겠어요?</AlertDialogTitle>
+            <AlertDialogTitle>{t("groups.unshareConfirmTitle")}</AlertDialogTitle>
             <AlertDialogDescription>
-              이 기록이 모임 피드에서 사라집니다. 원본 기록은 그대로 유지됩니다.
+              {t("groups.unshareConfirmDesc")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>취소</AlertDialogCancel>
+            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleUnshare}
               variant="destructive"
             >
-              공유 해제
+              {t("groups.unshare")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

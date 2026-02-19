@@ -13,6 +13,7 @@ import {
 import { parseNoteContentFields } from "@/lib/utils/note";
 import { BookLinkRenderer } from "@/components/notes/book-link-renderer";
 import { Quote, MessageCircle, ChevronRight } from "lucide-react";
+import { useTranslation } from "@/lib/i18n";
 
 interface NoteContentViewerProps {
   content: string | null;
@@ -32,6 +33,7 @@ export function NoteContentViewer({
   maxLength = 100,
   compact = false,
 }: NoteContentViewerProps) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
 
   if (!content) {
@@ -80,7 +82,7 @@ export function NoteContentViewer({
                 size="sm"
                 className="h-5 px-1.5 text-[10px] text-primary hover:text-primary/80 -ml-1"
               >
-                전체보기
+                {t("notes.viewFullLabel")}
                 <ChevronRight className="ml-0.5 h-3 w-3" />
               </Button>
             </DialogTrigger>
@@ -105,7 +107,7 @@ export function NoteContentViewer({
         <div className="space-y-1.5">
           <div className="flex items-center gap-1.5 text-primary">
             <Quote className="h-3.5 w-3.5" />
-            <span className="text-xs font-medium">인상깊은 구절</span>
+            <span className="text-xs font-medium">{t("notes.impressiveQuote")}</span>
           </div>
           <div className="pl-3 border-l-2 border-primary/40 bg-primary/5 rounded-r-lg py-2 pr-3">
             <p className="text-sm leading-relaxed whitespace-pre-wrap">
@@ -120,7 +122,7 @@ export function NoteContentViewer({
         <div className="space-y-1.5">
           <div className="flex items-center gap-1.5 text-muted-foreground">
             <MessageCircle className="h-3.5 w-3.5" />
-            <span className="text-xs font-medium">내 생각</span>
+            <span className="text-xs font-medium">{t("notes.myThought")}</span>
           </div>
           <div className="bg-muted/40 rounded-lg p-3">
             <p className="text-sm leading-relaxed whitespace-pre-wrap text-muted-foreground">
@@ -156,11 +158,12 @@ function FullContentDialog({
   hasQuote: boolean;
   hasMemo: boolean;
 }) {
+  const { t } = useTranslation();
   return (
     <DialogContent className="w-[calc(100vw-2rem)] max-w-2xl max-h-[85vh] sm:max-h-[80vh] overflow-y-auto p-4 sm:p-6">
       <DialogHeader className="pb-3">
-        <DialogTitle className="text-base sm:text-lg">기록 내용</DialogTitle>
-        <DialogDescription className="text-xs sm:text-sm">전체 내용을 확인하세요</DialogDescription>
+        <DialogTitle className="text-base sm:text-lg">{t("notes.noteContent")}</DialogTitle>
+        <DialogDescription className="text-xs sm:text-sm">{t("notes.viewFullContentDesc")}</DialogDescription>
       </DialogHeader>
       <div className="space-y-5">
         {/* 구절 */}
@@ -168,7 +171,7 @@ function FullContentDialog({
           <div className="space-y-2">
             <div className="flex items-center gap-1.5 text-primary">
               <Quote className="h-4 w-4" />
-              <h4 className="text-sm font-semibold">인상깊은 구절</h4>
+              <h4 className="text-sm font-semibold">{t("notes.impressiveQuote")}</h4>
             </div>
             <div className="pl-4 border-l-2 border-primary bg-primary/5 rounded-r-lg py-3 pr-4">
               <p className="text-sm sm:text-base whitespace-pre-wrap leading-relaxed">
@@ -183,7 +186,7 @@ function FullContentDialog({
           <div className="space-y-2">
             <div className="flex items-center gap-1.5 text-muted-foreground">
               <MessageCircle className="h-4 w-4" />
-              <h4 className="text-sm font-semibold">내 생각</h4>
+              <h4 className="text-sm font-semibold">{t("notes.myThought")}</h4>
             </div>
             <div className="bg-muted/50 rounded-lg p-4">
               <p className="text-sm sm:text-base whitespace-pre-wrap leading-relaxed">
@@ -196,7 +199,7 @@ function FullContentDialog({
         {/* 페이지 */}
         {pageNumber && (
           <p className="text-sm text-muted-foreground pt-2 border-t">
-            페이지 {pageNumber}
+            {t("notes.pageLabel", { page: pageNumber })}
           </p>
         )}
       </div>

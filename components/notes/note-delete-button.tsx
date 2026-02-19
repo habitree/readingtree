@@ -17,6 +17,7 @@ import {
 import { deleteNote } from "@/app/actions/notes";
 import { toast } from "sonner";
 import { Trash2, Loader2 } from "lucide-react";
+import { useTranslation } from "@/lib/i18n";
 
 interface NoteDeleteButtonProps {
   noteId: string;
@@ -27,6 +28,7 @@ interface NoteDeleteButtonProps {
  * 확인 후 기록을 삭제합니다
  */
 export function NoteDeleteButton({ noteId }: NoteDeleteButtonProps) {
+  const { t } = useTranslation();
   const router = useRouter();
   const [isDeleting, setIsDeleting] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
@@ -35,13 +37,13 @@ export function NoteDeleteButton({ noteId }: NoteDeleteButtonProps) {
     setIsDeleting(true);
     try {
       await deleteNote(noteId);
-      toast.success("삭제됨");
+      toast.success(t("notes.deleted"));
       setIsOpen(false);
       router.push("/notes");
     } catch (error) {
       console.error("기록 삭제 오류:", error);
       toast.error(
-        error instanceof Error ? error.message : "기록 삭제에 실패했습니다."
+        error instanceof Error ? error.message : t("notes.deleteError")
       );
     } finally {
       setIsDeleting(false);
@@ -61,15 +63,15 @@ export function NoteDeleteButton({ noteId }: NoteDeleteButtonProps) {
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>기록 삭제 확인</AlertDialogTitle>
+          <AlertDialogTitle>{t("notes.deleteConfirmTitle")}</AlertDialogTitle>
           <AlertDialogDescription>
-            정말로 이 기록을 삭제하시겠습니까?
+            {t("notes.deleteConfirmDesc")}
             <br />
-            이 작업은 되돌릴 수 없습니다.
+            {t("notes.deleteIrreversible")}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={isDeleting}>취소</AlertDialogCancel>
+          <AlertDialogCancel disabled={isDeleting}>{t("notes.cancel")}</AlertDialogCancel>
           <AlertDialogAction
             onClick={handleDelete}
             disabled={isDeleting}
@@ -78,12 +80,12 @@ export function NoteDeleteButton({ noteId }: NoteDeleteButtonProps) {
             {isDeleting ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                삭제 중...
+                {t("notes.deleting")}
               </>
             ) : (
               <>
                 <Trash2 className="mr-2 h-4 w-4" />
-                삭제
+                {t("notes.deleteAction")}
               </>
             )}
           </AlertDialogAction>

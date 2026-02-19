@@ -22,6 +22,7 @@ import {
 import { cn } from "@/lib/utils";
 import confetti from "canvas-confetti";
 import Link from "next/link";
+import { useTranslation } from "@/lib/i18n";
 
 /**
  * 온보딩 체크리스트 아이템 정의
@@ -37,43 +38,33 @@ export interface OnboardingItem {
   completed: boolean;
 }
 
-export const ONBOARDING_CHECKLIST: Omit<OnboardingItem, "completed">[] = [
+export const ONBOARDING_CHECKLIST: Omit<OnboardingItem, "completed" | "title" | "description">[] = [
   {
     id: "first_book",
-    title: "첫 번째 책 등록하기",
-    description: "읽고 싶은 책을 서재에 추가해보세요",
     reward: 35,
     icon: "book",
     href: "/books/search",
   },
   {
     id: "first_note",
-    title: "첫 기록 작성하기",
-    description: "인상적인 구절이나 생각을 기록해보세요",
     reward: 25,
     icon: "note",
     href: "/notes/new",
   },
   {
     id: "water_tree",
-    title: "나무에 물주기",
-    description: "나무를 돌보며 독서 습관을 키워요",
     reward: 10,
     icon: "water",
     href: "/tree",
   },
   {
     id: "set_goal",
-    title: "독서 목표 설정하기",
-    description: "올해 몇 권을 읽을지 목표를 세워요",
     reward: 20,
     icon: "goal",
     href: "/profile",
   },
   {
     id: "explore_persona",
-    title: "독서 페르소나 확인하기",
-    description: "나만의 독서 스타일을 알아보세요",
     reward: 15,
     icon: "persona",
     href: "/profile/persona",
@@ -103,6 +94,7 @@ export function OnboardingChecklist({
   onDismiss,
   className,
 }: OnboardingChecklistProps) {
+  const { t } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(true);
   const [celebratedItems, setCelebratedItems] = useState<Set<string>>(new Set());
 
@@ -151,17 +143,17 @@ export function OnboardingChecklist({
               </div>
               <div>
                 <p className="font-semibold text-green-700 dark:text-green-300">
-                  축하합니다! 온보딩을 완료했어요!
+                  {t("onboardingChecklist.congrats")}
                 </p>
                 <p className="text-sm text-green-600/80 dark:text-green-400/80">
-                  총 {totalReward} 포인트를 획득했어요
+                  {t("onboardingChecklist.totalPoints", { count: totalReward })}
                 </p>
               </div>
             </div>
             <button
               onClick={onDismiss}
               className="p-1 hover:bg-green-200/50 dark:hover:bg-green-800/50 rounded-full transition-colors"
-              aria-label="닫기"
+              aria-label={t("onboardingChecklist.closeAriaLabel")}
             >
               <X className="h-4 w-4 text-green-600 dark:text-green-400" />
             </button>
@@ -190,14 +182,14 @@ export function OnboardingChecklist({
             <div className="text-left">
               <div className="flex items-center gap-2">
                 <h3 className="font-semibold text-slate-900 dark:text-white text-sm">
-                  시작 가이드
+                  {t("onboardingChecklist.startGuide")}
                 </h3>
                 <Badge variant="secondary" className="text-xs">
                   {completedCount}/{totalCount}
                 </Badge>
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                완료하고 {totalReward}p 받기
+                {t("onboardingChecklist.completeForPoints", { count: totalReward })}
               </p>
             </div>
           </div>

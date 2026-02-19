@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useTranslation } from "@/lib/i18n";
 import {
   Plus,
   MessageSquare,
@@ -54,6 +55,7 @@ export function ChatSidebar({
   onToggleCollapse,
   onClose,
 }: ChatSidebarProps) {
+  const { t } = useTranslation();
   const [deleteSessionId, setDeleteSessionId] = useState<string | null>(null);
   const [showDeleteAllDialog, setShowDeleteAllDialog] = useState(false);
 
@@ -99,7 +101,7 @@ export function ChatSidebar({
       <div className="flex h-full w-64 flex-col border-r bg-background">
         {/* 헤더 */}
         <div className="flex items-center justify-between border-b p-4">
-          <h2 className="font-semibold">대화 목록</h2>
+          <h2 className="font-semibold">{t("chat.chatHistory")}</h2>
           <div className="flex gap-1">
             <Button variant="ghost" size="icon" onClick={onNewSession}>
               <Plus className="h-5 w-5" />
@@ -122,9 +124,7 @@ export function ChatSidebar({
           <div className="p-2">
             {sessions.length === 0 ? (
               <div className="py-8 text-center text-sm text-muted-foreground">
-                대화가 없습니다.
-                <br />
-                새 대화를 시작해보세요!
+                {t("chat.noChats")}
               </div>
             ) : (
               sessions.map((session) => (
@@ -142,12 +142,12 @@ export function ChatSidebar({
                     <MessageSquare className="h-4 w-4 shrink-0 text-muted-foreground" />
                     <div className="min-w-0 flex-1">
                       <div className="truncate text-sm font-medium">
-                        {session.title || "새 대화"}
+                        {session.title || t("chat.newChat")}
                       </div>
                       <div className="text-xs text-muted-foreground">
                         {session.last_message_at
                           ? new Date(session.last_message_at).toLocaleDateString("ko-KR")
-                          : "날짜 없음"}
+                          : t("chat.noDate")}
                       </div>
                     </div>
                   </button>
@@ -168,7 +168,7 @@ export function ChatSidebar({
                         className="text-destructive focus:text-destructive"
                       >
                         <Trash2 className="mr-2 h-4 w-4" />
-                        삭제
+                        {t("common.delete")}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -188,7 +188,7 @@ export function ChatSidebar({
               onClick={() => setShowDeleteAllDialog(true)}
             >
               <Trash2 className="mr-2 h-4 w-4" />
-              모든 대화 삭제
+              {t("chat.deleteAllChats")}
             </Button>
           </div>
         )}
@@ -201,18 +201,18 @@ export function ChatSidebar({
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>대화 삭제</AlertDialogTitle>
+            <AlertDialogTitle>{t("chat.deleteChat")}</AlertDialogTitle>
             <AlertDialogDescription>
-              이 대화를 삭제하시겠습니까? 삭제된 대화는 복구할 수 없습니다.
+              {t("chat.deleteChatConfirm")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>취소</AlertDialogCancel>
+            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteConfirm}
               variant="destructive"
             >
-              삭제
+              {t("common.delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -225,20 +225,18 @@ export function ChatSidebar({
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>모든 대화 삭제</AlertDialogTitle>
+            <AlertDialogTitle>{t("chat.deleteAllChats")}</AlertDialogTitle>
             <AlertDialogDescription>
-              정말 모든 대화 기록({sessions.length}개)을 삭제하시겠습니까?
-              <br />
-              삭제된 대화는 복구할 수 없습니다.
+              {t("chat.deleteAllChatsConfirm", { count: sessions.length })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>취소</AlertDialogCancel>
+            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteAllConfirm}
               variant="destructive"
             >
-              모두 삭제
+              {t("chat.deleteAll")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

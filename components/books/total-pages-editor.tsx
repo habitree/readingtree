@@ -34,6 +34,7 @@ import {
   refreshBookPageCount,
 } from "@/app/actions/books";
 import { toast } from "sonner";
+import { useTranslation } from "@/lib/i18n";
 
 interface TotalPagesEditorProps {
   bookId: string;
@@ -53,6 +54,7 @@ export function TotalPagesEditor({
   totalPages: initialTotalPages,
   onUpdate,
 }: TotalPagesEditorProps) {
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const [totalPages, setTotalPages] = useState(initialTotalPages);
   const [inputValue, setInputValue] = useState(
@@ -67,7 +69,7 @@ export function TotalPagesEditor({
     const newPages = parseInt(inputValue, 10);
 
     if (isNaN(newPages) || newPages < 1 || newPages > 10000) {
-      toast.error("페이지 수는 1~10,000 사이여야 해요.");
+      toast.error(t("books.pageRangeError"));
       return;
     }
 
@@ -79,13 +81,13 @@ export function TotalPagesEditor({
           setTotalPages(newPages);
           setLastSource("manual");
           onUpdate?.(newPages);
-          toast.success("페이지 수가 저장됐어요.");
+          toast.success(t("books.pagesSavedSuccess"));
           setIsOpen(false);
         } else {
-          toast.error(result.error || "저장에 실패했어요.");
+          toast.error(result.error || t("books.pagesSaveFailed"));
         }
       } catch (error) {
-        toast.error("저장 중 오류가 생겼어요.");
+        toast.error(t("books.pageSaveError"));
       }
     });
   };
@@ -93,7 +95,7 @@ export function TotalPagesEditor({
   // API에서 자동 조회
   const handleRefresh = async () => {
     if (!isbn) {
-      toast.error("ISBN이 없어 자동 조회가 불가능해요.");
+      toast.error(t("books.noIsbnError"));
       return;
     }
 
@@ -109,28 +111,28 @@ export function TotalPagesEditor({
         onUpdate?.(result.pageCount);
 
         const sourceNames: Record<string, string> = {
-          nl_seoji: "국립중앙도서관",
-          aladin: "알라딘",
-          google_books: "Google Books",
+          nl_seoji: t("books.sourceNlSeoji"),
+          aladin: t("books.sourceAladin"),
+          google_books: t("books.sourceGoogleBooks"),
         };
-        const sourceName = result.source ? sourceNames[result.source] || result.source : "알 수 없음";
+        const sourceName = result.source ? sourceNames[result.source] || result.source : t("books.sourceUnknown");
 
-        toast.success(`페이지 수를 찾았어요: ${result.pageCount}p (${sourceName})`);
+        toast.success(t("books.pageFoundSuccess", { count: result.pageCount, source: sourceName }));
       } else {
-        toast.error(result.error || "페이지 수를 찾을 수 없어요.");
+        toast.error(result.error || t("books.pageNotFoundError"));
       }
     } catch (error) {
-      toast.error("조회 중 오류가 생겼어요.");
+      toast.error(t("books.pageLookupError"));
     } finally {
       setIsRefreshing(false);
     }
   };
 
   const sourceLabels: Record<string, { label: string; color: string }> = {
-    nl_seoji: { label: "국립중앙도서관", color: "bg-blue-100 text-blue-800" },
-    aladin: { label: "알라딘", color: "bg-purple-100 text-purple-800" },
-    google_books: { label: "Google", color: "bg-green-100 text-green-800" },
-    manual: { label: "수동 입력", color: "bg-gray-100 text-gray-800" },
+    nl_seoji: { label: t("books.sourceNlSeoji"), color: "bg-blue-100 text-blue-800" },
+    aladin: { label: t("books.sourceAladin"), color: "bg-purple-100 text-purple-800" },
+    google_books: { label: t("books.sourceGoogleBooks"), color: "bg-green-100 text-green-800" },
+    manual: { label: t("books.sourceManual"), color: "bg-gray-100 text-gray-800" },
   };
 
   return (
@@ -150,7 +152,7 @@ export function TotalPagesEditor({
           ) : (
             <span className="flex items-center gap-1 text-xs">
               <AlertCircle className="h-3 w-3" />
-              페이지 수 설정
+              {t("books.setPageCount")}
             </span>
           )}
         </Button>
@@ -160,10 +162,10 @@ export function TotalPagesEditor({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <BookOpen className="h-5 w-5" />
-            총 페이지 수 설정
+            {t("books.totalPagesSetting")}
           </DialogTitle>
           <DialogDescription>
-            책의 총 페이지 수를 설정하면 읽기 진행률을 정확하게 추적할 수 있습니다.
+            {t("books.totalPagesDesc")}
           </DialogDescription>
         </DialogHeader>
 
@@ -171,9 +173,9 @@ export function TotalPagesEditor({
           {/* 현재 값 표시 */}
           {totalPages && (
             <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-              <span className="text-sm text-muted-foreground">현재 설정값</span>
+              <span className="text-sm text-muted-foreground">{t("books.currentValue")}</span>
               <div className="flex items-center gap-2">
-                <span className="font-medium">{totalPages} 페이지</span>
+                <span className="font-medium">{t("books.pagesCount", { count: totalPages })}</span>
                 {lastSource && sourceLabels[lastSource] && (
                   <Badge
                     variant="secondary"
@@ -189,7 +191,7 @@ export function TotalPagesEditor({
           {/* 자동 조회 버튼 */}
           {isbn && (
             <div className="space-y-2">
-              <Label className="text-sm font-medium">자동 조회</Label>
+              <Label className="text-sm font-medium">{t("books.autoLookup")}</Label>
               <Button
                 variant="outline"
                 className="w-full justify-start"
@@ -201,10 +203,10 @@ export function TotalPagesEditor({
                 ) : (
                   <Sparkles className="h-4 w-4 mr-2" />
                 )}
-                ISBN으로 페이지 수 자동 조회
+                {t("books.autoLookupByIsbn")}
               </Button>
               <p className="text-xs text-muted-foreground">
-                국립중앙도서관, 알라딘, Google Books에서 검색합니다.
+                {t("books.autoLookupDesc")}
               </p>
             </div>
           )}
@@ -217,7 +219,7 @@ export function TotalPagesEditor({
               </div>
               <div className="relative flex justify-center text-xs uppercase">
                 <span className="bg-background px-2 text-muted-foreground">
-                  또는
+                  {t("books.orDivider")}
                 </span>
               </div>
             </div>
@@ -226,7 +228,7 @@ export function TotalPagesEditor({
           {/* 수동 입력 */}
           <div className="space-y-2">
             <Label htmlFor="totalPages" className="text-sm font-medium">
-              직접 입력
+              {t("books.manualInput")}
             </Label>
             <div className="flex items-center gap-2">
               <Input
@@ -234,13 +236,13 @@ export function TotalPagesEditor({
                 type="number"
                 min={1}
                 max={10000}
-                placeholder="예: 320"
+                placeholder={t("books.examplePages")}
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 disabled={isPending || isRefreshing}
                 className="flex-1"
               />
-              <span className="text-sm text-muted-foreground">페이지</span>
+              <span className="text-sm text-muted-foreground">{t("books.pageUnit")}</span>
             </div>
           </div>
         </div>
@@ -251,7 +253,7 @@ export function TotalPagesEditor({
             onClick={() => setIsOpen(false)}
             disabled={isPending || isRefreshing}
           >
-            취소
+            {t("books.cancelLabel")}
           </Button>
           <Button onClick={handleSave} disabled={isPending || isRefreshing || !inputValue}>
             {isPending ? (
@@ -259,7 +261,7 @@ export function TotalPagesEditor({
             ) : (
               <Check className="h-4 w-4 mr-2" />
             )}
-            저장
+            {t("books.saveLabel")}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -275,6 +277,7 @@ export function TotalPagesBadge({
 }: {
   totalPages: number | null | undefined;
 }) {
+  const { t } = useTranslation();
   if (!totalPages) return null;
 
   return (
@@ -287,7 +290,7 @@ export function TotalPagesBadge({
           </Badge>
         </TooltipTrigger>
         <TooltipContent>
-          <p>총 {totalPages} 페이지</p>
+          <p>{t("books.totalPagesLabel", { count: totalPages })}</p>
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>
@@ -306,11 +309,12 @@ export function RefreshPageCountButton({
   isbn?: string | null;
   onUpdate?: (pageCount: number) => void;
 }) {
+  const { t } = useTranslation();
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const handleRefresh = async () => {
     if (!isbn) {
-      toast.error("ISBN이 없어 조회할 수 없어요.");
+      toast.error(t("books.noIsbnRefreshError"));
       return;
     }
 
@@ -323,10 +327,10 @@ export function RefreshPageCountButton({
         onUpdate?.(result.pageCount);
         toast.success(`${result.pageCount}p (${result.source})`);
       } else {
-        toast.error(result.error || "조회 실패");
+        toast.error(result.error || t("books.refreshFailed"));
       }
     } catch {
-      toast.error("오류 발생");
+      toast.error(t("books.refreshError"));
     } finally {
       setIsRefreshing(false);
     }
@@ -351,7 +355,7 @@ export function RefreshPageCountButton({
           </Button>
         </TooltipTrigger>
         <TooltipContent>
-          <p>페이지 수 다시 조회</p>
+          <p>{t("books.refreshPageCount")}</p>
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>

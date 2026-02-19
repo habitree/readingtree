@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { getUserPoints } from "@/app/actions/points";
+import { useTranslation } from "@/lib/i18n";
 import { LEVEL_STYLES, type UserPoints } from "@/types/points";
 
 const PointsModal = dynamic(
@@ -30,6 +31,7 @@ interface PointsButtonProps {
  * - 포인트 변경 시 애니메이션 효과
  */
 export function PointsButton({ className }: PointsButtonProps) {
+  const { t } = useTranslation();
   const [userPoints, setUserPoints] = useState<UserPoints | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
@@ -92,7 +94,7 @@ export function PointsButton({ className }: PointsButtonProps) {
                 className
               )}
               onClick={() => setIsModalOpen(true)}
-              aria-label="포인트 대시보드"
+              aria-label={t("points.pointsDashboardAriaLabel")}
             >
               {/* 레벨 이모지 - 개선된 애니메이션 */}
               <motion.span
@@ -179,10 +181,10 @@ export function PointsButton({ className }: PointsButtonProps) {
               <div className="text-xs text-muted-foreground">
                 {hasStreak && (
                   <span className="text-orange-500 mr-2">
-                    {userPoints.current_streak}일 연속
+                    {t("points.consecutiveDaysLabel", { count: userPoints.current_streak })}
                   </span>
                 )}
-                클릭하여 대시보드 열기
+                {t("points.openDashboard")}
               </div>
             </div>
           </div>

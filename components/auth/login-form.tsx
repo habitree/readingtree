@@ -14,19 +14,22 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Loader2, ChevronDown } from "lucide-react";
 import Link from "next/link";
+import { useTranslation, type TranslationKey } from "@/lib/i18n";
 
-const loginFormSchema = z.object({
-  email: z.string().email("유효한 이메일 주소를 입력해주세요."),
-  password: z.string().min(1, "비밀번호를 입력해주세요."),
-});
+const createLoginFormSchema = (t: (key: TranslationKey) => string) =>
+  z.object({
+    email: z.string().email(t("auth.invalidEmail")),
+    password: z.string().min(1, t("auth.passwordRequired")),
+  });
 
-type LoginFormValues = z.infer<typeof loginFormSchema>;
+type LoginFormValues = z.infer<ReturnType<typeof createLoginFormSchema>>;
 
 /**
  * 로그인 폼 컴포넌트
  * 소셜 로그인 버튼과 이메일/비밀번호 로그인을 모두 지원
  */
 export function LoginForm() {
+  const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState<"kakao" | "google" | "email" | null>(null);
   const [showEmailLogin, setShowEmailLogin] = useState(false);
 
@@ -35,7 +38,7 @@ export function LoginForm() {
     handleSubmit,
     formState: { errors },
   } = useForm<LoginFormValues>({
-    resolver: zodResolver(loginFormSchema),
+    resolver: zodResolver(createLoginFormSchema(t)),
     defaultValues: {
       email: "",
       password: "",
@@ -60,7 +63,7 @@ export function LoginForm() {
       toast.error(
         error instanceof Error
           ? error.message
-          : "로그인에 실패했습니다. 다시 시도해주세요."
+          : t("auth.loginFailed")
       );
     }
   };
@@ -77,7 +80,7 @@ export function LoginForm() {
         <div className="space-y-3">
           <SocialLoginButtons />
           <p className="text-xs text-center text-muted-foreground">
-            가장 빠르게 시작할 수 있어요
+            {t("auth.quickestWay")}
           </p>
         </div>
 
@@ -88,14 +91,14 @@ export function LoginForm() {
             onClick={() => setShowEmailLogin(!showEmailLogin)}
             className="flex items-center justify-center gap-1.5 w-full text-sm text-muted-foreground hover:text-foreground transition-colors duration-200 py-2"
           >
-            <span>다른 방법으로 로그인</span>
+            <span>{t("auth.otherLoginMethods")}</span>
             <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${showEmailLogin ? "rotate-180" : ""}`} />
           </button>
 
           {showEmailLogin && (
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 mt-3">
               <div className="space-y-2">
-                <Label htmlFor="email">이메일</Label>
+                <Label htmlFor="email">{t("auth.email")}</Label>
                 <Input
                   id="email"
                   type="email"
@@ -109,11 +112,11 @@ export function LoginForm() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="password">비밀번호</Label>
+                <Label htmlFor="password">{t("auth.password")}</Label>
                 <Input
                   id="password"
                   type="password"
-                  placeholder="비밀번호"
+                  placeholder={t("auth.password")}
                   disabled={isLoading !== null}
                   {...register("password")}
                 />
@@ -131,10 +134,10 @@ export function LoginForm() {
                 {isLoading === "email" ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    로그인 중...
+                    {t("auth.loggingIn")}
                   </>
                 ) : (
-                  "로그인"
+                  t("auth.login")
                 )}
               </Button>
             </form>
@@ -142,14 +145,14 @@ export function LoginForm() {
         </div>
 
         <p className="text-xs text-center text-muted-foreground">
-          로그인 시 이용약관 및 개인정보처리방침에 동의한 것으로 간주됩니다.
+          {t("auth.loginTermsNotice")}
         </p>
 
         <div className="text-center">
           <p className="text-sm text-muted-foreground">
-            계정이 없나요?{" "}
+            {t("auth.dontHaveAccount")}{" "}
             <Link href="/signup" className="text-primary hover:underline font-medium">
-              회원가입
+              {t("auth.signup")}
             </Link>
           </p>
         </div>
@@ -157,11 +160,11 @@ export function LoginForm() {
         <div className="pt-4 border-t">
           <div className="flex flex-wrap justify-center gap-x-4 gap-y-2 text-xs text-muted-foreground">
             <Link href="/terms" className="hover:text-foreground hover:underline">
-              이용약관
+              {t("auth.termsOfService")}
             </Link>
             <span className="text-muted-foreground/50">|</span>
             <Link href="/privacy" className="hover:text-foreground hover:underline">
-              개인정보처리방침
+              {t("auth.privacyPolicy")}
             </Link>
           </div>
         </div>

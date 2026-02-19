@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { AlertCircle } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from "@/lib/i18n";
 
 interface BookLinkRendererProps {
   text: string;
@@ -16,6 +17,7 @@ interface BookLinkRendererProps {
  * 서버 컴포넌트에서 사용할 수 있도록 분리
  */
 export function BookLinkRenderer({ text, className }: BookLinkRendererProps) {
+  const { t } = useTranslation();
   const parts = parseBookLinkParts(text);
   const router = useRouter();
   const [invalidLinks, setInvalidLinks] = useState<Set<string>>(new Set());
@@ -26,7 +28,7 @@ export function BookLinkRenderer({ text, className }: BookLinkRendererProps) {
     
     // 이미 유효하지 않은 링크로 표시된 경우 클릭 방지
     if (invalidLinks.has(userBookId)) {
-      toast.error("이 책은 삭제됐거나 더 이상 접근할 수 없어요.");
+      toast.error(t("notes.bookDeletedOrInaccessible"));
       return;
     }
 
@@ -48,7 +50,7 @@ export function BookLinkRenderer({ text, className }: BookLinkRendererProps) {
                   ? "text-muted-foreground line-through cursor-not-allowed" 
                   : "text-primary hover:underline font-medium underline decoration-primary/50 cursor-pointer"
                 }
-                title={isInvalid ? "이 책은 삭제되었거나 더 이상 접근할 수 없습니다." : undefined}
+                title={isInvalid ? t("notes.bookDeletedTitle") : undefined}
               >
                 {part.content}
               </button>

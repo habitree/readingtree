@@ -8,6 +8,7 @@ import { OCRStatusBadge } from "./ocr-status-badge";
 import { Button } from "@/components/ui/button";
 import { RefreshCw } from "lucide-react";
 import { getNoteDetail } from "@/app/actions/notes";
+import { useTranslation } from "@/lib/i18n";
 
 interface OCRStatusCheckerProps {
   noteId: string;
@@ -24,6 +25,7 @@ export function OCRStatusChecker({
   noteType,
   hasImage,
 }: OCRStatusCheckerProps) {
+  const { t } = useTranslation();
   const router = useRouter();
   const [isRetrying, setIsRetrying] = useState(false);
   const { status } = useOCRStatus({
@@ -31,8 +33,8 @@ export function OCRStatusChecker({
     enabled: noteType === "transcription" && hasImage,
     pollInterval: 3000,
     onComplete: () => {
-      toast.success("OCR 처리가 완료됐어요.", {
-        description: "사진 필사 텍스트가 저장됐어요. 기록 상세 페이지에서 확인하세요.",
+      toast.success(t("notes.ocrCompleteToast"), {
+        description: t("notes.ocrCompleteDesc"),
         duration: 5000,
       });
       // 페이지 새로고침하여 최신 데이터 표시
@@ -52,7 +54,7 @@ export function OCRStatusChecker({
       const note = await getNoteDetail(noteId);
       
       if (!note || !note.image_url) {
-        toast.error("기록 또는 이미지를 찾을 수 없습니다.");
+        toast.error(t("notes.noteOrImageNotFound"));
         setIsRetrying(false);
         return;
       }
@@ -70,11 +72,11 @@ export function OCRStatusChecker({
       });
 
       if (!response.ok) {
-        throw new Error("OCR 재시작에 실패했습니다.");
+        throw new Error(t("notes.ocrRetryFailed"));
       }
 
-      toast.success("OCR 처리를 다시 시작했습니다.", {
-        description: "처리 상태를 확인 중입니다...",
+      toast.success(t("notes.ocrRetryStarted"), {
+        description: t("notes.ocrRetryStartedDesc"),
         duration: 3000,
       });
 
@@ -84,7 +86,7 @@ export function OCRStatusChecker({
       }, 1000);
     } catch (error) {
       console.error("OCR 재시작 오류:", error);
-      toast.error("OCR 재시작에 실패했습니다. 다시 시도해주세요.");
+      toast.error(t("notes.ocrRetryFailed"));
     } finally {
       setIsRetrying(false);
     }
@@ -112,7 +114,7 @@ export function OCRStatusChecker({
           className="h-7 text-xs"
         >
           <RefreshCw className={`h-3 w-3 mr-1 ${isRetrying ? "animate-spin" : ""}`} />
-          {isRetrying ? "재시작 중..." : "재실행"}
+          {isRetrying ? t("notes.retrying") : t("notes.retryOcr")}
         </Button>
       </div>
     );

@@ -38,6 +38,7 @@ import {
 } from "@/app/actions/ai";
 import { WELCOME_MESSAGE, EXAMPLE_QUESTIONS } from "@/lib/api/chat-prompts";
 import type { ChatSession, ChatMessage as ChatMessageType, ChatContext } from "@/types/ai";
+import { useTranslation } from "@/lib/i18n";
 
 interface ChatInterfaceProps {
   userId: string;
@@ -46,6 +47,7 @@ interface ChatInterfaceProps {
 }
 
 export function ChatInterface({ userId, userAvatar, userName }: ChatInterfaceProps) {
+  const { t } = useTranslation();
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [currentSession, setCurrentSession] = useState<ChatSession | null>(null);
   const [messages, setMessages] = useState<ChatMessageType[]>([]);
@@ -137,7 +139,7 @@ export function ChatInterface({ userId, userAvatar, userName }: ChatInterfacePro
       setCurrentSession(session);
       setMessages([]);
     } catch (error) {
-      toast.error("새 대화를 만들지 못했어요.");
+      toast.error(t("chat.newSessionFailed"));
     }
   };
 
@@ -150,7 +152,7 @@ export function ChatInterface({ userId, userAvatar, userName }: ChatInterfacePro
         setMessages(data.messages);
       }
     } catch (error) {
-      toast.error("대화를 불러오지 못했어요.");
+      toast.error(t("chat.loadSessionFailed"));
     }
   };
 
@@ -163,9 +165,9 @@ export function ChatInterface({ userId, userAvatar, userName }: ChatInterfacePro
         setCurrentSession(null);
         setMessages([]);
       }
-      toast.success("대화가 삭제됐어요.");
+      toast.success(t("chat.chatDeleted"));
     } catch (error) {
-      toast.error("대화 삭제에 실패했어요.");
+      toast.error(t("chat.chatDeleteFailed"));
     }
   };
 
@@ -176,9 +178,9 @@ export function ChatInterface({ userId, userAvatar, userName }: ChatInterfacePro
       setSessions([]);
       setCurrentSession(null);
       setMessages([]);
-      toast.success(`${result.deletedCount}개의 대화가 삭제됐어요.`);
+      toast.success(t("chat.chatsDeletedCount").replace("{count}", String(result.deletedCount)));
     } catch (error) {
-      toast.error("대화 삭제에 실패했어요.");
+      toast.error(t("chat.chatDeleteFailed"));
     }
   };
 
@@ -187,9 +189,9 @@ export function ChatInterface({ userId, userAvatar, userName }: ChatInterfacePro
     try {
       await deleteChatMessage(messageId);
       setMessages((prev) => prev.filter((m) => m.id !== messageId));
-      toast.success("메시지가 삭제됐어요.");
+      toast.success(t("chat.messageDeleted"));
     } catch (error) {
-      toast.error("메시지 삭제에 실패했어요.");
+      toast.error(t("chat.messageDeleteFailed"));
     }
   };
 
@@ -213,7 +215,7 @@ export function ChatInterface({ userId, userAvatar, userName }: ChatInterfacePro
         // 첫 메시지로 제목 생성
         await generateSessionTitle(sessionId, message);
       } catch (error) {
-        toast.error("새 대화를 만들지 못했어요.");
+        toast.error(t("chat.newSessionFailed"));
         setLastFailedMessage(message);
         return;
       }
@@ -310,7 +312,7 @@ export function ChatInterface({ userId, userAvatar, userName }: ChatInterfacePro
       }
     } catch (error) {
       console.error("메시지 전송 오류:", error);
-      toast.error("메시지 전송에 실패했어요. 재시도해 주세요.");
+      toast.error(t("chat.sendFailed"));
       setStreamingContent("");
       setIsTyping(false);
       setLastFailedMessage(message);
@@ -386,7 +388,7 @@ export function ChatInterface({ userId, userAvatar, userName }: ChatInterfacePro
           </Button>
           <div className="flex-1 min-w-0">
             <span className="block truncate text-sm font-medium">
-              {currentSession?.title || "독서친구"}
+              {currentSession?.title || t("chat.readingFriend")}
             </span>
           </div>
           {/* 새 대화 버튼 */}
@@ -417,7 +419,7 @@ export function ChatInterface({ userId, userAvatar, userName }: ChatInterfacePro
                     className="text-destructive focus:text-destructive"
                   >
                     <Trash2 className="mr-2 h-4 w-4" />
-                    현재 대화 삭제
+                    {t("chat.deleteCurrentChat")}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                 </>
@@ -428,7 +430,7 @@ export function ChatInterface({ userId, userAvatar, userName }: ChatInterfacePro
                   className="text-destructive focus:text-destructive"
                 >
                   <Trash2 className="mr-2 h-4 w-4" />
-                  모든 대화 삭제 ({sessions.length}개)
+                  {t("chat.deleteAllChatsCount").replace("{count}", String(sessions.length))}
                 </DropdownMenuItem>
               )}
             </DropdownMenuContent>
@@ -467,7 +469,7 @@ export function ChatInterface({ userId, userAvatar, userName }: ChatInterfacePro
                       className="gap-2"
                     >
                       <RefreshCw className="h-4 w-4" />
-                      다시 시도
+                      {t("common.retry")}
                     </Button>
                   </div>
                 )}
@@ -489,7 +491,7 @@ export function ChatInterface({ userId, userAvatar, userName }: ChatInterfacePro
                 <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 sm:mb-8 sm:h-16 sm:w-16">
                   <Bot className="h-7 w-7 text-primary sm:h-8 sm:w-8" />
                 </div>
-                <h2 className="mb-2 text-xl font-bold sm:text-2xl">독서친구</h2>
+                <h2 className="mb-2 text-xl font-bold sm:text-2xl">{t("chat.readingFriend")}</h2>
                 <p className="mb-6 max-w-md text-center text-sm text-muted-foreground sm:mb-8 sm:text-base">
                   {WELCOME_MESSAGE}
                 </p>
@@ -522,13 +524,13 @@ export function ChatInterface({ userId, userAvatar, userName }: ChatInterfacePro
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>대화 삭제</AlertDialogTitle>
+            <AlertDialogTitle>{t("chat.deleteChat")}</AlertDialogTitle>
             <AlertDialogDescription>
-              현재 대화를 삭제하시겠습니까? 삭제된 대화는 복구할 수 없습니다.
+              {t("chat.deleteCurrentChatConfirm")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>취소</AlertDialogCancel>
+            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
                 if (currentSession) {
@@ -538,7 +540,7 @@ export function ChatInterface({ userId, userAvatar, userName }: ChatInterfacePro
               }}
               variant="destructive"
             >
-              삭제
+              {t("common.delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -548,15 +550,15 @@ export function ChatInterface({ userId, userAvatar, userName }: ChatInterfacePro
       <AlertDialog open={showDeleteAllDialog} onOpenChange={setShowDeleteAllDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>모든 대화 삭제</AlertDialogTitle>
+            <AlertDialogTitle>{t("chat.deleteAllChats")}</AlertDialogTitle>
             <AlertDialogDescription>
-              정말 모든 대화 기록({sessions.length}개)을 삭제하시겠습니까?
+              {t("chat.deleteAllChatsConfirmLong").replace("{count}", String(sessions.length))}
               <br />
-              삭제된 대화는 복구할 수 없습니다.
+              {t("chat.cannotRecover")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>취소</AlertDialogCancel>
+            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
                 handleDeleteAllSessions();
@@ -564,7 +566,7 @@ export function ChatInterface({ userId, userAvatar, userName }: ChatInterfacePro
               }}
               variant="destructive"
             >
-              모두 삭제
+              {t("chat.deleteAll")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -15,6 +15,7 @@ import {
 import { getImageUrl, isValidImageUrl } from "@/lib/utils/image";
 import { BookStatusBadge } from "@/components/books/book-status-badge";
 import type { ReadingStatus } from "@/types/book";
+import { useTranslation } from "@/lib/i18n";
 
 interface GroupBookCardEnhancedProps {
   groupId: string;
@@ -40,6 +41,7 @@ export function GroupBookCardEnhanced({
   noteCount,
   onAddToLibrary,
 }: GroupBookCardEnhancedProps) {
+  const { t } = useTranslation();
   const book = groupBook.books;
   if (!book) return null;
 
@@ -102,7 +104,7 @@ export function GroupBookCardEnhanced({
                 className="text-xs bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-400"
               >
                 <CheckCircle2 className="mr-1 h-3 w-3" />
-                내 서재
+                {t("groups.inMyLibrary")}
               </Badge>
               {groupBook.myStatus && (
                 <BookStatusBadge status={groupBook.myStatus as ReadingStatus} />
@@ -121,7 +123,7 @@ export function GroupBookCardEnhanced({
                 }}
               >
                 <Plus className="mr-1 h-3 w-3" />
-                내 서재에 추가
+                {t("groups.addToMyLibrary")}
               </Button>
             )
           )}
@@ -137,7 +139,9 @@ export function GroupBookCardEnhanced({
               className="w-full text-xs h-8 hover:bg-primary/10"
             >
               <MessageSquare className="mr-1 h-3 w-3" />
-              {noteCount > 0 ? `기록 ${noteCount}개 보기` : "기록 보기"}
+              {noteCount > 0
+                ? t("groups.viewNotesCount").replace("{count}", String(noteCount))
+                : t("groups.viewNotes")}
               <ChevronRight className="ml-auto h-3 w-3" />
             </Button>
           </Link>

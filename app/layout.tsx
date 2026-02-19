@@ -5,6 +5,7 @@ import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/contexts/auth-context";
 import { ThemeProvider } from "@/components/theme/theme-provider";
+import { LanguageInitializer } from "@/components/language-initializer";
 
 const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
 
@@ -137,6 +138,7 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <AuthProvider initialUser={initialUser}>
+            <LanguageInitializer />
             {children}
             <Toaster />
           </AuthProvider>

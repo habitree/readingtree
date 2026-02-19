@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from "react";
 import Image from "next/image";
+import { useTranslation } from "@/lib/i18n";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { getImageUrl, getProxiedImageUrl, isValidImageUrl } from "@/lib/utils/image";
@@ -51,6 +52,7 @@ function ExpandableText({
     className?: string;
     hideActions?: boolean;
 }) {
+    const { t } = useTranslation();
     const [isExpanded, setIsExpanded] = useState(false);
     const shouldTruncate = text.length > limit;
 
@@ -70,9 +72,9 @@ function ExpandableText({
                     className="h-6 px-2 mt-1 text-[10px] font-bold text-forest-600 hover:bg-forest-50 gap-1 transition-all"
                 >
                     {isExpanded ? (
-                        <>접기 <ChevronUp className="w-3 h-3" /></>
+                        <>{t("share.collapse")} <ChevronUp className="w-3 h-3" /></>
                     ) : (
-                        <>더보기 <ChevronDown className="w-3 h-3" /></>
+                        <>{t("share.expand")} <ChevronDown className="w-3 h-3" /></>
                     )}
                 </Button>
             )}
@@ -92,6 +94,7 @@ function CollapsibleAiSection({
     text: string;
     hideActions?: boolean;
 }) {
+    const { t } = useTranslation();
     const [isOpen, setIsOpen] = useState(false);
 
     // PC에서는 더 긴 미리보기, 모바일은 짧게
@@ -119,7 +122,7 @@ function CollapsibleAiSection({
                         <Sparkles className="w-3.5 h-3.5 md:w-4 md:h-4 text-forest-600 dark:text-forest-400" />
                     </div>
                     <span className="text-[11px] md:text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                        AI 텍스트 인식
+                        {t("share.aiTextRecognition")}
                     </span>
                 </div>
                 {!hideActions && (
@@ -129,7 +132,7 @@ function CollapsibleAiSection({
                             ? "bg-forest-100 dark:bg-forest-900/50 text-forest-700 dark:text-forest-300"
                             : "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 group-hover:bg-forest-100 dark:group-hover:bg-forest-900/50 group-hover:text-forest-700 dark:group-hover:text-forest-300"
                     )}>
-                        <span>{isOpen ? "접기" : "펼쳐보기"}</span>
+                        <span>{isOpen ? t("share.collapse") : t("share.expand")}</span>
                         {isOpen ? (
                             <ChevronUp className="w-3 h-3 md:w-3.5 md:h-3.5" />
                         ) : (
@@ -191,6 +194,7 @@ const formatDateTime = (dateStr: string) => {
  * - 표준 너비: max-w-[960px]
  */
 export function ShareNoteCard({ note, className, isPublicView = false, hideActions = false, showTimestamp = true, fixedHorizontal = false, user, relatedBooks }: ShareNoteCardProps) {
+    const { t } = useTranslation();
     const [imgError, setImgError] = useState(false);
     const handleImgError = useCallback(() => setImgError(true), []);
 
@@ -267,23 +271,23 @@ export function ShareNoteCard({ note, className, isPublicView = false, hideActio
                                 <div className="flex-1 min-w-0">
                                     <h3 className="font-bold text-lg text-slate-900 dark:text-slate-100 leading-tight mb-1">
                                         <BookTitle
-                                            title={book?.title || "제목 없음"}
+                                            title={book?.title || t("share.noTitle")}
                                             mainTitleClassName="text-slate-900 dark:text-slate-100"
                                             subtitleClassName="text-slate-500 dark:text-slate-400 text-sm font-normal block mt-0.5"
                                         />
                                     </h3>
                                     <p className="text-sm text-forest-700 dark:text-forest-400 font-medium mb-3">
-                                        {book?.author || "저자 미상"}
+                                        {book?.author || t("share.unknownAuthor")}
                                     </p>
 
                                     {/* 진행 정보 강조 */}
                                     <div className="flex items-center gap-2 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-lg px-3 py-2 shadow-sm">
                                         <TrendingUp className="w-5 h-5 text-forest-500" />
                                         <div>
-                                            <div className="text-xs text-slate-500 dark:text-slate-400">읽은 페이지</div>
+                                            <div className="text-xs text-slate-500 dark:text-slate-400">{t("share.readPage")}</div>
                                             <div className="text-xl font-bold text-forest-600 dark:text-forest-400">
                                                 {note.page_number || 0}
-                                                <span className="text-sm font-normal text-slate-400 ml-1">페이지</span>
+                                                <span className="text-sm font-normal text-slate-400 ml-1">{t("share.pageUnit")}</span>
                                             </div>
                                         </div>
                                     </div>
@@ -318,7 +322,7 @@ export function ShareNoteCard({ note, className, isPublicView = false, hideActio
                                         <div className="flex items-center gap-1.5 text-xs text-slate-500">
                                             <span>by</span>
                                             <span className="font-medium text-slate-700 dark:text-slate-300">
-                                                {user.name || "익명"}
+                                                {user.name || t("share.anonymous")}
                                             </span>
                                         </div>
                                     )}
@@ -372,13 +376,13 @@ export function ShareNoteCard({ note, className, isPublicView = false, hideActio
                             <div className="flex-1 min-w-0 pt-0.5">
                                 <h3 className="font-black text-lg text-slate-900 dark:text-slate-100 leading-[1.3] tracking-tight break-keep">
                                     <BookTitle
-                                        title={book?.title || "제목 없음"}
+                                        title={book?.title || t("share.noTitle")}
                                         mainTitleClassName="text-slate-900 dark:text-slate-100"
                                         subtitleClassName="text-slate-600 dark:text-slate-400 text-sm font-normal block mt-1"
                                     />
                                 </h3>
                                 <p className="text-sm text-forest-700 font-bold mt-2">
-                                    {book?.author || "저자 미상"}
+                                    {book?.author || t("share.unknownAuthor")}
                                 </p>
                                 {note.page_number && (
                                     <div className="h-4 leading-4 mt-2 overflow-visible">
@@ -410,7 +414,7 @@ export function ShareNoteCard({ note, className, isPublicView = false, hideActio
                                             ) : (
                                                 <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400">
                                                     <ImageOff className="h-10 w-10 mb-2 text-slate-400" />
-                                                    <p className="text-sm font-medium">이미지를 불러올 수 없습니다</p>
+                                                    <p className="text-sm font-medium">{t("share.imageLoadError")}</p>
                                                 </div>
                                             )}
                                             {showTimestamp && (
@@ -439,7 +443,7 @@ export function ShareNoteCard({ note, className, isPublicView = false, hideActio
                                                 ) : (
                                                     <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400">
                                                         <ImageOff className="h-10 w-10 mb-2 text-slate-400" />
-                                                        <p className="text-sm font-medium">이미지를 불러올 수 없습니다</p>
+                                                        <p className="text-sm font-medium">{t("share.imageLoadError")}</p>
                                                     </div>
                                                 )}
                                                 {showTimestamp && (
@@ -590,7 +594,7 @@ export function ShareNoteCard({ note, className, isPublicView = false, hideActio
                                                 "font-bold text-slate-700 dark:text-slate-200 text-xs whitespace-nowrap",
                                                 !hideActions && "truncate max-w-[100px]"
                                             )}>
-                                                {user?.name || "익명"}
+                                                {user?.name || t("share.anonymous")}
                                             </span>
                                         </div>
                                     </div>
@@ -632,12 +636,13 @@ function RelatedBooksSection({
     books: RelatedBookInfo[];
     hideActions?: boolean;
 }) {
+    const { t } = useTranslation();
     return (
         <div className="space-y-2.5">
             <div className="flex items-center gap-1.5">
                 <Link2 className="w-3.5 h-3.5 text-slate-400" />
                 <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                    연결된 책
+                    {t("share.relatedBooks")}
                 </span>
                 <span className="text-[10px] text-slate-300 font-medium">{books.length}</span>
             </div>

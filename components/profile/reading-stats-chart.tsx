@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useTranslation } from "@/lib/i18n";
 import {
   BookOpen,
   PenLine,
@@ -38,11 +39,6 @@ interface ReadingStatsChartProps {
 type ChartType = "books" | "notes";
 type Period = "6months" | "12months";
 
-const MONTH_LABELS = [
-  "1월", "2월", "3월", "4월", "5월", "6월",
-  "7월", "8월", "9월", "10월", "11월", "12월"
-];
-
 /**
  * 독서 통계 차트 컴포넌트
  *
@@ -56,8 +52,14 @@ export function ReadingStatsChart({
   yearOverYearGrowth,
   className,
 }: ReadingStatsChartProps) {
+  const { t } = useTranslation();
   const [chartType, setChartType] = useState<ChartType>("books");
   const [period, setPeriod] = useState<Period>("6months");
+  const MONTH_LABELS = [
+    t("common.month1"), t("common.month2"), t("common.month3"), t("common.month4"),
+    t("common.month5"), t("common.month6"), t("common.month7"), t("common.month8"),
+    t("common.month9"), t("common.month10"), t("common.month11"), t("common.month12"),
+  ];
 
   // 표시할 데이터 필터링
   const displayData = useMemo(() => {
@@ -95,15 +97,15 @@ export function ReadingStatsChart({
         <div className="flex items-center justify-between">
           <CardTitle className="text-base flex items-center gap-2">
             <BarChart3 className="h-5 w-5 text-primary" />
-            독서 활동 추이
+            {t("readingStats.activityTrend")}
           </CardTitle>
           <Tabs value={period} onValueChange={(v) => setPeriod(v as Period)} className="h-8">
             <TabsList className="h-7">
               <TabsTrigger value="6months" className="text-xs h-6 px-2">
-                6개월
+                {t("readingStats.sixMonths")}
               </TabsTrigger>
               <TabsTrigger value="12months" className="text-xs h-6 px-2">
-                1년
+                {t("readingStats.oneYear")}
               </TabsTrigger>
             </TabsList>
           </Tabs>
@@ -114,7 +116,7 @@ export function ReadingStatsChart({
         {/* 요약 통계 */}
         <div className="grid grid-cols-3 gap-3">
           <SummaryCard
-            label="올해 독서"
+            label={t("readingStats.yearlyBooks")}
             value={yearlyTotalBooks}
             unit="권"
             icon={BookOpen}
@@ -122,7 +124,7 @@ export function ReadingStatsChart({
             bgColor="bg-blue-50 dark:bg-blue-950/30"
           />
           <SummaryCard
-            label="올해 기록"
+            label={t("readingStats.yearlyNotes")}
             value={yearlyTotalNotes}
             unit="개"
             icon={PenLine}
@@ -130,7 +132,7 @@ export function ReadingStatsChart({
             bgColor="bg-amber-50 dark:bg-amber-950/30"
           />
           <SummaryCard
-            label="성장률"
+            label={t("readingStats.growthRate")}
             value={yearOverYearGrowth ?? 0}
             unit="%"
             icon={TrendIcon}
@@ -146,13 +148,13 @@ export function ReadingStatsChart({
             active={chartType === "books"}
             onClick={() => setChartType("books")}
             icon={BookOpen}
-            label="독서량"
+            label={t("readingStats.bookCount")}
           />
           <ChartTypeButton
             active={chartType === "notes"}
             onClick={() => setChartType("notes")}
             icon={PenLine}
-            label="기록 수"
+            label={t("readingStats.noteCount")}
           />
         </div>
 
@@ -209,12 +211,12 @@ export function ReadingStatsChart({
         <div className="flex items-center justify-center gap-2 pt-2 border-t">
           <TrendIcon className={cn("h-4 w-4", trendColor)} />
           <span className="text-sm text-muted-foreground">
-            최근 3개월 대비{" "}
+            {t("readingStats.trendCompare")}{" "}
             <span className={cn("font-medium", trendColor)}>
               {trend > 0 ? "+" : ""}
               {trend}%
             </span>{" "}
-            {trend > 0 ? "증가" : trend < 0 ? "감소" : "유지"}
+            {trend > 0 ? t("readingStats.increase") : trend < 0 ? t("readingStats.decrease") : t("readingStats.maintain")}
           </span>
         </div>
       </CardContent>
@@ -297,7 +299,11 @@ export function ActivityHeatmap({
   weeks = 12,
   className,
 }: ActivityHeatmapProps) {
-  const days = ["일", "월", "화", "수", "목", "금", "토"];
+  const { t } = useTranslation();
+  const days = [
+    t("common.day0Sun"), t("common.day1Mon"), t("common.day2Tue"), t("common.day3Wed"),
+    t("common.day4Thu"), t("common.day5Fri"), t("common.day6Sat"),
+  ];
 
   // 히트맵 데이터 생성
   const heatmapData = useMemo(() => {
@@ -359,7 +365,7 @@ export function ActivityHeatmap({
       <CardHeader className="pb-2">
         <CardTitle className="text-base flex items-center gap-2">
           <Calendar className="h-5 w-5 text-primary" />
-          활동 히트맵
+          {t("readingStats.activityHeatmap")}
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -403,13 +409,13 @@ export function ActivityHeatmap({
 
         {/* 범례 */}
         <div className="flex items-center justify-end gap-1 mt-3">
-          <span className="text-[10px] text-muted-foreground mr-1">적음</span>
+          <span className="text-[10px] text-muted-foreground mr-1">{t("readingStats.less")}</span>
           <div className="h-3 w-3 rounded-sm bg-slate-100 dark:bg-slate-800" />
           <div className="h-3 w-3 rounded-sm bg-emerald-200 dark:bg-emerald-900" />
           <div className="h-3 w-3 rounded-sm bg-emerald-300 dark:bg-emerald-700" />
           <div className="h-3 w-3 rounded-sm bg-emerald-400 dark:bg-emerald-600" />
           <div className="h-3 w-3 rounded-sm bg-emerald-500" />
-          <span className="text-[10px] text-muted-foreground ml-1">많음</span>
+          <span className="text-[10px] text-muted-foreground ml-1">{t("readingStats.more")}</span>
         </div>
       </CardContent>
     </Card>

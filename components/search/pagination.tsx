@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import type React from "react";
+import { useTranslation } from "@/lib/i18n";
 
 interface PaginationProps {
   currentPage: number;
@@ -16,6 +17,7 @@ interface PaginationProps {
 export function Pagination({ currentPage, totalPages }: PaginationProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { t } = useTranslation();
 
   const goToPage = (page: number) => {
     if (page < 1 || page > totalPages) return;
@@ -35,9 +37,9 @@ export function Pagination({ currentPage, totalPages }: PaginationProps) {
   if (totalPages <= 1) return null;
 
   return (
-    <nav 
+    <nav
       className="flex items-center justify-center gap-2"
-      aria-label="페이지 네비게이션"
+      aria-label={t("search.pageNavigation")}
     >
       <Button
         variant="outline"
@@ -45,7 +47,7 @@ export function Pagination({ currentPage, totalPages }: PaginationProps) {
         onClick={() => goToPage(currentPage - 1)}
         onKeyDown={(e) => handleKeyDown(e, currentPage - 1)}
         disabled={currentPage === 1}
-        aria-label="이전 페이지"
+        aria-label={t("search.prevPage")}
         aria-disabled={currentPage === 1}
       >
         <ChevronLeft className="h-4 w-4" aria-hidden="true" />
@@ -73,7 +75,7 @@ export function Pagination({ currentPage, totalPages }: PaginationProps) {
               size="sm"
               onClick={() => goToPage(pageNum)}
               onKeyDown={(e) => handleKeyDown(e, pageNum)}
-              aria-label={`페이지 ${pageNum}로 이동`}
+              aria-label={t("search.goToPage").replace("{page}", String(pageNum))}
               aria-current={isCurrentPage ? "page" : undefined}
               aria-pressed={isCurrentPage}
             >
@@ -89,7 +91,7 @@ export function Pagination({ currentPage, totalPages }: PaginationProps) {
         onClick={() => goToPage(currentPage + 1)}
         onKeyDown={(e) => handleKeyDown(e, currentPage + 1)}
         disabled={currentPage === totalPages}
-        aria-label="다음 페이지"
+        aria-label={t("search.nextPage")}
         aria-disabled={currentPage === totalPages}
       >
         <ChevronRight className="h-4 w-4" aria-hidden="true" />

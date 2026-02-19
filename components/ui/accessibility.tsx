@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useCallback, useState, createContext, useContext } from "react";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/lib/i18n";
 
 /**
  * 스크린 리더 전용 텍스트
@@ -45,7 +46,9 @@ interface SkipLinkProps {
   label?: string;
 }
 
-export function SkipLink({ targetId, label = "본문으로 건너뛰기" }: SkipLinkProps) {
+export function SkipLink({ targetId, label }: SkipLinkProps) {
+  const { t } = useTranslation();
+  const resolvedLabel = label ?? t("accessibility.skipToContent");
   return (
     <a
       href={`#${targetId}`}
@@ -57,7 +60,7 @@ export function SkipLink({ targetId, label = "본문으로 건너뛰기" }: Skip
         "focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
       )}
     >
-      {label}
+      {resolvedLabel}
     </a>
   );
 }
@@ -319,22 +322,25 @@ interface AccessibleLoadingProps {
 
 export function AccessibleLoading({
   loading,
-  message = "로딩 중...",
-  completeMessage = "로딩 완료",
+  message,
+  completeMessage,
   children,
 }: AccessibleLoadingProps) {
+  const { t } = useTranslation();
+  const resolvedMessage = message ?? t("accessibility.loading");
+  const resolvedCompleteMessage = completeMessage ?? t("accessibility.loadingComplete");
   const [announced, setAnnounced] = useState<string | null>(null);
 
   useEffect(() => {
     if (loading) {
-      setAnnounced(message);
-    } else if (announced === message) {
-      setAnnounced(completeMessage);
+      setAnnounced(resolvedMessage);
+    } else if (announced === resolvedMessage) {
+      setAnnounced(resolvedCompleteMessage);
       // 완료 메시지 후 초기화
       const timer = setTimeout(() => setAnnounced(null), 1000);
       return () => clearTimeout(timer);
     }
-  }, [loading, message, completeMessage, announced]);
+  }, [loading, resolvedMessage, resolvedCompleteMessage, announced]);
 
   return (
     <>
@@ -433,8 +439,9 @@ interface KeyboardShortcutsHelpProps {
 }
 
 export function KeyboardShortcutsHelp({ shortcuts, className }: KeyboardShortcutsHelpProps) {
+  const { t } = useTranslation();
   return (
-    <div className={cn("space-y-2", className)} role="list" aria-label="키보드 단축키">
+    <div className={cn("space-y-2", className)} role="list" aria-label={t("accessibility.keyboardShortcuts")}>
       {shortcuts.map((shortcut) => (
         <div
           key={shortcut.key}

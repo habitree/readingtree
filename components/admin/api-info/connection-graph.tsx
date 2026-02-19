@@ -15,6 +15,7 @@ import {
   Bot,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/lib/i18n";
 import type { ServiceNodeConfig } from "./types";
 
 interface ConnectionGraphProps {
@@ -119,6 +120,7 @@ function ServiceNode({
 }
 
 export function ConnectionGraph({ services }: ConnectionGraphProps) {
+  const { t } = useTranslation();
   const authServices = services.filter((s) => s.category === "auth");
   const searchServices = services.filter((s) => s.category === "search");
   const ocrServices = services.filter((s) => s.category === "ocr");
@@ -138,7 +140,7 @@ export function ConnectionGraph({ services }: ConnectionGraphProps) {
         <div className="flex items-center gap-2 mb-6">
           <Users className="h-4 w-4 text-muted-foreground" />
           <span className="text-sm font-medium text-muted-foreground">
-            서비스 연결 구조
+            {t("admin.apiInfo.serviceConnectionStructure")}
           </span>
         </div>
 
@@ -147,7 +149,7 @@ export function ConnectionGraph({ services }: ConnectionGraphProps) {
           {/* 좌: 인증 */}
           <div className="space-y-3">
             <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider px-1">
-              인증
+              {t("admin.apiInfo.categoryAuth")}
             </div>
             {authServices.map((s, i) => (
               <ServiceNode key={s.id} service={s} index={i} />
@@ -188,7 +190,7 @@ export function ConnectionGraph({ services }: ConnectionGraphProps) {
           {/* 우: 서비스 그룹 */}
           <div className="space-y-3">
             <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider px-1">
-              외부 서비스
+              {t("admin.apiInfo.categoryExternalServices")}
             </div>
             {[...searchServices, ...ocrServices, ...aiServices].map((s, i) => (
               <ServiceNode key={s.id} service={s} index={i + 2} />
@@ -203,7 +205,7 @@ export function ConnectionGraph({ services }: ConnectionGraphProps) {
             {/* 페이지 수 API */}
             <div className="space-y-3">
               <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider px-1">
-                페이지 수 조회
+                {t("admin.apiInfo.categoryPageCount")}
               </div>
               <div className="grid grid-cols-3 gap-2">
                 {pageCountServices.map((s, i) => (
@@ -214,7 +216,7 @@ export function ConnectionGraph({ services }: ConnectionGraphProps) {
             {/* 배포 */}
             <div className="space-y-3">
               <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider px-1">
-                배포
+                {t("admin.apiInfo.categoryDeploy")}
               </div>
               <div className="grid grid-cols-1 gap-2">
                 {deployServices.map((s, i) => (
@@ -253,12 +255,12 @@ export function ConnectionGraph({ services }: ConnectionGraphProps) {
 
           {/* 카테고리별 그룹 */}
           {[
-            { label: "인증", items: authServices },
-            { label: "검색", items: searchServices },
-            { label: "OCR", items: ocrServices },
-            { label: "AI", items: aiServices },
-            { label: "페이지 수 조회", items: pageCountServices },
-            { label: "배포", items: deployServices },
+            { label: t("admin.apiInfo.categoryAuth"), items: authServices },
+            { label: t("admin.apiInfo.categorySearch"), items: searchServices },
+            { label: t("admin.apiInfo.categoryOcr"), items: ocrServices },
+            { label: t("admin.apiInfo.categoryAi"), items: aiServices },
+            { label: t("admin.apiInfo.categoryPageCount"), items: pageCountServices },
+            { label: t("admin.apiInfo.categoryDeploy"), items: deployServices },
           ]
             .filter((g) => g.items.length > 0)
             .map((group) => (

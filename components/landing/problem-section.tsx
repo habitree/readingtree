@@ -1,29 +1,35 @@
+"use client";
+
 import { Search, FileQuestion, Share } from "lucide-react";
+import { useTranslation } from "@/lib/i18n";
 
 export function ProblemSection() {
+    const { t } = useTranslation();
+
+    const items = [
+        { title: t("landing.problem.item1Title"), desc: t("landing.problem.item1Desc"), icon: <FileQuestion className="w-5 h-5" /> },
+        { title: t("landing.problem.item2Title"), desc: t("landing.problem.item2Desc"), icon: <Search className="w-5 h-5" /> },
+        { title: t("landing.problem.item3Title"), desc: t("landing.problem.item3Desc"), icon: <Share className="w-5 h-5" /> },
+    ];
+
     return (
         <section className="py-24 bg-paper-50 text-charcoal-900 font-sans">
             <div className="container px-4 md:px-6">
                 <div className="grid lg:grid-cols-2 gap-12 items-center">
                     <div className="space-y-8">
                         <div>
-                            <span className="text-forest-600 font-bold tracking-wider uppercase text-sm mb-4 block">이런 경험, 있으신가요?</span>
+                            <span className="text-forest-600 font-bold tracking-wider uppercase text-sm mb-4 block">{t("landing.problem.eyebrow")}</span>
                             <h2 className="text-3xl md:text-5xl font-bold tracking-tight leading-tight font-serif break-keep">
-                                좋아서 읽었지만<br />
-                                남는 건 <span className="text-forest-600 italic font-serif">피로감</span>뿐이라면?
+                                {t("landing.problem.headline")}<br />
+                                <span className="text-forest-600 italic font-serif">{t("landing.problem.headlineAccent")}</span>{t("landing.problem.headlineSuffix")}
                             </h2>
                         </div>
                         <p className="text-lg text-charcoal-600 leading-relaxed break-keep font-serif">
-                            읽고 싶은 책은 쌓여만 가는데, 정리는 엄두가 안 나시나요? <br />
-                            과거의 기록을 찾지 못해 같은 책을 또 샀던 경험, 한 번쯤 있으시죠?
+                            {t("landing.problem.body")}
                         </p>
 
                         <div className="grid gap-4">
-                            {[
-                                { title: "흩어진 기록", desc: "노션, 메모장, 일기장에 제각각", icon: <FileQuestion className="w-5 h-5" /> },
-                                { title: "검색 불가", desc: "이미지로 찍어둔 문장은 찾을 수 없음", icon: <Search className="w-5 h-5" /> },
-                                { title: "공유의 어려움", desc: "인스타에 올리려면 또 편집해야 함", icon: <Share className="w-5 h-5" /> }
-                            ].map((item, idx) => (
+                            {items.map((item, idx) => (
                                 <div key={idx} className="flex items-center p-4 rounded-xl bg-white border border-paper-200 shadow-sm hover:border-forest-200 transition-colors group">
                                     <div className="w-10 h-10 rounded-full bg-paper-100 flex items-center justify-center mr-4 text-forest-600 group-hover:bg-forest-50 transition-colors">
                                         {item.icon}
@@ -62,7 +68,7 @@ export function ProblemSection() {
 
                             <div className="absolute top-[20%] right-[30%] w-48 h-60 bg-paper-50 shadow-xl p-6 rotate-[-8deg] border border-paper-200 transition-transform group-hover:rotate-[-2deg]">
                                 <div className="text-[8px] font-serif text-charcoal-300 leading-tight">
-                                    "독서는 완성된 사람을 만들고, 담론은 재치 있는 사람을 만들며, 필기는 정확한 사람을 만든다."
+                                    {t("landing.problem.scatteredQuote")}
                                 </div>
                                 <div className="mt-4 space-y-2">
                                     <div className="h-1 w-full bg-charcoal-100" />

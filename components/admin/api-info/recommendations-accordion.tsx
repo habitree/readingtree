@@ -10,6 +10,7 @@ import {
   Info,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/lib/i18n";
 
 interface Recommendation {
   type: string;
@@ -39,9 +40,18 @@ const ICON_COLOR: Record<string, string> = {
   info: "text-blue-600",
 };
 
+const CATEGORY_LABEL_KEYS: Record<string, string> = {
+  "인증": "admin.apiInfo.categoryAuth",
+  "검색": "admin.apiInfo.categorySearch",
+  "OCR": "admin.apiInfo.categoryOcr",
+  "AI": "admin.apiInfo.categoryAi",
+  "페이지수": "admin.apiInfo.categoryPageCount",
+};
+
 export function RecommendationsAccordion({
   recommendations,
 }: RecommendationsAccordionProps) {
+  const { t } = useTranslation();
   const byCategory = CATEGORY_ORDER.reduce(
     (acc, cat) => {
       acc[cat] = recommendations.filter((r) => r.category === cat);
@@ -56,7 +66,7 @@ export function RecommendationsAccordion({
   return (
     <div className="space-y-4">
       <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-        권장 사항
+        {t("admin.apiInfo.recommendations")}
       </h3>
 
       {CATEGORY_ORDER.map((category) => {
@@ -68,7 +78,7 @@ export function RecommendationsAccordion({
         return (
           <CollapsibleSection
             key={category}
-            title={`${category} (${recs.length})`}
+            title={`${CATEGORY_LABEL_KEYS[category] ? t(CATEGORY_LABEL_KEYS[category] as any) : category} (${recs.length})`}
             storageKey={`api-rec-${category}`}
             defaultOpen={hasErrors}
           >

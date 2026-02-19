@@ -7,12 +7,14 @@ import { GroupCard } from "./group-card";
 import { getGroups, getPublicGroups } from "@/app/actions/groups";
 import { Loader2, Search } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from "@/lib/i18n";
 
 /**
  * 모임 목록 컨텐츠 컴포넌트
  * 내 모임과 공개 모임 검색 제공
  */
 export function GroupsContent() {
+  const { t } = useTranslation();
   const [myGroups, setMyGroups] = useState<any[]>([]);
   const [publicGroups, setPublicGroups] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -35,7 +37,7 @@ export function GroupsContent() {
       setMyGroups(data as any);
     } catch (error) {
       console.error("내 모임 로드 오류:", error);
-      toast.error("모임 목록을 불러오지 못했어요.");
+      toast.error(t("errors.loadError"));
     } finally {
       setIsLoading(false);
     }
@@ -48,7 +50,7 @@ export function GroupsContent() {
       setPublicGroups(data as any);
     } catch (error) {
       console.error("공개 모임 로드 오류:", error);
-      toast.error("공개 모임 목록을 불러오지 못했어요.");
+      toast.error(t("errors.loadError"));
     } finally {
       setIsLoading(false);
     }
@@ -66,14 +68,14 @@ export function GroupsContent() {
     <div className="space-y-4">
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
-          <TabsTrigger value="my">내 모임</TabsTrigger>
-          <TabsTrigger value="public">공개 모임</TabsTrigger>
+          <TabsTrigger value="my">{t("groups.myGroupsTab")}</TabsTrigger>
+          <TabsTrigger value="public">{t("groups.publicGroupsTab")}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="my" className="space-y-4">
           {myGroups.length === 0 ? (
             <div className="text-center py-12">
-              <p className="text-muted-foreground">참여한 모임이 없습니다.</p>
+              <p className="text-muted-foreground">{t("groups.noJoinedGroups")}</p>
             </div>
           ) : (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -89,7 +91,7 @@ export function GroupsContent() {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               type="search"
-              placeholder="모임 검색..."
+              placeholder={t("groups.searchGroups")}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10"
@@ -103,7 +105,7 @@ export function GroupsContent() {
           ) : publicGroups.length === 0 ? (
             <div className="text-center py-12">
               <p className="text-muted-foreground">
-                {searchQuery ? "검색 결과가 없습니다." : "공개 모임이 없습니다."}
+                {searchQuery ? t("groups.noSearchResultsMsg") : t("groups.noPublicGroups")}
               </p>
             </div>
           ) : (

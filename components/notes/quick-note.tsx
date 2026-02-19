@@ -27,6 +27,7 @@ import {
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/lib/i18n";
 import { getUserBooks } from "@/app/actions/books";
 import { createNote } from "@/app/actions/notes";
 import confetti from "canvas-confetti";
@@ -52,17 +53,6 @@ interface QuickNoteProps {
 
 type NoteMode = "quote" | "memo";
 
-// 칭찬 메시지 목록 (가변 보상)
-const PRAISE_MESSAGES = [
-  "멋진 기록이에요!",
-  "좋은 생각이네요!",
-  "훌륭한 독서 습관!",
-  "오늘도 성장하고 있어요!",
-  "책과 함께하는 순간!",
-  "깊이 있는 독서!",
-  "기록하는 습관, 최고예요!",
-];
-
 /**
  * Quick Note - 대시보드에서 1탭으로 기록하는 컴포넌트
  *
@@ -78,7 +68,18 @@ export function QuickNote({
   onClose,
   className,
 }: QuickNoteProps) {
+  const { t } = useTranslation();
   const router = useRouter();
+
+  const PRAISE_MESSAGES = [
+    t("notes.praiseMsg1"),
+    t("notes.praiseMsg2"),
+    t("notes.praiseMsg3"),
+    t("notes.praiseMsg4"),
+    t("notes.praiseMsg5"),
+    t("notes.praiseMsg6"),
+    t("notes.praiseMsg7"),
+  ];
   const [books, setBooks] = useState<ReadingBook[]>([]);
   const [selectedBookId, setSelectedBookId] = useState<string>(defaultBookId || "");
   const [content, setContent] = useState("");
@@ -127,12 +128,12 @@ export function QuickNote({
   // 기록 저장
   const handleSubmit = async () => {
     if (!selectedBookId) {
-      toast.error("책을 선택해주세요.");
+      toast.error(t("notes.selectBookError"));
       return;
     }
 
     if (!content.trim()) {
-      toast.error("내용을 입력해주세요.");
+      toast.error(t("notes.enterContentError"));
       return;
     }
 
@@ -170,7 +171,7 @@ export function QuickNote({
       }, 1500);
     } catch (error) {
       console.error("기록 저장 실패:", error);
-      toast.error("기록 저장에 실패했어요.");
+      toast.error(t("notes.noteSaveFailed"));
     } finally {
       setIsLoading(false);
     }
@@ -188,14 +189,14 @@ export function QuickNote({
         <div className="flex flex-col items-center justify-center gap-2 py-4 text-center">
           <BookOpen className="h-8 w-8 text-muted-foreground" />
           <p className="text-sm text-muted-foreground">
-            읽고 있는 책이 없어요
+            {t("notes.noReadingBooks")}
           </p>
           <Button
             variant="outline"
             size="sm"
             onClick={() => router.push("/books/search")}
           >
-            책 추가하기
+            {t("notes.addBookBtn")}
           </Button>
         </div>
       </Card>
@@ -224,7 +225,7 @@ export function QuickNote({
           >
             <div className="flex flex-col items-center gap-2 text-white">
               <CheckCircle2 className="h-12 w-12" />
-              <span className="text-lg font-semibold">저장 완료!</span>
+              <span className="text-lg font-semibold">{t("notes.saveComplete")}</span>
             </div>
           </motion.div>
         )}
@@ -242,7 +243,7 @@ export function QuickNote({
               <PenLine className="h-4 w-4 text-primary" />
             </div>
             <div>
-              <span className="text-sm font-medium">빠른 기록</span>
+              <span className="text-sm font-medium">{t("notes.quickNote")}</span>
               {selectedBook && (
                 <p className="text-xs text-muted-foreground truncate max-w-[150px]">
                   {selectedBook.title}
@@ -284,14 +285,14 @@ export function QuickNote({
 
               {/* 책 선택 */}
               <div className="space-y-1.5">
-                <label className="text-xs text-muted-foreground">책 선택</label>
+                <label className="text-xs text-muted-foreground">{t("notes.selectBook")}</label>
                 <Select
                   value={selectedBookId}
                   onValueChange={setSelectedBookId}
                   disabled={isBooksLoading || isLoading}
                 >
                   <SelectTrigger className="h-9">
-                    <SelectValue placeholder="책을 선택하세요" />
+                    <SelectValue placeholder={t("notes.selectBookPlaceholder")} />
                   </SelectTrigger>
                   <SelectContent>
                     {books.map((book) => (
@@ -317,7 +318,7 @@ export function QuickNote({
                   disabled={isLoading}
                 >
                   <Quote className="h-3.5 w-3.5 mr-1.5" />
-                  구절
+                  {t("notes.quoteMode")}
                 </Button>
                 <Button
                   type="button"
@@ -331,7 +332,7 @@ export function QuickNote({
                   disabled={isLoading}
                 >
                   <MessageSquare className="h-3.5 w-3.5 mr-1.5" />
-                  생각
+                  {t("notes.memoMode")}
                 </Button>
               </div>
 
@@ -341,8 +342,8 @@ export function QuickNote({
                 onChange={(e) => setContent(e.target.value)}
                 placeholder={
                   mode === "quote"
-                    ? "인상깊은 문장을 기록하세요..."
-                    : "느낀 점이나 생각을 적어보세요..."
+                    ? t("notes.quoteModeInputPlaceholder")
+                    : t("notes.memoModeInputPlaceholder")
                 }
                 rows={3}
                 disabled={isLoading}
@@ -362,19 +363,19 @@ export function QuickNote({
                 {isLoading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    저장 중...
+                    {t("notes.saving")}
                   </>
                 ) : (
                   <>
                     <Sparkles className="mr-2 h-4 w-4" />
-                    기록하기
+                    {t("notes.recordNote")}
                   </>
                 )}
               </Button>
 
               {/* 힌트 */}
               <p className="text-[10px] text-center text-muted-foreground">
-                Tip: 작은 기록도 큰 변화를 만들어요
+                {t("notes.quickNoteTip")}
               </p>
             </div>
           </motion.div>

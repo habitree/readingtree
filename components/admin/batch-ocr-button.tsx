@@ -6,6 +6,7 @@ import { Loader2, ScanLine, RefreshCw } from "lucide-react";
 import { batchProcessOCR, getPendingOCRCount } from "@/app/actions/admin";
 import { getTranscription } from "@/app/actions/notes";
 import { toast } from "sonner";
+import { useTranslation } from "@/lib/i18n";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,6 +25,7 @@ import { BatchOCRProgressDialog, type OCRItem } from "./batch-ocr-progress-dialo
  * 관리자 전용
  */
 export function BatchOCRButton() {
+  const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(false);
   const [pendingCount, setPendingCount] = useState<number | null>(null);
   const [isChecking, setIsChecking] = useState(false);
@@ -41,13 +43,13 @@ export function BatchOCRButton() {
     try {
       const result = await getPendingOCRCount();
       setPendingCount(result.needingOCR);
-      toast.info(`OCR 처리가 필요한 기록: ${result.needingOCR}개`);
+      toast.info(t("admin.ocr.pendingOcrCount", { count: result.needingOCR }));
     } catch (error) {
       console.error("OCR 대기 기록 수 조회 오류:", error);
       toast.error(
         error instanceof Error
           ? error.message
-          : "OCR 대기 기록 수 조회에 실패했습니다."
+          : t("admin.ocr.checkError")
       );
     } finally {
       setIsChecking(false);
@@ -107,7 +109,7 @@ export function BatchOCRButton() {
                 return {
                   ...item,
                   status: "failed" as const,
-                  error: transcription.error || "OCR 처리 실패",
+                  error: transcription.error || t("notes.ocrFailed"),
                 };
               }
             }
@@ -221,11 +223,9 @@ export function BatchOCRButton() {
 
       // 최종 결과 메시지
       if (totalFailed === 0) {
-        toast.success(`모든 OCR 처리를 완료했습니다. (총 ${totalCompleted}개)`);
+        toast.success(t("admin.ocr.allSuccess", { count: totalCompleted }));
       } else {
-        toast.warning(
-          `OCR 처리를 완료했습니다. 성공: ${totalCompleted}개, 실패: ${totalFailed}개 (실패 항목은 무시되었습니다)`
-        );
+        toast.warning(t("admin.ocr.partialSuccess", { success: totalCompleted, failed: totalFailed }));
       }
 
       setPendingCount(null); // 카운트 초기화
@@ -236,7 +236,7 @@ export function BatchOCRButton() {
       toast.error(
         error instanceof Error
           ? error.message
-          : "OCR 배치 처리에 실패했습니다."
+          : t("admin.ocr.ocrFailed")
       );
     }
   };
@@ -246,7 +246,7 @@ export function BatchOCRButton() {
     const failedItems = progressItems.filter(item => item.status === "failed");
     
     if (failedItems.length === 0) {
-      toast.info("재시도할 실패 항목이 없습니다.");
+      toast.info(t("admin.ocr.retryNoItems"));
       return;
     }
 
@@ -292,9 +292,9 @@ export function BatchOCRButton() {
       const processedCount = result.processedCount ?? 0;
       
       if (failedCount === 0) {
-        toast.success("모든 실패 항목이 성공적으로 재처리되었습니다.");
+        toast.success(t("admin.ocr.retryAllSuccess"));
       } else {
-        toast.warning(`${processedCount}개 재처리 성공, ${failedCount}개 여전히 실패`);
+        toast.warning(t("admin.ocr.retryPartialSuccess", { success: processedCount, failed: failedCount }));
       }
     } catch (error) {
       console.error("OCR 재시도 오류:", error);
@@ -302,7 +302,7 @@ export function BatchOCRButton() {
       toast.error(
         error instanceof Error
           ? error.message
-          : "OCR 재시도에 실패했습니다."
+          : t("admin.ocr.retryFailed2")
       );
     }
   };
@@ -322,10 +322,10 @@ export function BatchOCRButton() {
           ) : (
             <RefreshCw className="h-4 w-4" />
           )}
-          대기 기록 확인
+          {t("admin.ocr.checkPending")}
           {pendingCount !== null && (
             <span className="ml-1 text-xs text-muted-foreground">
-              ({pendingCount}개)
+              ({pendingCount}{t("common.count")})
             </span>
           )}
         </Button>
@@ -342,29 +342,29 @@ export function BatchOCRButton() {
               ) : (
                 <ScanLine className="h-4 w-4" />
               )}
-              OCR 배치 처리
+              {t("admin.ocr.batchOcr")}
             </Button>
           </AlertDialogTrigger>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>OCR 배치 처리</AlertDialogTitle>
+              <AlertDialogTitle>{t("admin.ocr.batchOcr")}</AlertDialogTitle>
               <AlertDialogDescription>
-                이미지가 있지만 OCR 처리가 안 된 모든 기록을 일괄 처리합니다.
+                {t("admin.ocr.batchOcrDesc")}
                 <br />
                 <span className="text-muted-foreground text-sm">
-                  한 번에 최대 50개씩 처리되며, 대기 중인 모든 기록을 자동으로 처리합니다.
+                  {t("admin.ocr.batchOcrDetail")}
                   <br />
-                  실패한 항목은 자동으로 건너뛰고 계속 진행됩니다.
+                  {t("admin.ocr.batchOcrSkip")}
                 </span>
                 {pendingCount !== null && (
                   <div className="mt-2 text-sm font-semibold text-primary">
-                    처리 대기 중인 기록: {pendingCount}개
+                    {t("admin.ocr.pendingCount", { count: pendingCount })}
                   </div>
                 )}
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel>취소</AlertDialogCancel>
+              <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
               <AlertDialogAction
                 onClick={handleBatchProcess}
                 className="bg-primary text-primary-foreground hover:bg-primary/90"
@@ -373,10 +373,10 @@ export function BatchOCRButton() {
                 {isLoading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    처리 중...
+                    {t("admin.ocr.processing")}
                   </>
                 ) : (
-                  "확인 및 실행"
+                  t("admin.ocr.confirmAndRun")
                 )}
               </AlertDialogAction>
             </AlertDialogFooter>

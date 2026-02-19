@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { useTranslation } from "@/lib/i18n";
 import {
   Award,
   BookOpen,
@@ -138,13 +139,38 @@ interface AchievementBadgesProps {
   className?: string;
 }
 
+// 배지 ID -> 번역 키 매핑
+const BADGE_TITLE_KEYS: Record<string, string> = {
+  first_week: "achievementBadges.firstStep",
+  book_worm: "achievementBadges.bookworm",
+  social_butterfly: "achievementBadges.socialButterfly",
+  note_master: "achievementBadges.noteMaster",
+  streak_champion: "achievementBadges.streakChampion",
+  early_bird: "achievementBadges.earlyBird",
+};
+
+const BADGE_DESC_KEYS: Record<string, string> = {
+  first_week: "achievementBadges.firstStepDesc",
+  book_worm: "achievementBadges.bookwormDesc",
+  social_butterfly: "achievementBadges.socialButterflyDesc",
+  note_master: "achievementBadges.noteMasterDesc",
+  streak_champion: "achievementBadges.streakChampionDesc",
+  early_bird: "achievementBadges.earlyBirdDesc",
+};
+
 /**
  * 프로필 업적 배지 컴포넌트
  */
 export function AchievementBadges({ badges, className }: AchievementBadgesProps) {
+  const { t } = useTranslation();
   const earnedBadges = badges.filter((b) => b.earned);
   const lockedBadges = badges.filter((b) => !b.earned);
   const nextToEarn = lockedBadges.find((b) => b.progress && b.progress.current > 0);
+
+  const getBadgeTitle = (badge: AchievementBadge) =>
+    BADGE_TITLE_KEYS[badge.id] ? t(BADGE_TITLE_KEYS[badge.id] as any) : badge.title;
+  const getBadgeDesc = (badge: AchievementBadge) =>
+    BADGE_DESC_KEYS[badge.id] ? t(BADGE_DESC_KEYS[badge.id] as any) : badge.description;
 
   return (
     <Card className={className}>
@@ -152,10 +178,10 @@ export function AchievementBadges({ badges, className }: AchievementBadgesProps)
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Trophy className="h-5 w-5 text-amber-500" />
-            <CardTitle className="text-base">업적 배지</CardTitle>
+            <CardTitle className="text-base">{t("achievementBadges.title")}</CardTitle>
           </div>
           <Badge variant="secondary" className="text-xs">
-            {earnedBadges.length}/{badges.length} 획득
+            {t("achievementBadges.earnedCount", { earned: earnedBadges.length, total: badges.length })}
           </Badge>
         </div>
       </CardHeader>
@@ -163,7 +189,7 @@ export function AchievementBadges({ badges, className }: AchievementBadgesProps)
         {/* 획득한 배지 */}
         {earnedBadges.length > 0 && (
           <div className="space-y-2">
-            <h4 className="text-sm font-medium text-muted-foreground">획득한 배지</h4>
+            <h4 className="text-sm font-medium text-muted-foreground">{t("achievementBadges.earnedBadges")}</h4>
             <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
               {earnedBadges.map((badge, index) => {
                 const Icon = iconMap[badge.icon] || Award;
@@ -188,7 +214,7 @@ export function AchievementBadges({ badges, className }: AchievementBadgesProps)
                     </div>
                     <div className="text-center">
                       <p className="text-xs font-medium truncate max-w-[70px]">
-                        {badge.title}
+                        {getBadgeTitle(badge)}
                       </p>
                       <Badge
                         variant="outline"
@@ -209,7 +235,7 @@ export function AchievementBadges({ badges, className }: AchievementBadgesProps)
           <div className="space-y-2">
             <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-1.5">
               <Sparkles className="h-4 w-4 text-amber-500" />
-              곧 달성 가능!
+              {t("achievementBadges.soonAchievable")}
             </h4>
             <div className={cn(
               "p-3 rounded-lg border-2 border-dashed",
@@ -229,8 +255,8 @@ export function AchievementBadges({ badges, className }: AchievementBadgesProps)
                   })()}
                 </div>
                 <div className="flex-1">
-                  <p className="font-medium text-sm">{nextToEarn.title}</p>
-                  <p className="text-xs text-muted-foreground">{nextToEarn.description}</p>
+                  <p className="font-medium text-sm">{getBadgeTitle(nextToEarn as AchievementBadge)}</p>
+                  <p className="text-xs text-muted-foreground">{getBadgeDesc(nextToEarn as AchievementBadge)}</p>
                   {nextToEarn.progress && (
                     <div className="mt-2 space-y-1">
                       <Progress
@@ -251,7 +277,7 @@ export function AchievementBadges({ badges, className }: AchievementBadgesProps)
         {/* 잠긴 배지 */}
         {lockedBadges.filter((b) => b !== nextToEarn).length > 0 && (
           <div className="space-y-2">
-            <h4 className="text-sm font-medium text-muted-foreground">도전 중</h4>
+            <h4 className="text-sm font-medium text-muted-foreground">{t("achievementBadges.inChallenge")}</h4>
             <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
               {lockedBadges
                 .filter((b) => b !== nextToEarn)
@@ -262,7 +288,7 @@ export function AchievementBadges({ badges, className }: AchievementBadgesProps)
                     <div
                       key={badge.id}
                       className="flex flex-col items-center gap-1 opacity-50"
-                      title={`${badge.title}: ${badge.description}`}
+                      title={`${getBadgeTitle(badge)}: ${getBadgeDesc(badge)}`}
                     >
                       <div
                         className={cn(
@@ -274,7 +300,7 @@ export function AchievementBadges({ badges, className }: AchievementBadgesProps)
                         <Lock className="h-4 w-4 text-slate-400" />
                       </div>
                       <p className="text-[10px] text-muted-foreground truncate max-w-[50px]">
-                        {badge.title}
+                        {getBadgeTitle(badge)}
                       </p>
                     </div>
                   );

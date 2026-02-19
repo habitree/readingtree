@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Trash2, AlertTriangle, Loader2 } from "lucide-react";
+import { useTranslation } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -30,14 +31,15 @@ import { deleteAccount } from "@/app/actions/auth";
  * 프로필 페이지 하단에 표시되는 위험 영역
  */
 export function DeleteAccountSection() {
+  const { t } = useTranslation();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const handleDeleteAccount = async () => {
-    if (deleteConfirmText !== "계정삭제") {
-      setDeleteError("확인 문구를 정확히 입력해주세요.");
+    if (deleteConfirmText !== t("deleteAccount.confirmWord")) {
+      setDeleteError(t("deleteAccount.confirmError"));
       return;
     }
 
@@ -49,7 +51,7 @@ export function DeleteAccountSection() {
     } catch (error) {
       console.error("계정 삭제 오류:", error);
       setDeleteError(
-        error instanceof Error ? error.message : "계정 삭제에 실패했습니다."
+        error instanceof Error ? error.message : t("deleteAccount.deleteError")
       );
       setIsDeleting(false);
     }
@@ -70,10 +72,10 @@ export function DeleteAccountSection() {
       <CardHeader>
         <CardTitle className="text-destructive flex items-center gap-2">
           <AlertTriangle className="h-5 w-5" />
-          위험 영역
+          {t("deleteAccount.dangerZone")}
         </CardTitle>
         <CardDescription>
-          계정을 삭제하면 모든 데이터가 영구적으로 삭제되며 복구할 수 없습니다.
+          {t("deleteAccount.dangerZoneDesc")}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -81,42 +83,42 @@ export function DeleteAccountSection() {
           <AlertDialogTrigger asChild>
             <Button variant="destructive" className="gap-2">
               <Trash2 className="h-4 w-4" />
-              계정 삭제
+              {t("deleteAccount.deleteAccount")}
             </Button>
           </AlertDialogTrigger>
           <AlertDialogContent className="max-w-md">
             <AlertDialogHeader>
               <AlertDialogTitle className="flex items-center gap-2 text-destructive">
                 <AlertTriangle className="h-5 w-5" />
-                계정 삭제
+                {t("deleteAccount.deleteAccountTitle")}
               </AlertDialogTitle>
               <AlertDialogDescription asChild>
                 <div className="space-y-3">
                   <p className="font-medium text-destructive">
-                    이 작업은 되돌릴 수 없습니다.
+                    {t("deleteAccount.irreversible")}
                   </p>
                   <div className="rounded-lg bg-destructive/10 p-3 text-sm space-y-2">
-                    <p>계정을 삭제하면 다음 데이터가 영구적으로 삭제됩니다:</p>
+                    <p>{t("deleteAccount.deleteWarning")}</p>
                     <ul className="list-disc list-inside space-y-1 text-muted-foreground">
-                      <li>프로필 정보</li>
-                      <li>독서 기록 및 메모</li>
-                      <li>서재에 등록한 책 정보</li>
-                      <li>작성한 리뷰 및 댓글</li>
+                      <li>{t("deleteAccount.profileInfo")}</li>
+                      <li>{t("deleteAccount.readingNotes")}</li>
+                      <li>{t("deleteAccount.bookInfo")}</li>
+                      <li>{t("deleteAccount.reviewsAndComments")}</li>
                     </ul>
                     <p className="font-semibold text-destructive">
-                      삭제된 데이터는 복구할 수 없습니다.
+                      {t("deleteAccount.cannotRecover")}
                     </p>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="delete-confirm" className="text-sm">
-                      확인을 위해{" "}
-                      <span className="font-bold">계정삭제</span>를 입력하세요
+                      {t("deleteAccount.confirmLabel")}{" "}
+                      <span className="font-bold">{t("deleteAccount.confirmWord")}</span>{t("deleteAccount.confirmLabelSuffix")}
                     </Label>
                     <Input
                       id="delete-confirm"
                       value={deleteConfirmText}
                       onChange={(e) => setDeleteConfirmText(e.target.value)}
-                      placeholder="계정삭제"
+                      placeholder={t("deleteAccount.confirmPlaceholder")}
                       className="font-mono"
                       disabled={isDeleting}
                     />
@@ -128,21 +130,21 @@ export function DeleteAccountSection() {
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel disabled={isDeleting}>취소</AlertDialogCancel>
+              <AlertDialogCancel disabled={isDeleting}>{t("common.cancel")}</AlertDialogCancel>
               <AlertDialogAction
                 onClick={handleDeleteAccount}
-                disabled={deleteConfirmText !== "계정삭제" || isDeleting}
+                disabled={deleteConfirmText !== t("deleteAccount.confirmWord") || isDeleting}
                 variant="destructive"
               >
                 {isDeleting ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    삭제 중...
+                    {t("deleteAccount.deleting")}
                   </>
                 ) : (
                   <>
                     <Trash2 className="mr-2 h-4 w-4" />
-                    계정 삭제
+                    {t("deleteAccount.deleteAccount")}
                   </>
                 )}
               </AlertDialogAction>

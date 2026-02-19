@@ -17,20 +17,21 @@ import {
   Search,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/lib/i18n";
 
 interface NavItem {
   href: string;
   icon: typeof Home;
-  label: string;
+  labelKey: "nav.home" | "nav.bookshelf" | "nav.notes" | "nav.community" | "nav.profile";
   activePattern?: RegExp;
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { href: "/", icon: Home, label: "홈" },
-  { href: "/books", icon: BookOpen, label: "책장", activePattern: /^\/books/ },
-  { href: "/notes", icon: PenLine, label: "기록", activePattern: /^\/notes/ },
-  { href: "/groups", icon: Users, label: "모임", activePattern: /^\/groups/ },
-  { href: "/profile", icon: User, label: "프로필", activePattern: /^\/profile/ },
+  { href: "/", icon: Home, labelKey: "nav.home" },
+  { href: "/books", icon: BookOpen, labelKey: "nav.bookshelf", activePattern: /^\/books/ },
+  { href: "/notes", icon: PenLine, labelKey: "nav.notes", activePattern: /^\/notes/ },
+  { href: "/groups", icon: Users, labelKey: "nav.community", activePattern: /^\/groups/ },
+  { href: "/profile", icon: User, labelKey: "nav.profile", activePattern: /^\/profile/ },
 ];
 
 interface MobileBottomNavProps {
@@ -55,6 +56,7 @@ export function MobileBottomNav({
   className,
 }: MobileBottomNavProps) {
   const pathname = usePathname();
+  const { t } = useTranslation();
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
 
@@ -138,7 +140,7 @@ export function MobileBottomNav({
                   active ? "text-primary font-medium" : "text-muted-foreground"
                 )}
               >
-                {item.label}
+                {t(item.labelKey)}
               </span>
             </Link>
           );
@@ -175,6 +177,7 @@ interface MobileFullMenuProps {
 
 export function MobileFullMenu({ open, onClose }: MobileFullMenuProps) {
   const pathname = usePathname();
+  const { t } = useTranslation();
 
   // ESC 키로 닫기
   useEffect(() => {
@@ -202,11 +205,11 @@ export function MobileFullMenu({ open, onClose }: MobileFullMenuProps) {
         >
           {/* 헤더 */}
           <div className="flex items-center justify-between p-4 border-b">
-            <span className="text-lg font-semibold">메뉴</span>
+            <span className="text-lg font-semibold">{t("nav.menu")}</span>
             <button
               onClick={onClose}
               className="p-2 rounded-full hover:bg-muted transition-colors"
-              aria-label="메뉴 닫기"
+              aria-label={t("nav.closeMenu")}
             >
               <X className="h-6 w-6" />
             </button>
@@ -237,7 +240,7 @@ export function MobileFullMenu({ open, onClose }: MobileFullMenuProps) {
                     )}
                   >
                     <Icon className="h-6 w-6" />
-                    <span className="text-lg font-medium">{item.label}</span>
+                    <span className="text-lg font-medium">{t(item.labelKey)}</span>
                   </Link>
                 </motion.div>
               );
@@ -256,7 +259,7 @@ export function MobileFullMenu({ open, onClose }: MobileFullMenuProps) {
                   className="flex items-center gap-4 p-4 rounded-xl hover:bg-muted transition-colors"
                 >
                   <MessageSquare className="h-6 w-6" />
-                  <span className="text-lg font-medium">AI 채팅</span>
+                  <span className="text-lg font-medium">{t("chat.aiChat")}</span>
                 </Link>
               </motion.div>
               <motion.div
@@ -270,7 +273,7 @@ export function MobileFullMenu({ open, onClose }: MobileFullMenuProps) {
                   className="flex items-center gap-4 p-4 rounded-xl hover:bg-muted transition-colors"
                 >
                   <Search className="h-6 w-6" />
-                  <span className="text-lg font-medium">검색</span>
+                  <span className="text-lg font-medium">{t("nav.search")}</span>
                 </Link>
               </motion.div>
             </div>
@@ -302,6 +305,7 @@ export function MobileHeader({
   className,
 }: MobileHeaderProps) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const { t } = useTranslation();
 
   return (
     <>
@@ -320,7 +324,7 @@ export function MobileHeader({
             <button
               onClick={onBack}
               className="p-2 -ml-2 rounded-full hover:bg-muted transition-colors"
-              aria-label="뒤로 가기"
+              aria-label={t("nav.goBack")}
             >
               <svg
                 className="h-5 w-5"
@@ -349,7 +353,7 @@ export function MobileHeader({
             <button
               onClick={() => setMenuOpen(true)}
               className="p-2 -mr-2 rounded-full hover:bg-muted transition-colors"
-              aria-label="메뉴 열기"
+              aria-label={t("nav.openMenu")}
             >
               <Menu className="h-5 w-5" />
             </button>

@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import { ko } from "date-fns/locale";
 import type { FeatureRequestWithUser } from "@/types/feature-request";
+import { useTranslation } from "@/lib/i18n";
 
 interface FeatureRequestCardProps {
   request: FeatureRequestWithUser;
@@ -29,7 +30,8 @@ export function FeatureRequestCard({
   compact = false,
   className,
 }: FeatureRequestCardProps) {
-  const userName = request.users?.name || "익명";
+  const { t } = useTranslation();
+  const userName = request.users?.name || t("featureRequests.anonymous");
   const userInitial = userName.charAt(0).toUpperCase();
 
   return (

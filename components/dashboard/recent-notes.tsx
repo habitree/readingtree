@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import Image from "next/image";
 import { Card, CardContent } from "@/components/ui/card";
@@ -9,6 +11,7 @@ import { getImageUrl, isValidImageUrl } from "@/lib/utils/image";
 import { cn } from "@/lib/utils";
 import { BookOpen } from "lucide-react";
 import type { NoteWithBook } from "@/types/note";
+import { useTranslation } from "@/lib/i18n";
 
 interface RecentNotesProps {
   notes: NoteWithBook[];
@@ -20,6 +23,8 @@ interface RecentNotesProps {
  * 타임라인 스타일로 표시
  */
 export function RecentNotes({ notes }: RecentNotesProps) {
+  const { t } = useTranslation();
+
   return (
     // 8dp 그리드 시스템: space-y-3 = 12px 간격
     <div className="space-y-3">
@@ -47,7 +52,7 @@ export function RecentNotes({ notes }: RecentNotesProps) {
                         {hasBookCover ? (
                           <Image
                             src={getImageUrl(bookCoverImage!)}
-                            alt={book.title || "책 표지"}
+                            alt={book.title || t("books.coverAlt")}
                             fill
                             className="object-cover"
                             sizes="(max-width: 640px) 80px, 96px"
@@ -93,7 +98,7 @@ export function RecentNotes({ notes }: RecentNotesProps) {
                     {book ? (
                       <div className="space-y-1 pb-1 border-b">
                         <p className="text-base font-bold line-clamp-1 text-foreground">
-                          {book.title || "제목 없음"}
+                          {book.title || t("books.noTitle")}
                         </p>
                         {book.author && (
                           <p className="text-sm text-muted-foreground line-clamp-1">
@@ -103,7 +108,7 @@ export function RecentNotes({ notes }: RecentNotesProps) {
                       </div>
                     ) : (
                       <div className="pb-1 border-b">
-                        <p className="text-sm text-muted-foreground italic">책 정보 없음</p>
+                        <p className="text-sm text-muted-foreground italic">{t("books.noBookInfo")}</p>
                       </div>
                     )}
 
@@ -139,4 +144,3 @@ export function RecentNotes({ notes }: RecentNotesProps) {
     </div>
   );
 }
-

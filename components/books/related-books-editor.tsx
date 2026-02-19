@@ -23,6 +23,7 @@ import { getUserBooksWithNotes, type BookWithNotes } from "@/app/actions/books";
 import { getImageUrl } from "@/lib/utils/image";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { useTranslation } from "@/lib/i18n";
 
 interface RelatedBooksEditorProps {
   userBookId: string;
@@ -33,6 +34,7 @@ interface RelatedBooksEditorProps {
  * 현재 연결된 책 목록 확인 및 추가/삭제
  */
 export function RelatedBooksEditor({ userBookId }: RelatedBooksEditorProps) {
+  const { t } = useTranslation();
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [relatedBooks, setRelatedBooks] = useState<RelatedBook[]>([]);
@@ -57,7 +59,7 @@ export function RelatedBooksEditor({ userBookId }: RelatedBooksEditorProps) {
         setAllBooks(booksResult.books);
       } catch (error) {
         console.error("데이터 로드 실패:", error);
-        toast.error("데이터를 불러오지 못했어요.");
+        toast.error(t("books.dataLoadFailed"));
       } finally {
         setIsLoading(false);
       }
@@ -99,11 +101,11 @@ export function RelatedBooksEditor({ userBookId }: RelatedBooksEditorProps) {
       // 목록 갱신
       const updated = await getRelatedBooks(userBookId);
       setRelatedBooks(updated);
-      toast.success("책이 연결됐어요.");
+      toast.success(t("books.bookLinkedSuccess"));
       router.refresh();
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "책 연결에 실패했습니다."
+        error instanceof Error ? error.message : t("books.bookLinkFailed")
       );
     } finally {
       setIsAdding(false);
@@ -119,11 +121,11 @@ export function RelatedBooksEditor({ userBookId }: RelatedBooksEditorProps) {
       setRelatedBooks((prev) =>
         prev.filter((b) => b.userBookId !== targetUserBookId)
       );
-      toast.success("책 연결이 해제됐어요.");
+      toast.success(t("books.bookUnlinkedSuccess"));
       router.refresh();
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "책 연결 해제에 실패했습니다."
+        error instanceof Error ? error.message : t("books.bookUnlinkFailed")
       );
     } finally {
       setRemovingId(null);
@@ -141,7 +143,7 @@ export function RelatedBooksEditor({ userBookId }: RelatedBooksEditorProps) {
         <DialogHeader className="pb-2">
           <DialogTitle className="flex items-center gap-2 text-base">
             <Link2 className="h-4 w-4" />
-            연결된 책
+            {t("books.relatedBooksTitle")}
           </DialogTitle>
         </DialogHeader>
 
@@ -154,11 +156,11 @@ export function RelatedBooksEditor({ userBookId }: RelatedBooksEditorProps) {
             {/* 현재 연결된 책 */}
             <div>
               <h4 className="text-sm font-medium mb-2">
-                연결된 책 ({relatedBooks.length})
+                {t("books.relatedBooksCountLabel", { count: relatedBooks.length })}
               </h4>
               {relatedBooks.length === 0 ? (
                 <p className="text-sm text-muted-foreground py-4 text-center">
-                  연결된 책이 없습니다.
+                  {t("books.noRelatedBooks")}
                 </p>
               ) : (
                 <ScrollArea className="h-[140px]">
@@ -221,14 +223,14 @@ export function RelatedBooksEditor({ userBookId }: RelatedBooksEditorProps) {
 
             {/* 책 추가 */}
             <div className="flex-1 min-h-0 flex flex-col">
-              <h4 className="text-sm font-medium mb-2">책 추가</h4>
+              <h4 className="text-sm font-medium mb-2">{t("books.addBookRelation")}</h4>
 
               {/* 검색 */}
               <div className="relative mb-3">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   type="text"
-                  placeholder="내 서재에서 검색..."
+                  placeholder={t("books.searchInLibrary")}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-9 h-9"
@@ -242,8 +244,8 @@ export function RelatedBooksEditor({ userBookId }: RelatedBooksEditorProps) {
                     <BookOpen className="h-8 w-8 mx-auto mb-2 opacity-50" />
                     <p className="text-sm">
                       {searchQuery.trim()
-                        ? "검색 결과가 없습니다"
-                        : "추가할 수 있는 책이 없습니다"}
+                        ? t("books.noSearchResults")
+                        : t("books.noBooksToAdd")}
                     </p>
                   </div>
                 ) : (

@@ -15,6 +15,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { updateBookshelf } from "@/app/actions/bookshelves";
 import { toast } from "sonner";
+import { useTranslation } from "@/lib/i18n";
 
 interface BookshelfShareButtonProps {
   bookshelfId: string;
@@ -27,6 +28,7 @@ export function BookshelfShareButton({
   bookshelfName,
   isPublic: initialIsPublic,
 }: BookshelfShareButtonProps) {
+  const { t } = useTranslation();
   const [isPublic, setIsPublic] = useState(initialIsPublic);
   const [isUpdating, setIsUpdating] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
@@ -38,10 +40,10 @@ export function BookshelfShareButton({
     try {
       await updateBookshelf(bookshelfId, { is_public: checked });
       setIsPublic(checked);
-      toast.success(checked ? "서재가 공개되었습니다" : "서재가 비공개로 변경되었습니다");
+      toast.success(checked ? t("bookshelves.madePublic") : t("bookshelves.madePrivate"));
     } catch (error) {
       console.error("서재 공개 설정 오류:", error);
-      toast.error("공개 설정 변경에 실패했습니다");
+      toast.error(t("bookshelves.shareSettingFailed"));
     } finally {
       setIsUpdating(false);
     }
@@ -52,10 +54,10 @@ export function BookshelfShareButton({
     try {
       await navigator.clipboard.writeText(shareUrl);
       setIsCopied(true);
-      toast.success("링크가 복사되었습니다");
+      toast.success(t("bookshelves.linkCopied"));
       setTimeout(() => setIsCopied(false), 2000);
     } catch {
-      toast.error("링크 복사에 실패했습니다");
+      toast.error(t("bookshelves.linkCopyFailed"));
     }
   }, [isPublic, shareUrl]);
 
@@ -64,14 +66,14 @@ export function BookshelfShareButton({
       <DialogTrigger asChild>
         <Button variant="outline" size="icon" className="h-9 w-9 sm:w-auto sm:px-3">
           <Share2 className="h-4 w-4 sm:mr-1" />
-          <span className="hidden sm:inline">공유</span>
+          <span className="hidden sm:inline">{t("common.share")}</span>
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
-          <DialogTitle>서재 공유</DialogTitle>
+          <DialogTitle>{t("bookshelves.shareBookshelf")}</DialogTitle>
           <DialogDescription>
-            {bookshelfName} 서재를 링크로 공유할 수 있습니다.
+            {t("bookshelves.shareBookshelfDesc").replace("{name}", bookshelfName)}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 pt-2">
@@ -84,7 +86,7 @@ export function BookshelfShareButton({
                 <Lock className="h-4 w-4 text-muted-foreground" />
               )}
               <Label htmlFor="share-public-toggle" className="text-sm cursor-pointer">
-                {isPublic ? "공개 중" : "비공개"}
+                {isPublic ? t("bookshelves.publicStatus") : t("bookshelves.privateStatus")}
               </Label>
             </div>
             <Switch
@@ -107,11 +109,11 @@ export function BookshelfShareButton({
               ) : (
                 <Link2 className="h-4 w-4" />
               )}
-              {isCopied ? "복사됨" : "링크 복사"}
+              {isCopied ? t("common.copied") : t("bookshelves.copyLink")}
             </Button>
           ) : (
             <p className="text-xs text-muted-foreground text-center py-2">
-              서재를 공개로 설정하면 링크를 공유할 수 있습니다.
+              {t("bookshelves.enablePublicToShare")}
             </p>
           )}
         </div>

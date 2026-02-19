@@ -7,6 +7,7 @@ import Image from "next/image";
 import { getImageUrl } from "@/lib/utils/image";
 import { Loader2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { useTranslation } from "@/lib/i18n";
 
 interface RelatedBooksPreviewProps {
   relatedBookIds: string[] | null;
@@ -18,6 +19,7 @@ interface RelatedBooksPreviewProps {
 export function RelatedBooksPreview({
   relatedBookIds,
 }: RelatedBooksPreviewProps) {
+  const { t } = useTranslation();
   const [relatedBooks, setRelatedBooks] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -55,7 +57,7 @@ export function RelatedBooksPreview({
     return (
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
         <Loader2 className="w-4 h-4 animate-spin" />
-        연결된 책을 불러오는 중...
+        {t("notes.linkedBooksLoading")}
       </div>
     );
   }
@@ -63,14 +65,14 @@ export function RelatedBooksPreview({
   if (relatedBooks.length === 0) {
     return (
       <div className="text-sm text-muted-foreground">
-        연결된 책이 삭제되었거나 더 이상 접근할 수 없습니다.
+        {t("notes.linkedBooksUnavailable")}
       </div>
     );
   }
 
   return (
     <div className="space-y-2">
-      <h4 className="text-sm font-medium">연결된 책 ({relatedBooks.length}개)</h4>
+      <h4 className="text-sm font-medium">{t("notes.linkedBooksCountPreview", { count: relatedBooks.length })}</h4>
       <div className="flex flex-wrap gap-3">
         {relatedBooks.map((book) => (
           <Link
@@ -83,7 +85,7 @@ export function RelatedBooksPreview({
                 <div className="relative w-full h-full">
                   <Image
                     src={getImageUrl(book.books?.cover_image_url || "/placeholder-book.png")}
-                    alt={book.books?.title || "책"}
+                    alt={book.books?.title || t("notes.bookAlt")}
                     fill
                     className="object-cover"
                     sizes="80px"

@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { useTranslation } from "@/lib/i18n";
 import {
   BookOpen,
   FileText,
@@ -51,13 +52,13 @@ const ENGAGEMENT_VALUES: Record<GroupEngagement, number> = {
   solo: 30,
 };
 
-// 특성 라벨
-const TRAIT_LABELS = {
-  readingPace: "독서 속도",
-  noteStyle: "기록 깊이",
-  activityPattern: "활동성",
-  groupEngagement: "사회성",
-};
+// 특성 라벨 키
+const TRAIT_LABEL_KEYS = {
+  readingPace: "persona.readingPace",
+  noteStyle: "persona.noteStyle",
+  activityPattern: "persona.activityPattern",
+  groupEngagement: "persona.groupEngagement",
+} as const;
 
 // 특성 아이콘
 const TRAIT_ICONS = {
@@ -90,6 +91,14 @@ export function PersonaRadarChart({
   compact = false,
   className,
 }: PersonaRadarChartProps) {
+  const { t } = useTranslation();
+  const TRAIT_LABELS = {
+    readingPace: t("persona.readingPace"),
+    noteStyle: t("persona.noteStyle"),
+    activityPattern: t("persona.activityPattern"),
+    groupEngagement: t("persona.groupEngagement"),
+  };
+
   // 특성값 계산
   const traits = useMemo(() => {
     if (!persona) {
@@ -255,10 +264,10 @@ export function PersonaRadarChart({
         <div className="flex items-center justify-between">
           <CardTitle className="text-base flex items-center gap-2">
             <Radar className="h-5 w-5 text-primary" />
-            독서 특성 분석
+            {t("persona.radarTitle")}
           </CardTitle>
           <Badge variant="secondary" className="text-xs">
-            종합 {averageScore}점
+            {t("persona.averageScore", { score: averageScore })}
           </Badge>
         </div>
       </CardHeader>
@@ -418,6 +427,13 @@ export function PersonaCompareChart({
   previousPersona,
   className,
 }: PersonaCompareChartProps) {
+  const { t } = useTranslation();
+  const TRAIT_LABELS = {
+    readingPace: t("persona.readingPace"),
+    noteStyle: t("persona.noteStyle"),
+    activityPattern: t("persona.activityPattern"),
+    groupEngagement: t("persona.groupEngagement"),
+  };
   const traitKeys = ["readingPace", "noteStyle", "activityPattern", "groupEngagement"] as const;
 
   const getTraitValue = (persona: UserPersona | null, key: typeof traitKeys[number]) => {
@@ -437,7 +453,7 @@ export function PersonaCompareChart({
   return (
     <Card className={className}>
       <CardHeader className="pb-2">
-        <CardTitle className="text-base">특성 변화</CardTitle>
+        <CardTitle className="text-base">{t("persona.traitChange")}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
         {traitKeys.map((key) => {

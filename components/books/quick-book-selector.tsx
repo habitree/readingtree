@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Search, BookOpen, Loader2 } from "lucide-react";
 import Image from "next/image";
 import { getUserBooksWithNotes, type BookWithNotes } from "@/app/actions/books";
+import { useTranslation } from "@/lib/i18n";
 
 interface QuickBookSelectorProps {
   onSelect: (book: BookWithNotes) => void;
@@ -17,6 +18,7 @@ interface QuickBookSelectorProps {
  * 내 서재에서 책을 빠르게 선택할 수 있는 UI
  */
 export function QuickBookSelector({ onSelect, excludeUserBookIds = [] }: QuickBookSelectorProps) {
+  const { t } = useTranslation();
   const [books, setBooks] = useState<BookWithNotes[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -102,7 +104,7 @@ export function QuickBookSelector({ onSelect, excludeUserBookIds = [] }: QuickBo
     return (
       <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
         <Loader2 className="h-8 w-8 animate-spin mb-2" />
-        <p className="text-sm">책 목록을 불러오는 중...</p>
+        <p className="text-sm">{t("books.loadingBooks")}</p>
       </div>
     );
   }
@@ -111,8 +113,8 @@ export function QuickBookSelector({ onSelect, excludeUserBookIds = [] }: QuickBo
     return (
       <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
         <BookOpen className="h-12 w-12 mb-3 opacity-50" />
-        <p className="text-sm font-medium">서재에 책이 없습니다</p>
-        <p className="text-xs mt-1">먼저 책을 추가해주세요</p>
+        <p className="text-sm font-medium">{t("books.noBooksInLibrary")}</p>
+        <p className="text-xs mt-1">{t("books.addBooksFirst")}</p>
       </div>
     );
   }
@@ -124,7 +126,7 @@ export function QuickBookSelector({ onSelect, excludeUserBookIds = [] }: QuickBo
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
           type="text"
-          placeholder="책 검색..."
+          placeholder={t("books.searchBooksPlaceholder")}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="pl-9 h-11"
@@ -136,7 +138,7 @@ export function QuickBookSelector({ onSelect, excludeUserBookIds = [] }: QuickBo
         {!searchQuery.trim() && recentNoteBooks.length > 0 && (
           <div>
             <h4 className="text-sm font-medium text-muted-foreground mb-2">
-              최근 기록한 책
+              {t("books.recentlyNoted")}
             </h4>
             <div className="grid grid-cols-3 gap-2">
               {recentNoteBooks.map((book) => (
@@ -155,7 +157,7 @@ export function QuickBookSelector({ onSelect, excludeUserBookIds = [] }: QuickBo
         {!searchQuery.trim() && readingBooks.length > 0 && (
           <div>
             <h4 className="text-sm font-medium text-muted-foreground mb-2">
-              읽는 중인 책
+              {t("books.currentlyReadingBooks")}
             </h4>
             <div className="grid grid-cols-3 gap-2">
               {readingBooks.map((book) => (
@@ -174,7 +176,7 @@ export function QuickBookSelector({ onSelect, excludeUserBookIds = [] }: QuickBo
         <div>
           {!searchQuery.trim() && (recentNoteBooks.length > 0 || readingBooks.length > 0) && (
             <h4 className="text-sm font-medium text-muted-foreground mb-2">
-              내 서재
+              {t("books.myBooks")}
             </h4>
           )}
           {otherBooks.length > 0 ? (
@@ -190,7 +192,7 @@ export function QuickBookSelector({ onSelect, excludeUserBookIds = [] }: QuickBo
             </div>
           ) : searchQuery.trim() ? (
             <div className="text-center py-8 text-muted-foreground">
-              <p className="text-sm">검색 결과가 없습니다</p>
+              <p className="text-sm">{t("search.noResults")}</p>
             </div>
           ) : null}
         </div>
@@ -206,6 +208,7 @@ interface BookCardProps {
 }
 
 function BookCard({ book, variant, onSelect }: BookCardProps) {
+  const { t } = useTranslation();
   const coverUrl = book.books.cover_image_url;
 
   if (variant === "compact") {
@@ -272,7 +275,7 @@ function BookCard({ book, variant, onSelect }: BookCardProps) {
           </p>
         )}
         <p className="text-xs text-muted-foreground/70 mt-1">
-          기록 {book.noteCount}개
+          {t("books.noteCountLabel", { count: book.noteCount })}
         </p>
       </div>
     </button>

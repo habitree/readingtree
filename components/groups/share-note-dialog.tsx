@@ -17,6 +17,7 @@ import { getShareableNotes, shareNotesToGroup } from "@/app/actions/groups";
 import { toast } from "sonner";
 import { formatSmartDate } from "@/lib/utils/date";
 import type { NoteType } from "@/types/group";
+import { useTranslation } from "@/lib/i18n";
 
 interface ShareNoteDialogProps {
   open: boolean;
@@ -34,11 +35,11 @@ const noteTypeIcons = {
   transcription: ScanText,
 };
 
-const noteTypeLabels = {
-  quote: "인용구",
-  photo: "사진",
-  memo: "메모",
-  transcription: "사진 필사",
+const noteTypeLabelKeys: Record<string, string> = {
+  quote: "groups.noteTypeQuote",
+  photo: "groups.noteTypePhoto",
+  memo: "groups.noteTypeMemo",
+  transcription: "groups.noteTypeTranscription",
 };
 
 export function ShareNoteDialog({
@@ -49,6 +50,7 @@ export function ShareNoteDialog({
   bookTitle,
   onSuccess,
 }: ShareNoteDialogProps) {
+  const { t } = useTranslation();
   const [notes, setNotes] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSharing, setIsSharing] = useState(false);
@@ -61,7 +63,7 @@ export function ShareNoteDialog({
       setNotes(data);
     } catch (error) {
       console.error("기록 조회 오류:", error);
-      toast.error("기록을 불러오지 못했어요.");
+      toast.error(t("errors.loadError"));
     } finally {
       setIsLoading(false);
     }
@@ -96,7 +98,7 @@ export function ShareNoteDialog({
 
   const handleShare = async () => {
     if (selectedNoteIds.size === 0) {
-      toast.error("공유할 기록을 선택해주세요.");
+      toast.error(t("groups.selectNotes"));
       return;
     }
 
@@ -106,12 +108,12 @@ export function ShareNoteDialog({
         Array.from(selectedNoteIds),
         groupId
       );
-      toast.success(`${result.sharedCount}개의 기록이 공유됐어요.`);
+      toast.success(t("groups.notesSharedCount").replace("{count}", String(result.sharedCount)));
       onOpenChange(false);
       onSuccess?.();
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "공유에 실패했습니다."
+        error instanceof Error ? error.message : t("errors.saveError")
       );
     } finally {
       setIsSharing(false);
@@ -124,10 +126,10 @@ export function ShareNoteDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Share2 className="h-5 w-5" />
-            기록 공유하기
+            {t("groups.shareNoteTitle")}
           </DialogTitle>
           <DialogDescription>
-            &quot;{bookTitle}&quot;에 대한 내 기록을 모임에 공유합니다.
+            {t("groups.shareNoteDesc").replace("{bookTitle}", bookTitle)}
           </DialogDescription>
         </DialogHeader>
 
@@ -139,10 +141,10 @@ export function ShareNoteDialog({
           ) : notes.length === 0 ? (
             <div className="text-center py-12">
               <p className="text-muted-foreground">
-                공유할 수 있는 기록이 없습니다.
+                {t("groups.noShareableNotes")}
               </p>
               <p className="text-sm text-muted-foreground mt-1">
-                이 책에 대한 기록을 먼저 작성해주세요.
+                {t("groups.writeNoteFirst")}
               </p>
             </div>
           ) : (
@@ -153,10 +155,12 @@ export function ShareNoteDialog({
                     checked={selectedNoteIds.size === notes.length}
                     onCheckedChange={toggleAll}
                   />
-                  <span className="text-sm font-medium">전체 선택</span>
+                  <span className="text-sm font-medium">{t("groups.selectAll")}</span>
                 </label>
                 <span className="text-sm text-muted-foreground">
-                  {selectedNoteIds.size}/{notes.length}개 선택
+                  {t("groups.selectedCount")
+                    .replace("{selected}", String(selectedNoteIds.size))
+                    .replace("{total}", String(notes.length))}
                 </span>
               </div>
 
@@ -180,7 +184,7 @@ export function ShareNoteDialog({
                       <div className="flex items-center gap-2 mb-1">
                         <Badge variant="secondary" className="text-xs">
                           <Icon className="mr-1 h-3 w-3" />
-                          {noteTypeLabels[note.type as NoteType]}
+                          {t((noteTypeLabelKeys[note.type as NoteType] || "groups.noteTypeMemo") as Parameters<typeof t>[0])}
                         </Badge>
                         {note.page_number && (
                           <span className="text-xs text-muted-foreground">
@@ -211,7 +215,7 @@ export function ShareNoteDialog({
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            취소
+            {t("common.cancel")}
           </Button>
           <Button
             onClick={handleShare}
@@ -220,12 +224,12 @@ export function ShareNoteDialog({
             {isSharing ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                공유 중...
+                {t("groups.sharing")}
               </>
             ) : (
               <>
                 <Share2 className="mr-2 h-4 w-4" />
-                {selectedNoteIds.size}개 공유
+                {t("groups.shareCount").replace("{count}", String(selectedNoteIds.size))}
               </>
             )}
           </Button>

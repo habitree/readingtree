@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { Activity } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/lib/i18n";
 
 interface StatusItem {
   name: string;
@@ -15,6 +16,7 @@ interface StatusOverviewBarProps {
 }
 
 export function StatusOverviewBar({ services }: StatusOverviewBarProps) {
+  const { t } = useTranslation();
   const activeCount = services.filter((s) => s.enabled).length;
   const totalCount = services.length;
 
@@ -25,9 +27,9 @@ export function StatusOverviewBar({ services }: StatusOverviewBarProps) {
           {/* 라벨 */}
           <div className="flex items-center gap-2">
             <Activity className="h-4 w-4 text-forest-600 dark:text-forest-400" />
-            <span className="text-sm font-medium">서비스 상태</span>
+            <span className="text-sm font-medium">{t("admin.apiInfo.serviceStatus")}</span>
             <span className="text-xs text-muted-foreground">
-              {activeCount}/{totalCount} 활성
+              {t("admin.apiInfo.activeCount", { active: activeCount, total: totalCount })}
             </span>
           </div>
 

@@ -52,6 +52,7 @@ import {
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import type { MemberRole } from "@/types/group";
+import { useTranslation } from "@/lib/i18n";
 
 interface MemberListProps {
   members: Array<{
@@ -87,12 +88,12 @@ function MemberSkeleton() {
   );
 }
 
-function getRoleBadge(role: string, isGroupLeader: boolean) {
+function getRoleBadge(role: string, isGroupLeader: boolean, leaderLabel: string, subleaderLabel: string) {
   if (isGroupLeader || role === "leader") {
     return (
       <Badge className="text-xs bg-amber-100 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 border-0">
         <Crown className="mr-1 h-3 w-3" />
-        리더
+        {leaderLabel}
       </Badge>
     );
   }
@@ -100,7 +101,7 @@ function getRoleBadge(role: string, isGroupLeader: boolean) {
     return (
       <Badge className="text-xs bg-blue-100 dark:bg-blue-950/30 text-blue-700 dark:text-blue-400 border-0">
         <Shield className="mr-1 h-3 w-3" />
-        부리더
+        {subleaderLabel}
       </Badge>
     );
   }
@@ -115,6 +116,7 @@ export function MemberList({
   currentUserId,
 }: MemberListProps) {
   const router = useRouter();
+  const { t } = useTranslation();
   const [pendingMembers, setPendingMembers] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -156,12 +158,12 @@ export function MemberList({
     setActionLoading(userId);
     try {
       await approveMember(groupId, userId);
-      toast.success("멤버가 승인됐어요.");
+      toast.success(t("groups.memberApproved"));
       setPendingMembers((prev) => prev.filter((m) => m.user_id !== userId));
       router.refresh();
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "멤버 승인에 실패했습니다."
+        error instanceof Error ? error.message : t("groups.approveFailed")
       );
     } finally {
       setActionLoading(null);
@@ -172,12 +174,12 @@ export function MemberList({
     setActionLoading(userId);
     try {
       await rejectMember(groupId, userId);
-      toast.success("멤버 신청이 거절됐어요.");
+      toast.success(t("groups.memberRejected"));
       setPendingMembers((prev) => prev.filter((m) => m.user_id !== userId));
       router.refresh();
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "멤버 거절에 실패했습니다."
+        error instanceof Error ? error.message : t("groups.rejectFailed")
       );
     } finally {
       setActionLoading(null);
@@ -188,12 +190,12 @@ export function MemberList({
     setActionLoading("all");
     try {
       const result = await approveAllPendingMembers(groupId);
-      toast.success(`${result.count}명의 멤버가 승인됐어요.`);
+      toast.success(t("groups.membersApprovedCount").replace("{count}", String(result.count)));
       setPendingMembers([]);
       router.refresh();
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "일괄 승인에 실패했습니다."
+        error instanceof Error ? error.message : t("groups.approveAllFailed")
       );
     } finally {
       setActionLoading(null);
@@ -205,12 +207,12 @@ export function MemberList({
     setActionLoading(confirmDialog.userId);
     try {
       await removeMember(groupId, confirmDialog.userId);
-      toast.success(`${confirmDialog.userName}님이 모임에서 제외됐어요.`);
+      toast.success(t("groups.memberKicked").replace("{name}", confirmDialog.userName));
       setConfirmDialog({ open: false, type: null, userId: "", userName: "" });
       router.refresh();
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "멤버 제외에 실패했습니다."
+        error instanceof Error ? error.message : t("groups.kickFailed")
       );
     } finally {
       setActionLoading(null);
@@ -224,15 +226,15 @@ export function MemberList({
     try {
       await updateMemberRole(groupId, confirmDialog.userId, confirmDialog.newRole as "moderator" | "member");
       toast.success(
-        `${confirmDialog.userName}님의 역할이 ${
-          confirmDialog.newRole === "moderator" ? "부리더" : "멤버"
-        }로 변경됐어요.`
+        t("groups.roleChanged")
+          .replace("{name}", confirmDialog.userName)
+          .replace("{role}", confirmDialog.newRole === "moderator" ? t("groups.subleader") : t("groups.member"))
       );
       setConfirmDialog({ open: false, type: null, userId: "", userName: "" });
       router.refresh();
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "역할 변경에 실패했습니다."
+        error instanceof Error ? error.message : t("groups.roleChangeFailed")
       );
     } finally {
       setActionLoading(null);
@@ -244,12 +246,12 @@ export function MemberList({
     setActionLoading(confirmDialog.userId);
     try {
       await transferLeadership(groupId, confirmDialog.userId);
-      toast.success(`${confirmDialog.userName}님에게 리더가 위임됐어요.`);
+      toast.success(t("groups.leaderTransferred").replace("{name}", confirmDialog.userName));
       setConfirmDialog({ open: false, type: null, userId: "", userName: "" });
       router.refresh();
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "리더 위임에 실패했습니다."
+        error instanceof Error ? error.message : t("groups.transferFailed")
       );
     } finally {
       setActionLoading(null);
@@ -269,7 +271,7 @@ export function MemberList({
     return (
       <Card>
         <CardHeader>
-          <CardTitle>구성원 목록</CardTitle>
+          <CardTitle>{t("groups.memberList")}</CardTitle>
         </CardHeader>
         <CardContent>
           <MemberSkeleton />
@@ -294,9 +296,9 @@ export function MemberList({
               <div className="flex items-center justify-between">
                 <CardTitle className="text-base flex items-center gap-2">
                   <Clock className="h-5 w-5 text-orange-600" />
-                  승인 대기 중
+                  {t("groups.pendingApproval")}
                   <Badge variant="secondary" className="ml-1">
-                    {pendingMembers.length}명
+                    {t("groups.memberCount").replace("{count}", String(pendingMembers.length))}
                   </Badge>
                 </CardTitle>
                 {pendingMembers.length > 1 && (
@@ -312,7 +314,7 @@ export function MemberList({
                     ) : (
                       <CheckCircle className="mr-1 h-3 w-3" />
                     )}
-                    전체 승인
+                    {t("groups.approveAll")}
                   </Button>
                 )}
               </div>
@@ -321,7 +323,7 @@ export function MemberList({
               <div className="space-y-2">
                 {pendingMembers.map((member) => {
                   const user = member.users;
-                  const userName = user?.name || `사용자 ${member.user_id.slice(0, 8)}`;
+                  const userName = user?.name || `${t("common.user")} ${member.user_id.slice(0, 8)}`;
                   const isProcessing = actionLoading === member.user_id;
 
                   return (
@@ -344,7 +346,7 @@ export function MemberList({
                             {userName}
                           </Link>
                           <p className="text-xs text-muted-foreground">
-                            참여 신청 대기 중
+                            {t("groups.pendingRequestWaiting")}
                           </p>
                         </div>
                       </div>
@@ -373,7 +375,7 @@ export function MemberList({
                           ) : (
                             <Check className="mr-1 h-4 w-4" />
                           )}
-                          승인
+                          {t("groups.approve")}
                         </Button>
                       </div>
                     </div>
@@ -390,9 +392,9 @@ export function MemberList({
             <div className="flex items-center justify-between">
               <CardTitle className="flex items-center gap-2">
                 <Users className="h-5 w-5" />
-                구성원
+                {t("groups.composedOf")}
                 <Badge variant="outline" className="ml-1">
-                  {approvedMembers.length}명
+                  {t("groups.memberCount").replace("{count}", String(approvedMembers.length))}
                 </Badge>
               </CardTitle>
             </div>
@@ -403,13 +405,13 @@ export function MemberList({
                 <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
                   <Users className="h-8 w-8 text-muted-foreground" />
                 </div>
-                <p className="text-muted-foreground">구성원이 없습니다.</p>
+                <p className="text-muted-foreground">{t("groups.noMembers")}</p>
               </div>
             ) : (
               <div className="space-y-2">
                 {sortedMembers.map((member, index) => {
                   const user = member.users;
-                  const userName = user?.name || `사용자 ${member.user_id.slice(0, 8)}`;
+                  const userName = user?.name || `${t("common.user")} ${member.user_id.slice(0, 8)}`;
                   const isGroupLeader = member.role === "leader";
                   const isMemberModerator = member.role === "moderator";
                   const isCurrentUser = member.user_id === currentUserId;
@@ -442,14 +444,14 @@ export function MemberList({
                             </Link>
                             {isCurrentUser && (
                               <Badge variant="outline" className="text-xs">
-                                나
+                                {t("groups.me")}
                               </Badge>
                             )}
-                            {getRoleBadge(member.role, isGroupLeader)}
+                            {getRoleBadge(member.role, isGroupLeader, t("groups.leader"), t("groups.subleader"))}
                           </div>
                           {!user && (
                             <p className="text-xs text-muted-foreground">
-                              프로필 정보를 불러올 수 없습니다
+                              {t("groups.failedToLoadProfile")}
                             </p>
                           )}
                         </div>
@@ -483,7 +485,7 @@ export function MemberList({
                                     }
                                   >
                                     <ShieldOff className="mr-2 h-4 w-4" />
-                                    부리더 해제
+                                    {t("groups.demoteSubleader")}
                                   </DropdownMenuItem>
                                 ) : (
                                   <DropdownMenuItem
@@ -492,7 +494,7 @@ export function MemberList({
                                     }
                                   >
                                     <Shield className="mr-2 h-4 w-4" />
-                                    부리더 임명
+                                    {t("groups.promoteSubleader")}
                                   </DropdownMenuItem>
                                 )}
                                 <DropdownMenuItem
@@ -501,7 +503,7 @@ export function MemberList({
                                   }
                                 >
                                   <ArrowRightLeft className="mr-2 h-4 w-4" />
-                                  리더 위임
+                                  {t("groups.transferLeadership")}
                                 </DropdownMenuItem>
                               </>
                             )}
@@ -516,7 +518,7 @@ export function MemberList({
                                   className="text-destructive focus:text-destructive"
                                 >
                                   <UserMinus className="mr-2 h-4 w-4" />
-                                  내보내기
+                                  {t("groups.kick")}
                                 </DropdownMenuItem>
                               </>
                             )}
@@ -542,44 +544,26 @@ export function MemberList({
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {confirmDialog.type === "kick" && "멤버를 내보내시겠어요?"}
-              {confirmDialog.type === "transfer" && "리더를 위임하시겠어요?"}
+              {confirmDialog.type === "kick" && t("groups.kickConfirmTitle")}
+              {confirmDialog.type === "transfer" && t("groups.transferConfirmTitle")}
               {confirmDialog.type === "role" &&
                 (confirmDialog.newRole === "moderator"
-                  ? "부리더로 임명하시겠어요?"
-                  : "부리더를 해제하시겠어요?")}
+                  ? t("groups.promoteConfirmTitle")
+                  : t("groups.demoteConfirmTitle"))}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              {confirmDialog.type === "kick" && (
-                <>
-                  <span className="font-medium">{confirmDialog.userName}</span>
-                  님을 모임에서 내보냅니다. 이 작업은 되돌릴 수 없습니다.
-                </>
-              )}
-              {confirmDialog.type === "transfer" && (
-                <>
-                  <span className="font-medium">{confirmDialog.userName}</span>
-                  님에게 리더 권한을 위임합니다. 위임 후 본인은 일반 멤버가 됩니다.
-                </>
-              )}
+              {confirmDialog.type === "kick" && t("groups.kickConfirmDesc").replace("{name}", confirmDialog.userName)}
+              {confirmDialog.type === "transfer" && t("groups.transferConfirmDesc").replace("{name}", confirmDialog.userName)}
               {confirmDialog.type === "role" &&
-                confirmDialog.newRole === "moderator" && (
-                  <>
-                    <span className="font-medium">{confirmDialog.userName}</span>
-                    님을 부리더로 임명합니다. 부리더는 멤버 승인/거절 권한을 가집니다.
-                  </>
-                )}
+                confirmDialog.newRole === "moderator" &&
+                t("groups.promoteConfirmDesc").replace("{name}", confirmDialog.userName)}
               {confirmDialog.type === "role" &&
-                confirmDialog.newRole === "member" && (
-                  <>
-                    <span className="font-medium">{confirmDialog.userName}</span>
-                    님의 부리더 권한을 해제합니다.
-                  </>
-                )}
+                confirmDialog.newRole === "member" &&
+                t("groups.demoteConfirmDesc").replace("{name}", confirmDialog.userName)}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>취소</AlertDialogCancel>
+            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
                 if (confirmDialog.type === "kick") handleKick();
@@ -591,13 +575,13 @@ export function MemberList({
               {confirmDialog.type === "kick" && (
                 <>
                   <UserMinus className="mr-2 h-4 w-4" />
-                  내보내기
+                  {t("groups.kick")}
                 </>
               )}
               {confirmDialog.type === "transfer" && (
                 <>
                   <ArrowRightLeft className="mr-2 h-4 w-4" />
-                  위임하기
+                  {t("groups.delegateLeader")}
                 </>
               )}
               {confirmDialog.type === "role" && (
@@ -605,12 +589,12 @@ export function MemberList({
                   {confirmDialog.newRole === "moderator" ? (
                     <>
                       <Shield className="mr-2 h-4 w-4" />
-                      임명하기
+                      {t("groups.promote")}
                     </>
                   ) : (
                     <>
                       <ShieldOff className="mr-2 h-4 w-4" />
-                      해제하기
+                      {t("groups.demote")}
                     </>
                   )}
                 </>

@@ -12,6 +12,7 @@ import { getImageUrl, isValidImageUrl } from "@/lib/utils/image";
 import { BookStatusBadge } from "@/components/books/book-status-badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { UserBookSelectDialog } from "@/components/books/user-book-select-dialog";
+import { useTranslation } from "@/lib/i18n";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,6 +29,7 @@ interface SharedBooksManagerProps {
 }
 
 export function SharedBooksManager({ groupId }: SharedBooksManagerProps) {
+  const { t } = useTranslation();
   const [sharedBooks, setSharedBooks] = useState<any[]>([]);
   const [myBooks, setMyBooks] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -50,7 +52,7 @@ export function SharedBooksManager({ groupId }: SharedBooksManagerProps) {
     } catch (error) {
       console.error("공유 서재 조회 오류:", error);
       toast.error(
-        error instanceof Error ? error.message : "공유 서재 조회에 실패했습니다."
+        error instanceof Error ? error.message : t("errors.loadError")
       );
     } finally {
       setIsLoading(false);
@@ -61,11 +63,11 @@ export function SharedBooksManager({ groupId }: SharedBooksManagerProps) {
     try {
       setIsSharing(true);
       await shareUserBookToGroup(groupId, userBook.id);
-      toast.success(`'${userBook.books?.title}'이(가) 공유됐어요.`);
+      toast.success(t("groups.bookSharedSuccess").replace("{title}", userBook.books?.title || ""));
       loadData();
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "서재 공유 실패"
+        error instanceof Error ? error.message : t("errors.saveError")
       );
     } finally {
       setIsSharing(false);
@@ -75,12 +77,12 @@ export function SharedBooksManager({ groupId }: SharedBooksManagerProps) {
   const handleUnshareBook = async (userBookId: string) => {
     try {
       await unshareUserBookFromGroup(groupId, userBookId);
-      toast.success("공유가 해제됐어요.");
+      toast.success(t("groups.unshareSuccess"));
       setUnsharingBookId(null);
       loadData();
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "공유 해제 실패"
+        error instanceof Error ? error.message : t("errors.saveError")
       );
     }
   };
@@ -106,9 +108,9 @@ export function SharedBooksManager({ groupId }: SharedBooksManagerProps) {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-lg font-semibold">공유 서재</h3>
+          <h3 className="text-lg font-semibold">{t("groups.sharedLibrary")}</h3>
           <p className="text-sm text-muted-foreground">
-            모임 멤버들이 공유한 개인 서재입니다
+            {t("groups.sharedLibraryDesc")}
           </p>
         </div>
         <UserBookSelectDialog
@@ -116,9 +118,9 @@ export function SharedBooksManager({ groupId }: SharedBooksManagerProps) {
           excludeBookIds={sharedBookIds}
           onSelect={handleShareBook}
           isSelecting={isSharing}
-          title="내 서재에서 공유"
-          description="모임에 공유할 책을 선택하세요"
-          selectButtonText="공유하기"
+          title={t("groups.shareFromMyLibrary")}
+          description={t("groups.selectBookToShare")}
+          selectButtonText={t("groups.shareButton")}
         />
       </div>
 
@@ -128,7 +130,7 @@ export function SharedBooksManager({ groupId }: SharedBooksManagerProps) {
             <div className="text-center py-12">
               <BookOpen className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
               <p className="text-muted-foreground">
-                공유된 서재가 없습니다.
+                {t("groups.noSharedLibrary")}
               </p>
             </div>
           </CardContent>
@@ -177,7 +179,7 @@ export function SharedBooksManager({ groupId }: SharedBooksManagerProps) {
                         </AvatarFallback>
                       </Avatar>
                       <span className="text-xs text-muted-foreground">
-                        {user?.name || "알 수 없음"}
+                        {user?.name || t("groups.unknownUser")}
                       </span>
                     </div>
 
@@ -193,7 +195,7 @@ export function SharedBooksManager({ groupId }: SharedBooksManagerProps) {
                         onClick={() => setUnsharingBookId(userBook.id)}
                       >
                         <X className="mr-2 h-4 w-4" />
-                        공유 해제
+                        {t("groups.unshareBook")}
                       </Button>
                     )}
                   </div>
@@ -210,17 +212,17 @@ export function SharedBooksManager({ groupId }: SharedBooksManagerProps) {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>공유 해제</AlertDialogTitle>
+            <AlertDialogTitle>{t("groups.unshareBookConfirmTitle")}</AlertDialogTitle>
             <AlertDialogDescription>
-              정말로 이 서재의 공유를 해제하시겠습니까?
+              {t("groups.unshareBookConfirmDesc")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>취소</AlertDialogCancel>
+            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => unsharingBookId && handleUnshareBook(unsharingBookId)}
             >
-              공유 해제
+              {t("groups.unshareBook")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

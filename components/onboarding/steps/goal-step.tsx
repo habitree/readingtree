@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Target, Minus, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/lib/i18n";
 
 interface GoalStepProps {
   onNext: (data: { goal: number }) => void;
@@ -18,6 +19,7 @@ const PRESET_GOALS = [6, 12, 24, 52];
  * 연간 독서 목표를 설정하는 단계
  */
 export function GoalStep({ onNext, onBack, isLoading }: GoalStepProps) {
+  const { t } = useTranslation();
   const [goal, setGoal] = useState(12);
 
   const handleIncrement = () => {
@@ -34,11 +36,11 @@ export function GoalStep({ onNext, onBack, isLoading }: GoalStepProps) {
 
   // 목표에 따른 동기부여 메시지
   const getMotivationMessage = () => {
-    if (goal <= 6) return "월 0.5권";
-    if (goal <= 12) return "월 1권";
-    if (goal <= 24) return "월 2권";
-    if (goal <= 52) return "주 1권";
-    return "주 2권+";
+    if (goal <= 6) return t("onboarding.goalHalfMonthly");
+    if (goal <= 12) return t("onboarding.goalMonthly");
+    if (goal <= 24) return t("onboarding.goalBiMonthly");
+    if (goal <= 52) return t("onboarding.goalWeekly");
+    return t("onboarding.goalBiWeekly");
   };
 
   return (
@@ -49,7 +51,7 @@ export function GoalStep({ onNext, onBack, isLoading }: GoalStepProps) {
           <Target className="w-8 h-8 text-primary" />
         </div>
         <div>
-          <h2 className="text-xl font-bold">연간 목표</h2>
+          <h2 className="text-xl font-bold">{t("onboarding.goalStep")}</h2>
         </div>
       </div>
 
@@ -70,7 +72,7 @@ export function GoalStep({ onNext, onBack, isLoading }: GoalStepProps) {
 
           <div className="text-center">
             <div className="text-6xl font-bold text-primary">{goal}</div>
-            <div className="text-sm text-muted-foreground mt-1">권 / 년</div>
+            <div className="text-sm text-muted-foreground mt-1">{t("onboarding.booksPerYear")}</div>
           </div>
 
           <Button
@@ -100,7 +102,7 @@ export function GoalStep({ onNext, onBack, isLoading }: GoalStepProps) {
                 goal === preset && "ring-2 ring-primary/20"
               )}
             >
-              {preset}권
+              {preset}{t("onboarding.booksUnit")}
             </Button>
           ))}
         </div>
@@ -122,19 +124,19 @@ export function GoalStep({ onNext, onBack, isLoading }: GoalStepProps) {
           disabled={isLoading}
           className="flex-1"
         >
-          이전
+          {t("common.prev")}
         </Button>
         <Button
           onClick={handleSubmit}
           disabled={isLoading}
           className="flex-1"
         >
-          {isLoading ? "저장 중..." : "다음"}
+          {isLoading ? t("onboarding.saving") : t("common.next")}
         </Button>
       </div>
 
       <p className="text-xs text-muted-foreground text-center">
-        목표는 나중에 설정에서 변경할 수 있습니다
+        {t("onboarding.goalChangeHint")}
       </p>
     </div>
   );

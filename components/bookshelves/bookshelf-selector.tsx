@@ -11,6 +11,7 @@ import {
 import { getBookshelves } from "@/app/actions/bookshelves";
 import { Bookshelf } from "@/types/bookshelf";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useTranslation } from "@/lib/i18n";
 
 interface BookshelfSelectorProps {
   value?: string;
@@ -23,8 +24,10 @@ export function BookshelfSelector({
   value,
   onValueChange,
   excludeMain = false,
-  placeholder = "서재 선택",
+  placeholder,
 }: BookshelfSelectorProps) {
+  const { t } = useTranslation();
+  const resolvedPlaceholder = placeholder ?? t("books.selectShelf");
   const [bookshelves, setBookshelves] = useState<Bookshelf[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -49,13 +52,13 @@ export function BookshelfSelector({
   return (
     <Select value={value} onValueChange={onValueChange}>
       <SelectTrigger>
-        <SelectValue placeholder={placeholder} />
+        <SelectValue placeholder={resolvedPlaceholder} />
       </SelectTrigger>
       <SelectContent>
         {bookshelves.map((bookshelf) => (
           <SelectItem key={bookshelf.id} value={bookshelf.id}>
             {bookshelf.name}
-            {bookshelf.is_main && " (통합)"}
+            {bookshelf.is_main && ` (${t("books.integrated")})`}
           </SelectItem>
         ))}
       </SelectContent>

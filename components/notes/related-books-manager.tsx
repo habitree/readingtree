@@ -21,6 +21,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { getImageUrl } from "@/lib/utils/image";
+import { useTranslation } from "@/lib/i18n";
 
 interface RelatedBooksManagerProps {
   noteId: string;
@@ -38,6 +39,7 @@ export function RelatedBooksManager({
   mainBookId,
   onUpdate,
 }: RelatedBooksManagerProps) {
+  const { t } = useTranslation();
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
@@ -66,7 +68,7 @@ export function RelatedBooksManager({
       setAvailableBooks(filtered);
     } catch (error) {
       console.error("책 목록 로드 오류:", error);
-      toast.error("책 목록을 불러오지 못했어요.");
+      toast.error(t("notes.booksLoadFailed"));
     } finally {
       setIsLoadingBooks(false);
     }
@@ -89,7 +91,7 @@ export function RelatedBooksManager({
         related_user_book_ids: selectedBookIds.length > 0 ? selectedBookIds : [],
       });
 
-      toast.success("관련 책이 업데이트됐어요.");
+      toast.success(t("notes.relatedBooksUpdated"));
       
       // 부모 컴포넌트에 업데이트된 목록 전달
       if (onUpdate) {
@@ -100,7 +102,7 @@ export function RelatedBooksManager({
       router.refresh();
     } catch (error: any) {
       console.error("관련 책 업데이트 오류:", error);
-      toast.error(error.message || "관련 책 업데이트에 실패했어요.");
+      toast.error(error.message || t("notes.relatedBooksUpdateFailed"));
     } finally {
       setIsUpdating(false);
     }
@@ -126,7 +128,7 @@ export function RelatedBooksManager({
       <DialogTrigger asChild>
         <Button variant="outline" size="sm" className="gap-1.5 h-8 px-2.5 sm:px-3">
           <BookOpen className="w-4 h-4" />
-          <span className="hidden sm:inline">연결된 책</span>
+          <span className="hidden sm:inline">{t("notes.relatedBooks")}</span>
           {currentRelatedBookIds && currentRelatedBookIds.length > 0 && (
             <Badge variant="secondary" className="ml-0.5 h-5 min-w-5 px-1.5 text-xs">
               {currentRelatedBookIds.length}
@@ -136,9 +138,9 @@ export function RelatedBooksManager({
       </DialogTrigger>
       <DialogContent className="w-[calc(100vw-2rem)] max-w-2xl max-h-[85vh] sm:max-h-[80vh] overflow-hidden flex flex-col p-0">
         <DialogHeader className="px-4 pt-4 pb-2 sm:px-6 sm:pt-6">
-          <DialogTitle className="text-base sm:text-lg">연결된 책 관리</DialogTitle>
+          <DialogTitle className="text-base sm:text-lg">{t("notes.relatedBooksManage")}</DialogTitle>
           <DialogDescription className="text-xs sm:text-sm">
-            이 기록과 관련된 다른 책을 선택하세요.
+            {t("notes.relatedBooksManageDesc")}
           </DialogDescription>
         </DialogHeader>
 
@@ -147,7 +149,7 @@ export function RelatedBooksManager({
           {selectedBooks.length > 0 && (
             <div className="space-y-2">
               <h4 className="text-xs sm:text-sm font-medium text-muted-foreground">
-                선택됨 ({selectedBooks.length})
+                {t("notes.selectedLabel", { count: selectedBooks.length })}
               </h4>
               <div className="flex flex-wrap gap-1.5 sm:gap-2">
                 {selectedBooks.map((book) => (
@@ -159,7 +161,7 @@ export function RelatedBooksManager({
                     <button
                       onClick={() => handleToggleBook(book.id)}
                       className="ml-0.5 h-5 w-5 rounded-full flex items-center justify-center text-primary-foreground/70 hover:bg-destructive hover:text-destructive-foreground transition-colors"
-                      aria-label={`${book.books.title} 제거`}
+                      aria-label={t("notes.removeAriaLabel", { title: book.books.title })}
                     >
                       <X className="w-3 h-3" />
                     </button>
@@ -172,7 +174,7 @@ export function RelatedBooksManager({
           {/* 사용 가능한 책 목록 */}
           <div className="space-y-2">
             <div className="flex items-center justify-between gap-2">
-              <h4 className="text-xs sm:text-sm font-medium text-muted-foreground shrink-0">책 선택</h4>
+              <h4 className="text-xs sm:text-sm font-medium text-muted-foreground shrink-0">{t("notes.bookSelectLabel")}</h4>
               {availableBooks.length > 0 && (
                 <span className="text-[10px] sm:text-xs text-muted-foreground truncate">
                   {filteredBooks.length}/{availableBooks.length}
@@ -186,7 +188,7 @@ export function RelatedBooksManager({
                 <Search className="absolute left-2.5 sm:left-3 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground" />
                 <Input
                   type="search"
-                  placeholder="검색..."
+                  placeholder={t("notes.searchPlaceholder")}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-8 sm:pl-10 h-9 text-sm"
@@ -200,11 +202,11 @@ export function RelatedBooksManager({
               </div>
             ) : availableBooks.length === 0 ? (
               <p className="text-xs sm:text-sm text-muted-foreground text-center py-8">
-                연결할 수 있는 다른 책이 없습니다.
+                {t("notes.noOtherBooksToLink")}
               </p>
             ) : filteredBooks.length === 0 ? (
               <p className="text-xs sm:text-sm text-muted-foreground text-center py-8">
-                검색 결과가 없습니다.
+                {t("notes.noSearchResults")}
               </p>
             ) : (
               <div className="space-y-1.5 sm:space-y-2 max-h-[40vh] sm:max-h-[300px] overflow-y-auto -mx-1 px-1">
@@ -261,7 +263,7 @@ export function RelatedBooksManager({
             size="sm"
             className="h-9 sm:h-10"
           >
-            취소
+            {t("notes.cancel")}
           </Button>
           <Button
             onClick={handleSave}
@@ -272,10 +274,10 @@ export function RelatedBooksManager({
             {isUpdating ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                저장 중...
+                {t("notes.saving")}
               </>
             ) : (
-              `저장${selectedBookIds.length > 0 ? ` (${selectedBookIds.length})` : ""}`
+              selectedBookIds.length > 0 ? t("notes.saveWithCount", { count: selectedBookIds.length }) : t("notes.save")
             )}
           </Button>
         </div>
@@ -298,6 +300,7 @@ export function RelatedBooksDisplay({
   mainBookId,
   initialBooks,
 }: RelatedBooksDisplayProps) {
+  const { t } = useTranslation();
   const [relatedBooks, setRelatedBooks] = useState<any[]>(initialBooks || []);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -330,14 +333,14 @@ export function RelatedBooksDisplay({
 
   if (isLoading) {
     return (
-      <div className="text-sm text-muted-foreground">관련 책을 불러오는 중...</div>
+      <div className="text-sm text-muted-foreground">{t("notes.linkedBooksLoading")}</div>
     );
   }
 
   if (relatedBooks.length === 0) {
     return (
       <div className="text-sm text-muted-foreground">
-        연결된 책이 삭제되었거나 더 이상 접근할 수 없습니다.
+        {t("notes.linkedBooksUnavailable")}
       </div>
     );
   }
@@ -346,7 +349,7 @@ export function RelatedBooksDisplay({
     <div className="space-y-2">
       <h4 className="text-xs sm:text-sm font-medium text-muted-foreground flex items-center gap-1.5">
         <BookOpen className="w-3.5 h-3.5" />
-        연결된 책
+        {t("notes.relatedBooks")}
         <Badge variant="secondary" className="ml-1 h-4 min-w-4 px-1 text-[10px]">
           {relatedBooks.length}
         </Badge>

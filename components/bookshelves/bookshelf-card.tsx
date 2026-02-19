@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { BookshelfWithStats } from "@/types/bookshelf";
 import { BookOpen, Library } from "lucide-react";
+import { useTranslation } from "@/lib/i18n";
 
 interface BookshelfCardProps {
   bookshelf: BookshelfWithStats;
@@ -12,6 +13,7 @@ interface BookshelfCardProps {
 }
 
 export function BookshelfCard({ bookshelf, isGuest = false }: BookshelfCardProps) {
+  const { t } = useTranslation();
   const isMain = bookshelf.is_main;
 
   return (
@@ -29,7 +31,7 @@ export function BookshelfCard({ bookshelf, isGuest = false }: BookshelfCardProps
             </div>
             {isMain && (
               <Badge variant="secondary" className="text-xs">
-                통합
+                {t("books.integrated")}
               </Badge>
             )}
           </div>
@@ -40,28 +42,28 @@ export function BookshelfCard({ bookshelf, isGuest = false }: BookshelfCardProps
         <CardContent>
           <div className="space-y-2">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">전체</span>
-              <span className="font-semibold">{bookshelf.book_count}권</span>
+              <span className="text-muted-foreground">{t("books.filterAll")}</span>
+              <span className="font-semibold">{t("books.bookCount", { count: bookshelf.book_count })}</span>
             </div>
             {bookshelf.book_count > 0 && (
               <div className="grid grid-cols-2 gap-2 text-xs">
                 <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">읽는 중</span>
+                  <span className="text-muted-foreground">{t("books.filterReading")}</span>
                   <span>{bookshelf.reading_count}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">완독</span>
+                  <span className="text-muted-foreground">{t("books.filterCompleted")}</span>
                   <span>{bookshelf.completed_count}</span>
                 </div>
                 {bookshelf.paused_count > 0 && (
                   <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">일시정지</span>
+                    <span className="text-muted-foreground">{t("books.paused")}</span>
                     <span>{bookshelf.paused_count}</span>
                   </div>
                 )}
                 {bookshelf.rereading_count > 0 && (
                   <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">재독</span>
+                    <span className="text-muted-foreground">{t("books.rereading")}</span>
                     <span>{bookshelf.rereading_count}</span>
                   </div>
                 )}

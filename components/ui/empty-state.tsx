@@ -1,9 +1,12 @@
+"use client";
+
 import * as React from "react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Sparkles, Heart, PartyPopper, Compass } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { useTranslation } from "@/lib/i18n";
 
 /**
  * 감정적 변형 타입
@@ -19,7 +22,7 @@ const variantStyles: Record<EmptyStateVariant, {
   iconRing: string;
   iconColor: string;
   accentIcon?: LucideIcon;
-  accentText?: string;
+  accentTextKey?: string;
 }> = {
   default: {
     iconBg: "bg-primary/10",
@@ -31,21 +34,21 @@ const variantStyles: Record<EmptyStateVariant, {
     iconRing: "ring-green-100 dark:ring-green-900/20",
     iconColor: "text-green-600 dark:text-green-400",
     accentIcon: Heart,
-    accentText: "시작이 반이에요!",
+    accentTextKey: "empty.startingHalf",
   },
   celebratory: {
     iconBg: "bg-amber-100 dark:bg-amber-900/30",
     iconRing: "ring-amber-100 dark:ring-amber-900/20",
     iconColor: "text-amber-600 dark:text-amber-400",
     accentIcon: PartyPopper,
-    accentText: "대단해요!",
+    accentTextKey: "empty.amazing",
   },
   curious: {
     iconBg: "bg-blue-100 dark:bg-blue-900/30",
     iconRing: "ring-blue-100 dark:ring-blue-900/20",
     iconColor: "text-blue-600 dark:text-blue-400",
     accentIcon: Compass,
-    accentText: "탐험을 시작해보세요",
+    accentTextKey: "empty.startExploring",
   },
 };
 
@@ -90,8 +93,10 @@ export function EmptyState({
   className,
   ...props
 }: EmptyStateProps) {
+  const { t } = useTranslation();
   const styles = variantStyles[variant];
   const AccentIcon = styles.accentIcon;
+  const accentText = styles.accentTextKey ? t(styles.accentTextKey as Parameters<typeof t>[0]) : undefined;
 
   return (
     <div
@@ -115,10 +120,10 @@ export function EmptyState({
       )}
 
       {/* 감정적 악센트 텍스트 */}
-      {AccentIcon && styles.accentText && (
+      {AccentIcon && accentText && (
         <div className="mb-4 flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
           <AccentIcon className={cn("h-4 w-4", styles.iconColor)} />
-          <span>{styles.accentText}</span>
+          <span>{accentText}</span>
         </div>
       )}
 

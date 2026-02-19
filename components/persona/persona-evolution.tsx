@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useTranslation } from "@/lib/i18n";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -40,29 +41,29 @@ interface PersonaEvolutionProps {
   className?: string;
 }
 
-// 특성 변화 메시지
-const EVOLUTION_MESSAGES = {
+// 특성 변화 메시지 키
+const EVOLUTION_MESSAGE_KEYS = {
   readingPace: {
-    improved: "독서 속도가 빨라졌어요!",
-    maintained: "꾸준한 독서 속도를 유지하고 있어요",
-    declined: "독서 속도가 느려졌어요",
+    improved: "persona.paceImproved",
+    maintained: "persona.paceMaintained",
+    declined: "persona.paceDeclined",
   },
   noteStyle: {
-    improved: "기록이 더 깊어졌어요!",
-    maintained: "기록 스타일을 잘 유지하고 있어요",
-    declined: "기록 빈도가 줄었어요",
+    improved: "persona.styleImproved",
+    maintained: "persona.styleMaintained",
+    declined: "persona.styleDeclined",
   },
   activityPattern: {
-    improved: "활동 시간이 더 규칙적이에요!",
-    maintained: "활동 패턴을 잘 유지하고 있어요",
-    declined: "활동 시간이 불규칙해졌어요",
+    improved: "persona.activityImproved",
+    maintained: "persona.activityMaintained",
+    declined: "persona.activityDeclined",
   },
   groupEngagement: {
-    improved: "모임 참여도가 높아졌어요!",
-    maintained: "모임 참여를 잘 유지하고 있어요",
-    declined: "모임 참여가 줄었어요",
+    improved: "persona.engagementImproved",
+    maintained: "persona.engagementMaintained",
+    declined: "persona.engagementDeclined",
   },
-};
+} as const;
 
 // 특성 아이콘
 const TRAIT_ICONS = {
@@ -83,6 +84,8 @@ export function PersonaEvolution({
   maxSnapshots = 6,
   className,
 }: PersonaEvolutionProps) {
+  const { t } = useTranslation();
+
   // 표시할 스냅샷 (최신 순)
   const displayHistory = useMemo(() => {
     return [...history].reverse().slice(0, maxSnapshots);
@@ -162,8 +165,8 @@ export function PersonaEvolution({
         <CardContent className="flex flex-col items-center justify-center py-8">
           <Sparkles className="h-12 w-12 text-muted-foreground mb-3" />
           <p className="text-sm text-muted-foreground text-center">
-            아직 페르소나 히스토리가 없습니다.<br />
-            분석을 진행하면 변화를 추적할 수 있어요.
+            {t("persona.noHistory")}<br />
+            {t("persona.noHistoryDesc")}
           </p>
         </CardContent>
       </Card>
@@ -176,7 +179,7 @@ export function PersonaEvolution({
         <div className="flex items-center justify-between">
           <CardTitle className="text-base flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-primary" />
-            페르소나 진화
+            {t("persona.evolutionTitle")}
           </CardTitle>
           <Badge
             variant={growthScore > 0 ? "default" : growthScore < 0 ? "secondary" : "outline"}
@@ -186,7 +189,7 @@ export function PersonaEvolution({
               growthScore < 0 && "bg-rose-500"
             )}
           >
-            {growthScore > 0 ? "성장 중" : growthScore < 0 ? "관리 필요" : "유지 중"}
+            {growthScore > 0 ? t("persona.growing") : growthScore < 0 ? t("persona.needsAttention") : t("persona.maintaining")}
           </Badge>
         </div>
       </CardHeader>
@@ -195,7 +198,7 @@ export function PersonaEvolution({
         {/* 최근 변화 요약 */}
         {recentChanges && recentChanges.length > 0 && (
           <div className="space-y-2">
-            <h4 className="text-xs font-medium text-muted-foreground">최근 변화</h4>
+            <h4 className="text-xs font-medium text-muted-foreground">{t("persona.recentChanges")}</h4>
             <div className="space-y-2">
               {recentChanges.map((change, index) => {
                 const Icon = TRAIT_ICONS[change.trait];
@@ -219,7 +222,7 @@ export function PersonaEvolution({
                     </div>
                     <div className="flex-1">
                       <p className="text-xs text-muted-foreground">
-                        {EVOLUTION_MESSAGES[change.trait][change.trend]}
+                        {t(EVOLUTION_MESSAGE_KEYS[change.trait][change.trend] as any)}
                       </p>
                     </div>
                     <TrendIcon className={cn("h-4 w-4", trendColor)} />
@@ -232,7 +235,7 @@ export function PersonaEvolution({
 
         {/* 타임라인 */}
         <div className="space-y-2">
-          <h4 className="text-xs font-medium text-muted-foreground">진화 타임라인</h4>
+          <h4 className="text-xs font-medium text-muted-foreground">{t("persona.evolutionTimeline")}</h4>
           <div className="relative">
             {/* 타임라인 선 */}
             <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-slate-200 dark:bg-slate-700" />
@@ -279,7 +282,7 @@ export function PersonaEvolution({
                         </div>
                         {isLatest && (
                           <Badge variant="outline" className="text-[10px] px-1.5">
-                            현재
+                            {t("persona.current")}
                           </Badge>
                         )}
                       </div>
@@ -335,13 +338,13 @@ export function PersonaEvolution({
                 <Sparkles className="h-4 w-4 text-primary" />
               </div>
               <div>
-                <p className="text-xs font-medium mb-1">성장 인사이트</p>
+                <p className="text-xs font-medium mb-1">{t("persona.growthInsights")}</p>
                 <p className="text-[11px] text-muted-foreground">
                   {growthScore > 0
-                    ? "꾸준히 성장하고 있어요! 이 페이스를 유지하면 더 깊은 독서 경험을 쌓을 수 있어요."
+                    ? t("persona.insightGrowing")
                     : growthScore < 0
-                    ? "최근 독서 활동이 줄었어요. 작은 목표부터 다시 시작해보는 건 어떨까요?"
-                    : "안정적인 독서 습관을 유지하고 있어요. 새로운 도전을 시작해볼 타이밍이에요!"}
+                    ? t("persona.insightDeclining")
+                    : t("persona.insightStable")}
                 </p>
               </div>
             </div>
@@ -371,6 +374,7 @@ export function PersonaGrowthSummary({
   className,
   onAnalyze,
 }: PersonaGrowthSummaryProps) {
+  const { t } = useTranslation();
   const needsAnalysis = daysSinceLastAnalysis >= 7;
 
   return (
@@ -390,11 +394,11 @@ export function PersonaGrowthSummary({
               )} />
             </div>
             <div>
-              <p className="text-sm font-medium">페르소나 상태</p>
+              <p className="text-sm font-medium">{t("persona.personaStatus")}</p>
               <p className="text-xs text-muted-foreground">
                 {needsAnalysis
-                  ? `${daysSinceLastAnalysis}일 전 분석 - 업데이트 권장`
-                  : `${daysSinceLastAnalysis}일 전 분석 - 최신 상태`}
+                  ? t("persona.daysAgoAnalysis", { days: daysSinceLastAnalysis }) + t("persona.updateRecommended")
+                  : t("persona.daysAgoAnalysis", { days: daysSinceLastAnalysis }) + t("persona.upToDate")}
               </p>
             </div>
           </div>
@@ -405,7 +409,7 @@ export function PersonaGrowthSummary({
               size="sm"
               onClick={onAnalyze}
             >
-              분석하기
+              {t("persona.analyze")}
               <ChevronRight className="h-4 w-4 ml-1" />
             </Button>
           )}
@@ -440,7 +444,7 @@ export function PersonaGrowthSummary({
                       animate={{ scale: 1 }}
                       className="text-[10px] text-primary font-medium"
                     >
-                      변화
+                      {t("persona.changed")}
                     </motion.div>
                   )}
                 </div>

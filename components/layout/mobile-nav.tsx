@@ -11,6 +11,7 @@ import { useLoginPrompt } from "@/hooks/use-login-prompt";
 import { LoginPromptModal } from "@/components/ui/login-prompt-modal";
 import { MobileMenuSheet } from "./mobile-menu-sheet";
 import { useMobileNoteSheet } from "@/hooks/use-mobile-note-sheet";
+import { useTranslation, type TranslationKey } from "@/lib/i18n";
 
 /**
  * 모바일 네비게이션 아이템 타입
@@ -27,15 +28,19 @@ interface MobileNavItem {
 }
 
 /**
- * 모바일 네비게이션 아이템 목록
+ * 모바일 네비게이션 아이템 목록 (labelKey 기반)
  * 홈, 서재, +기록(FAB), 타임라인, 더보기
  */
-const mobileNavItemsList: MobileNavItem[] = [
-  { icon: Home, label: "홈", href: "/" },
-  { icon: Library, label: "서재", href: "/books" },
-  { icon: Plus, label: "기록", action: "note", requiresAuth: true, isFab: true },
-  { icon: Clock, label: "타임라인", href: "/timeline" },
-  { icon: Menu, label: "더보기", action: "menu" },
+interface MobileNavItemConfig extends Omit<MobileNavItem, 'label'> {
+  labelKey: TranslationKey;
+}
+
+const mobileNavItemsConfig: MobileNavItemConfig[] = [
+  { icon: Home, labelKey: "nav.home", href: "/" },
+  { icon: Library, labelKey: "nav.bookshelf", href: "/books" },
+  { icon: Plus, labelKey: "nav.writeNote", action: "note", requiresAuth: true, isFab: true },
+  { icon: Clock, labelKey: "nav.timeline", href: "/timeline" },
+  { icon: Menu, labelKey: "nav.more", action: "menu" },
 ];
 
 /**
@@ -43,6 +48,7 @@ const mobileNavItemsList: MobileNavItem[] = [
  * 모바일에서만 표시되는 하단 고정 네비게이션
  */
 export function MobileNav() {
+  const { t } = useTranslation();
   const pathname = usePathname();
   const { user, isLoading } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -52,8 +58,8 @@ export function MobileNav() {
   const handleNoteAction = useCallback(() => {
     if (!user) {
       requireLogin({
-        title: "기록을 남기려면",
-        description: "로그인 후 독서 기록을 남길 수 있어요.",
+        title: t("nav.writeNoteLoginTitle"),
+        description: t("nav.writeNoteLoginDesc"),
       });
       return;
     }
@@ -64,11 +70,12 @@ export function MobileNav() {
     <>
       <nav
         className="fixed bottom-0 left-0 right-0 z-50 border-t bg-background/80 backdrop-blur-lg lg:hidden"
-        aria-label="모바일 네비게이션"
+        aria-label={t("nav.mobileNav")}
       >
         <div className="flex items-center justify-around h-14 sm:h-16 safe-area-inset-bottom" role="list">
-          {mobileNavItemsList.map((item, index) => {
+          {mobileNavItemsConfig.map((item, index) => {
             const Icon = item.icon;
+            const label = t(item.labelKey);
             const isActive = item.href
               ? pathname === item.href || pathname.startsWith(item.href + "/")
               : false;
@@ -81,7 +88,7 @@ export function MobileNav() {
                   key={key}
                   onClick={() => setIsMenuOpen(true)}
                   className="flex-1 min-h-[44px]"
-                  aria-label={item.label}
+                  aria-label={label}
                 >
                   <div
                     className={cn(
@@ -91,7 +98,7 @@ export function MobileNav() {
                   >
                     <Icon className="h-4 w-4 sm:h-5 sm:w-5" aria-hidden="true" />
                     <span className="text-[10px] sm:text-xs leading-tight">
-                      {item.label}
+                      {label}
                     </span>
                   </div>
                 </button>
@@ -105,14 +112,14 @@ export function MobileNav() {
                   key={key}
                   onClick={handleNoteAction}
                   className="flex-1 min-h-[44px] flex items-center justify-center"
-                  aria-label={item.label}
+                  aria-label={label}
                 >
                   <div className="flex flex-col items-center gap-0.5 sm:gap-1 touch-manipulation">
                     <div className="flex items-center justify-center w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-primary text-primary-foreground shadow-md -mt-3">
                       <Icon className="h-5 w-5 sm:h-6 sm:w-6" aria-hidden="true" />
                     </div>
                     <span className="text-[10px] sm:text-xs leading-tight font-medium text-primary">
-                      {item.label}
+                      {label}
                     </span>
                   </div>
                 </button>
@@ -124,7 +131,7 @@ export function MobileNav() {
                 key={key}
                 href={item.href!}
                 className="flex-1 min-h-[44px]"
-                aria-label={item.label}
+                aria-label={label}
                 aria-current={isActive ? "page" : undefined}
               >
                 <Button
@@ -133,12 +140,12 @@ export function MobileNav() {
                     "w-full flex flex-col items-center justify-center h-full gap-0.5 sm:gap-1 rounded-none touch-manipulation",
                     isActive && "text-primary bg-secondary/50"
                   )}
-                  aria-label={item.label}
+                  aria-label={label}
                   aria-pressed={isActive}
                 >
                   <Icon className={cn("h-4 w-4 sm:h-5 sm:w-5", isActive && "text-primary")} aria-hidden="true" />
                   <span className={cn("text-[10px] sm:text-xs leading-tight", isActive && "text-primary font-medium")}>
-                    {item.label}
+                    {label}
                   </span>
                 </Button>
               </Link>

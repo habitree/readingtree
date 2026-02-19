@@ -9,6 +9,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { ReadingStatus } from "@/types/book";
+import { useTranslation } from "@/lib/i18n";
 
 interface StatusFilterProps {
   currentStatus?: ReadingStatus;
@@ -19,6 +20,7 @@ interface StatusFilterProps {
  * 상태 필터 컴포넌트
  */
 export function StatusFilter({ currentStatus, basePath: propBasePath }: StatusFilterProps) {
+  const { t } = useTranslation();
   const router = useRouter();
   const searchParams = useSearchParams();
   const pathname = usePathname();
@@ -42,15 +44,15 @@ export function StatusFilter({ currentStatus, basePath: propBasePath }: StatusFi
       onValueChange={handleStatusChange}
     >
       <SelectTrigger className="w-[120px] sm:w-[150px] h-9 text-sm">
-        <SelectValue placeholder="상태" />
+        <SelectValue placeholder={t("books.statusFilterPlaceholder")} />
       </SelectTrigger>
       <SelectContent>
-        <SelectItem value="all">전체</SelectItem>
-        <SelectItem value="reading">읽는 중</SelectItem>
-        <SelectItem value="completed">완독</SelectItem>
-        <SelectItem value="paused">쉬는 중</SelectItem>
-        <SelectItem value="not_started">읽을 예정</SelectItem>
-        <SelectItem value="rereading">재독</SelectItem>
+        <SelectItem value="all">{t("books.statusFilterAll")}</SelectItem>
+        <SelectItem value="reading">{t("books.statusFilterReading")}</SelectItem>
+        <SelectItem value="completed">{t("books.statusFilterCompleted")}</SelectItem>
+        <SelectItem value="paused">{t("books.statusFilterPaused")}</SelectItem>
+        <SelectItem value="not_started">{t("books.statusFilterNotStarted")}</SelectItem>
+        <SelectItem value="rereading">{t("books.statusFilterRereading")}</SelectItem>
       </SelectContent>
     </Select>
   );

@@ -21,6 +21,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { BookshelfTree } from "./bookshelf-tree";
 import { getCurrentUserProfile } from "@/app/actions/profile";
 import { useEffect, useState, useCallback } from "react";
+import { useTranslation } from "@/lib/i18n";
 
 /**
  * 사이드바 네비게이션 아이템 타입
@@ -34,27 +35,6 @@ interface SidebarItem {
 }
 
 /**
- * 핵심 네비게이션 아이템 (항상 표시)
- */
-const primaryItems: SidebarItem[] = [
-  { icon: Home, label: "홈", href: "/" },
-  { icon: Library, label: "내 서재", href: "/books" },
-  { icon: Search, label: "검색", href: "/search" },
-  { icon: Clock, label: "타임라인", href: "/timeline" },
-  { icon: User, label: "프로필", href: "/profile" },
-];
-
-/**
- * 더보기 네비게이션 아이템 (접이식)
- */
-const secondaryItems: SidebarItem[] = [
-  { icon: Users, label: "독서모임", href: "/groups" },
-  { icon: Bot, label: "AI 도우미", href: "/chat" },
-  { icon: Trees, label: "관리자", href: "/admin", adminOnly: true },
-];
-
-
-/**
  * 사이드바 컴포넌트
  * 데스크톱에서 고정 사이드바로 표시
  * 핵심 5개 메뉴 + 더보기 접이식 그룹
@@ -62,6 +42,21 @@ const secondaryItems: SidebarItem[] = [
 export function Sidebar() {
   const pathname = usePathname();
   const { user } = useAuth();
+  const { t } = useTranslation();
+
+  const primaryItems: SidebarItem[] = [
+    { icon: Home, label: t("nav.home"), href: "/" },
+    { icon: Library, label: t("nav.myLibrary"), href: "/books" },
+    { icon: Search, label: t("nav.search"), href: "/search" },
+    { icon: Clock, label: t("nav.timeline"), href: "/timeline" },
+    { icon: User, label: t("nav.profile"), href: "/profile" },
+  ];
+
+  const secondaryItems: SidebarItem[] = [
+    { icon: Users, label: t("nav.groups"), href: "/groups" },
+    { icon: Bot, label: t("nav.aiChat"), href: "/chat" },
+    { icon: Trees, label: t("nav.admin"), href: "/admin", adminOnly: true },
+  ];
   const [userProfile, setUserProfile] = useState<{ is_admin?: boolean } | null>(null);
   const [isMoreOpen, setIsMoreOpen] = useState(false);
 
@@ -139,18 +134,18 @@ export function Sidebar() {
   return (
     <aside
       className="hidden lg:flex lg:flex-col lg:w-64 lg:fixed lg:inset-y-0 lg:border-r lg:bg-background lg:z-50"
-      aria-label="주요 네비게이션"
+      aria-label={t("nav.mainNav")}
     >
       <div className="flex flex-col flex-1 pt-6 pb-4 overflow-y-auto">
         <Link
           href="/"
           className="flex items-center flex-shrink-0 px-6 mb-8 gap-2 hover:opacity-80 transition-opacity duration-200"
-          aria-label="홈으로 이동"
+          aria-label={t("nav.goHome")}
         >
           <Trees className="w-8 h-8 text-forest-600" />
           <h1 className="text-xl font-bold">ReadTree</h1>
         </Link>
-        <nav className="flex-1 px-3 space-y-1" aria-label="메인 메뉴">
+        <nav className="flex-1 px-3 space-y-1" aria-label={t("nav.mainMenu")}>
           {/* 핵심 메뉴 */}
           {primaryItems.map(renderNavItem)}
 
@@ -171,7 +166,7 @@ export function Sidebar() {
                     isMoreOpen && "rotate-180"
                   )}
                 />
-                <span>더보기</span>
+                <span>{t("nav.more")}</span>
               </button>
               {isMoreOpen && (
                 <div className="space-y-1">

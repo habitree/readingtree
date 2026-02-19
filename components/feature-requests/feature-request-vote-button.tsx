@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { useTranslation } from "@/lib/i18n";
 
 interface FeatureRequestVoteButtonProps {
   featureRequestId: string;
@@ -31,16 +32,17 @@ export function FeatureRequestVoteButton({
 }: FeatureRequestVoteButtonProps) {
   const { user } = useAuth();
   const router = useRouter();
+  const { t } = useTranslation();
   const [isPending, startTransition] = useTransition();
   const [optimisticVoteCount, setOptimisticVoteCount] = useState(initialVoteCount);
   const [optimisticHasVoted, setOptimisticHasVoted] = useState(initialHasVoted);
 
   const handleClick = () => {
     if (!user) {
-      toast.info("로그인이 필요합니다", {
-        description: "투표하려면 로그인해주세요.",
+      toast.info(t("featureRequests.loginRequired"), {
+        description: t("featureRequests.loginToVote"),
         action: {
-          label: "로그인",
+          label: t("common.login"),
           onClick: () => router.push("/login"),
         },
       });
@@ -65,7 +67,7 @@ export function FeatureRequestVoteButton({
         setOptimisticVoteCount(
           !newHasVoted ? newVoteCount + 1 : newVoteCount - 1
         );
-        toast.error(result.error || "투표에 실패했습니다");
+        toast.error(result.error || t("featureRequests.voteFailed"));
       }
     });
   };

@@ -9,6 +9,7 @@ import { Card } from "@/components/ui/card";
 import { BookOpen, ChevronRight, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useHapticFeedback } from "@/components/ui/touch-feedback";
+import { useTranslation } from "@/lib/i18n";
 
 interface ContinueReadingCardProps {
   userBookId: string;
@@ -41,6 +42,7 @@ export function ContinueReadingCard({
   const pathname = usePathname();
   const [isNavigating, setIsNavigating] = useState(false);
   const { lightTap } = useHapticFeedback();
+  const { t } = useTranslation();
 
   // 뒤로가기 등으로 경로가 변경되면 네비게이션 상태 리셋
   useEffect(() => {
@@ -108,7 +110,7 @@ export function ContinueReadingCard({
                 {/* 책 정보 */}
                 <div className="flex-1 min-w-0">
                   <p className="text-[9px] font-medium text-forest-600 dark:text-forest-400 mb-0.5">
-                    이어서
+                    {t("dashboard.continueLabel")}
                   </p>
                   <h3 className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-white line-clamp-2 group-hover:text-forest-700 dark:group-hover:text-forest-300 transition-colors leading-tight">
                     {title}
@@ -181,7 +183,7 @@ export function ContinueReadingCard({
             {/* 책 정보 */}
             <div className="flex-1 min-w-0">
               <p className="text-xs font-medium text-forest-600 dark:text-forest-400 mb-1">
-                지난번에 읽던 책
+                {t("dashboard.lastReadBook")}
               </p>
               <h3 className="font-semibold text-slate-900 dark:text-white truncate group-hover:text-forest-700 dark:group-hover:text-forest-300 transition-colors">
                 {title}
@@ -235,6 +237,7 @@ export function ContinueReadingCardSkeleton() {
  * 단계별 가이드 + CTA로 첫 행동 유도
  */
 export function NoReadingBookCard() {
+  const { t } = useTranslation();
   return (
     <Card className="p-5 sm:p-6 border-slate-200/60 dark:border-slate-800/60 bg-white dark:bg-slate-900">
       <div className="text-center space-y-4">
@@ -248,25 +251,25 @@ export function NoReadingBookCard() {
         {/* 메시지 */}
         <div>
           <p className="text-base font-semibold text-slate-900 dark:text-white">
-            독서나무에 첫 씨앗을 심어보세요
+            {t("dashboard.addFirstBookTitle")}
           </p>
           <p className="text-sm text-muted-foreground mt-1">
-            책을 추가하면 여기에 읽는 중인 책이 표시돼요
+            {t("dashboard.addFirstBookDesc")}
           </p>
         </div>
 
         {/* 단계별 가이드 */}
         <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
           <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-forest-50 dark:bg-forest-900/30 text-forest-700 dark:text-forest-400">
-            1. 책 검색
+            {t("dashboard.addFirstBookStep1")}
           </span>
           <ChevronRight className="h-3 w-3 text-slate-400" />
           <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
-            2. 서재에 추가
+            {t("dashboard.addFirstBookStep2")}
           </span>
           <ChevronRight className="h-3 w-3 text-slate-400" />
           <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
-            3. 기록 시작
+            {t("dashboard.addFirstBookStep3")}
           </span>
         </div>
 
@@ -276,7 +279,7 @@ export function NoReadingBookCard() {
           className="inline-flex items-center justify-center gap-2 rounded-lg bg-forest-600 hover:bg-forest-700 text-white px-6 py-2.5 text-sm font-medium transition-colors duration-200 shadow-sm"
         >
           <BookOpen className="h-4 w-4" />
-          첫 책 추가하기
+          {t("dashboard.addFirstBookCta")}
         </Link>
       </div>
     </Card>

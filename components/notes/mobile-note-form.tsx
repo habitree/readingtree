@@ -26,6 +26,7 @@ import { BookMentionTextarea } from "./book-mention-textarea";
 import type { NoteMode } from "@/hooks/use-mobile-note-sheet";
 import { cn } from "@/lib/utils";
 import { useNoteForm } from "@/hooks/use-note-form";
+import { useTranslation } from "@/lib/i18n";
 
 interface MobileNoteFormProps {
   /** user_books.id */
@@ -48,6 +49,7 @@ export function MobileNoteForm({
   onSaved,
   onCancel,
 }: MobileNoteFormProps) {
+  const { t } = useTranslation();
   // 폼 상태
   const [title, setTitle] = useState("");
   const [quoteContent, setQuoteContent] = useState("");
@@ -83,7 +85,7 @@ export function MobileNoteForm({
     },
     onError: (error) => {
       // 에러 발생 시 사용자에게 토스트로 알림
-      toast.error(error.message || "기록 저장에 실패했어요. 다시 시도해주세요.");
+      toast.error(error.message || t("notes.noteSaveFailed"));
     },
   });
 
@@ -104,7 +106,7 @@ export function MobileNoteForm({
     const hasImage = images.length > 0;
 
     if (!hasQuote && !hasMemo && !hasImage) {
-      toast.error("인상깊은 구절, 내 생각, 또는 이미지 중 최소 하나는 입력해주세요.");
+      toast.error(t("notes.minOneInputRequired"));
       return;
     }
 
@@ -130,7 +132,7 @@ export function MobileNoteForm({
           <Input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="제목 (선택)"
+            placeholder={t("notes.titleMobilePlaceholder")}
             className="h-7 text-xs border-slate-200/60"
             maxLength={100}
           />
@@ -146,7 +148,7 @@ export function MobileNoteForm({
         )}>
           <Label htmlFor="quoteContent" className="text-[11px] font-medium flex items-center gap-1 text-blue-700 dark:text-blue-300">
             <Quote className="w-3 h-3" />
-            구절
+            {t("notes.quoteLabel")}
             {quoteContent.length > 0 && <CheckCircle2 className="w-2.5 h-2.5 text-emerald-500" />}
           </Label>
           <BookMentionTextarea
@@ -155,7 +157,7 @@ export function MobileNoteForm({
             onValueChange={setQuoteContent}
             onFocus={() => setQuoteFocused(true)}
             onBlur={() => setQuoteFocused(false)}
-            placeholder="인상깊은 문장"
+            placeholder={t("notes.quoteInputPlaceholder")}
             rows={quoteFocused ? 4 : 2}
             className="resize-none text-sm bg-white/80 dark:bg-slate-900/50 border-blue-200/50 dark:border-blue-800/30 min-h-0"
           />
@@ -171,7 +173,7 @@ export function MobileNoteForm({
         )}>
           <Label htmlFor="memoContent" className="text-[11px] font-medium flex items-center gap-1 text-amber-700 dark:text-amber-300">
             <MessageSquare className="w-3 h-3" />
-            생각
+            {t("notes.thoughtLabel")}
             {memoContent.length > 0 && <CheckCircle2 className="w-2.5 h-2.5 text-emerald-500" />}
           </Label>
           <BookMentionTextarea
@@ -180,7 +182,7 @@ export function MobileNoteForm({
             onValueChange={setMemoContent}
             onFocus={() => setMemoFocused(true)}
             onBlur={() => setMemoFocused(false)}
-            placeholder="느낀 점, 깨달음"
+            placeholder={t("notes.memoInputPlaceholder")}
             rows={memoFocused ? 5 : 2}
             className="resize-none text-sm bg-white/80 dark:bg-slate-900/50 border-amber-200/50 dark:border-amber-800/30 min-h-0"
           />
@@ -199,7 +201,7 @@ export function MobileNoteForm({
             )}
           >
             <PenTool className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
-            <span className="text-[11px] font-medium text-purple-700 dark:text-purple-300">사진 필사</span>
+            <span className="text-[11px] font-medium text-purple-700 dark:text-purple-300">{t("notes.photoTranscription")}</span>
           </label>
 
           {/* 사진 버튼 */}
@@ -213,7 +215,7 @@ export function MobileNoteForm({
             )}
           >
             <Camera className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
-            <span className="text-[11px] font-medium text-emerald-700 dark:text-emerald-300">사진</span>
+            <span className="text-[11px] font-medium text-emerald-700 dark:text-emerald-300">{t("notes.photoLabel")}</span>
           </label>
 
           {/* 스탬프 옵션 */}
@@ -227,14 +229,14 @@ export function MobileNoteForm({
             />
             <Label htmlFor="stamp-mobile" className="text-[10px] text-slate-500 cursor-pointer flex items-center gap-0.5">
               <Sparkles className="w-2.5 h-2.5 text-amber-500" />
-              스탬프
+              {t("notes.stamp")}
             </Label>
           </div>
 
           {/* 이미지 카운트 */}
           {images.length > 0 && (
             <span className="text-[10px] text-emerald-600 font-medium">
-              {images.length}장
+              {t("notes.imageCountUnit", { count: images.length })}
             </span>
           )}
 
@@ -268,7 +270,7 @@ export function MobileNoteForm({
                     {isValidImageUrl(url) ? (
                       <Image
                         src={imageUrl}
-                        alt={`이미지 ${index + 1}`}
+                        alt={t("notes.imageAlt", { index: index + 1 })}
                         fill
                         className="object-cover"
                         sizes="56px"
@@ -298,13 +300,13 @@ export function MobileNoteForm({
           <Input
             value={pageNumbers}
             onChange={(e) => setPageNumbers(e.target.value)}
-            placeholder="페이지"
+            placeholder={t("notes.pageMobilePlaceholder")}
             className="h-6 w-16 text-[11px] px-2"
           />
           <Input
             value={tags}
             onChange={(e) => setTags(e.target.value)}
-            placeholder="태그 (쉼표 구분)"
+            placeholder={t("notes.tagsCommaSeparated")}
             className="h-6 flex-1 text-[11px] px-2"
           />
           <button
@@ -318,7 +320,7 @@ export function MobileNoteForm({
             )}
           >
             {isPublic ? <Globe className="w-3 h-3" /> : <Lock className="w-3 h-3" />}
-            {isPublic ? "공개" : "비공개"}
+            {isPublic ? t("notes.public") : t("notes.private")}
           </button>
         </div>
       </div>
@@ -332,7 +334,7 @@ export function MobileNoteForm({
           disabled={isSubmitting || uploading}
           className="h-9 px-4 text-sm"
         >
-          취소
+          {t("notes.cancel")}
         </Button>
         <Button
           type="button"
@@ -347,7 +349,7 @@ export function MobileNoteForm({
           ) : (
             <>
               <CheckCircle2 className="mr-1 h-4 w-4" />
-              저장
+              {t("notes.save")}
             </>
           )}
         </Button>

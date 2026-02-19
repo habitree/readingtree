@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { Flame, Check, Circle } from "lucide-react";
+import { useTranslation } from "@/lib/i18n";
 
 interface WeeklyProgressDay {
   date: string;
@@ -40,21 +41,22 @@ export function WeeklyProgressBar({
   streakStatus,
   className,
 }: WeeklyProgressBarProps) {
+  const { t } = useTranslation();
   const progressPercent = (recordedDays / totalDays) * 100;
 
   // 스트릭 상태별 메시지
   const getStreakMessage = () => {
     if (streakStatus === "active") {
-      if (streak >= 30) return `대단해요! ${streak}일 연속 기록 중!`;
-      if (streak >= 14) return `${streak}일 연속! 습관이 되어가고 있어요`;
-      if (streak >= 7) return `${streak}일 연속! 일주일 달성!`;
-      if (streak >= 3) return `${streak}일 연속 기록 중!`;
-      return `${streak}일 연속! 계속 이어가요`;
+      if (streak >= 30) return t("dashboard.streakActive30", { count: streak });
+      if (streak >= 14) return t("dashboard.streakActive14", { count: streak });
+      if (streak >= 7) return t("dashboard.streakActive7", { count: streak });
+      if (streak >= 3) return t("dashboard.streakActive3", { count: streak });
+      return t("dashboard.streakActiveDefault", { count: streak });
     }
     if (streakStatus === "at_risk") {
-      return `${streak}일 기록 중 - 오늘 기록하면 유지!`;
+      return t("dashboard.streakAtRisk", { count: streak });
     }
-    return "오늘 첫 기록을 남겨보세요";
+    return t("dashboard.streakNone");
   };
 
   return (
@@ -63,10 +65,10 @@ export function WeeklyProgressBar({
         {/* 헤더: 제목 + 진행률 */}
         <div className="flex items-center justify-between">
           <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
-            이번 주 독서 현황
+            {t("dashboard.weeklyStatus")}
           </span>
           <span className="text-sm font-semibold text-forest-600 dark:text-forest-400">
-            {recordedDays}/{totalDays}일
+            {recordedDays}/{totalDays}{t("common.day")}
           </span>
         </div>
 

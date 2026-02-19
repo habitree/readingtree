@@ -9,6 +9,7 @@ import type { NoteWithBook } from "@/types/note";
 import { format } from "date-fns";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useTranslation } from "@/lib/i18n";
 
 /**
  * 타임라인 컨텐츠 컴포넌트
@@ -17,6 +18,7 @@ import { Button } from "@/components/ui/button";
 export function TimelineContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { t } = useTranslation();
   const [sortBy, setSortBy] = useState<TimelineSortBy>(
     (searchParams.get("sort") as TimelineSortBy) || "latest"
   );
@@ -92,9 +94,9 @@ export function TimelineContent() {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="latest">최신순</SelectItem>
-            <SelectItem value="oldest">오래된순</SelectItem>
-            <SelectItem value="book">책별</SelectItem>
+            <SelectItem value="latest">{t("timeline.latestFirst")}</SelectItem>
+            <SelectItem value="oldest">{t("timeline.oldestFirst")}</SelectItem>
+            <SelectItem value="book">{t("timeline.byBook")}</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -102,7 +104,7 @@ export function TimelineContent() {
       {/* 타임라인 */}
       {notes.length === 0 ? (
         <div className="text-center py-12">
-          <p className="text-muted-foreground">기록이 없습니다.</p>
+          <p className="text-muted-foreground">{t("timeline.noNotes")}</p>
         </div>
       ) : (
         <div className="space-y-8">
@@ -124,7 +126,7 @@ export function TimelineContent() {
             onClick={() => handlePageChange(page - 1)}
             disabled={page === 1}
           >
-            이전
+            {t("common.prev")}
           </Button>
           <span className="text-sm text-muted-foreground">
             {page} / {totalPages}
@@ -134,7 +136,7 @@ export function TimelineContent() {
             onClick={() => handlePageChange(page + 1)}
             disabled={page === totalPages}
           >
-            다음
+            {t("common.next")}
           </Button>
         </div>
       )}

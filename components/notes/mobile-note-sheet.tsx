@@ -18,6 +18,7 @@ import {
 import type { BookWithNotes } from "@/app/actions/books";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
+import { useTranslation } from "@/lib/i18n";
 
 /**
  * 모바일 기록 작성 바텀시트
@@ -25,6 +26,7 @@ import Image from "next/image";
  * - 스텝 2: 내용 입력
  */
 export function MobileNoteSheet() {
+  const { t } = useTranslation();
   const {
     isOpen,
     mode,
@@ -96,7 +98,7 @@ export function MobileNoteSheet() {
                     <PenTool className="h-5 w-5 text-forest-600" />
                   )}
                   <span>
-                    {mode === "transcription" ? "사진 필사할" : "기록할"} 책 선택
+                    {mode === "transcription" ? t("notes.selectBookForTranscription") : t("notes.selectBookForNote")}
                   </span>
                 </>
               ) : (
@@ -111,7 +113,7 @@ export function MobileNoteSheet() {
               onClick={handleClose}
               className="h-9 px-3 text-muted-foreground"
             >
-              취소
+              {t("notes.cancel")}
             </Button>
           </div>
         </SheetHeader>

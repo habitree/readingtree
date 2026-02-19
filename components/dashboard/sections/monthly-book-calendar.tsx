@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { ChevronLeft, ChevronRight, BookOpen, Calendar, Sparkles, X, PenTool } from "lucide-react";
 import Link from "next/link";
 import type { DailyBookActivity } from "@/app/actions/stats";
+import { useTranslation } from "@/lib/i18n";
 
 interface MonthlyBookCalendarProps {
   activities: Record<string, DailyBookActivity>;
@@ -17,11 +18,9 @@ interface MonthlyBookCalendarProps {
   className?: string;
 }
 
-const DAY_LABELS = ["일", "월", "화", "수", "목", "금", "토"];
-const MONTH_LABELS = [
-  "1월", "2월", "3월", "4월", "5월", "6월",
-  "7월", "8월", "9월", "10월", "11월", "12월"
-];
+// Fallback labels (Korean default) — overridden by t() in render
+const DAY_LABEL_KEYS = ["common.day0Sun", "common.day1Mon", "common.day2Tue", "common.day3Wed", "common.day4Thu", "common.day5Fri", "common.day6Sat"] as const;
+const MONTH_LABEL_KEYS = ["common.month1", "common.month2", "common.month3", "common.month4", "common.month5", "common.month6", "common.month7", "common.month8", "common.month9", "common.month10", "common.month11", "common.month12"] as const;
 
 // 부드러운 스프링 애니메이션 설정 (성능 최적화: 가벼운 설정)
 const gentleSpring = { type: "spring" as const, stiffness: 260, damping: 20 };
@@ -43,6 +42,7 @@ export function MonthlyBookCalendar({
   onMonthChange,
   className,
 }: MonthlyBookCalendarProps) {
+  const { t } = useTranslation();
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [hoveredDate, setHoveredDate] = useState<string | null>(null);
 
@@ -197,7 +197,7 @@ export function MonthlyBookCalendar({
               <Calendar className="w-4 h-4 text-forest-600 dark:text-forest-400" />
             </div>
             <span className="text-sm font-semibold text-slate-800 dark:text-white">
-              독서 달력
+              {t("dashboard.readingCalendar")}
             </span>
           </div>
 
@@ -206,20 +206,20 @@ export function MonthlyBookCalendar({
             <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-100/80 dark:bg-amber-900/30">
               <Sparkles className="w-3 h-3 text-amber-600 dark:text-amber-400" />
               <span className="text-xs font-medium text-amber-700 dark:text-amber-300">
-                {calendarData.recordedDays}일
+                {calendarData.recordedDays}{t("common.day")}
               </span>
             </div>
             <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-forest-100/80 dark:bg-forest-900/30">
               <BookOpen className="w-3 h-3 text-forest-600 dark:text-forest-400" />
               <span className="text-xs font-medium text-forest-700 dark:text-forest-300">
-                {calendarData.uniqueBooks}권
+                {calendarData.uniqueBooks}{t("books.volumeUnit")}
               </span>
             </div>
             {calendarData.totalNotes > 0 && (
               <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-violet-100/80 dark:bg-violet-900/30">
                 <PenTool className="w-3 h-3 text-violet-600 dark:text-violet-400" />
                 <span className="text-xs font-medium text-violet-700 dark:text-violet-300">
-                  {calendarData.totalNotes}개
+                  {calendarData.totalNotes}{t("common.count")}
                 </span>
               </div>
             )}
@@ -238,7 +238,7 @@ export function MonthlyBookCalendar({
           </Button>
 
           <span className="text-sm font-semibold text-slate-800 dark:text-white">
-            {year}년 {MONTH_LABELS[month - 1]}
+            {t("common.yearMonth", { year, month: t(MONTH_LABEL_KEYS[month - 1]) })}
           </span>
 
           <Button
@@ -254,9 +254,9 @@ export function MonthlyBookCalendar({
 
         {/* 요일 헤더 */}
         <div className="grid grid-cols-7 gap-1">
-          {DAY_LABELS.map((label, index) => (
+          {DAY_LABEL_KEYS.map((labelKey, index) => (
             <div
-              key={label}
+              key={labelKey}
               className={cn(
                 "text-center text-[10px] font-semibold py-1.5 rounded-md",
                 index === 0
@@ -266,7 +266,7 @@ export function MonthlyBookCalendar({
                     : "text-slate-500 dark:text-slate-400"
               )}
             >
-              {label}
+              {t(labelKey)}
             </div>
           ))}
         </div>
@@ -572,11 +572,11 @@ const StackedBookCovers = memo(function StackedBookCovers({ books, isHovered }: 
 StackedBookCovers.displayName = "StackedBookCovers";
 
 // 기록 타입 라벨 정의 (상세보기용)
-const NOTE_TYPE_LABELS: Record<string, { label: string; color: string }> = {
-  transcription: { label: "사진 필사", color: "text-violet-600 dark:text-violet-400" },
-  photo: { label: "사진", color: "text-sky-600 dark:text-sky-400" },
-  memo: { label: "기록", color: "text-emerald-600 dark:text-emerald-400" },
-  progress: { label: "진행", color: "text-amber-600 dark:text-amber-400" },
+const NOTE_TYPE_LABELS: Record<string, { labelKey: string; color: string }> = {
+  transcription: { labelKey: "notes.typeTranscription", color: "text-violet-600 dark:text-violet-400" },
+  photo: { labelKey: "notes.typePhoto", color: "text-sky-600 dark:text-sky-400" },
+  memo: { labelKey: "notes.typeMemo", color: "text-emerald-600 dark:text-emerald-400" },
+  progress: { labelKey: "notes.typeProgress", color: "text-amber-600 dark:text-amber-400" },
 };
 
 interface SelectedDateDetailProps {
@@ -587,6 +587,7 @@ interface SelectedDateDetailProps {
 }
 
 function SelectedDateDetail({ date, books, noteTypes, onClose }: SelectedDateDetailProps) {
+  const { t } = useTranslation();
   const formattedDate = date ? date.split("-").slice(1).map(n => parseInt(n)).join("/") : "";
 
   return (
@@ -607,7 +608,7 @@ function SelectedDateDetail({ date, books, noteTypes, onClose }: SelectedDateDet
               {formattedDate}
             </span>
             <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-forest-100 dark:bg-forest-900/40 text-forest-700 dark:text-forest-300 font-medium">
-              {books.length}권
+              {books.length}{t("books.volumeUnit")}
             </span>
           </div>
           <button
@@ -623,26 +624,26 @@ function SelectedDateDetail({ date, books, noteTypes, onClose }: SelectedDateDet
           <div className="flex items-center gap-2 flex-wrap">
             {noteTypes.transcription > 0 && (
               <span className={cn("text-[11px] font-medium", NOTE_TYPE_LABELS.transcription.color)}>
-                사진 필사 {noteTypes.transcription}
+                {t("notes.typeTranscription")} {noteTypes.transcription}
               </span>
             )}
             {noteTypes.photo > 0 && (
               <span className={cn("text-[11px] font-medium", NOTE_TYPE_LABELS.photo.color)}>
-                사진 {noteTypes.photo}
+                {t("notes.typePhoto")} {noteTypes.photo}
               </span>
             )}
             {(noteTypes.memo > 0 || noteTypes.quote > 0) && (
               <span className={cn("text-[11px] font-medium", NOTE_TYPE_LABELS.memo.color)}>
-                기록 {noteTypes.memo + noteTypes.quote}
+                {t("notes.typeMemo")} {noteTypes.memo + noteTypes.quote}
               </span>
             )}
             {noteTypes.progress > 0 && (
               <span className={cn("text-[11px] font-medium", NOTE_TYPE_LABELS.progress.color)}>
-                진행 {noteTypes.progress}
+                {t("notes.typeProgress")} {noteTypes.progress}
               </span>
             )}
             <span className="text-[10px] text-slate-400 dark:text-slate-500">
-              총 {noteTypes.total}개
+              {t("common.total")} {noteTypes.total}{t("common.count")}
             </span>
           </div>
         )}

@@ -25,6 +25,7 @@ import {
 import { createNote } from "@/app/actions/notes";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/lib/i18n";
 
 interface ProgressRecordSheetProps {
   open: boolean;
@@ -54,6 +55,7 @@ export function ProgressRecordSheet({
   totalPages,
   onSuccess,
 }: ProgressRecordSheetProps) {
+  const { t } = useTranslation();
   const [memo, setMemo] = useState("");
   const [isPublic, setIsPublic] = useState(true);
   const [isPending, startTransition] = useTransition();
@@ -73,24 +75,24 @@ export function ProgressRecordSheet({
           is_public: isPublic,
         });
 
-        toast.success("진행 기록이 저장됐어요.");
+        toast.success(t("books.progressSavedSuccess"));
         setMemo("");
         onOpenChange(false);
         onSuccess?.();
       } catch (error) {
         console.error("진행 기록 저장 실패:", error);
-        toast.error("저장에 실패했어요. 다시 시도해주세요.");
+        toast.error(t("books.progressSaveFailed"));
       }
     });
   };
 
   const getProgressMessage = () => {
-    if (!progressPercent) return "읽기 시작!";
-    if (progressPercent < 25) return "좋은 시작이에요!";
-    if (progressPercent < 50) return "순조롭게 진행 중!";
-    if (progressPercent < 75) return "절반을 넘었어요!";
-    if (progressPercent < 100) return "완독이 눈앞에!";
-    return "완독을 축하해요!";
+    if (!progressPercent) return t("books.progressReadStart");
+    if (progressPercent < 25) return t("books.progressGoodStart");
+    if (progressPercent < 50) return t("books.progressSmooth");
+    if (progressPercent < 75) return t("books.progressOverHalf");
+    if (progressPercent < 100) return t("books.progressAlmostDone");
+    return t("books.progressCongrats");
   };
 
   return (
@@ -99,10 +101,10 @@ export function ProgressRecordSheet({
         <SheetHeader className="text-left pb-4">
           <SheetTitle className="flex items-center gap-2">
             <BookOpen className="h-5 w-5 text-forest-500" />
-            진행 기록
+            {t("books.progressRecord")}
           </SheetTitle>
           <SheetDescription>
-            현재 읽은 페이지를 기록하고 공유해보세요
+            {t("books.progressRecordDesc")}
           </SheetDescription>
         </SheetHeader>
 
@@ -165,11 +167,11 @@ export function ProgressRecordSheet({
           {/* 한 줄 메모 (선택) */}
           <div className="space-y-2">
             <Label htmlFor="memo" className="text-sm text-slate-600 dark:text-slate-400">
-              한 줄 메모 <span className="text-slate-400">(선택)</span>
+              {t("books.oneLineMemo")} <span className="text-slate-400">{t("books.optionalLabel")}</span>
             </Label>
             <Textarea
               id="memo"
-              placeholder="오늘의 독서 한 줄..."
+              placeholder={t("books.memoPlaceholder")}
               value={memo}
               onChange={(e) => setMemo(e.target.value)}
               className="resize-none h-20"
@@ -189,7 +191,7 @@ export function ProgressRecordSheet({
                 <Lock className="h-4 w-4 text-slate-400" />
               )}
               <Label htmlFor="public" className="text-sm font-medium cursor-pointer">
-                {isPublic ? "전체 공개" : "나만 보기"}
+                {isPublic ? t("books.publicVisibility") : t("books.privateVisibility")}
               </Label>
             </div>
             <Switch
@@ -207,7 +209,7 @@ export function ProgressRecordSheet({
               className="flex-1"
               disabled={isPending}
             >
-              취소
+              {t("books.cancelLabel")}
             </Button>
             <Button
               onClick={handleSave}
@@ -217,12 +219,12 @@ export function ProgressRecordSheet({
               {isPending ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  저장 중...
+                  {t("books.savingLabel")}
                 </>
               ) : (
                 <>
                   <Share2 className="h-4 w-4 mr-2" />
-                  기록하기
+                  {t("books.recordButton")}
                 </>
               )}
             </Button>

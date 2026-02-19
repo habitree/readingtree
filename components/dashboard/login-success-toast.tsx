@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { useTranslation } from "@/lib/i18n";
 
 /**
  * 로그인 성공 메시지 표시 컴포넌트
@@ -11,18 +12,18 @@ import { toast } from "sonner";
 export function LoginSuccessToast() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { t } = useTranslation();
 
   useEffect(() => {
     if (searchParams.get("login") === "success") {
-      toast.success("로그인했어요.", {
-        description: "독서 여정을 시작해보세요.",
+      toast.success(t("auth.loginSuccess"), {
+        description: t("auth.loginSuccessDesc"),
         duration: 3000,
       });
       // URL에서 파라미터 제거
       router.replace("/", { scroll: false });
     }
-  }, [searchParams, router]);
+  }, [searchParams, router, t]);
 
   return null;
 }
-

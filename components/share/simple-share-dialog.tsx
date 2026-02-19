@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
+import { useTranslation } from "@/lib/i18n";
 import {
   Dialog,
   DialogContent,
@@ -82,6 +83,7 @@ interface SimpleShareDialogProps {
  * 3. 이미지 복사: 업로드된 원본 이미지(필사/사진)만 복사 (이미지 있을 경우에만)
  */
 export function SimpleShareDialog({ note }: SimpleShareDialogProps) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
   const [cardCopied, setCardCopied] = useState(false);
@@ -143,21 +145,21 @@ export function SimpleShareDialog({ note }: SimpleShareDialogProps) {
   // 1. 링크 공유 (링크 복사)
   const handleCopyLink = async () => {
     if (!shareUrl) {
-      toast.error("공개 기록만 공유할 수 있습니다.");
+      toast.error(t("share.privateNoteWarning"));
       return;
     }
 
     try {
       await navigator.clipboard.writeText(shareUrl);
       setLinkCopied(true);
-      toast.success("링크가 클립보드에 복사됐어요.");
+      toast.success(t("share.linkCopied2"));
 
       setTimeout(() => {
         setLinkCopied(false);
       }, 2000);
     } catch (error) {
       console.error("링크 복사 실패:", error);
-      toast.error("링크 복사에 실패했어요.");
+      toast.error(t("share.linkShare") + " " + t("common.retry"));
     }
   };
 
@@ -172,14 +174,14 @@ export function SimpleShareDialog({ note }: SimpleShareDialogProps) {
     const targetElement = captureRef.current;
 
     if (!targetElement) {
-      toast.error("카드를 찾을 수 없습니다.");
+      toast.error(t("share.cardCopy") + " " + t("common.retry"));
       return;
     }
 
     try {
       // 캡처 모드 활성화
       setIsCapturing(true);
-      toast.info("카드를 생성하는 중...");
+      toast.info(t("common.loading"));
 
       // Step 0: 폰트 로딩 대기 (텍스트 레이아웃 안정화)
       await document.fonts.ready;
@@ -314,7 +316,7 @@ export function SimpleShareDialog({ note }: SimpleShareDialogProps) {
       const clipboardSuccess = await copyImageToClipboard(blob, {
         onSuccess: () => {
           setCardCopied(true);
-          toast.success("카드가 클립보드에 복사됐어요.");
+          toast.success(t("share.cardCopied"));
           setTimeout(() => {
             setCardCopied(false);
           }, 2000);
@@ -329,18 +331,14 @@ export function SimpleShareDialog({ note }: SimpleShareDialogProps) {
         downloadImage(blob, filename);
         setCardCopied(true);
         const isMobileDevice = isMobile();
-        toast.success(
-          isMobileDevice
-            ? "카드 이미지가 다운로드됐어요. 갤러리에서 확인하세요."
-            : "카드 이미지가 다운로드됐어요."
-        );
+        toast.success(t("share.cardCopied"));
         setTimeout(() => {
           setCardCopied(false);
         }, 2000);
       }
     } catch (error) {
       console.error("카드 복사 오류:", error);
-      toast.error("카드 복사에 실패했어요. 다시 시도해주세요.");
+      toast.error(t("share.cardCopy") + " " + t("common.retry"));
     } finally {
       setIsCapturing(false);
     }
@@ -349,7 +347,7 @@ export function SimpleShareDialog({ note }: SimpleShareDialogProps) {
   // 3. 이미지 복사 (원본 이미지)
   const handleCopyPhotoOnly = async () => {
     if (!note.image_url) {
-      toast.error("이미지가 없습니다.");
+      toast.error(t("share.imageLoadError"));
       return;
     }
 
@@ -367,9 +365,9 @@ export function SimpleShareDialog({ note }: SimpleShareDialogProps) {
       });
 
       await toast.promise(loadImage, {
-        loading: '원본 이미지를 준비 중입니다...',
-        success: '이미지 준비 완료',
-        error: '이미지를 불러오는데 실패했습니다.'
+        loading: t("common.loading"),
+        success: t("share.originalCopy"),
+        error: t("share.imageLoadError"),
       });
 
       const loadedImg = await loadImage as HTMLImageElement;
@@ -385,7 +383,7 @@ export function SimpleShareDialog({ note }: SimpleShareDialogProps) {
 
       canvas.toBlob(async (blob: Blob | null) => {
         if (!blob) {
-          toast.error("이미지 변환에 실패했습니다.");
+          toast.error(t("share.imageLoadError"));
           return;
         }
 
@@ -402,7 +400,7 @@ export function SimpleShareDialog({ note }: SimpleShareDialogProps) {
         const clipboardSuccess = await copyImageToClipboard(finalBlob, {
           onSuccess: () => {
             setPhotoCopied(true);
-            toast.success("원본 이미지가 클립보드에 복사됐어요.");
+            toast.success(t("share.originalCopied"));
             setTimeout(() => {
               setPhotoCopied(false);
             }, 2000);
@@ -418,24 +416,20 @@ export function SimpleShareDialog({ note }: SimpleShareDialogProps) {
             downloadImage(finalBlob, filename);
             setPhotoCopied(true);
             const isMobileDevice = isMobile();
-            toast.success(
-              isMobileDevice
-                ? "원본 이미지가 다운로드됐어요. 갤러리에서 확인하세요."
-                : "원본 이미지가 다운로드됐어요."
-            );
+            toast.success(t("share.originalCopied"));
 
             setTimeout(() => {
               setPhotoCopied(false);
             }, 2000);
           } catch (downloadError) {
             console.error("다운로드도 실패:", downloadError);
-            toast.error("이미지 복사에 실패했어요. 브라우저를 확인해주세요.");
+            toast.error(t("share.originalCopy") + " " + t("common.retry"));
           }
         }
       }, "image/png");
     } catch (error) {
       console.error("이미지 처리 실패:", error);
-      toast.error("이미지 처리에 실패했어요.");
+      toast.error(t("share.imageLoadError"));
     }
   };
 
@@ -445,14 +439,14 @@ export function SimpleShareDialog({ note }: SimpleShareDialogProps) {
   // 4. 카카오톡 공유
   const handleKakaoShare = useCallback(async () => {
     if (!note.is_public) {
-      toast.error("공개 기록만 공유할 수 있습니다.");
+      toast.error(t("share.privateNoteWarning"));
       return;
     }
 
     try {
       const kakao = await loadKakaoSdk();
       if (!kakao) {
-        toast.error("카카오 SDK를 불러올 수 없습니다.");
+        toast.error(t("share.kakaoShare") + " " + t("common.retry"));
         return;
       }
 
@@ -505,11 +499,11 @@ export function SimpleShareDialog({ note }: SimpleShareDialogProps) {
       });
 
       setKakaoShared(true);
-      toast.success("카카오톡 공유가 시작됐어요.");
+      toast.success(t("share.shareDone"));
       setTimeout(() => setKakaoShared(false), 2000);
     } catch (error) {
       console.error("카카오 공유 실패:", error);
-      toast.error("카카오톡 공유에 실패했어요.");
+      toast.error(t("share.kakaoShare") + " " + t("common.retry"));
     }
   }, [note]);
 
@@ -518,7 +512,7 @@ export function SimpleShareDialog({ note }: SimpleShareDialogProps) {
       <DialogTrigger asChild>
         <Button variant="outline" size="sm" className="gap-2">
           <Share2 className="h-4 w-4" />
-          공유
+          {t("share.share")}
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-5xl max-h-[98vh] overflow-y-auto p-0 border-none bg-transparent shadow-none">
@@ -526,7 +520,7 @@ export function SimpleShareDialog({ note }: SimpleShareDialogProps) {
           <DialogHeader className="p-6 sm:p-8 pb-4">
             <DialogTitle className="text-xl sm:text-2xl font-black italic tracking-tighter text-forest-600">Share Your Insight</DialogTitle>
             <DialogDescription className="text-sm font-bold text-slate-400">
-              세련된 ReadTree 리딩 카드로 당신의 독서 순간을 공유해보세요.
+              {t("share.shareInsightDesc")}
             </DialogDescription>
           </DialogHeader>
 
@@ -547,12 +541,12 @@ export function SimpleShareDialog({ note }: SimpleShareDialogProps) {
                 {linkCopied ? (
                   <>
                     <Check className="h-4 w-4" />
-                    링크 복사됨
+                    {t("share.linkCopied2")}
                   </>
                 ) : (
                   <>
                     <LinkIcon className="h-4 w-4" />
-                    링크 공유
+                    {t("share.linkShare")}
                   </>
                 )}
               </Button>
@@ -569,7 +563,7 @@ export function SimpleShareDialog({ note }: SimpleShareDialogProps) {
                   {kakaoShared ? (
                     <>
                       <Check className="h-4 w-4" />
-                      공유 완료
+                      {t("share.shareDone")}
                     </>
                   ) : (
                     <>
@@ -585,7 +579,7 @@ export function SimpleShareDialog({ note }: SimpleShareDialogProps) {
                           fill="#3C1E1E"
                         />
                       </svg>
-                      카카오톡
+                      {t("share.kakaoShare")}
                     </>
                   )}
                 </Button>
@@ -601,12 +595,12 @@ export function SimpleShareDialog({ note }: SimpleShareDialogProps) {
                 {cardCopied ? (
                   <>
                     <Check className="h-4 w-4" />
-                    카드 복사됨
+                    {t("share.cardCopied")}
                   </>
                 ) : (
                   <>
                     <ImageIcon className="h-4 w-4" />
-                    카드 복사
+                    {t("share.cardCopy")}
                   </>
                 )}
               </Button>
@@ -622,12 +616,12 @@ export function SimpleShareDialog({ note }: SimpleShareDialogProps) {
                   {photoCopied ? (
                     <>
                       <Check className="h-4 w-4" />
-                      원본 복사됨
+                      {t("share.originalCopied")}
                     </>
                   ) : (
                     <>
                       <Download className="h-4 w-4" />
-                      이미지 복사
+                      {t("share.imageCopy")}
                     </>
                   )}
                 </Button>
@@ -678,7 +672,7 @@ export function SimpleShareDialog({ note }: SimpleShareDialogProps) {
               <div className="mb-8 p-5 bg-amber-50 dark:bg-amber-950/30 border border-amber-100 dark:border-amber-900 rounded-3xl">
                 <p className="text-sm leading-relaxed text-amber-800 dark:text-amber-200 font-medium flex gap-3">
                   <span className="shrink-0 text-xl">⚠️</span>
-                  현재 비공개 설정된 기록입니다. 링크로 공유하시려면 기록 설정에서 '공개'로 변경해 주세요. (카드/이미지 복사는 가능합니다)
+                  {t("share.privateNoteWarning")}
                 </p>
               </div>
             )}

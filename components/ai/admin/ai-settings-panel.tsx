@@ -44,6 +44,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from "@/lib/i18n";
 import {
   getActiveAISettings,
   updateAISettings,
@@ -72,6 +73,7 @@ export function AISettingsPanel({
   initialSettings,
   apiKeyStatus: initialApiKeyStatus,
 }: AISettingsPanelProps) {
+  const { t } = useTranslation();
   // 상태 관리
   const [settings, setSettings] = useState<AISettings | null>(
     initialSettings || null
@@ -149,14 +151,14 @@ export function AISettingsPanel({
 
       if (settings?.id) {
         await updateAISettings(settings.id, formData);
-        toast.success("AI 설정이 저장되었습니다.");
+        toast.success(t("admin.aiSettings.savedSuccess"));
       } else {
         const newSettings = await createAISettings(formData);
         setSettings(newSettings);
-        toast.success("AI 설정이 생성되었습니다.");
+        toast.success(t("admin.aiSettings.createdSuccess"));
       }
     } catch (error) {
-      toast.error("설정 저장에 실패했습니다.");
+      toast.error(t("admin.aiSettings.saveFailed"));
       console.error(error);
     } finally {
       setIsSaving(false);
@@ -172,14 +174,14 @@ export function AISettingsPanel({
       setTestResult({
         success: result.success,
         message: result.success
-          ? `연결 성공! 응답: "${result.testResponse}"`
-          : `연결 실패: ${result.error}`,
+          ? t("admin.aiSettings.connectionSuccess", { response: result.testResponse })
+          : t("admin.aiSettings.connectionFailed", { error: result.error }),
         responseTime: result.responseTime,
       });
     } catch (error) {
       setTestResult({
         success: false,
-        message: "테스트 중 오류가 발생했습니다.",
+        message: t("admin.aiSettings.testError"),
       });
     } finally {
       setIsTesting(false);
@@ -198,9 +200,9 @@ export function AISettingsPanel({
       setContextSettings(defaultSettings.contextSettings);
       setGenerationSettings(defaultSettings.generationSettings);
       setMemorySettings(defaultSettings.memorySettings);
-      toast.success("기본 설정이 적용되었습니다.");
+      toast.success(t("admin.aiSettings.resetSuccess"));
     } catch (error) {
-      toast.error("초기화에 실패했습니다.");
+      toast.error(t("admin.aiSettings.resetFailed"));
     }
   };
 
@@ -213,9 +215,9 @@ export function AISettingsPanel({
             <Bot className="h-6 w-6 text-primary" />
           </div>
           <div>
-            <h2 className="text-2xl font-bold">AI 챗봇 설정</h2>
+            <h2 className="text-2xl font-bold">{t("admin.aiSettings.title")}</h2>
             <p className="text-muted-foreground text-sm">
-              AI 독서 도우미의 모델, 프롬프트, 동작 방식을 설정합니다
+              {t("admin.aiSettings.description")}
             </p>
           </div>
         </div>
@@ -226,7 +228,7 @@ export function AISettingsPanel({
             disabled={isSaving}
           >
             <RefreshCw className="h-4 w-4 mr-2" />
-            기본값 복원
+            {t("admin.aiSettings.resetDefaults")}
           </Button>
           <Button onClick={handleSave} disabled={isSaving}>
             {isSaving ? (
@@ -234,7 +236,7 @@ export function AISettingsPanel({
             ) : (
               <Save className="h-4 w-4 mr-2" />
             )}
-            저장
+            {t("admin.aiSettings.save")}
           </Button>
         </div>
       </div>
@@ -244,7 +246,7 @@ export function AISettingsPanel({
         <CardHeader className="pb-3">
           <CardTitle className="text-lg flex items-center gap-2">
             <Zap className="h-5 w-5" />
-            API 키 상태
+            {t("admin.aiSettings.apiKeyStatus")}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -275,23 +277,23 @@ export function AISettingsPanel({
         <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="model" className="flex items-center gap-2">
             <Sparkles className="h-4 w-4" />
-            모델
+            {t("admin.aiSettings.tabModel")}
           </TabsTrigger>
           <TabsTrigger value="prompt" className="flex items-center gap-2">
             <MessageSquare className="h-4 w-4" />
-            프롬프트
+            {t("admin.aiSettings.tabPrompt")}
           </TabsTrigger>
           <TabsTrigger value="context" className="flex items-center gap-2">
             <Settings className="h-4 w-4" />
-            컨텍스트
+            {t("admin.aiSettings.tabContext")}
           </TabsTrigger>
           <TabsTrigger value="generation" className="flex items-center gap-2">
             <Zap className="h-4 w-4" />
-            생성 설정
+            {t("admin.aiSettings.tabGeneration")}
           </TabsTrigger>
           <TabsTrigger value="memory" className="flex items-center gap-2">
             <Brain className="h-4 w-4" />
-            메모리
+            {t("admin.aiSettings.tabMemory")}
           </TabsTrigger>
         </TabsList>
 
@@ -299,15 +301,15 @@ export function AISettingsPanel({
         <TabsContent value="model">
           <Card>
             <CardHeader>
-              <CardTitle>AI 모델 선택</CardTitle>
+              <CardTitle>{t("admin.aiSettings.modelTitle")}</CardTitle>
               <CardDescription>
-                사용할 AI 제공자와 모델을 선택하세요
+                {t("admin.aiSettings.modelDesc")}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               {/* 제공자 선택 */}
               <div className="space-y-3">
-                <Label>AI 제공자</Label>
+                <Label>{t("admin.aiSettings.providerLabel")}</Label>
                 <div className="grid grid-cols-3 gap-4">
                   {(Object.keys(AI_PROVIDER_INFO) as AIProvider[]).map(
                     (key) => {
@@ -335,7 +337,7 @@ export function AISettingsPanel({
                               variant="outline"
                               className="mt-2 text-xs bg-red-500/10 text-red-600"
                             >
-                              API 키 미설정
+                              {t("admin.aiSettings.noApiKey")}
                             </Badge>
                           )}
                         </button>
@@ -347,10 +349,10 @@ export function AISettingsPanel({
 
               {/* 모델 선택 */}
               <div className="space-y-3">
-                <Label>모델</Label>
+                <Label>{t("admin.aiSettings.modelLabel")}</Label>
                 <Select value={modelId} onValueChange={setModelId}>
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder="모델을 선택하세요" />
+                    <SelectValue placeholder={t("admin.aiSettings.modelPlaceholder")} />
                   </SelectTrigger>
                   <SelectContent>
                     {AI_MODELS[provider].map((model) => (
@@ -380,7 +382,7 @@ export function AISettingsPanel({
                     ) : (
                       <Zap className="h-4 w-4 mr-2" />
                     )}
-                    연결 테스트
+                    {isTesting ? t("admin.aiSettings.testing") : t("admin.aiSettings.testConnection")}
                   </Button>
                   {testResult && (
                     <div
@@ -411,31 +413,31 @@ export function AISettingsPanel({
         <TabsContent value="prompt">
           <Card>
             <CardHeader>
-              <CardTitle>프롬프트 설정</CardTitle>
+              <CardTitle>{t("admin.aiSettings.promptTitle")}</CardTitle>
               <CardDescription>
-                AI의 성격과 응답 방식을 정의하는 시스템 프롬프트를 설정하세요
+                {t("admin.aiSettings.promptDesc")}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-3">
-                <Label>시스템 프롬프트</Label>
+                <Label>{t("admin.aiSettings.systemPromptLabel")}</Label>
                 <Textarea
                   value={systemPrompt}
                   onChange={(e) => setSystemPrompt(e.target.value)}
-                  placeholder="AI의 성격, 역할, 응답 규칙을 정의하세요..."
+                  placeholder={t("admin.aiSettings.systemPromptPlaceholder")}
                   className="min-h-[300px] font-mono text-sm"
                 />
                 <p className="text-xs text-muted-foreground">
-                  사용자 페르소나, 최근 책 정보 등은 자동으로 추가됩니다.
+                  {t("admin.aiSettings.systemPromptHint")}
                 </p>
               </div>
 
               <div className="space-y-3">
-                <Label>환영 메시지</Label>
+                <Label>{t("admin.aiSettings.welcomeLabel")}</Label>
                 <Textarea
                   value={welcomeMessage}
                   onChange={(e) => setWelcomeMessage(e.target.value)}
-                  placeholder="새 대화 시작 시 표시할 환영 메시지..."
+                  placeholder={t("admin.aiSettings.welcomePlaceholder")}
                   className="min-h-[100px]"
                 />
               </div>
@@ -447,18 +449,18 @@ export function AISettingsPanel({
         <TabsContent value="context">
           <Card>
             <CardHeader>
-              <CardTitle>컨텍스트 설정</CardTitle>
+              <CardTitle>{t("admin.aiSettings.contextTitle")}</CardTitle>
               <CardDescription>
-                AI에게 제공할 사용자 정보 범위를 설정하세요
+                {t("admin.aiSettings.contextDesc")}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <Label>대화 히스토리 개수</Label>
+                    <Label>{t("admin.aiSettings.historyCountLabel")}</Label>
                     <p className="text-xs text-muted-foreground">
-                      컨텍스트에 포함할 이전 메시지 수
+                      {t("admin.aiSettings.historyCountDesc")}
                     </p>
                   </div>
                   <div className="flex items-center gap-3">
@@ -482,13 +484,13 @@ export function AISettingsPanel({
                 </div>
 
                 <div className="border-t pt-4 space-y-4">
-                  <Label>포함할 정보</Label>
+                  <Label>{t("admin.aiSettings.includeInfo")}</Label>
 
                   <div className="flex items-center justify-between">
                     <div>
-                      <span className="font-medium">사용자 페르소나</span>
+                      <span className="font-medium">{t("admin.aiSettings.personaLabel")}</span>
                       <p className="text-xs text-muted-foreground">
-                        독서 속도, 기록 스타일, 활동 패턴 등
+                        {t("admin.aiSettings.personaDesc")}
                       </p>
                     </div>
                     <Switch
@@ -504,9 +506,9 @@ export function AISettingsPanel({
 
                   <div className="flex items-center justify-between">
                     <div>
-                      <span className="font-medium">최근 읽은 책</span>
+                      <span className="font-medium">{t("admin.aiSettings.recentBooksLabel")}</span>
                       <p className="text-xs text-muted-foreground">
-                        최근 읽고 있거나 완독한 책 정보
+                        {t("admin.aiSettings.recentBooksDesc")}
                       </p>
                     </div>
                     <Switch
@@ -522,7 +524,7 @@ export function AISettingsPanel({
 
                   {contextSettings.includeRecentBooks && (
                     <div className="ml-6 flex items-center justify-between">
-                      <span className="text-sm">포함할 책 수</span>
+                      <span className="text-sm">{t("admin.aiSettings.booksCountLabel")}</span>
                       <div className="flex items-center gap-3">
                         <Slider
                           value={[contextSettings.maxRecentBooks]}
@@ -546,9 +548,9 @@ export function AISettingsPanel({
 
                   <div className="flex items-center justify-between">
                     <div>
-                      <span className="font-medium">최근 기록</span>
+                      <span className="font-medium">{t("admin.aiSettings.recentNotesLabel")}</span>
                       <p className="text-xs text-muted-foreground">
-                        인용구, 메모, 사진 필사 등 독서 기록
+                        {t("admin.aiSettings.recentNotesDesc")}
                       </p>
                     </div>
                     <Switch
@@ -564,7 +566,7 @@ export function AISettingsPanel({
 
                   {contextSettings.includeRecentNotes && (
                     <div className="ml-6 flex items-center justify-between">
-                      <span className="text-sm">포함할 기록 수</span>
+                      <span className="text-sm">{t("admin.aiSettings.notesCountLabel")}</span>
                       <div className="flex items-center gap-3">
                         <Slider
                           value={[contextSettings.maxRecentNotes]}
@@ -588,9 +590,9 @@ export function AISettingsPanel({
 
                   <div className="flex items-center justify-between">
                     <div>
-                      <span className="font-medium">독서 목표</span>
+                      <span className="font-medium">{t("admin.aiSettings.goalsLabel")}</span>
                       <p className="text-xs text-muted-foreground">
-                        올해 독서 목표 및 달성률
+                        {t("admin.aiSettings.goalsDesc")}
                       </p>
                     </div>
                     <Switch
@@ -613,18 +615,18 @@ export function AISettingsPanel({
         <TabsContent value="generation">
           <Card>
             <CardHeader>
-              <CardTitle>생성 파라미터</CardTitle>
+              <CardTitle>{t("admin.aiSettings.generationTitle")}</CardTitle>
               <CardDescription>
-                AI 응답 생성 방식을 조정하세요
+                {t("admin.aiSettings.generationDesc")}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <Label>Temperature (창의성)</Label>
+                    <Label>{t("admin.aiSettings.temperatureLabel")}</Label>
                     <p className="text-xs text-muted-foreground">
-                      낮을수록 일관된 응답, 높을수록 창의적인 응답
+                      {t("admin.aiSettings.temperatureDesc")}
                     </p>
                   </div>
                   <div className="flex items-center gap-3">
@@ -649,9 +651,9 @@ export function AISettingsPanel({
 
                 <div className="flex items-center justify-between">
                   <div>
-                    <Label>최대 출력 토큰</Label>
+                    <Label>{t("admin.aiSettings.maxTokensLabel")}</Label>
                     <p className="text-xs text-muted-foreground">
-                      AI 응답의 최대 길이
+                      {t("admin.aiSettings.maxTokensDesc")}
                     </p>
                   </div>
                   <div className="flex items-center gap-3">
@@ -676,9 +678,9 @@ export function AISettingsPanel({
 
                 <div className="flex items-center justify-between">
                   <div>
-                    <Label>Top P (누적 확률)</Label>
+                    <Label>{t("admin.aiSettings.topPLabel")}</Label>
                     <p className="text-xs text-muted-foreground">
-                      응답 다양성 조절 (1.0 권장)
+                      {t("admin.aiSettings.topPDesc")}
                     </p>
                   </div>
                   <div className="flex items-center gap-3">
@@ -703,9 +705,9 @@ export function AISettingsPanel({
 
                 <div className="flex items-center justify-between">
                   <div>
-                    <Label>반복 방지 (Frequency Penalty)</Label>
+                    <Label>{t("admin.aiSettings.freqPenaltyLabel")}</Label>
                     <p className="text-xs text-muted-foreground">
-                      같은 표현 반복 억제
+                      {t("admin.aiSettings.freqPenaltyDesc")}
                     </p>
                   </div>
                   <div className="flex items-center gap-3">
@@ -730,9 +732,9 @@ export function AISettingsPanel({
 
                 <div className="flex items-center justify-between">
                   <div>
-                    <Label>새 토픽 유도 (Presence Penalty)</Label>
+                    <Label>{t("admin.aiSettings.presPenaltyLabel")}</Label>
                     <p className="text-xs text-muted-foreground">
-                      새로운 주제로 전환 유도
+                      {t("admin.aiSettings.presPenaltyDesc")}
                     </p>
                   </div>
                   <div className="flex items-center gap-3">
@@ -763,17 +765,17 @@ export function AISettingsPanel({
         <TabsContent value="memory">
           <Card>
             <CardHeader>
-              <CardTitle>메모리 설정</CardTitle>
+              <CardTitle>{t("admin.aiSettings.memoryTitle")}</CardTitle>
               <CardDescription>
-                AI가 사용자에 대해 기억할 정보를 관리합니다
+                {t("admin.aiSettings.memoryDesc")}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <Label>장기 메모리 활성화</Label>
+                  <Label>{t("admin.aiSettings.longTermMemoryLabel")}</Label>
                   <p className="text-xs text-muted-foreground">
-                    대화에서 중요한 정보를 장기 저장
+                    {t("admin.aiSettings.longTermMemoryDesc")}
                   </p>
                 </div>
                 <Switch
@@ -791,9 +793,9 @@ export function AISettingsPanel({
                 <>
                   <div className="flex items-center justify-between">
                     <div>
-                      <Label>최대 메모리 항목 수</Label>
+                      <Label>{t("admin.aiSettings.maxMemoryItemsLabel")}</Label>
                       <p className="text-xs text-muted-foreground">
-                        사용자당 저장할 최대 메모리 개수
+                        {t("admin.aiSettings.maxMemoryItemsDesc")}
                       </p>
                     </div>
                     <div className="flex items-center gap-3">
@@ -817,7 +819,7 @@ export function AISettingsPanel({
                   </div>
 
                   <div className="space-y-3">
-                    <Label>메모리 추출 프롬프트</Label>
+                    <Label>{t("admin.aiSettings.memoryPromptLabel")}</Label>
                     <Textarea
                       value={memorySettings.memoryUpdatePrompt}
                       onChange={(e) =>
@@ -826,11 +828,11 @@ export function AISettingsPanel({
                           memoryUpdatePrompt: e.target.value,
                         })
                       }
-                      placeholder="AI가 대화에서 기억할 정보를 추출하는 프롬프트..."
+                      placeholder={t("admin.aiSettings.memoryPromptPlaceholder")}
                       className="min-h-[150px] font-mono text-sm"
                     />
                     <p className="text-xs text-muted-foreground">
-                      이 프롬프트를 사용해 대화에서 중요 정보를 추출합니다.
+                      {t("admin.aiSettings.memoryPromptHint")}
                     </p>
                   </div>
                 </>
@@ -840,8 +842,7 @@ export function AISettingsPanel({
                 <div className="flex items-center gap-3 p-4 bg-muted/50 rounded-lg">
                   <AlertCircle className="h-5 w-5 text-muted-foreground" />
                   <p className="text-sm text-muted-foreground">
-                    장기 메모리가 비활성화되면 AI는 세션 내 대화 기록만
-                    참조합니다.
+                    {t("admin.aiSettings.memoryDisabledNote")}
                   </p>
                 </div>
               )}

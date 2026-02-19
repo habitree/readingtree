@@ -13,6 +13,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Eye, Save } from "lucide-react";
+import { useTranslation } from "@/lib/i18n";
 
 interface TextPreviewDialogProps {
   title: string;
@@ -29,10 +30,12 @@ interface TextPreviewDialogProps {
 export function TextPreviewDialog({
   title,
   content,
-  label = "전체 보기",
+  label,
   onSave,
   maxLength,
 }: TextPreviewDialogProps) {
+  const { t } = useTranslation();
+  const resolvedLabel = label || t("notes.previewLabel");
   const [open, setOpen] = useState(false);
   const [editedContent, setEditedContent] = useState(content);
   const [hasChanges, setHasChanges] = useState(false);
@@ -79,25 +82,25 @@ export function TextPreviewDialog({
           className="h-8 text-xs"
         >
           <Eye className="mr-1 h-3 w-3" />
-          {label}
+          {resolvedLabel}
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
-          <DialogDescription>내용을 확인하고 수정할 수 있습니다</DialogDescription>
+          <DialogDescription>{t("notes.contentEditDesc")}</DialogDescription>
         </DialogHeader>
         <div className="flex-1 pt-4 overflow-y-auto">
           <Textarea
             value={editedContent}
             onChange={(e) => setEditedContent(e.target.value)}
-            placeholder="내용을 입력하세요"
+            placeholder={t("notes.contentPlaceholder")}
             className="min-h-[400px] resize-none text-sm whitespace-pre-wrap"
             maxLength={maxLength}
           />
           {maxLength && (
             <p className="text-xs text-muted-foreground mt-2 text-right">
-              {editedContent.length} / {maxLength}자
+              {editedContent.length} / {maxLength}{t("notes.charSuffix")}
             </p>
           )}
         </div>
@@ -107,7 +110,7 @@ export function TextPreviewDialog({
             variant="outline"
             onClick={handleCancel}
           >
-            취소
+            {t("notes.cancel")}
           </Button>
           <Button
             type="button"
@@ -115,7 +118,7 @@ export function TextPreviewDialog({
             disabled={!hasChanges}
           >
             <Save className="mr-2 h-4 w-4" />
-            저장
+            {t("notes.save")}
           </Button>
         </DialogFooter>
       </DialogContent>

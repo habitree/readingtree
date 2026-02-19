@@ -1,8 +1,7 @@
 import { Suspense } from "react";
 import { getCachedCurrentUser } from "@/lib/cached";
-import Link from "next/link";
-import { BookOpen } from "lucide-react";
 import { LoginSuccessToast } from "./login-success-toast";
+import { GuestBannerClient } from "./guest-banner-client";
 
 // Streaming SSR 섹션 컴포넌트
 import {
@@ -22,36 +21,13 @@ import {
 import { TertiaryZoneWrapper } from "./tertiary-zone-wrapper";
 
 /**
- * 게스트 사용자 가입 유도 배너
- * 더 눈에 띄는 카드 스타일로 가입 CTA 강화
+ * 게스트 사용자 가입 유도 배너 (서버 컴포넌트 래퍼)
+ * 인증 상태 확인 후 클라이언트 컴포넌트로 전달
  */
 async function GuestBanner() {
   const user = await getCachedCurrentUser();
   if (user) return null;
-
-  return (
-    <div className="rounded-xl bg-gradient-to-r from-forest-50 to-emerald-50 dark:from-forest-950/40 dark:to-emerald-950/30 border border-forest-200/50 dark:border-forest-800/30 p-4 sm:p-5">
-      <div className="flex items-center gap-3 sm:gap-4">
-        <div className="shrink-0 flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-forest-100 dark:bg-forest-900/40">
-          <BookOpen className="h-5 w-5 sm:h-6 sm:w-6 text-forest-600 dark:text-forest-400" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-sm sm:text-base font-semibold text-slate-900 dark:text-white">
-            나만의 독서 기록을 시작해보세요
-          </p>
-          <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
-            지금 체험 중이에요. 가입하면 기록이 저장돼요.
-          </p>
-        </div>
-        <Link
-          href="/login"
-          className="shrink-0 inline-flex items-center justify-center rounded-lg bg-forest-600 hover:bg-forest-700 text-white px-4 py-2 sm:px-5 sm:py-2.5 text-sm font-medium transition-colors duration-200 shadow-sm"
-        >
-          시작하기
-        </Link>
-      </div>
-    </div>
-  );
+  return <GuestBannerClient />;
 }
 
 /**

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Sparkles, FileText } from "lucide-react";
+import { useTranslation } from "@/lib/i18n";
 
 interface OcrTextViewerProps {
   /** 보정된 텍스트 (기본 표시) */
@@ -18,6 +19,7 @@ interface OcrTextViewerProps {
  * - 토글: 추출원문(원본) 보기 가능
  */
 export function OcrTextViewer({ correctedText, rawText }: OcrTextViewerProps) {
+  const { t } = useTranslation();
   const [showRaw, setShowRaw] = useState(false);
 
   // 원본과 보정본이 같으면 토글 버튼 숨김
@@ -33,7 +35,7 @@ export function OcrTextViewer({ correctedText, rawText }: OcrTextViewerProps) {
         <div className="flex items-center justify-between">
           <CardTitle className="text-xs sm:text-sm font-bold uppercase tracking-widest text-primary/80 flex items-center gap-2">
             <Sparkles className="w-4 h-4" />
-            AI 텍스트 분석
+            {t("notes.aiTextAnalysis")}
           </CardTitle>
 
           {/* 토글 버튼 - 원본이 있을 때만 표시 */}
@@ -45,7 +47,7 @@ export function OcrTextViewer({ correctedText, rawText }: OcrTextViewerProps) {
               className="h-7 px-2.5 text-xs gap-1.5"
             >
               <FileText className="w-3.5 h-3.5" />
-              {showRaw ? "AI 보정" : "추출원문"}
+              {showRaw ? t("notes.aiCorrectedBtn") : t("notes.rawExtractedBtn")}
             </Button>
           )}
         </div>
@@ -55,7 +57,7 @@ export function OcrTextViewer({ correctedText, rawText }: OcrTextViewerProps) {
         <div className="space-y-2.5">
           <h4 className="text-xs sm:text-sm font-semibold text-primary flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-primary" />
-            {showRaw ? "추출된 원문" : "AI 보정 텍스트"}
+            {showRaw ? t("notes.extractedRawText") : t("notes.aiCorrectedText")}
           </h4>
           <div className="bg-white/80 dark:bg-slate-900/80 p-4 sm:p-5 rounded-xl border border-slate-100 dark:border-slate-800 shadow-sm backdrop-blur-sm">
             <p className="text-sm sm:text-base leading-relaxed text-slate-700 dark:text-slate-300 whitespace-pre-wrap">
@@ -67,8 +69,8 @@ export function OcrTextViewer({ correctedText, rawText }: OcrTextViewerProps) {
           {hasRawText && (
             <p className="text-xs text-muted-foreground text-right">
               {showRaw
-                ? "OCR로 추출된 원본 텍스트입니다"
-                : "AI가 맞춤법과 띄어쓰기를 보정한 텍스트입니다"}
+                ? t("notes.rawTextNote")
+                : t("notes.correctedTextNote")}
             </p>
           )}
         </div>

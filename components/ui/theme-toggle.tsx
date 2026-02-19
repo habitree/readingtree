@@ -14,6 +14,7 @@ import {
   DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/lib/i18n";
 
 /**
  * 테마 토글 버튼 (아이콘만)
@@ -32,6 +33,7 @@ export function ThemeToggle({
   size = "default",
   className,
 }: ThemeToggleProps) {
+  const { t } = useTranslation();
   const { theme, setTheme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
@@ -64,7 +66,7 @@ export function ThemeToggle({
       size="icon"
       onClick={cycleTheme}
       className={cn("relative overflow-hidden", className)}
-      aria-label={`현재 테마: ${theme === "system" ? "시스템" : theme === "dark" ? "다크" : "라이트"}`}
+      aria-label={t("theme.currentTheme", { theme: theme === "system" ? t("theme.system") : theme === "dark" ? t("theme.dark") : t("theme.light") })}
     >
       <AnimatePresence mode="wait" initial={false}>
         {resolvedTheme === "dark" ? (
@@ -115,6 +117,7 @@ export function ThemeDropdown({
   showLabel = false,
   className,
 }: ThemeDropdownProps) {
+  const { t } = useTranslation();
   const { theme, setTheme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
@@ -126,15 +129,15 @@ export function ThemeDropdown({
     return (
       <Button variant={variant} className={className} disabled>
         <Sun className="h-4 w-4" />
-        {showLabel && <span className="ml-2">테마</span>}
+        {showLabel && <span className="ml-2">{t("theme.theme")}</span>}
       </Button>
     );
   }
 
   const themeOptions = [
-    { value: "light", label: "라이트", icon: Sun },
-    { value: "dark", label: "다크", icon: Moon },
-    { value: "system", label: "시스템", icon: Monitor },
+    { value: "light", label: t("theme.light"), icon: Sun },
+    { value: "dark", label: t("theme.dark"), icon: Moon },
+    { value: "system", label: t("theme.system"), icon: Monitor },
   ];
 
   const currentTheme = themeOptions.find((t) => t.value === theme);
@@ -149,7 +152,7 @@ export function ThemeDropdown({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        <DropdownMenuLabel>테마 선택</DropdownMenuLabel>
+        <DropdownMenuLabel>{t("theme.selectTheme")}</DropdownMenuLabel>
         <DropdownMenuSeparator />
         {themeOptions.map((option) => {
           const Icon = option.icon;
@@ -188,16 +191,17 @@ interface ThemePreviewCardProps {
 }
 
 export function ThemePreviewCard({ value, selected, onSelect }: ThemePreviewCardProps) {
+  const { t } = useTranslation();
   const labels = {
-    light: "라이트 모드",
-    dark: "다크 모드",
-    system: "시스템 설정",
+    light: t("theme.lightMode"),
+    dark: t("theme.darkMode"),
+    system: t("theme.system"),
   };
 
   const descriptions = {
-    light: "밝은 배경에 어두운 텍스트",
-    dark: "어두운 배경에 밝은 텍스트",
-    system: "기기 설정을 따릅니다",
+    light: t("theme.lightModeDesc"),
+    dark: t("theme.darkModeDesc"),
+    system: t("theme.systemModeDesc"),
   };
 
   const icons = {
@@ -357,13 +361,6 @@ interface ColorTheme {
   description: string;
 }
 
-const COLOR_THEMES: ColorTheme[] = [
-  { id: "default", name: "기본", primary: "#22c55e", description: "깔끔한 그린" },
-  { id: "blue", name: "블루", primary: "#3b82f6", description: "시원한 블루" },
-  { id: "violet", name: "바이올렛", primary: "#8b5cf6", description: "우아한 퍼플" },
-  { id: "rose", name: "로즈", primary: "#f43f5e", description: "생동감 있는 핑크" },
-  { id: "amber", name: "앰버", primary: "#f59e0b", description: "따뜻한 오렌지" },
-];
 
 interface ColorThemeSelectorProps {
   currentTheme: string;
@@ -371,11 +368,21 @@ interface ColorThemeSelectorProps {
 }
 
 export function ColorThemeSelector({ currentTheme, onSelect }: ColorThemeSelectorProps) {
+  const { t } = useTranslation();
+
+  const COLOR_THEMES: ColorTheme[] = [
+    { id: "default", name: t("theme.default"), primary: "#22c55e", description: t("theme.defaultDesc") },
+    { id: "blue", name: t("theme.blue"), primary: "#3b82f6", description: t("theme.blueDesc") },
+    { id: "violet", name: t("theme.violet"), primary: "#8b5cf6", description: t("theme.violetDesc") },
+    { id: "rose", name: t("theme.rose"), primary: "#f43f5e", description: t("theme.roseDesc") },
+    { id: "amber", name: t("theme.amber"), primary: "#f59e0b", description: t("theme.amberDesc") },
+  ];
+
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2">
         <Palette className="h-4 w-4 text-muted-foreground" />
-        <span className="text-sm font-medium">색상 테마</span>
+        <span className="text-sm font-medium">{t("theme.colorTheme")}</span>
       </div>
       <div className="flex flex-wrap gap-2">
         {COLOR_THEMES.map((theme) => (

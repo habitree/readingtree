@@ -1,8 +1,11 @@
+"use client";
+
 import Link from "next/link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Users, Lock, Globe } from "lucide-react";
 import { formatSmartDate } from "@/lib/utils/date";
+import { useTranslation } from "@/lib/i18n";
 
 interface GroupCardProps {
   group: {
@@ -28,6 +31,8 @@ interface GroupCardProps {
  * 모임 목록에서 사용
  */
 export function GroupCard({ group, memberCount }: GroupCardProps) {
+  const { t } = useTranslation();
+
   return (
     <Link href={`/groups/${group.id}`}>
       <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full">
@@ -36,22 +41,22 @@ export function GroupCard({ group, memberCount }: GroupCardProps) {
             <div className="flex-1 space-y-2">
               <CardTitle className="line-clamp-1">{group.name}</CardTitle>
               <CardDescription className="line-clamp-2">
-                {group.description || "설명이 없습니다."}
+                {group.description || t("groups.noDescription")}
               </CardDescription>
             </div>
-            <Badge 
+            <Badge
               variant={group.is_public ? "default" : "secondary"}
               className="shrink-0"
             >
               {group.is_public ? (
                 <>
                   <Globe className="mr-1 h-3 w-3" />
-                  공개
+                  {t("groups.public")}
                 </>
               ) : (
                 <>
                   <Lock className="mr-1 h-3 w-3" />
-                  비공개
+                  {t("groups.private")}
                 </>
               )}
             </Badge>
@@ -63,11 +68,11 @@ export function GroupCard({ group, memberCount }: GroupCardProps) {
               {memberCount !== undefined && (
                 <div className="flex items-center gap-2">
                   <Users className="h-4 w-4" />
-                  <span>{memberCount}명</span>
+                  <span>{t("groups.memberCount").replace("{count}", String(memberCount))}</span>
                 </div>
               )}
               {group.users && (
-                <span>리더: {group.users.name}</span>
+                <span>{t("groups.leader")}: {group.users.name}</span>
               )}
             </div>
             <span>{formatSmartDate(group.created_at)}</span>

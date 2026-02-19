@@ -21,6 +21,7 @@ import {
 import { getGroupBookNotes, unshareNoteFromGroup } from "@/app/actions/groups";
 import { toast } from "sonner";
 import type { NoteType } from "@/types/group";
+import { useTranslation } from "@/lib/i18n";
 
 interface GroupNoteFeedProps {
   groupId: string;
@@ -29,17 +30,17 @@ interface GroupNoteFeedProps {
   onShareClick?: () => void;
 }
 
-const noteTypeFilters: {
+const noteTypeFilterDefs: {
   type: NoteType | "all";
-  label: string;
+  labelKey: string;
   icon: React.ElementType;
   color?: string;
 }[] = [
-  { type: "all", label: "전체", icon: Filter },
-  { type: "quote", label: "인용구", icon: Quote, color: "text-amber-600" },
-  { type: "memo", label: "메모", icon: FileText, color: "text-green-600" },
-  { type: "photo", label: "사진", icon: Camera, color: "text-blue-600" },
-  { type: "transcription", label: "사진 필사", icon: ScanText, color: "text-purple-600" },
+  { type: "all", labelKey: "groups.filterAll", icon: Filter },
+  { type: "quote", labelKey: "groups.noteTypeQuote", icon: Quote, color: "text-amber-600" },
+  { type: "memo", labelKey: "groups.noteTypeMemo", icon: FileText, color: "text-green-600" },
+  { type: "photo", labelKey: "groups.noteTypePhoto", icon: Camera, color: "text-blue-600" },
+  { type: "transcription", labelKey: "groups.noteTypeTranscription", icon: ScanText, color: "text-purple-600" },
 ];
 
 function FeedSkeleton() {
@@ -73,9 +74,15 @@ export function GroupNoteFeed({
   onShareClick,
 }: GroupNoteFeedProps) {
   const router = useRouter();
+  const { t } = useTranslation();
   const [notes, setNotes] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState<NoteType | "all">("all");
+
+  const noteTypeFilters = noteTypeFilterDefs.map((f) => ({
+    ...f,
+    label: t(f.labelKey as Parameters<typeof t>[0]),
+  }));
 
   const loadNotes = async () => {
     try {
@@ -85,7 +92,7 @@ export function GroupNoteFeed({
       setNotes(data);
     } catch (error) {
       console.error("기록 조회 오류:", error);
-      toast.error("기록을 불러오지 못했어요.");
+      toast.error(t("errors.loadError"));
     } finally {
       setIsLoading(false);
     }
@@ -98,11 +105,11 @@ export function GroupNoteFeed({
   const handleUnshare = async (noteId: string) => {
     try {
       await unshareNoteFromGroup(noteId, groupId);
-      toast.success("공유가 해제됐어요.");
+      toast.success(t("groups.unshareSuccess"));
       loadNotes();
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "공유 해제에 실패했습니다."
+        error instanceof Error ? error.message : t("errors.saveError")
       );
     }
   };
@@ -155,22 +162,22 @@ export function GroupNoteFeed({
               </div>
               <h4 className="font-semibold mb-2">
                 {activeFilter === "all"
-                  ? "아직 공유된 기록이 없어요"
-                  : `공유된 ${activeFilterLabel} 기록이 없어요`}
+                  ? t("groups.noSharedNotesEmpty")
+                  : t("groups.noFilteredNotes").replace("{type}", activeFilterLabel || "")}
               </h4>
               <p className="text-sm text-muted-foreground mb-6 max-w-xs">
                 {activeFilter === "all"
-                  ? "이 책에 대한 첫 번째 기록을 공유해보세요. 모임원들과 생각을 나눌 수 있어요."
-                  : `다른 유형의 기록을 확인하거나, ${activeFilterLabel}을 작성해서 공유해보세요.`}
+                  ? t("groups.firstNoteShareDesc")
+                  : t("groups.noFilteredNotesDesc").replace("{type}", activeFilterLabel || "")}
               </p>
               <div className="flex flex-col sm:flex-row gap-2">
                 <Button onClick={onShareClick || (() => {})}>
                   <Share2 className="mr-2 h-4 w-4" />
-                  내 기록 공유하기
+                  {t("groups.shareNoteBtn")}
                 </Button>
                 <Button variant="outline" onClick={handleWriteNote}>
                   <PenLine className="mr-2 h-4 w-4" />
-                  기록 작성하기
+                  {t("groups.writeNoteBtn")}
                 </Button>
               </div>
             </div>

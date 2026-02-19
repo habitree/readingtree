@@ -17,6 +17,7 @@ import {
 import { getImageUrl, isValidImageUrl } from "@/lib/utils/image";
 import { cn } from "@/lib/utils";
 import { BookOpen, Users, Link2 } from "lucide-react";
+import { useTranslation } from "@/lib/i18n";
 import type { BookWithUserBook, ReadingStatus } from "@/types/book";
 import type { BookWithNotes } from "@/app/actions/books";
 
@@ -41,6 +42,7 @@ interface BookCardProps {
  * React.memo로 래핑하여 불필요한 리렌더링 방지
  */
 function BookCardComponent({ book, userBookId, status, groupBooks, relatedBooks, isSample: isSampleProp = false }: BookCardProps) {
+  const { t } = useTranslation();
   // 이미지 상태를 단일 객체로 통합 (리렌더링 최적화)
   const [imageState, setImageState] = useState({ error: false, retryCount: 0 });
   const MAX_RETRIES = 2; // 최대 2번 재시도
@@ -73,34 +75,34 @@ function BookCardComponent({ book, userBookId, status, groupBooks, relatedBooks,
     <div className="relative group">
       <Link
         href={`/books/${userBookId}`}
-        aria-label={`${book.title} 상세 보기`}
+        aria-label={t("books.viewBookDetail", { title: book.title })}
       >
         <Card
           className="hover:shadow-lg transition-shadow h-full cursor-pointer"
         >
           <CardContent className="p-0">
-            <div className="relative aspect-[3/4] w-full overflow-hidden rounded-t-lg bg-muted" role="img" aria-label={`${book.title} 표지`}>
+            <div className="relative aspect-[3/4] w-full overflow-hidden rounded-t-lg bg-muted" role="img" aria-label={t("books.bookCover", { title: book.title })}>
               {hasValidImage ? (
                 <Image
                   key={`${book.cover_image_url}-retry-${imageState.retryCount}`}
                   src={getImageUrl(book.cover_image_url)}
-                  alt={`${book.title} 표지`}
+                  alt={t("books.bookCover", { title: book.title })}
                   fill
                   className="object-cover group-hover:scale-105 transition-transform"
                   sizes="(max-width: 768px) 25vw, (max-width: 1024px) 16vw, 12.5vw"
                   onError={handleImageError}
                 />
               ) : (
-                <div className="absolute inset-0 flex flex-col items-center justify-center bg-muted/50" aria-label="이미지 없음">
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-muted/50" aria-label={t("books.noImage")}>
                   <BookOpen className="w-5 h-5 sm:w-8 sm:h-8 text-muted-foreground mb-0.5 sm:mb-1" aria-hidden="true" />
-                  <span className="text-[9px] sm:text-xs text-muted-foreground">이미지 없음</span>
+                  <span className="text-[9px] sm:text-xs text-muted-foreground">{t("books.noImage")}</span>
                 </div>
               )}
               {/* 모바일: 연결된 책 미니 배지 (좌하단, 심플) */}
               {relatedBooks && relatedBooks.length > 0 && (
                 <div
                   className="absolute bottom-2 left-2 lg:hidden"
-                  title={`연결된 책 ${relatedBooks.length}권`}
+                  title={t("books.relatedBooksCount", { count: relatedBooks.length })}
                 >
                   <div className="flex items-center gap-0.5 bg-black/60 backdrop-blur-sm text-white px-1.5 py-0.5 rounded-full text-[10px] font-medium">
                     <Link2 className="w-2.5 h-2.5" />
@@ -133,7 +135,7 @@ function BookCardComponent({ book, userBookId, status, groupBooks, relatedBooks,
                       key={gb.group_id}
                       variant="secondary"
                       className="text-[9px] sm:text-[10px] px-1 py-0"
-                      title={`${gb.group_name} 지정도서`}
+                      title={t("books.groupDesignatedBook", { name: gb.group_name })}
                     >
                       <Users className="mr-0.5 h-2 w-2" />
                       <span className="line-clamp-1">{gb.group_name}</span>
@@ -171,7 +173,7 @@ function BookCardComponent({ book, userBookId, status, groupBooks, relatedBooks,
                         onClick={(e) => e.preventDefault()}
                       >
                         <Link2 className="w-2.5 h-2.5" />
-                        <span>연결 {relatedBooks.length}권</span>
+                        <span>{t("books.linkedCount", { count: relatedBooks.length })}</span>
                       </button>
                     </HoverCardTrigger>
                     <HoverCardContent

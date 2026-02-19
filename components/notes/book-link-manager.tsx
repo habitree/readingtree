@@ -16,6 +16,7 @@ import { parseBookLinks } from "@/lib/utils/book-link";
 import { updateNote } from "@/app/actions/notes";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { useTranslation } from "@/lib/i18n";
 
 interface BookLinkManagerProps {
   noteId: string;
@@ -28,6 +29,7 @@ interface BookLinkManagerProps {
  * 삭제된 책 링크를 제거하거나 재설정할 수 있음
  */
 export function BookLinkManager({ noteId, content, onUpdate }: BookLinkManagerProps) {
+  const { t } = useTranslation();
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
@@ -40,7 +42,7 @@ export function BookLinkManager({ noteId, content, onUpdate }: BookLinkManagerPr
   }
 
   const handleRemoveAllLinks = async () => {
-    if (!confirm("모든 책 링크를 제거하시겠습니까? 책 제목은 유지됩니다.")) {
+    if (!confirm(t("notes.confirmRemoveLinks"))) {
       return;
     }
 
@@ -73,7 +75,7 @@ export function BookLinkManager({ noteId, content, onUpdate }: BookLinkManagerPr
         memo_content: newMemo.trim() || undefined,
       });
 
-      toast.success("책 링크가 제거됐어요.");
+      toast.success(t("notes.bookLinksRemoved"));
       setOpen(false);
       if (onUpdate) {
         onUpdate();
@@ -82,7 +84,7 @@ export function BookLinkManager({ noteId, content, onUpdate }: BookLinkManagerPr
       }
     } catch (error) {
       console.error("책 링크 제거 오류:", error);
-      toast.error("책 링크 제거에 실패했어요.");
+      toast.error(t("notes.bookLinksRemoveFailed"));
     } finally {
       setIsUpdating(false);
     }
@@ -93,27 +95,26 @@ export function BookLinkManager({ noteId, content, onUpdate }: BookLinkManagerPr
       <DialogTrigger asChild>
         <Button variant="outline" size="sm" className="gap-2">
           <Link2 className="w-4 h-4" />
-          책 링크 관리
+          {t("notes.bookLinkManage")}
         </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>책 링크 관리</DialogTitle>
+          <DialogTitle>{t("notes.bookLinkManage")}</DialogTitle>
           <DialogDescription>
-            기록 내용에 포함된 책 링크를 관리할 수 있습니다.
+            {t("notes.bookLinkManageDesc")}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           <Alert>
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              기록 내용에 {bookLinks.length}개의 책 링크가 포함되어 있습니다.
-              삭제된 책 링크는 제거하거나 기록 수정 페이지에서 재설정할 수 있습니다.
+              {t("notes.bookLinkCountAlert", { count: bookLinks.length })}
             </AlertDescription>
           </Alert>
 
           <div className="space-y-2">
-            <h4 className="text-sm font-medium">포함된 책 링크:</h4>
+            <h4 className="text-sm font-medium">{t("notes.includedBookLinks")}</h4>
             <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
               {bookLinks.map((link, index) => (
                 <li key={index}>{link.text}</li>
@@ -129,7 +130,7 @@ export function BookLinkManager({ noteId, content, onUpdate }: BookLinkManagerPr
               className="gap-2"
             >
               <X className="w-4 h-4" />
-              모든 링크 제거
+              {t("notes.removeAllLinks")}
             </Button>
             <Button
               variant="default"
@@ -138,7 +139,7 @@ export function BookLinkManager({ noteId, content, onUpdate }: BookLinkManagerPr
                 router.push(`/notes/${noteId}/edit`);
               }}
             >
-              기록 수정 페이지로 이동
+              {t("notes.goToEditPage")}
             </Button>
           </div>
         </div>

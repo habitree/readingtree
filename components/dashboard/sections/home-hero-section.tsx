@@ -22,6 +22,7 @@ import { cn } from "@/lib/utils";
 import type { UserPersona } from "@/types/persona";
 import type { ReadingStats } from "@/types/persona";
 import { useStyle } from "@/hooks/use-style";
+import { useTranslation } from "@/lib/i18n";
 import { ContinueReadingCard, NoReadingBookCard } from "./continue-reading-card";
 import { OnboardingChecklist, type OnboardingItem } from "@/components/onboarding/onboarding-checklist";
 import type { DailyRecordByType } from "@/app/actions/stats";
@@ -106,35 +107,37 @@ export function HomeHeroSection({
 }: HomeHeroSectionProps) {
   const [mounted, setMounted] = useState(false);
   const { greeting, getStreakMessage, getMotivationalMessage } = useStyle();
+  const { t } = useTranslation();
   const stats = persona?.reading_stats as ReadingStats | null;
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  const displayGreeting = mounted ? greeting : { text: "안녕하세요", emoji: "" };
+  const displayGreeting = mounted ? greeting : { text: t("auth.welcome"), emoji: "" };
 
   // 시간대별 메시지 (useMemo로 캐싱)
   const timeBasedCue = useMemo(() => {
     const hour = new Date().getHours();
     if (hour >= 5 && hour < 9) {
-      return "아침 공기가 맑아요";
+      return t("dashboard.timeCueEarlyMorning");
     } else if (hour >= 9 && hour < 12) {
-      return "고요한 시간이에요";
+      return t("dashboard.timeCueMorning");
     } else if (hour >= 12 && hour < 14) {
-      return "잠시 쉬어가도 좋아요";
+      return t("dashboard.timeCueNoon");
     } else if (hour >= 14 && hour < 18) {
-      return "오후의 여유";
+      return t("dashboard.timeCueAfternoon");
     } else if (hour >= 18 && hour < 21) {
-      return "하루가 마무리되고 있어요";
+      return t("dashboard.timeCueEvening");
     } else {
-      return "조용한 밤, 좋은 시간이에요";
+      return t("dashboard.timeCueNight");
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // 컴포넌트 마운트 시 한 번만 계산
 
   // 컨텍스트 기반 메시지 (useMemo로 캐싱)
   const motivationalMessage = useMemo(() => {
-    if (!mounted) return "독서의 흔적을 남겨보세요";
+    if (!mounted) return t("dashboard.defaultMotivational");
 
     if (continueReadingBooks.length > 0) {
       return timeBasedCue;
@@ -166,10 +169,10 @@ export function HomeHeroSection({
     : null;
 
   const noteTypeIcons: Record<string, { icon: React.ElementType; label: string; color: string }> = {
-    quote: { icon: Quote, label: "인용구", color: "text-blue-500" },
-    memo: { icon: FileText, label: "메모", color: "text-green-500" },
-    photo: { icon: Camera, label: "사진", color: "text-orange-500" },
-    transcription: { icon: PenTool, label: "사진 필사", color: "text-purple-500" },
+    quote: { icon: Quote, label: t("notes.typeQuote"), color: "text-blue-500" },
+    memo: { icon: FileText, label: t("notes.typeMemo"), color: "text-green-500" },
+    photo: { icon: Camera, label: t("notes.typePhoto"), color: "text-orange-500" },
+    transcription: { icon: PenTool, label: t("notes.typeTranscription"), color: "text-purple-500" },
   };
 
   // 나무 이미지 레벨
@@ -198,7 +201,7 @@ export function HomeHeroSection({
                   )}
                   <h1 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white leading-tight">
                     {displayGreeting.text}
-                    {userName && <span className="text-forest-700 dark:text-forest-400">, {userName}님</span>}
+                    {userName && <span className="text-forest-700 dark:text-forest-400">, {userName}</span>}
                   </h1>
                 </div>
                 <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mb-3">
@@ -220,7 +223,7 @@ export function HomeHeroSection({
               <div className="relative w-24 h-24 sm:w-28 sm:h-28 shrink-0">
                 <Image
                   src={`/images/trees/level-${safeLevel}.webp`}
-                  alt={`독서나무 레벨 ${safeLevel}`}
+                  alt={`ReadingTree Lv.${safeLevel}`}
                   fill
                   className="object-contain drop-shadow-md"
                   priority
@@ -263,11 +266,11 @@ export function HomeHeroSection({
         <Card className="p-3 sm:p-4 border-slate-200/60 dark:border-slate-800/60 bg-white dark:bg-slate-900">
           <div className="flex items-center gap-1.5 mb-1.5">
             <Flame className="h-4 w-4 text-orange-500" />
-            <span className="text-[10px] sm:text-xs font-semibold text-slate-500 dark:text-slate-400">연속 기록</span>
+            <span className="text-[10px] sm:text-xs font-semibold text-slate-500 dark:text-slate-400">{t("dashboard.streak")}</span>
           </div>
           <div className="flex items-baseline gap-1 mb-2">
             <span className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">{streak}</span>
-            <span className="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400">일</span>
+            <span className="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400">{t("common.day")}</span>
           </div>
           {weeklyProgress && (
             <div className="flex items-end gap-0.5 h-4 opacity-60">
@@ -297,11 +300,11 @@ export function HomeHeroSection({
               ) : (
                 <PenLine className="h-4 w-4 text-forest-500" />
               )}
-              <span className="text-[10px] sm:text-xs font-semibold text-slate-500 dark:text-slate-400">오늘의 기록</span>
+              <span className="text-[10px] sm:text-xs font-semibold text-slate-500 dark:text-slate-400">{t("dashboard.todayNotes")}</span>
             </div>
             <div className="flex items-baseline gap-1 mb-2">
               <span className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">{todayNotes}</span>
-              <span className="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400">개</span>
+              <span className="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400">{t("common.count")}</span>
             </div>
             {weeklyProgress && (
               <div className="flex items-end gap-0.5 h-4 opacity-60">
@@ -329,9 +332,9 @@ export function HomeHeroSection({
       {userName && weeklyProgress && (
         <Card className="px-4 py-3 sm:px-5 sm:py-4 border-slate-200/60 dark:border-slate-800/60 bg-white dark:bg-slate-900">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-sm font-bold text-slate-900 dark:text-white">이번 주 달성</span>
+            <span className="text-sm font-bold text-slate-900 dark:text-white">{t("dashboard.weeklyAchievement")}</span>
             <span className="text-[10px] sm:text-xs font-medium text-forest-600 dark:text-forest-400 bg-forest-50 dark:bg-forest-900/30 px-2 py-0.5 rounded-md">
-              {weeklyProgress.recordedDays}/{weeklyProgress.totalDays}일
+              {weeklyProgress.recordedDays}/{weeklyProgress.totalDays}{t("common.day")}
             </span>
           </div>
           <div className="flex justify-between items-center">
@@ -439,11 +442,12 @@ export function PersonaInsightCard({
     ? Object.entries(noteDistribution).reduce((a, b) => (a[1] > b[1] ? a : b))[0]
     : null;
 
+  const { t: tPersona } = useTranslation();
   const noteTypeIcons: Record<string, { label: string }> = {
-    quote: { label: "인용구" },
-    memo: { label: "메모" },
-    photo: { label: "사진" },
-    transcription: { label: "사진 필사" },
+    quote: { label: tPersona("notes.typeQuote") },
+    memo: { label: tPersona("notes.typeMemo") },
+    photo: { label: tPersona("notes.typePhoto") },
+    transcription: { label: tPersona("notes.typeTranscription") },
   };
 
   if (!persona || !stats || totalNotes === 0) {
@@ -462,7 +466,7 @@ export function PersonaInsightCard({
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-0.5">
                 <span className="text-sm font-semibold text-slate-900 dark:text-white">
-                  기록의 결
+                  {tPersona("dashboard.noteStyle")}
                 </span>
                 {dominantType && noteTypeIcons[dominantType] && (
                   <Badge variant="secondary" className="text-[10px] h-5 px-1.5">

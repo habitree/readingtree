@@ -4,6 +4,7 @@ import Image from "next/image";
 import { motion } from "framer-motion";
 import { getLevelStyle, LEVEL_DEFAULTS } from "@/types/points";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/lib/i18n";
 
 interface ReadingTreeProps {
     level: number;
@@ -16,9 +17,14 @@ interface ReadingTreeProps {
  * 사용자의 레벨에 따라 성장하는 나무 이미지를 표시합니다.
  */
 export function ReadingTree({ level, className, showTitle = true }: ReadingTreeProps) {
+    const { t } = useTranslation();
     const safeLevel = Math.max(1, Math.min(10, level));
     const levelInfo = LEVEL_DEFAULTS.find((l) => l.level === safeLevel);
     const levelStyle = getLevelStyle(safeLevel);
+
+    const levelTitleKey = `dashboard.treeLevelTitle${safeLevel}` as const;
+    // @ts-expect-error dynamic key
+    const localizedTitle = t(levelTitleKey) || levelInfo?.title || "";
 
     return (
         <div className={cn("relative flex flex-col items-center", className)}>
@@ -32,7 +38,7 @@ export function ReadingTree({ level, className, showTitle = true }: ReadingTreeP
                 <div className="relative w-24 h-24 sm:w-32 sm:h-32 tree-sway">
                     <Image
                         src={`/images/trees/level-${safeLevel}.webp`}
-                        alt={`독서나무 레벨 ${safeLevel}: ${levelInfo?.title}`}
+                        alt={`ReadingTree Lv.${safeLevel}: ${localizedTitle}`}
                         fill
                         className="object-contain drop-shadow-md transition-all duration-700"
                         priority
@@ -49,7 +55,7 @@ export function ReadingTree({ level, className, showTitle = true }: ReadingTreeP
                         levelStyle.borderColor,
                         levelStyle.textColor,
                     )}>
-                        Lv.{safeLevel} {levelInfo.title}
+                        Lv.{safeLevel} {localizedTitle}
                     </div>
                 </div>
             )}

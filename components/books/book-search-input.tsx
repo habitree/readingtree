@@ -5,6 +5,7 @@ import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 import { Loader2 } from "lucide-react";
+import { useTranslation } from "@/lib/i18n";
 
 interface BookSearchInputProps {
   className?: string;
@@ -21,6 +22,7 @@ interface BookSearchInputProps {
  * - 사용자 입력과 URL 동기화를 분리하여 순환 의존성 해결
  */
 export function BookSearchInput({ className, basePath: propBasePath }: BookSearchInputProps) {
+  const { t } = useTranslation();
   const router = useRouter();
   const searchParams = useSearchParams();
   const pathname = usePathname();
@@ -118,13 +120,13 @@ export function BookSearchInput({ className, basePath: propBasePath }: BookSearc
       />
       <Input
         type="search"
-        placeholder="검색"
+        placeholder={t("books.searchInputPlaceholder")}
         value={query}
         onChange={handleQueryChange}
         onCompositionStart={handleCompositionStart}
         onCompositionEnd={handleCompositionEnd}
         className="pl-9 pr-9 h-9 text-sm"
-        aria-label="책 검색"
+        aria-label={t("books.searchInputAriaLabel")}
       />
       {isSearching && (
         <div className="absolute right-3 top-1/2 transform -translate-y-1/2" aria-hidden="true">

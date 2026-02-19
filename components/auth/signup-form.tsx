@@ -14,6 +14,7 @@ import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import Link from "next/link";
+import { useTranslation } from "@/lib/i18n";
 
 const signupFormSchema = z.object({
   email: z.string().email("유효한 이메일 주소를 입력해주세요."),
@@ -39,6 +40,7 @@ type SignupFormValues = z.infer<typeof signupFormSchema>;
  */
 export function SignupForm() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState<"kakao" | "google" | "email" | null>(null);
   const [emailSignupSuccess, setEmailSignupSuccess] = useState(false);
 
@@ -130,19 +132,19 @@ export function SignupForm() {
       <Card className="w-full max-w-md mx-auto">
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold text-center">
-            이메일 확인 필요
+            {t("signup.emailCheckTitle")}
           </CardTitle>
           <CardDescription className="text-center">
-            회원가입이 완료되었습니다
+            {t("signup.emailCheckDesc")}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="text-center space-y-2">
             <p className="text-sm text-muted-foreground">
-              입력하신 이메일 주소로 인증 링크를 전송했습니다.
+              {t("signup.emailSent")}
             </p>
             <p className="text-sm text-muted-foreground">
-              이메일을 확인하고 인증 링크를 클릭해주세요.
+              {t("signup.emailVerify")}
             </p>
           </div>
           <div className="pt-4">
@@ -151,7 +153,7 @@ export function SignupForm() {
               className="w-full"
               onClick={() => router.push("/login")}
             >
-              로그인 페이지로 이동
+              {t("signup.goToLogin")}
             </Button>
           </div>
         </CardContent>
@@ -166,7 +168,7 @@ export function SignupForm() {
           ReadTree
         </CardTitle>
         <CardDescription className="text-center">
-          회원가입하고 독서 기록을 시작하세요
+          {t("signup.subtitle")}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -182,7 +184,7 @@ export function SignupForm() {
             {isLoading === "kakao" ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                처리 중...
+                {t("signup.processing")}
               </>
             ) : (
               <>
@@ -199,7 +201,7 @@ export function SignupForm() {
                     fill="#000000"
                   />
                 </svg>
-                카카오로 회원가입
+                {t("signup.signupWithKakao")}
               </>
             )}
           </Button>
@@ -215,7 +217,7 @@ export function SignupForm() {
             {isLoading === "google" ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                처리 중...
+                {t("signup.processing")}
               </>
             ) : (
               <>
@@ -244,7 +246,7 @@ export function SignupForm() {
                     fill="#EA4335"
                   />
                 </svg>
-                구글로 회원가입
+                {t("signup.signupWithGoogle")}
               </>
             )}
           </Button>
@@ -255,14 +257,14 @@ export function SignupForm() {
             <Separator />
           </div>
           <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-background px-2 text-muted-foreground">또는</span>
+            <span className="bg-background px-2 text-muted-foreground">{t("auth.or")}</span>
           </div>
         </div>
 
         {/* 이메일 회원가입 폼 */}
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="email">이메일</Label>
+            <Label htmlFor="email">{t("auth.email")}</Label>
             <Input
               id="email"
               type="email"
@@ -276,11 +278,11 @@ export function SignupForm() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="password">비밀번호</Label>
+            <Label htmlFor="password">{t("auth.password")}</Label>
             <Input
               id="password"
               type="password"
-              placeholder="최소 8자 이상"
+              placeholder={t("signup.passwordMinHint")}
               disabled={isLoading !== null}
               {...register("password")}
             />
@@ -290,11 +292,11 @@ export function SignupForm() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="passwordConfirm">비밀번호 확인</Label>
+            <Label htmlFor="passwordConfirm">{t("auth.confirmPassword")}</Label>
             <Input
               id="passwordConfirm"
               type="password"
-              placeholder="비밀번호를 다시 입력하세요"
+              placeholder={t("signup.passwordConfirmPlaceholder")}
               disabled={isLoading !== null}
               {...register("passwordConfirm")}
             />
@@ -304,11 +306,11 @@ export function SignupForm() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="name">이름</Label>
+            <Label htmlFor="name">{t("profile.displayName")}</Label>
             <Input
               id="name"
               type="text"
-              placeholder="이름을 입력하세요"
+              placeholder={t("auth.namePlaceholder")}
               disabled={isLoading !== null}
               {...register("name")}
             />
@@ -327,15 +329,16 @@ export function SignupForm() {
               />
               <div className="flex-1">
                 <span className="text-sm">
+                  {t("signup.termsAgreePrefix")}
                   <Link
                     href="/terms"
                     target="_blank"
                     className="text-primary hover:underline"
                     onClick={(e) => e.stopPropagation()}
                   >
-                    이용약관
+                    {t("auth.termsOfService")}
                   </Link>
-                  에 동의합니다 <span className="text-destructive">(필수)</span>
+                  {t("signup.termsAgreeSuffix")} <span className="text-destructive">{t("signup.required")}</span>
                 </span>
               </div>
             </label>
@@ -352,15 +355,16 @@ export function SignupForm() {
               />
               <div className="flex-1">
                 <span className="text-sm">
+                  {t("signup.termsAgreePrefix")}
                   <Link
                     href="/privacy"
                     target="_blank"
                     className="text-primary hover:underline"
                     onClick={(e) => e.stopPropagation()}
                   >
-                    개인정보처리방침
+                    {t("signup.privacyPolicy")}
                   </Link>
-                  에 동의합니다 <span className="text-destructive">(필수)</span>
+                  {t("signup.termsAgreeSuffix")} <span className="text-destructive">{t("signup.required")}</span>
                 </span>
               </div>
             </label>
@@ -378,19 +382,19 @@ export function SignupForm() {
             {isLoading === "email" ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                처리 중...
+                {t("signup.processing")}
               </>
             ) : (
-              "회원가입"
+              t("auth.signup")
             )}
           </Button>
         </form>
 
         <div className="text-center">
           <p className="text-sm text-muted-foreground">
-            이미 계정이 있으신가요?{" "}
+            {t("auth.alreadyHaveAccount")}{" "}
             <Link href="/login" className="text-primary hover:underline">
-              로그인
+              {t("auth.login")}
             </Link>
           </p>
         </div>
@@ -398,4 +402,3 @@ export function SignupForm() {
     </Card>
   );
 }
-

@@ -37,6 +37,7 @@ import { TagInput } from "./tag-input";
 import { BookMentionTextarea } from "./book-mention-textarea";
 import { RelatedBooksManager } from "./related-books-manager";
 import { RelatedBooksPreview } from "./related-books-preview";
+import { useTranslation } from "@/lib/i18n";
 
 // 스키마: 모든 값은 선택이지만 완전히 빈값은 불가
 const noteEditFormSchema = z.object({
@@ -69,6 +70,7 @@ interface NoteEditFormProps {
  * - 페이지번호, 태그, 공개여부
  */
 export function NoteEditForm({ note }: NoteEditFormProps) {
+  const { t } = useTranslation();
   const router = useRouter();
   const [images, setImages] = useState<string[]>(note.image_url ? [note.image_url] : []);
   const [uploading, setUploading] = useState(false);
@@ -121,12 +123,12 @@ export function NoteEditForm({ note }: NoteEditFormProps) {
     );
 
     if (validFiles.length === 0) {
-      toast.error("유효한 이미지 파일을 선택해주세요. (최대 5MB)");
+      toast.error(t("notes.validImageError"));
       return;
     }
 
     if (!uploadType) {
-      toast.error("업로드 타입을 먼저 선택해주세요.");
+      toast.error(t("notes.selectUploadTypeFirst"));
       return;
     }
 
@@ -148,7 +150,7 @@ export function NoteEditForm({ note }: NoteEditFormProps) {
         });
 
         if (!response.ok) {
-          throw new Error("이미지 업로드 실패");
+          throw new Error(t("notes.imageUploadFailed"));
         }
 
         const data = await response.json();
@@ -156,7 +158,7 @@ export function NoteEditForm({ note }: NoteEditFormProps) {
         setUploadProgress((prev) => ({ ...prev, [i]: 100 }));
       } catch (error) {
         console.error("이미지 업로드 오류:", error);
-        toast.error(`이미지 업로드 실패: ${error instanceof Error ? error.message : "알 수 없는 오류"}`);
+        toast.error(error instanceof Error ? error.message : t("notes.editFailed"));
         setUploading(false);
         return;
       }
@@ -165,7 +167,7 @@ export function NoteEditForm({ note }: NoteEditFormProps) {
     setImages(newImages);
     setUploading(false);
     setUploadProgress({});
-    toast.success("이미지가 업로드됐어요.");
+    toast.success(t("notes.imageUploaded"));
   };
 
   const removeImage = (index: number) => {
@@ -191,12 +193,12 @@ export function NoteEditForm({ note }: NoteEditFormProps) {
         is_public: data.isPublic,
       });
 
-      toast.success("저장됨");
+      toast.success(t("notes.saved"));
       router.push(`/notes/${note.id}`);
     } catch (error) {
       console.error("기록 수정 오류:", error);
       toast.error(
-        error instanceof Error ? error.message : "기록 수정에 실패했습니다."
+        error instanceof Error ? error.message : t("notes.editFailed")
       );
     }
   };
@@ -211,11 +213,11 @@ export function NoteEditForm({ note }: NoteEditFormProps) {
           render={({ field }) => (
             <FormItem>
               <FormLabel className="text-sm">
-                제목 <span className="text-muted-foreground text-xs font-normal">(선택)</span>
+                {t("notes.titleLabel")} <span className="text-muted-foreground text-xs font-normal">{t("notes.titleOptionalSuffix")}</span>
               </FormLabel>
               <FormControl>
                 <Input
-                  placeholder="기록에 제목을 붙여보세요."
+                  placeholder={t("notes.titleEditPlaceholder")}
                   {...field}
                   value={field.value || ""}
                   className="h-10 sm:h-11"
@@ -232,10 +234,10 @@ export function NoteEditForm({ note }: NoteEditFormProps) {
           name="quoteContent"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-sm">인상깊은 구절</FormLabel>
+              <FormLabel className="text-sm">{t("notes.impressiveQuoteLabel")}</FormLabel>
               <FormControl>
                 <BookMentionTextarea
-                  placeholder="인상 깊었던 문장을 입력하세요."
+                  placeholder={t("notes.quotePlaceholder")}
                   value={field.value || ""}
                   onValueChange={field.onChange}
                   rows={3}
@@ -253,10 +255,10 @@ export function NoteEditForm({ note }: NoteEditFormProps) {
           name="memoContent"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-sm">내 생각</FormLabel>
+              <FormLabel className="text-sm">{t("notes.myThoughtLabel")}</FormLabel>
               <FormControl>
                 <BookMentionTextarea
-                  placeholder="생각이나 감상을 입력하세요."
+                  placeholder={t("notes.memoPlaceholder")}
                   value={field.value || ""}
                   onValueChange={field.onChange}
                   rows={4}
@@ -270,7 +272,7 @@ export function NoteEditForm({ note }: NoteEditFormProps) {
 
         {/* 업로드 타입 선택 */}
         <div className="space-y-2">
-          <Label className="text-sm">업로드 타입 (선택)</Label>
+          <Label className="text-sm">{t("notes.uploadTypeLabel")}</Label>
           <Select
             value={uploadType || undefined}
             onValueChange={(value) =>
@@ -278,11 +280,11 @@ export function NoteEditForm({ note }: NoteEditFormProps) {
             }
           >
             <SelectTrigger className="h-10 sm:h-11">
-              <SelectValue placeholder="사진 또는 사진 필사 선택" />
+              <SelectValue placeholder={t("notes.uploadTypePlaceholder")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="photo">사진</SelectItem>
-              <SelectItem value="transcription">사진 필사</SelectItem>
+              <SelectItem value="photo">{t("notes.photoLabel")}</SelectItem>
+              <SelectItem value="transcription">{t("notes.photoTranscription")}</SelectItem>
             </SelectContent>
           </Select>
           {uploadType && (
@@ -296,7 +298,7 @@ export function NoteEditForm({ note }: NoteEditFormProps) {
               }}
               className="text-xs h-7"
             >
-              타입 취소
+              {t("notes.cancelType")}
             </Button>
           )}
         </div>
@@ -304,7 +306,7 @@ export function NoteEditForm({ note }: NoteEditFormProps) {
         {/* 이미지 업로드 */}
         {uploadType && (
           <div className="space-y-2">
-            <Label className="text-sm">이미지 업로드</Label>
+            <Label className="text-sm">{t("notes.imageUploadLabel")}</Label>
             <div className="flex flex-col gap-3">
               <input
                 ref={fileInputRef}
@@ -321,7 +323,7 @@ export function NoteEditForm({ note }: NoteEditFormProps) {
                 className="h-10 sm:h-11"
               >
                 <Upload className="mr-2 h-4 w-4" />
-                {uploading ? "업로드 중..." : images.length > 0 ? "이미지 변경" : "이미지 선택"}
+                {uploading ? t("notes.uploading") : images.length > 0 ? t("notes.imageChange") : t("notes.imageSelect")}
               </Button>
 
               {images.length > 0 && (
@@ -330,7 +332,7 @@ export function NoteEditForm({ note }: NoteEditFormProps) {
                     <div key={index} className="relative aspect-[3/4] rounded-lg overflow-hidden border">
                       <Image
                         src={getImageUrl(imageUrl)}
-                        alt={`업로드된 이미지 ${index + 1}`}
+                        alt={t("notes.uploadedImageAlt", { index: index + 1 })}
                         fill
                         className="object-cover"
                         sizes="(max-width: 768px) 50vw, 33vw"
@@ -360,11 +362,11 @@ export function NoteEditForm({ note }: NoteEditFormProps) {
           render={({ field }) => (
             <FormItem>
               <FormLabel className="text-sm">
-                페이지 번호 <span className="text-muted-foreground text-xs font-normal">(선택)</span>
+                {t("notes.pageNumberOptional")} <span className="text-muted-foreground text-xs font-normal">{t("notes.titleOptionalSuffix")}</span>
               </FormLabel>
               <FormControl>
                 <Input
-                  placeholder="예: 123, 10-20"
+                  placeholder={t("notes.pageEditPlaceholder")}
                   {...field}
                   value={field.value || ""}
                   className="h-10 sm:h-11"
@@ -385,7 +387,7 @@ export function NoteEditForm({ note }: NoteEditFormProps) {
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <Label className="text-sm">
-              연결된 책 <span className="text-muted-foreground text-xs font-normal">(선택)</span>
+              {t("notes.linkedBookOptional")} <span className="text-muted-foreground text-xs font-normal">{t("notes.titleOptionalSuffix")}</span>
             </Label>
             <RelatedBooksManager
               noteId={note.id}
@@ -405,10 +407,10 @@ export function NoteEditForm({ note }: NoteEditFormProps) {
         <div className="flex items-center justify-between py-2 px-3 bg-muted/50 rounded-lg">
           <div className="space-y-0.5">
             <Label htmlFor="isPublic" className="text-sm font-medium cursor-pointer">
-              공개 설정
+              {t("notes.publicSetting")}
             </Label>
             <p className="text-[10px] sm:text-xs text-muted-foreground">
-              {isPublic ? "다른 사용자도 볼 수 있습니다" : "나만 볼 수 있습니다"}
+              {isPublic ? t("notes.publicDesc") : t("notes.privateDesc")}
             </p>
           </div>
           <Switch
@@ -427,7 +429,7 @@ export function NoteEditForm({ note }: NoteEditFormProps) {
             disabled={isSubmitting}
             className="flex-1 h-11"
           >
-            취소
+            {t("notes.cancel")}
           </Button>
           <Button
             type="submit"
@@ -437,10 +439,10 @@ export function NoteEditForm({ note }: NoteEditFormProps) {
             {isSubmitting ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                저장 중...
+                {t("notes.saving")}
               </>
             ) : (
-              "저장"
+              t("notes.save")
             )}
           </Button>
         </div>

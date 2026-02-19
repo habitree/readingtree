@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { TotalPagesEditor } from "./total-pages-editor";
 import { ProgressRecordSheet } from "./progress-record-sheet";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/lib/i18n";
 
 interface ReadingProgressProps {
   userBookId: string;
@@ -46,6 +47,7 @@ export function ReadingProgress({
   onTotalPagesUpdate,
   onRecordCreated,
 }: ReadingProgressProps) {
+  const { t } = useTranslation();
   const [currentPage, setCurrentPage] = useState(initialPage || 0);
   const [totalPages, setTotalPages] = useState(initialTotalPages);
   const [inputValue, setInputValue] = useState(String(initialPage || 0));
@@ -125,15 +127,15 @@ export function ReadingProgress({
       setInputValue(String(pendingPageUpdate));
       setDragValue(pendingPageUpdate);
       onUpdate?.(pendingPageUpdate);
-      toast.success(`${pendingPageUpdate}페이지로 업데이트됨`);
+      toast.success(t("books.progressUpdatedTo", { page: pendingPageUpdate }));
       setShowInlineMemo(false);
       setPendingPageUpdate(null);
     } catch (error) {
-      toast.error("진행률 업데이트에 실패했어요.");
+      toast.error(t("books.progressUpdateFailed"));
     } finally {
       setIsInlineSaving(false);
     }
-  }, [pendingPageUpdate, userBookId, onUpdate]);
+  }, [pendingPageUpdate, userBookId, onUpdate, t]);
 
   // 인라인 메모와 함께 진행률 저장
   const handleSaveWithMemo = useCallback(async () => {
@@ -163,16 +165,16 @@ export function ReadingProgress({
       setDragValue(pendingPageUpdate);
       onUpdate?.(pendingPageUpdate);
       onRecordCreated?.();
-      toast.success("진행 기록이 저장됐어요");
+      toast.success(t("books.progressRecordSaved"));
       setShowInlineMemo(false);
       setPendingPageUpdate(null);
       setInlineMemo("");
     } catch (error) {
-      toast.error("저장에 실패했어요.");
+      toast.error(t("books.saveFailed"));
     } finally {
       setIsInlineSaving(false);
     }
-  }, [pendingPageUpdate, userBookId, inlineMemo, onUpdate, onRecordCreated]);
+  }, [pendingPageUpdate, userBookId, inlineMemo, onUpdate, onRecordCreated, t]);
 
   // 인라인 메모 취소
   const handleCancelInlineMemo = useCallback(() => {
@@ -186,7 +188,7 @@ export function ReadingProgress({
     const newPage = parseInt(inputValue, 10);
 
     if (isNaN(newPage) || newPage < 0) {
-      toast.error("올바른 페이지 수를 입력해주세요.");
+      toast.error(t("books.invalidPageNumber"));
       return;
     }
 
@@ -197,9 +199,9 @@ export function ReadingProgress({
         setDragValue(newPage);
         setIsEditing(false);
         onUpdate?.(newPage);
-        toast.success("진행률이 업데이트됐어요.");
+        toast.success(t("books.progressUpdatedSuccess"));
       } catch (error) {
-        toast.error("진행률 업데이트에 실패했어요.");
+        toast.error(t("books.progressUpdateFailed"));
       }
     });
   };
@@ -212,13 +214,13 @@ export function ReadingProgress({
 
   // 동기부여 메시지 생성 함수
   const getMotivationalMessage = (percent: number, remaining: number) => {
-    if (percent === 0) return { icon: Sparkles, message: "첫 페이지를 펼쳐보세요!", color: "text-slate-500" };
-    if (percent < 10) return { icon: Flame, message: "좋은 시작이에요!", color: "text-orange-500" };
-    if (percent < 25) return { icon: TrendingUp, message: "순조로운 출발!", color: "text-blue-500" };
-    if (percent < 50) return { icon: Target, message: `${remaining}페이지 더 읽으면 절반!`, color: "text-indigo-500" };
-    if (percent < 75) return { icon: Flame, message: "절반을 넘었어요!", color: "text-amber-500" };
-    if (percent < 90) return { icon: Trophy, message: "완독이 눈앞에!", color: "text-emerald-500" };
-    return { icon: Sparkles, message: "거의 다 읽었어요!", color: "text-primary" };
+    if (percent === 0) return { icon: Sparkles, message: t("books.motivationFirstPage"), color: "text-slate-500" };
+    if (percent < 10) return { icon: Flame, message: t("books.motivationGoodStart"), color: "text-orange-500" };
+    if (percent < 25) return { icon: TrendingUp, message: t("books.motivationSmoothStart"), color: "text-blue-500" };
+    if (percent < 50) return { icon: Target, message: t("books.motivationHalfway", { remaining }), color: "text-indigo-500" };
+    if (percent < 75) return { icon: Flame, message: t("books.motivationOverHalf"), color: "text-amber-500" };
+    if (percent < 90) return { icon: Trophy, message: t("books.motivationAlmostDone"), color: "text-emerald-500" };
+    return { icon: Sparkles, message: t("books.motivationNearlyFinished"), color: "text-primary" };
   };
 
   // 진행률에 따른 색상 결정
@@ -240,7 +242,7 @@ export function ReadingProgress({
         <div className="flex items-center justify-between">
           <span className="text-emerald-600 dark:text-emerald-400 flex items-center gap-2 font-medium">
             <Trophy className="h-4 w-4" />
-            완독 완료
+            {t("books.readingComplete")}
           </span>
           <span className="text-lg font-bold text-emerald-600 dark:text-emerald-400">100%</span>
         </div>
@@ -249,7 +251,7 @@ export function ReadingProgress({
           <div className="absolute inset-0 bg-gradient-to-r from-emerald-400 to-emerald-600 rounded-full" />
         </div>
         <p className="text-xs text-center text-emerald-600/80 dark:text-emerald-400/80 font-medium">
-          축하해요. 책을 완독했어요
+          {t("books.congratsCompleted")}
         </p>
       </div>
     );
@@ -264,7 +266,7 @@ export function ReadingProgress({
       <div className="flex items-center justify-between">
         <Label className="text-sm text-muted-foreground flex items-center gap-1.5">
           <BookOpen className="h-4 w-4" />
-          읽기 진행률
+          {t("books.readingProgress")}
         </Label>
         {displayPercent !== null && (
           <div className="flex items-center gap-1.5">
@@ -328,14 +330,14 @@ export function ReadingProgress({
             {/* 드래그 힌트 - 처음 표시 시 */}
             <div className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-[10px] text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
               <GripHorizontal className="w-3 h-3" />
-              드래그하여 조절
+              {t("books.dragToAdjust")}
             </div>
           </div>
 
           {/* 드래그 중 페이지 미리보기 */}
           {isDragging && (
             <div className="flex items-center justify-center gap-2 py-1 px-3 rounded-full bg-primary/10 text-primary text-sm font-medium animate-in fade-in duration-150">
-              <span>{dragValue}페이지</span>
+              <span>{t("books.pagePreview", { page: dragValue })}</span>
               <span className="text-xs text-muted-foreground">({dragPercent}%)</span>
             </div>
           )}
@@ -347,7 +349,7 @@ export function ReadingProgress({
                 <div className="flex items-center gap-2">
                   <TrendingUp className="h-4 w-4 text-teal-600 dark:text-teal-400" />
                   <span className="text-sm font-medium text-teal-700 dark:text-teal-300">
-                    {pendingPageUpdate}페이지로 업데이트
+                    {t("books.updateToPage", { page: pendingPageUpdate })}
                   </span>
                 </div>
                 <Button
@@ -361,7 +363,7 @@ export function ReadingProgress({
                 </Button>
               </div>
               <Textarea
-                placeholder="한줄 메모를 남겨보세요 (선택사항)"
+                placeholder={t("books.inlineMemoPlaceholder")}
                 value={inlineMemo}
                 onChange={(e) => setInlineMemo(e.target.value)}
                 disabled={isInlineSaving}
@@ -383,7 +385,7 @@ export function ReadingProgress({
                     {isInlineSaving ? (
                       <Loader2 className="h-3.5 w-3.5 animate-spin" />
                     ) : (
-                      "메모 없이 저장"
+                      t("books.saveWithoutMemo")
                     )}
                   </Button>
                   <Button
@@ -397,7 +399,7 @@ export function ReadingProgress({
                     ) : (
                       <>
                         <Send className="h-3.5 w-3.5 mr-1" />
-                        기록 저장
+                        {t("books.saveRecord")}
                       </>
                     )}
                   </Button>
@@ -437,7 +439,7 @@ export function ReadingProgress({
       ) : (
         <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/50">
           <p className="text-xs text-muted-foreground flex-1">
-            총 페이지 수를 설정하면 진행률을 확인할 수 있어요
+            {t("books.setTotalPagesHint")}
           </p>
           {bookId && (
             <TotalPagesEditor
@@ -460,10 +462,10 @@ export function ReadingProgress({
           <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
             <Calendar className="h-3 w-3 shrink-0" />
             <span>
-              읽기 시작 {daysSinceStart}일째
-              {avgPagesPerDay && <> · 일평균 {avgPagesPerDay}p</>}
+              {t("books.readingDays", { days: daysSinceStart })}
+              {avgPagesPerDay && <> · {t("books.avgPagesPerDay", { avg: avgPagesPerDay })}</>}
               {avgPagesPerDay && totalPages && remainingPages > 0 && (
-                <> · 약 {Math.ceil(remainingPages / Number(avgPagesPerDay))}일 후 완독 예상</>
+                <> · {t("books.estimatedCompletion", { days: Math.ceil(remainingPages / Number(avgPagesPerDay)) })}</>
               )}
             </span>
           </div>
@@ -494,7 +496,7 @@ export function ReadingProgress({
             disabled={isPending}
             className="h-8 px-2"
           >
-            취소
+            {t("books.cancelLabel")}
           </Button>
           <Button
             size="sm"
@@ -520,12 +522,12 @@ export function ReadingProgress({
                 <span className="text-muted-foreground">{totalPages}p</span>
                 {remainingPages > 0 && (
                   <span className="text-xs text-muted-foreground ml-1">
-                    ({remainingPages}p 남음)
+                    {t("books.remainingPages", { count: remainingPages })}
                   </span>
                 )}
               </>
             ) : (
-              <span className="text-muted-foreground">페이지</span>
+              <span className="text-muted-foreground">{t("books.pageUnit")}</span>
             )}
           </div>
           {bookId && displayPercent !== null && (
@@ -544,7 +546,7 @@ export function ReadingProgress({
               onClick={() => setIsEditing(true)}
               className="h-8 text-xs"
             >
-              진행률 수정
+              {t("books.editProgress")}
             </Button>
             <Button
               size="sm"
@@ -552,10 +554,10 @@ export function ReadingProgress({
               onClick={() => setIsRecordSheetOpen(true)}
               disabled={currentPage < 1}
               className="h-8 text-xs bg-forest-600 hover:bg-forest-700 text-white disabled:opacity-50"
-              title={currentPage < 1 ? "먼저 읽은 페이지를 입력해주세요" : undefined}
+              title={currentPage < 1 ? t("books.firstReadPagesHint") : undefined}
             >
               <PenLine className="h-3.5 w-3.5 mr-1" />
-              기록
+              {t("books.recordLabel")}
             </Button>
           </div>
         </div>
@@ -588,12 +590,13 @@ export function ReadingProgressBadge({
   totalPages: number | null | undefined;
   status: string;
 }) {
+  const { t } = useTranslation();
   // 완독 상태
   if (status === "completed") {
     return (
       <div className="flex items-center gap-1 text-xs text-primary">
         <Check className="h-3 w-3" />
-        완독
+        {t("books.completedBadge")}
       </div>
     );
   }

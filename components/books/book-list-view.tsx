@@ -7,6 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils/cn";
 import { getImageUrl, isValidImageUrl } from "@/lib/utils/image";
+import { useTranslation } from "@/lib/i18n";
 import type { ReadingStatus } from "@/types/book";
 
 interface BookListViewProps {
@@ -32,24 +33,15 @@ interface BookListViewProps {
 }
 
 /**
- * 읽기 상태를 한글로 변환
+ * 상태별 번역 키 매핑
  */
-function getStatusLabel(status: ReadingStatus): string {
-  switch (status) {
-    case "not_started":
-      return "읽을 예정";
-    case "reading":
-      return "읽는 중";
-    case "completed":
-      return "완독";
-    case "rereading":
-      return "재독";
-    case "paused":
-      return "쉬는 중";
-    default:
-      return status;
-  }
-}
+const statusKeyMap: Record<ReadingStatus, string> = {
+  not_started: "books.statusNotStarted",
+  reading: "books.statusReading",
+  completed: "books.statusCompleted",
+  rereading: "books.statusRereading",
+  paused: "books.statusPaused",
+};
 
 /**
  * 상태별 뱃지 스타일
@@ -76,6 +68,8 @@ function getStatusBadgeVariant(
  * 테이블 뷰의 모바일 대체 버전
  */
 export function BookListView({ books, isLoading }: BookListViewProps) {
+  const { t } = useTranslation();
+
   if (isLoading) {
     return (
       <div className="space-y-3">
@@ -102,9 +96,9 @@ export function BookListView({ books, isLoading }: BookListViewProps) {
           </div>
         </div>
         <div className="space-y-2">
-          <h3 className="text-lg font-semibold">등록된 책이 없습니다</h3>
+          <h3 className="text-lg font-semibold">{t("books.noBooksListEmpty")}</h3>
           <p className="text-sm text-muted-foreground max-w-md mx-auto">
-            첫 번째 책을 추가하고 독서 여정을 시작해보세요!
+            {t("books.noBooksListDesc")}
           </p>
         </div>
       </div>
@@ -140,7 +134,7 @@ export function BookListView({ books, isLoading }: BookListViewProps) {
                 {hasValidImage ? (
                   <Image
                     src={getImageUrl(book.cover_image_url)}
-                    alt={`${book.title} 표지`}
+                    alt={t("books.bookCover", { title: book.title })}
                     fill
                     className="object-cover"
                     sizes="48px"
@@ -190,7 +184,7 @@ export function BookListView({ books, isLoading }: BookListViewProps) {
                   variant={getStatusBadgeVariant(userBook.status)}
                   className="text-[10px] px-2 py-0.5"
                 >
-                  {getStatusLabel(userBook.status)}
+                  {t(statusKeyMap[userBook.status] as any)}
                 </Badge>
                 <ChevronRight className="w-4 h-4 text-muted-foreground" />
               </div>

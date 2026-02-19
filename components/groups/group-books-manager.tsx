@@ -31,6 +31,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Loader2 } from "lucide-react";
+import { useTranslation } from "@/lib/i18n";
 
 interface GroupBooksManagerProps {
   groupId: string;
@@ -39,6 +40,7 @@ interface GroupBooksManagerProps {
 
 export function GroupBooksManager({ groupId, isLeader }: GroupBooksManagerProps) {
   const router = useRouter();
+  const { t } = useTranslation();
   const [isAdding, setIsAdding] = useState(false);
   const [groupBooks, setGroupBooks] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -79,7 +81,7 @@ export function GroupBooksManager({ groupId, isLeader }: GroupBooksManagerProps)
     } catch (error) {
       console.error("지정도서 조회 오류:", error);
       toast.error(
-        error instanceof Error ? error.message : "지정도서 조회에 실패했습니다."
+        error instanceof Error ? error.message : t("errors.loadError")
       );
     } finally {
       setIsLoading(false);
@@ -89,12 +91,12 @@ export function GroupBooksManager({ groupId, isLeader }: GroupBooksManagerProps)
   const handleAddBook = async (bookId: string) => {
     try {
       await addGroupBook(groupId, bookId);
-      toast.success("지정도서가 추가됐어요.");
+      toast.success(t("groups.designatedBookAdded"));
       setIsAdding(false);
       loadGroupBooks();
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "도서 추가 실패"
+        error instanceof Error ? error.message : t("errors.saveError")
       );
     }
   };
@@ -102,12 +104,12 @@ export function GroupBooksManager({ groupId, isLeader }: GroupBooksManagerProps)
   const handleAddToMyLibrary = async (bookId: string) => {
     try {
       await addGroupBookToMyLibrary(groupId, bookId, "reading");
-      toast.success("내 서재에 추가됐어요.");
+      toast.success(t("groups.addedToMyLibrary"));
       loadGroupBooks();
       router.refresh();
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "서재 추가 실패"
+        error instanceof Error ? error.message : t("errors.saveError")
       );
     }
   };
@@ -115,12 +117,12 @@ export function GroupBooksManager({ groupId, isLeader }: GroupBooksManagerProps)
   const handleRemoveBook = async (bookId: string) => {
     try {
       await removeGroupBook(groupId, bookId);
-      toast.success("지정도서가 삭제됐어요.");
+      toast.success(t("groups.designatedBookRemoved"));
       setDeletingBookId(null);
       loadGroupBooks();
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "도서 삭제 실패"
+        error instanceof Error ? error.message : t("errors.saveError")
       );
     }
   };
@@ -141,15 +143,15 @@ export function GroupBooksManager({ groupId, isLeader }: GroupBooksManagerProps)
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-lg font-semibold">지정도서</h3>
+          <h3 className="text-lg font-semibold">{t("groups.designatedBook")}</h3>
           <p className="text-sm text-muted-foreground">
-            모임에서 함께 읽을 책을 지정합니다
+            {t("groups.searchAndAddBook")}
           </p>
         </div>
         {isLeader && (
           <Button onClick={() => setIsAdding(true)}>
             <Plus className="mr-2 h-4 w-4" />
-            도서 추가
+            {t("groups.addBook")}
           </Button>
         )}
       </div>
@@ -157,8 +159,8 @@ export function GroupBooksManager({ groupId, isLeader }: GroupBooksManagerProps)
       {isAdding && (
         <Card>
           <CardHeader>
-            <CardTitle>지정도서 추가</CardTitle>
-            <CardDescription>검색하여 도서를 추가하세요</CardDescription>
+            <CardTitle>{t("groups.addDesignatedBook")}</CardTitle>
+            <CardDescription>{t("groups.searchAndAddBook")}</CardDescription>
           </CardHeader>
           <CardContent>
             <BookSearch
@@ -173,7 +175,7 @@ export function GroupBooksManager({ groupId, isLeader }: GroupBooksManagerProps)
               className="mt-4 w-full"
               onClick={() => setIsAdding(false)}
             >
-              취소
+              {t("common.cancel")}
             </Button>
           </CardContent>
         </Card>
@@ -185,8 +187,8 @@ export function GroupBooksManager({ groupId, isLeader }: GroupBooksManagerProps)
             <div className="text-center py-12">
               <BookOpen className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
               <p className="text-muted-foreground">
-                지정도서가 없습니다.
-                {isLeader && " 위의 '도서 추가' 버튼을 눌러 도서를 추가하세요."}
+                {t("groups.noDesignatedBooks")}
+                {isLeader && " " + t("groups.addBookHint")}
               </p>
             </div>
           </CardContent>
@@ -213,7 +215,7 @@ export function GroupBooksManager({ groupId, isLeader }: GroupBooksManagerProps)
                     onClick={() => setDeletingBookId(book.id)}
                   >
                     <Trash2 className="mr-2 h-4 w-4" />
-                    지정도서 삭제
+                    {t("groups.deleteDesignatedBook")}
                   </Button>
                 )}
               </div>
@@ -228,18 +230,18 @@ export function GroupBooksManager({ groupId, isLeader }: GroupBooksManagerProps)
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>지정도서 삭제</AlertDialogTitle>
+            <AlertDialogTitle>{t("groups.deleteDesignatedBookConfirmTitle")}</AlertDialogTitle>
             <AlertDialogDescription>
-              정말로 이 지정도서를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.
+              {t("groups.deleteDesignatedBookConfirmDesc")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>취소</AlertDialogCancel>
+            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => deletingBookId && handleRemoveBook(deletingBookId)}
               variant="destructive"
             >
-              삭제
+              {t("common.delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

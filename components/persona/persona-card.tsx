@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { analyzeAndSavePersona } from "@/app/actions/persona";
+import { useTranslation } from "@/lib/i18n";
 import type { UserPersona } from "@/types/persona";
 import {
   ReadingPaceLabels,
@@ -37,6 +38,7 @@ export function PersonaCard({
   analysisAge,
   onRefresh,
 }: PersonaCardProps) {
+  const { t } = useTranslation();
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const router = useRouter();
 
@@ -44,7 +46,7 @@ export function PersonaCard({
     setIsAnalyzing(true);
     try {
       await analyzeAndSavePersona();
-      toast.success("독서 성향 분석이 완료됐어요.");
+      toast.success(t("persona.analysisComplete"));
       // 서버 컴포넌트 새로고침
       router.refresh();
       onRefresh?.();
@@ -53,7 +55,7 @@ export function PersonaCard({
       toast.error(
         error instanceof Error
           ? error.message
-          : "분석에 실패했습니다. 다시 시도해주세요."
+          : t("persona.analysisFailed")
       );
     } finally {
       setIsAnalyzing(false);
@@ -65,23 +67,23 @@ export function PersonaCard({
     return (
       <Card>
         <CardHeader>
-          <CardTitle>내 독서 페르소나</CardTitle>
+          <CardTitle>{t("persona.myReadingPersona")}</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col items-center space-y-4 py-8">
           <div className="text-center text-muted-foreground">
-            <p>아직 분석된 페르소나가 없습니다.</p>
-            <p className="text-sm">독서 기록을 분석하여 나만의 페르소나를 만들어보세요!</p>
+            <p>{t("persona.noPersonaYet")}</p>
+            <p className="text-sm">{t("persona.noPersonaDesc")}</p>
           </div>
           <Button onClick={handleAnalyze} disabled={isAnalyzing}>
             {isAnalyzing ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                분석 중...
+                {t("persona.analyzing")}
               </>
             ) : (
               <>
                 <RefreshCw className="mr-2 h-4 w-4" />
-                페르소나 분석하기
+                {t("persona.analyzePersona")}
               </>
             )}
           </Button>
@@ -93,11 +95,11 @@ export function PersonaCard({
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>내 독서 페르소나</CardTitle>
+        <CardTitle>{t("persona.myReadingPersona")}</CardTitle>
         <div className="flex items-center gap-2">
           {needsAnalysis && (
             <Badge variant="outline" className="text-xs">
-              업데이트 권장
+              {t("persona.updateRecommended")}
             </Badge>
           )}
           <Button
@@ -130,11 +132,11 @@ export function PersonaCard({
               <BookOpen className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-xs text-muted-foreground">독서 속도</p>
+              <p className="text-xs text-muted-foreground">{t("persona.readingPaceLabel")}</p>
               <p className="font-medium">
                 {persona.reading_pace
                   ? ReadingPaceLabels[persona.reading_pace as keyof typeof ReadingPaceLabels]
-                  : "분석 필요"}
+                  : t("persona.needsAnalysis")}
               </p>
             </div>
           </div>
@@ -145,11 +147,11 @@ export function PersonaCard({
               <FileText className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-xs text-muted-foreground">기록 스타일</p>
+              <p className="text-xs text-muted-foreground">{t("persona.noteStyleLabel")}</p>
               <p className="font-medium">
                 {persona.note_style
                   ? NoteStyleLabels[persona.note_style as keyof typeof NoteStyleLabels]
-                  : "분석 필요"}
+                  : t("persona.needsAnalysis")}
               </p>
             </div>
           </div>
@@ -160,11 +162,11 @@ export function PersonaCard({
               <Clock className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-xs text-muted-foreground">활동 시간</p>
+              <p className="text-xs text-muted-foreground">{t("persona.activityTime")}</p>
               <p className="font-medium">
                 {persona.activity_pattern
                   ? ActivityPatternLabels[persona.activity_pattern as keyof typeof ActivityPatternLabels]
-                  : "분석 필요"}
+                  : t("persona.needsAnalysis")}
               </p>
             </div>
           </div>
@@ -175,11 +177,11 @@ export function PersonaCard({
               <Users className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-xs text-muted-foreground">모임 스타일</p>
+              <p className="text-xs text-muted-foreground">{t("persona.groupStyle")}</p>
               <p className="font-medium">
                 {persona.group_engagement
                   ? GroupEngagementLabels[persona.group_engagement as keyof typeof GroupEngagementLabels]
-                  : "분석 필요"}
+                  : t("persona.needsAnalysis")}
               </p>
             </div>
           </div>
@@ -187,7 +189,7 @@ export function PersonaCard({
 
         {/* 마지막 분석 시간 */}
         <p className="text-xs text-muted-foreground">
-          마지막 분석: {analysisAge}시간 전
+          {t("persona.lastAnalysis", { hours: String(analysisAge) })}
         </p>
       </CardContent>
     </Card>

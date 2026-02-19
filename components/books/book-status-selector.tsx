@@ -14,6 +14,7 @@ import { updateBookStatus } from "@/app/actions/books";
 import { moveBookToBookshelf, getBookshelves } from "@/app/actions/bookshelves";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { useTranslation } from "@/lib/i18n";
 import type { ReadingStatus } from "@/types/book";
 import { Bookshelf } from "@/types/bookshelf";
 import {
@@ -34,15 +35,20 @@ interface BookStatusSelectorProps {
   currentBookshelfId?: string | null;
 }
 
-const statusConfig: Record<
-  ReadingStatus,
-  { label: string; icon: React.ElementType; dotColor: string }
-> = {
-  not_started: { label: "읽을 예정", icon: BookOpen, dotColor: "bg-gray-400" },
-  reading: { label: "읽는 중", icon: BookMarked, dotColor: "bg-blue-500" },
-  completed: { label: "완독", icon: Trophy, dotColor: "bg-emerald-500" },
-  rereading: { label: "재독", icon: RotateCcw, dotColor: "bg-purple-500" },
-  paused: { label: "쉬는 중", icon: Pause, dotColor: "bg-amber-500" },
+const statusIcons: Record<ReadingStatus, { icon: React.ElementType; dotColor: string }> = {
+  not_started: { icon: BookOpen, dotColor: "bg-gray-400" },
+  reading: { icon: BookMarked, dotColor: "bg-blue-500" },
+  completed: { icon: Trophy, dotColor: "bg-emerald-500" },
+  rereading: { icon: RotateCcw, dotColor: "bg-purple-500" },
+  paused: { icon: Pause, dotColor: "bg-amber-500" },
+};
+
+const statusLabelKeys: Record<ReadingStatus, string> = {
+  not_started: "books.statusNotStarted",
+  reading: "books.statusReading",
+  completed: "books.statusCompleted",
+  rereading: "books.statusRereading",
+  paused: "books.statusPaused",
 };
 
 /**
@@ -54,6 +60,7 @@ export function BookStatusSelector({
   userBookId,
   currentBookshelfId,
 }: BookStatusSelectorProps) {
+  const { t } = useTranslation();
   const router = useRouter();
   const [isUpdating, setIsUpdating] = useState(false);
   const [bookshelves, setBookshelves] = useState<Bookshelf[]>([]);
@@ -81,12 +88,12 @@ export function BookStatusSelector({
     setIsUpdating(true);
     try {
       await updateBookStatus(userBookId, status);
-      toast.success("상태가 변경됐어요.");
+      toast.success(t("books.statusChangedSuccess"));
       router.refresh();
     } catch (error) {
       console.error("상태 변경 오류:", error);
       toast.error(
-        error instanceof Error ? error.message : "상태 변경에 실패했어요."
+        error instanceof Error ? error.message : t("books.statusChangeFailed")
       );
     } finally {
       setIsUpdating(false);
@@ -101,12 +108,12 @@ export function BookStatusSelector({
     setIsUpdating(true);
     try {
       await moveBookToBookshelf(userBookId, bookshelfId);
-      toast.success("서재가 변경됐어요.");
+      toast.success(t("books.shelfChangedSuccess"));
       router.refresh();
     } catch (error) {
       console.error("서재 변경 오류:", error);
       toast.error(
-        error instanceof Error ? error.message : "서재 변경에 실패했어요."
+        error instanceof Error ? error.message : t("books.shelfChangeFailed")
       );
     } finally {
       setIsUpdating(false);
@@ -121,7 +128,8 @@ export function BookStatusSelector({
     "paused",
   ];
 
-  const current = statusConfig[currentStatus];
+  const current = statusIcons[currentStatus];
+  const currentLabel = t(statusLabelKeys[currentStatus] as any);
   const currentBookshelf = bookshelves.find((b) => b.id === currentBookshelfId);
 
   return (
@@ -131,12 +139,12 @@ export function BookStatusSelector({
           {isUpdating ? (
             <>
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              <span className="text-sm">변경 중...</span>
+              <span className="text-sm">{t("books.changingStatus")}</span>
             </>
           ) : (
             <>
               <span className={`w-2 h-2 rounded-full shrink-0 ${current.dotColor}`} />
-              <span className="text-sm">{current.label}</span>
+              <span className="text-sm">{currentLabel}</span>
               <ChevronDown className="h-3.5 w-3.5 opacity-50" />
             </>
           )}
@@ -145,10 +153,10 @@ export function BookStatusSelector({
       <DropdownMenuContent className="w-52" align="end">
         {/* 독서 상태 */}
         <DropdownMenuLabel className="text-xs text-muted-foreground font-normal">
-          독서 상태
+          {t("books.readingStatus")}
         </DropdownMenuLabel>
         {statusOptions.map((value) => {
-          const config = statusConfig[value];
+          const config = statusIcons[value];
           const Icon = config.icon;
           const isActive = value === currentStatus;
           return (
@@ -160,7 +168,7 @@ export function BookStatusSelector({
             >
               <span className={`w-2 h-2 rounded-full shrink-0 ${config.dotColor}`} />
               <Icon className="h-3.5 w-3.5 shrink-0 opacity-60" />
-              <span className="flex-1">{config.label}</span>
+              <span className="flex-1">{t(statusLabelKeys[value] as any)}</span>
               {isActive && <Check className="h-3.5 w-3.5 text-primary" />}
             </DropdownMenuItem>
           );
@@ -170,19 +178,19 @@ export function BookStatusSelector({
         <DropdownMenuSeparator />
         <DropdownMenuLabel className="text-xs text-muted-foreground font-normal flex items-center gap-1.5">
           <Library className="h-3 w-3" />
-          서재 이동
+          {t("books.moveToShelfLabel")}
           {currentBookshelf && (
-            <span className="text-[10px] opacity-60">· 현재: {currentBookshelf.name}</span>
+            <span className="text-[10px] opacity-60">· {t("books.currentShelf", { name: currentBookshelf.name })}</span>
           )}
         </DropdownMenuLabel>
         {isLoadingBookshelves ? (
           <DropdownMenuItem disabled>
             <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
-            불러오는 중...
+            {t("books.loadingBookshelves")}
           </DropdownMenuItem>
         ) : bookshelves.length === 0 ? (
           <DropdownMenuItem disabled className="text-xs text-muted-foreground">
-            등록된 서재가 없습니다
+            {t("books.noShelvesRegistered")}
           </DropdownMenuItem>
         ) : (
           bookshelves.map((bookshelf) => {

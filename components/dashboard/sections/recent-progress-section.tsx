@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/card";
 import { TrendingUp, ChevronRight, BookOpen, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ProgressLogItem } from "@/app/actions/stats";
+import { useTranslation, type TranslationKey } from "@/lib/i18n";
 
 interface RecentProgressSectionProps {
   logs: ProgressLogItem[];
@@ -17,6 +18,8 @@ interface RecentProgressSectionProps {
  * 최근 3개의 진행 로그를 카드 형태로 표시
  */
 export function RecentProgressSection({ logs, className }: RecentProgressSectionProps) {
+  const { t } = useTranslation();
+
   // 로그가 없으면 빈 상태 표시
   if (!logs || logs.length === 0) {
     return (
@@ -27,15 +30,15 @@ export function RecentProgressSection({ logs, className }: RecentProgressSection
               <TrendingUp className="h-4 w-4 text-blue-600 dark:text-blue-400" />
             </div>
             <span className="text-sm font-semibold text-slate-900 dark:text-white">
-              최근 진행 체크
+              {t("dashboard.recentProgress")}
             </span>
           </div>
         </div>
         <div className="text-center py-6 text-slate-500 dark:text-slate-400">
           <BookOpen className="h-8 w-8 mx-auto mb-2 opacity-50" />
-          <p className="text-sm">아직 진행 체크가 없어요</p>
+          <p className="text-sm">{t("dashboard.noProgressYet")}</p>
           <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
-            책을 읽으면서 진행 상황을 기록해보세요
+            {t("dashboard.noProgressDesc")}
           </p>
         </div>
       </Card>
@@ -51,14 +54,14 @@ export function RecentProgressSection({ logs, className }: RecentProgressSection
             <TrendingUp className="h-4 w-4 text-blue-600 dark:text-blue-400" />
           </div>
           <span className="text-sm font-semibold text-slate-900 dark:text-white">
-            최근 진행 체크
+            {t("dashboard.recentProgress")}
           </span>
         </div>
         <Link
           href="/notes?type=progress"
           className="text-xs text-slate-500 dark:text-slate-400 hover:text-forest-600 dark:hover:text-forest-400 flex items-center gap-0.5 transition-colors"
         >
-          모두 보기
+          {t("dashboard.viewAllNotes")}
           <ChevronRight className="h-3.5 w-3.5" />
         </Link>
       </div>
@@ -79,7 +82,8 @@ interface ProgressLogCardProps {
 }
 
 function ProgressLogCard({ log, index }: ProgressLogCardProps) {
-  const timeAgo = getTimeAgo(log.createdAt);
+  const { t } = useTranslation();
+  const timeAgo = getTimeAgo(log.createdAt, t);
   const truncatedContent = log.content
     ? log.content.length > 50
       ? log.content.slice(0, 50) + "..."
@@ -144,7 +148,7 @@ function ProgressLogCard({ log, index }: ProgressLogCardProps) {
 /**
  * 시간 경과 문자열 계산
  */
-function getTimeAgo(dateString: string): string {
+function getTimeAgo(dateString: string, t: (key: TranslationKey, params?: Record<string, string | number>) => string): string {
   const date = new Date(dateString);
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
@@ -152,13 +156,13 @@ function getTimeAgo(dateString: string): string {
   const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
   const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
-  if (diffMins < 1) return "방금 전";
-  if (diffMins < 60) return `${diffMins}분 전`;
-  if (diffHours < 24) return `${diffHours}시간 전`;
-  if (diffDays === 1) return "어제";
-  if (diffDays < 7) return `${diffDays}일 전`;
-  if (diffDays < 30) return `${Math.floor(diffDays / 7)}주 전`;
-  return `${Math.floor(diffDays / 30)}개월 전`;
+  if (diffMins < 1) return t("common.justNow");
+  if (diffMins < 60) return t("common.minutesAgo", { count: diffMins });
+  if (diffHours < 24) return t("common.hoursAgo", { count: diffHours });
+  if (diffDays === 1) return t("common.yesterday");
+  if (diffDays < 7) return t("common.daysAgo", { count: diffDays });
+  if (diffDays < 30) return t("common.weeksAgo", { count: Math.floor(diffDays / 7) });
+  return t("common.monthsAgo", { count: Math.floor(diffDays / 30) });
 }
 
 /**

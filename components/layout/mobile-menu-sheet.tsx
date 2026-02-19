@@ -26,6 +26,7 @@ import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils/cn";
 import { useAuth } from "@/hooks/use-auth";
+import { useTranslation } from "@/lib/i18n";
 import { getCurrentUserProfile } from "@/app/actions/profile";
 
 interface MobileMenuSheetProps {
@@ -39,6 +40,7 @@ interface MobileMenuSheetProps {
  * 외부 터치로 닫힘
  */
 export function MobileMenuSheet({ open, onOpenChange }: MobileMenuSheetProps) {
+  const { t } = useTranslation();
   const pathname = usePathname();
   const { user } = useAuth();
   const { theme, setTheme } = useTheme();
@@ -93,7 +95,7 @@ export function MobileMenuSheet({ open, onOpenChange }: MobileMenuSheetProps) {
         </div>
 
         <SheetHeader className="sr-only">
-          <SheetTitle>메뉴</SheetTitle>
+          <SheetTitle>{t("nav.menu")}</SheetTitle>
         </SheetHeader>
 
         <div className="space-y-1 px-4 pb-6">
@@ -102,8 +104,8 @@ export function MobileMenuSheet({ open, onOpenChange }: MobileMenuSheetProps) {
             <SheetClose asChild>
               <Link href="/login" onClick={handleMenuClick}>
                 <div className="flex items-center justify-between px-3 py-2 mb-2 rounded-lg bg-primary/5 border border-primary/10">
-                  <span className="text-sm text-muted-foreground">ReadTree를 체험 중이에요</span>
-                  <span className="text-sm font-medium text-primary">로그인</span>
+                  <span className="text-sm text-muted-foreground">{t("nav.exploringReadTree")}</span>
+                  <span className="text-sm font-medium text-primary">{t("common.login")}</span>
                 </div>
               </Link>
             </SheetClose>
@@ -120,7 +122,7 @@ export function MobileMenuSheet({ open, onOpenChange }: MobileMenuSheetProps) {
                 )}
               >
                 <Search className="h-5 w-5" />
-                <span>검색</span>
+                <span>{t("nav.search")}</span>
               </Button>
             </Link>
           </SheetClose>
@@ -135,7 +137,7 @@ export function MobileMenuSheet({ open, onOpenChange }: MobileMenuSheetProps) {
                 )}
               >
                 <User className="h-5 w-5" />
-                <span>프로필</span>
+                <span>{t("nav.profile")}</span>
               </Button>
             </Link>
           </SheetClose>
@@ -150,7 +152,7 @@ export function MobileMenuSheet({ open, onOpenChange }: MobileMenuSheetProps) {
                 )}
               >
                 <Users className="h-5 w-5" />
-                <span>독서모임</span>
+                <span>{t("nav.groups")}</span>
               </Button>
             </Link>
           </SheetClose>
@@ -165,7 +167,7 @@ export function MobileMenuSheet({ open, onOpenChange }: MobileMenuSheetProps) {
                 )}
               >
                 <Bot className="h-5 w-5" />
-                <span>AI 도우미</span>
+                <span>{t("nav.aiChat")}</span>
               </Button>
             </Link>
           </SheetClose>
@@ -185,7 +187,7 @@ export function MobileMenuSheet({ open, onOpenChange }: MobileMenuSheetProps) {
                   )}
                 >
                   <Trees className="h-5 w-5" />
-                  <span>관리자</span>
+                  <span>{t("nav.admin")}</span>
                 </Button>
               </Link>
             </SheetClose>
@@ -201,13 +203,13 @@ export function MobileMenuSheet({ open, onOpenChange }: MobileMenuSheetProps) {
               ) : (
                 <Sun className="h-5 w-5" />
               )}
-              <span>다크모드</span>
+              <span>{t("theme.darkModeToggle")}</span>
             </div>
             {mounted && (
               <Switch
                 checked={isDarkMode}
                 onCheckedChange={handleThemeToggle}
-                aria-label="다크모드 전환"
+                aria-label={t("theme.darkModeSwitch")}
               />
             )}
           </div>

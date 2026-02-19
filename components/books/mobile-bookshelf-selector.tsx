@@ -15,6 +15,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils/cn";
 import { getBookshelves } from "@/app/actions/bookshelves";
 import { getSampleBookshelves } from "@/app/actions/sample";
+import { useTranslation } from "@/lib/i18n";
 import type { Bookshelf } from "@/types/bookshelf";
 
 interface MobileBookshelfSelectorProps {
@@ -31,6 +32,7 @@ export function MobileBookshelfSelector({
   currentBookshelfId,
   isGuest = false,
 }: MobileBookshelfSelectorProps) {
+  const { t } = useTranslation();
   const router = useRouter();
   const pathname = usePathname();
   const [bookshelves, setBookshelves] = useState<Bookshelf[]>([]);
@@ -79,8 +81,8 @@ export function MobileBookshelfSelector({
   );
 
   const selectedLabel = isMainSelected
-    ? mainBookshelf?.name || "전체 서재"
-    : currentSubBookshelf?.name || "서재 선택";
+    ? mainBookshelf?.name || t("books.allBookshelves")
+    : currentSubBookshelf?.name || t("books.selectBookshelf");
 
   const handleSelect = (bookshelfId: string | null) => {
     if (bookshelfId === null) {

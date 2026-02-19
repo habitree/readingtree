@@ -19,6 +19,7 @@ import {
   SheetDescription,
 } from "@/components/ui/sheet";
 import { useMediaQuery } from "@/hooks/use-media-query";
+import { useTranslation } from "@/lib/i18n";
 
 interface LoginPromptModalProps {
   open: boolean;
@@ -35,9 +36,12 @@ interface LoginPromptModalProps {
 export function LoginPromptModal({
   open,
   onOpenChange,
-  title = "로그인이 필요해요",
-  description = "이 기능을 사용하려면 로그인해주세요.",
+  title,
+  description,
 }: LoginPromptModalProps) {
+  const { t } = useTranslation();
+  const resolvedTitle = title || t("auth.loginNeeded");
+  const resolvedDescription = description || t("auth.loginNeededDesc");
   const router = useRouter();
   const isMobile = useMediaQuery("(max-width: 768px)");
 
@@ -67,7 +71,7 @@ export function LoginPromptModal({
           className="w-full h-12 bg-[#FEE500] hover:bg-[#FDD800] text-[#191919] font-medium"
         >
           <MessageCircle className="w-5 h-5 mr-2" />
-          카카오로 시작하기
+          {t("auth.startWithKakao")}
         </Button>
         <Button
           onClick={handleGoogleLogin}
@@ -92,7 +96,7 @@ export function LoginPromptModal({
               d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
             />
           </svg>
-          Google로 시작하기
+          {t("auth.startWithGoogle")}
         </Button>
       </div>
       <div className="relative">
@@ -100,7 +104,7 @@ export function LoginPromptModal({
           <span className="w-full border-t" />
         </div>
         <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-background px-2 text-muted-foreground">또는</span>
+          <span className="bg-background px-2 text-muted-foreground">{t("auth.or")}</span>
         </div>
       </div>
       <Button
@@ -108,7 +112,7 @@ export function LoginPromptModal({
         onClick={() => onOpenChange(false)}
         className="w-full h-11 text-muted-foreground"
       >
-        둘러보기 계속하기
+        {t("auth.continueBrowsing")}
       </Button>
     </div>
   );
@@ -124,9 +128,9 @@ export function LoginPromptModal({
         >
           <div className="mx-auto w-12 h-1.5 rounded-full bg-muted mb-6" />
           <SheetHeader className="mb-6">
-            <SheetTitle className="text-center text-lg">{title}</SheetTitle>
+            <SheetTitle className="text-center text-lg">{resolvedTitle}</SheetTitle>
             <SheetDescription className="text-center">
-              {description}
+              {resolvedDescription}
             </SheetDescription>
           </SheetHeader>
           {content}
@@ -139,8 +143,8 @@ export function LoginPromptModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[400px]">
         <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
-          <DialogDescription>{description}</DialogDescription>
+          <DialogTitle>{resolvedTitle}</DialogTitle>
+          <DialogDescription>{resolvedDescription}</DialogDescription>
         </DialogHeader>
         {content}
       </DialogContent>

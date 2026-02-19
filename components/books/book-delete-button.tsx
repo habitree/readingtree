@@ -19,6 +19,7 @@ import {
 import { deleteBook } from "@/app/actions/books";
 import { toast } from "sonner";
 import { Trash2, Loader2 } from "lucide-react";
+import { useTranslation } from "@/lib/i18n";
 
 interface BookDeleteButtonProps {
   userBookId: string;
@@ -32,6 +33,7 @@ interface BookDeleteButtonProps {
  * 제목 입력 확인 후 책을 삭제합니다
  */
 export function BookDeleteButton({ userBookId, bookTitle, variant = "default", size }: BookDeleteButtonProps) {
+  const { t } = useTranslation();
   const router = useRouter();
   const [isDeleting, setIsDeleting] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
@@ -40,21 +42,21 @@ export function BookDeleteButton({ userBookId, bookTitle, variant = "default", s
   const handleDelete = async () => {
     // 제목이 정확히 일치하는지 확인
     if (confirmTitle.trim() !== bookTitle.trim()) {
-      toast.error("책 제목이 일치하지 않아요. 정확히 입력해주세요.");
+      toast.error(t("books.titleMismatchError"));
       return;
     }
 
     setIsDeleting(true);
     try {
       await deleteBook(userBookId);
-      toast.success("책이 삭제됐어요.");
+      toast.success(t("books.bookDeletedSuccess"));
       setIsOpen(false);
       setConfirmTitle("");
       router.push("/books");
     } catch (error) {
       console.error("책 삭제 오류:", error);
       toast.error(
-        error instanceof Error ? error.message : "책 삭제에 실패했어요."
+        error instanceof Error ? error.message : t("books.bookDeleteFailed")
       );
     } finally {
       setIsDeleting(false);
@@ -82,28 +84,28 @@ export function BookDeleteButton({ userBookId, bookTitle, variant = "default", s
           {isDeleting ? (
             <>
               <Loader2 className={variant === "icon" ? "h-2 w-2" : "mr-2 h-4 w-4 animate-spin"} />
-              {variant !== "icon" && "삭제 중..."}
+              {variant !== "icon" && t("books.deletingBook")}
             </>
           ) : (
             <>
               <Trash2 className={variant === "icon" ? "h-2 w-2" : "mr-2 h-4 w-4"} />
-              {variant !== "icon" && "책 삭제"}
+              {variant !== "icon" && t("books.deleteBook")}
             </>
           )}
         </Button>
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>책 삭제 확인</AlertDialogTitle>
+          <AlertDialogTitle>{t("books.deleteBookConfirmTitle")}</AlertDialogTitle>
           <AlertDialogDescription className="space-y-4">
             <p>
-              정말로 이 책을 삭제하시겠습니까?
+              {t("books.deleteBookConfirmMessage")}
               <br />
-              이 책의 모든 기록도 함께 삭제되며, 이 작업은 되돌릴 수 없습니다.
+              {t("books.deleteBookConfirmDetail")}
             </p>
             <div className="space-y-2 pt-2">
               <Label htmlFor="confirm-title" className="text-sm font-medium">
-                삭제를 확인하려면 책 제목을 정확히 입력하세요:
+                {t("books.deleteConfirmInputLabel")}
               </Label>
               <p className="text-sm font-semibold text-foreground bg-muted p-2 rounded">
                 {bookTitle}
@@ -112,7 +114,7 @@ export function BookDeleteButton({ userBookId, bookTitle, variant = "default", s
                 id="confirm-title"
                 value={confirmTitle}
                 onChange={(e) => setConfirmTitle(e.target.value)}
-                placeholder="책 제목 입력"
+                placeholder={t("books.deleteConfirmPlaceholder")}
                 disabled={isDeleting}
                 className="mt-2"
               />
@@ -120,7 +122,7 @@ export function BookDeleteButton({ userBookId, bookTitle, variant = "default", s
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={isDeleting}>취소</AlertDialogCancel>
+          <AlertDialogCancel disabled={isDeleting}>{t("books.cancelLabel")}</AlertDialogCancel>
           <AlertDialogAction
             onClick={handleDelete}
             disabled={isDeleting || confirmTitle.trim() !== bookTitle.trim()}
@@ -129,12 +131,12 @@ export function BookDeleteButton({ userBookId, bookTitle, variant = "default", s
             {isDeleting ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                삭제 중...
+                {t("books.deletingBook")}
               </>
             ) : (
               <>
                 <Trash2 className="mr-2 h-4 w-4" />
-                삭제
+                {t("books.deleteLabel")}
               </>
             )}
           </AlertDialogAction>

@@ -18,6 +18,7 @@ import {
   Bot,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/lib/i18n";
 
 const ICON_MAP: Record<string, React.ElementType> = {
   shield: Shield,
@@ -63,6 +64,7 @@ export function ServiceCard({
   className,
 }: ServiceCardProps) {
   const [expanded, setExpanded] = useState(false);
+  const { t } = useTranslation();
   const Icon = ICON_MAP[icon] || Globe;
   const accentGradient = ACCENT_GRADIENTS[category] || "from-slate-400 to-slate-600";
 
@@ -113,7 +115,7 @@ export function ServiceCard({
                 )}
               />
             </span>
-            {enabled ? "활성" : "비활성"}
+            {enabled ? t("admin.apiInfo.statusEnabled") : t("admin.apiInfo.statusDisabled")}
           </Badge>
         </div>
 
@@ -160,7 +162,7 @@ export function ServiceCard({
             >
               <ChevronDown className="h-3.5 w-3.5" />
             </motion.div>
-            {expanded ? "접기" : "상세 보기"}
+            {expanded ? t("admin.apiInfo.collapse") : t("admin.apiInfo.expand")}
           </button>
 
           {apiReference && (
@@ -170,7 +172,7 @@ export function ServiceCard({
               rel="noopener noreferrer"
               className="flex items-center gap-1 text-xs text-blue-500 hover:text-blue-600 transition-colors"
             >
-              공식 문서
+              {t("admin.apiInfo.officialDocs")}
               <ExternalLink className="h-3 w-3" />
             </a>
           )}

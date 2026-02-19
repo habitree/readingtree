@@ -9,6 +9,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatSmartDate } from "@/lib/utils/date";
 import { TrendingUp, ChevronRight, Clock } from "lucide-react";
+import { useTranslation } from "@/lib/i18n";
 import type { NoteWithBook } from "@/types/note";
 
 interface ProgressLogListProps {
@@ -21,6 +22,7 @@ interface ProgressLogListProps {
  * progress 타입의 기록만 필터링하여 컴팩트하게 표시
  */
 export function ProgressLogList({ userBookId, initialNotes }: ProgressLogListProps) {
+  const { t } = useTranslation();
   const [logs, setLogs] = useState<NoteWithBook[]>(initialNotes || []);
   const [isLoading, setIsLoading] = useState(!initialNotes);
 
@@ -53,8 +55,8 @@ export function ProgressLogList({ userBookId, initialNotes }: ProgressLogListPro
     return (
       <EmptyState
         icon={TrendingUp}
-        title="진행 기록이 없습니다"
-        description="읽기 진행률을 업데이트하면 자동으로 기록됩니다"
+        title={t("books.noProgressLogs")}
+        description={t("books.noProgressLogsDesc")}
         variant="encouraging"
       />
     );

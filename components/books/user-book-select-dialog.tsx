@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import { useTranslation } from "@/lib/i18n";
 import {
   Dialog,
   DialogContent,
@@ -92,10 +93,14 @@ export function UserBookSelectDialog({
   excludeBookIds = new Set(),
   onSelect,
   isSelecting = false,
-  title = "내 서재에서 선택",
-  description = "공유할 책을 선택하세요",
-  selectButtonText = "선택",
+  title,
+  description,
+  selectButtonText,
 }: UserBookSelectDialogProps) {
+  const { t } = useTranslation();
+  const resolvedTitle = title ?? t("books.selectFromLibrary");
+  const resolvedDescription = description ?? t("books.selectBookToShare");
+  const resolvedSelectButtonText = selectButtonText ?? t("common.confirm");
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -149,7 +154,7 @@ export function UserBookSelectDialog({
         {children || (
           <Button variant="outline" disabled={!hasSelectableBooks}>
             <Library className="mr-2 h-4 w-4" />
-            {hasSelectableBooks ? title : "공유할 책이 없습니다"}
+            {hasSelectableBooks ? resolvedTitle : t("books.noShareableBook")}
           </Button>
         )}
       </DialogTrigger>
@@ -157,9 +162,9 @@ export function UserBookSelectDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Library className="h-5 w-5" />
-            {title}
+            {resolvedTitle}
           </DialogTitle>
-          <DialogDescription>{description}</DialogDescription>
+          <DialogDescription>{resolvedDescription}</DialogDescription>
         </DialogHeader>
 
         {/* 검색 및 필터 */}
@@ -168,7 +173,7 @@ export function UserBookSelectDialog({
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               type="search"
-              placeholder="제목 또는 저자로 검색..."
+              placeholder={t("books.searchByTitleOrAuthor")}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-9"
@@ -177,14 +182,14 @@ export function UserBookSelectDialog({
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-full sm:w-[140px]">
               <Filter className="mr-2 h-4 w-4" />
-              <SelectValue placeholder="상태" />
+              <SelectValue placeholder={t("books.statusFilter")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">전체</SelectItem>
-              <SelectItem value="reading">읽는 중</SelectItem>
-              <SelectItem value="completed">완독</SelectItem>
-              <SelectItem value="paused">중단</SelectItem>
-              <SelectItem value="not_started">읽기 전</SelectItem>
+              <SelectItem value="all">{t("books.filterAll")}</SelectItem>
+              <SelectItem value="reading">{t("books.filterReading")}</SelectItem>
+              <SelectItem value="completed">{t("books.filterCompleted")}</SelectItem>
+              <SelectItem value="paused">{t("books.filterPaused")}</SelectItem>
+              <SelectItem value="not_started">{t("books.filterNotStarted")}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -202,8 +207,8 @@ export function UserBookSelectDialog({
               <BookOpen className="h-12 w-12 text-muted-foreground mb-4" />
               <p className="text-muted-foreground">
                 {searchQuery || statusFilter !== "all"
-                  ? "검색 결과가 없습니다"
-                  : "공유할 수 있는 책이 없습니다"}
+                  ? t("search.noResults")
+                  : t("books.noShareableBooks")}
               </p>
               {(searchQuery || statusFilter !== "all") && (
                 <Button
@@ -215,7 +220,7 @@ export function UserBookSelectDialog({
                     setStatusFilter("all");
                   }}
                 >
-                  필터 초기화
+                  {t("books.filterReset")}
                 </Button>
               )}
             </div>
@@ -285,27 +290,27 @@ export function UserBookSelectDialog({
         {/* 선택 버튼 */}
         <div className="flex items-center justify-between pt-4 border-t">
           <p className="text-sm text-muted-foreground">
-            {filteredBooks.length}권 중{" "}
+            {t("books.ofCount", { count: filteredBooks.length })}{" "}
             {selectedBook ? (
-              <span className="text-primary font-medium">1권 선택됨</span>
+              <span className="text-primary font-medium">{t("books.oneSelected")}</span>
             ) : (
-              "선택 안 됨"
+              t("books.noneSelected")
             )}
           </p>
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => setOpen(false)}>
-              취소
+              {t("common.cancel")}
             </Button>
             <Button onClick={handleSelect} disabled={!selectedBook || isSelecting}>
               {isSelecting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  처리 중...
+                  {t("books.processing")}
                 </>
               ) : (
                 <>
                   <Plus className="mr-2 h-4 w-4" />
-                  {selectButtonText}
+                  {resolvedSelectButtonText}
                 </>
               )}
             </Button>

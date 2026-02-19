@@ -10,6 +10,7 @@ import { useMobileNoteSheet, type NoteMode } from "@/hooks/use-mobile-note-sheet
 import { useLoginPrompt } from "@/hooks/use-login-prompt";
 import { LoginPromptModal } from "@/components/ui/login-prompt-modal";
 import { useMediaQuery } from "@/hooks/use-media-query";
+import { useTranslation } from "@/lib/i18n";
 
 interface QuickActionItem {
   icon: React.ElementType;
@@ -24,40 +25,41 @@ interface QuickActionItem {
   description: string;
 }
 
-const quickActions: QuickActionItem[] = [
+// Quick action definitions with i18n keys
+const QUICK_ACTION_KEYS = [
   {
     icon: PenTool,
-    label: "기록",
-    sheetMode: "memo",
+    labelKey: "dashboard.quickWriteNote" as const,
+    sheetMode: "memo" as NoteMode,
     desktopHref: "/notes/new",
     color: "text-forest-600 dark:text-forest-400",
     bgColor: "bg-forest-50/60 dark:bg-forest-900/20",
-    description: "생각 남기기",
+    descKey: "dashboard.quickWriteNoteDesc" as const,
   },
   {
     icon: BookPlus,
-    label: "책 추가",
+    labelKey: "dashboard.quickAddBook" as const,
     href: "/books/search",
     color: "text-forest-600 dark:text-forest-400",
     bgColor: "bg-forest-50/60 dark:bg-forest-900/20",
-    description: "씨앗 심기",
+    descKey: "dashboard.quickAddBookDesc" as const,
   },
   {
     icon: Camera,
-    label: "사진 필사",
-    sheetMode: "transcription",
+    labelKey: "dashboard.quickTranscription" as const,
+    sheetMode: "transcription" as NoteMode,
     desktopHref: "/notes/new?type=transcription",
     color: "text-forest-600 dark:text-forest-400",
     bgColor: "bg-forest-50/60 dark:bg-forest-900/20",
-    description: "페이지 담기",
+    descKey: "dashboard.quickTranscriptionDesc" as const,
   },
   {
     icon: Search,
-    label: "검색",
+    labelKey: "dashboard.quickSearch" as const,
     href: "/search",
     color: "text-forest-600 dark:text-forest-400",
     bgColor: "bg-forest-50/60 dark:bg-forest-900/20",
-    description: "정원 둘러보기",
+    descKey: "dashboard.quickSearchDesc" as const,
   },
 ];
 
@@ -70,11 +72,19 @@ export function MobileQuickActions() {
   const { isOpen, setIsOpen, title, description, requireLogin } = useLoginPrompt();
   const isDesktop = useMediaQuery("(min-width: 640px)");
   const router = useRouter();
+  const { t } = useTranslation();
+
+  // Build quickActions with translated labels
+  const quickActions: QuickActionItem[] = QUICK_ACTION_KEYS.map(k => ({
+    ...k,
+    label: t(k.labelKey),
+    description: t(k.descKey),
+  }));
 
   const handleSheetAction = useCallback((action: QuickActionItem) => {
     if (requireLogin({
-      title: "기록을 작성하려면",
-      description: "로그인 후 독서 기록을 작성할 수 있어요.",
+      title: t("auth.loginToWrite"),
+      description: t("auth.loginToWriteDesc"),
     })) return;
 
     // 데스크톱에서는 URL 네비게이션
@@ -89,15 +99,14 @@ export function MobileQuickActions() {
   }, [open, requireLogin, isDesktop, router]);
 
   const handleLinkClick = useCallback((e: React.MouseEvent, action: QuickActionItem) => {
+    const isSearch = action.label === t("dashboard.quickSearch");
     if (requireLogin({
-      title: action.label === "검색" ? "검색하려면" : "책을 추가하려면",
-      description: action.label === "검색"
-        ? "로그인 후 내 기록을 검색할 수 있어요."
-        : "로그인 후 서재에 책을 추가할 수 있어요.",
+      title: isSearch ? t("auth.loginToSearch") : t("auth.loginToAddBook"),
+      description: isSearch ? t("auth.loginToSearchDesc") : t("auth.loginToAddBookDesc"),
     })) {
       e.preventDefault();
     }
-  }, [requireLogin]);
+  }, [requireLogin, t]);
 
   return (
     <>
@@ -156,27 +165,27 @@ export function MobileQuickActions() {
 }
 
 /** 데스크탑용 퀵 액션 아이템 (href 필수) */
-const desktopQuickActions = [
+const DESKTOP_QUICK_ACTION_KEYS = [
   {
     icon: PenTool,
-    label: "기록",
+    labelKey: "dashboard.quickWriteNote" as const,
     href: "/notes/new",
     color: "text-forest-600",
-    description: "생각 남기기",
+    descKey: "dashboard.quickWriteNoteDesc" as const,
   },
   {
     icon: BookPlus,
-    label: "책 추가",
+    labelKey: "dashboard.quickAddBook" as const,
     href: "/books/search",
     color: "text-forest-600",
-    description: "씨앗 심기",
+    descKey: "dashboard.quickAddBookDesc" as const,
   },
   {
     icon: Camera,
-    label: "사진 필사",
+    labelKey: "dashboard.quickTranscription" as const,
     href: "/notes/new?type=transcription",
     color: "text-forest-600",
-    description: "페이지 담기",
+    descKey: "dashboard.quickTranscriptionDesc" as const,
   },
 ];
 
@@ -185,9 +194,10 @@ const desktopQuickActions = [
  * 데스크탑에서는 기존 URL 방식 유지
  */
 export function DesktopQuickActions() {
+  const { t } = useTranslation();
   return (
     <div className="hidden sm:flex gap-2">
-      {desktopQuickActions.map((action) => (
+      {DESKTOP_QUICK_ACTION_KEYS.map((action) => (
         <Button
           key={action.href}
           variant="outline"
@@ -197,7 +207,7 @@ export function DesktopQuickActions() {
         >
           <Link href={action.href}>
             <action.icon className={cn("h-4 w-4", action.color)} />
-            {action.description}
+            {t(action.descKey)}
           </Link>
         </Button>
       ))}

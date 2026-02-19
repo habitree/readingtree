@@ -5,12 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { useTranslation } from "@/lib/i18n";
 
 /**
  * 소셜 로그인 버튼 컴포넌트
  * 카카오톡, 구글 로그인 버튼 제공
  */
 export function SocialLoginButtons() {
+  const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState<"kakao" | "google" | null>(null);
 
   const handleKakaoLogin = async () => {
@@ -25,13 +27,13 @@ export function SocialLoginButtons() {
       // Next.js의 redirect()는 특별한 타입의 예외를 던지므로
       // 에러 메시지나 타입으로 확인
       const errorMessage = error instanceof Error ? error.message : String(error);
-      
+
       if (errorMessage.includes("NEXT_REDIRECT") || errorMessage.includes("redirect")) {
         // 리다이렉트가 진행 중이므로 로딩 상태 유지
         // 에러를 표시하지 않음
         return;
       }
-      
+
       // 실제 에러인 경우에만 처리
       console.error("카카오톡 로그인 오류:", error);
       setIsLoading(null);
@@ -53,13 +55,13 @@ export function SocialLoginButtons() {
       // NEXT_REDIRECT는 Next.js의 정상적인 리다이렉트 메커니즘
       // 이 예외는 무시하고 리다이렉트를 기다림
       const errorMessage = error instanceof Error ? error.message : String(error);
-      
+
       if (errorMessage.includes("NEXT_REDIRECT") || errorMessage.includes("redirect")) {
         // 리다이렉트가 진행 중이므로 로딩 상태 유지
         // 에러를 표시하지 않음
         return;
       }
-      
+
       // 실제 에러인 경우에만 처리
       console.error("구글 로그인 오류:", error);
       setIsLoading(null);
@@ -131,12 +133,12 @@ export function SocialLoginButtons() {
         {isLoading === "kakao" ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            로그인 중...
+            {t("socialLogin.loggingIn")}
           </>
         ) : (
           <>
             <KakaoIcon />
-            카카오톡으로 시작하기
+            {t("socialLogin.startWithKakao")}
           </>
         )}
       </Button>
@@ -153,16 +155,15 @@ export function SocialLoginButtons() {
         {isLoading === "google" ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            로그인 중...
+            {t("socialLogin.loggingIn")}
           </>
         ) : (
           <>
             <GoogleIcon />
-            구글로 시작하기
+            {t("socialLogin.startWithGoogle")}
           </>
         )}
       </Button>
     </div>
   );
 }
-

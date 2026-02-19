@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
+import { useTranslation } from "@/lib/i18n";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Coins,
@@ -37,6 +38,7 @@ interface PointsModalProps {
  * - 기간별 통계
  */
 export function PointsModal({ open, onOpenChange }: PointsModalProps) {
+  const { t } = useTranslation();
   const [data, setData] = useState<PointsDashboardData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -72,12 +74,12 @@ export function PointsModal({ open, onOpenChange }: PointsModalProps) {
               >
                 <Coins className="h-5 w-5 text-amber-500" />
               </motion.div>
-              <span>포인트 대시보드</span>
+              <span>{t("points.dashboard")}</span>
             </div>
             {/* 오늘 획득 포인트 뱃지 */}
             {data?.todayEarned ? (
               <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
-                오늘 +{data.todayEarned}P
+                {t("points.todayEarned", { count: data.todayEarned })}
               </Badge>
             ) : null}
           </SheetTitle>
@@ -105,7 +107,7 @@ export function PointsModal({ open, onOpenChange }: PointsModalProps) {
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-2">
                       <Coins className="h-5 w-5 text-amber-500" />
-                      <span className="font-semibold text-foreground">내 포인트</span>
+                      <span className="font-semibold text-foreground">{t("points.myPoints")}</span>
                     </div>
 
                     {/* 연속 기록 뱃지 - 핵심 동기부여 요소 */}
@@ -124,7 +126,7 @@ export function PointsModal({ open, onOpenChange }: PointsModalProps) {
                         <span className="text-2xl font-bold text-orange-600 dark:text-orange-400">
                           {data.userPoints.current_streak}일
                         </span>
-                        <span className="text-[10px] text-orange-500/70">연속 기록</span>
+                        <span className="text-[10px] text-orange-500/70">{t("points.streak")}</span>
                       </motion.div>
                     )}
                   </div>
@@ -138,14 +140,14 @@ export function PointsModal({ open, onOpenChange }: PointsModalProps) {
                     transition={{ type: "spring", stiffness: 200 }}
                   >
                     <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1">
-                      총 포인트
+                      {t("points.totalPoints")}
                     </div>
                     <AnimatedCounter
                       value={data.userPoints.total_points}
                       className="text-5xl font-extrabold tabular-nums tracking-tight text-forest-600 dark:text-forest-400"
                     />
                     <div className="mt-2 text-sm text-muted-foreground">
-                      누적 {data.userPoints.lifetime_points.toLocaleString()}P
+                      {t("points.lifetimePoints", { count: data.userPoints.lifetime_points.toLocaleString() })}
                     </div>
                   </motion.div>
                 </div>
@@ -157,7 +159,7 @@ export function PointsModal({ open, onOpenChange }: PointsModalProps) {
                 <div className="grid grid-cols-3 gap-3">
                   <StatCard
                     icon={Zap}
-                    label="오늘"
+                    label={t("points.today")}
                     value={data.todayEarned}
                     color="text-amber-500"
                     bgColor="bg-amber-50 dark:bg-amber-950/30"
@@ -165,14 +167,14 @@ export function PointsModal({ open, onOpenChange }: PointsModalProps) {
                   />
                   <StatCard
                     icon={Calendar}
-                    label="이번 주"
+                    label={t("points.thisWeek")}
                     value={data.weeklyEarned}
                     color="text-blue-500"
                     bgColor="bg-blue-50 dark:bg-blue-950/30"
                   />
                   <StatCard
                     icon={TrendingUp}
-                    label="이번 달"
+                    label={t("points.thisMonth")}
                     value={data.monthlyEarned}
                     color="text-emerald-500"
                     bgColor="bg-emerald-50 dark:bg-emerald-950/30"
@@ -199,12 +201,12 @@ export function PointsModal({ open, onOpenChange }: PointsModalProps) {
                         </div>
                         <div>
                           <div className="font-semibold text-orange-700 dark:text-orange-300">
-                            연속 기록 진행 중!
+                            {t("points.streakOngoing")}
                           </div>
                           <div className="text-xs text-orange-600/70 dark:text-orange-400/70">
                             {data.userPoints.current_streak >= 7
-                              ? "대단해요! 이 기록을 지켜나가세요"
-                              : "오늘도 기록해서 연속일을 늘려보세요"}
+                              ? t("points.streakMilestoneHigh")
+                              : t("points.streakMilestoneLow")}
                           </div>
                         </div>
                       </div>
@@ -212,16 +214,16 @@ export function PointsModal({ open, onOpenChange }: PointsModalProps) {
                         <div className="text-3xl font-bold text-orange-600 dark:text-orange-400">
                           {data.userPoints.current_streak}
                         </div>
-                        <div className="text-xs text-orange-500/70">일 연속</div>
+                        <div className="text-xs text-orange-500/70">{t("points.consecutiveDays")}</div>
                       </div>
                     </div>
 
                     {/* 다음 마일스톤 안내 */}
-                    {getNextMilestoneMessage(data.userPoints.current_streak) && (
+                    {getNextMilestoneMessage(data.userPoints.current_streak, t) && (
                       <div className="mt-3 pt-3 border-t border-orange-200/50 dark:border-orange-700/50">
                         <div className="flex items-center gap-2 text-sm text-orange-600/80 dark:text-orange-400/80">
                           <Trophy className="h-4 w-4" />
-                          <span>{getNextMilestoneMessage(data.userPoints.current_streak)}</span>
+                          <span>{getNextMilestoneMessage(data.userPoints.current_streak, t)}</span>
                         </div>
                       </div>
                     )}
@@ -232,28 +234,28 @@ export function PointsModal({ open, onOpenChange }: PointsModalProps) {
                 <div className="p-4 rounded-xl bg-muted/30 border border-border/50 space-y-4">
                   <h4 className="font-semibold text-sm flex items-center gap-2">
                     <Target className="h-4 w-4 text-muted-foreground" />
-                    상세 통계
+                    {t("points.detailStats")}
                   </h4>
                   <div className="grid grid-cols-2 gap-4">
                     <InfoItem
-                      label="누적 포인트"
+                      label={t("points.lifetimePointsLabel")}
                       value={data.userPoints.lifetime_points.toLocaleString()}
                       subValue="P"
                     />
                     <InfoItem
-                      label="현재 스트릭"
+                      label={t("points.currentStreak")}
                       value={data.userPoints.current_streak.toString()}
-                      subValue="일 연속"
+                      subValue={t("points.daysStreak")}
                       highlight={data.userPoints.current_streak >= 7}
                     />
                     <InfoItem
-                      label="최장 기록"
+                      label={t("points.longestStreak")}
                       value={data.userPoints.longest_streak.toString()}
-                      subValue="일"
+                      subValue={t("points.daysStreak")}
                     />
                     <InfoItem
-                      label="현재 레벨"
-                      value={data.currentLevel?.title || "씨앗"}
+                      label={t("points.currentLevel")}
+                      value={data.currentLevel?.title || t("points.defaultLevel")}
                       subValue={`Lv.${data.userPoints.current_level}`}
                     />
                   </div>
@@ -262,7 +264,7 @@ export function PointsModal({ open, onOpenChange }: PointsModalProps) {
             </div>
           ) : (
             <div className="p-6 text-center text-muted-foreground">
-              포인트 데이터를 불러올 수 없습니다
+              {t("points.noData")}
             </div>
           )}
         </ScrollArea>
@@ -274,16 +276,16 @@ export function PointsModal({ open, onOpenChange }: PointsModalProps) {
 /**
  * 다음 마일스톤 메시지 생성
  */
-function getNextMilestoneMessage(currentStreak: number): string | null {
+function getNextMilestoneMessage(currentStreak: number, t: (key: any, params?: any) => string): string | null {
   if (currentStreak < 7) {
     const daysLeft = 7 - currentStreak;
-    return `${daysLeft}일 후 7일 마일스톤! (+50P)`;
+    return t("points.milestone7", { days: daysLeft });
   } else if (currentStreak < 30) {
     const daysLeft = 30 - currentStreak;
-    return `${daysLeft}일 후 30일 마일스톤! (+200P)`;
+    return t("points.milestone30", { days: daysLeft });
   } else if (currentStreak < 100) {
     const daysLeft = 100 - currentStreak;
-    return `${daysLeft}일 후 100일 마일스톤! (+500P)`;
+    return t("points.milestone100", { days: daysLeft });
   }
   return null;
 }
@@ -350,7 +352,12 @@ function WeeklyActivityHeatmap({
   todayEarned: number;
   streak: number;
 }) {
-  const days = ["월", "화", "수", "목", "금", "토", "일"];
+  const { t } = useTranslation();
+  // 월~일 순서로 요일 라벨 (Mon-Sun order)
+  const days = [
+    t("common.day1Mon"), t("common.day2Tue"), t("common.day3Wed"),
+    t("common.day4Thu"), t("common.day5Fri"), t("common.day6Sat"), t("common.day0Sun"),
+  ];
   const today = new Date().getDay();
   const adjustedToday = today === 0 ? 6 : today - 1; // 월요일 기준으로 조정
 
@@ -374,10 +381,10 @@ function WeeklyActivityHeatmap({
       <div className="flex items-center justify-between mb-3">
         <h4 className="text-sm font-semibold flex items-center gap-2">
           <Calendar className="h-4 w-4 text-muted-foreground" />
-          이번 주 활동
+          {t("points.weeklyActivity")}
         </h4>
         <span className="text-xs text-muted-foreground">
-          {activeDays.size}/7일 활동
+          {t("points.weeklyActivityCount", { count: activeDays.size })}
         </span>
       </div>
       <div className="grid grid-cols-7 gap-2">

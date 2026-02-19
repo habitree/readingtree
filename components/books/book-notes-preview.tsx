@@ -10,6 +10,7 @@ import { NoteContentViewer } from "@/components/notes/note-content-viewer";
 import { OCRStatusBadge } from "@/components/notes/ocr-status-badge";
 import { useOCRStatus } from "@/hooks/use-ocr-status";
 import type { NoteType } from "@/types/note";
+import { useTranslation } from "@/lib/i18n";
 
 interface BookNotesPreviewProps {
   notes: Array<{
@@ -31,6 +32,7 @@ export function BookNotesPreview({
   notes,
   maxVisible = 3,
 }: BookNotesPreviewProps) {
+  const { t } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(false);
 
   if (notes.length === 0) {
@@ -66,12 +68,12 @@ export function BookNotesPreview({
           {isExpanded ? (
             <>
               <ChevronUp className="h-4 w-4 mr-2" aria-hidden="true" />
-              접기
+              {t("common.showLess")}
             </>
           ) : (
             <>
               <ChevronDown className="h-4 w-4 mr-2" aria-hidden="true" />
-              더보기 ({notes.length - maxVisible}개 더)
+              {t("common.showMore")} ({t("notes.moreCount", { count: notes.length - maxVisible })})
             </>
           )}
         </Button>

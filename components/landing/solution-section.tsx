@@ -1,16 +1,21 @@
+"use client";
+
 import { Camera, Search, Share2, ScanText, ArrowRight } from "lucide-react";
+import { useTranslation } from "@/lib/i18n";
 
 export function SolutionSection() {
+    const { t } = useTranslation();
+
     return (
         <section className="py-32 bg-paper-100 text-charcoal-900 overflow-hidden">
             <div className="container px-4 md:px-6">
                 <div className="text-center mb-20 max-w-2xl mx-auto">
-                    <span className="text-forest-600 font-bold tracking-wider uppercase text-sm mb-4 block">이렇게 해결합니다</span>
+                    <span className="text-forest-600 font-bold tracking-wider uppercase text-sm mb-4 block">{t("landing.solution.eyebrow")}</span>
                     <h2 className="text-4xl md:text-5xl font-serif font-bold mb-6 break-keep">
-                        독서 기록 시스템
+                        {t("landing.solution.headline")}
                     </h2>
                     <p className="text-xl text-charcoal-600 leading-relaxed break-keep font-serif">
-                        흩어진 문장들을 모으는 일이 더 이상 번거롭지 않습니다.
+                        {t("landing.solution.subtitle")}
                     </p>
                 </div>
 
@@ -24,9 +29,9 @@ export function SolutionSection() {
                                 <div className="w-12 h-12 bg-charcoal-100 rounded-2xl flex items-center justify-center mb-6 text-charcoal-900">
                                     <Camera className="w-6 h-6" />
                                 </div>
-                                <h3 className="text-2xl font-bold mb-3">AI 텍스트 추출</h3>
+                                <h3 className="text-2xl font-bold mb-3">{t("landing.solution.ocrTitle")}</h3>
                                 <p className="text-charcoal-500 text-lg max-w-md break-keep">
-                                    찍으면 텍스트로
+                                    {t("landing.solution.ocrDesc")}
                                 </p>
                             </div>
 
@@ -38,7 +43,7 @@ export function SolutionSection() {
                                         <div className="h-2 bg-charcoal-200 rounded w-full animate-pulse" />
                                         <div className="h-2 bg-charcoal-200 rounded w-3/4 animate-pulse delay-75" />
                                         <div className="flex gap-2 mt-2">
-                                            <span className="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full">인식 완료</span>
+                                            <span className="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full">{t("landing.solution.ocrDone")}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -56,9 +61,9 @@ export function SolutionSection() {
                             <div className="w-12 h-12 bg-charcoal-800 rounded-2xl flex items-center justify-center mb-6 text-paper-50 border border-charcoal-700">
                                 <ScanText className="w-6 h-6" />
                             </div>
-                            <h3 className="text-2xl font-bold mb-3">자동 페이지 정렬</h3>
+                            <h3 className="text-2xl font-bold mb-3">{t("landing.solution.sortTitle")}</h3>
                             <p className="text-charcoal-400 text-lg leading-relaxed break-keep">
-                                순서대로 정렬
+                                {t("landing.solution.sortDesc")}
                             </p>
                         </div>
 
@@ -94,9 +99,9 @@ export function SolutionSection() {
                         <div className="w-12 h-12 bg-forest-50 rounded-2xl flex items-center justify-center mb-6 text-forest-600">
                             <Search className="w-6 h-6" />
                         </div>
-                        <h3 className="text-xl font-bold mb-3">문장 검색</h3>
+                        <h3 className="text-xl font-bold mb-3">{t("landing.solution.searchTitle")}</h3>
                         <p className="text-charcoal-500">
-                            "그 문장 뭐였지?"<br />키워드 하나로 1초 만에 찾으세요.
+                            {t("landing.solution.searchDesc")}
                         </p>
                     </div>
 
@@ -105,9 +110,9 @@ export function SolutionSection() {
                         <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center mb-6 text-forest-600">
                             <Share2 className="w-6 h-6" />
                         </div>
-                        <h3 className="text-xl font-bold mb-3">카드뉴스 공유</h3>
+                        <h3 className="text-xl font-bold mb-3">{t("landing.solution.shareTitle")}</h3>
                         <div className="flex items-center text-forest-700 font-medium mt-auto group-hover:translate-x-1 transition-transform cursor-pointer">
-                            예시 보기 <ArrowRight className="w-4 h-4 ml-1" />
+                            {t("landing.solution.shareLink")} <ArrowRight className="w-4 h-4 ml-1" />
                         </div>
                     </div>
 

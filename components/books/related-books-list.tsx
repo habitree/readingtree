@@ -6,6 +6,7 @@ import Link from "next/link";
 import { BookOpen, Loader2 } from "lucide-react";
 import { getRelatedBooks, type RelatedBook } from "@/app/actions/book-relations";
 import { getImageUrl } from "@/lib/utils/image";
+import { useTranslation } from "@/lib/i18n";
 
 interface RelatedBooksListProps {
   userBookId: string;
@@ -17,6 +18,7 @@ interface RelatedBooksListProps {
  * 책 상세 페이지에서 연결된 관련 도서를 표시
  */
 export function RelatedBooksList({ userBookId, initialBooks }: RelatedBooksListProps) {
+  const { t } = useTranslation();
   const [books, setBooks] = useState<RelatedBook[]>(initialBooks || []);
   const [isLoading, setIsLoading] = useState(!initialBooks);
   const [error, setError] = useState<string | null>(null);
@@ -33,7 +35,7 @@ export function RelatedBooksList({ userBookId, initialBooks }: RelatedBooksListP
         setBooks(relatedBooks);
       } catch (err) {
         console.error("연결된 책 로드 실패:", err);
-        setError(err instanceof Error ? err.message : "연결된 책을 불러오는데 실패했습니다.");
+        setError(err instanceof Error ? err.message : t("books.relatedBooksLoadFailed"));
       } finally {
         setIsLoading(false);
       }
@@ -46,7 +48,7 @@ export function RelatedBooksList({ userBookId, initialBooks }: RelatedBooksListP
     return (
       <div className="flex items-center justify-center py-6 text-muted-foreground">
         <Loader2 className="h-5 w-5 animate-spin mr-2" />
-        <span className="text-sm">불러오는 중...</span>
+        <span className="text-sm">{t("books.relatedBooksLoading")}</span>
       </div>
     );
   }
@@ -63,8 +65,8 @@ export function RelatedBooksList({ userBookId, initialBooks }: RelatedBooksListP
     return (
       <div className="text-center py-6 text-muted-foreground">
         <BookOpen className="h-8 w-8 mx-auto mb-2 opacity-50" />
-        <p className="text-sm">연결된 책이 없습니다</p>
-        <p className="text-xs mt-1">관련 도서를 추가해보세요</p>
+        <p className="text-sm">{t("books.relatedBooksEmpty")}</p>
+        <p className="text-xs mt-1">{t("books.relatedBooksEmptyDesc")}</p>
       </div>
     );
   }

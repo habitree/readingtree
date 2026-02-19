@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import { Card } from "@/components/ui/card";
 import type { DailyBookActivity } from "@/app/actions/stats";
+import { useTranslation } from "@/lib/i18n";
 
 const STACK_COLORS = [
   "bg-forest-600 dark:bg-forest-500",
@@ -23,6 +24,7 @@ interface MonthlySummaryCardProps {
  * TertiaryZone 캘린더 위에 배치
  */
 export function MonthlySummaryCard({ activities, year, month }: MonthlySummaryCardProps) {
+  const { t } = useTranslation();
   const summary = useMemo(() => {
     const uniqueBookIds = new Set<string>();
     let totalNotes = 0;
@@ -70,14 +72,10 @@ export function MonthlySummaryCard({ activities, year, month }: MonthlySummaryCa
         {/* 텍스트 */}
         <div className="min-w-0">
           <p className="text-sm font-semibold text-slate-900 dark:text-white">
-            {month}월에{" "}
-            <span className="text-forest-600 dark:text-forest-400">
-              {summary.bookCount}권
-            </span>{" "}
-            읽었어요
+            {t("dashboard.monthlySummary", { month, count: summary.bookCount })}
           </p>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            {summary.activeDays}일 기록 · {summary.noteCount}개 메모
+            {t("dashboard.monthlySummaryDetail", { days: summary.activeDays, notes: summary.noteCount })}
           </p>
         </div>
       </div>

@@ -43,6 +43,7 @@ import {
   Database,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from "@/lib/i18n";
 import {
   getActiveOcrCorrectionSettings,
   updateOcrCorrectionSettings,
@@ -73,6 +74,7 @@ export function OcrSettingsPanel({
   initialStats,
   apiKeyStatus: initialApiKeyStatus,
 }: OcrSettingsPanelProps) {
+  const { t } = useTranslation();
   // 상태 관리
   const [settings, setSettings] = useState<OcrCorrectionSettings | null>(
     initialSettings || null
@@ -165,14 +167,14 @@ export function OcrSettingsPanel({
 
       if (settings?.id && settings.id !== "default") {
         await updateOcrCorrectionSettings(settings.id, formData);
-        toast.success("OCR 보정 설정이 저장되었습니다.");
+        toast.success(t("admin.ocrSettings.savedSuccess"));
       } else {
         const newSettings = await createOcrCorrectionSettings(formData);
         setSettings(newSettings);
-        toast.success("OCR 보정 설정이 생성되었습니다.");
+        toast.success(t("admin.ocrSettings.createdSuccess"));
       }
     } catch (error) {
-      toast.error("설정 저장에 실패했습니다.");
+      toast.error(t("admin.ocrSettings.saveFailed"));
       console.error(error);
     } finally {
       setIsSaving(false);
@@ -188,21 +190,21 @@ export function OcrSettingsPanel({
       setTestResult({
         success: result.success,
         message: result.success
-          ? `연결 성공! 응답시간: ${result.responseTime}ms`
-          : `연결 실패: ${result.error}`,
+          ? t("admin.ocrSettings.connectionSuccess", { ms: result.responseTime })
+          : t("admin.ocrSettings.connectionFailed", { error: result.error }),
         responseTime: result.responseTime,
       });
       if (result.success) {
-        toast.success("연결 테스트 성공.");
+        toast.success(t("admin.ocrSettings.testSuccess"));
       } else {
-        toast.error(`연결 테스트 실패: ${result.error}`);
+        toast.error(t("admin.ocrSettings.testFailed", { error: result.error }));
       }
     } catch (error) {
       setTestResult({
         success: false,
-        message: "테스트 중 오류가 발생했습니다.",
+        message: t("admin.ocrSettings.testError"),
       });
-      toast.error("연결 테스트 중 오류가 발생했습니다.");
+      toast.error(t("admin.ocrSettings.testErrorToast"));
     } finally {
       setIsTesting(false);
     }
@@ -213,7 +215,7 @@ export function OcrSettingsPanel({
     setProvider(DEFAULT_OCR_CORRECTION_SETTINGS.provider);
     setModelId(DEFAULT_OCR_CORRECTION_SETTINGS.modelId);
     setGenerationSettings(DEFAULT_OCR_CORRECTION_SETTINGS.generationSettings);
-    toast.info("기본값으로 초기화되었습니다. 저장을 눌러 적용하세요.");
+    toast.info(t("admin.ocrSettings.resetSuccess"));
   };
 
   // 일괄 보정 통계 로드
@@ -228,7 +230,7 @@ export function OcrSettingsPanel({
       });
     } catch (error) {
       console.error("일괄 보정 통계 로드 실패:", error);
-      toast.error("통계 로드에 실패했습니다.");
+      toast.error(t("admin.ocrSettings.statsLoadFailed"));
     } finally {
       setIsBatchLoading(false);
     }
@@ -246,12 +248,12 @@ export function OcrSettingsPanel({
         failed: result.failed,
         modified: result.modified,
       });
-      toast.success(`${result.success}건 보정 완료 (${result.modified}건 수정됨)`);
+      toast.success(t("admin.ocrSettings.batchSuccess", { success: result.success, modified: result.modified }));
       // 통계 새로고침
       await loadBatchStats();
     } catch (error) {
       console.error("일괄 보정 실행 실패:", error);
-      toast.error("일괄 보정 중 오류가 발생했습니다.");
+      toast.error(t("admin.ocrSettings.batchFailed"));
     } finally {
       setIsBatchRunning(false);
     }
@@ -266,9 +268,9 @@ export function OcrSettingsPanel({
             <ScanLine className="h-6 w-6 text-purple-600" />
           </div>
           <div>
-            <h2 className="text-2xl font-bold">OCR 보정 설정</h2>
+            <h2 className="text-2xl font-bold">{t("admin.ocrSettings.title")}</h2>
             <p className="text-muted-foreground text-sm">
-              OCR 텍스트 자동 보정에 사용할 AI 모델과 파라미터를 설정합니다
+              {t("admin.ocrSettings.description")}
             </p>
           </div>
         </div>
@@ -279,7 +281,7 @@ export function OcrSettingsPanel({
             disabled={isSaving}
           >
             <RefreshCw className="h-4 w-4 mr-2" />
-            기본값 복원
+            {t("admin.ocrSettings.resetDefaults")}
           </Button>
           <Button onClick={handleSave} disabled={isSaving}>
             {isSaving ? (
@@ -287,7 +289,7 @@ export function OcrSettingsPanel({
             ) : (
               <Save className="h-4 w-4 mr-2" />
             )}
-            저장
+            {t("admin.ocrSettings.save")}
           </Button>
         </div>
       </div>
@@ -299,7 +301,7 @@ export function OcrSettingsPanel({
             <CardContent className="pt-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">이번 달 보정</p>
+                  <p className="text-sm text-muted-foreground">{t("admin.ocrSettings.thisMonthCorrections")}</p>
                   <p className="text-2xl font-bold">
                     {stats.thisMonthCorrections.toLocaleString()}
                   </p>
@@ -312,7 +314,7 @@ export function OcrSettingsPanel({
             <CardContent className="pt-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">성공률</p>
+                  <p className="text-sm text-muted-foreground">{t("admin.ocrSettings.successRate")}</p>
                   <p className="text-2xl font-bold">{stats.successRate}%</p>
                 </div>
                 <CheckCircle2 className="h-8 w-8 text-green-500/50" />
@@ -323,7 +325,7 @@ export function OcrSettingsPanel({
             <CardContent className="pt-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">이번 달 비용</p>
+                  <p className="text-sm text-muted-foreground">{t("admin.ocrSettings.thisMonthCost")}</p>
                   <p className="text-2xl font-bold">
                     ${stats.thisMonthCostUsd.toFixed(4)}
                   </p>
@@ -336,7 +338,7 @@ export function OcrSettingsPanel({
             <CardContent className="pt-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">예상 비용</p>
+                  <p className="text-sm text-muted-foreground">{t("admin.ocrSettings.estimatedCost")}</p>
                   <p className="text-2xl font-bold">
                     ${monthlyEstimate.toFixed(4)}
                   </p>
@@ -353,7 +355,7 @@ export function OcrSettingsPanel({
         <CardHeader className="pb-3">
           <CardTitle className="text-lg flex items-center gap-2">
             <Zap className="h-5 w-5" />
-            API 키 상태
+            {t("admin.ocrSettings.apiKeyStatus")}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -384,15 +386,15 @@ export function OcrSettingsPanel({
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="model" className="flex items-center gap-2">
             <Sparkles className="h-4 w-4" />
-            모델 선택
+            {t("admin.ocrSettings.tabModel")}
           </TabsTrigger>
           <TabsTrigger value="params" className="flex items-center gap-2">
             <Settings className="h-4 w-4" />
-            파라미터
+            {t("admin.ocrSettings.tabParams")}
           </TabsTrigger>
           <TabsTrigger value="cost" className="flex items-center gap-2">
             <DollarSign className="h-4 w-4" />
-            비용 정보
+            {t("admin.ocrSettings.tabCost")}
           </TabsTrigger>
           <TabsTrigger
             value="batch"
@@ -402,7 +404,7 @@ export function OcrSettingsPanel({
             }}
           >
             <Database className="h-4 w-4" />
-            일괄 보정
+            {t("admin.ocrSettings.tabBatch")}
           </TabsTrigger>
         </TabsList>
 
@@ -410,15 +412,15 @@ export function OcrSettingsPanel({
         <TabsContent value="model">
           <Card>
             <CardHeader>
-              <CardTitle>AI 모델 선택</CardTitle>
+              <CardTitle>{t("admin.ocrSettings.modelSelectTitle")}</CardTitle>
               <CardDescription>
-                OCR 텍스트 보정에 사용할 AI 제공자와 모델을 선택하세요
+                {t("admin.ocrSettings.modelSelectDesc")}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               {/* 제공자 선택 */}
               <div className="space-y-3">
-                <Label>AI 제공자</Label>
+                <Label>{t("admin.ocrSettings.providerLabel")}</Label>
                 <div className="grid grid-cols-3 gap-4">
                   {(Object.keys(AI_PROVIDER_INFO) as AIProvider[]).map(
                     (key) => {
@@ -446,7 +448,7 @@ export function OcrSettingsPanel({
                           </div>
                           {recommendedModel && (
                             <div className="text-xs text-muted-foreground">
-                              권장: {recommendedModel.name}
+                              {t("admin.ocrSettings.recommendedModel", { name: recommendedModel.name })}
                             </div>
                           )}
                           {!isAvailable && (
@@ -454,7 +456,7 @@ export function OcrSettingsPanel({
                               variant="outline"
                               className="mt-2 text-xs bg-red-500/10 text-red-600"
                             >
-                              API 키 미설정
+                              {t("admin.ocrSettings.noApiKey")}
                             </Badge>
                           )}
                         </button>
@@ -466,10 +468,10 @@ export function OcrSettingsPanel({
 
               {/* 모델 선택 */}
               <div className="space-y-3">
-                <Label>모델</Label>
+                <Label>{t("admin.ocrSettings.modelLabel")}</Label>
                 <Select value={modelId} onValueChange={setModelId}>
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder="모델을 선택하세요" />
+                    <SelectValue placeholder={t("admin.ocrSettings.modelPlaceholder")} />
                   </SelectTrigger>
                   <SelectContent>
                     {OCR_CORRECTION_MODELS[provider].map((model) => (
@@ -481,12 +483,11 @@ export function OcrSettingsPanel({
                               variant="secondary"
                               className="text-xs bg-green-500/10 text-green-700"
                             >
-                              권장
+                              {t("admin.ocrSettings.recommended")}
                             </Badge>
                           )}
                           <span className="text-xs text-muted-foreground">
-                            (입력: ${model.cost.input}/1M, 출력: $
-                            {model.cost.output}/1M)
+                            (${model.cost.input}/1M, ${model.cost.output}/1M)
                           </span>
                         </div>
                       </SelectItem>
@@ -500,7 +501,7 @@ export function OcrSettingsPanel({
                 <div className="p-4 bg-muted/50 rounded-lg space-y-2">
                   <div className="flex items-center gap-2">
                     <Info className="h-4 w-4 text-muted-foreground" />
-                    <span className="font-medium">현재 선택</span>
+                    <span className="font-medium">{t("admin.ocrSettings.currentSelection")}</span>
                   </div>
                   <div className="text-sm text-muted-foreground">
                     <p>
@@ -508,8 +509,7 @@ export function OcrSettingsPanel({
                       {currentModel.name}
                     </p>
                     <p>
-                      비용: 입력 ${currentModel.cost.input}/1M 토큰, 출력 $
-                      {currentModel.cost.output}/1M 토큰
+                      {t("admin.ocrSettings.costInfo", { input: currentModel.cost.input, output: currentModel.cost.output })}
                     </p>
                   </div>
                 </div>
@@ -528,7 +528,7 @@ export function OcrSettingsPanel({
                     ) : (
                       <Zap className="h-4 w-4 mr-2" />
                     )}
-                    연결 테스트
+                    {isTesting ? t("admin.ocrSettings.testing") : t("admin.ocrSettings.testConnection")}
                   </Button>
                   {testResult && (
                     <div
@@ -554,18 +554,18 @@ export function OcrSettingsPanel({
         <TabsContent value="params">
           <Card>
             <CardHeader>
-              <CardTitle>생성 파라미터</CardTitle>
+              <CardTitle>{t("admin.ocrSettings.paramsTitle")}</CardTitle>
               <CardDescription>
-                OCR 보정 AI의 동작 방식을 조정하세요
+                {t("admin.ocrSettings.paramsDesc")}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <Label>Temperature (일관성)</Label>
+                    <Label>{t("admin.ocrSettings.temperatureLabel")}</Label>
                     <p className="text-xs text-muted-foreground">
-                      낮을수록 일관된 보정, 높을수록 다양한 보정 (권장: 0.3)
+                      {t("admin.ocrSettings.temperatureDesc")}
                     </p>
                   </div>
                   <div className="flex items-center gap-3">
@@ -590,9 +590,9 @@ export function OcrSettingsPanel({
 
                 <div className="flex items-center justify-between">
                   <div>
-                    <Label>최대 출력 토큰</Label>
+                    <Label>{t("admin.ocrSettings.maxTokensLabel")}</Label>
                     <p className="text-xs text-muted-foreground">
-                      보정된 텍스트의 최대 길이 (권장: 2048)
+                      {t("admin.ocrSettings.maxTokensDesc")}
                     </p>
                   </div>
                   <div className="flex items-center gap-3">
@@ -620,14 +620,11 @@ export function OcrSettingsPanel({
                 <div className="flex items-start gap-2">
                   <Info className="h-5 w-5 text-blue-600 mt-0.5" />
                   <div className="text-sm text-blue-800">
-                    <p className="font-medium mb-1">OCR 보정 권장 설정</p>
+                    <p className="font-medium mb-1">{t("admin.ocrSettings.recommendedSettings")}</p>
                     <ul className="list-disc list-inside text-xs space-y-1">
-                      <li>Temperature: 0.3 (일관된 보정)</li>
-                      <li>Max Tokens: 2048 (긴 텍스트 대응)</li>
-                      <li>
-                        보정 품질이 중요하면 Temperature를 낮추고, 다양성이
-                        필요하면 높이세요
-                      </li>
+                      <li>{t("admin.ocrSettings.recommendedTemp")}</li>
+                      <li>{t("admin.ocrSettings.recommendedTokens")}</li>
+                      <li>{t("admin.ocrSettings.qualityTip")}</li>
                     </ul>
                   </div>
                 </div>
@@ -640,9 +637,9 @@ export function OcrSettingsPanel({
         <TabsContent value="cost">
           <Card>
             <CardHeader>
-              <CardTitle>모델별 비용 비교</CardTitle>
+              <CardTitle>{t("admin.ocrSettings.costTitle")}</CardTitle>
               <CardDescription>
-                각 모델의 비용을 비교하여 효율적인 모델을 선택하세요
+                {t("admin.ocrSettings.costDesc")}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -657,7 +654,7 @@ export function OcrSettingsPanel({
                             variant="outline"
                             className="text-xs bg-red-500/10 text-red-600"
                           >
-                            미설정
+                            {t("admin.ocrSettings.notConfigured")}
                           </Badge>
                         )}
                       </h4>
@@ -692,7 +689,7 @@ export function OcrSettingsPanel({
                                       variant="secondary"
                                       className="text-xs bg-green-500/10 text-green-700"
                                     >
-                                      권장
+                                      {t("admin.ocrSettings.recommended")}
                                     </Badge>
                                   )}
                                   {isSelected && (
@@ -700,20 +697,19 @@ export function OcrSettingsPanel({
                                       variant="default"
                                       className="text-xs"
                                     >
-                                      선택됨
+                                      {t("admin.ocrSettings.selected")}
                                     </Badge>
                                   )}
                                 </div>
                                 <div className="text-sm text-muted-foreground">
-                                  <span>월 1000건: </span>
+                                  <span>{t("admin.ocrSettings.monthly1000")}</span>
                                   <span className="font-mono font-medium">
                                     ${monthlyEst.toFixed(2)}
                                   </span>
                                 </div>
                               </div>
                               <div className="mt-1 text-xs text-muted-foreground">
-                                입력: ${model.cost.input}/1M 토큰 | 출력: $
-                                {model.cost.output}/1M 토큰
+                                {t("admin.ocrSettings.tokenCostInfo", { input: model.cost.input, output: model.cost.output })}
                               </div>
                             </div>
                           );
@@ -728,19 +724,11 @@ export function OcrSettingsPanel({
                 <div className="flex items-start gap-2">
                   <DollarSign className="h-5 w-5 text-yellow-600 mt-0.5" />
                   <div className="text-sm text-yellow-800">
-                    <p className="font-medium mb-1">비용 절감 팁</p>
+                    <p className="font-medium mb-1">{t("admin.ocrSettings.costTips")}</p>
                     <ul className="list-disc list-inside text-xs space-y-1">
-                      <li>
-                        <strong>Gemini 2.0 Flash</strong>가 가장 저렴하며 성능도
-                        우수합니다
-                      </li>
-                      <li>
-                        <strong>GPT-4o Mini</strong>는 비용 대비 안정적인
-                        품질을 제공합니다
-                      </li>
-                      <li>
-                        월 1000건 기준 $0.13 ~ $0.50 수준의 비용이 예상됩니다
-                      </li>
+                      <li>{t("admin.ocrSettings.costTip1")}</li>
+                      <li>{t("admin.ocrSettings.costTip2")}</li>
+                      <li>{t("admin.ocrSettings.costTip3")}</li>
                     </ul>
                   </div>
                 </div>
@@ -753,9 +741,9 @@ export function OcrSettingsPanel({
         <TabsContent value="batch">
           <Card>
             <CardHeader>
-              <CardTitle>기존 데이터 일괄 보정</CardTitle>
+              <CardTitle>{t("admin.ocrSettings.batchTitle")}</CardTitle>
               <CardDescription>
-                보정이 적용되지 않은 기존 OCR 데이터에 GPT 보정을 일괄 적용합니다
+                {t("admin.ocrSettings.batchDesc")}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -763,20 +751,20 @@ export function OcrSettingsPanel({
               {isBatchLoading ? (
                 <div className="flex items-center justify-center py-8">
                   <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                  <span className="ml-2 text-muted-foreground">통계 로드 중...</span>
+                  <span className="ml-2 text-muted-foreground">{t("admin.ocrSettings.statsLoading")}</span>
                 </div>
               ) : batchStats ? (
                 <div className="grid gap-4 md:grid-cols-3">
                   <div className="p-4 bg-muted/50 rounded-lg">
-                    <p className="text-sm text-muted-foreground">전체 데이터</p>
+                    <p className="text-sm text-muted-foreground">{t("admin.ocrSettings.totalData")}</p>
                     <p className="text-2xl font-bold">{batchStats.total}</p>
                   </div>
                   <div className="p-4 bg-green-500/10 rounded-lg border border-green-500/20">
-                    <p className="text-sm text-green-700">보정 완료</p>
+                    <p className="text-sm text-green-700">{t("admin.ocrSettings.correctionDone")}</p>
                     <p className="text-2xl font-bold text-green-700">{batchStats.corrected}</p>
                   </div>
                   <div className="p-4 bg-orange-500/10 rounded-lg border border-orange-500/20">
-                    <p className="text-sm text-orange-700">보정 대기</p>
+                    <p className="text-sm text-orange-700">{t("admin.ocrSettings.correctionPending")}</p>
                     <p className="text-2xl font-bold text-orange-700">{batchStats.pending}</p>
                   </div>
                 </div>
@@ -785,7 +773,7 @@ export function OcrSettingsPanel({
                   <Database className="h-12 w-12 text-muted-foreground/30" />
                   <Button variant="outline" onClick={loadBatchStats}>
                     <RefreshCw className="h-4 w-4 mr-2" />
-                    통계 로드
+                    {t("admin.ocrSettings.loadStats")}
                   </Button>
                 </div>
               )}
@@ -797,12 +785,12 @@ export function OcrSettingsPanel({
                     <div className="flex items-start gap-2">
                       <Info className="h-5 w-5 text-blue-600 mt-0.5" />
                       <div className="text-sm text-blue-800">
-                        <p className="font-medium mb-1">일괄 보정 안내</p>
+                        <p className="font-medium mb-1">{t("admin.ocrSettings.batchGuide")}</p>
                         <ul className="list-disc list-inside text-xs space-y-1">
-                          <li>한 번에 최대 10건씩 보정됩니다</li>
-                          <li>API Rate Limit 방지를 위해 건당 0.5초 지연됩니다</li>
-                          <li>원본 텍스트는 별도 보관됩니다 (복원 가능)</li>
-                          <li>완료 후 &apos;원본/보정&apos; 토글로 확인할 수 있습니다</li>
+                          <li>{t("admin.ocrSettings.batchGuide1")}</li>
+                          <li>{t("admin.ocrSettings.batchGuide2")}</li>
+                          <li>{t("admin.ocrSettings.batchGuide3")}</li>
+                          <li>{t("admin.ocrSettings.batchGuide4")}</li>
                         </ul>
                       </div>
                     </div>
@@ -819,7 +807,7 @@ export function OcrSettingsPanel({
                       ) : (
                         <PlayCircle className="h-4 w-4 mr-2" />
                       )}
-                      {isBatchRunning ? "보정 중..." : `${Math.min(10, batchStats.pending)}건 보정 실행`}
+                      {isBatchRunning ? t("admin.ocrSettings.correcting") : t("admin.ocrSettings.runBatch", { count: Math.min(10, batchStats.pending) })}
                     </Button>
                     <Button
                       variant="outline"
@@ -827,7 +815,7 @@ export function OcrSettingsPanel({
                       disabled={isBatchLoading || isBatchRunning}
                     >
                       <RefreshCw className={`h-4 w-4 mr-2 ${isBatchLoading ? "animate-spin" : ""}`} />
-                      새로고침
+                      {t("admin.ocrSettings.refresh")}
                     </Button>
                   </div>
                 </div>
@@ -838,7 +826,7 @@ export function OcrSettingsPanel({
                 <div className="p-4 bg-green-500/10 rounded-lg border border-green-500/20">
                   <div className="flex items-center gap-2">
                     <CheckCircle2 className="h-5 w-5 text-green-600" />
-                    <span className="text-green-700 font-medium">모든 데이터가 보정 완료되었습니다!</span>
+                    <span className="text-green-700 font-medium">{t("admin.ocrSettings.allCorrected")}</span>
                   </div>
                 </div>
               )}
@@ -846,23 +834,23 @@ export function OcrSettingsPanel({
               {/* 실행 결과 */}
               {batchResult && (
                 <div className="p-4 bg-muted/50 rounded-lg space-y-2">
-                  <p className="font-medium">실행 결과</p>
+                  <p className="font-medium">{t("admin.ocrSettings.resultTitle")}</p>
                   <div className="grid grid-cols-4 gap-4 text-sm">
                     <div>
-                      <p className="text-muted-foreground">처리</p>
-                      <p className="font-bold">{batchResult.processed}건</p>
+                      <p className="text-muted-foreground">{t("admin.ocrSettings.resultProcessed")}</p>
+                      <p className="font-bold">{batchResult.processed}{t("admin.ocrSettings.itemUnit")}</p>
                     </div>
                     <div>
-                      <p className="text-green-600">성공</p>
-                      <p className="font-bold text-green-600">{batchResult.success}건</p>
+                      <p className="text-green-600">{t("admin.ocrSettings.resultSuccess")}</p>
+                      <p className="font-bold text-green-600">{batchResult.success}{t("admin.ocrSettings.itemUnit")}</p>
                     </div>
                     <div>
-                      <p className="text-red-600">실패</p>
-                      <p className="font-bold text-red-600">{batchResult.failed}건</p>
+                      <p className="text-red-600">{t("admin.ocrSettings.resultFailed")}</p>
+                      <p className="font-bold text-red-600">{batchResult.failed}{t("admin.ocrSettings.itemUnit")}</p>
                     </div>
                     <div>
-                      <p className="text-blue-600">수정됨</p>
-                      <p className="font-bold text-blue-600">{batchResult.modified}건</p>
+                      <p className="text-blue-600">{t("admin.ocrSettings.resultModified")}</p>
+                      <p className="font-bold text-blue-600">{batchResult.modified}{t("admin.ocrSettings.itemUnit")}</p>
                     </div>
                   </div>
                 </div>

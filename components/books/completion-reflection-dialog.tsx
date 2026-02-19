@@ -25,40 +25,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import confetti from "canvas-confetti";
-
-/**
- * 성찰 프롬프트 정의
- * Elaborative Interrogation - 깊은 처리가 기억과 의미 증가
- */
-const REFLECTION_PROMPTS = [
-  {
-    id: "quote",
-    icon: Quote,
-    label: "인상적인 문장",
-    question: "이 책에서 가장 기억에 남는 문장은?",
-    placeholder: "마음에 새겨진 문장을 적어보세요...",
-    color: "text-blue-500",
-    bgColor: "bg-blue-50 dark:bg-blue-950/30",
-  },
-  {
-    id: "reflection",
-    icon: Lightbulb,
-    label: "생각의 변화",
-    question: "이 책을 읽고 달라진 생각이 있나요?",
-    placeholder: "새롭게 깨달은 것, 달라진 시각을 적어보세요...",
-    color: "text-amber-500",
-    bgColor: "bg-amber-50 dark:bg-amber-950/30",
-  },
-  {
-    id: "recommend",
-    icon: ThumbsUp,
-    label: "추천",
-    question: "비슷한 책을 찾는 친구에게 추천할까요?",
-    placeholder: "누구에게, 왜 추천하고 싶은지 적어보세요...",
-    color: "text-green-500",
-    bgColor: "bg-green-50 dark:bg-green-950/30",
-  },
-];
+import { useTranslation } from "@/lib/i18n";
 
 interface CompletionReflectionDialogProps {
   open: boolean;
@@ -81,9 +48,44 @@ export function CompletionReflectionDialog({
   onSubmit,
   onSkip,
 }: CompletionReflectionDialogProps) {
+  const { t } = useTranslation();
   const [currentStep, setCurrentStep] = useState(0);
   const [reflections, setReflections] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  /**
+   * 성찰 프롬프트 정의
+   * Elaborative Interrogation - 깊은 처리가 기억과 의미 증가
+   */
+  const REFLECTION_PROMPTS = [
+    {
+      id: "quote",
+      icon: Quote,
+      label: t("completion.quoteLabel"),
+      question: t("completion.quoteQuestion"),
+      placeholder: t("completion.quotePlaceholder"),
+      color: "text-blue-500",
+      bgColor: "bg-blue-50 dark:bg-blue-950/30",
+    },
+    {
+      id: "reflection",
+      icon: Lightbulb,
+      label: t("completion.reflectionLabel"),
+      question: t("completion.reflectionQuestion"),
+      placeholder: t("completion.reflectionPlaceholder"),
+      color: "text-amber-500",
+      bgColor: "bg-amber-50 dark:bg-amber-950/30",
+    },
+    {
+      id: "recommend",
+      icon: ThumbsUp,
+      label: t("completion.recommendLabel"),
+      question: t("completion.recommendQuestion"),
+      placeholder: t("completion.recommendPlaceholder"),
+      color: "text-green-500",
+      bgColor: "bg-green-50 dark:bg-green-950/30",
+    },
+  ];
 
   const currentPrompt = REFLECTION_PROMPTS[currentStep];
   const isLastStep = currentStep === REFLECTION_PROMPTS.length - 1;
@@ -150,7 +152,7 @@ export function CompletionReflectionDialog({
               <BookOpen className="h-6 w-6 text-white" />
             </div>
             <div>
-              <Badge className="bg-green-500 text-white mb-1">완독 축하!</Badge>
+              <Badge className="bg-green-500 text-white mb-1">{t("completion.celebration")}</Badge>
               <DialogTitle className="text-lg">
                 <span className="line-clamp-1">{bookTitle}</span>
               </DialogTitle>
@@ -213,7 +215,7 @@ export function CompletionReflectionDialog({
             {/* 보상 안내 */}
             <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
               <Gift className="h-4 w-4 text-amber-500" />
-              <span>성찰 기록 시 <span className="text-amber-600 font-medium">+15 포인트</span></span>
+              <span>{t("completion.reflectionPoints", { points: "+15" })}</span>
             </div>
           </motion.div>
         </AnimatePresence>
@@ -221,7 +223,7 @@ export function CompletionReflectionDialog({
         {/* 버튼 영역 */}
         <div className="flex items-center justify-between mt-4">
           <Button variant="ghost" size="sm" onClick={handleSkipPrompt} disabled={isSubmitting}>
-            건너뛰기
+            {t("completion.skipPrompt")}
           </Button>
           <div className="flex items-center gap-2">
             {currentStep > 0 && (
@@ -231,7 +233,7 @@ export function CompletionReflectionDialog({
                 onClick={() => setCurrentStep((prev) => prev - 1)}
                 disabled={isSubmitting}
               >
-                이전
+                {t("common.prev")}
               </Button>
             )}
             <Button onClick={handleNext} disabled={isSubmitting}>
@@ -239,14 +241,14 @@ export function CompletionReflectionDialog({
                 hasAnyReflection ? (
                   <>
                     <Sparkles className="h-4 w-4 mr-2" />
-                    저장하기
+                    {t("completion.saveReflection")}
                   </>
                 ) : (
-                  "완료"
+                  t("completion.done")
                 )
               ) : (
                 <>
-                  다음
+                  {t("common.next")}
                   <ChevronRight className="h-4 w-4 ml-1" />
                 </>
               )}
@@ -256,7 +258,7 @@ export function CompletionReflectionDialog({
 
         {/* 별점 (선택적) */}
         <div className="flex items-center justify-center gap-1 pt-4 border-t">
-          <span className="text-sm text-muted-foreground mr-2">별점:</span>
+          <span className="text-sm text-muted-foreground mr-2">{t("completion.rating")}</span>
           {[1, 2, 3, 4, 5].map((rating) => (
             <button
               key={rating}

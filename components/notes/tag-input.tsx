@@ -20,6 +20,7 @@ import { X, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { getUserTags, deleteTag, getTagUsageCount } from "@/app/actions/notes";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/lib/i18n";
 
 interface TagInputProps {
   value: string;
@@ -32,7 +33,10 @@ interface TagInputProps {
  * 태그 입력 컴포넌트
  * 자동완성 및 저장된 태그 목록 제공
  */
-export function TagInput({ value, onChange, placeholder = "태그 입력", label = "태그" }: TagInputProps) {
+export function TagInput({ value, onChange, placeholder, label }: TagInputProps) {
+  const { t } = useTranslation();
+  const resolvedPlaceholder = placeholder || t("notes.tagInputPlaceholder");
+  const resolvedLabel = label || t("notes.tagLabel");
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [userTags, setUserTags] = useState<string[]>([]);
@@ -68,7 +72,7 @@ export function TagInput({ value, onChange, placeholder = "태그 입력", label
       const usageCount = await getTagUsageCount(tag);
       
       if (usageCount === 0) {
-        toast.info("이미 사용되지 않는 태그입니다.");
+        toast.info(t("notes.tagAlreadyUnused"));
         // 태그 목록 새로고침 (이미 삭제된 경우)
         await loadUserTags();
         return;
@@ -79,9 +83,9 @@ export function TagInput({ value, onChange, placeholder = "태그 입력", label
       
       if (result.success) {
         if (result.updatedCount > 0) {
-          toast.success(`태그 "${tag}"가 ${result.updatedCount}개의 기록에서 삭제됐어요.`);
+          toast.success(t("notes.tagDeletedSuccess", { tag, count: result.updatedCount }));
         } else {
-          toast.info(`태그 "${tag}"가 삭제됐어요. (사용된 기록이 없어요.)`);
+          toast.info(t("notes.tagDeletedNoUsage", { tag }));
         }
         
         // 태그 목록 새로고침
@@ -100,7 +104,7 @@ export function TagInput({ value, onChange, placeholder = "태그 입력", label
     } catch (error) {
       console.error("태그 삭제 오류:", error);
       toast.error(
-        error instanceof Error ? error.message : "태그 삭제에 실패했어요."
+        error instanceof Error ? error.message : t("notes.tagDeleteFailed")
       );
     }
   };
@@ -108,7 +112,7 @@ export function TagInput({ value, onChange, placeholder = "태그 입력", label
   // 선택된 태그들 일괄 삭제
   const handleBatchDeleteTags = async () => {
     if (selectedTagsForDelete.size === 0) {
-      toast.info("삭제할 태그를 선택해주세요.");
+      toast.info(t("notes.selectTagsToDelete"));
       return;
     }
 
@@ -155,15 +159,15 @@ export function TagInput({ value, onChange, placeholder = "태그 입력", label
 
       if (successCount > 0) {
         toast.success(
-          `${successCount}개의 태그가 삭제됐어요. (총 ${totalUpdatedCount}개 기록에서 제거됨)`
+          t("notes.tagBatchDeleteSuccess", { count: successCount, total: totalUpdatedCount })
         );
       }
       if (failCount > 0) {
-        toast.error(`${failCount}개의 태그 삭제에 실패했어요.`);
+        toast.error(t("notes.tagBatchDeleteFailed", { count: failCount }));
       }
     } catch (error) {
       console.error("태그 일괄 삭제 오류:", error);
-      toast.error("태그 삭제에 실패했어요.");
+      toast.error(t("notes.tagBatchDeleteError"));
     }
   };
 
@@ -190,7 +194,7 @@ export function TagInput({ value, onChange, placeholder = "태그 입력", label
     
     // 태그 개수 제한 (10개)
     if (currentTags.length > 10) {
-      toast.error("태그는 최대 10개까지 입력할 수 있어요.");
+      toast.error(t("notes.tagMaxError"));
       // 10개까지만 유지
       const limitedTags = currentTags.slice(0, 10);
       const limitedValue = limitedTags.join(", ") + (newValue.endsWith(",") ? ", " : "");
@@ -231,7 +235,7 @@ export function TagInput({ value, onChange, placeholder = "태그 입력", label
     
     // 태그 개수 제한 확인
     if (currentTags.length >= 10) {
-      toast.error("태그는 최대 10개까지 입력할 수 있어요.");
+      toast.error(t("notes.tagMaxError"));
       setShowSuggestions(false);
       return;
     }
@@ -262,7 +266,7 @@ export function TagInput({ value, onChange, placeholder = "태그 입력", label
     
     // 태그 개수 제한 확인
     if (currentTags.length >= 10) {
-      toast.error("태그는 최대 10개까지 입력할 수 있어요.");
+      toast.error(t("notes.tagMaxError"));
       return;
     }
     
@@ -344,7 +348,7 @@ export function TagInput({ value, onChange, placeholder = "태그 입력", label
 
   return (
     <div className="space-y-2">
-      <Label htmlFor="tags">{label}</Label>
+      <Label htmlFor="tags">{resolvedLabel}</Label>
       <div className="relative">
         <Input
           ref={inputRef}
@@ -357,7 +361,7 @@ export function TagInput({ value, onChange, placeholder = "태그 입력", label
               setShowSuggestions(true);
             }
           }}
-          placeholder={placeholder}
+          placeholder={resolvedPlaceholder}
         />
         
         {/* 자동완성 목록 */}
@@ -385,12 +389,12 @@ export function TagInput({ value, onChange, placeholder = "태그 입력", label
         <div className="space-y-2">
           <div className="flex items-center justify-between gap-2">
             <p className="text-xs text-muted-foreground">
-              저장된 태그: <span className="text-foreground">클릭하여 추가</span>
+              {t("notes.savedTags")} <span className="text-foreground">{t("notes.savedTagsClickToAdd")}</span>
             </p>
             <div className="flex items-center gap-2">
               {isDeleteMode && (
                 <span className="text-xs text-muted-foreground">
-                  {selectedTagsForDelete.size}개 선택됨
+                  {t("notes.selectedTagCount", { count: selectedTagsForDelete.size })}
                 </span>
               )}
               <Button
@@ -409,7 +413,7 @@ export function TagInput({ value, onChange, placeholder = "태그 입력", label
                   }
                 }}
               >
-                {isDeleteMode ? "취소" : "태그 삭제"}
+                {isDeleteMode ? t("notes.cancel") : t("notes.deleteTagBtn")}
               </Button>
               {isDeleteMode && selectedTagsForDelete.size > 0 && (
                 <AlertDialog>
@@ -420,22 +424,22 @@ export function TagInput({ value, onChange, placeholder = "태그 입력", label
                       size="sm"
                       className="h-6 px-2 text-xs"
                     >
-                      선택 삭제 ({selectedTagsForDelete.size})
+                      {t("notes.deleteSelected", { count: selectedTagsForDelete.size })}
                     </Button>
                   </AlertDialogTrigger>
                   <AlertDialogContent>
                     <AlertDialogHeader>
-                      <AlertDialogTitle>태그 완전 삭제 확인</AlertDialogTitle>
+                      <AlertDialogTitle>{t("notes.confirmDeleteTagsTitle")}</AlertDialogTitle>
                       <AlertDialogDescription>
-                        선택한 {selectedTagsForDelete.size}개의 태그를 완전히 삭제하시겠습니까?
+                        {t("notes.confirmDeleteTagsDesc", { count: selectedTagsForDelete.size })}
                         <br />
-                        이 태그들이 달린 모든 기록에서 태그가 제거됩니다.
+                        {t("notes.confirmDeleteTagsNote")}
                         <br />
                         <span className="text-destructive font-semibold">
-                          이 작업은 되돌릴 수 없습니다.
+                          {t("notes.deleteIrreversible")}
                         </span>
                         <div className="mt-2 pt-2 border-t">
-                          <p className="text-sm font-medium mb-1">삭제할 태그:</p>
+                          <p className="text-sm font-medium mb-1">{t("notes.tagsToDelete")}</p>
                           <div className="flex flex-wrap gap-1">
                             {Array.from(selectedTagsForDelete).map((tag) => (
                               <Badge key={tag} variant="secondary" className="text-xs">
@@ -447,12 +451,12 @@ export function TagInput({ value, onChange, placeholder = "태그 입력", label
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                      <AlertDialogCancel>취소</AlertDialogCancel>
+                      <AlertDialogCancel>{t("notes.cancel")}</AlertDialogCancel>
                       <AlertDialogAction
                         onClick={handleBatchDeleteTags}
                         variant="destructive"
                       >
-                        삭제
+                        {t("notes.deleteAction")}
                       </AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>
@@ -476,7 +480,7 @@ export function TagInput({ value, onChange, placeholder = "태그 입력", label
                       : "hover:bg-primary hover:text-primary-foreground"
                   )}
                   onClick={() => handleSavedTagClick(tag)}
-                  title={isDeleteMode ? (isSelected ? "선택 해제" : "선택하여 삭제") : "클릭하여 추가"}
+                  title={isDeleteMode ? (isSelected ? t("notes.deselectTag") : t("notes.selectToDelete")) : t("notes.clickToAdd")}
                 >
                   <span className="truncate max-w-[120px]">{tag}</span>
                 </Badge>
@@ -491,7 +495,7 @@ export function TagInput({ value, onChange, placeholder = "태그 입력", label
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <p className="text-xs text-muted-foreground">
-              입력된 태그:
+              {t("notes.enteredTags")}
               <span className={`ml-1 font-semibold ${currentTags.length >= 10 ? "text-destructive" : "text-foreground"}`}>
                 {currentTags.length}/10
               </span>
@@ -511,8 +515,8 @@ export function TagInput({ value, onChange, placeholder = "태그 입력", label
                     handleTagRemove(tag);
                   }}
                   className="ml-1 h-5 w-5 rounded-full flex items-center justify-center text-muted-foreground hover:bg-destructive hover:text-destructive-foreground transition-colors shrink-0"
-                  aria-label={`${tag} 태그 제거`}
-                  title="태그 제거"
+                  aria-label={t("notes.tagRemoveAriaLabel", { tag })}
+                  title={t("notes.tagRemoveTitle")}
                 >
                   <X className="h-3 w-3" />
                 </button>
@@ -521,7 +525,7 @@ export function TagInput({ value, onChange, placeholder = "태그 입력", label
           </div>
           {currentTags.length >= 10 && (
             <p className="text-xs text-destructive font-medium">
-              태그는 최대 10개까지 입력할 수 있어요.
+              {t("notes.tagMaxError")}
             </p>
           )}
         </div>

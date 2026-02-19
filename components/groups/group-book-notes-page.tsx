@@ -23,6 +23,7 @@ import {
 import { getImageUrl, isValidImageUrl } from "@/lib/utils/image";
 import { getGroupBookNoteCounts } from "@/app/actions/groups";
 import { useMediaQuery } from "@/hooks/use-media-query";
+import { useTranslation } from "@/lib/i18n";
 
 interface GroupBookNotesPageProps {
   groupId: string;
@@ -48,6 +49,7 @@ export function GroupBookNotesPage({
   hasMyNotes = false,
 }: GroupBookNotesPageProps) {
   const router = useRouter();
+  const { t } = useTranslation();
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [noteCount, setNoteCount] = useState<number | null>(null);
@@ -79,7 +81,7 @@ export function GroupBookNotesPage({
       {/* 브레드크럼 네비게이션 */}
       <nav className="flex items-center gap-2 text-sm text-muted-foreground overflow-x-auto pb-2">
         <Link href="/groups" className="hover:text-foreground whitespace-nowrap">
-          모임
+          {t("groups.groups")}
         </Link>
         <ChevronRight className="h-4 w-4 flex-shrink-0" />
         <Link
@@ -100,9 +102,9 @@ export function GroupBookNotesPage({
           </Button>
         </Link>
         <div className="min-w-0">
-          <h1 className="text-xl md:text-2xl font-bold truncate">공유 기록</h1>
+          <h1 className="text-xl md:text-2xl font-bold truncate">{t("groups.sharedNotes")}</h1>
           <p className="text-sm text-muted-foreground">
-            모임원들이 공유한 기록을 확인하세요
+            {t("groups.membersNotes")}
           </p>
         </div>
       </div>
@@ -134,12 +136,12 @@ export function GroupBookNotesPage({
             <div className="flex-1 min-w-0 flex flex-col">
               <div className="flex items-center gap-2 mb-2 flex-wrap">
                 <Badge variant="secondary" className="text-xs">
-                  지정도서
+                  {t("groups.designatedBookLabel")}
                 </Badge>
                 {noteCount !== null && noteCount > 0 && (
                   <Badge variant="outline" className="text-xs">
                     <MessageSquare className="mr-1 h-3 w-3" />
-                    {noteCount}개 기록
+                    {t("groups.noteCountLabel").replace("{count}", String(noteCount))}
                   </Badge>
                 )}
               </div>
@@ -166,7 +168,7 @@ export function GroupBookNotesPage({
                   className="flex-1 sm:flex-none"
                 >
                   <Share2 className="mr-2 h-4 w-4" />
-                  내 기록 공유
+                  {t("groups.shareNote")}
                 </Button>
                 <Button
                   variant="outline"
@@ -174,7 +176,7 @@ export function GroupBookNotesPage({
                   className="flex-1 sm:flex-none"
                 >
                   <PenLine className="mr-2 h-4 w-4" />
-                  기록 작성
+                  {t("notes.writeNote")}
                 </Button>
               </div>
             </div>
@@ -185,10 +187,10 @@ export function GroupBookNotesPage({
       {/* 공유 기록 피드 */}
       <section>
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold">모임원들의 기록</h3>
+          <h3 className="text-lg font-semibold">{t("groups.membersNotes")}</h3>
           {noteCount !== null && (
             <span className="text-sm text-muted-foreground">
-              총 {noteCount}개
+              {t("groups.totalNotes").replace("{count}", String(noteCount))}
             </span>
           )}
         </div>

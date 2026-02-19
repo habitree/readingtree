@@ -11,6 +11,7 @@ import { updateProfile, updateProfileImage } from "@/app/actions/profile";
 import { toast } from "sonner";
 import { Loader2, Upload, User } from "lucide-react";
 import { getImageUrl, getProxiedImageUrl, smartCompressImage, formatFileSize } from "@/lib/utils/image";
+import { useTranslation } from "@/lib/i18n";
 import type { User as UserType } from "@/types/user";
 
 interface ProfileFormProps {
@@ -22,6 +23,7 @@ interface ProfileFormProps {
  * 프로필 정보 수정 및 이미지 업로드
  */
 export function ProfileForm({ user }: ProfileFormProps) {
+  const { t } = useTranslation();
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -48,7 +50,7 @@ export function ProfileForm({ user }: ProfileFormProps) {
         reading_goal: formData.reading_goal,
       });
 
-      toast.success("저장됨");
+      toast.success(t("profile.saved"));
       // 프로필 수정 후 페이지 새로고침하여 헤더도 갱신
       router.refresh();
       // 약간의 지연 후 다시 새로고침하여 헤더 컴포넌트의 useEffect가 실행되도록 함
@@ -58,7 +60,7 @@ export function ProfileForm({ user }: ProfileFormProps) {
     } catch (error) {
       console.error("프로필 수정 오류:", error);
       toast.error(
-        error instanceof Error ? error.message : "프로필 수정에 실패했습니다."
+        error instanceof Error ? error.message : t("profile.profileUpdateFailed")
       );
     } finally {
       setIsSubmitting(false);
@@ -72,7 +74,7 @@ export function ProfileForm({ user }: ProfileFormProps) {
     // 파일 형식 검증
     const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
     if (!allowedTypes.includes(file.type)) {
-      toast.error("지원하지 않는 파일 형식입니다. (jpg, png, webp만 지원)");
+      toast.error(t("profile.unsupportedFileFormat"));
       return;
     }
 
@@ -102,7 +104,7 @@ export function ProfileForm({ user }: ProfileFormProps) {
 
       const result = await updateProfileImage(fileToUpload);
       setAvatarUrl(result.avatarUrl);
-      toast.success("저장됨");
+      toast.success(t("profile.saved"));
       // 프로필 이미지 업로드 후 페이지 새로고침하여 헤더도 갱신
       router.refresh();
       // 약간의 지연 후 다시 새로고침하여 헤더 컴포넌트의 useEffect가 실행되도록 함
@@ -112,7 +114,7 @@ export function ProfileForm({ user }: ProfileFormProps) {
     } catch (error) {
       console.error("이미지 업로드 오류:", error);
       toast.error(
-        error instanceof Error ? error.message : "이미지 업로드에 실패했습니다."
+        error instanceof Error ? error.message : t("profile.imageUploadFailed")
       );
     } finally {
       setIsUploading(false);
@@ -127,9 +129,9 @@ export function ProfileForm({ user }: ProfileFormProps) {
       {/* 프로필 이미지 */}
       <Card>
         <CardHeader>
-          <CardTitle>프로필 이미지</CardTitle>
+          <CardTitle>{t("profile.profileImage")}</CardTitle>
           <CardDescription>
-            jpg, png, webp 형식, 최대 2MB
+            {t("profile.profileImageDesc")}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -161,17 +163,17 @@ export function ProfileForm({ user }: ProfileFormProps) {
                 {isUploading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    업로드 중...
+                    {t("profile.uploading")}
                   </>
                 ) : (
                   <>
                     <Upload className="mr-2 h-4 w-4" />
-                    이미지 변경
+                    {t("profile.changeImage")}
                   </>
                 )}
               </Button>
               <p className="text-xs text-muted-foreground">
-                권장 크기: 400x400px
+                {t("profile.recommendedSize")}
               </p>
             </div>
           </div>
@@ -181,22 +183,22 @@ export function ProfileForm({ user }: ProfileFormProps) {
       {/* 프로필 정보 */}
       <Card>
         <CardHeader>
-          <CardTitle>프로필 정보</CardTitle>
+          <CardTitle>{t("profile.profileInfoTitle")}</CardTitle>
           <CardDescription>
-            이름과 독서 목표를 수정할 수 있습니다
+            {t("profile.profileInfoDesc")}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="name">이름</Label>
+              <Label htmlFor="name">{t("profile.nameLabel")}</Label>
               <Input
                 id="name"
                 value={formData.name}
                 onChange={(e) =>
                   setFormData({ ...formData, name: e.target.value })
                 }
-                placeholder="이름을 입력하세요"
+                placeholder={t("profile.namePlaceholder")}
                 required
                 maxLength={100}
                 disabled={isSubmitting || isUploading}
@@ -204,7 +206,7 @@ export function ProfileForm({ user }: ProfileFormProps) {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="reading_goal">올해 독서 목표 (권)</Label>
+              <Label htmlFor="reading_goal">{t("profile.readingGoalLabel")}</Label>
               <Input
                 id="reading_goal"
                 type="number"
@@ -217,12 +219,12 @@ export function ProfileForm({ user }: ProfileFormProps) {
                     reading_goal: parseInt(e.target.value, 10) || 0,
                   })
                 }
-                placeholder="1-100 사이의 숫자"
+                placeholder={t("profile.readingGoalPlaceholder")}
                 required
                 disabled={isSubmitting || isUploading}
               />
               <p className="text-xs text-muted-foreground">
-                1-100 사이의 숫자를 입력하세요
+                {t("profile.readingGoalHint")}
               </p>
             </div>
 
@@ -236,10 +238,10 @@ export function ProfileForm({ user }: ProfileFormProps) {
                 {isSubmitting || isUploading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    {isSubmitting ? "저장 중..." : "업로드 중..."}
+                    {isSubmitting ? t("profile.saving") : t("profile.uploading")}
                   </>
                 ) : (
-                  "저장"
+                  t("common.save")
                 )}
               </Button>
             </div>

@@ -5,6 +5,7 @@ import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Grid3x3, Table2, Loader2, List } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/lib/i18n";
 
 type ViewMode = "grid" | "table";
 
@@ -18,6 +19,7 @@ interface ViewModeToggleProps {
  * 모바일에서는 테이블 옵션 숨김 (lg 이상에서만 표시)
  */
 export function ViewModeToggle({ className }: ViewModeToggleProps) {
+  const { t } = useTranslation();
   const router = useRouter();
   const searchParams = useSearchParams();
   const pathname = usePathname();
@@ -58,7 +60,7 @@ export function ViewModeToggle({ className }: ViewModeToggleProps) {
         type="button"
         onClick={() => handleViewChange("grid")}
         disabled={isPending}
-        aria-label="그리드 보기"
+        aria-label={t("books.viewGrid")}
         className={cn(
           "inline-flex items-center justify-center rounded-full h-7 w-7 transition-all",
           currentView === "grid"
@@ -76,7 +78,7 @@ export function ViewModeToggle({ className }: ViewModeToggleProps) {
         type="button"
         onClick={() => handleViewChange("table")}
         disabled={isPending}
-        aria-label={isMobile ? "리스트 보기" : "테이블 보기"}
+        aria-label={isMobile ? t("books.viewList") : t("books.viewTable")}
         className={cn(
           "inline-flex items-center justify-center rounded-full h-7 w-7 transition-all",
           currentView === "table"

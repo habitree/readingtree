@@ -7,6 +7,7 @@ import { FeatureRequestStatusBadge } from "./feature-request-status-badge";
 import { Lightbulb, ChevronRight, ThumbsUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { FeatureRequestWithUser } from "@/types/feature-request";
+import { useTranslation } from "@/lib/i18n";
 
 interface FeatureRequestPreviewSectionProps {
   requests: FeatureRequestWithUser[];
@@ -20,6 +21,7 @@ export function FeatureRequestPreviewSection({
   requests,
   className,
 }: FeatureRequestPreviewSectionProps) {
+  const { t } = useTranslation();
   if (requests.length === 0) {
     return null;
   }
@@ -30,17 +32,17 @@ export function FeatureRequestPreviewSection({
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2 text-base">
             <Lightbulb className="h-5 w-5 text-amber-500" />
-            기능 요청
+            {t("featureRequests.featureRequests")}
           </CardTitle>
           <Button variant="ghost" size="sm" asChild>
             <Link href="/feature-requests" className="flex items-center gap-1">
-              전체 보기
+              {t("featureRequests.viewAll")}
               <ChevronRight className="h-4 w-4" />
             </Link>
           </Button>
         </div>
         <p className="text-sm text-muted-foreground">
-          앱 개선에 참여해주세요!
+          {t("featureRequests.participate")}
         </p>
       </CardHeader>
       <CardContent className="pt-0">

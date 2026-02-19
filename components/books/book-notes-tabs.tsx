@@ -4,6 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { NoteList } from "@/components/notes/note-list";
 import { ProgressLogList } from "./progress-log-list";
 import { FileText, TrendingUp } from "lucide-react";
+import { useTranslation } from "@/lib/i18n";
 import type { NoteWithBook } from "@/types/note";
 
 interface BookNotesTabsProps {
@@ -16,6 +17,7 @@ interface BookNotesTabsProps {
  * "상세 기록" 탭과 "진행 로그" 탭으로 분리
  */
 export function BookNotesTabs({ userBookId, notes }: BookNotesTabsProps) {
+  const { t } = useTranslation();
   // progress 타입 제외한 상세 기록 개수
   const detailNotesCount = notes.filter((n) => n.type !== "progress").length;
   // progress 타입만 있는 진행 로그 개수
@@ -26,7 +28,7 @@ export function BookNotesTabs({ userBookId, notes }: BookNotesTabsProps) {
       <TabsList className="grid w-full grid-cols-2 mb-4">
         <TabsTrigger value="notes" className="flex items-center gap-1.5">
           <FileText className="h-4 w-4" />
-          <span>상세 기록</span>
+          <span>{t("books.detailedRecords")}</span>
           {detailNotesCount > 0 && (
             <span className="ml-1 text-xs bg-muted-foreground/20 text-muted-foreground px-1.5 py-0.5 rounded-full">
               {detailNotesCount}
@@ -35,7 +37,7 @@ export function BookNotesTabs({ userBookId, notes }: BookNotesTabsProps) {
         </TabsTrigger>
         <TabsTrigger value="progress" className="flex items-center gap-1.5">
           <TrendingUp className="h-4 w-4" />
-          <span>진행 로그</span>
+          <span>{t("books.progressLog")}</span>
           {progressNotesCount > 0 && (
             <span className="ml-1 text-xs bg-teal-500/20 text-teal-600 dark:text-teal-400 px-1.5 py-0.5 rounded-full">
               {progressNotesCount}

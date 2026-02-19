@@ -27,6 +27,7 @@ import type { NoteWithBook } from "@/types/note";
 import { FileText, Image as ImageIcon, PenTool, Camera, Trash2, Loader2, BookOpen, TrendingUp } from "lucide-react";
 import { BookLinkRenderer } from "./book-link-renderer";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/lib/i18n";
 
 interface NoteCardProps {
   note: NoteWithBook;
@@ -39,6 +40,7 @@ interface NoteCardProps {
  * 심리적/디자인적/기능적 관점에서 최적화된 레이아웃
  */
 export function NoteCard({ note, showDeleteButton = false, onDelete }: NoteCardProps) {
+  const { t } = useTranslation();
   const [imgError, setImgError] = useState(false);
   const handleImgError = useCallback(() => setImgError(true), []);
 
@@ -87,7 +89,7 @@ export function NoteCard({ note, showDeleteButton = false, onDelete }: NoteCardP
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-0.5">
                   <Badge variant="secondary" className="text-[10px] h-5 px-1.5 bg-teal-100 dark:bg-teal-900/50 text-teal-700 dark:text-teal-300">
-                    진행 기록
+                    {t("notes.progressRecord")}
                   </Badge>
                   {pageNumber && (
                     <span className="text-sm font-semibold text-teal-600 dark:text-teal-400">
@@ -280,13 +282,14 @@ export function NoteCard({ note, showDeleteButton = false, onDelete }: NoteCardP
 /**
  * 삭제 후 콜백을 지원하는 삭제 버튼 래퍼
  */
-function NoteDeleteButtonWithCallback({ 
-  noteId, 
-  onDelete 
-}: { 
-  noteId: string; 
+function NoteDeleteButtonWithCallback({
+  noteId,
+  onDelete
+}: {
+  noteId: string;
   onDelete?: () => void;
 }) {
+  const { t } = useTranslation();
   const [isDeleting, setIsDeleting] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
 
@@ -296,7 +299,7 @@ function NoteDeleteButtonWithCallback({
       const { deleteNote } = await import("@/app/actions/notes");
       await deleteNote(noteId);
       const { toast } = await import("sonner");
-      toast.success("삭제됨");
+      toast.success(t("notes.deleted"));
       setIsOpen(false);
       if (onDelete) {
         onDelete();
@@ -307,7 +310,7 @@ function NoteDeleteButtonWithCallback({
       console.error("기록 삭제 오류:", error);
       const { toast } = await import("sonner");
       toast.error(
-        error instanceof Error ? error.message : "기록 삭제에 실패했습니다."
+        error instanceof Error ? error.message : t("notes.deleteError")
       );
     } finally {
       setIsDeleting(false);
@@ -327,15 +330,15 @@ function NoteDeleteButtonWithCallback({
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>기록 삭제 확인</AlertDialogTitle>
+          <AlertDialogTitle>{t("notes.deleteConfirmTitle")}</AlertDialogTitle>
           <AlertDialogDescription>
-            정말로 이 기록을 삭제하시겠습니까?
+            {t("notes.deleteConfirmDesc")}
             <br />
-            이 작업은 되돌릴 수 없습니다.
+            {t("notes.deleteIrreversible")}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={isDeleting}>취소</AlertDialogCancel>
+          <AlertDialogCancel disabled={isDeleting}>{t("notes.cancel")}</AlertDialogCancel>
           <AlertDialogAction
             onClick={handleDelete}
             disabled={isDeleting}
@@ -344,10 +347,10 @@ function NoteDeleteButtonWithCallback({
             {isDeleting ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                삭제 중...
+                {t("notes.deleting")}
               </>
             ) : (
-              "삭제"
+              t("notes.deleteAction")
             )}
           </AlertDialogAction>
         </AlertDialogFooter>

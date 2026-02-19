@@ -6,6 +6,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Shield, FileText } from "lucide-react";
 import Link from "next/link";
+import { useTranslation } from "@/lib/i18n";
 
 interface ConsentStepProps {
   onNext: (data: { termsAgreed: boolean; privacyAgreed: boolean }) => void;
@@ -17,6 +18,7 @@ interface ConsentStepProps {
  * 이용약관과 개인정보처리방침 동의를 받는 단계
  */
 export function ConsentStep({ onNext, isLoading }: ConsentStepProps) {
+  const { t } = useTranslation();
   const [termsAgreed, setTermsAgreed] = useState(false);
   const [privacyAgreed, setPrivacyAgreed] = useState(false);
 
@@ -40,7 +42,7 @@ export function ConsentStep({ onNext, isLoading }: ConsentStepProps) {
           <Shield className="w-8 h-8 text-primary" />
         </div>
         <div>
-          <h2 className="text-xl font-bold">동의</h2>
+          <h2 className="text-xl font-bold">{t("consentStep.title")}</h2>
         </div>
       </div>
 
@@ -58,7 +60,7 @@ export function ConsentStep({ onNext, isLoading }: ConsentStepProps) {
               disabled={isLoading}
               className="h-5 w-5"
             />
-            <span className="font-medium">전체 동의</span>
+            <span className="font-medium">{t("consentStep.agreeAll")}</span>
           </div>
         </div>
 
@@ -76,8 +78,8 @@ export function ConsentStep({ onNext, isLoading }: ConsentStepProps) {
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
                     <FileText className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-sm font-medium">이용약관</span>
-                    <span className="text-xs text-destructive">(필수)</span>
+                    <span className="text-sm font-medium">{t("consentStep.termsOfService")}</span>
+                    <span className="text-xs text-destructive">{t("consentStep.required")}</span>
                   </div>
                   <Link
                     href="/terms"
@@ -85,11 +87,11 @@ export function ConsentStep({ onNext, isLoading }: ConsentStepProps) {
                     className="text-xs text-primary hover:underline"
                     onClick={(e) => e.stopPropagation()}
                   >
-                    보기
+                    {t("consentStep.viewLink")}
                   </Link>
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  서비스 이용 조건 및 회원 권리/의무에 관한 내용
+                  {t("consentStep.termsDesc")}
                 </p>
               </div>
             </div>
@@ -108,8 +110,8 @@ export function ConsentStep({ onNext, isLoading }: ConsentStepProps) {
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
                     <Shield className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-sm font-medium">개인정보처리방침</span>
-                    <span className="text-xs text-destructive">(필수)</span>
+                    <span className="text-sm font-medium">{t("consentStep.privacyPolicy")}</span>
+                    <span className="text-xs text-destructive">{t("consentStep.required")}</span>
                   </div>
                   <Link
                     href="/privacy"
@@ -117,11 +119,11 @@ export function ConsentStep({ onNext, isLoading }: ConsentStepProps) {
                     className="text-xs text-primary hover:underline"
                     onClick={(e) => e.stopPropagation()}
                   >
-                    보기
+                    {t("consentStep.viewLink")}
                   </Link>
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  개인정보 수집/이용 및 보호에 관한 내용
+                  {t("consentStep.privacyDesc")}
                 </p>
               </div>
             </div>
@@ -136,11 +138,11 @@ export function ConsentStep({ onNext, isLoading }: ConsentStepProps) {
         className="w-full"
         size="lg"
       >
-        {isLoading ? "처리 중..." : "다음"}
+        {isLoading ? t("consentStep.processing") : t("common.next")}
       </Button>
 
       <p className="text-xs text-muted-foreground text-center">
-        약관에 동의하지 않으시면 서비스를 이용하실 수 없습니다.
+        {t("consentStep.noConsentWarning")}
       </p>
     </div>
   );

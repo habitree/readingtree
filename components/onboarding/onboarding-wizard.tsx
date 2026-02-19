@@ -8,6 +8,7 @@ import { ConsentStep, GoalStep, TutorialStep } from "./steps";
 import { agreeToTerms, setReadingGoal } from "@/app/actions/onboarding";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/lib/i18n";
 
 interface OnboardingData {
   termsAgreed: boolean;
@@ -23,18 +24,19 @@ interface OnboardingWizardProps {
   initialStep?: number;
 }
 
-const STEPS = [
-  { id: "consent", title: "약관 동의" },
-  { id: "goal", title: "연간 목표" },
-  { id: "tutorial", title: "ReadTree 시작하기" },
-];
-
 /**
  * 프로그레시브 온보딩 위저드
  * 3단계 (약관 동의 → 목표 설정 → 튜토리얼)를 통합한 온보딩 플로우
  */
 export function OnboardingWizard({ initialStep = 0 }: OnboardingWizardProps) {
+  const { t } = useTranslation();
   const router = useRouter();
+
+  const STEPS = [
+    { id: "consent", title: t("onboarding.consentStep") },
+    { id: "goal", title: t("onboarding.goalStep") },
+    { id: "tutorial", title: t("onboarding.tutorialStep") },
+  ];
   const [currentStep, setCurrentStep] = useState(initialStep);
   const [isLoading, setIsLoading] = useState(false);
   const [data, setData] = useState<Partial<OnboardingData>>({});
@@ -50,17 +52,17 @@ export function OnboardingWizard({ initialStep = 0 }: OnboardingWizardProps) {
         if (typeof window !== "undefined") {
           localStorage.setItem("onboarding_tutorial_completed", "true");
         }
-        toast.success("환영합니다! ReadTree를 시작하세요.");
+        toast.success(t("onboarding.welcomeMessage"));
         router.push("/");
       } catch (error) {
         toast.error(
-          error instanceof Error ? error.message : "약관 동의에 실패했습니다."
+          error instanceof Error ? error.message : t("onboarding.consentFailed")
         );
       } finally {
         setIsLoading(false);
       }
     },
-    [router]
+    [router, t]
   );
 
   // 목표 설정 처리 (프로필 페이지에서 접근 시 사용)
@@ -73,13 +75,13 @@ export function OnboardingWizard({ initialStep = 0 }: OnboardingWizardProps) {
         setCurrentStep(2);
       } catch (error) {
         toast.error(
-          error instanceof Error ? error.message : "목표 설정에 실패했습니다."
+          error instanceof Error ? error.message : t("onboarding.goalFailed")
         );
       } finally {
         setIsLoading(false);
       }
     },
-    []
+    [t]
   );
 
   // 온보딩 완료 처리
@@ -87,9 +89,9 @@ export function OnboardingWizard({ initialStep = 0 }: OnboardingWizardProps) {
     if (typeof window !== "undefined") {
       localStorage.setItem("onboarding_tutorial_completed", "true");
     }
-    toast.success("준비 완료");
+    toast.success(t("onboarding.setupComplete"));
     router.push("/");
-  }, [router]);
+  }, [router, t]);
 
   // 이전 스텝으로 이동 (초기 스텝 이전으로는 이동 불가)
   const handleBack = useCallback(() => {
@@ -134,7 +136,7 @@ export function OnboardingWizard({ initialStep = 0 }: OnboardingWizardProps) {
 
         {/* 브랜딩 */}
         <p className="text-center text-xs text-muted-foreground">
-          © 2026 ReadTree. 독서의 새로운 시작.
+          {t("onboarding.copyright")}
         </p>
       </div>
     </div>

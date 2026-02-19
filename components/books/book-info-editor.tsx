@@ -21,6 +21,7 @@ import { getBookshelves } from "@/app/actions/bookshelves";
 import { BookshelfSelector } from "@/components/bookshelves/bookshelf-selector";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { useTranslation } from "@/lib/i18n";
 import { Bookshelf } from "@/types/bookshelf";
 
 interface BookInfoEditorProps {
@@ -42,6 +43,7 @@ export function BookInfoEditor({
   currentCompletedDates,
   currentBookshelfId,
 }: BookInfoEditorProps) {
+  const { t } = useTranslation();
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [readingReason, setReadingReason] = useState(currentReadingReason || "");
@@ -109,14 +111,14 @@ export function BookInfoEditor({
         await moveBookToBookshelf(userBookId, selectedBookshelfId);
       }
 
-      toast.success("책 정보가 업데이트됐어요.");
+      toast.success(t("books.bookInfoUpdatedSuccess"));
       setOpen(false);
       router.refresh();
     } catch (error) {
       toast.error(
         error instanceof Error
           ? error.message
-          : "책 정보 업데이트에 실패했어요."
+          : t("books.bookInfoUpdateFailed")
       );
     } finally {
       setIsLoading(false);
@@ -142,49 +144,49 @@ export function BookInfoEditor({
       <DialogTrigger asChild>
         <Button variant="outline" size="sm">
           <Pencil className="mr-2 h-4 w-4" />
-          정보 수정
+          {t("books.editInfo")}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[500px]">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>책 정보 수정</DialogTitle>
+            <DialogTitle>{t("books.editBookInfo")}</DialogTitle>
             <DialogDescription>
-              읽는 이유, 시작일, 완독일자, 서재를 수정할 수 있습니다.
+              {t("books.editBookInfoDesc")}
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="bookshelf">서재</Label>
+              <Label htmlFor="bookshelf">{t("books.shelfLabel")}</Label>
               {isLoadingBookshelves ? (
                 <div className="h-10 bg-muted animate-pulse rounded-md" />
               ) : (
                 <BookshelfSelector
                   value={selectedBookshelfId}
                   onValueChange={setSelectedBookshelfId}
-                  placeholder="서재를 선택하세요"
+                  placeholder={t("books.selectShelfPlaceholder")}
                 />
               )}
               <p className="text-xs text-muted-foreground">
-                이 책이 속한 서재를 선택하세요.
+                {t("books.selectShelfDesc")}
               </p>
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="reading-reason">읽는 이유</Label>
+              <Label htmlFor="reading-reason">{t("books.readingReasonLabel")}</Label>
               <Textarea
                 id="reading-reason"
-                placeholder="이 책을 읽는 이유를 입력하세요..."
+                placeholder={t("books.readingReasonPlaceholder")}
                 value={readingReason}
                 onChange={(e) => setReadingReason(e.target.value)}
                 rows={3}
                 className="resize-none"
               />
               <p className="text-xs text-muted-foreground">
-                이 책을 읽게 된 계기나 목적을 자유롭게 작성해주세요.
+                {t("books.readingReasonDesc")}
               </p>
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="started-at">시작일</Label>
+              <Label htmlFor="started-at">{t("books.startDateLabel")}</Label>
               <div className="relative">
                 <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -196,12 +198,12 @@ export function BookInfoEditor({
                 />
               </div>
               <p className="text-xs text-muted-foreground">
-                이 책을 읽기 시작한 날짜를 선택하세요.
+                {t("books.startDateDesc")}
               </p>
             </div>
             <div className="grid gap-2">
               <div className="flex items-center justify-between">
-                <Label htmlFor="completed-dates">완독일자</Label>
+                <Label htmlFor="completed-dates">{t("books.completedDatesLabel")}</Label>
                 <Button
                   type="button"
                   variant="outline"
@@ -211,12 +213,12 @@ export function BookInfoEditor({
                   className="h-8"
                 >
                   <Plus className="h-3 w-3 mr-1" />
-                  추가
+                  {t("books.addLabel")}
                 </Button>
               </div>
               {completedDates.length === 0 ? (
                 <p className="text-xs text-muted-foreground py-2">
-                  완독일자가 없습니다. 추가 버튼을 눌러 완독일자를 등록하세요.
+                  {t("books.noCompletedDatesMessage")}
                 </p>
               ) : (
                 <div className="space-y-2">
@@ -247,7 +249,7 @@ export function BookInfoEditor({
                 </div>
               )}
               <p className="text-xs text-muted-foreground">
-                여러 번 완독한 경우 각 완독일자를 추가할 수 있습니다.
+                {t("books.completedDatesDesc")}
               </p>
             </div>
           </div>
@@ -258,10 +260,10 @@ export function BookInfoEditor({
               onClick={() => setOpen(false)}
               disabled={isLoading}
             >
-              취소
+              {t("books.cancelLabel")}
             </Button>
             <Button type="submit" disabled={isLoading}>
-              {isLoading ? "저장 중..." : "저장"}
+              {isLoading ? t("books.savingLabel") : t("books.saveLabel")}
             </Button>
           </DialogFooter>
         </form>

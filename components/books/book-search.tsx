@@ -11,6 +11,7 @@ import { addBook } from "@/app/actions/books";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
+import { useTranslation } from "@/lib/i18n";
 
 interface SearchResult {
   isbn: string | null;
@@ -33,6 +34,7 @@ interface BookSearchProps {
  * 네이버 API를 통해 책을 검색하고 추가할 수 있습니다.
  */
 export function BookSearch({ onBookAdded, onSelectBook, excludeBookIds, showAlreadyAdded = false }: BookSearchProps) {
+  const { t } = useTranslation();
   const router = useRouter();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
@@ -209,7 +211,7 @@ export function BookSearch({ onBookAdded, onSelectBook, excludeBookIds, showAlre
       } else {
         // 기존 동작: 내 서재에 추가
         const result = await addBook(book, "reading");
-        toast.success("책이 추가됐어요.");
+        toast.success(t("books.bookAddedSuccess"));
         setQuery("");
         setResults([]);
         onBookAdded?.();
@@ -219,7 +221,7 @@ export function BookSearch({ onBookAdded, onSelectBook, excludeBookIds, showAlre
     } catch (error) {
       console.error("책 추가 오류:", error);
       toast.error(
-        error instanceof Error ? error.message : "책 추가에 실패했어요."
+        error instanceof Error ? error.message : t("books.bookAddFailed")
       );
     } finally {
       setIsAdding(null);
@@ -232,7 +234,7 @@ export function BookSearch({ onBookAdded, onSelectBook, excludeBookIds, showAlre
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
           type="search"
-          placeholder="책 제목이나 저자를 검색하세요..."
+          placeholder={t("books.searchPlaceholderFull")}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onCompositionStart={handleCompositionStart}
@@ -291,10 +293,10 @@ export function BookSearch({ onBookAdded, onSelectBook, excludeBookIds, showAlre
                     {isAdding === (book.isbn || book.title) ? (
                       <>
                         <Loader2 className="mr-2 h-3 w-3 animate-spin" />
-                        추가 중...
+                        {t("books.addingBook")}
                       </>
                     ) : (
-                      "추가"
+                      t("books.addButton")
                     )}
                   </Button>
                 </div>
@@ -307,7 +309,7 @@ export function BookSearch({ onBookAdded, onSelectBook, excludeBookIds, showAlre
 
       {query && !isSearching && results.length === 0 && (
         <div className="text-center py-8 text-muted-foreground">
-          검색 결과가 없습니다.
+          {t("books.noResults")}
         </div>
       )}
     </div>

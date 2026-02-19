@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Bot } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/lib/i18n";
 
 interface TypingIndicatorProps {
   /** 작은 크기 (인라인 사용) */
@@ -98,16 +99,18 @@ export function InlineTypingIndicator({ className }: { className?: string }) {
  * 텍스트와 함께 표시되는 타이핑 상태
  */
 export function TypingStatus({
-  text = "생각하는 중",
+  text,
   className,
 }: {
   text?: string;
   className?: string;
 }) {
+  const { t } = useTranslation();
+  const resolvedText = text ?? t("chat.thinking");
   return (
     <div className={cn("flex items-center gap-2 text-sm text-muted-foreground", className)}>
       <Bot className="h-4 w-4 text-primary animate-pulse" />
-      <span>{text}</span>
+      <span>{resolvedText}</span>
       <InlineTypingIndicator />
     </div>
   );

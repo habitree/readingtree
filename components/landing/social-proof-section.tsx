@@ -2,46 +2,49 @@
 
 import { Quote, MessageSquarePlus, ArrowRight } from "lucide-react";
 import Link from "next/link";
-
-const useCases = [
-    {
-        id: 1,
-        title: "독서가 자산이 되는 경험",
-        content: "단순히 읽는 것을 넘어, 수집된 문장이 나만의 지식 데이터베이스로 구축됩니다.",
-        category: "마케터의 사용 예시",
-        color: "bg-paper-50",
-    },
-    {
-        id: 2,
-        title: "5분 만에 끝내는 독서 노트",
-        content: "이미지 텍스트 추출 기술로 기록 시간을 90% 이상 단축하고 독서에 더 집중하세요.",
-        category: "학습/성장 활용 예시",
-        color: "bg-charcoal-50",
-    },
-    {
-        id: 3,
-        title: "전문가 수준의 지식 공유",
-        content: "수집한 문장을 디자인 카드뉴스로 즉시 변환하여 커뮤니티나 블로그에 공유할 수 있습니다.",
-        category: "콘텐츠 개발 활용 예시",
-        color: "bg-forest-50",
-    },
-    {
-        id: 4,
-        title: "강력한 문장 검색",
-        content: "기록한 수천 개의 문장 중 필요한 내용을 키워드 하나로 1초 만에 찾아낼 수 있습니다.",
-        category: "리서치 활용 예시",
-        color: "bg-paper-100",
-    },
-    {
-        id: 5,
-        title: "채워지는 서재의 즐거움",
-        content: "디지털 서재가 시각적으로 채워지는 과정을 보며 독서 습관을 지속할 동기를 얻습니다.",
-        category: "습관 형성 활용 예시",
-        color: "bg-white",
-    }
-];
+import { useTranslation } from "@/lib/i18n";
 
 export function SocialProofSection() {
+    const { t } = useTranslation();
+
+    const useCases = [
+        {
+            id: 1,
+            title: t("landing.socialProof.case1Title"),
+            content: t("landing.socialProof.case1Desc"),
+            category: t("landing.socialProof.case1Category"),
+            color: "bg-paper-50",
+        },
+        {
+            id: 2,
+            title: t("landing.socialProof.case2Title"),
+            content: t("landing.socialProof.case2Desc"),
+            category: t("landing.socialProof.case2Category"),
+            color: "bg-charcoal-50",
+        },
+        {
+            id: 3,
+            title: t("landing.socialProof.case3Title"),
+            content: t("landing.socialProof.case3Desc"),
+            category: t("landing.socialProof.case3Category"),
+            color: "bg-forest-50",
+        },
+        {
+            id: 4,
+            title: t("landing.socialProof.case4Title"),
+            content: t("landing.socialProof.case4Desc"),
+            category: t("landing.socialProof.case4Category"),
+            color: "bg-paper-100",
+        },
+        {
+            id: 5,
+            title: t("landing.socialProof.case5Title"),
+            content: t("landing.socialProof.case5Desc"),
+            category: t("landing.socialProof.case5Category"),
+            color: "bg-white",
+        },
+    ];
+
     return (
         <section className="py-32 bg-paper-50 relative overflow-hidden font-sans">
             {/* Background Decoration */}
@@ -50,13 +53,12 @@ export function SocialProofSection() {
 
             <div className="container px-4 md:px-6 relative z-10">
                 <div className="text-center mb-20 max-w-3xl mx-auto">
-                    <span className="text-forest-600 font-bold tracking-wider uppercase text-sm mb-4 block">활용 사례</span>
+                    <span className="text-forest-600 font-bold tracking-wider uppercase text-sm mb-4 block">{t("landing.socialProof.eyebrow")}</span>
                     <h2 className="text-4xl md:text-5xl font-bold tracking-tight mb-6 font-serif text-charcoal-900 break-keep">
-                        ReadTree와 함께<br />
-                        당신의 독서가 변화합니다
+                        {t("landing.socialProof.headline")}
                     </h2>
                     <p className="text-xl text-charcoal-600 font-serif leading-relaxed">
-                        기록의 번거로움은 줄이고, 독서의 가치는 높이는<br className="hidden md:block" /> ReadTree만의 사용 시나리오를 만나보세요.
+                        {t("landing.socialProof.subtitle")}
                     </p>
                 </div>
 
@@ -89,12 +91,10 @@ export function SocialProofSection() {
                                 <MessageSquarePlus className="w-6 h-6" />
                             </div>
                             <h3 className="text-2xl font-bold font-serif mb-4">
-                                발전하는 ReadTree,<br />의견을 들려주세요
+                                {t("landing.socialProof.featureRequestTitle")}
                             </h3>
                             <p className="text-charcoal-300 mb-8 break-keep text-sm leading-relaxed font-sans">
-                                ReadTree는 사용자 여러분의 제안을 바탕으로<br />
-                                매일 더 나은 독서 파트너가 되어가고 있습니다.<br />
-                                필요한 기능이 있다면 언제든 알려주세요.
+                                {t("landing.socialProof.featureRequestDesc")}
                             </p>
 
                             <div className="mt-auto">
@@ -102,7 +102,7 @@ export function SocialProofSection() {
                                     href="mailto:contact@readtree.com?subject=ReadTree%20기능%20제안"
                                     className="inline-flex items-center justify-center w-full bg-paper-50 text-charcoal-900 h-14 rounded-2xl font-bold hover:bg-forest-100 transition-colors gap-2"
                                 >
-                                    기능 요청하기
+                                    {t("landing.socialProof.featureRequestCta")}
                                     <ArrowRight className="w-4 h-4" />
                                 </Link>
                             </div>

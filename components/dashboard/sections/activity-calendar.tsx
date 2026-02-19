@@ -6,13 +6,17 @@ import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { Flame } from "lucide-react";
 import type { DailyRecordByType } from "@/app/actions/stats";
+import { useTranslation } from "@/lib/i18n";
 
 interface ActivityCalendarProps {
   dailyRecordsByType: Record<string, DailyRecordByType>;
   className?: string;
 }
 
-const DAY_LABELS = ["일", "월", "화", "수", "목", "금", "토"];
+const DAY_LABEL_KEYS = [
+  "common.day0Sun", "common.day1Mon", "common.day2Tue", "common.day3Wed",
+  "common.day4Thu", "common.day5Fri", "common.day6Sat",
+] as const;
 
 // 타입별 색상 정의 (더 부드러운 톤)
 const TYPE_COLORS = {
@@ -20,25 +24,25 @@ const TYPE_COLORS = {
     base: "bg-violet-400/90 dark:bg-violet-500/80",
     light: "bg-violet-200 dark:bg-violet-800/50",
     text: "text-violet-600 dark:text-violet-400",
-    label: "사진 필사",
+    labelKey: "notes.typeTranscription" as const,
   },
   photo: {
     base: "bg-sky-400/90 dark:bg-sky-500/80",
     light: "bg-sky-200 dark:bg-sky-800/50",
     text: "text-sky-600 dark:text-sky-400",
-    label: "사진",
+    labelKey: "notes.typePhoto" as const,
   },
   memo: {
     base: "bg-emerald-400/90 dark:bg-emerald-500/80",
     light: "bg-emerald-200 dark:bg-emerald-800/50",
     text: "text-emerald-600 dark:text-emerald-400",
-    label: "기록",
+    labelKey: "notes.typeMemo" as const,
   },
   progress: {
     base: "bg-amber-400/90 dark:bg-amber-500/80",
     light: "bg-amber-200 dark:bg-amber-800/50",
     text: "text-amber-600 dark:text-amber-400",
-    label: "진행",
+    labelKey: "notes.typeProgress" as const,
   },
 };
 
@@ -50,6 +54,7 @@ export function ActivityCalendar({
   dailyRecordsByType,
   className,
 }: ActivityCalendarProps) {
+  const { t } = useTranslation();
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -177,19 +182,19 @@ export function ActivityCalendar({
           <div className="flex items-center gap-1.5">
             <Flame className="w-3.5 h-3.5 text-orange-500" />
             <span className="text-xs font-medium text-slate-700 dark:text-slate-300">
-              독서 활동
+              {t("dashboard.readingActivity")}
             </span>
             <span className="text-[10px] text-slate-400 dark:text-slate-500 ml-0.5">
-              30일
+              30{t("common.day")}
             </span>
           </div>
           <div className="flex items-center gap-1.5 text-[11px]">
             <span className="text-slate-500 dark:text-slate-400">
-              <span className="font-semibold text-forest-600 dark:text-forest-400">{stats.recordedDays}</span>일
+              <span className="font-semibold text-forest-600 dark:text-forest-400">{stats.recordedDays}</span>{t("common.day")}
             </span>
             <span className="text-slate-300 dark:text-slate-600">·</span>
             <span className="text-slate-500 dark:text-slate-400">
-              <span className="font-semibold text-forest-600 dark:text-forest-400">{stats.totalRecords}</span>개
+              <span className="font-semibold text-forest-600 dark:text-forest-400">{stats.totalRecords}</span>{t("common.count")}
             </span>
           </div>
         </div>
@@ -203,7 +208,7 @@ export function ActivityCalendar({
                 key={dayIndex}
                 className="text-[8px] text-slate-400 dark:text-slate-500 leading-none h-[10px] flex items-center"
               >
-                {DAY_LABELS[dayIndex]}
+                {t(DAY_LABEL_KEYS[dayIndex])}
               </span>
             ))}
           </div>
@@ -265,7 +270,7 @@ export function ActivityCalendar({
                   <span className="text-[11px] font-medium text-slate-700 dark:text-slate-300">
                     {selectedDayInfo.displayDate}
                     {selectedDayInfo.isToday && (
-                      <span className="ml-1 text-forest-500 font-semibold">오늘</span>
+                      <span className="ml-1 text-forest-500 font-semibold">{t("dashboard.todayLabel")}</span>
                     )}
                   </span>
                 </div>
@@ -274,27 +279,27 @@ export function ActivityCalendar({
                     <>
                       {selectedDayInfo.records.transcription > 0 && (
                         <span className="text-violet-600 dark:text-violet-400">
-                          사진 필사 {selectedDayInfo.records.transcription}
+                          {t("notes.typeTranscription")} {selectedDayInfo.records.transcription}
                         </span>
                       )}
                       {selectedDayInfo.records.photo > 0 && (
                         <span className="text-sky-600 dark:text-sky-400">
-                          사진 {selectedDayInfo.records.photo}
+                          {t("notes.typePhoto")} {selectedDayInfo.records.photo}
                         </span>
                       )}
                       {(selectedDayInfo.records.memo > 0 || selectedDayInfo.records.quote > 0) && (
                         <span className="text-emerald-600 dark:text-emerald-400">
-                          기록 {selectedDayInfo.records.memo + selectedDayInfo.records.quote}
+                          {t("notes.typeMemo")} {selectedDayInfo.records.memo + selectedDayInfo.records.quote}
                         </span>
                       )}
                       {selectedDayInfo.records.progress > 0 && (
                         <span className="text-amber-600 dark:text-amber-400">
-                          진행 {selectedDayInfo.records.progress}
+                          {t("notes.typeProgress")} {selectedDayInfo.records.progress}
                         </span>
                       )}
                     </>
                   ) : (
-                    <span className="text-slate-400 dark:text-slate-500">기록 없음</span>
+                    <span className="text-slate-400 dark:text-slate-500">{t("dashboard.noRecords")}</span>
                   )}
                 </div>
               </div>
@@ -311,7 +316,7 @@ export function ActivityCalendar({
               {Object.entries(TYPE_COLORS).map(([key, value]) => (
                 <div key={key} className="flex items-center gap-1">
                   <div className={cn("w-2 h-2 rounded-sm", value.base)} />
-                  <span className="text-[9px] text-slate-500 dark:text-slate-400">{value.label}</span>
+                  <span className="text-[9px] text-slate-500 dark:text-slate-400">{t(value.labelKey)}</span>
                 </div>
               ))}
             </motion.div>

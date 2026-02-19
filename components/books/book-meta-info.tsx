@@ -1,6 +1,9 @@
+"use client";
+
 import { Building2, Hash, Calendar, Trophy } from "lucide-react";
 import { formatDate } from "@/lib/utils/date";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/lib/i18n";
 
 interface BookMetaInfoProps {
   publisher?: string | null;
@@ -24,6 +27,7 @@ export function BookMetaInfo({
   useGrid = true,
   className,
 }: BookMetaInfoProps) {
+  const { t } = useTranslation();
   const hasAnyMeta = publisher || isbn || startedAt || completedDates.length > 0;
 
   if (!hasAnyMeta) {
@@ -52,14 +56,14 @@ export function BookMetaInfo({
       {startedAt && (
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Calendar className="w-4 h-4 shrink-0 opacity-60" />
-          <span>{formatDate(startedAt)} 시작</span>
+          <span>{t("books.metaStartedAt", { date: formatDate(startedAt) })}</span>
         </div>
       )}
       {completedDates.length > 0 && (
         <div className="flex items-center gap-2 text-sm">
           <Trophy className="w-4 h-4 shrink-0 text-emerald-500" />
           <span className="text-emerald-600 dark:text-emerald-400 font-medium">
-            {completedDates.length}회 완독
+            {t("books.metaCompletedTimes", { count: completedDates.length })}
           </span>
         </div>
       )}

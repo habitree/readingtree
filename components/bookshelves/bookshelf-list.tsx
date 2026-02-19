@@ -3,6 +3,7 @@
 import { BookshelfCard } from "./bookshelf-card";
 import { BookshelfWithStats } from "@/types/bookshelf";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useTranslation } from "@/lib/i18n";
 
 interface BookshelfListProps {
   bookshelves: BookshelfWithStats[];
@@ -11,6 +12,7 @@ interface BookshelfListProps {
 }
 
 export function BookshelfList({ bookshelves, isLoading, isGuest = false }: BookshelfListProps) {
+  const { t } = useTranslation();
   if (isLoading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -25,7 +27,7 @@ export function BookshelfList({ bookshelves, isLoading, isGuest = false }: Books
     return (
       <div className="text-center py-12">
         <p className="text-muted-foreground">
-          {isGuest ? "체험 서재가 없어요." : "서재가 없습니다. 새 서재를 만들어보세요."}
+          {isGuest ? t("bookshelves.noBookshelvesGuest") : t("bookshelves.noBookshelves")}
         </p>
       </div>
     );

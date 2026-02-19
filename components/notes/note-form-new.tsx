@@ -28,6 +28,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { BookMentionTextarea } from "./book-mention-textarea";
 import { cn } from "@/lib/utils";
 import { useNoteForm } from "@/hooks/use-note-form";
+import { useTranslation } from "@/lib/i18n";
 
 // 스키마: 모든 값은 선택이지만 완전히 빈값은 불가
 const noteFormSchema = z.object({
@@ -60,6 +61,7 @@ interface NoteFormNewProps {
  * - 페이지번호, 태그, 공개여부
  */
 export function NoteFormNew({ bookId }: NoteFormNewProps) {
+  const { t } = useTranslation();
   const router = useRouter();
   const [applyStamp, setApplyStamp] = useState(false);
   const [showOptionalFields, setShowOptionalFields] = useState(false);
@@ -148,7 +150,7 @@ export function NoteFormNew({ bookId }: NoteFormNewProps) {
         {/* 안내 메시지 */}
         <div className="flex items-center gap-2 p-2.5 rounded-lg bg-primary/5 border border-primary/10 text-sm text-muted-foreground">
           <Info className="w-4 h-4 text-primary shrink-0" />
-          <span>구절, 생각, 이미지 중 <span className="text-primary font-medium">하나 이상</span> 입력</span>
+          <span>{t("notes.inputAtLeastOne")}</span>
         </div>
 
         {/* 인상깊은 구절 */}
@@ -156,15 +158,15 @@ export function NoteFormNew({ bookId }: NoteFormNewProps) {
           <div className="flex items-center justify-between">
             <Label htmlFor="quoteContent" className="flex items-center gap-1.5 text-sm text-blue-700 dark:text-blue-300">
               <Quote className="w-3.5 h-3.5" />
-              구절
+              {t("notes.quoteLabel")}
               {quoteContent.length > 0 && (
                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
               )}
             </Label>
             <TextPreviewDialog
-              title="인상깊은 구절"
+              title={t("notes.impressiveQuoteLabel")}
               content={quoteContent}
-              label="확장"
+              label={t("notes.expand")}
               onSave={(value) => setValue("quoteContent", value)}
               maxLength={5000}
             />
@@ -173,7 +175,7 @@ export function NoteFormNew({ bookId }: NoteFormNewProps) {
             id="quoteContent"
             value={quoteContent}
             onValueChange={(value) => setValue("quoteContent", value)}
-            placeholder="인상깊은 문장"
+            placeholder={t("notes.quoteInputPlaceholder")}
             rows={3}
             className="resize-none bg-white/70 dark:bg-slate-900/50 border-blue-200/50 dark:border-blue-800/30 text-sm"
           />
@@ -187,15 +189,15 @@ export function NoteFormNew({ bookId }: NoteFormNewProps) {
           <div className="flex items-center justify-between">
             <Label htmlFor="memoContent" className="flex items-center gap-1.5 text-sm text-amber-700 dark:text-amber-300">
               <MessageSquare className="w-3.5 h-3.5" />
-              생각
+              {t("notes.thoughtLabel")}
               {memoContent.length > 0 && (
                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
               )}
             </Label>
             <TextPreviewDialog
-              title="내 생각"
+              title={t("notes.myThoughtLabel")}
               content={memoContent}
-              label="확장"
+              label={t("notes.expand")}
               onSave={(value) => setValue("memoContent", value)}
               maxLength={10000}
             />
@@ -204,7 +206,7 @@ export function NoteFormNew({ bookId }: NoteFormNewProps) {
             id="memoContent"
             value={memoContent}
             onValueChange={(value) => setValue("memoContent", value)}
-            placeholder="느낀 점, 깨달음"
+            placeholder={t("notes.memoInputPlaceholder")}
             rows={4}
             className="resize-none bg-white/70 dark:bg-slate-900/50 border-amber-200/50 dark:border-amber-800/30 text-sm"
           />
@@ -218,7 +220,7 @@ export function NoteFormNew({ bookId }: NoteFormNewProps) {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Camera className="w-4 h-4 text-slate-500" />
-              <Label className="text-sm font-medium">이미지</Label>
+              <Label className="text-sm font-medium">{t("notes.imageLabel")}</Label>
               {images.length > 0 && (
                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
               )}
@@ -236,7 +238,7 @@ export function NoteFormNew({ bookId }: NoteFormNewProps) {
                 className="text-xs cursor-pointer flex items-center gap-1"
               >
                 <Sparkles className="w-3 h-3 text-amber-500" />
-                스탬프
+                {t("notes.stamp")}
               </Label>
             </div>
           </div>
@@ -253,7 +255,7 @@ export function NoteFormNew({ bookId }: NoteFormNewProps) {
                 }`}
               >
                 <PenTool className="h-4 w-4 text-purple-600 dark:text-purple-400" />
-                <span className="font-medium text-sm text-purple-700 dark:text-purple-300">사진 필사</span>
+                <span className="font-medium text-sm text-purple-700 dark:text-purple-300">{t("notes.photoTranscription")}</span>
               </div>
             </label>
             <label
@@ -267,7 +269,7 @@ export function NoteFormNew({ bookId }: NoteFormNewProps) {
                 }`}
               >
                 <Camera className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                <span className="font-medium text-sm text-emerald-700 dark:text-emerald-300">사진</span>
+                <span className="font-medium text-sm text-emerald-700 dark:text-emerald-300">{t("notes.photoLabel")}</span>
               </div>
             </label>
           </div>
@@ -294,7 +296,7 @@ export function NoteFormNew({ bookId }: NoteFormNewProps) {
         {/* 업로드된 이미지 표시 */}
         {images.length > 0 && (
           <div className="space-y-2">
-            <Label>업로드된 이미지 ({images.length}개)</Label>
+            <Label>{t("notes.uploadedImages", { count: images.length })}</Label>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
               {images.map((url, index) => {
                 const imageUrl = getImageUrl(url);
@@ -304,19 +306,19 @@ export function NoteFormNew({ bookId }: NoteFormNewProps) {
                       {isValidImageUrl(url) ? (
                         <Image
                           src={imageUrl}
-                          alt={`업로드된 이미지 ${index + 1}`}
+                          alt={t("notes.uploadedImageAlt", { index: index + 1 })}
                           fill
                           className="object-cover"
                           sizes="(max-width: 768px) 50vw, 33vw"
                           unoptimized={true}
                           onError={() => {
                             console.error("[이미지 표시] 로드 실패:", { url: imageUrl.substring(0, 100), index });
-                            toast.error(`이미지 ${index + 1} 로드에 실패했어요.`);
+                            toast.error(t("notes.imageLoadError", { index: index + 1 }));
                           }}
                         />
                       ) : (
                         <div className="absolute inset-0 flex items-center justify-center bg-muted text-muted-foreground text-xs">
-                          이미지 로드 실패
+                          {t("notes.imageLoadFailed")}
                         </div>
                       )}
                     </div>
@@ -340,7 +342,7 @@ export function NoteFormNew({ bookId }: NoteFormNewProps) {
             </div>
             {uploadType && (
               <p className="text-xs text-muted-foreground">
-                타입: {uploadType === "photo" ? "이미지" : "사진 필사"}
+                {uploadType === "photo" ? t("notes.typeImageLabel") : t("notes.photoTranscription")}
               </p>
             )}
           </div>
@@ -355,9 +357,9 @@ export function NoteFormNew({ bookId }: NoteFormNewProps) {
           >
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Settings2 className="h-4 w-4" />
-              <span>추가 옵션</span>
+              <span>{t("notes.additionalOptions")}</span>
               <span className="text-xs text-muted-foreground/70">
-                (제목, 페이지, 태그, 공개)
+                ({t("notes.additionalOptionsDesc")})
               </span>
             </div>
             <motion.div
@@ -384,10 +386,10 @@ export function NoteFormNew({ bookId }: NoteFormNewProps) {
                     name="title"
                     render={({ field }) => (
                       <FormItem className="space-y-1.5">
-                        <FormLabel className="text-sm">제목</FormLabel>
+                        <FormLabel className="text-sm">{t("notes.titleLabel")}</FormLabel>
                         <FormControl>
                           <Input
-                            placeholder="기록 제목 (선택)"
+                            placeholder={t("notes.titlePlaceholder")}
                             {...field}
                             value={field.value || ""}
                             className="text-sm h-9"
@@ -400,11 +402,11 @@ export function NoteFormNew({ bookId }: NoteFormNewProps) {
 
                   {/* 페이지 번호 */}
                   <div className="space-y-1.5">
-                    <Label htmlFor="pageNumbers" className="text-sm">페이지</Label>
+                    <Label htmlFor="pageNumbers" className="text-sm">{t("notes.pageMobilePlaceholder")}</Label>
                     <Input
                       id="pageNumbers"
                       {...register("pageNumbers")}
-                      placeholder="예: 42, 100-105"
+                      placeholder={t("notes.pagePlaceholder")}
                       className="max-w-xs text-sm h-9"
                     />
                     {errors.pageNumbers && (
@@ -426,7 +428,7 @@ export function NoteFormNew({ bookId }: NoteFormNewProps) {
                       onCheckedChange={(checked) => setValue("isPublic", !checked)}
                     />
                     <Label htmlFor="isPublic" className="cursor-pointer text-sm">
-                      {isPublic ? "공개" : "비공개"}
+                      {isPublic ? t("notes.public") : t("notes.private")}
                     </Label>
                   </div>
                 </div>
@@ -446,17 +448,17 @@ export function NoteFormNew({ bookId }: NoteFormNewProps) {
             {isSubmitting ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                저장 중...
+                {t("notes.saving")}
               </>
             ) : uploading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                업로드 중...
+                {t("notes.uploading")}
               </>
             ) : (
               <>
                 <CheckCircle2 className="mr-2 h-4 w-4" />
-                저장
+                {t("notes.save")}
               </>
             )}
           </Button>
@@ -468,7 +470,7 @@ export function NoteFormNew({ bookId }: NoteFormNewProps) {
             fullWidth
             size="sm"
           >
-            취소
+            {t("notes.cancel")}
           </Button>
         </div>
       </form>

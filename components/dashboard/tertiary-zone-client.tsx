@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { useTranslation } from "@/lib/i18n";
 import dynamic from "next/dynamic";
 import { CollapsibleSection } from "./sections/collapsible-section";
 import { PersonaInsightCard } from "./sections/home-hero-section";
@@ -81,6 +82,7 @@ export function TertiaryZoneClient({
   readingStats,
   isGuest = false,
 }: TertiaryZoneClientProps) {
+  const { t } = useTranslation();
   const [year, setYear] = useState(initialYear);
   const [month, setMonth] = useState(initialMonth);
   const [activities, setActivities] = useState<Record<string, DailyBookActivity>>(initialActivities);
@@ -134,7 +136,7 @@ export function TertiaryZoneClient({
       {/* 모바일: 기존 접이식 */}
       <div className="lg:hidden">
         <CollapsibleSection
-          title="비밀 정원"
+          title={t("dashboard.secretGarden")}
           storageKey="dashboard-tertiary"
           defaultOpen={false}
         >
@@ -154,7 +156,7 @@ export function TertiaryZoneClient({
         <div className="space-y-4">
           {/* 섹션 헤더 */}
           <div className="flex items-center gap-2 text-sm font-medium text-slate-600 dark:text-slate-400">
-            <span>비밀 정원</span>
+            <span>{t("dashboard.secretGarden")}</span>
             <div className="flex-1 h-px bg-slate-200 dark:bg-slate-700" />
           </div>
 

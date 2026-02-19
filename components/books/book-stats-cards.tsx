@@ -4,6 +4,7 @@ import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/ca
 import { BookOpen, BookMarked, CheckCircle2, Pause, BookX, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
+import { useTranslation } from "@/lib/i18n";
 import type { BookStats } from "@/app/actions/books";
 import type { ReadingStatus } from "@/types/book";
 
@@ -17,6 +18,7 @@ interface BookStatsCardsProps {
  * habitree.io/search 페이지의 상단 통계 카드와 유사한 형태
  */
 export function BookStatsCards({ stats, className }: BookStatsCardsProps) {
+  const { t } = useTranslation();
   const router = useRouter();
   const searchParams = useSearchParams();
   const pathname = usePathname();
@@ -26,42 +28,42 @@ export function BookStatsCards({ stats, className }: BookStatsCardsProps) {
 
   const statItems = [
     {
-      label: "총등록",
+      label: t("books.statTotal"),
       value: stats.total,
       icon: BookOpen,
       color: "blue",
       status: null,
     },
     {
-      label: "읽을 예정",
+      label: t("books.statNotStarted"),
       value: stats.not_started,
       icon: BookX,
       color: "gray",
       status: "not_started" as const,
     },
     {
-      label: "읽는중",
+      label: t("books.statReading"),
       value: stats.reading,
       icon: BookMarked,
       color: "green",
       status: "reading" as const,
     },
     {
-      label: "완독",
+      label: t("books.statCompleted"),
       value: stats.completed,
       icon: CheckCircle2,
       color: "purple",
       status: "completed" as const,
     },
     {
-      label: "재독",
+      label: t("books.statRereading"),
       value: stats.rereading,
       icon: RotateCcw,
       color: "cyan",
       status: "rereading" as const,
     },
     {
-      label: "멈춤",
+      label: t("books.statPaused"),
       value: stats.paused,
       icon: Pause,
       color: "orange",
@@ -120,7 +122,7 @@ export function BookStatsCards({ stats, className }: BookStatsCardsProps) {
             key={item.label}
             onClick={() => handleClick(item.status)}
             className="w-full text-left cursor-pointer hover:shadow-md transition-[box-shadow,transform] duration-150 active:scale-[0.98]"
-            aria-label={`${item.label}: ${item.value}권`}
+            aria-label={t("books.statAriaLabel", { label: item.label, value: item.value })}
           >
             <Card
               className={cn(
@@ -151,7 +153,7 @@ export function BookStatsCards({ stats, className }: BookStatsCardsProps) {
                   </CardDescription>
                 </div>
                 <CardTitle className="text-2xl sm:text-3xl font-bold tracking-tight">
-                  {item.value}권
+                  {t("books.statValue", { value: item.value })}
                 </CardTitle>
               </CardHeader>
             </Card>

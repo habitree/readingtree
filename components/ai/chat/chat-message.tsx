@@ -18,6 +18,7 @@ import {
 import { Bot, User, Trash2, BookOpen, FileText } from "lucide-react";
 import { getImageUrl } from "@/lib/utils/image";
 import type { ChatMessage as ChatMessageType } from "@/types/ai";
+import { useTranslation, type TranslationKey } from "@/lib/i18n";
 
 /** 책 메타데이터 (표지 이미지 표시용) */
 export interface BookMetadata {
@@ -125,7 +126,7 @@ function extractReferencedBooks(
 /**
  * 스트리밍 중 [[book:...]] / [[note:...]] / [[recommend:...]] 패턴을 깔끔한 텍스트로 치환
  */
-function cleanStreamingContent(content: string): string {
+function cleanStreamingContent(content: string, t: (key: TranslationKey, params?: Record<string, string | number>) => string): string {
   return content
     .replace(
       /\[\[(book|note):([a-zA-Z0-9-]+):([^\]]+)\]\]/g,
@@ -135,7 +136,7 @@ function cleanStreamingContent(content: string): string {
     )
     .replace(
       /\[\[recommend:([^\]]+):([^\]]+)\]\]/g,
-      (_, title, author) => `${title} (${author} 추천)`
+      (_, title, author) => t("chat.recommendedBy", { title, author })
     );
 }
 
@@ -148,6 +149,7 @@ interface ChatMessageProps {
 }
 
 export function ChatMessage({ message, userAvatar, userName, onDelete, bookMetadataMap }: ChatMessageProps) {
+  const { t } = useTranslation();
   const isUser = message.role === "user";
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
@@ -270,7 +272,7 @@ export function ChatMessage({ message, userAvatar, userName, onDelete, bookMetad
                 onClick={() => setShowDeleteDialog(true)}
               >
                 <Trash2 className="h-3 w-3 mr-1" />
-                삭제
+                {t("common.delete")}
               </Button>
             </div>
           )}
@@ -281,18 +283,18 @@ export function ChatMessage({ message, userAvatar, userName, onDelete, bookMetad
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>메시지 삭제</AlertDialogTitle>
+            <AlertDialogTitle>{t("chat.deleteMessage")}</AlertDialogTitle>
             <AlertDialogDescription>
-              이 메시지를 삭제하시겠습니까? 삭제된 메시지는 복구할 수 없습니다.
+              {t("chat.deleteMessageConfirm")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>취소</AlertDialogCancel>
+            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              삭제
+              {t("common.delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -308,12 +310,13 @@ interface StreamingMessageProps {
 }
 
 export function StreamingMessage({ content, isLoading, bookMetadataMap }: StreamingMessageProps) {
+  const { t } = useTranslation();
   // 스트리밍 중: [[book:...]] 패턴을 깔끔한 텍스트로 치환
   // 스트리밍 완료 후: 링크로 파싱
   const displayContent = useMemo(() => {
     if (!content) return content;
     if (isLoading) {
-      return cleanStreamingContent(content);
+      return cleanStreamingContent(content, t);
     }
     return parseMessageContent(content, bookMetadataMap);
   }, [content, isLoading, bookMetadataMap]);
@@ -345,7 +348,7 @@ export function StreamingMessage({ content, isLoading, bookMetadataMap }: Stream
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary/60 opacity-75" />
               <span className="relative inline-flex rounded-full h-2 w-2 bg-primary/80" />
             </span>
-            <span>독서친구가 답변을 작성하고 있어요...</span>
+            <span>{t("chat.writingResponse")}</span>
           </div>
         )}
       </div>

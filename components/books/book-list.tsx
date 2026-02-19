@@ -1,3 +1,5 @@
+"use client";
+
 import { BookCard } from "./book-card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { BookListSkeleton } from "@/components/ui/skeletons";
@@ -5,6 +7,7 @@ import { BookOpen } from "lucide-react";
 import type { BookWithUserBook } from "@/types/book";
 import type { UserBook, ReadingStatus } from "@/types/book";
 import { grids } from "@/lib/design-tokens";
+import { useTranslation } from "@/lib/i18n";
 
 interface RelatedBookPreview {
   userBookId: string;
@@ -41,6 +44,8 @@ interface BookListProps {
  * 그리드 형태로 책 카드들을 표시
  */
 export function BookList({ books, isLoading, isSample = false }: BookListProps) {
+  const { t } = useTranslation();
+
   if (isLoading) {
     return <BookListSkeleton count={10} />;
   }
@@ -49,11 +54,11 @@ export function BookList({ books, isLoading, isSample = false }: BookListProps) 
     return (
       <EmptyState
         icon={BookOpen}
-        title="책이 없습니다"
-        description="첫 번째 책을 추가하여 나만의 서재를 만들어보세요"
+        title={t("books.noBooksTitle")}
+        description={t("books.noBooksDesc")}
         variant="encouraging"
         action={{
-          label: "책 추가하기",
+          label: t("books.addBookAction"),
           href: "/books/search",
         }}
       />

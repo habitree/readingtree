@@ -11,10 +11,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
+import { useTranslation } from "@/lib/i18n";
 
 type Theme = "light" | "dark" | "forest" | "forest-dark";
 
 export function ThemeSelector() {
+  const { t } = useTranslation();
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = React.useState(false);
 
@@ -34,10 +36,10 @@ export function ThemeSelector() {
   const currentTheme = (theme || "light") as Theme;
 
   const themeConfig: Record<Theme, { icon: typeof Sun; label: string }> = {
-    light: { icon: Sun, label: "낮 테마" },
-    dark: { icon: Moon, label: "밤 테마" },
-    forest: { icon: Trees, label: "숲 (밝음)" },
-    "forest-dark": { icon: TreePine, label: "숲 (어둠)" },
+    light: { icon: Sun, label: t("theme.dayTheme") },
+    dark: { icon: Moon, label: t("theme.nightTheme") },
+    forest: { icon: Trees, label: t("theme.forestLight") },
+    "forest-dark": { icon: TreePine, label: t("theme.forestDark") },
   };
 
   const CurrentIcon = themeConfig[currentTheme]?.icon || Sun;
@@ -45,7 +47,7 @@ export function ThemeSelector() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="h-10 w-10" aria-label="테마 선택">
+        <Button variant="ghost" size="icon" className="h-10 w-10" aria-label={t("theme.selectTheme")}>
           <CurrentIcon className="h-5 w-5" />
         </Button>
       </DropdownMenuTrigger>
@@ -53,12 +55,12 @@ export function ThemeSelector() {
         {/* 기본 테마 */}
         <DropdownMenuItem onClick={() => setTheme("light")}>
           <Sun className="mr-2 h-4 w-4" />
-          <span>낮 테마</span>
+          <span>{t("theme.dayTheme")}</span>
           {currentTheme === "light" && <span className="ml-auto text-primary">✓</span>}
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => setTheme("dark")}>
           <Moon className="mr-2 h-4 w-4" />
-          <span>밤 테마</span>
+          <span>{t("theme.nightTheme")}</span>
           {currentTheme === "dark" && <span className="ml-auto text-primary">✓</span>}
         </DropdownMenuItem>
 
@@ -67,12 +69,12 @@ export function ThemeSelector() {
         {/* Forest 테마 */}
         <DropdownMenuItem onClick={() => setTheme("forest")}>
           <Trees className="mr-2 h-4 w-4 text-green-600" />
-          <span>숲 (밝음)</span>
+          <span>{t("theme.forestLight")}</span>
           {currentTheme === "forest" && <span className="ml-auto text-primary">✓</span>}
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => setTheme("forest-dark")}>
           <TreePine className="mr-2 h-4 w-4 text-green-700" />
-          <span>숲 (어둠)</span>
+          <span>{t("theme.forestDark")}</span>
           {currentTheme === "forest-dark" && <span className="ml-auto text-primary">✓</span>}
         </DropdownMenuItem>
       </DropdownMenuContent>

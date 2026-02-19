@@ -8,6 +8,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { useTranslation } from "@/lib/i18n";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -58,6 +59,7 @@ export function BatchOCRProgressDialog({
   onRetryFailed,
   onClose,
 }: BatchOCRProgressDialogProps) {
+  const { t } = useTranslation();
   const progress = totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
   const pendingCount = items.filter((item) => item.status === "pending").length;
   const processingCount = items.filter(
@@ -82,12 +84,12 @@ export function BatchOCRProgressDialog({
                 isProcessing && "animate-spin"
               )}
             />
-            OCR 배치 처리 진행 상황
+            {t("admin.ocr.progressTitle")}
           </DialogTitle>
           <DialogDescription>
             {isProcessing
-              ? `${totalCount}개 중 ${completedCount}개 완료, ${failedCount}개 실패`
-              : `처리 완료: ${completedCount}개 성공, ${failedCount}개 실패`}
+              ? t("admin.ocr.progressDesc", { total: totalCount, completed: completedCount, failed: failedCount })
+              : t("admin.ocr.progressDone", { completed: completedCount, failed: failedCount })}
           </DialogDescription>
         </DialogHeader>
 
@@ -95,17 +97,17 @@ export function BatchOCRProgressDialog({
           {/* 진행률 표시 */}
           <div className="space-y-2">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">전체 진행률</span>
+              <span className="text-muted-foreground">{t("admin.ocr.overallProgress")}</span>
               <span className="font-semibold">
                 {completedCount} / {totalCount} ({Math.round(progress)}%)
               </span>
             </div>
             <Progress value={progress} className="h-2" />
             <div className="flex items-center gap-4 text-xs text-muted-foreground">
-              <span>대기: {pendingCount}</span>
-              <span>처리 중: {processingCount}</span>
-              <span className="text-green-600">완료: {completedCount}</span>
-              <span className="text-red-600">실패: {failedCount}</span>
+              <span>{t("admin.ocr.pending")}: {pendingCount}</span>
+              <span>{t("admin.ocr.inProgress")}: {processingCount}</span>
+              <span className="text-green-600">{t("admin.ocr.completed")}: {completedCount}</span>
+              <span className="text-red-600">{t("admin.ocr.failed")}: {failedCount}</span>
             </div>
           </div>
 
@@ -114,7 +116,7 @@ export function BatchOCRProgressDialog({
             <div className="space-y-2">
               {items.length === 0 ? (
                 <div className="text-center text-sm text-muted-foreground py-8">
-                  처리할 항목이 없습니다.
+                  {t("admin.ocr.noItems")}
                 </div>
               ) : (
                 items.map((item) => (
@@ -130,7 +132,7 @@ export function BatchOCRProgressDialog({
               <div className="flex items-center gap-2">
                 <AlertCircle className="h-4 w-4 text-destructive" />
                 <span className="text-sm font-medium">
-                  {failedCount}개 항목이 실패했습니다.
+                  {t("admin.ocr.failedCount", { count: failedCount })}
                 </span>
               </div>
               <Button
@@ -141,7 +143,7 @@ export function BatchOCRProgressDialog({
                 className="gap-2"
               >
                 <RefreshCw className={cn("h-4 w-4", isProcessing && "animate-spin")} />
-                {isProcessing ? "재시도 중..." : "실패 항목 재시도"}
+                {isProcessing ? t("admin.ocr.retrying") : t("admin.ocr.retryFailed")}
               </Button>
             </div>
           )}
@@ -150,7 +152,7 @@ export function BatchOCRProgressDialog({
           {!isProcessing && (
             <div className="flex items-center justify-end gap-2 pt-2 border-t">
               <Button onClick={handleClose} variant="default">
-                닫기
+                {t("admin.ocr.close")}
               </Button>
             </div>
           )}
@@ -164,6 +166,7 @@ export function BatchOCRProgressDialog({
  * 개별 OCR 항목 행 컴포넌트
  */
 function OCRItemRow({ item }: { item: OCRItem }) {
+  const { t } = useTranslation();
   const getStatusIcon = () => {
     switch (item.status) {
       case "completed":
@@ -182,22 +185,22 @@ function OCRItemRow({ item }: { item: OCRItem }) {
       case "completed":
         return (
           <Badge variant="default" className="bg-green-600">
-            완료
+            {t("admin.ocr.completed")}
           </Badge>
         );
       case "failed":
         return (
-          <Badge variant="destructive">실패</Badge>
+          <Badge variant="destructive">{t("admin.ocr.failed")}</Badge>
         );
       case "processing":
         return (
           <Badge variant="secondary" className="bg-blue-100 text-blue-700">
-            처리 중
+            {t("admin.ocr.inProgress")}
           </Badge>
         );
       case "pending":
         return (
-          <Badge variant="outline">대기</Badge>
+          <Badge variant="outline">{t("admin.ocr.pending")}</Badge>
         );
     }
   };
@@ -223,7 +226,7 @@ function OCRItemRow({ item }: { item: OCRItem }) {
           <div className="mt-2 p-2 bg-destructive/10 border border-destructive/20 rounded-md text-xs">
             <div className="font-semibold mb-1 text-destructive flex items-center gap-1">
               <AlertCircle className="h-3 w-3" />
-              오류:
+              {t("admin.ocr.error")}
             </div>
             <div className="break-words text-destructive/90">{item.error}</div>
           </div>

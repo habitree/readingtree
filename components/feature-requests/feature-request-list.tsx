@@ -20,6 +20,7 @@ import type {
   FeatureRequestStatus,
 } from "@/types/feature-request";
 import { FEATURE_REQUEST_STATUS_CONFIG } from "@/types/feature-request";
+import { useTranslation } from "@/lib/i18n";
 
 interface FeatureRequestListProps {
   requests: FeatureRequestWithUser[];
@@ -48,6 +49,7 @@ export function FeatureRequestList({
   const { user } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { t } = useTranslation();
   const [isPending, startTransition] = useTransition();
   const [search, setSearch] = useState(initialSearch);
 
@@ -86,7 +88,7 @@ export function FeatureRequestList({
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               type="text"
-              placeholder="검색..."
+              placeholder={t("featureRequests.searchPlaceholder")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="pl-9"
@@ -100,10 +102,10 @@ export function FeatureRequestList({
           onValueChange={(value) => updateFilters({ status: value === "all" ? "" : value })}
         >
           <SelectTrigger className="w-full sm:w-[140px]">
-            <SelectValue placeholder="전체 상태" />
+            <SelectValue placeholder={t("featureRequests.allStatus")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">전체 상태</SelectItem>
+            <SelectItem value="all">{t("featureRequests.allStatus")}</SelectItem>
             {Object.entries(FEATURE_REQUEST_STATUS_CONFIG).map(([key, config]) => (
               <SelectItem key={key} value={key}>
                 {config.label}
@@ -120,11 +122,11 @@ export function FeatureRequestList({
           }
         >
           <SelectTrigger className="w-full sm:w-[140px]">
-            <SelectValue placeholder="정렬" />
+            <SelectValue placeholder={t("featureRequests.sortPopular")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="vote_count">인기순</SelectItem>
-            <SelectItem value="created_at">최신순</SelectItem>
+            <SelectItem value="vote_count">{t("featureRequests.sortPopular")}</SelectItem>
+            <SelectItem value="created_at">{t("featureRequests.sortLatest")}</SelectItem>
           </SelectContent>
         </Select>
 
@@ -133,7 +135,7 @@ export function FeatureRequestList({
           <Button asChild>
             <Link href="/feature-requests/new">
               <Plus className="h-4 w-4 mr-1" />
-              요청하기
+              {t("featureRequests.request")}
             </Link>
           </Button>
         )}
@@ -164,14 +166,14 @@ export function FeatureRequestList({
         <div className="text-center py-12">
           <p className="text-muted-foreground mb-4">
             {initialSearch || initialStatus
-              ? "검색 결과가 없습니다."
-              : "아직 기능 요청이 없습니다."}
+              ? t("featureRequests.noResults")
+              : t("featureRequests.noRequests")}
           </p>
           {user && (
             <Button asChild>
               <Link href="/feature-requests/new">
                 <Plus className="h-4 w-4 mr-1" />
-                첫 번째 요청 작성하기
+                {t("featureRequests.firstRequest")}
               </Link>
             </Button>
           )}
@@ -189,7 +191,7 @@ export function FeatureRequestList({
               updateFilters({ page: String(currentPage - 1) })
             }
           >
-            이전
+            {t("common.prev")}
           </Button>
           <span className="text-sm text-muted-foreground px-2">
             {currentPage} / {totalPages}
@@ -202,7 +204,7 @@ export function FeatureRequestList({
               updateFilters({ page: String(currentPage + 1) })
             }
           >
-            다음
+            {t("common.next")}
           </Button>
         </div>
       )}

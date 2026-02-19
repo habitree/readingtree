@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import Image from "next/image";
 import { Card, CardContent } from "@/components/ui/card";
@@ -19,6 +21,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import type { NoteWithBook } from "@/types/note";
+import { useTranslation } from "@/lib/i18n";
 
 interface SharedNotesListProps {
   notes: Array<{
@@ -53,6 +56,8 @@ const noteTypeConfig: Record<string, { icon: React.ElementType; color: string; b
  * 모임에 공유된 기록 표시 (책 정보 + 작성자 포함)
  */
 export function SharedNotesList({ notes, groupId }: SharedNotesListProps) {
+  const { t } = useTranslation();
+
   if (notes.length === 0) {
     return (
       <Card className="border-dashed">
@@ -61,17 +66,15 @@ export function SharedNotesList({ notes, groupId }: SharedNotesListProps) {
             <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center mb-4">
               <Sparkles className="h-8 w-8 text-primary/60" />
             </div>
-            <h4 className="font-semibold mb-2">아직 공유된 기록이 없어요</h4>
+            <h4 className="font-semibold mb-2">{t("groups.noSharedNotesEmpty")}</h4>
             <p className="text-sm text-muted-foreground mb-6 max-w-sm">
-              지정도서를 선택하고 기록을 공유해보세요.
-              <br />
-              모임원들과 독서 경험을 나눌 수 있어요.
+              {t("groups.noSharedNotesEmptyDesc")}
             </p>
             <div className="flex flex-col sm:flex-row gap-2">
               <Button variant="outline" asChild>
                 <Link href={groupId ? `/groups/${groupId}?tab=books` : "#"}>
                   <BookOpen className="mr-2 h-4 w-4" />
-                  지정도서 보기
+                  {t("groups.viewDesignatedBooks")}
                 </Link>
               </Button>
             </div>
@@ -87,7 +90,7 @@ export function SharedNotesList({ notes, groupId }: SharedNotesListProps) {
       {/* 상단 안내 */}
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
-          총 {notes.length}개의 기록이 공유되었어요
+          {t("groups.sharedNotesCount").replace("{count}", String(notes.length))}
         </p>
       </div>
 
@@ -117,7 +120,7 @@ export function SharedNotesList({ notes, groupId }: SharedNotesListProps) {
                       <div className="relative w-16 sm:w-20 shrink-0 bg-muted">
                         <Image
                           src={getImageUrl(book.cover_image_url)}
-                          alt={book.title || "책 표지"}
+                          alt={book.title || t("books.book")}
                           fill
                           className="object-cover"
                           sizes="80px"

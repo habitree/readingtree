@@ -26,6 +26,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { useTranslation } from "@/lib/i18n";
 
 /**
  * 드래그 가능한 서재 아이템 컴포넌트
@@ -39,6 +40,7 @@ function SortableBookshelfItem({
   pathname: string;
   isActive: boolean;
 }) {
+  const { t } = useTranslation();
   const {
     attributes,
     listeners,
@@ -80,7 +82,7 @@ function SortableBookshelfItem({
             {...attributes}
             {...listeners}
             className="cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity touch-none"
-            aria-label="순서 변경"
+            aria-label={t("bookshelves.reorderLabel")}
             onClick={(e) => {
               // 드래그 핸들 클릭 시 링크 이동 방지
               e.preventDefault();
@@ -98,6 +100,7 @@ function SortableBookshelfItem({
 }
 
 export function BookshelfTree() {
+  const { t } = useTranslation();
   const pathname = usePathname();
   const [bookshelves, setBookshelves] = useState<Bookshelf[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -197,7 +200,7 @@ export function BookshelfTree() {
       {mainBookshelf && (
         <Link
           href="/books"
-          aria-label="내 서재 (통합)"
+          aria-label={t("bookshelves.myLibraryIntegrated")}
           aria-current={pathname === "/books" ? "page" : undefined}
         >
           <Button
@@ -226,7 +229,7 @@ export function BookshelfTree() {
             ) : (
               <ChevronRight className="h-3 w-3" />
             )}
-            <span>서재 ({subBookshelves.length})</span>
+            <span>{t("bookshelves.bookshelvesCount").replace("{count}", String(subBookshelves.length))}</span>
           </Button>
           {isExpanded && (
             <DndContext

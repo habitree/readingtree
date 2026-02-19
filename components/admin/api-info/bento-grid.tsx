@@ -3,6 +3,7 @@
 import { ArrowRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { useTranslation } from "@/lib/i18n";
 import { ServiceCard, ServiceDetail, FeatureList } from "./service-card";
 import { OcrStatsPanel } from "./ocr-stats-panel";
 import type { ApiIntegrationInfoProps } from "./types";
@@ -16,6 +17,7 @@ export function BentoGrid({
   ocrConnectionTest,
   transcriptionStats,
 }: BentoGridProps) {
+  const { t } = useTranslation();
   const { supabase, kakaoSdk, naver, cloudRunOcr, aiServices, pageCountApis } = apiInfo;
 
   return (
@@ -40,7 +42,7 @@ export function BentoGrid({
           />
         </div>
         <div className="pt-2">
-          <div className="text-xs font-medium mb-1.5">인증 방법</div>
+          <div className="text-xs font-medium mb-1.5">{t("admin.apiInfo.authMethods")}</div>
           <div className="space-y-1 text-xs">
             <div>{supabase.authMethods.oauth.kakao}</div>
             <div>{supabase.authMethods.oauth.google}</div>
@@ -48,7 +50,7 @@ export function BentoGrid({
           </div>
         </div>
         <div className="pt-2">
-          <div className="text-xs font-medium mb-1.5">주요 기능</div>
+          <div className="text-xs font-medium mb-1.5">{t("admin.apiInfo.keyFeatures")}</div>
           <FeatureList features={supabase.features} />
         </div>
       </ServiceCard>
@@ -71,7 +73,7 @@ export function BentoGrid({
           />
         </div>
         <div className="pt-2">
-          <div className="text-xs font-medium mb-1.5">주요 기능</div>
+          <div className="text-xs font-medium mb-1.5">{t("admin.apiInfo.keyFeatures")}</div>
           <FeatureList features={naver.features} />
         </div>
       </ServiceCard>
@@ -87,24 +89,24 @@ export function BentoGrid({
           apiReference={cloudRunOcr.apiReference}
         >
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <ServiceDetail label="서비스 URL" value={cloudRunOcr.url} />
-            <ServiceDetail label="URL 상태" value={cloudRunOcr.urlStatus} />
-            <ServiceDetail label="인증 방법" value={cloudRunOcr.authMethod} />
-            <ServiceDetail label="인증 상태" value={cloudRunOcr.authStatus} />
+            <ServiceDetail label={t("admin.apiInfo.serviceUrl")} value={cloudRunOcr.url} />
+            <ServiceDetail label={t("admin.apiInfo.urlStatus")} value={cloudRunOcr.urlStatus} />
+            <ServiceDetail label={t("admin.apiInfo.authMethodLabel")} value={cloudRunOcr.authMethod} />
+            <ServiceDetail label={t("admin.apiInfo.authStatusLabel")} value={cloudRunOcr.authStatus} />
           </div>
           <div className="pt-2">
-            <div className="text-xs font-medium mb-1.5">주요 기능</div>
+            <div className="text-xs font-medium mb-1.5">{t("admin.apiInfo.keyFeatures")}</div>
             <FeatureList features={cloudRunOcr.features} />
           </div>
           {cloudRunOcr.pricing && (
             <div className="pt-2 p-2.5 bg-muted/50 rounded-lg text-xs">
-              <div className="font-medium mb-1">비용 정보</div>
+              <div className="font-medium mb-1">{t("admin.apiInfo.costInfoLabel")}</div>
               <div>
-                <span className="font-medium">무료:</span>{" "}
+                <span className="font-medium">{t("admin.apiInfo.freeLabel")}</span>{" "}
                 {cloudRunOcr.pricing.freeTier}
               </div>
               <div>
-                <span className="font-medium">유료:</span>{" "}
+                <span className="font-medium">{t("admin.apiInfo.paidLabel")}</span>{" "}
                 {cloudRunOcr.pricing.costPerRequest}
               </div>
             </div>
@@ -122,23 +124,23 @@ export function BentoGrid({
       <ServiceCard
         id="service-ai"
         icon="bot"
-        provider="AI 챗봇 서비스"
+        provider={t("admin.apiInfo.aiChatbotService")}
         enabled={aiServices.enabled}
         category="ai"
-        previewBadges={["멀티 프로바이더", "스트리밍", "독서 AI"]}
+        previewBadges={[t("admin.apiInfo.multiProvider"), t("admin.apiInfo.streaming"), t("admin.apiInfo.readingAi")]}
         className="md:col-span-2"
       >
         <div className="space-y-3">
           {/* 현재 활성 프로바이더 */}
           <div className="p-2.5 bg-pink-500/5 rounded-lg border border-pink-500/20">
-            <div className="text-xs font-medium mb-1">현재 활성 설정</div>
+            <div className="text-xs font-medium mb-1">{t("admin.apiInfo.currentActiveSettings")}</div>
             <div className="grid grid-cols-2 gap-2 text-xs">
               <div>
-                <span className="text-muted-foreground">프로바이더: </span>
+                <span className="text-muted-foreground">{t("admin.apiInfo.providerLabel")}</span>
                 <span className="font-semibold">{aiServices.activeProvider}</span>
               </div>
               <div>
-                <span className="text-muted-foreground">모델: </span>
+                <span className="text-muted-foreground">{t("admin.apiInfo.modelLabel")}</span>
                 <span className="font-mono text-[11px]">{aiServices.activeModel}</span>
               </div>
             </div>
@@ -163,7 +165,7 @@ export function BentoGrid({
                     />
                   </span>
                 </div>
-                <div className="text-[10px] text-muted-foreground">키: {p.keyStatus}</div>
+                <div className="text-[10px] text-muted-foreground">{t("admin.apiInfo.keyLabel")}{p.keyStatus}</div>
                 <div className="flex flex-wrap gap-0.5 mt-1">
                   {p.models.slice(0, 2).map((m) => (
                     <Badge key={m} variant="outline" className="text-[9px] px-1 py-0">
@@ -177,7 +179,7 @@ export function BentoGrid({
 
           {/* 기능 목록 */}
           <div>
-            <div className="text-xs font-medium mb-1.5">주요 기능</div>
+            <div className="text-xs font-medium mb-1.5">{t("admin.apiInfo.keyFeatures")}</div>
             <FeatureList features={aiServices.features} />
           </div>
         </div>
@@ -192,9 +194,9 @@ export function BentoGrid({
         previewBadges={kakaoSdk.features.slice(0, 2)}
         apiReference={kakaoSdk.apiReference}
       >
-        <ServiceDetail label="App Key 상태" value={kakaoSdk.keyStatus} />
+        <ServiceDetail label={t("admin.apiInfo.appKeyStatus")} value={kakaoSdk.keyStatus} />
         <div className="pt-2">
-          <div className="text-xs font-medium mb-1.5">주요 기능</div>
+          <div className="text-xs font-medium mb-1.5">{t("admin.apiInfo.keyFeatures")}</div>
           <FeatureList features={kakaoSdk.features} />
         </div>
         <div className="text-xs text-muted-foreground italic pt-1">
@@ -213,19 +215,19 @@ export function BentoGrid({
             {/* 폴백 체인 헤더 */}
             <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:justify-between">
               <div className="text-sm font-semibold">
-                도서 페이지 수 API 폴백 체인
+                {t("admin.apiInfo.pageCountFallbackChain")}
               </div>
               <div className="text-xs text-muted-foreground">
                 <span className="font-medium">
                   {pageCountApis.summary.enabledApis}/
                   {pageCountApis.summary.totalApis}
                 </span>{" "}
-                활성 &middot;{" "}
+                {t("admin.apiInfo.statusEnabled")} &middot;{" "}
                 <span className="font-medium">
                   {pageCountApis.summary.configuredApis}/
                   {pageCountApis.summary.totalApis}
                 </span>{" "}
-                구성 완료
+                {t("admin.apiInfo.configuredCount")}
               </div>
             </div>
 
@@ -234,15 +236,15 @@ export function BentoGrid({
               {[
                 {
                   api: pageCountApis.nlSeoji,
-                  label: "1순위",
+                  label: t("admin.apiInfo.priority1"),
                 },
                 {
                   api: pageCountApis.aladin,
-                  label: "2순위",
+                  label: t("admin.apiInfo.priority2"),
                 },
                 {
                   api: pageCountApis.googleBooks,
-                  label: "3순위",
+                  label: t("admin.apiInfo.priority3"),
                 },
               ].map((item, i) => (
                 <div key={item.api.provider} className="flex items-center gap-2 flex-1">
@@ -273,7 +275,7 @@ export function BentoGrid({
                       {item.api.provider}
                     </div>
                     <div className="text-[10px] text-muted-foreground">
-                      키: {item.api.keyStatus}
+                      {t("admin.apiInfo.keyLabel")}{item.api.keyStatus}
                     </div>
                     <div className="flex flex-wrap gap-0.5 mt-1.5">
                       {item.api.features.slice(0, 2).map((f) => (
@@ -296,7 +298,7 @@ export function BentoGrid({
 
             {/* 폴백 체인 코드 */}
             <div className="text-xs text-muted-foreground">
-              <span className="font-medium">조회 순서: </span>
+              <span className="font-medium">{t("admin.apiInfo.lookupOrder")}</span>
               <code className="bg-muted px-1.5 py-0.5 rounded text-[10px]">
                 {pageCountApis.summary.fallbackChain}
               </code>

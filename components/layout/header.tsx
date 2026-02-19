@@ -25,6 +25,8 @@ import { getCurrentUserProfile } from "@/app/actions/profile";
 import { getProxiedImageUrl } from "@/lib/utils/image";
 import { useEffect, useState, useRef, useCallback } from "react";
 import { usePathname } from "next/navigation";
+import { useTranslation } from "@/lib/i18n";
+import { LanguageToggle } from "@/components/ui/language-toggle";
 
 /**
  * 헤더 컴포넌트
@@ -32,6 +34,7 @@ import { usePathname } from "next/navigation";
  */
 export function Header() {
   const { user, isLoading } = useAuth();
+  const { t } = useTranslation();
   const pathname = usePathname();
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
@@ -88,7 +91,7 @@ export function Header() {
     userProfile?.name ||
     user?.user_metadata?.name ||
     user?.email?.split("@")[0] ||
-    "사용자";
+    t("common.user");
   const userAvatar = userProfile?.avatar_url || null;
   const isDarkMode = theme === "dark";
 
@@ -111,6 +114,9 @@ export function Header() {
         {/* 우측 메뉴 */}
         <div className="flex items-center gap-1.5 sm:gap-2 ml-auto shrink-0">
           <TooltipProvider>
+            {/* 언어 토글 */}
+            <LanguageToggle />
+
             {/* 테마 토글 */}
             <Tooltip>
               <TooltipTrigger asChild>
@@ -119,7 +125,7 @@ export function Header() {
                   size="icon"
                   className="relative h-8 w-8 sm:h-10 sm:w-10"
                   onClick={handleThemeToggle}
-                  aria-label={isDarkMode ? "라이트 모드로 전환" : "다크 모드로 전환"}
+                  aria-label={isDarkMode ? t("theme.switchToLight") : t("theme.switchToDark")}
                 >
                   {mounted && isDarkMode ? (
                     <Sun className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -129,7 +135,7 @@ export function Header() {
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
-                <p>{mounted && isDarkMode ? "라이트 모드" : "다크 모드"}</p>
+                <p>{mounted && isDarkMode ? t("theme.lightMode") : t("theme.darkMode")}</p>
               </TooltipContent>
             </Tooltip>
 
@@ -142,7 +148,7 @@ export function Header() {
                       <Button
                         variant="ghost"
                         className="relative h-8 w-8 sm:h-10 sm:w-10 rounded-full p-0"
-                        aria-label="프로필"
+                        aria-label={t("nav.profile")}
                       >
                         <Avatar className="h-8 w-8 sm:h-10 sm:w-10 border-2 border-background">
                           <AvatarImage
@@ -158,14 +164,14 @@ export function Header() {
                     </DropdownMenuTrigger>
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p>프로필</p>
+                    <p>{t("nav.profile")}</p>
                   </TooltipContent>
                 </Tooltip>
                 <DropdownMenuContent align="end" className="w-48">
                   <DropdownMenuItem asChild>
                     <Link href="/profile" className="flex items-center gap-2">
                       <User className="h-4 w-4" />
-                      <span>프로필</span>
+                      <span>{t("nav.profile")}</span>
                       <DropdownMenuShortcut>⌘P</DropdownMenuShortcut>
                     </Link>
                   </DropdownMenuItem>
@@ -185,13 +191,13 @@ export function Header() {
                       }
                     }}
                   >
-                    로그아웃
+                    {t("common.logout")}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
               <Button asChild variant="default" size="sm">
-                <Link href="/login">로그인</Link>
+                <Link href="/login">{t("common.login")}</Link>
               </Button>
             )}
           </TooltipProvider>

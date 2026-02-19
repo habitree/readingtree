@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { useTranslation, type TranslationKey } from "@/lib/i18n";
 import { ConnectionGraph } from "./connection-graph";
 import { StatusOverviewBar } from "./status-overview-bar";
 import { BentoGrid } from "./bento-grid";
@@ -9,13 +10,14 @@ import { DocsLinksBar } from "./docs-links-bar";
 import type { ApiIntegrationInfoProps, ServiceNodeConfig } from "./types";
 
 function buildServiceNodes(
-  apiInfo: ApiIntegrationInfoProps["apiInfo"]
+  apiInfo: ApiIntegrationInfoProps["apiInfo"],
+  t: (key: TranslationKey, params?: Record<string, string | number>) => string
 ): ServiceNodeConfig[] {
   return [
     {
       id: "supabase-auth",
       name: "Supabase Auth",
-      description: "인증 및 데이터베이스",
+      description: t("admin.apiInfo.descSupabaseAuth"),
       enabled: apiInfo.supabase.enabled,
       icon: "shield",
       category: "auth",
@@ -25,7 +27,7 @@ function buildServiceNodes(
     {
       id: "kakao-sdk",
       name: "Kakao SDK",
-      description: "소셜 로그인 보조",
+      description: t("admin.apiInfo.descKakaoSdk"),
       enabled: apiInfo.kakaoSdk.enabled,
       icon: "key",
       category: "auth",
@@ -33,8 +35,8 @@ function buildServiceNodes(
     },
     {
       id: "naver-search",
-      name: "Naver 검색",
-      description: "도서 검색 API",
+      name: t("admin.apiInfo.naverSearchName"),
+      description: t("admin.apiInfo.descNaverSearch"),
       enabled: apiInfo.naver.enabled,
       icon: "search",
       category: "search",
@@ -44,7 +46,7 @@ function buildServiceNodes(
     {
       id: "cloud-run-ocr",
       name: "Cloud Run OCR",
-      description: "이미지 텍스트 인식",
+      description: t("admin.apiInfo.descCloudRunOcr"),
       enabled: apiInfo.cloudRunOcr.enabled,
       icon: "zap",
       category: "ocr",
@@ -52,8 +54,8 @@ function buildServiceNodes(
     },
     {
       id: "nl-seoji",
-      name: "국립중앙도서관",
-      description: "서지정보 1순위",
+      name: t("admin.apiInfo.nlSeojiName"),
+      description: t("admin.apiInfo.descNlSeoji"),
       enabled: apiInfo.pageCountApis.nlSeoji.enabled,
       icon: "library",
       category: "pageCount",
@@ -61,8 +63,8 @@ function buildServiceNodes(
     },
     {
       id: "aladin",
-      name: "알라딘",
-      description: "도서정보 2순위",
+      name: t("admin.apiInfo.aladinName"),
+      description: t("admin.apiInfo.descAladin"),
       enabled: apiInfo.pageCountApis.aladin.enabled,
       icon: "bookOpen",
       category: "pageCount",
@@ -71,7 +73,7 @@ function buildServiceNodes(
     {
       id: "google-books",
       name: "Google Books",
-      description: "글로벌 도서 3순위",
+      description: t("admin.apiInfo.descGoogleBooks"),
       enabled: apiInfo.pageCountApis.googleBooks.enabled,
       icon: "globe",
       category: "pageCount",
@@ -79,8 +81,8 @@ function buildServiceNodes(
     },
     {
       id: "ai-chatbot",
-      name: "AI 챗봇",
-      description: "독서 AI 어시스턴트",
+      name: t("admin.apiInfo.aiChatbotName"),
+      description: t("admin.apiInfo.descAiChatbot"),
       enabled: apiInfo.aiServices.enabled,
       icon: "bot",
       category: "ai",
@@ -89,7 +91,7 @@ function buildServiceNodes(
     {
       id: "vercel",
       name: "Vercel",
-      description: "배포 플랫폼",
+      description: t("admin.apiInfo.descVercel"),
       enabled: true,
       icon: "cloud",
       category: "deploy",
@@ -105,7 +107,8 @@ export function ApiInfoDashboard({
   ocrConnectionTest,
   transcriptionStats,
 }: ApiIntegrationInfoProps) {
-  const serviceNodes = buildServiceNodes(apiInfo);
+  const { t } = useTranslation();
+  const serviceNodes = buildServiceNodes(apiInfo, t);
   const statusItems = serviceNodes.map((s) => ({
     name: s.name,
     enabled: s.enabled,
@@ -119,9 +122,9 @@ export function ApiInfoDashboard({
         animate={{ opacity: 1, y: 0 }}
         className="flex flex-col gap-1"
       >
-        <h1 className="text-2xl font-bold tracking-tight">API 연동 정보</h1>
+        <h1 className="text-2xl font-bold tracking-tight">{t("admin.apiInfo.title")}</h1>
         <p className="text-sm text-muted-foreground">
-          서비스 연결 구조와 각 API의 상태를 한눈에 확인합니다
+          {t("admin.apiInfo.subtitle")}
         </p>
       </motion.div>
 

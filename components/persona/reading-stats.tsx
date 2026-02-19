@@ -13,6 +13,7 @@ import {
   Camera,
   FileSignature,
 } from "lucide-react";
+import { useTranslation } from "@/lib/i18n";
 import type { UserPersona } from "@/types/persona";
 import type { ReadingStats as ReadingStatsType, CategoryPreference } from "@/types/persona";
 
@@ -21,6 +22,8 @@ interface ReadingStatsProps {
 }
 
 export function ReadingStats({ persona }: ReadingStatsProps) {
+  const { t } = useTranslation();
+
   if (!persona) {
     return null;
   }
@@ -43,7 +46,7 @@ export function ReadingStats({ persona }: ReadingStatsProps) {
       {/* 독서 통계 */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">독서 통계</CardTitle>
+          <CardTitle className="text-base">{t("persona.readingStatsTitle")}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
@@ -53,7 +56,7 @@ export function ReadingStats({ persona }: ReadingStatsProps) {
               </div>
               <div>
                 <p className="text-2xl font-bold">{stats.totalBooks}</p>
-                <p className="text-xs text-muted-foreground">총 책</p>
+                <p className="text-xs text-muted-foreground">{t("persona.totalBooksLabel")}</p>
               </div>
             </div>
 
@@ -63,7 +66,7 @@ export function ReadingStats({ persona }: ReadingStatsProps) {
               </div>
               <div>
                 <p className="text-2xl font-bold">{stats.completedBooks}</p>
-                <p className="text-xs text-muted-foreground">완독</p>
+                <p className="text-xs text-muted-foreground">{t("persona.completedBooksLabel")}</p>
               </div>
             </div>
 
@@ -73,7 +76,7 @@ export function ReadingStats({ persona }: ReadingStatsProps) {
               </div>
               <div>
                 <p className="text-2xl font-bold">{stats.totalNotes}</p>
-                <p className="text-xs text-muted-foreground">총 기록</p>
+                <p className="text-xs text-muted-foreground">{t("persona.totalNotesLabel")}</p>
               </div>
             </div>
 
@@ -85,7 +88,7 @@ export function ReadingStats({ persona }: ReadingStatsProps) {
                 <p className="text-2xl font-bold">
                   {stats.averageReadingDays || "-"}
                 </p>
-                <p className="text-xs text-muted-foreground">평균 독서일</p>
+                <p className="text-xs text-muted-foreground">{t("persona.averageReadingDays")}</p>
               </div>
             </div>
           </div>
@@ -95,7 +98,7 @@ export function ReadingStats({ persona }: ReadingStatsProps) {
       {/* 기록 유형 분포 */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">기록 유형 분포</CardTitle>
+          <CardTitle className="text-base">{t("persona.noteTypeDistribution")}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           {totalNoteTypes > 0 ? (
@@ -105,10 +108,10 @@ export function ReadingStats({ persona }: ReadingStatsProps) {
                 <div className="flex items-center justify-between text-sm">
                   <div className="flex items-center gap-2">
                     <Quote className="h-4 w-4 text-muted-foreground" />
-                    <span>인용구</span>
+                    <span>{t("persona.quoteType")}</span>
                   </div>
                   <span className="text-muted-foreground">
-                    {stats.noteTypeDistribution.quote}개
+                    {t("persona.countUnit", { count: stats.noteTypeDistribution.quote })}
                   </span>
                 </div>
                 <Progress
@@ -122,10 +125,10 @@ export function ReadingStats({ persona }: ReadingStatsProps) {
                 <div className="flex items-center justify-between text-sm">
                   <div className="flex items-center gap-2">
                     <Pencil className="h-4 w-4 text-muted-foreground" />
-                    <span>메모</span>
+                    <span>{t("persona.memoType")}</span>
                   </div>
                   <span className="text-muted-foreground">
-                    {stats.noteTypeDistribution.memo}개
+                    {t("persona.countUnit", { count: stats.noteTypeDistribution.memo })}
                   </span>
                 </div>
                 <Progress
@@ -139,10 +142,10 @@ export function ReadingStats({ persona }: ReadingStatsProps) {
                 <div className="flex items-center justify-between text-sm">
                   <div className="flex items-center gap-2">
                     <Camera className="h-4 w-4 text-muted-foreground" />
-                    <span>사진</span>
+                    <span>{t("persona.photoType")}</span>
                   </div>
                   <span className="text-muted-foreground">
-                    {stats.noteTypeDistribution.photo}개
+                    {t("persona.countUnit", { count: stats.noteTypeDistribution.photo })}
                   </span>
                 </div>
                 <Progress
@@ -156,10 +159,10 @@ export function ReadingStats({ persona }: ReadingStatsProps) {
                 <div className="flex items-center justify-between text-sm">
                   <div className="flex items-center gap-2">
                     <FileSignature className="h-4 w-4 text-muted-foreground" />
-                    <span>사진 필사</span>
+                    <span>{t("persona.transcriptionType")}</span>
                   </div>
                   <span className="text-muted-foreground">
-                    {stats.noteTypeDistribution.transcription}개
+                    {t("persona.countUnit", { count: stats.noteTypeDistribution.transcription })}
                   </span>
                 </div>
                 <Progress
@@ -170,7 +173,7 @@ export function ReadingStats({ persona }: ReadingStatsProps) {
             </>
           ) : (
             <p className="py-4 text-center text-sm text-muted-foreground">
-              기록이 없습니다.
+              {t("persona.noRecordsYet")}
             </p>
           )}
         </CardContent>
@@ -180,7 +183,7 @@ export function ReadingStats({ persona }: ReadingStatsProps) {
       {categories && categories.length > 0 && (
         <Card className="md:col-span-2">
           <CardHeader>
-            <CardTitle className="text-base">선호 카테고리</CardTitle>
+            <CardTitle className="text-base">{t("persona.preferredCategories")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex flex-wrap gap-2">
@@ -190,7 +193,7 @@ export function ReadingStats({ persona }: ReadingStatsProps) {
                   variant={index === 0 ? "default" : "secondary"}
                   className="text-sm"
                 >
-                  {cat.category} ({cat.count}권, {cat.percentage}%)
+                  {t("persona.categoryCount", { category: cat.category, count: cat.count, percentage: cat.percentage })}
                 </Badge>
               ))}
             </div>

@@ -21,12 +21,14 @@ import { BookshelfWithStats } from "@/types/bookshelf";
 import { toast } from "sonner";
 import { Switch } from "@/components/ui/switch";
 import { Trash2, Save } from "lucide-react";
+import { useTranslation } from "@/lib/i18n";
 
 interface BookshelfEditFormProps {
   bookshelf: BookshelfWithStats;
 }
 
 export function BookshelfEditForm({ bookshelf }: BookshelfEditFormProps) {
+  const { t } = useTranslation();
   const router = useRouter();
   const [name, setName] = useState(bookshelf.name);
   const [description, setDescription] = useState(bookshelf.description || "");
@@ -39,7 +41,7 @@ export function BookshelfEditForm({ bookshelf }: BookshelfEditFormProps) {
     e.preventDefault();
 
     if (!name.trim()) {
-      toast.error("서재 이름을 입력해주세요.");
+      toast.error(t("bookshelves.bookshelfNameRequired"));
       return;
     }
 
@@ -50,13 +52,13 @@ export function BookshelfEditForm({ bookshelf }: BookshelfEditFormProps) {
         description: description.trim() || null,
         is_public: isPublic,
       });
-      toast.success("저장됨");
+      toast.success(t("bookshelves.saved"));
       router.push(`/bookshelves/${bookshelf.id}`);
       router.refresh();
     } catch (error) {
       console.error("서재 수정 오류:", error);
       toast.error(
-        error instanceof Error ? error.message : "서재 수정에 실패했습니다."
+        error instanceof Error ? error.message : t("bookshelves.editFailed")
       );
     } finally {
       setIsSubmitting(false);
@@ -67,13 +69,13 @@ export function BookshelfEditForm({ bookshelf }: BookshelfEditFormProps) {
     setIsDeleting(true);
     try {
       await deleteBookshelf(bookshelf.id);
-      toast.success("삭제됨");
+      toast.success(t("bookshelves.deleted"));
       router.push("/bookshelves");
       router.refresh();
     } catch (error) {
       console.error("서재 삭제 오류:", error);
       toast.error(
-        error instanceof Error ? error.message : "서재 삭제에 실패했습니다."
+        error instanceof Error ? error.message : t("bookshelves.deleteFailed")
       );
       setIsDeleting(false);
       setDeleteDialogOpen(false);
@@ -84,37 +86,37 @@ export function BookshelfEditForm({ bookshelf }: BookshelfEditFormProps) {
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>서재 정보</CardTitle>
-          <CardDescription>서재 이름과 설명을 수정할 수 있습니다.</CardDescription>
+          <CardTitle>{t("bookshelves.bookshelfInfo")}</CardTitle>
+          <CardDescription>{t("bookshelves.bookshelfInfoDesc")}</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="name">서재 이름 *</Label>
+              <Label htmlFor="name">{t("bookshelves.bookshelfNameLabel")}</Label>
               <Input
                 id="name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="예: 읽고 싶은 책"
+                placeholder={t("bookshelves.bookshelfNamePlaceholder")}
                 maxLength={100}
                 required
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="description">설명 (선택)</Label>
+              <Label htmlFor="description">{t("bookshelves.descriptionLabel")}</Label>
               <Textarea
                 id="description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="서재에 대한 설명을 입력하세요."
+                placeholder={t("bookshelves.descriptionPlaceholder")}
                 rows={3}
               />
             </div>
             <div className="flex items-center justify-between rounded-lg border p-4">
               <div className="space-y-0.5">
-                <Label htmlFor="is-public" className="text-sm font-medium cursor-pointer">서재 공개</Label>
+                <Label htmlFor="is-public" className="text-sm font-medium cursor-pointer">{t("bookshelves.bookshelfPublic")}</Label>
                 <p className="text-xs text-muted-foreground">
-                  공개하면 링크를 통해 누구나 이 서재를 볼 수 있습니다.
+                  {t("bookshelves.bookshelfPublicDesc")}
                 </p>
               </div>
               <Switch
@@ -132,17 +134,17 @@ export function BookshelfEditForm({ bookshelf }: BookshelfEditFormProps) {
                     disabled={isSubmitting || isDeleting}
                   >
                     <Trash2 className="mr-2 h-4 w-4" />
-                    서재 삭제
+                    {t("bookshelves.deleteBookshelf")}
                   </Button>
                 </DialogTrigger>
                 <DialogContent>
                   <DialogHeader>
-                    <DialogTitle>서재 삭제 확인</DialogTitle>
+                    <DialogTitle>{t("bookshelves.deleteBookshelfConfirm")}</DialogTitle>
                     <DialogDescription>
-                      이 서재를 삭제하시겠습니까? 서재에 속한 모든 책은 메인 서재로 이동됩니다.
+                      {t("bookshelves.deleteBookshelfDesc")}
                       <br />
                       <strong className="text-destructive">
-                        이 작업은 되돌릴 수 없습니다.
+                        {t("bookshelves.deleteIrreversible")}
                       </strong>
                     </DialogDescription>
                   </DialogHeader>
@@ -153,7 +155,7 @@ export function BookshelfEditForm({ bookshelf }: BookshelfEditFormProps) {
                       onClick={() => setDeleteDialogOpen(false)}
                       disabled={isDeleting}
                     >
-                      취소
+                      {t("common.cancel")}
                     </Button>
                     <Button
                       type="button"
@@ -161,7 +163,7 @@ export function BookshelfEditForm({ bookshelf }: BookshelfEditFormProps) {
                       onClick={handleDelete}
                       disabled={isDeleting}
                     >
-                      {isDeleting ? "삭제 중..." : "삭제"}
+                      {isDeleting ? t("common.loading") : t("common.delete")}
                     </Button>
                   </DialogFooter>
                 </DialogContent>
@@ -169,7 +171,7 @@ export function BookshelfEditForm({ bookshelf }: BookshelfEditFormProps) {
 
               <Button type="submit" disabled={isSubmitting}>
                 <Save className="mr-2 h-4 w-4" />
-                {isSubmitting ? "저장 중..." : "저장"}
+                {isSubmitting ? t("common.loading") : t("common.save")}
               </Button>
             </div>
           </form>
@@ -178,28 +180,28 @@ export function BookshelfEditForm({ bookshelf }: BookshelfEditFormProps) {
 
       <Card>
         <CardHeader>
-          <CardTitle>서재 통계</CardTitle>
+          <CardTitle>{t("bookshelves.bookshelfStats")}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
             <div>
-              <div className="text-muted-foreground">전체</div>
+              <div className="text-muted-foreground">{t("bookshelves.totalBooks")}</div>
               <div className="text-2xl font-bold">{bookshelf.book_count}</div>
             </div>
             <div>
-              <div className="text-muted-foreground">읽는 중</div>
+              <div className="text-muted-foreground">{t("bookshelves.readingBooks")}</div>
               <div className="text-2xl font-bold">{bookshelf.reading_count}</div>
             </div>
             <div>
-              <div className="text-muted-foreground">완독</div>
+              <div className="text-muted-foreground">{t("bookshelves.completedBooks")}</div>
               <div className="text-2xl font-bold">{bookshelf.completed_count}</div>
             </div>
             <div>
-              <div className="text-muted-foreground">일시정지</div>
+              <div className="text-muted-foreground">{t("bookshelves.pausedBooks")}</div>
               <div className="text-2xl font-bold">{bookshelf.paused_count}</div>
             </div>
             <div>
-              <div className="text-muted-foreground">재독</div>
+              <div className="text-muted-foreground">{t("bookshelves.rereadingBooks")}</div>
               <div className="text-2xl font-bold">{bookshelf.rereading_count}</div>
             </div>
           </div>

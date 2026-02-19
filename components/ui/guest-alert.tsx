@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { LogIn, Sparkles, X, BookOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/lib/i18n";
 
 type GuestAlertVariant = "default" | "compact" | "hero" | "inline-banner";
 
@@ -32,12 +33,15 @@ interface GuestAlertProps {
  * ```
  */
 export function GuestAlert({
-  message = "ReadTree를 미리 둘러보고 있어요",
+  message,
   variant = "default",
   className,
-  loginLabel = "로그인",
+  loginLabel,
   loginHref = "/login",
 }: GuestAlertProps) {
+  const { t } = useTranslation();
+  const resolvedMessage = message || t("auth.exploringPreview");
+  const resolvedLoginLabel = loginLabel || t("common.login");
   const [dismissed, setDismissed] = useState(() => {
     if (typeof window !== "undefined" && variant === "inline-banner") {
       return sessionStorage.getItem("guest-banner-dismissed") === "true";
@@ -58,12 +62,12 @@ export function GuestAlert({
       >
         <div className="flex items-center gap-2 min-w-0">
           <BookOpen className="h-3.5 w-3.5 text-primary shrink-0" />
-          <span className="text-sm text-muted-foreground truncate">체험 중이에요</span>
+          <span className="text-sm text-muted-foreground truncate">{t("auth.exploring")}</span>
           <Link
             href={loginHref}
             className="text-sm font-medium text-primary hover:underline shrink-0"
           >
-            {loginLabel}
+            {resolvedLoginLabel}
           </Link>
         </div>
         <button
@@ -74,7 +78,7 @@ export function GuestAlert({
             }
           }}
           className="shrink-0 p-1 rounded hover:bg-primary/10 transition-colors"
-          aria-label="닫기"
+          aria-label={t("common.close")}
         >
           <X className="h-3.5 w-3.5 text-muted-foreground" />
         </button>
@@ -94,14 +98,14 @@ export function GuestAlert({
         <div className="flex items-center gap-2">
           <Badge variant="secondary" className="text-xs">
             <Sparkles className="w-3 h-3 mr-1" />
-            체험하기
+            {t("auth.tryIt")}
           </Badge>
-          <span className="text-sm text-muted-foreground">{message}</span>
+          <span className="text-sm text-muted-foreground">{resolvedMessage}</span>
         </div>
         <Button asChild size="sm" variant="outline">
           <Link href={loginHref}>
             <LogIn className="mr-1.5 h-3.5 w-3.5" />
-            {loginLabel}
+            {resolvedLoginLabel}
           </Link>
         </Button>
       </div>
@@ -125,14 +129,14 @@ export function GuestAlert({
                 className="bg-white/80 dark:bg-slate-800/80 shadow-sm"
               >
                 <Sparkles className="w-3 h-3 mr-1" />
-                체험하기
+                {t("auth.tryIt")}
               </Badge>
-              <p className="text-sm text-muted-foreground">{message}</p>
+              <p className="text-sm text-muted-foreground">{resolvedMessage}</p>
             </div>
             <Button asChild size="sm" className="shadow-sm">
               <Link href={loginHref}>
                 <LogIn className="mr-2 h-4 w-4" />
-                시작하기
+                {t("auth.start")}
               </Link>
             </Button>
           </div>
@@ -147,13 +151,13 @@ export function GuestAlert({
       <CardContent className="pt-6">
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-3">
-            <Badge variant="secondary">체험하기</Badge>
-            <p className="text-sm text-muted-foreground">{message}</p>
+            <Badge variant="secondary">{t("auth.tryIt")}</Badge>
+            <p className="text-sm text-muted-foreground">{resolvedMessage}</p>
           </div>
           <Button asChild size="sm">
             <Link href={loginHref}>
               <LogIn className="mr-2 h-4 w-4" />
-              {loginLabel}
+              {resolvedLoginLabel}
             </Link>
           </Button>
         </div>
