@@ -581,6 +581,35 @@ export type Database = {
           },
         ]
       }
+      note_likes: {
+        Row: {
+          id: string
+          note_id: string
+          user_id: string
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          note_id: string
+          user_id: string
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          note_id?: string
+          user_id?: string
+          created_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "note_likes_note_id_fkey"
+            columns: ["note_id"]
+            isOneToOne: false
+            referencedRelation: "notes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       feature_request_votes: {
         Row: {
           created_at: string | null
@@ -651,7 +680,7 @@ export type Database = {
       }
       notes: {
         Row: {
-          book_id: string
+          book_id: string | null
           content: string | null
           created_at: string | null
           id: string
@@ -660,6 +689,9 @@ export type Database = {
           is_sample: boolean | null
           page_number: number | null
           related_user_book_ids: string[] | null
+          source_type: string | null
+          source_label: string | null
+          like_count: number | null
           tags: string[] | null
           title: string | null
           type: Database["public"]["Enums"]["note_type"]
@@ -667,7 +699,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
-          book_id: string
+          book_id?: string | null
           content?: string | null
           created_at?: string | null
           id?: string
@@ -676,6 +708,9 @@ export type Database = {
           is_sample?: boolean | null
           page_number?: number | null
           related_user_book_ids?: string[] | null
+          source_type?: string | null
+          source_label?: string | null
+          like_count?: number | null
           tags?: string[] | null
           title?: string | null
           type: Database["public"]["Enums"]["note_type"]
@@ -683,7 +718,7 @@ export type Database = {
           user_id: string
         }
         Update: {
-          book_id?: string
+          book_id?: string | null
           content?: string | null
           created_at?: string | null
           id?: string
@@ -692,6 +727,9 @@ export type Database = {
           is_sample?: boolean | null
           page_number?: number | null
           related_user_book_ids?: string[] | null
+          source_type?: string | null
+          source_label?: string | null
+          like_count?: number | null
           tags?: string[] | null
           title?: string | null
           type?: Database["public"]["Enums"]["note_type"]

@@ -11,7 +11,9 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Share2, Check, Image as ImageIcon, Download, Link as LinkIcon } from "lucide-react";
+import { Share2, Check, Image as ImageIcon, Download, Link as LinkIcon, Trees } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { getImageUrl } from "@/lib/utils/image";
@@ -92,6 +94,7 @@ export function SimpleShareDialog({ note }: SimpleShareDialogProps) {
   const [kakaoShared, setKakaoShared] = useState(false);
   const [user, setUser] = useState<{ id: string; name: string; avatar_url: string | null } | null>(null);
   const [relatedBooks, setRelatedBooks] = useState<RelatedBookInfo[]>([]);
+  const [includeBranding, setIncludeBranding] = useState(true);
   const cardRef = useRef<HTMLDivElement>(null);
   const captureRef = useRef<HTMLDivElement>(null); // 캡처 전용 Hidden 요소 Ref
 
@@ -113,7 +116,7 @@ export function SimpleShareDialog({ note }: SimpleShareDialogProps) {
           .filter((ub: any) => ids.includes(ub.id))
           .map((ub: any) => ({
             id: ub.id,
-            title: ub.books?.title || "알 수 없는 책",
+            title: ub.books?.title || t("share.unknownBook"),
             author: ub.books?.author || null,
             coverImageUrl: ub.books?.cover_image_url || null,
           }));
@@ -158,7 +161,7 @@ export function SimpleShareDialog({ note }: SimpleShareDialogProps) {
         setLinkCopied(false);
       }, 2000);
     } catch (error) {
-      console.error("링크 복사 실패:", error);
+      console.error("Failed to copy link:", error);
       toast.error(t("share.linkShare") + " " + t("common.retry"));
     }
   };
@@ -198,14 +201,14 @@ export function SimpleShareDialog({ note }: SimpleShareDialogProps) {
               try {
                 await img.decode();
               } catch (e) {
-                console.warn(`[카드 복사] 이미지 ${index + 1}/${images.length} 디코딩 실패:`, e);
+                console.warn(`[Card copy] Image ${index + 1}/${images.length} decode failed:`, e);
               }
               resolve();
               return;
             }
 
             const timeout = setTimeout(() => {
-              console.warn(`[카드 복사] 이미지 ${index + 1}/${images.length} 타임아웃:`, img.src);
+              console.warn(`[Card copy] Image ${index + 1}/${images.length} timeout:`, img.src);
               resolve();
             }, 5000);
 
@@ -215,13 +218,13 @@ export function SimpleShareDialog({ note }: SimpleShareDialogProps) {
               try {
                 await img.decode();
               } catch (e) {
-                console.warn(`[카드 복사] 이미지 ${index + 1}/${images.length} 디코딩 실패:`, e);
+                console.warn(`[Card copy] Image ${index + 1}/${images.length} decode failed:`, e);
               }
               resolve();
             };
 
             img.onerror = (e) => {
-              console.error(`[카드 복사] 이미지 ${index + 1}/${images.length} 로드 실패:`, img.src, e);
+              console.error(`[Card copy] Image ${index + 1}/${images.length} load failed:`, img.src, e);
               clearTimeout(timeout);
               resolve();
             };
@@ -299,14 +302,14 @@ export function SimpleShareDialog({ note }: SimpleShareDialogProps) {
               if (blob && blob.size > 0) {
                 resolve(blob);
               } else {
-                console.error("[카드 복사] Blob 변환 실패 - 빈 Blob");
-                reject(new Error("이미지 변환 실패: 빈 이미지"));
+                console.error("[Card copy] Blob conversion failed - empty Blob");
+                reject(new Error("Image conversion failed: empty image"));
               }
             },
             "image/png"
           );
         } catch (blobError) {
-          console.error("[카드 복사] Blob 변환 예외:", blobError);
+          console.error("[Card copy] Blob conversion exception:", blobError);
           reject(blobError);
         }
       });
@@ -337,7 +340,7 @@ export function SimpleShareDialog({ note }: SimpleShareDialogProps) {
         }, 2000);
       }
     } catch (error) {
-      console.error("카드 복사 오류:", error);
+      console.error("Card copy error:", error);
       toast.error(t("share.cardCopy") + " " + t("common.retry"));
     } finally {
       setIsCapturing(false);
@@ -360,7 +363,7 @@ export function SimpleShareDialog({ note }: SimpleShareDialogProps) {
 
       const loadImage = new Promise((resolve, reject) => {
         img.onload = () => resolve(img);
-        img.onerror = () => reject(new Error("이미지 로드에 실패했습니다."));
+        img.onerror = () => reject(new Error("Failed to load image"));
         img.src = imageUrl;
       });
 
@@ -377,7 +380,7 @@ export function SimpleShareDialog({ note }: SimpleShareDialogProps) {
       canvas.width = loadedImg.width;
       canvas.height = loadedImg.height;
       const ctx = canvas.getContext("2d");
-      if (!ctx) throw new Error("Canvas context를 생성할 수 없습니다.");
+      if (!ctx) throw new Error("Cannot create canvas context");
 
       ctx.drawImage(loadedImg, 0, 0);
 
@@ -390,9 +393,9 @@ export function SimpleShareDialog({ note }: SimpleShareDialogProps) {
         // 스템프 적용
         let finalBlob = blob;
         try {
-          finalBlob = await addStampToBlob(blob, new Date(note.created_at));
+          finalBlob = await addStampToBlob(blob, new Date(note.created_at), includeBranding ? { brandingUrl: "readingtree.app" } : undefined);
         } catch (stampError) {
-          console.error("스탬프 적용 실패, 원본 이미지 사용:", stampError);
+          console.error("Stamp application failed, using original image:", stampError);
           // 스탬프 적용 실패 시 원본 사용
         }
 
@@ -422,13 +425,13 @@ export function SimpleShareDialog({ note }: SimpleShareDialogProps) {
               setPhotoCopied(false);
             }, 2000);
           } catch (downloadError) {
-            console.error("다운로드도 실패:", downloadError);
+            console.error("Download also failed:", downloadError);
             toast.error(t("share.originalCopy") + " " + t("common.retry"));
           }
         }
       }, "image/png");
     } catch (error) {
-      console.error("이미지 처리 실패:", error);
+      console.error("Image processing failed:", error);
       toast.error(t("share.imageLoadError"));
     }
   };
@@ -454,7 +457,7 @@ export function SimpleShareDialog({ note }: SimpleShareDialogProps) {
       const shareUrl = `${baseUrl}/share/notes/${note.id}`;
 
       // description 결정: 필사 OCR > 인용구 > 메모 > 기본 문구
-      let description = "ReadTree에서 기록한 독서 메모입니다.";
+      let description = t("share.defaultDescription");
       if (note.transcription?.extracted_text) {
         description = note.transcription.extracted_text;
       } else if (note.content) {
@@ -472,12 +475,12 @@ export function SimpleShareDialog({ note }: SimpleShareDialogProps) {
 
       // OG 이미지 URL 사용 (동적 생성 이미지)
       const ogImageUrl = `${baseUrl}/share/notes/${note.id}/opengraph-image`;
-      const bookTitle = note.book?.title || "독서 기록";
+      const bookTitle = note.book?.title || t("share.readingNote");
 
       kakao.Share.sendDefault({
         objectType: "feed",
         content: {
-          title: `"${bookTitle}" 독서 기록 - ReadTree`,
+          title: t("share.readingNoteTitle", { title: bookTitle }),
           description,
           imageUrl: ogImageUrl,
           imageWidth: 1200,
@@ -489,7 +492,7 @@ export function SimpleShareDialog({ note }: SimpleShareDialogProps) {
         },
         buttons: [
           {
-            title: "기록 보러가기",
+            title: t("share.viewNote"),
             link: {
               mobileWebUrl: shareUrl,
               webUrl: shareUrl,
@@ -502,7 +505,7 @@ export function SimpleShareDialog({ note }: SimpleShareDialogProps) {
       toast.success(t("share.shareDone"));
       setTimeout(() => setKakaoShared(false), 2000);
     } catch (error) {
-      console.error("카카오 공유 실패:", error);
+      console.error("Kakao share failed:", error);
       toast.error(t("share.kakaoShare") + " " + t("common.retry"));
     }
   }, [note]);
@@ -626,6 +629,20 @@ export function SimpleShareDialog({ note }: SimpleShareDialogProps) {
                   )}
                 </Button>
               )}
+            </div>
+
+            {/* 브랜딩 포함 토글 */}
+            <div className="flex items-center justify-end gap-2 mb-3">
+              <Label htmlFor="branding-toggle" className="text-xs font-medium text-slate-500 dark:text-slate-400 flex items-center gap-1.5 cursor-pointer">
+                <Trees className="w-3.5 h-3.5 text-forest-500" />
+                {t("share.includeBranding")}
+              </Label>
+              <Switch
+                id="branding-toggle"
+                checked={includeBranding}
+                onCheckedChange={setIncludeBranding}
+                className="scale-90"
+              />
             </div>
 
             <div className="mb-6 group bg-slate-50 dark:bg-slate-900/50 p-4 sm:p-6 rounded-[2rem] border border-slate-100 dark:border-slate-800">

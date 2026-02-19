@@ -91,18 +91,20 @@ export async function addStampToImage(
  * Blob 이미지에 타임스탬프 스탬프를 추가
  * @param blob 원본 이미지 Blob
  * @param timestamp 타임스탬프 (기본값: 현재 시간)
+ * @param options.brandingUrl 우측 하단에 표시할 브랜딩 URL 텍스트 (예: "readingtree.app")
  * @returns 스탬프가 추가된 Blob
  */
 export async function addStampToBlob(
   blob: Blob,
-  timestamp?: Date
+  timestamp?: Date,
+  options?: { brandingUrl?: string }
 ): Promise<Blob> {
   const targetTimestamp = timestamp || new Date();
-  
+
   // 이미지 로드
   const img = new Image();
   const imageUrl = URL.createObjectURL(blob);
-  
+
   return new Promise((resolve, reject) => {
     img.onload = () => {
       // Canvas 생성
@@ -110,30 +112,32 @@ export async function addStampToBlob(
       canvas.width = img.width;
       canvas.height = img.height;
       const ctx = canvas.getContext("2d");
-      
+
       if (!ctx) {
         URL.revokeObjectURL(imageUrl);
         reject(new Error("Canvas context를 생성할 수 없습니다."));
         return;
       }
-      
+
       // 이미지 그리기
       ctx.drawImage(img, 0, 0);
-      
+
       // 타임스탬프 텍스트 포맷팅
       const formattedDate = formatDateTime(targetTimestamp);
-      
+
       // 스탬프 스타일 설정
       const fontSize = Math.max(12, Math.min(img.width, img.height) * 0.02);
       const padding = fontSize * 0.5;
+      const font = `bold ${fontSize}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif`;
+      ctx.font = font;
       const textX = padding;
       const textY = img.height - padding;
-      
+
       // 배경 박스 그리기 (반투명)
       const textMetrics = ctx.measureText(formattedDate);
       const textWidth = textMetrics.width;
       const textHeight = fontSize;
-      
+
       ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
       ctx.fillRect(
         textX - padding * 0.5,
@@ -141,13 +145,33 @@ export async function addStampToBlob(
         textWidth + padding,
         textHeight + padding
       );
-      
+
       // 텍스트 그리기
       ctx.fillStyle = "rgba(255, 255, 255, 0.9)";
-      ctx.font = `bold ${fontSize}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif`;
       ctx.textBaseline = "bottom";
       ctx.fillText(formattedDate, textX, textY);
-      
+
+      // 브랜딩 URL (우측 하단)
+      if (options?.brandingUrl) {
+        const brandingFontSize = fontSize * 0.85;
+        ctx.font = `bold ${brandingFontSize}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif`;
+        const brandingMetrics = ctx.measureText(options.brandingUrl);
+        const brandingX = img.width - brandingMetrics.width - padding;
+        const brandingY = img.height - padding;
+
+        ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
+        ctx.fillRect(
+          brandingX - padding * 0.5,
+          brandingY - brandingFontSize - padding * 0.5,
+          brandingMetrics.width + padding,
+          brandingFontSize + padding
+        );
+
+        ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
+        ctx.textBaseline = "bottom";
+        ctx.fillText(options.brandingUrl, brandingX, brandingY);
+      }
+
       // Blob으로 변환
       canvas.toBlob(
         (resultBlob) => {
@@ -162,12 +186,12 @@ export async function addStampToBlob(
         0.95
       );
     };
-    
+
     img.onerror = () => {
       URL.revokeObjectURL(imageUrl);
       reject(new Error("이미지 로드에 실패했습니다."));
     };
-    
+
     img.src = imageUrl;
   });
 }

@@ -11,6 +11,9 @@ import {
   User,
   Trees,
   Bot,
+  Tag,
+  BarChart3,
+  Compass,
   ChevronDown,
   type LucideIcon,
 } from "lucide-react";
@@ -53,7 +56,10 @@ export function Sidebar() {
   ];
 
   const secondaryItems: SidebarItem[] = [
+    { icon: Compass, label: t("nav.explore"), href: "/explore" },
     { icon: Users, label: t("nav.groups"), href: "/groups" },
+    { icon: Tag, label: t("nav.tags"), href: "/tags" },
+    { icon: BarChart3, label: t("nav.stats"), href: "/stats" },
     { icon: Bot, label: t("nav.aiChat"), href: "/chat" },
     { icon: Trees, label: t("nav.admin"), href: "/admin", adminOnly: true },
   ];

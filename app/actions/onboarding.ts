@@ -120,6 +120,35 @@ export async function agreeToTerms(termsAgreed: boolean, privacyAgreed: boolean)
 }
 
 /**
+ * 첫 기록 작성 여부 확인
+ * @returns hasFirstNote: true면 이미 기록이 있음
+ */
+export async function checkHasFirstNote() {
+  const supabase = await createServerSupabaseClient();
+
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    return { hasFirstNote: false };
+  }
+
+  const { count, error } = await supabase
+    .from("notes")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", user.id)
+    .limit(1);
+
+  if (error) {
+    return { hasFirstNote: false };
+  }
+
+  return { hasFirstNote: (count ?? 0) > 0 };
+}
+
+/**
  * 약관 동의 여부 확인
  */
 export async function checkConsentComplete() {

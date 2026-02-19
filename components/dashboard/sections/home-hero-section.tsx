@@ -25,6 +25,7 @@ import { useStyle } from "@/hooks/use-style";
 import { useTranslation } from "@/lib/i18n";
 import { ContinueReadingCard, NoReadingBookCard } from "./continue-reading-card";
 import { OnboardingChecklist, type OnboardingItem } from "@/components/onboarding/onboarding-checklist";
+import { FirstNotePrompt } from "@/components/onboarding/first-note-prompt";
 import type { DailyRecordByType } from "@/app/actions/stats";
 
 interface ContinueReadingData {
@@ -83,6 +84,8 @@ interface HomeHeroSectionProps {
   levelTitle?: string;
   /** 게스트 모드 (샘플 데이터 표시) */
   isGuest?: boolean;
+  /** 첫 기록 작성 여부 (false이면 CTA 표시) */
+  hasFirstNote?: boolean;
 }
 
 /**
@@ -104,6 +107,7 @@ export function HomeHeroSection({
   userLevel = 1,
   levelTitle,
   isGuest = false,
+  hasFirstNote = true,
 }: HomeHeroSectionProps) {
   const [mounted, setMounted] = useState(false);
   const { greeting, getStreakMessage, getMotivationalMessage } = useStyle();
@@ -233,6 +237,9 @@ export function HomeHeroSection({
           </div>
         </div>
       </motion.div>
+
+      {/* ======== 첫 기록 CTA (기록이 없는 유저에게만 표시) ======== */}
+      {userName && !isGuest && !hasFirstNote && <FirstNotePrompt />}
 
       {/* ======== 계속 읽기 (Primary CTA - 최우선) ======== */}
       {(userName || (isGuest && continueReadingBooks.length > 0)) && (

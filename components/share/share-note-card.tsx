@@ -212,24 +212,29 @@ export function ShareNoteCard({ note, className, isPublicView = false, hideActio
     const formattedDate = formatDate(note.created_at);
     const isProgressType = note.type === "progress";
 
-    // 공통 푸터 (Habitree 로고) - 한 줄로 표시
+    // 공통 푸터 (ReadTree 로고 + 브랜딩 URL)
     const FooterLogo = () => (
-        <div className="flex items-center gap-2 whitespace-nowrap overflow-visible">
-            <div className="w-8 h-8 bg-forest-600 dark:bg-forest-500 rounded-lg flex items-center justify-center shadow-md shadow-forest-200 dark:shadow-forest-900/20 transition-transform hover:scale-105 shrink-0">
-                <Trees className="w-4 h-4 text-white" />
-            </div>
-            <div className="flex flex-col justify-center gap-0 overflow-visible h-8">
-                <div className="block h-[18px] leading-[18px] overflow-visible">
-                    <span className="text-sm font-black tracking-tight text-slate-900 dark:text-slate-100 italic">
-                        ReadTree
-                    </span>
+        <div className="flex items-center justify-between w-full overflow-visible">
+            <div className="flex items-center gap-2 whitespace-nowrap overflow-visible">
+                <div className="w-8 h-8 bg-forest-600 dark:bg-forest-500 rounded-lg flex items-center justify-center shadow-md shadow-forest-200 dark:shadow-forest-900/20 transition-transform hover:scale-105 shrink-0">
+                    <Trees className="w-4 h-4 text-white" />
                 </div>
-                <div className="block h-[12px] leading-[12px] overflow-visible">
-                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-tight">
-                        Your Intelligence Forest
-                    </span>
+                <div className="flex flex-col justify-center gap-0 overflow-visible h-8">
+                    <div className="block h-[18px] leading-[18px] overflow-visible">
+                        <span className="text-sm font-black tracking-tight text-slate-900 dark:text-slate-100 italic">
+                            ReadTree
+                        </span>
+                    </div>
+                    <div className="block h-[12px] leading-[12px] overflow-visible">
+                        <span className="text-[11px] font-bold text-slate-400 uppercase tracking-tight">
+                            Your Intelligence Forest
+                        </span>
+                    </div>
                 </div>
             </div>
+            <span className="text-[10px] font-semibold text-slate-300 dark:text-slate-600 tracking-wide">
+                readingtree.app
+            </span>
         </div>
     );
 

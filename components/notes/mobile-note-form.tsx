@@ -23,14 +23,15 @@ import {
 import Image from "next/image";
 import { getImageUrl, isValidImageUrl } from "@/lib/utils/image";
 import { BookMentionTextarea } from "./book-mention-textarea";
+import { SourceInput } from "./source-input";
 import type { NoteMode } from "@/hooks/use-mobile-note-sheet";
 import { cn } from "@/lib/utils";
 import { useNoteForm } from "@/hooks/use-note-form";
 import { useTranslation } from "@/lib/i18n";
 
 interface MobileNoteFormProps {
-  /** user_books.id */
-  bookId: string;
+  /** user_books.id (책 없이 저장 시 undefined) */
+  bookId?: string;
   /** 기록 모드 */
   mode: NoteMode;
   /** 저장 완료 후 콜백 */
@@ -58,6 +59,9 @@ export function MobileNoteForm({
   const [pageNumbers, setPageNumbers] = useState("");
   const [tags, setTags] = useState("");
   const [applyStamp, setApplyStamp] = useState(false);
+  const [sourceType, setSourceType] = useState("");
+  const [sourceLabel, setSourceLabel] = useState("");
+  const [isAiTagLoading, setIsAiTagLoading] = useState(false);
 
   // 텍스트 영역 포커스 상태
   const [quoteFocused, setQuoteFocused] = useState(false);
@@ -117,6 +121,8 @@ export function MobileNoteForm({
       pageNumbers: pageNumbers.trim() || undefined,
       tags: tags || undefined,
       isPublic,
+      sourceType: !bookId && sourceType ? sourceType : undefined,
+      sourceLabel: !bookId && sourceLabel.trim() ? sourceLabel.trim() : undefined,
     });
   };
 
@@ -295,6 +301,16 @@ export function MobileNoteForm({
           </div>
         )}
 
+        {/* 출처 입력 (책 없이 기록할 때) */}
+        {!bookId && (
+          <SourceInput
+            sourceType={sourceType}
+            sourceLabel={sourceLabel}
+            onSourceTypeChange={setSourceType}
+            onSourceLabelChange={setSourceLabel}
+          />
+        )}
+
         {/* 페이지 & 태그 & 공개 - 한 줄에 */}
         <div className="flex items-center gap-2 py-0.5">
           <Input
@@ -309,6 +325,43 @@ export function MobileNoteForm({
             placeholder={t("notes.tagsCommaSeparated")}
             className="h-6 flex-1 text-[11px] px-2"
           />
+          <button
+            type="button"
+            disabled={isAiTagLoading || (!quoteContent.trim() && !memoContent.trim())}
+            className="shrink-0 flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/50 transition-colors disabled:opacity-40"
+            onClick={async () => {
+              const content = [quoteContent, memoContent].filter(Boolean).join("\n");
+              if (content.trim().length < 10) {
+                toast.info(t("notes.aiTagNeedContent"));
+                return;
+              }
+              setIsAiTagLoading(true);
+              try {
+                const res = await fetch("/api/ai/auto-tag", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ content }),
+                });
+                const data = await res.json();
+                if (data.success && data.tags?.length > 0) {
+                  const currentTags = tags.split(",").map((t) => t.trim()).filter(Boolean);
+                  const newTags = data.tags.filter((t: string) => !currentTags.includes(t));
+                  const merged = [...currentTags, ...newTags].slice(0, 10).join(", ") + ", ";
+                  setTags(merged);
+                  toast.success(t("notes.aiTagSuccess", { count: newTags.length }));
+                } else {
+                  toast.info(t("notes.aiTagNoResult"));
+                }
+              } catch {
+                toast.error(t("notes.aiTagFailed"));
+              } finally {
+                setIsAiTagLoading(false);
+              }
+            }}
+          >
+            {isAiTagLoading ? <Loader2 className="w-2.5 h-2.5 animate-spin" /> : <Sparkles className="w-2.5 h-2.5" />}
+            AI
+          </button>
           <button
             type="button"
             onClick={() => setIsPublic(!isPublic)}

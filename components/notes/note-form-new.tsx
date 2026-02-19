@@ -26,15 +26,16 @@ import { TagInput } from "./tag-input";
 import { TextPreviewDialog } from "./text-preview-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { BookMentionTextarea } from "./book-mention-textarea";
+import { SourceInput } from "./source-input";
 import { cn } from "@/lib/utils";
 import { useNoteForm } from "@/hooks/use-note-form";
 import { useTranslation } from "@/lib/i18n";
 
 // 스키마: 모든 값은 선택이지만 완전히 빈값은 불가
 const noteFormSchema = z.object({
-  title: z.string().max(100, "제목은 100자 이하여야 합니다.").optional(),
-  quoteContent: z.string().max(5000, "인상깊은 구절은 5000자 이하여야 합니다.").optional(),
-  memoContent: z.string().max(10000, "내 생각은 10000자 이하여야 합니다.").optional(),
+  title: z.string().max(100, "Title must be 100 characters or less.").optional(),
+  quoteContent: z.string().max(5000, "Quote must be 5000 characters or less.").optional(),
+  memoContent: z.string().max(10000, "Thought must be 10000 characters or less.").optional(),
   uploadType: z.enum(["photo", "transcription"]).optional(),
   pageNumbers: z.string().max(1500).optional(),
   tags: z.string().optional().refine(
@@ -43,7 +44,7 @@ const noteFormSchema = z.object({
       const tags = val.split(",").map((t) => t.trim()).filter(Boolean);
       return tags.length <= 10;
     },
-    { message: "태그는 최대 10개까지 입력할 수 있습니다." }
+    { message: "You can add up to 10 tags." }
   ),
   isPublic: z.boolean(),
 });
@@ -51,7 +52,7 @@ const noteFormSchema = z.object({
 type NoteFormValues = z.infer<typeof noteFormSchema>;
 
 interface NoteFormNewProps {
-  bookId: string;
+  bookId?: string;
 }
 
 /**
@@ -65,6 +66,8 @@ export function NoteFormNew({ bookId }: NoteFormNewProps) {
   const router = useRouter();
   const [applyStamp, setApplyStamp] = useState(false);
   const [showOptionalFields, setShowOptionalFields] = useState(false);
+  const [sourceType, setSourceType] = useState("");
+  const [sourceLabel, setSourceLabel] = useState("");
   const transcriptionInputRef = useRef<HTMLInputElement>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
 
@@ -84,7 +87,7 @@ export function NoteFormNew({ bookId }: NoteFormNewProps) {
   } = useNoteForm({
     bookId,
     onSuccess: () => {
-      router.push(`/books/${bookId}`);
+      router.push(bookId ? `/books/${bookId}` : "/notes");
     },
   });
 
@@ -127,6 +130,8 @@ export function NoteFormNew({ bookId }: NoteFormNewProps) {
       pageNumbers: data.pageNumbers,
       tags: data.tags,
       isPublic: data.isPublic,
+      sourceType: !bookId && sourceType ? sourceType : undefined,
+      sourceLabel: !bookId && sourceLabel.trim() ? sourceLabel.trim() : undefined,
     });
   };
 
@@ -348,6 +353,19 @@ export function NoteFormNew({ bookId }: NoteFormNewProps) {
           </div>
         )}
 
+        {/* 출처 입력 (책 없이 기록할 때) */}
+        {!bookId && (
+          <div className="p-3 bg-slate-50/50 dark:bg-slate-800/30 rounded-lg border border-slate-200 dark:border-slate-700">
+            <Label className="text-sm font-medium mb-2 block">{t("notes.sourceType")}</Label>
+            <SourceInput
+              sourceType={sourceType}
+              sourceLabel={sourceLabel}
+              onSourceTypeChange={setSourceType}
+              onSourceLabelChange={setSourceLabel}
+            />
+          </div>
+        )}
+
         {/* 추가 옵션 섹션 (접힘 가능) */}
         <div className="border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
           <button
@@ -418,6 +436,7 @@ export function NoteFormNew({ bookId }: NoteFormNewProps) {
                   <TagInput
                     value={watch("tags") || ""}
                     onChange={(value) => setValue("tags", value)}
+                    noteContent={[quoteContent, memoContent].filter(Boolean).join("\n")}
                   />
 
                   {/* 공개 설정 */}

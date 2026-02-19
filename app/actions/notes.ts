@@ -36,8 +36,8 @@ export async function createNote(data: CreateNoteInput, user?: User | null) {
     currentUser = fetchedUser;
   }
 
-  // UUID 검증
-  if (!isValidUUID(data.book_id)) {
+  // book_id UUID 검증 (optional — 책 없이 저장 가능)
+  if (data.book_id && !isValidUUID(data.book_id)) {
     throw new Error("유효하지 않은 책 ID입니다.");
   }
 
@@ -83,22 +83,27 @@ export async function createNote(data: CreateNoteInput, user?: User | null) {
     }
   }
 
-  // 책 소유 확인 및 book_id 조회
-  // data.book_id는 user_books.id이므로, user_books에서 book_id를 조회해야 함
-  const { data: userBook, error: bookCheckError } = await supabase
-    .from("user_books")
-    .select("id, book_id")
-    .eq("id", data.book_id)
-    .eq("user_id", currentUser.id)
-    .maybeSingle(); // .single() 대신 .maybeSingle() 사용
+  // 책 소유 확인 및 book_id 조회 (book_id가 있는 경우에만)
+  let resolvedBookId: string | null = null;
 
-  if (bookCheckError && bookCheckError.code !== "PGRST116") {
-    // PGRST116은 "결과가 없음" 에러이므로 무시
-    throw new Error("책 소유 확인에 실패했습니다.");
-  }
+  if (data.book_id) {
+    // data.book_id는 user_books.id이므로, user_books에서 book_id를 조회해야 함
+    const { data: userBook, error: bookCheckError } = await supabase
+      .from("user_books")
+      .select("id, book_id")
+      .eq("id", data.book_id)
+      .eq("user_id", currentUser.id)
+      .maybeSingle();
 
-  if (!userBook || !userBook.book_id) {
-    throw new Error("권한이 없습니다. 해당 책을 소유하고 있지 않습니다.");
+    if (bookCheckError && bookCheckError.code !== "PGRST116") {
+      throw new Error("책 소유 확인에 실패했습니다.");
+    }
+
+    if (!userBook || !userBook.book_id) {
+      throw new Error("권한이 없습니다. 해당 책을 소유하고 있지 않습니다.");
+    }
+
+    resolvedBookId = userBook.book_id;
   }
 
   // related_user_book_ids 검증
@@ -163,20 +168,21 @@ export async function createNote(data: CreateNoteInput, user?: User | null) {
   }
 
   // 기록 생성
-  // notes.book_id는 books.id를 참조하므로 userBook.book_id를 사용
   const { data: note, error } = await supabase
     .from("notes")
     .insert({
       user_id: currentUser.id,
-      book_id: userBook.book_id,
+      book_id: resolvedBookId,
       title: data.title || null,
       type: noteType,
       content: content,
       image_url: data.image_url || null,
       page_number: data.page_number || null,
-      is_public: data.is_public ?? true, // 기본값: 공개
+      is_public: data.is_public ?? true,
       tags: data.tags || null,
       related_user_book_ids: relatedUserBookIds,
+      source_type: data.source_type || null,
+      source_label: data.source_label || null,
     })
     .select()
     .single();
@@ -217,9 +223,11 @@ export async function createNote(data: CreateNoteInput, user?: User | null) {
   }
 
   revalidatePath("/notes");
-  revalidatePath(`/books/${data.book_id}`);
+  if (data.book_id) {
+    revalidatePath(`/books/${data.book_id}`);
+  }
   revalidatePath(`/notes/${note.id}`);
-  revalidatePath("/"); // 홈페이지도 갱신
+  revalidatePath("/");
 
   return { success: true, noteId: note.id };
 }
@@ -845,6 +853,44 @@ export async function getUserTags(user?: User | null): Promise<string[]> {
 
   // 알파벳/한글 순으로 정렬
   return Array.from(allTags).sort((a, b) => a.localeCompare(b, "ko"));
+}
+
+/**
+ * 태그별 사용 빈도 조회 (태그 클라우드용)
+ */
+export async function getUserTagsWithCount(user?: User | null): Promise<{ tag: string; count: number }[]> {
+  const supabase = await createServerSupabaseClient();
+
+  let currentUser = user;
+  if (!currentUser) {
+    const { data: { user: fetchedUser }, error: authError } = await supabase.auth.getUser();
+    if (authError || !fetchedUser) throw new Error("로그인이 필요합니다.");
+    currentUser = fetchedUser;
+  }
+
+  const { data: notes, error } = await supabase
+    .from("notes")
+    .select("tags")
+    .eq("user_id", currentUser.id)
+    .not("tags", "is", null);
+
+  if (error || !notes) return [];
+
+  const tagCounts = new Map<string, number>();
+  notes.forEach((note) => {
+    if (note.tags && Array.isArray(note.tags)) {
+      note.tags.forEach((tag) => {
+        if (tag && typeof tag === "string" && tag.trim()) {
+          const t = tag.trim();
+          tagCounts.set(t, (tagCounts.get(t) || 0) + 1);
+        }
+      });
+    }
+  });
+
+  return Array.from(tagCounts.entries())
+    .map(([tag, count]) => ({ tag, count }))
+    .sort((a, b) => b.count - a.count);
 }
 
 /**

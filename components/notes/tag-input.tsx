@@ -16,7 +16,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { X, Trash2 } from "lucide-react";
+import { X, Trash2, Sparkles, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { getUserTags, deleteTag, getTagUsageCount } from "@/app/actions/notes";
 import { cn } from "@/lib/utils";
@@ -27,13 +27,15 @@ interface TagInputProps {
   onChange: (value: string) => void;
   placeholder?: string;
   label?: string;
+  /** AI 태그 추천을 위한 노트 텍스트 내용 */
+  noteContent?: string;
 }
 
 /**
  * 태그 입력 컴포넌트
  * 자동완성 및 저장된 태그 목록 제공
  */
-export function TagInput({ value, onChange, placeholder, label }: TagInputProps) {
+export function TagInput({ value, onChange, placeholder, label, noteContent }: TagInputProps) {
   const { t } = useTranslation();
   const resolvedPlaceholder = placeholder || t("notes.tagInputPlaceholder");
   const resolvedLabel = label || t("notes.tagLabel");
@@ -43,6 +45,7 @@ export function TagInput({ value, onChange, placeholder, label }: TagInputProps)
   const [inputValue, setInputValue] = useState(value);
   const [isDeleteMode, setIsDeleteMode] = useState(false);
   const [selectedTagsForDelete, setSelectedTagsForDelete] = useState<Set<string>>(new Set());
+  const [isAiLoading, setIsAiLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
 
@@ -62,6 +65,55 @@ export function TagInput({ value, onChange, placeholder, label }: TagInputProps)
       setUserTags(tags);
     } catch (error) {
       console.error("태그 목록 로드 오류:", error);
+    }
+  };
+
+  // AI 태그 추천 요청
+  const handleAiTagSuggestion = async () => {
+    if (!noteContent || noteContent.trim().length < 10) {
+      toast.info(t("notes.aiTagNeedContent"));
+      return;
+    }
+
+    setIsAiLoading(true);
+    try {
+      const response = await fetch("/api/ai/auto-tag", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: noteContent }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        toast.error(data.error || t("notes.aiTagFailed"));
+        return;
+      }
+
+      if (!data.tags || data.tags.length === 0) {
+        toast.info(t("notes.aiTagNoResult"));
+        return;
+      }
+
+      // 기존 태그와 합치기 (중복 제거, 10개 제한)
+      const currentTags = inputValue
+        .split(",")
+        .map((t) => t.trim())
+        .filter(Boolean);
+
+      const newTags = data.tags.filter((tag: string) => !currentTags.includes(tag));
+      const mergedTags = [...currentTags, ...newTags].slice(0, 10);
+
+      const newValue = mergedTags.join(", ") + ", ";
+      setInputValue(newValue);
+      onChange(newValue);
+
+      toast.success(t("notes.aiTagSuccess", { count: newTags.length }));
+    } catch (error) {
+      console.error("[TagInput] AI 태그 추천 오류:", error);
+      toast.error(t("notes.aiTagFailed"));
+    } finally {
+      setIsAiLoading(false);
     }
   };
 
@@ -348,7 +400,26 @@ export function TagInput({ value, onChange, placeholder, label }: TagInputProps)
 
   return (
     <div className="space-y-2">
-      <Label htmlFor="tags">{resolvedLabel}</Label>
+      <div className="flex items-center justify-between">
+        <Label htmlFor="tags">{resolvedLabel}</Label>
+        {noteContent && (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="h-6 px-2 text-xs gap-1"
+            onClick={handleAiTagSuggestion}
+            disabled={isAiLoading || !noteContent || noteContent.trim().length < 10}
+          >
+            {isAiLoading ? (
+              <Loader2 className="h-3 w-3 animate-spin" />
+            ) : (
+              <Sparkles className="h-3 w-3 text-amber-500" />
+            )}
+            {t("notes.aiTagBtn")}
+          </Button>
+        )}
+      </div>
       <div className="relative">
         <Input
           ref={inputRef}

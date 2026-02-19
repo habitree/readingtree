@@ -41,18 +41,18 @@ import { useTranslation } from "@/lib/i18n";
 
 // 스키마: 모든 값은 선택이지만 완전히 빈값은 불가
 const noteEditFormSchema = z.object({
-  title: z.string().max(100, "제목은 100자 이하여야 합니다.").optional(),
-  quoteContent: z.string().max(5000, "인상깊은 구절은 5000자 이하여야 합니다.").optional(),
-  memoContent: z.string().max(10000, "내 생각은 10000자 이하여야 합니다.").optional(),
+  title: z.string().max(100, "Title must be 100 characters or less.").optional(),
+  quoteContent: z.string().max(5000, "Quote must be 5000 characters or less.").optional(),
+  memoContent: z.string().max(10000, "Thought must be 10000 characters or less.").optional(),
   uploadType: z.enum(["photo", "transcription"]).optional(),
-  pageNumber: z.string().max(200, "페이지 정보는 200자 이하여야 합니다.").optional(),
+  pageNumber: z.string().max(200, "Page info must be 200 characters or less.").optional(),
   tags: z.string().optional().refine(
     (val) => {
       if (!val) return true;
       const tags = val.split(",").map((t) => t.trim()).filter(Boolean);
       return tags.length <= 10;
     },
-    { message: "태그는 최대 10개까지 입력할 수 있습니다." }
+    { message: "You can add up to 10 tags." }
   ),
   isPublic: z.boolean(),
 });
@@ -381,6 +381,7 @@ export function NoteEditForm({ note }: NoteEditFormProps) {
         <TagInput
           value={watch("tags") || ""}
           onChange={(value) => setValue("tags", value)}
+          noteContent={[watch("quoteContent"), watch("memoContent")].filter(Boolean).join("\n")}
         />
 
         {/* 연결된 책 관리 */}

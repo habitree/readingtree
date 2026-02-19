@@ -33,6 +33,8 @@ import {
 } from "@/app/actions/groups";
 import { toast } from "sonner";
 import { ArrowLeft, Loader2, Trash2, AlertTriangle, Copy, Check, Link as LinkIcon } from "lucide-react";
+import { useTranslation } from "@/lib/i18n";
+import { InviteLinkDialog } from "@/components/groups/invite-link-dialog";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -44,6 +46,7 @@ interface PageProps {
  */
 export default function GroupSettingsPage({ params }: PageProps) {
   const router = useRouter();
+  const { t } = useTranslation();
   const [groupId, setGroupId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -71,7 +74,7 @@ export default function GroupSettingsPage({ params }: PageProps) {
         });
       } catch (err) {
         console.error("모임 설정 로드 오류:", err);
-        setError(err instanceof Error ? err.message : "모임 정보를 불러올 수 없습니다.");
+        setError(err instanceof Error ? err.message : t("groups.groupLoadError"));
       } finally {
         setIsLoading(false);
       }
@@ -91,11 +94,11 @@ export default function GroupSettingsPage({ params }: PageProps) {
         description: formData.description,
         isPublic: formData.isPublic,
       });
-      toast.success("모임 설정이 저장됐어요.");
+      toast.success(t("groups.groupSaveSuccess"));
       router.push(`/groups/${groupId}`);
     } catch (err) {
       console.error("모임 수정 오류:", err);
-      toast.error(err instanceof Error ? err.message : "모임 수정에 실패했어요.");
+      toast.error(err instanceof Error ? err.message : t("groups.groupSaveFailed"));
     } finally {
       setIsSaving(false);
     }
@@ -108,11 +111,11 @@ export default function GroupSettingsPage({ params }: PageProps) {
     try {
       await navigator.clipboard.writeText(inviteLink);
       setIsCopied(true);
-      toast.success("초대 링크가 복사됐어요.");
+      toast.success(t("groups.inviteLinkCopied"));
       setTimeout(() => setIsCopied(false), 2000);
     } catch (err) {
       console.error("링크 복사 오류:", err);
-      toast.error("링크 복사에 실패했어요.");
+      toast.error(t("groups.inviteLinkCopyFailed"));
     }
   };
 
@@ -122,11 +125,11 @@ export default function GroupSettingsPage({ params }: PageProps) {
     setIsDeleting(true);
     try {
       await deleteGroup(groupId);
-      toast.success("모임이 삭제됐어요.");
+      toast.success(t("groups.groupDeleteSuccess"));
       router.push("/groups");
     } catch (err) {
       console.error("모임 삭제 오류:", err);
-      toast.error(err instanceof Error ? err.message : "모임 삭제에 실패했어요.");
+      toast.error(err instanceof Error ? err.message : t("groups.groupDeleteFailed"));
     } finally {
       setIsDeleting(false);
     }
@@ -146,7 +149,7 @@ export default function GroupSettingsPage({ params }: PageProps) {
         <Button variant="ghost" size="sm" asChild>
           <Link href="/groups" className="flex items-center gap-1">
             <ArrowLeft className="h-4 w-4" />
-            모임 목록으로
+            {t("groups.backToGroupList")}
           </Link>
         </Button>
         <Card>
@@ -155,7 +158,7 @@ export default function GroupSettingsPage({ params }: PageProps) {
               <AlertTriangle className="h-12 w-12 text-destructive mx-auto mb-4" />
               <p className="text-destructive font-medium">{error}</p>
               <p className="text-sm text-muted-foreground mt-2">
-                리더만 모임 설정에 접근할 수 있습니다.
+                {t("groups.leaderOnlyError")}
               </p>
             </div>
           </CardContent>
@@ -170,57 +173,57 @@ export default function GroupSettingsPage({ params }: PageProps) {
       <Button variant="ghost" size="sm" asChild>
         <Link href={`/groups/${groupId}`} className="flex items-center gap-1">
           <ArrowLeft className="h-4 w-4" />
-          모임으로 돌아가기
+          {t("groups.backToGroup")}
         </Link>
       </Button>
 
       {/* 헤더 */}
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">모임 설정</h1>
-        <p className="text-muted-foreground">모임 정보를 수정하세요</p>
+        <h1 className="text-3xl font-bold tracking-tight">{t("groups.settingsPageTitle")}</h1>
+        <p className="text-muted-foreground">{t("groups.settingsPageDesc")}</p>
       </div>
 
       {/* 기본 정보 설정 */}
       <Card>
         <CardHeader>
-          <CardTitle>기본 정보</CardTitle>
-          <CardDescription>모임의 이름과 설명을 수정합니다.</CardDescription>
+          <CardTitle>{t("groups.basicInfoCardTitle")}</CardTitle>
+          <CardDescription>{t("groups.basicInfoCardDesc")}</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="name">모임 이름 *</Label>
+              <Label htmlFor="name">{t("groups.groupNameLabel")}</Label>
               <Input
                 id="name"
                 value={formData.name}
                 onChange={(e) =>
                   setFormData({ ...formData, name: e.target.value })
                 }
-                placeholder="예: 2024년 독서 모임"
+                placeholder={t("groups.groupNamePlaceholder")}
                 required
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="description">모임 설명</Label>
+              <Label htmlFor="description">{t("groups.groupDescLabel")}</Label>
               <Textarea
                 id="description"
                 value={formData.description}
                 onChange={(e) =>
                   setFormData({ ...formData, description: e.target.value })
                 }
-                placeholder="모임에 대한 설명을 입력하세요"
+                placeholder={t("groups.groupDescPlaceholder")}
                 rows={4}
               />
             </div>
 
             <div className="flex items-center justify-between py-2">
               <div className="space-y-0.5">
-                <Label htmlFor="isPublic">공개 모임</Label>
+                <Label htmlFor="isPublic">{t("groups.groupPublicLabel")}</Label>
                 <p className="text-sm text-muted-foreground">
-                  공개 모임은 누구나 찾아서 참여할 수 있습니다.
-                  <br />
-                  비공개로 변경하면 새로운 참여자는 승인이 필요합니다.
+                  {t("groups.groupPublicPrivateDesc").split("\n").map((line, i) => (
+                    i === 0 ? line : <><br key={i} />{line}</>
+                  ))}
                 </p>
               </div>
               <Switch
@@ -237,10 +240,10 @@ export default function GroupSettingsPage({ params }: PageProps) {
                 {isSaving ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    저장 중...
+                    {t("groups.savingLabel")}
                   </>
                 ) : (
-                  "변경사항 저장"
+                  t("groups.saveChangesBtn")
                 )}
               </Button>
               <Button
@@ -248,7 +251,7 @@ export default function GroupSettingsPage({ params }: PageProps) {
                 variant="outline"
                 onClick={() => router.push(`/groups/${groupId}`)}
               >
-                취소
+                {t("groups.groupCancelBtn")}
               </Button>
             </div>
           </form>
@@ -260,12 +263,12 @@ export default function GroupSettingsPage({ params }: PageProps) {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <LinkIcon className="h-5 w-5" />
-            초대 링크
+            {t("groups.inviteLinkCardTitle")}
           </CardTitle>
           <CardDescription>
             {formData.isPublic
-              ? "이 링크를 공유하면 누구나 모임에 바로 참여할 수 있습니다."
-              : "비공개 모임입니다. 링크를 받은 사용자는 참여 신청 후 승인을 받아야 합니다."}
+              ? t("groups.inviteLinkPublicDesc")
+              : t("groups.inviteLinkPrivateDesc")}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -284,57 +287,60 @@ export default function GroupSettingsPage({ params }: PageProps) {
               {isCopied ? (
                 <>
                   <Check className="mr-2 h-4 w-4 text-green-600" />
-                  복사됨
+                  {t("groups.linkCopiedBtn")}
                 </>
               ) : (
                 <>
                   <Copy className="mr-2 h-4 w-4" />
-                  복사
+                  {t("groups.copyLinkBtn")}
                 </>
               )}
             </Button>
           </div>
           {!formData.isPublic && (
             <p className="text-sm text-amber-600 mt-3">
-              비공개 모임이므로, 참여 신청이 들어오면 멤버 관리에서 승인해주세요.
+              {t("groups.privateGroupApprovalHint")}
             </p>
           )}
+          <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+            <InviteLinkDialog groupId={groupId} />
+          </div>
         </CardContent>
       </Card>
 
       {/* 위험 영역 */}
       <Card variant="destructive">
         <CardHeader>
-          <CardTitle className="text-destructive">위험 영역</CardTitle>
+          <CardTitle className="text-destructive">{t("groups.dangerZoneCardTitle")}</CardTitle>
           <CardDescription>
-            이 작업은 되돌릴 수 없습니다. 신중하게 결정해주세요.
+            {t("groups.dangerZoneCardDesc")}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
-              <p className="font-medium">모임 삭제</p>
+              <p className="font-medium">{t("groups.deleteGroupLabel")}</p>
               <p className="text-sm text-muted-foreground">
-                모임과 모든 관련 데이터(기록, 지정도서 등)가 영구적으로 삭제됩니다.
+                {t("groups.deleteGroupDesc")}
               </p>
             </div>
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button variant="destructive" disabled={isDeleting}>
                   <Trash2 className="mr-2 h-4 w-4" />
-                  모임 삭제
+                  {t("groups.deleteGroupBtn")}
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
-                  <AlertDialogTitle>정말 모임을 삭제하시겠습니까?</AlertDialogTitle>
+                  <AlertDialogTitle>{t("groups.deleteGroupConfirmTitle")}</AlertDialogTitle>
                   <AlertDialogDescription>
-                    <span className="font-medium">{formData.name}</span> 모임과 모든 관련
-                    데이터가 영구적으로 삭제됩니다. 이 작업은 되돌릴 수 없습니다.
+                    <span className="font-medium">{formData.name}</span>{" "}
+                    {t("groups.deleteGroupConfirmDesc").replace("{name}", "").trim()}
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                  <AlertDialogCancel>취소</AlertDialogCancel>
+                  <AlertDialogCancel>{t("groups.groupCancelBtn")}</AlertDialogCancel>
                   <AlertDialogAction
                     onClick={handleDelete}
                     disabled={isDeleting}
@@ -343,10 +349,10 @@ export default function GroupSettingsPage({ params }: PageProps) {
                     {isDeleting ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        삭제 중...
+                        {t("groups.deletingLabel")}
                       </>
                     ) : (
-                      "삭제하기"
+                      t("groups.deleteGroupAction")
                     )}
                   </AlertDialogAction>
                 </AlertDialogFooter>

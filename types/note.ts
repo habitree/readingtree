@@ -4,10 +4,12 @@
 
 export type NoteType = "quote" | "photo" | "memo" | "transcription" | "progress";
 
+export type SourceType = "book" | "youtube" | "instagram" | "article" | "other";
+
 export interface Note {
   id: string;
   user_id: string;
-  book_id: string;
+  book_id: string | null;
   title: string | null;
   type: NoteType;
   content: string | null;
@@ -16,6 +18,8 @@ export interface Note {
   is_public: boolean;
   tags: string[] | null;
   related_user_book_ids: string[] | null;
+  source_type: SourceType | null;
+  source_label: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -45,7 +49,7 @@ export interface NoteWithBook extends Note {
 }
 
 export interface CreateNoteInput {
-  book_id: string;
+  book_id?: string;
   title?: string;
   type?: NoteType; // 업로드 타입이 있을 때만 필요
   content?: string; // 기존 content 필드 (하위 호환성)
@@ -57,6 +61,8 @@ export interface CreateNoteInput {
   is_public?: boolean; // 기본값: true (공개)
   tags?: string[];
   related_user_book_ids?: string[]; // 연결된 다른 책들의 user_books.id 배열
+  source_type?: SourceType;
+  source_label?: string;
 }
 
 export interface UpdateNoteInput {

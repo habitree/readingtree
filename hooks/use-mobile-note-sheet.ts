@@ -33,6 +33,8 @@ interface MobileNoteSheetState {
   selectBook: (book: SelectedBook) => void;
   /** 책 선택 해제 */
   clearBook: () => void;
+  /** 책 없이 기록 (Step 1 스킵) */
+  skipBook: () => void;
   /** 다음 스텝으로 이동 */
   nextStep: () => void;
   /** 이전 스텝으로 이동 */
@@ -76,6 +78,12 @@ export const useMobileNoteSheet = create<MobileNoteSheetState>((set) => ({
     set({
       selectedBook: null,
       currentStep: 1,
+    }),
+
+  skipBook: () =>
+    set({
+      selectedBook: null,
+      currentStep: 2,
     }),
 
   nextStep: () =>

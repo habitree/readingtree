@@ -170,11 +170,18 @@ export default async function ShareNotePage({
               기록은 생각의 깊이를 더해줍니다.
             </p>
           </div>
-          <Button asChild className="rounded-full px-8 h-12 text-sm font-bold shadow-xl shadow-primary/20 transition-all duration-300 hover:scale-105 active:scale-95">
-            <Link href="/login">
-              나도 기록 시작하기
-            </Link>
-          </Button>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+            <Button asChild className="rounded-full px-8 h-12 text-sm font-bold shadow-xl shadow-primary/20 transition-all duration-300 hover:scale-105 active:scale-95">
+              <Link href="/login">
+                나도 문장 카드 만들기
+              </Link>
+            </Button>
+            <Button asChild variant="outline" className="rounded-full px-6 h-12 text-sm font-medium transition-all duration-300 hover:scale-105 active:scale-95">
+              <Link href="/login">
+                나도 기록 시작하기
+              </Link>
+            </Button>
+          </div>
         </div>
       </div>
     </div>

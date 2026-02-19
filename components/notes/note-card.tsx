@@ -174,8 +174,8 @@ export function NoteCard({ note, showDeleteButton = false, onDelete }: NoteCardP
                 )}
               </div>
 
-              {/* 책 정보 - 이미지 아래에 심플하게 */}
-              {note.book && (
+              {/* 책 정보 또는 출처 - 이미지 아래에 심플하게 */}
+              {note.book ? (
                 <div className="p-1.5 sm:p-2 bg-background/80 backdrop-blur-sm border-t">
                   <div className="flex items-center gap-1">
                     <BookOpen className="h-3 w-3 text-muted-foreground shrink-0" />
@@ -184,7 +184,16 @@ export function NoteCard({ note, showDeleteButton = false, onDelete }: NoteCardP
                     </p>
                   </div>
                 </div>
-              )}
+              ) : (note as any).source_label ? (
+                <div className="p-1.5 sm:p-2 bg-background/80 backdrop-blur-sm border-t">
+                  <div className="flex items-center gap-1">
+                    <BookOpen className="h-3 w-3 text-muted-foreground shrink-0" />
+                    <p className="text-[9px] sm:text-[10px] font-medium text-muted-foreground line-clamp-2 leading-tight">
+                      {(note as any).source_label}
+                    </p>
+                  </div>
+                </div>
+              ) : null}
             </div>
 
             {/* 우측: 내용 영역 */}

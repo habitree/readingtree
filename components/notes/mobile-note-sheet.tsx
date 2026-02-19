@@ -8,7 +8,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, BookOpen, PenTool, Camera } from "lucide-react";
+import { ArrowLeft, BookOpen, PenTool, Camera, FileText } from "lucide-react";
 import { QuickBookSelector } from "@/components/books/quick-book-selector";
 import { MobileNoteForm } from "./mobile-note-form";
 import {
@@ -34,6 +34,7 @@ export function MobileNoteSheet() {
     currentStep,
     selectBook,
     clearBook,
+    skipBook,
     reset,
   } = useMobileNoteSheet();
 
@@ -101,8 +102,13 @@ export function MobileNoteSheet() {
                     {mode === "transcription" ? t("notes.selectBookForTranscription") : t("notes.selectBookForNote")}
                   </span>
                 </>
+              ) : selectedBook ? (
+                <SelectedBookInfo book={selectedBook} />
               ) : (
-                <SelectedBookInfo book={selectedBook!} />
+                <div className="flex items-center gap-2 min-w-0">
+                  <FileText className="h-5 w-5 text-forest-600" />
+                  <span className="text-sm font-medium">{t("notes.freeNote")}</span>
+                </div>
               )}
             </SheetTitle>
 
@@ -121,15 +127,31 @@ export function MobileNoteSheet() {
         {/* 컨텐츠 */}
         <div className="flex-1 overflow-hidden">
           {currentStep === 1 ? (
-            <QuickBookSelector onSelect={handleBookSelect} />
-          ) : selectedBook ? (
+            <div className="flex flex-col h-full">
+              <div className="flex-1 overflow-hidden">
+                <QuickBookSelector onSelect={handleBookSelect} />
+              </div>
+              {/* 책 없이 문장만 저장 버튼 */}
+              <div className="pt-3 border-t border-slate-100 dark:border-slate-800">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={skipBook}
+                  className="w-full text-slate-500 dark:text-slate-400 hover:text-forest-600"
+                >
+                  <FileText className="h-4 w-4 mr-1.5" />
+                  {t("notes.saveWithoutBook")}
+                </Button>
+              </div>
+            </div>
+          ) : (
             <MobileNoteForm
-              bookId={selectedBook.id}
+              bookId={selectedBook?.id}
               mode={mode}
               onSaved={handleSaved}
               onCancel={handleClose}
             />
-          ) : null}
+          )}
         </div>
       </SheetContent>
     </Sheet>

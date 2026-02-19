@@ -3,34 +3,51 @@ import { NoteFormNew } from "@/components/notes/note-form-new";
 import { redirect } from "next/navigation";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { isValidUUID } from "@/lib/utils/validation";
-import { typography } from "@/lib/design-tokens";
+import { PageHeader } from "@/components/layout/page-header";
 
 export const metadata: Metadata = {
-  title: "기록 작성 | ReadTree",
-  description: "새로운 기록을 작성하세요",
+  title: "Write Note | ReadTree",
+  description: "Write a new note",
 };
 
 interface NewNotePageProps {
   searchParams: Promise<{
     bookId?: string;
+    quickstart?: string;
   }> | {
     bookId?: string;
+    quickstart?: string;
   };
 }
 
 /**
  * 기록 작성 페이지
- * US-010~US-015: 기록 작성 기능
- * 
- * 성능 최적화:
- * - Supabase 클라이언트 재사용 (중복 생성 방지)
- * - 사용자 정보와 책 소유 확인 병렬 처리
- * - 검증 단계 최적화
+ * - bookId 있으면 책 연결 기록
+ * - quickstart=true 이면 책 없이 바로 폼 표시
  */
 export default async function NewNotePage({ searchParams }: NewNotePageProps) {
-  // Next.js 15+ 에서 searchParams는 Promise일 수 있음
   const resolvedSearchParams = await (searchParams instanceof Promise ? searchParams : Promise.resolve(searchParams));
   const bookId = resolvedSearchParams.bookId;
+  const isQuickstart = resolvedSearchParams.quickstart === "true";
+
+  // quickstart 모드: 책 없이 바로 폼 표시
+  if (isQuickstart && !bookId) {
+    const supabase = await createServerSupabaseClient();
+    const { data: { user }, error } = await supabase.auth.getUser();
+    if (!user || error) {
+      redirect("/login");
+    }
+
+    return (
+      <div className="space-y-6">
+        <PageHeader
+          titleKey="notes.freeNote"
+          descriptionKey="onboarding.firstNoteDescription"
+        />
+        <NoteFormNew />
+      </div>
+    );
+  }
 
   // bookId 검증 (한 번에 처리)
   if (!bookId || typeof bookId !== 'string' || !isValidUUID(bookId)) {
@@ -64,15 +81,11 @@ export default async function NewNotePage({ searchParams }: NewNotePageProps) {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className={typography.pageTitle}>기록 작성</h1>
-        <p className={typography.pageDescription}>
-          책에 대한 기록을 작성하세요
-        </p>
-      </div>
-
+      <PageHeader
+        titleKey="notes.writeNotePageTitle"
+        descriptionKey="notes.writeNotePageDesc"
+      />
       <NoteFormNew bookId={bookId} />
     </div>
   );
 }
-

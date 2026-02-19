@@ -6,6 +6,7 @@ import type { NoteType } from "@/types/note";
 import { smartCompressImage, formatFileSize, validateImageType } from "@/lib/utils/image";
 import { addStampToImage } from "@/lib/utils/stamp";
 import { toast } from "sonner";
+import { useTranslation } from "@/lib/i18n";
 
 /**
  * 노트 폼 데이터 타입
@@ -17,14 +18,16 @@ export interface NoteFormData {
   pageNumbers?: string;
   tags?: string;
   isPublic: boolean;
+  sourceType?: string;
+  sourceLabel?: string;
 }
 
 /**
  * useNoteForm 훅 옵션
  */
 export interface UseNoteFormOptions {
-  /** user_books.id */
-  bookId: string;
+  /** user_books.id (책 없이 저장 시 undefined) */
+  bookId?: string;
   /** 저장 성공 콜백 */
   onSuccess?: () => void;
   /** 저장 실패 콜백 */
@@ -72,6 +75,7 @@ export interface UseNoteFormReturn {
  */
 export function useNoteForm(options: UseNoteFormOptions): UseNoteFormReturn {
   const { bookId, onSuccess, onError, initialUploadType = null } = options;
+  const { t } = useTranslation();
 
   // 이미지 상태
   const [images, setImages] = useState<string[]>([]);
@@ -110,7 +114,7 @@ export function useNoteForm(options: UseNoteFormOptions): UseNoteFormReturn {
     const validFiles = fileArray.filter((file) => validateImageType(file));
 
     if (validFiles.length === 0) {
-      toast.error("유효한 이미지 파일을 선택해주세요. (JPEG, PNG, WebP, HEIC 지원)");
+      toast.error(t("noteForm.invalidImageType"));
       isUploadingRef.current = false;
       return;
     }
@@ -159,7 +163,7 @@ export function useNoteForm(options: UseNoteFormOptions): UseNoteFormReturn {
             });
           } catch (stampError) {
             console.error("[useNoteForm] 스탬프 적용 오류:", stampError);
-            toast.warning("스탬프 적용에 실패했어요. 원본 이미지를 업로드합니다.");
+            toast.warning(t("noteForm.stampFailed"));
           }
         }
 
@@ -190,7 +194,7 @@ export function useNoteForm(options: UseNoteFormOptions): UseNoteFormReturn {
 
         if (!data.url) {
           console.error("[useNoteForm] URL이 응답에 없습니다:", data);
-          toast.error(`${file.name} 업로드는 됐지만 URL을 받지 못했어요.`);
+          toast.error(`${file.name}: ${t("noteForm.uploadUrlMissing")}`);
           continue;
         }
 
@@ -199,7 +203,7 @@ export function useNoteForm(options: UseNoteFormOptions): UseNoteFormReturn {
         console.log("[useNoteForm] 업로드 성공:", { fileName: file.name, index: i });
       } catch (error) {
         console.error("[useNoteForm] 이미지 업로드 오류:", error);
-        toast.error(`${file.name} 업로드에 실패했어요.`);
+        toast.error(`${file.name}: ${t("noteForm.uploadFailed")}`);
       }
     }
 
@@ -210,13 +214,13 @@ export function useNoteForm(options: UseNoteFormOptions): UseNoteFormReturn {
 
     if (newImages.length > 0) {
       setImages((prev) => [...prev, ...newImages]);
-      toast.success(`${newImages.length}개의 이미지가 업로드됐어요.`);
+      toast.success(t("noteForm.uploadSuccess").replace("{count}", String(newImages.length)));
     }
 
     setUploading(false);
     setUploadProgress({});
     isUploadingRef.current = false;
-  }, [images.length]);
+  }, [images.length, t]);
 
   /**
    * 이미지 제거 핸들러
@@ -256,18 +260,13 @@ export function useNoteForm(options: UseNoteFormOptions): UseNoteFormReturn {
     setIsSubmitting(true);
 
     try {
-      // bookId 검증
-      if (!bookId || typeof bookId !== "string" || bookId.trim() === "") {
-        throw new Error("책 정보를 찾을 수 없습니다. 다시 시도해주세요.");
-      }
-
       // 최소 하나의 값이 있는지 확인
       const hasQuote = data.quoteContent && data.quoteContent.trim().length > 0;
       const hasMemo = data.memoContent && data.memoContent.trim().length > 0;
       const hasImage = images.length > 0;
 
       if (!hasQuote && !hasMemo && !hasImage) {
-        throw new Error("인상깊은 구절, 내 생각, 또는 이미지 중 최소 하나는 입력해주세요.");
+        throw new Error(t("noteForm.minContentRequired"));
       }
 
       // type 결정: 이미지 기반 > 콘텐츠 기반 > 기본 memo
@@ -291,64 +290,64 @@ export function useNoteForm(options: UseNoteFormOptions): UseNoteFormReturn {
 
       let createdCount = 0;
 
+      // 공통 노트 데이터
+      const commonNoteData = {
+        book_id: bookId || undefined,
+        title: data.title?.trim() || undefined,
+        type: noteType,
+        quote_content: data.quoteContent?.trim() || undefined,
+        memo_content: data.memoContent?.trim() || undefined,
+        page_number: pageNumber,
+        tags: parsedTags,
+        is_public: data.isPublic,
+        source_type: data.sourceType as any || undefined,
+        source_label: data.sourceLabel?.trim() || undefined,
+      };
+
       // 다중 이미지 업로드 시 각 이미지별로 기록 생성
       if (images.length > 0) {
         for (const imageUrl of images) {
           const result = await createNote({
-            book_id: bookId,
-            title: data.title?.trim() || undefined,
-            type: noteType,
-            quote_content: data.quoteContent?.trim() || undefined,
-            memo_content: data.memoContent?.trim() || undefined,
+            ...commonNoteData,
             image_url: imageUrl,
             upload_type: currentUploadType || undefined,
-            page_number: pageNumber,
-            tags: parsedTags,
-            is_public: data.isPublic,
           });
 
           createdCount++;
 
           // transcription 타입이면 OCR 처리 요청
           if (noteType === "transcription" && result.noteId) {
-            await requestOCR(result.noteId, imageUrl);
+            await requestOCR(result.noteId, imageUrl, t);
           }
         }
       } else {
         // 이미지가 없는 경우: 텍스트 기록만 생성
         await createNote({
-          book_id: bookId,
-          title: data.title?.trim() || undefined,
-          type: noteType,
-          quote_content: data.quoteContent?.trim() || undefined,
-          memo_content: data.memoContent?.trim() || undefined,
+          ...commonNoteData,
           upload_type: currentUploadType || undefined,
-          page_number: pageNumber,
-          tags: parsedTags,
-          is_public: data.isPublic,
         });
         createdCount++;
       }
 
       // 성공 메시지
       if (createdCount > 1) {
-        toast.success(`${createdCount}개의 기록이 저장됐어요.`);
+        toast.success(t("noteForm.savedMultiple").replace("{count}", String(createdCount)));
       } else {
-        toast.success("저장됨");
+        toast.success(t("noteForm.saved"));
       }
 
       // 성공 콜백 호출
       onSuccess?.();
     } catch (error) {
       console.error("[useNoteForm] 기록 저장 오류:", error);
-      const errorMessage = error instanceof Error ? error.message : "기록 저장에 실패했습니다.";
+      const errorMessage = error instanceof Error ? error.message : t("noteForm.saveFailed");
       toast.error(errorMessage);
       onError?.(error instanceof Error ? error : new Error(errorMessage));
     } finally {
       isSubmittingRef.current = false;
       setIsSubmitting(false);
     }
-  }, [bookId, images, uploadType, onSuccess, onError]);
+  }, [bookId, images, uploadType, onSuccess, onError, t]);
 
   return {
     // 상태
@@ -374,12 +373,12 @@ export function useNoteForm(options: UseNoteFormOptions): UseNoteFormReturn {
 /**
  * OCR 처리 요청 헬퍼 함수
  */
-async function requestOCR(noteId: string, imageUrl: string): Promise<void> {
+async function requestOCR(noteId: string, imageUrl: string, t: (key: string) => string): Promise<void> {
   try {
     console.log("[useNoteForm] OCR 요청 시작:", { noteId, imageUrl: imageUrl.substring(0, 50) + "..." });
 
-    toast.info("사진에서 텍스트를 추출하는 중이에요...", {
-      description: "OCR 처리가 완료되면 자동으로 저장됩니다.",
+    toast.info(t("noteForm.ocrProcessing"), {
+      description: t("noteForm.ocrProcessingDesc"),
       duration: 5000,
     });
 
@@ -395,19 +394,19 @@ async function requestOCR(noteId: string, imageUrl: string): Promise<void> {
     });
 
     if (ocrResponse.ok) {
-      toast.success("OCR 처리가 시작됐어요.", {
-        description: "처리가 완료되면 자동으로 업데이트됩니다.",
+      toast.success(t("noteForm.ocrStarted"), {
+        description: t("noteForm.ocrStartedDesc"),
         duration: 3000,
       });
     } else {
       const errorData = await ocrResponse.json().catch(() => ({}));
       console.error("[useNoteForm] OCR 요청 실패:", errorData);
-      toast.warning("OCR 처리 요청에 실패했어요.", {
-        description: errorData.error || "나중에 다시 시도해주세요.",
+      toast.warning(t("noteForm.ocrRequestFailed"), {
+        description: errorData.error || t("noteForm.ocrRequestFailedDesc"),
       });
     }
   } catch (error) {
     console.error("[useNoteForm] OCR 요청 오류:", error);
-    toast.error("OCR 처리 중 오류가 생겼어요.");
+    toast.error(t("noteForm.ocrError"));
   }
 }
