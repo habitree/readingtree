@@ -34,7 +34,7 @@ export default async function StatsPage() {
       getWeeklyProgress(user),
       getGoalProgress(user),
       getUserTagsWithCount(user),
-      getDailyRecordsForCalendar(user, startDate.toISOString(), endDate.toISOString()),
+      getDailyRecordsForCalendar(user, startDate, endDate),
     ]);
 
   return (
