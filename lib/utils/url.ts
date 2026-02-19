@@ -11,6 +11,10 @@
  * 6. 기본값 (개발/프로덕션)
  */
 export function getAppUrl(): string {
+  return _getAppUrl().replace(/\/+$/, "");
+}
+
+function _getAppUrl(): string {
   // 강화된 디버깅 로그 (프로덕션에서만)
   if (process.env.VERCEL || process.env.VERCEL_ENV === "production") {
     console.log("[getAppUrl] 환경 변수 확인:", {

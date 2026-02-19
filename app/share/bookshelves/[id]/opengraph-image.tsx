@@ -7,6 +7,26 @@ export const alt = "ReadTree 서재 공유";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
+/**
+ * 외부 이미지를 사전 fetch하여 base64 data URI로 변환
+ * Satori 스트림 렌더링 중 외부 fetch 실패로 인한 500 에러 방지
+ */
+async function prefetchImageAsDataUri(url: string): Promise<string | null> {
+  try {
+    const res = await fetch(url, {
+      signal: AbortSignal.timeout(5000),
+      headers: { "User-Agent": "Mozilla/5.0 (compatible; ReadTree/1.0)" },
+    });
+    if (!res.ok) return null;
+    const buffer = await res.arrayBuffer();
+    if (buffer.byteLength > 10 * 1024 * 1024) return null;
+    const ct = res.headers.get("content-type") || "image/jpeg";
+    return `data:${ct};base64,${Buffer.from(buffer).toString("base64")}`;
+  } catch {
+    return null;
+  }
+}
+
 function createServiceSupabaseClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -126,6 +146,14 @@ export default async function OgImage({
         : bookshelf.name;
 
     const displayBooks = books.slice(0, 6);
+
+    // 외부 표지 이미지를 사전 fetch → base64 data URI 변환 (Satori 500 에러 방지)
+    const prefetchedBooks = await Promise.all(
+      displayBooks.map(async (book) => ({
+        ...book,
+        coverDataUri: book.coverUrl ? await prefetchImageAsDataUri(book.coverUrl) : null,
+      }))
+    );
 
     return new ImageResponse(
       (
@@ -332,7 +360,7 @@ export default async function OgImage({
                   gap: 16,
                 }}
               >
-                {displayBooks.map((book, i) => (
+                {prefetchedBooks.map((book, i) => (
                   <div
                     key={i}
                     style={{
@@ -342,9 +370,9 @@ export default async function OgImage({
                       width: 120,
                     }}
                   >
-                    {book.coverUrl ? (
+                    {book.coverDataUri ? (
                       <img
-                        src={book.coverUrl}
+                        src={book.coverDataUri}
                         alt=""
                         width={100}
                         height={140}
@@ -379,7 +407,7 @@ export default async function OgImage({
                     )}
                   </div>
                 ))}
-                {displayBooks.length === 0 && (
+                {prefetchedBooks.length === 0 && (
                   <div
                     style={{
                       fontSize: 18,
