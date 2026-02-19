@@ -56,20 +56,14 @@ export function BookSearchInput({ className, basePath: propBasePath }: BookSearc
     }
   }, [searchParams]);
 
-  // 검색어 변경 시 URL 업데이트 (디바운싱)
-  useEffect(() => {
-    // IME 조합 중이면 URL 업데이트 하지 않음
-    if (isComposingRef.current) {
-      return;
-    }
-
+  // URL 업데이트 함수 (공통)
+  const syncQueryToUrl = useCallback((searchQuery: string) => {
     if (searchTimeoutRef.current) {
       clearTimeout(searchTimeoutRef.current);
     }
 
-    // 현재 URL의 쿼리와 동일하면 업데이트 하지 않음
     const currentUrlQuery = searchParams.get("q") || "";
-    if (query.trim() === currentUrlQuery) {
+    if (searchQuery.trim() === currentUrlQuery) {
       setIsSearching(false);
       return;
     }
@@ -77,36 +71,44 @@ export function BookSearchInput({ className, basePath: propBasePath }: BookSearc
     setIsSearching(true);
     searchTimeoutRef.current = setTimeout(() => {
       const params = new URLSearchParams(searchParams.toString());
-      if (query.trim()) {
-        params.set("q", query.trim());
+      if (searchQuery.trim()) {
+        params.set("q", searchQuery.trim());
       } else {
         params.delete("q");
       }
-      params.set("page", "1"); // 검색 시 첫 페이지로
+      params.set("page", "1");
 
-      // 사용자 입력으로 인한 URL 변경 표시
       isUserInputRef.current = true;
-      lastUrlQueryRef.current = query.trim();
+      lastUrlQueryRef.current = searchQuery.trim();
 
       router.push(`${basePath}?${params.toString()}`, { scroll: false });
       setIsSearching(false);
     }, 300);
+  }, [router, searchParams, basePath]);
 
+  // 검색어 변경 시 URL 업데이트 (디바운싱, IME 조합 중에는 건너뜀)
+  useEffect(() => {
+    if (isComposingRef.current) {
+      return;
+    }
+    syncQueryToUrl(query);
     return () => {
       if (searchTimeoutRef.current) {
         clearTimeout(searchTimeoutRef.current);
       }
     };
-  }, [query, router, searchParams, basePath]);
+  }, [query, syncQueryToUrl]);
 
   // IME 조합 이벤트 핸들러
   const handleCompositionStart = useCallback(() => {
     isComposingRef.current = true;
   }, []);
 
-  const handleCompositionEnd = useCallback(() => {
+  const handleCompositionEnd = useCallback((e: React.CompositionEvent<HTMLInputElement>) => {
     isComposingRef.current = false;
-  }, []);
+    // 조합 완료 후 즉시 URL 동기화 (useEffect가 재실행되지 않으므로 직접 호출)
+    syncQueryToUrl(e.currentTarget.value);
+  }, [syncQueryToUrl]);
 
   const handleQueryChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setQuery(e.target.value);

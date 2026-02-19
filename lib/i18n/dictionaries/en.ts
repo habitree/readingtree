@@ -805,6 +805,7 @@ export const en: Dictionary = {
     changeBook: "Change book",
     selectedBook: "Selected book",
     selectBookBelow: "Or select a book below",
+    registerNewBook: "Register a new book",
     writeNoteHeroCta: "Write a note",
     writeNoteHeroDesc: "Record memorable quotes and your thoughts",
     // notes/new page

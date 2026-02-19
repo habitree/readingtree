@@ -8,7 +8,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, BookOpen, PenTool, Camera, FileText } from "lucide-react";
+import { ArrowLeft, BookOpen, PenTool, Camera, FileText, Plus } from "lucide-react";
 import { QuickBookSelector } from "@/components/books/quick-book-selector";
 import { MobileNoteForm } from "./mobile-note-form";
 import {
@@ -19,6 +19,7 @@ import type { BookWithNotes } from "@/app/actions/books";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
 import { useTranslation } from "@/lib/i18n";
+import Link from "next/link";
 
 /**
  * 모바일 기록 작성 바텀시트
@@ -131,15 +132,26 @@ export function MobileNoteSheet() {
               <div className="flex-1 overflow-hidden">
                 <QuickBookSelector onSelect={handleBookSelect} />
               </div>
-              {/* 책 없이 문장만 저장 버튼 */}
-              <div className="pt-3 border-t border-slate-100 dark:border-slate-800">
+              {/* 하단 액션: 책 등록 + 책 없이 저장 */}
+              <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  asChild
+                  className="flex-1 text-forest-600 dark:text-forest-400 hover:text-forest-700"
+                >
+                  <Link href="/books/search">
+                    <Plus className="h-4 w-4 mr-1" />
+                    {t("notes.registerNewBook")}
+                  </Link>
+                </Button>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={skipBook}
-                  className="w-full text-slate-500 dark:text-slate-400 hover:text-forest-600"
+                  className="flex-1 text-slate-500 dark:text-slate-400 hover:text-slate-600"
                 >
-                  <FileText className="h-4 w-4 mr-1.5" />
+                  <FileText className="h-4 w-4 mr-1" />
                   {t("notes.saveWithoutBook")}
                 </Button>
               </div>

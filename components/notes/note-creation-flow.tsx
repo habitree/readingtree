@@ -2,12 +2,13 @@
 
 import { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, BookOpen, FileText, PenTool } from "lucide-react";
+import { ArrowLeft, BookOpen, FileText, PenTool, Plus } from "lucide-react";
 import { QuickBookSelector } from "@/components/books/quick-book-selector";
 import { NoteFormNew } from "./note-form-new";
 import type { BookWithNotes } from "@/app/actions/books";
 import Image from "next/image";
 import { useTranslation } from "@/lib/i18n";
+import Link from "next/link";
 
 /**
  * 데스크톱 기록 작성 통합 플로우
@@ -104,31 +105,36 @@ export function NoteCreationFlow() {
         <h2 className="text-lg font-semibold">{t("notes.writeNotePageTitle")}</h2>
       </div>
 
-      {/* 책 없이 기록하기 배너 (상단 강조) */}
-      <button
-        type="button"
-        onClick={handleSkipBook}
-        className="w-full rounded-xl bg-gradient-to-r from-forest-50 to-emerald-50 dark:from-forest-950/40 dark:to-emerald-950/30 border border-forest-200/60 dark:border-forest-800/40 p-4 sm:p-5 text-left hover:shadow-md hover:border-forest-300 dark:hover:border-forest-700 transition-all group"
-      >
-        <div className="flex items-center gap-4">
-          <div className="h-12 w-12 rounded-xl bg-forest-100 dark:bg-forest-900/50 flex items-center justify-center shrink-0 group-hover:bg-forest-200 dark:group-hover:bg-forest-800/50 transition-colors">
-            <FileText className="h-6 w-6 text-forest-600 dark:text-forest-400" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-forest-800 dark:text-forest-300">
-              {t("notes.writeWithoutBook")}
-            </p>
-            <p className="text-xs text-forest-600/80 dark:text-forest-400/70 mt-0.5">
-              {t("notes.writeWithoutBookDesc")}
-            </p>
-          </div>
-          <div className="shrink-0">
-            <div className="h-8 px-3 rounded-lg bg-forest-600 text-white text-xs font-medium flex items-center group-hover:bg-forest-700 transition-colors">
-              {t("notes.writeNoteHeroCta")}
+      {/* 빠른 액션: 책 등록 + 책 없이 기록 */}
+      <div className="flex gap-3">
+        <Link
+          href="/books/search"
+          className="flex-1 rounded-xl border border-forest-200/60 dark:border-forest-800/40 bg-forest-50/50 dark:bg-forest-950/30 p-3 hover:shadow-md hover:border-forest-300 dark:hover:border-forest-700 transition-all group"
+        >
+          <div className="flex items-center gap-3">
+            <div className="h-9 w-9 rounded-lg bg-forest-100 dark:bg-forest-900/50 flex items-center justify-center shrink-0 group-hover:bg-forest-200 dark:group-hover:bg-forest-800/50 transition-colors">
+              <Plus className="h-4 w-4 text-forest-600 dark:text-forest-400" />
             </div>
+            <span className="text-sm font-medium text-forest-800 dark:text-forest-300">
+              {t("notes.registerNewBook")}
+            </span>
           </div>
-        </div>
-      </button>
+        </Link>
+        <button
+          type="button"
+          onClick={handleSkipBook}
+          className="flex-1 rounded-xl border border-slate-200/60 dark:border-slate-700/40 bg-slate-50/50 dark:bg-slate-900/30 p-3 hover:shadow-md hover:border-slate-300 dark:hover:border-slate-600 transition-all group"
+        >
+          <div className="flex items-center gap-3">
+            <div className="h-9 w-9 rounded-lg bg-slate-100 dark:bg-slate-800/50 flex items-center justify-center shrink-0 group-hover:bg-slate-200 dark:group-hover:bg-slate-700/50 transition-colors">
+              <FileText className="h-4 w-4 text-slate-500 dark:text-slate-400" />
+            </div>
+            <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
+              {t("notes.writeWithoutBook")}
+            </span>
+          </div>
+        </button>
+      </div>
 
       {/* 구분선 + 책 선택 안내 */}
       <div className="flex items-center gap-3">

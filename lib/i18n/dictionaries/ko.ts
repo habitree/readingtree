@@ -805,6 +805,7 @@ export const ko = {
     changeBook: "다른 책 선택",
     selectedBook: "선택된 책",
     selectBookBelow: "또는 아래에서 책을 선택하세요",
+    registerNewBook: "새 책 등록하기",
     writeNoteHeroCta: "기록 남기기",
     writeNoteHeroDesc: "인상깊은 구절과 생각을 기록하세요",
     // notes/new page

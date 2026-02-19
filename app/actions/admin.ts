@@ -1,6 +1,5 @@
 "use server";
 
-import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { isAdmin } from "@/app/actions/auth";
 import { validateImageUrl } from "@/lib/utils/image-url-validation";
@@ -21,8 +20,8 @@ async function requireAdmin() {
  */
 export async function getAdminStats() {
     await requireAdmin();
-    
-    const supabase = await createServerSupabaseClient();
+
+    const supabase = createAdminSupabaseClient();
 
     // 전체 사용자 수
     const { count: totalUsers } = await supabase
@@ -78,8 +77,8 @@ export async function getAdminStats() {
  */
 export async function getUserGrowthData() {
     await requireAdmin();
-    
-    const supabase = await createServerSupabaseClient();
+
+    const supabase = createAdminSupabaseClient();
     const now = new Date();
     const growthData = [];
 
@@ -108,8 +107,8 @@ export async function getUserGrowthData() {
  */
 export async function getRecentSystemActivity() {
     await requireAdmin();
-    
-    const supabase = await createServerSupabaseClient();
+
+    const supabase = createAdminSupabaseClient();
 
     // 최근 가입한 사용자 5명
     const { data: recentUsers } = await supabase
@@ -145,8 +144,8 @@ export async function getRecentSystemActivity() {
  */
 export async function getOcrMonthlyUsage() {
     await requireAdmin();
-    
-    const supabase = await createServerSupabaseClient();
+
+    const supabase = createAdminSupabaseClient();
     const now = new Date();
     const monthlyData = [];
 
@@ -196,8 +195,8 @@ export async function getOcrMonthlyUsage() {
  */
 export async function getOcrTotalStats() {
     await requireAdmin();
-    
-    const supabase = await createServerSupabaseClient();
+
+    const supabase = createAdminSupabaseClient();
 
     // 전체 OCR 처리 횟수
     const { count: totalCount } = await supabase
@@ -902,7 +901,7 @@ export async function getApiIntegrationInfo() {
     const anthropicKey = process.env.ANTHROPIC_API_KEY;
 
     // DB에서 활성 AI 설정 조회
-    const supabase = await createServerSupabaseClient();
+    const supabase = createAdminSupabaseClient();
     const { data: activeAISetting } = await supabase
         .from("ai_settings")
         .select("provider, model_id")
@@ -1250,7 +1249,7 @@ export async function getInvalidImageNotes(
 }> {
     await requireAdmin();
 
-    const supabase = await createServerSupabaseClient();
+    const supabase = createAdminSupabaseClient();
     const invalidNotes: InvalidImageNote[] = [];
 
     // 1. type이 photo/transcription인 기록 조회
@@ -1377,7 +1376,7 @@ export async function cleanupInvalidImageNotes(
 }> {
     await requireAdmin();
 
-    const supabase = await createServerSupabaseClient();
+    const supabase = createAdminSupabaseClient();
 
     // noteIds가 없으면 비정상 데이터 조회
     let targetNoteIds = noteIds;
