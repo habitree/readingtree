@@ -15,6 +15,7 @@ import { ImageLightbox } from "@/components/notes/image-lightbox";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { BookLinkRenderer } from "@/components/notes/book-link-renderer";
 import { BookTitle } from "@/components/books/book-title";
+import { READTREE_BOOK_ID } from "@/lib/constants/readtree";
 
 export interface RelatedBookInfo {
     id: string; // user_books.id
@@ -201,6 +202,7 @@ export function ShareNoteCard({ note, className, isPublicView = false, hideActio
 
     // [데이터 매핑 수정] Supabase 쿼리 결과인 'books' 필드와 'book' 필드 모두를 지원하도록 정규화
     const book = note.book || (note as any).books;
+    const isReadtreeNote = note.book_id === READTREE_BOOK_ID;
 
     const { quote, memo } = parseNoteContentFields(note.content);
     const hasQuote = quote && quote.trim().length > 0;
@@ -277,14 +279,16 @@ export function ShareNoteCard({ note, className, isPublicView = false, hideActio
                                 <div className="flex-1 min-w-0">
                                     <h3 className="font-bold text-lg text-slate-900 dark:text-slate-100 leading-tight mb-1">
                                         <BookTitle
-                                            title={book?.title || t("share.noTitle")}
+                                            title={isReadtreeNote ? t("notes.freeNote") : (book?.title || t("share.noTitle"))}
                                             mainTitleClassName="text-slate-900 dark:text-slate-100"
                                             subtitleClassName="text-slate-500 dark:text-slate-400 text-sm font-normal block mt-0.5"
                                         />
                                     </h3>
+                                    {!isReadtreeNote && (
                                     <p className="text-sm text-forest-700 dark:text-forest-400 font-medium mb-3">
                                         {book?.author || t("share.unknownAuthor")}
                                     </p>
+                                    )}
 
                                     {/* 진행 정보 강조 */}
                                     <div className="flex items-center gap-2 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-lg px-3 py-2 shadow-sm">
@@ -382,14 +386,16 @@ export function ShareNoteCard({ note, className, isPublicView = false, hideActio
                             <div className="flex-1 min-w-0 pt-0.5">
                                 <h3 className="font-black text-lg text-slate-900 dark:text-slate-100 leading-[1.3] tracking-tight break-keep">
                                     <BookTitle
-                                        title={book?.title || t("share.noTitle")}
+                                        title={isReadtreeNote ? t("notes.freeNote") : (book?.title || t("share.noTitle"))}
                                         mainTitleClassName="text-slate-900 dark:text-slate-100"
                                         subtitleClassName="text-slate-600 dark:text-slate-400 text-sm font-normal block mt-1"
                                     />
                                 </h3>
+                                {!isReadtreeNote && (
                                 <p className="text-sm text-forest-700 font-bold mt-2">
                                     {book?.author || t("share.unknownAuthor")}
                                 </p>
+                                )}
                                 {note.page_number && (
                                     <div className="h-4 leading-4 mt-2 overflow-visible">
                                         <BookOpen className="w-3 h-3 text-forest-400 shrink-0 inline-block align-middle mr-1.5" />

@@ -15,9 +15,7 @@ import { getCurrentUser } from "./auth";
 import { earnPoints, updateStreak } from "./points";
 import type { PointActionType } from "@/types/points";
 import { getRandomDefaultCoverPath } from "@/lib/constants/default-covers";
-
-/** "Readtree 기록" 시스템 책 well-known UUID */
-const READTREE_BOOK_ID = "00000000-0000-0000-0000-000000000001";
+import { READTREE_BOOK_ID } from "@/lib/constants/readtree";
 
 /**
  * 기록 생성

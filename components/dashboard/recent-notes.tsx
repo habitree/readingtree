@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 import { BookOpen } from "lucide-react";
 import type { NoteWithBook } from "@/types/note";
 import { useTranslation } from "@/lib/i18n";
+import { READTREE_BOOK_ID } from "@/lib/constants/readtree";
 
 interface RecentNotesProps {
   notes: NoteWithBook[];
@@ -36,8 +37,12 @@ export function RecentNotes({ notes }: RecentNotesProps) {
         // Supabase 조인 결과가 `books` 키로 올 수 있으므로 처리
         const bookData = (note as any).books || note.book;
         const book = Array.isArray(bookData) ? bookData[0] : bookData;
+        const isReadtreeNote = note.book_id === READTREE_BOOK_ID;
         const bookCoverImage = book?.cover_image_url;
         const hasBookCover = bookCoverImage && isValidImageUrl(bookCoverImage);
+
+        // Readtree 기록: note.image_url을 단일 레이어로 표시 (겹침 불필요)
+        const showOverlay = hasImage && !isReadtreeNote;
 
         return (
           <Link key={note.id} href={`/notes/${note.id}`} className="group">
@@ -45,9 +50,20 @@ export function RecentNotes({ notes }: RecentNotesProps) {
               <CardContent className="p-4">
                 <div className="flex gap-4">
                   {/* 책 표지 이미지와 기록 이미지 겹치기 - UX 원칙 05: 깊이감 부여 */}
-                  <div className={cn("relative shrink-0", hasImage && "mb-4 mr-4")}>
-                    {/* 책 표지 이미지 - 배경 레이어 (조금 더 뒤쪽 느낌) */}
-                    {book ? (
+                  <div className={cn("relative shrink-0", showOverlay && "mb-4 mr-4")}>
+                    {isReadtreeNote && hasImage ? (
+                      /* Readtree 기록: note.image_url 단일 레이어 */
+                      <div className="relative w-20 h-28 sm:w-24 sm:h-32 overflow-hidden rounded-lg bg-slate-100 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 shadow-sm transition-transform group-hover:scale-[1.02]">
+                        <Image
+                          src={getImageUrl(note.image_url!)}
+                          alt={t("notes.freeNote")}
+                          fill
+                          className="object-cover"
+                          sizes="(max-width: 640px) 80px, 96px"
+                        />
+                      </div>
+                    ) : book ? (
+                      /* 일반 책: 책 표지 배경 레이어 */
                       <div className="relative w-20 h-28 sm:w-24 sm:h-32 overflow-hidden rounded-lg bg-slate-100 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 shadow-sm transition-transform group-hover:scale-[1.02]">
                         {hasBookCover ? (
                           <Image
@@ -69,8 +85,8 @@ export function RecentNotes({ notes }: RecentNotesProps) {
                       </div>
                     )}
 
-                    {/* 기록 이미지가 있는 경우에만 전면 레이어 표시 */}
-                    {note.image_url && (
+                    {/* 기록 이미지가 있는 경우에만 전면 레이어 표시 (Readtree 기록 제외) */}
+                    {showOverlay && note.image_url && (
                       <div className="absolute top-4 left-4 sm:top-6 sm:left-6 w-20 h-28 sm:w-24 sm:h-32 z-10 transition-transform group-hover:translate-x-1 group-hover:-translate-y-1">
                         <div className="relative w-full h-full overflow-hidden rounded-lg bg-white dark:bg-slate-900 border-2 border-white dark:border-slate-800 shadow-[10px_10px_25px_-10px_rgba(0,0,0,0.3)]">
                           <Image
@@ -98,9 +114,9 @@ export function RecentNotes({ notes }: RecentNotesProps) {
                     {book ? (
                       <div className="space-y-1 pb-1 border-b">
                         <p className="text-base font-bold line-clamp-1 text-foreground">
-                          {book.title || t("books.noTitle")}
+                          {isReadtreeNote ? t("notes.freeNote") : (book.title || t("books.noTitle"))}
                         </p>
-                        {book.author && (
+                        {!isReadtreeNote && book.author && (
                           <p className="text-sm text-muted-foreground line-clamp-1">
                             {book.author}
                           </p>
