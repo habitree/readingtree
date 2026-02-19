@@ -1,5 +1,9 @@
 ---
-alwaysApply: true
+alwaysApply: false
+description: "DB/RLS 정책 작업 시 적용하는 규칙"
+globs:
+  - "doc/database/**"
+  - "types/database.ts"
 ---
 
 ## [DB/RLS 관리 규칙]

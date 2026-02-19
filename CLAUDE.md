@@ -1,14 +1,14 @@
 # Habitree Reading Hub v4.0.0 - Claude Code Rules
 
-> 이 프로젝트 작업 시 **반드시** `doc/claude/RULES.md` 파일을 읽고 규칙을 따르세요.
+> `.agent/rules/`가 작업 관련 규칙을 자동 로드합니다. 전체 규칙 참조가 필요하면 `doc/claude/RULES.md`를 확인하세요.
 
 ---
 
 ## 필수 규칙 파일
 
-**상세 규칙**: `doc/claude/RULES.md`
+**상세 규칙**: `doc/claude/RULES.md` (통합 레퍼런스)
 
-이 파일에 모든 프로젝트 규칙이 정의되어 있습니다. 작업 전 반드시 읽어주세요.
+`.agent/rules/`가 조건부 자동 로드되므로 별도 참조 불필요. 전체 규칙 확인 시만 열람.
 
 ---
 

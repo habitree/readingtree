@@ -1,5 +1,10 @@
 ---
-alwaysApply: true
+alwaysApply: false
+description: "인증/세션 관리 규칙"
+globs:
+  - "app/actions/auth.ts"
+  - "contexts/auth-context.tsx"
+  - "lib/supabase/**"
 ---
 
 ## [인증/세션 관리 규칙]

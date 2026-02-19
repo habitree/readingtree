@@ -1,5 +1,9 @@
 ---
-alwaysApply: true
+alwaysApply: false
+description: "데이터 구조 규칙 - 거버넌스 및 스키마"
+globs:
+  - "doc/database/DATA_MODEL.md"
+  - "types/database.ts"
 ---
 
 ## [Data Model Governance]

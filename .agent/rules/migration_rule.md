@@ -1,5 +1,8 @@
 ---
-alwaysApply: true
+alwaysApply: false
+description: "마이그레이션 파일 작성 시 적용하는 규칙"
+globs:
+  - "doc/database/migration-*"
 ---
 
 ## [마이그레이션 관리 규칙]

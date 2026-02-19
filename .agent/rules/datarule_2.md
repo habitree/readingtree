@@ -1,5 +1,9 @@
 ---
-alwaysApply: true
+alwaysApply: false
+description: "데이터 구조 규칙 - 구현 및 코드 패턴"
+globs:
+  - "app/actions/**"
+  - "hooks/**"
 ---
 
 ## [Data Model Governance]

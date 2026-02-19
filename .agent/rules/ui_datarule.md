@@ -1,5 +1,10 @@
 ---
-alwaysApply: true
+alwaysApply: false
+description: "UI/데이터 접근 레이어 분리 규칙"
+globs:
+  - "components/**"
+  - "hooks/**"
+  - "app/actions/**"
 ---
 
 ## [UI/데이터 접근 레이어 분리 규칙]
