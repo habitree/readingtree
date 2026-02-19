@@ -12,7 +12,11 @@ import type {
   MissionWithDetails,
   DailyMissionType,
   Achievement,
+  PointSpendType,
+  SpendPointsResult,
+  CheckPointBalanceResult,
 } from "@/types/points";
+import { POINT_SPEND_COSTS } from "@/types/points";
 
 /**
  * KST 기준 오늘 날짜 반환 (YYYY-MM-DD)
@@ -803,4 +807,169 @@ export async function getPointTransactions(
   }
 
   return data || [];
+}
+
+/**
+ * 포인트 잔액 확인
+ */
+export async function checkPointBalance(
+  spendType: PointSpendType,
+  user?: User | null
+): Promise<CheckPointBalanceResult> {
+  const cost = POINT_SPEND_COSTS[spendType];
+  const userPoints = await getUserPoints(user);
+  const balance = userPoints?.total_points ?? 0;
+
+  return {
+    canAfford: balance >= cost,
+    balance,
+    cost,
+  };
+}
+
+/**
+ * 포인트 차감 (AI 채팅, OCR 등 유료 기능 사용 시)
+ */
+export async function spendPoints(
+  spendType: PointSpendType,
+  options?: {
+    user?: User | null;
+    description?: string;
+    metadata?: Record<string, any>;
+  }
+): Promise<SpendPointsResult> {
+  const supabase = await createServerSupabaseClient();
+  const cost = POINT_SPEND_COSTS[spendType];
+
+  let currentUser = options?.user;
+  if (!currentUser) {
+    const { data: { user: fetchedUser } } = await supabase.auth.getUser();
+    if (!fetchedUser) {
+      return { success: false, points_spent: 0, new_total: 0, error: "로그인이 필요합니다." };
+    }
+    currentUser = fetchedUser;
+  }
+
+  // 잔액 확인
+  const userPoints = await getUserPoints(currentUser);
+  if (!userPoints || userPoints.total_points < cost) {
+    return {
+      success: false,
+      points_spent: 0,
+      new_total: userPoints?.total_points ?? 0,
+      error: "포인트가 부족합니다.",
+    };
+  }
+
+  const actionType: PointActionType = spendType === "ai_chat" ? "ai_chat_spend" : "ocr_spend";
+  const newTotal = userPoints.total_points - cost;
+
+  // 트랜잭션 기록 (음수 포인트)
+  const { data: transaction, error: txError } = await supabase
+    .from("point_transactions")
+    .insert({
+      user_id: currentUser.id,
+      action_type: actionType,
+      points: -cost,
+      final_points: -cost,
+      description: options?.description || `${spendType} 포인트 차감`,
+      balance_after: newTotal,
+      metadata: options?.metadata,
+    })
+    .select("id")
+    .single();
+
+  if (txError) {
+    console.error("포인트 차감 실패:", txError);
+    return { success: false, points_spent: 0, new_total: userPoints.total_points, error: "포인트 차감에 실패했습니다." };
+  }
+
+  // 포인트 업데이트
+  await supabase
+    .from("user_points")
+    .update({
+      total_points: newTotal,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("user_id", currentUser.id);
+
+  revalidatePath("/");
+
+  return {
+    success: true,
+    points_spent: cost,
+    new_total: newTotal,
+    transaction_id: transaction?.id,
+  };
+}
+
+/**
+ * 포인트 환불 (AI 호출 실패 등 오류 시)
+ */
+export async function refundPoints(
+  transactionId: string,
+  reason: string,
+  user?: User | null
+): Promise<SpendPointsResult> {
+  const supabase = await createServerSupabaseClient();
+
+  let currentUser = user;
+  if (!currentUser) {
+    const { data: { user: fetchedUser } } = await supabase.auth.getUser();
+    if (!fetchedUser) {
+      return { success: false, points_spent: 0, new_total: 0, error: "로그인이 필요합니다." };
+    }
+    currentUser = fetchedUser;
+  }
+
+  // 원본 트랜잭션 조회
+  const { data: originalTx, error: txError } = await supabase
+    .from("point_transactions")
+    .select("*")
+    .eq("id", transactionId)
+    .eq("user_id", currentUser.id)
+    .single();
+
+  if (txError || !originalTx) {
+    return { success: false, points_spent: 0, new_total: 0, error: "원본 트랜잭션을 찾을 수 없습니다." };
+  }
+
+  const refundAmount = Math.abs(originalTx.final_points);
+
+  // 현재 잔액 조회
+  const userPoints = await getUserPoints(currentUser);
+  if (!userPoints) {
+    return { success: false, points_spent: 0, new_total: 0, error: "포인트 정보를 찾을 수 없습니다." };
+  }
+
+  const newTotal = userPoints.total_points + refundAmount;
+
+  // 환불 트랜잭션 기록
+  await supabase.from("point_transactions").insert({
+    user_id: currentUser.id,
+    action_type: "point_refund" as PointActionType,
+    points: refundAmount,
+    final_points: refundAmount,
+    description: `환불: ${reason}`,
+    reference_id: transactionId,
+    reference_type: "refund",
+    balance_after: newTotal,
+  });
+
+  // 포인트 업데이트
+  await supabase
+    .from("user_points")
+    .update({
+      total_points: newTotal,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("user_id", currentUser.id);
+
+  revalidatePath("/");
+
+  return {
+    success: true,
+    points_spent: -refundAmount,
+    new_total: newTotal,
+  };
 }

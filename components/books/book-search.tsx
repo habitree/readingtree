@@ -49,6 +49,7 @@ export function BookSearch({ onBookAdded, onSelectBook, excludeBookIds, showAlre
 
   // IME 조합 상태 추적
   const isComposingRef = useRef(false);
+  const [searchTrigger, setSearchTrigger] = useState(0);
 
   // 초기 로드 시 인기 도서 조회
   useEffect(() => {
@@ -159,21 +160,18 @@ export function BookSearch({ onBookAdded, onSelectBook, excludeBookIds, showAlre
   }, [t]);
 
   // 디바운싱 (300ms) - 검색어가 2자 이상일 때만 검색
-  // IME 조합 중에는 검색하지 않음
+  // IME 조합 중에는 검색하지 않음 (searchTrigger로 조합 완료 시 재트리거)
   useEffect(() => {
-    // IME 조합 중이면 검색 하지 않음
     if (isComposingRef.current) {
       return;
     }
 
     if (query.trim().length < 2 && query.trim().length > 0) {
-      // 검색어가 1자일 때는 결과를 비우고 검색하지 않음
       setResults([]);
       return;
     }
 
     const timer = setTimeout(() => {
-      // 조합 완료 후에도 확인
       if (isComposingRef.current) {
         return;
       }
@@ -186,7 +184,7 @@ export function BookSearch({ onBookAdded, onSelectBook, excludeBookIds, showAlre
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [query, performSearch]);
+  }, [query, performSearch, searchTrigger]);
 
   // IME 조합 이벤트 핸들러
   const handleCompositionStart = useCallback(() => {
@@ -195,6 +193,8 @@ export function BookSearch({ onBookAdded, onSelectBook, excludeBookIds, showAlre
 
   const handleCompositionEnd = useCallback(() => {
     isComposingRef.current = false;
+    // 조합 완료 시 useEffect 재실행을 트리거하여 검색 수행
+    setSearchTrigger((c) => c + 1);
   }, []);
 
   const handleAddBook = async (book: SearchResult) => {
@@ -225,6 +225,7 @@ export function BookSearch({ onBookAdded, onSelectBook, excludeBookIds, showAlre
       } else {
         // 기존 동작: 내 서재에 추가
         const result = await addBook(book, "reading");
+        if (!result.success) throw new Error(result.error);
         toast.success(t("books.bookAddedSuccess"));
         setQuery("");
         setResults([]);
@@ -324,7 +325,8 @@ export function BookSearch({ onBookAdded, onSelectBook, excludeBookIds, showAlre
                           if (isAdding === `want-${key}`) return;
                           setIsAdding(`want-${key}`);
                           try {
-                            await addBook(book, "not_started");
+                            const wantResult = await addBook(book, "not_started");
+                            if (!wantResult.success) throw new Error(wantResult.error);
                             toast.success(t("dashboard.wantToReadAdded"));
                             router.refresh();
                           } catch (error) {
@@ -416,7 +418,7 @@ export function BookSearch({ onBookAdded, onSelectBook, excludeBookIds, showAlre
                         if (isAdded || isAddingThis) return;
                         setAddingWantToRead(book.bookId);
                         try {
-                          await addBook(
+                          const popResult = await addBook(
                             {
                               title: book.title,
                               author: book.author,
@@ -425,6 +427,7 @@ export function BookSearch({ onBookAdded, onSelectBook, excludeBookIds, showAlre
                             },
                             "not_started"
                           );
+                          if (!popResult.success) throw new Error(popResult.error);
                           setWantToReadIds((prev) => new Set(prev).add(book.bookId));
                           toast.success(t("dashboard.wantToReadAdded"));
                         } catch (error) {

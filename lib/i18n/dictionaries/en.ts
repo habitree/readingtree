@@ -1502,6 +1502,10 @@ export const en: Dictionary = {
     useCaseCreatorDesc: "Turn reading insights into shareable cards for social media",
     bookshelfCtaHeadline: "Create your own bookshelf",
     bookshelfCtaDesc: "Organize your books in one place\nand manage your reading journey with notes.",
+    twitterShare: "X (Twitter)",
+    nativeShare: "Share to other apps",
+    completionCardTitle: "Congratulations on finishing!",
+    shareCompletion: "Share your completion",
   },
 
   landing: {
@@ -2242,6 +2246,16 @@ export const en: Dictionary = {
     consecutiveDaysLabel: "{count}-day streak",
     openDashboard: "Click to open dashboard",
     pointsDashboardAriaLabel: "Points dashboard",
+    insufficientPoints: "Insufficient points",
+    insufficientPointsDesc: "You need more points to use this feature.",
+    requiredPoints: "Required",
+    currentBalance: "Balance",
+    shortfall: "Shortfall",
+    earnMorePoints: "Earn more points",
+    aiChatCost: "AI Chat 500P",
+    ocrCost: "OCR 300P",
+    pointDeducted: "{cost}P deducted",
+    refunded: "Points refunded",
   },
 
   accessibility: {

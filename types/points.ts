@@ -35,6 +35,10 @@ export type PointActionType =
   // 특별 보상
   | "first_book"
   | "first_note"
+  // 소비
+  | "ai_chat_spend"
+  | "ocr_spend"
+  | "point_refund"
   // 시스템
   | "admin_adjust";
 
@@ -240,6 +244,11 @@ export const POINT_ACTION_DEFAULTS: Record<PointActionType, { base_points: numbe
   first_book: { base_points: 35, description: "첫 번째 책 등록", category: "special" },
   first_note: { base_points: 25, description: "첫 번째 노트 작성", category: "special" },
 
+  // AI / OCR 소비
+  ai_chat_spend: { base_points: 0, description: "AI 채팅 포인트 소비", category: "system" },
+  ocr_spend: { base_points: 0, description: "OCR 포인트 소비", category: "system" },
+  point_refund: { base_points: 0, description: "포인트 환불", category: "system" },
+
   // 시스템
   admin_adjust: { base_points: 0, description: "관리자 조정", category: "system" },
 };
@@ -365,6 +374,39 @@ export const LEVEL_STYLES: Record<number, LevelStyle> = {
  */
 export function getLevelStyle(level: number): LevelStyle {
   return LEVEL_STYLES[level] || LEVEL_STYLES[1];
+}
+
+/**
+ * 포인트 소비 타입
+ */
+export type PointSpendType = "ai_chat" | "ocr_process";
+
+/**
+ * 포인트 소비 비용 설정
+ */
+export const POINT_SPEND_COSTS: Record<PointSpendType, number> = {
+  ai_chat: 500,
+  ocr_process: 300,
+};
+
+/**
+ * 포인트 소비 결과
+ */
+export interface SpendPointsResult {
+  success: boolean;
+  points_spent: number;
+  new_total: number;
+  transaction_id?: string;
+  error?: string;
+}
+
+/**
+ * 포인트 잔액 확인 결과
+ */
+export interface CheckPointBalanceResult {
+  canAfford: boolean;
+  balance: number;
+  cost: number;
 }
 
 /**

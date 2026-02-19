@@ -1502,6 +1502,10 @@ export const ko = {
     useCaseCreatorDesc: "독서 인사이트를 SNS에 바로 공유할 수 있는 카드 생성",
     bookshelfCtaHeadline: "나만의 서재를 만들어보세요",
     bookshelfCtaDesc: "읽은 책을 한곳에 정리하고,\n기록과 함께 독서 여정을 관리할 수 있습니다.",
+    twitterShare: "X (Twitter)",
+    nativeShare: "다른 앱으로 공유",
+    completionCardTitle: "완독을 축하합니다!",
+    shareCompletion: "완독 소식 공유하기",
   },
 
   landing: {
@@ -2242,6 +2246,16 @@ export const ko = {
     consecutiveDaysLabel: "{count}일 연속",
     openDashboard: "클릭하여 대시보드 열기",
     pointsDashboardAriaLabel: "포인트 대시보드",
+    insufficientPoints: "포인트가 부족합니다",
+    insufficientPointsDesc: "이 기능을 사용하려면 더 많은 포인트가 필요합니다.",
+    requiredPoints: "필요 포인트",
+    currentBalance: "현재 잔액",
+    shortfall: "부족 포인트",
+    earnMorePoints: "포인트 모으러 가기",
+    aiChatCost: "AI 채팅 500P",
+    ocrCost: "OCR 처리 300P",
+    pointDeducted: "{cost}P 차감됨",
+    refunded: "포인트가 환불되었습니다",
   },
 
   accessibility: {

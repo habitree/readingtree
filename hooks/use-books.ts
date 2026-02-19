@@ -38,7 +38,8 @@ export function useBooks(status?: ReadingStatus) {
     bookStatus: ReadingStatus = "reading"
   ) => {
     try {
-      await addBook(bookData, bookStatus);
+      const result = await addBook(bookData, bookStatus);
+      if (!result.success) throw new Error(result.error);
       await fetchBooks(); // 새 책은 ID를 알 수 없으므로 전체 새로고침
     } catch (err) {
       const error = err instanceof Error ? err : new Error("책 추가 실패");

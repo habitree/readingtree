@@ -32,7 +32,7 @@ export function PopularBooksWidget({ books }: PopularBooksWidgetProps) {
     if (addedBookIds.has(book.bookId)) return;
     setAddingBookId(book.bookId);
     try {
-      await addBook(
+      const result = await addBook(
         {
           title: book.title,
           author: book.author,
@@ -41,6 +41,7 @@ export function PopularBooksWidget({ books }: PopularBooksWidgetProps) {
         },
         "not_started"
       );
+      if (!result.success) throw new Error(result.error);
       setAddedBookIds((prev) => new Set(prev).add(book.bookId));
       toast.success(t("dashboard.wantToReadAdded"));
       router.refresh();
