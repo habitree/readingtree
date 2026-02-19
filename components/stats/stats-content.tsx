@@ -21,8 +21,8 @@ interface StatsContentProps {
   readingStats: {
     thisWeek: { notes: number };
     thisYear: { completedBooks: number; notes: number };
-    topBooks: Array<{ bookTitle: string; noteCount: number }>;
-    recentBooks: Array<{ bookTitle: string; status: string }>;
+    topBooks: Array<{ book: any; noteCount: number }>;
+    recentBooks: Array<{ book: any; noteCount: number }>;
   };
   monthlyStats: Array<{ month: string; count: number }>;
   weeklyProgress: {
@@ -206,17 +206,17 @@ export function StatsContent({
           <CardContent>
             {readingStats.topBooks.length > 0 ? (
               <div className="space-y-2">
-                {readingStats.topBooks.slice(0, 5).map((book, i) => (
+                {readingStats.topBooks.slice(0, 5).map((item, i) => (
                   <div
-                    key={book.bookTitle}
+                    key={item.book?.title || i}
                     className="flex items-center gap-3 py-1"
                   >
                     <span className="text-xs font-bold text-muted-foreground w-5">
                       {i + 1}
                     </span>
-                    <span className="text-sm flex-1 truncate">{book.bookTitle}</span>
+                    <span className="text-sm flex-1 truncate">{item.book?.title || "알 수 없는 책"}</span>
                     <Badge variant="secondary" className="text-xs">
-                      {book.noteCount}{t("stats.unitCount")}
+                      {item.noteCount}{t("stats.unitCount")}
                     </Badge>
                   </div>
                 ))}
