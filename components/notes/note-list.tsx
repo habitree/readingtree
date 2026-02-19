@@ -1,3 +1,5 @@
+"use client";
+
 import { NoteCard } from "./note-card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { NoteListSkeleton } from "@/components/ui/skeletons";
@@ -9,12 +11,13 @@ interface NoteListProps {
   notes: NoteWithBook[];
   isLoading?: boolean;
   excludeProgress?: boolean;  // progress 타입 제외 옵션
+  bookId?: string;  // 책별 기록 목록일 때 빈 상태 링크용
 }
 
 /**
  * 기록 목록 컴포넌트
  */
-export function NoteList({ notes, isLoading, excludeProgress = false }: NoteListProps) {
+export function NoteList({ notes, isLoading, excludeProgress = false, bookId }: NoteListProps) {
   if (isLoading) {
     return <NoteListSkeleton count={6} />;
   }
@@ -25,16 +28,18 @@ export function NoteList({ notes, isLoading, excludeProgress = false }: NoteList
     : notes;
 
   if (filteredNotes.length === 0) {
+    const href = bookId ? `/notes/new?bookId=${bookId}` : "/notes/new";
     return (
       <EmptyState
         icon={FileText}
         title="기록이 없습니다"
-        description="첫 번째 기록을 작성하고 독서 여정을 시작해보세요!"
+        description={bookId ? "이 책에 대한 첫 기록을 남겨보세요" : "첫 번째 기록을 작성하고 독서 여정을 시작해보세요!"}
         variant="encouraging"
         action={{
-          label: "기록 작성하기",
-          href: "/notes/new",
+          label: bookId ? "기록 추가" : "기록 작성하기",
+          href,
         }}
+        actionVariant={bookId ? "outline" : undefined}
       />
     );
   }
