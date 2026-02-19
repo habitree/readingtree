@@ -14,6 +14,7 @@ import type { User } from "@supabase/supabase-js";
 import { getCurrentUser } from "./auth";
 import { earnPoints, updateStreak } from "./points";
 import type { PointActionType } from "@/types/points";
+import { getRandomDefaultCoverPath } from "@/lib/constants/default-covers";
 
 /** "Readtree 기록" 시스템 책 well-known UUID */
 const READTREE_BOOK_ID = "00000000-0000-0000-0000-000000000001";
@@ -191,6 +192,14 @@ export async function createNote(data: CreateNoteInput, user?: User | null) {
     }
   }
 
+  // Readtree 기록 + 이미지 없음 → 랜덤 기본 표지 배정
+  let imageUrl = data.image_url || null;
+  if (resolvedBookId === READTREE_BOOK_ID && !imageUrl) {
+    const coverPath = getRandomDefaultCoverPath();
+    const { data: { publicUrl } } = supabase.storage.from("images").getPublicUrl(coverPath);
+    imageUrl = publicUrl;
+  }
+
   // 기록 생성
   const { data: note, error } = await supabase
     .from("notes")
@@ -200,7 +209,7 @@ export async function createNote(data: CreateNoteInput, user?: User | null) {
       title: data.title || null,
       type: noteType,
       content: content,
-      image_url: data.image_url || null,
+      image_url: imageUrl,
       page_number: data.page_number || null,
       is_public: data.is_public ?? true,
       tags: data.tags || null,
