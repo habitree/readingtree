@@ -34,14 +34,14 @@ export function ProfileContent() {
       .catch((err) => {
         if (!cancelled) {
           console.error("프로필 조회 오류:", err);
-          setError(err instanceof Error ? err.message : t("profile.loadError"));
+          setError(err instanceof Error ? err.message : "프로필을 불러올 수 없습니다");
         }
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
       });
     return () => { cancelled = true; };
-  }, [t]);
+  }, []);
 
   if (loading) {
     return (

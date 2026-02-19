@@ -51,12 +51,7 @@ export function ProfileForm({ user }: ProfileFormProps) {
       });
 
       toast.success(t("profile.saved"));
-      // 프로필 수정 후 페이지 새로고침하여 헤더도 갱신
       router.refresh();
-      // 약간의 지연 후 다시 새로고침하여 헤더 컴포넌트의 useEffect가 실행되도록 함
-      setTimeout(() => {
-        window.location.reload();
-      }, 100);
     } catch (error) {
       console.error("프로필 수정 오류:", error);
       toast.error(
@@ -105,12 +100,7 @@ export function ProfileForm({ user }: ProfileFormProps) {
       const result = await updateProfileImage(fileToUpload);
       setAvatarUrl(result.avatarUrl);
       toast.success(t("profile.saved"));
-      // 프로필 이미지 업로드 후 페이지 새로고침하여 헤더도 갱신
       router.refresh();
-      // 약간의 지연 후 다시 새로고침하여 헤더 컴포넌트의 useEffect가 실행되도록 함
-      setTimeout(() => {
-        window.location.reload();
-      }, 100);
     } catch (error) {
       console.error("이미지 업로드 오류:", error);
       toast.error(

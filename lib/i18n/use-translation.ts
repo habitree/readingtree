@@ -1,3 +1,4 @@
+import { useCallback } from "react";
 import { useLanguageStore } from "./store";
 import { ko, en, type Dictionary } from "./dictionaries";
 
@@ -45,10 +46,13 @@ export function useTranslation() {
   const { locale, setLocale, toggleLocale } = useLanguageStore();
   const dict = dictionaries[locale] ?? ko;
 
-  function t(key: TranslationKey, params?: Record<string, string | number>): string {
-    const value = getNestedValue(dict as unknown as Record<string, unknown>, key);
-    return interpolate(value, params);
-  }
+  const t = useCallback(
+    (key: TranslationKey, params?: Record<string, string | number>): string => {
+      const value = getNestedValue(dict as unknown as Record<string, unknown>, key);
+      return interpolate(value, params);
+    },
+    [dict]
+  );
 
   return { t, locale, setLocale, toggleLocale } as const;
 }
