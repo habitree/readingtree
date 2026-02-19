@@ -303,7 +303,7 @@ export default function GroupSettingsPage({ params }: PageProps) {
             </p>
           )}
           <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
-            <InviteLinkDialog groupId={groupId} />
+            {groupId && <InviteLinkDialog groupId={groupId} />}
           </div>
         </CardContent>
       </Card>
