@@ -197,7 +197,7 @@ export function OcrSettingsPanel({
       if (result.success) {
         toast.success(t("admin.ocrSettings.testSuccess"));
       } else {
-        toast.error(t("admin.ocrSettings.testFailed", { error: result.error }));
+        toast.error(t("admin.ocrSettings.testFailed", { error: result.error ?? "" }));
       }
     } catch (error) {
       setTestResult({
