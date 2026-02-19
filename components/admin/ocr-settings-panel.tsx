@@ -190,8 +190,8 @@ export function OcrSettingsPanel({
       setTestResult({
         success: result.success,
         message: result.success
-          ? t("admin.ocrSettings.connectionSuccess", { ms: result.responseTime })
-          : t("admin.ocrSettings.connectionFailed", { error: result.error }),
+          ? t("admin.ocrSettings.connectionSuccess", { ms: result.responseTime ?? 0 })
+          : t("admin.ocrSettings.connectionFailed", { error: result.error ?? "" }),
         responseTime: result.responseTime,
       });
       if (result.success) {
