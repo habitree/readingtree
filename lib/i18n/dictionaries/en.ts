@@ -2324,6 +2324,8 @@ export const en: Dictionary = {
     noTopBooks: "No notes yet",
     topTags: "Most Used Tags",
     noTags: "No tags yet",
+    setGoal: "Set goal",
+    viewAllBooks: "View all",
   },
 
   bookshelves: {

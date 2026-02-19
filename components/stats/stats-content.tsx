@@ -70,6 +70,7 @@ export function StatsContent({
           unit={t("stats.unitBooks")}
           color="text-blue-600 dark:text-blue-400"
           bgColor="bg-blue-50 dark:bg-blue-950/30"
+          href="/books?status=completed"
         />
         <StatCard
           icon={PenLine}
@@ -78,6 +79,7 @@ export function StatsContent({
           unit={t("stats.unitCount")}
           color="text-emerald-600 dark:text-emerald-400"
           bgColor="bg-emerald-50 dark:bg-emerald-950/30"
+          href="/notes"
         />
         <StatCard
           icon={Flame}
@@ -98,8 +100,9 @@ export function StatsContent({
           subtitle={
             goalProgress.goal > 0
               ? `${goalProgress.completed}/${goalProgress.goal}${t("stats.unitBooks")}`
-              : t("stats.noGoalSet")
+              : t("stats.setGoal")
           }
+          href="/profile"
         />
       </div>
 
@@ -198,18 +201,24 @@ export function StatsContent({
         {/* 인기 책 */}
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
-              <BookOpen className="h-5 w-5 text-primary" />
-              {t("stats.topBooks")}
-            </CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base flex items-center gap-2">
+                <BookOpen className="h-5 w-5 text-primary" />
+                {t("stats.topBooks")}
+              </CardTitle>
+              <Link href="/books" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+                {t("stats.viewAllBooks")} →
+              </Link>
+            </div>
           </CardHeader>
           <CardContent>
             {readingStats.topBooks.length > 0 ? (
-              <div className="space-y-2">
+              <div className="space-y-1">
                 {readingStats.topBooks.slice(0, 5).map((item, i) => (
-                  <div
-                    key={item.book?.title || i}
-                    className="flex items-center gap-3 py-1"
+                  <Link
+                    key={item.book?.id || i}
+                    href={`/books/${item.book?.id}`}
+                    className="flex items-center gap-3 py-1.5 px-2 -mx-2 rounded-lg hover:bg-muted/50 transition-colors"
                   >
                     <span className="text-xs font-bold text-muted-foreground w-5">
                       {i + 1}
@@ -218,7 +227,7 @@ export function StatsContent({
                     <Badge variant="secondary" className="text-xs">
                       {item.noteCount}{t("stats.unitCount")}
                     </Badge>
-                  </div>
+                  </Link>
                 ))}
               </div>
             ) : (
@@ -279,6 +288,7 @@ function StatCard({
   bgColor,
   highlight,
   subtitle,
+  href,
 }: {
   icon: React.ComponentType<{ className?: string }>;
   label: string;
@@ -288,9 +298,10 @@ function StatCard({
   bgColor: string;
   highlight?: boolean;
   subtitle?: string;
+  href?: string;
 }) {
-  return (
-    <Card className={cn(highlight && "ring-1 ring-orange-300 dark:ring-orange-700")}>
+  const card = (
+    <Card className={cn(highlight && "ring-1 ring-orange-300 dark:ring-orange-700", href && "hover:bg-muted/50 transition-colors cursor-pointer")}>
       <CardContent className="pt-4 pb-3 px-4">
         <div className="flex items-center gap-2 mb-2">
           <div className={cn("p-1.5 rounded-lg", bgColor)}>
@@ -308,4 +319,5 @@ function StatCard({
       </CardContent>
     </Card>
   );
+  return href ? <Link href={href}>{card}</Link> : card;
 }

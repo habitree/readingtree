@@ -2324,6 +2324,8 @@ export const ko = {
     noTopBooks: "아직 기록이 없어요",
     topTags: "자주 사용하는 태그",
     noTags: "아직 태그가 없어요",
+    setGoal: "목표 설정하기",
+    viewAllBooks: "전체 보기",
   },
 
   bookshelves: {
