@@ -118,9 +118,7 @@ export const ko = {
     writeNote: "기록",
     writeNoteLoginTitle: "기록을 남기려면",
     writeNoteLoginDesc: "로그인 후 독서 기록을 남길 수 있어요.",
-    tags: "태그",
     stats: "통계",
-    explore: "탐색",
   },
 
   auth: {
@@ -822,8 +820,6 @@ export const ko = {
     noteEditButton: "수정",
     noteTypeQuoteDisplay: "인상깊은 구절",
     noteTypeReadingRecord: "독서 기록",
-    tagsTitle: "태그 모아보기",
-    tagsDescription: "태그별로 기록을 탐색해보세요",
   },
 
   dashboard: {
@@ -2327,22 +2323,6 @@ export const ko = {
     noTopBooks: "아직 기록이 없어요",
     topTags: "자주 사용하는 태그",
     noTags: "아직 태그가 없어요",
-  },
-
-  explore: {
-    pageTitle: "문장 탐색",
-    pageDescription: "다른 독자들의 문장과 기록을 발견해보세요",
-    sortRecent: "최신순",
-    sortPopular: "인기순",
-    loadMore: "더 보기",
-    loadFailed: "불러오기에 실패했어요.",
-    likeFailed: "좋아요 처리에 실패했어요.",
-    emptyState: "아직 공개된 문장이 없어요. 첫 공유를 시작해보세요!",
-    anonymous: "익명",
-    likeAria: "좋아요",
-    unlikeAria: "좋아요 취소",
-    allTags: "전체",
-    goToExplore: "탐색으로",
   },
 
   bookshelves: {

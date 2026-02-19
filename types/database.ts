@@ -581,35 +581,6 @@ export type Database = {
           },
         ]
       }
-      note_likes: {
-        Row: {
-          id: string
-          note_id: string
-          user_id: string
-          created_at: string | null
-        }
-        Insert: {
-          id?: string
-          note_id: string
-          user_id: string
-          created_at?: string | null
-        }
-        Update: {
-          id?: string
-          note_id?: string
-          user_id?: string
-          created_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "note_likes_note_id_fkey"
-            columns: ["note_id"]
-            isOneToOne: false
-            referencedRelation: "notes"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       feature_request_votes: {
         Row: {
           created_at: string | null
@@ -691,7 +662,7 @@ export type Database = {
           related_user_book_ids: string[] | null
           source_type: string | null
           source_label: string | null
-          like_count: number | null
+
           tags: string[] | null
           title: string | null
           type: Database["public"]["Enums"]["note_type"]
@@ -710,7 +681,7 @@ export type Database = {
           related_user_book_ids?: string[] | null
           source_type?: string | null
           source_label?: string | null
-          like_count?: number | null
+
           tags?: string[] | null
           title?: string | null
           type: Database["public"]["Enums"]["note_type"]
@@ -729,7 +700,7 @@ export type Database = {
           related_user_book_ids?: string[] | null
           source_type?: string | null
           source_label?: string | null
-          like_count?: number | null
+
           tags?: string[] | null
           title?: string | null
           type?: Database["public"]["Enums"]["note_type"]

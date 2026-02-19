@@ -118,9 +118,7 @@ export const en: Dictionary = {
     mobileNav: "Mobile navigation",
     exploringReadTree: "Exploring ReadTree",
     writeNote: "Note",
-    tags: "Tags",
     stats: "Stats",
-    explore: "Explore",
     writeNoteLoginTitle: "To write notes",
     writeNoteLoginDesc: "Log in to write reading notes.",
   },
@@ -822,8 +820,6 @@ export const en: Dictionary = {
     noteEditButton: "Edit",
     noteTypeQuoteDisplay: "Impressive quote",
     noteTypeReadingRecord: "Reading note",
-    tagsTitle: "Tags",
-    tagsDescription: "Browse your notes by tags",
   },
 
   dashboard: {
@@ -2327,22 +2323,6 @@ export const en: Dictionary = {
     noTopBooks: "No notes yet",
     topTags: "Most Used Tags",
     noTags: "No tags yet",
-  },
-
-  explore: {
-    pageTitle: "Explore",
-    pageDescription: "Discover quotes and notes from other readers",
-    sortRecent: "Recent",
-    sortPopular: "Popular",
-    loadMore: "Load more",
-    loadFailed: "Failed to load notes.",
-    likeFailed: "Failed to process like.",
-    emptyState: "No public notes yet. Be the first to share!",
-    anonymous: "Anonymous",
-    likeAria: "Like",
-    unlikeAria: "Unlike",
-    allTags: "All",
-    goToExplore: "Explore",
   },
 
   bookshelves: {

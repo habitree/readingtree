@@ -15,6 +15,9 @@ import { getCurrentUser } from "./auth";
 import { earnPoints, updateStreak } from "./points";
 import type { PointActionType } from "@/types/points";
 
+/** "Readtree 기록" 시스템 책 well-known UUID */
+const READTREE_BOOK_ID = "00000000-0000-0000-0000-000000000001";
+
 /**
  * 기록 생성
  * @param data 기록 데이터
@@ -105,6 +108,26 @@ export async function createNote(data: CreateNoteInput, user?: User | null) {
     }
 
     resolvedBookId = userBook.book_id;
+  }
+
+  // book_id가 없으면 "Readtree 기록" 시스템 책에 자동 할당
+  if (!resolvedBookId) {
+    resolvedBookId = READTREE_BOOK_ID;
+
+    const { data: existingUB } = await supabase
+      .from("user_books")
+      .select("id")
+      .eq("user_id", currentUser.id)
+      .eq("book_id", READTREE_BOOK_ID)
+      .maybeSingle();
+
+    if (!existingUB) {
+      await supabase.from("user_books").insert({
+        user_id: currentUser.id,
+        book_id: READTREE_BOOK_ID,
+        status: "reading",
+      });
+    }
   }
 
   // related_user_book_ids 검증

@@ -9,7 +9,7 @@ import { ShareCtaSection } from "@/components/share/share-cta-section";
 import type { NoteWithBook } from "@/types/note";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, Compass } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
 import { getUserById } from "@/app/actions/profile";
 
 /**
@@ -138,12 +138,6 @@ export default async function ShareNotePage({
               <Link href="/">
                 <ChevronLeft className="w-4 h-4 mr-1" />
                 메인으로
-              </Link>
-            </Button>
-            <Button variant="ghost" size="sm" asChild className="text-muted-foreground hover:text-primary">
-              <Link href="/explore">
-                <Compass className="w-4 h-4 mr-1" />
-                탐색으로
               </Link>
             </Button>
           </div>
