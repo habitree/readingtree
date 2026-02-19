@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslation } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -25,6 +26,7 @@ export function FeatureRequestForm({
   initialData,
 }: FeatureRequestFormProps) {
   const router = useRouter();
+  const { t } = useTranslation();
   const [isPending, startTransition] = useTransition();
   const [title, setTitle] = useState(initialData?.title || "");
   const [description, setDescription] = useState(initialData?.description || "");
@@ -38,10 +40,10 @@ export function FeatureRequestForm({
           const result = await createFeatureRequest({ title, description });
 
           if (result.success && result.id) {
-            toast.success("기능 요청이 등록됐어요.");
+            toast.success(t("featureRequests.submitSuccess"));
             router.push(`/feature-requests/${result.id}`);
           } else {
-            toast.error(result.error || "등록에 실패했어요.");
+            toast.error(result.error || t("featureRequests.submitFailed"));
           }
         } else if (mode === "edit" && initialData) {
           const result = await updateFeatureRequest(initialData.id, {
@@ -50,14 +52,14 @@ export function FeatureRequestForm({
           });
 
           if (result.success) {
-            toast.success("수정됐어요.");
+            toast.success(t("featureRequests.updateSuccess"));
             router.push(`/feature-requests/${initialData.id}`);
           } else {
-            toast.error(result.error || "수정에 실패했어요.");
+            toast.error(result.error || t("featureRequests.updateFailed"));
           }
         }
       } catch (error) {
-        toast.error("오류가 발생했어요.");
+        toast.error(t("featureRequests.errorOccurred"));
       }
     });
   };
@@ -67,18 +69,18 @@ export function FeatureRequestForm({
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Lightbulb className="h-5 w-5 text-primary" />
-          {mode === "create" ? "새 기능 요청" : "기능 요청 수정"}
+          {mode === "create" ? t("featureRequests.newRequest") : t("featureRequests.editRequest")}
         </CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="title">제목</Label>
+            <Label htmlFor="title">{t("featureRequests.titleLabel")}</Label>
             <Input
               id="title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="어떤 기능이 필요하신가요?"
+              placeholder={t("featureRequests.titlePlaceholder")}
               maxLength={200}
               required
             />
@@ -88,17 +90,17 @@ export function FeatureRequestForm({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="description">상세 설명</Label>
+            <Label htmlFor="description">{t("featureRequests.descriptionLabel")}</Label>
             <Textarea
               id="description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="기능이 필요한 이유와 기대하는 동작을 자세히 설명해주세요."
+              placeholder={t("featureRequests.descriptionPlaceholder")}
               rows={6}
               required
             />
             <p className="text-xs text-muted-foreground">
-              * 최소 20자 이상 작성해주세요.
+              {t("featureRequests.minCharsNotice")}
             </p>
           </div>
 
@@ -112,12 +114,12 @@ export function FeatureRequestForm({
               {isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {mode === "create" ? "등록 중..." : "수정 중..."}
+                  {mode === "create" ? t("featureRequests.submitting") : t("featureRequests.updating")}
                 </>
               ) : mode === "create" ? (
-                "등록하기"
+                t("featureRequests.submitButton")
               ) : (
-                "수정하기"
+                t("featureRequests.updateButton")
               )}
             </Button>
             <Button
@@ -127,7 +129,7 @@ export function FeatureRequestForm({
               disabled={isPending}
               fullWidth
             >
-              취소
+              {t("featureRequests.cancel")}
             </Button>
           </div>
         </form>

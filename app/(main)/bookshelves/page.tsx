@@ -5,10 +5,11 @@ import { BookshelfList } from "@/components/bookshelves/bookshelf-list";
 import { CreateBookshelfDialog } from "@/components/bookshelves/create-bookshelf-dialog";
 import { getCurrentUser } from "@/app/actions/auth";
 import type { BookshelfWithStats } from "@/types/bookshelf";
+import { PageHeader } from "@/components/layout/page-header";
 
 export const metadata: Metadata = {
   title: "서재 관리 | ReadTree",
-  description: "내 서재를 관리하세요",
+  description: "나만의 서재로 책을 정리하세요",
 };
 
 /**
@@ -56,14 +57,7 @@ export default async function BookshelvesPage() {
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">
-              서재 관리
-            </h1>
-            <p className="text-muted-foreground">
-              책을 분류하여 관리할 수 있는 서재를 만들어보세요
-            </p>
-          </div>
+          <PageHeader titleKey="bookshelves.pageTitle" descriptionKey="bookshelves.pageDesc" />
           {!isGuest && <CreateBookshelfDialog />}
         </div>
 
@@ -71,15 +65,10 @@ export default async function BookshelvesPage() {
       </div>
     );
   } catch (error) {
-    console.error("서재 목록 조회 오류:", error);
+    console.error("Bookshelves load error:", error);
     return (
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">서재 관리</h1>
-          <p className="text-muted-foreground">
-            서재 목록을 불러오는 중 오류가 발생했습니다.
-          </p>
-        </div>
+        <PageHeader titleKey="bookshelves.pageTitle" descriptionKey="bookshelves.loadError" />
       </div>
     );
   }

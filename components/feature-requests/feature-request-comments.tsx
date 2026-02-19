@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useTranslation } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -46,6 +47,7 @@ export function FeatureRequestComments({
   comments,
 }: FeatureRequestCommentsProps) {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [newComment, setNewComment] = useState("");
@@ -56,9 +58,9 @@ export function FeatureRequestComments({
     e.preventDefault();
 
     if (!user) {
-      toast.info("로그인이 필요합니다", {
+      toast.info(t("featureRequests.loginRequiredComment"), {
         action: {
-          label: "로그인",
+          label: t("featureRequests.loginAction"),
           onClick: () => router.push("/login"),
         },
       });
@@ -74,9 +76,9 @@ export function FeatureRequestComments({
 
       if (result.success) {
         setNewComment("");
-        toast.success("댓글이 등록됐어요.");
+        toast.success(t("featureRequests.commentSuccess"));
       } else {
-        toast.error(result.error || "댓글 등록에 실패했어요.");
+        toast.error(result.error || t("featureRequests.commentFailed"));
       }
     });
   };
@@ -94,23 +96,23 @@ export function FeatureRequestComments({
 
       if (result.success) {
         setEditingId(null);
-        toast.success("댓글이 수정됐어요.");
+        toast.success(t("featureRequests.commentEditSuccess"));
       } else {
-        toast.error(result.error || "댓글 수정에 실패했어요.");
+        toast.error(result.error || t("featureRequests.commentEditFailed"));
       }
     });
   };
 
   const handleDelete = (commentId: string) => {
-    if (!confirm("댓글을 삭제하시겠습니까?")) return;
+    if (!confirm(t("featureRequests.commentDeleteConfirm"))) return;
 
     startTransition(async () => {
       const result = await deleteComment(commentId);
 
       if (result.success) {
-        toast.success("댓글이 삭제됐어요.");
+        toast.success(t("featureRequests.commentDeleteSuccess"));
       } else {
-        toast.error(result.error || "댓글 삭제에 실패했어요.");
+        toast.error(result.error || t("featureRequests.commentDeleteFailed"));
       }
     });
   };
@@ -120,7 +122,7 @@ export function FeatureRequestComments({
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-lg">
           <MessageCircle className="h-5 w-5" />
-          댓글 {comments.length > 0 && `(${comments.length})`}
+          {t("featureRequests.comments")} {comments.length > 0 && `(${comments.length})`}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -131,8 +133,8 @@ export function FeatureRequestComments({
             onChange={(e) => setNewComment(e.target.value)}
             placeholder={
               user
-                ? "댓글을 작성해주세요..."
-                : "로그인 후 댓글을 작성할 수 있습니다."
+                ? t("featureRequests.commentPlaceholder")
+                : t("featureRequests.commentLoginPlaceholder")
             }
             rows={3}
             disabled={!user || isPending}
@@ -144,7 +146,7 @@ export function FeatureRequestComments({
               ) : (
                 <Send className="h-4 w-4 mr-2" />
               )}
-              등록
+              {t("featureRequests.commentSubmit")}
             </Button>
           </div>
         </form>
@@ -153,7 +155,7 @@ export function FeatureRequestComments({
         {comments.length > 0 ? (
           <div className="space-y-4 pt-4 border-t">
             {comments.map((comment) => {
-              const userName = comment.users?.name || "익명";
+              const userName = comment.users?.name || t("featureRequests.anonymous");
               const userInitial = userName.charAt(0).toUpperCase();
               const isOwner = user?.id === comment.user_id;
               const isAdminComment =
@@ -182,7 +184,7 @@ export function FeatureRequestComments({
                       <span className="font-medium text-sm">{userName}</span>
                       {isAdminComment && (
                         <Badge variant="secondary" className="text-[10px]">
-                          관리자
+                          {t("featureRequests.adminBadge")}
                         </Badge>
                       )}
                       <span className="text-xs text-muted-foreground">
@@ -208,14 +210,14 @@ export function FeatureRequestComments({
                               onClick={() => handleEdit(comment)}
                             >
                               <Pencil className="h-4 w-4 mr-2" />
-                              수정
+                              {t("featureRequests.edit")}
                             </DropdownMenuItem>
                             <DropdownMenuItem
                               onClick={() => handleDelete(comment.id)}
                               className="text-destructive"
                             >
                               <Trash2 className="h-4 w-4 mr-2" />
-                              삭제
+                              {t("featureRequests.deleteAction")}
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -235,7 +237,7 @@ export function FeatureRequestComments({
                             variant="outline"
                             onClick={() => setEditingId(null)}
                           >
-                            취소
+                            {t("featureRequests.cancel")}
                           </Button>
                           <Button
                             size="sm"
@@ -245,7 +247,7 @@ export function FeatureRequestComments({
                             {isPending ? (
                               <Loader2 className="h-4 w-4 animate-spin" />
                             ) : (
-                              "저장"
+                              t("featureRequests.save")
                             )}
                           </Button>
                         </div>
@@ -262,7 +264,7 @@ export function FeatureRequestComments({
           </div>
         ) : (
           <div className="text-center py-8 text-muted-foreground">
-            아직 댓글이 없어요. 첫 댓글을 남겨보세요.
+            {t("featureRequests.noComments")}
           </div>
         )}
       </CardContent>

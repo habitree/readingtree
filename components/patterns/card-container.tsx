@@ -6,6 +6,7 @@ import Image from "next/image";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { elevation, radius, transition } from "@/lib/design-tokens";
+import { useTranslation } from "@/lib/i18n";
 
 // ============================================================================
 // CardImageSlot - 카드 이미지 영역
@@ -40,6 +41,8 @@ function CardImageSlot({
   sizes = "(max-width: 768px) 25vw, (max-width: 1024px) 16vw, 12.5vw",
   className,
 }: CardImageSlotProps) {
+  const { t } = useTranslation();
+
   return (
     <div
       className={cn(
@@ -61,7 +64,7 @@ function CardImageSlot({
       ) : (
         fallback ?? (
           <div className="absolute inset-0 flex items-center justify-center bg-muted/50">
-            <span className="text-xs text-muted-foreground">이미지 없음</span>
+            <span className="text-xs text-muted-foreground">{t("books.noImage")}</span>
           </div>
         )
       )}

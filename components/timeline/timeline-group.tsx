@@ -1,7 +1,11 @@
+"use client";
+
 import { TimelineItem } from "./timeline-item";
 import type { NoteWithBook } from "@/types/note";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
+import { enUS } from "date-fns/locale";
+import { useTranslation } from "@/lib/i18n";
 
 interface TimelineGroupProps {
   month: string;
@@ -13,10 +17,13 @@ interface TimelineGroupProps {
  * 월별로 기록을 그룹화하여 표시
  */
 export function TimelineGroup({ month, notes }: TimelineGroupProps) {
-  // YYYY-MM 형식을 "2024년 1월" 형식으로 변환
+  const { locale } = useTranslation();
+  // YYYY-MM 형식을 locale에 맞게 변환
   const [year, monthNum] = month.split("-");
   const date = new Date(parseInt(year), parseInt(monthNum) - 1, 1);
-  const formattedMonth = format(date, "yyyy년 M월", { locale: ko });
+  const formattedMonth = locale === "ko"
+    ? format(date, "yyyy년 M월", { locale: ko })
+    : format(date, "MMMM yyyy", { locale: enUS });
 
   return (
     <div className="space-y-4">

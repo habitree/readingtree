@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { getBookshelfWithStats, updateBookshelf, deleteBookshelf } from "@/app/actions/bookshelves";
 import { getCurrentUser } from "@/app/actions/auth";
 import { BookshelfEditForm } from "@/components/bookshelves/bookshelf-edit-form";
+import { BookshelfEditTitle } from "@/components/bookshelves/bookshelf-page-strings";
 
 interface BookshelfEditPageProps {
   params: Promise<{
@@ -58,10 +59,7 @@ export default async function BookshelfEditPage({
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">서재 설정</h1>
-          <p className="text-muted-foreground">
-            서재 정보를 수정하거나 삭제할 수 있습니다.
-          </p>
+          <BookshelfEditTitle />
         </div>
 
         <BookshelfEditForm bookshelf={bookshelf} />

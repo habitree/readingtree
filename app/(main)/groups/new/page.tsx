@@ -11,6 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { createGroup } from "@/app/actions/groups";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
+import { useTranslation } from "@/lib/i18n";
 
 /**
  * 모임 생성 페이지
@@ -18,6 +19,7 @@ import { Loader2 } from "lucide-react";
  */
 export default function NewGroupPage() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
@@ -36,12 +38,12 @@ export default function NewGroupPage() {
         isPublic: formData.isPublic,
       });
 
-      toast.success("모임이 만들어졌어요.");
+      toast.success(t("groups.groupCreatedSuccess"));
       router.push(`/groups/${result.groupId}`);
     } catch (error) {
       console.error("모임 생성 오류:", error);
       toast.error(
-        error instanceof Error ? error.message : "모임 만들기에 실패했어요."
+        error instanceof Error ? error.message : t("groups.groupCreateFailed")
       );
     } finally {
       setIsSubmitting(false);
@@ -51,52 +53,52 @@ export default function NewGroupPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">모임 만들기</h1>
+        <h1 className="text-3xl font-bold tracking-tight">{t("groups.newGroupPageTitle")}</h1>
         <p className="text-muted-foreground">
-          새로운 독서모임을 생성하세요
+          {t("groups.newGroupPageDesc")}
         </p>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>모임 정보</CardTitle>
+          <CardTitle>{t("groups.groupInfoCardTitle")}</CardTitle>
           <CardDescription>
-            모임 이름과 설명을 입력하세요
+            {t("groups.groupInfoCardDesc")}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="name">모임 이름 *</Label>
+              <Label htmlFor="name">{t("groups.groupNameLabel")}</Label>
               <Input
                 id="name"
                 value={formData.name}
                 onChange={(e) =>
                   setFormData({ ...formData, name: e.target.value })
                 }
-                placeholder="예: 2024년 독서 모임"
+                placeholder={t("groups.groupNamePlaceholder")}
                 required
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="description">모임 설명</Label>
+              <Label htmlFor="description">{t("groups.groupDescLabel")}</Label>
               <Textarea
                 id="description"
                 value={formData.description}
                 onChange={(e) =>
                   setFormData({ ...formData, description: e.target.value })
                 }
-                placeholder="모임에 대한 설명을 입력하세요"
+                placeholder={t("groups.groupDescPlaceholder")}
                 rows={4}
               />
             </div>
 
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
-                <Label htmlFor="isPublic">공개 모임</Label>
+                <Label htmlFor="isPublic">{t("groups.groupPublicLabel")}</Label>
                 <p className="text-sm text-muted-foreground">
-                  공개 모임은 누구나 찾아서 참여할 수 있습니다
+                  {t("groups.groupPublicDesc")}
                 </p>
               </div>
               <Switch
@@ -109,8 +111,8 @@ export default function NewGroupPage() {
             </div>
 
             <div className="flex flex-col gap-2 pt-4">
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 disabled={isSubmitting || !formData.name}
                 fullWidth
                 size="lg"
@@ -118,10 +120,10 @@ export default function NewGroupPage() {
                 {isSubmitting ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    생성 중...
+                    {t("groups.groupCreating")}
                   </>
                 ) : (
-                  "모임 만들기"
+                  t("groups.groupCreateBtn")
                 )}
               </Button>
               <Button
@@ -130,7 +132,7 @@ export default function NewGroupPage() {
                 onClick={() => router.back()}
                 fullWidth
               >
-                취소
+                {t("groups.groupCancelBtn")}
               </Button>
             </div>
           </form>

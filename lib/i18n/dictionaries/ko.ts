@@ -1456,6 +1456,21 @@ export const ko = {
     bookshelfCtaDesc1: "나만의 서재를 만들고 독서 기록을 시작해보세요.",
     bookshelfCtaDesc2: "읽은 책을 정리하고 생각을 기록할 수 있습니다.",
     makeMyBookshelf: "나도 서재 만들기",
+    // share landing CTA
+    ctaHeadline: "마음에 남은 한 줄,\n그냥 흘려보내지 마세요",
+    ctaDesc: "책이 아니어도 괜찮아요. SNS, 영상, 대화에서 만난 문장도\n예쁜 카드로 만들어 공유할 수 있습니다.",
+    ctaCreateCard: "나도 문장 카드 만들기",
+    ctaStartRecord: "무료로 시작하기",
+    // use cases
+    useCaseTitle: "이런 분들이 사용하고 있어요",
+    useCaseReaderTitle: "꾸준한 독서가",
+    useCaseReaderDesc: "읽은 책의 인상 깊은 구절과 생각을 체계적으로 기록",
+    useCaseCasualTitle: "가끔 읽는 사람",
+    useCaseCasualDesc: "부담 없이 한 줄만 기록하고 나중에 책과 연결",
+    useCaseCreatorTitle: "콘텐츠 크리에이터",
+    useCaseCreatorDesc: "독서 인사이트를 SNS에 바로 공유할 수 있는 카드 생성",
+    bookshelfCtaHeadline: "나만의 서재를 만들어보세요",
+    bookshelfCtaDesc: "읽은 책을 한곳에 정리하고,\n기록과 함께 독서 여정을 관리할 수 있습니다.",
   },
 
   landing: {

@@ -3,9 +3,8 @@ import { getCurrentUser } from "@/app/actions/auth";
 import { getPersonaDashboardData } from "@/app/actions/persona";
 import { PersonaCard, PersonaCardSkeleton } from "@/components/persona/persona-card";
 import { ReadingStats, ReadingStatsSkeleton } from "@/components/persona/reading-stats";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import Link from "next/link";
+import { PersonaAICard } from "@/components/persona/persona-ai-card";
+import { PageHeader } from "@/components/layout/page-header";
 import { getSamplePersonaDashboardData } from "@/app/actions/sample";
 
 /**
@@ -17,14 +16,7 @@ export default async function PersonaPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-          독서 성향
-        </h1>
-        <p className="text-muted-foreground">
-          독서 기록을 분석하여 나만의 독서 성향을 파악해보세요.
-        </p>
-      </div>
+      <PageHeader titleKey="persona.pageTitle" descriptionKey="persona.pageDesc" />
 
       <Suspense fallback={<PersonaContentSkeleton />}>
         {isGuest ? <GuestPersonaContent /> : <PersonaContent />}
@@ -46,19 +38,7 @@ async function PersonaContent() {
       <ReadingStats persona={data.persona} />
 
       {/* AI 챗봇 바로가기 */}
-      <Card>
-        <CardContent className="flex items-center justify-between py-4">
-          <div>
-            <h3 className="font-medium">AI 독서 도우미와 대화하기</h3>
-            <p className="text-sm text-muted-foreground">
-              독서 성향을 바탕으로 맞춤 추천을 받아보세요.
-            </p>
-          </div>
-          <Button asChild>
-            <Link href="/chat">대화 시작</Link>
-          </Button>
-        </CardContent>
-      </Card>
+      <PersonaAICard />
     </div>
   );
 }
@@ -75,19 +55,7 @@ async function GuestPersonaContent() {
       />
       <ReadingStats persona={data.persona} />
 
-      <Card>
-        <CardContent className="flex items-center justify-between py-4">
-          <div>
-            <h3 className="font-medium">AI 독서 도우미와 대화하기</h3>
-            <p className="text-sm text-muted-foreground">
-              독서 성향을 바탕으로 맞춤 추천을 받아보세요.
-            </p>
-          </div>
-          <Button asChild>
-            <Link href="/chat">대화 시작</Link>
-          </Button>
-        </CardContent>
-      </Card>
+      <PersonaAICard />
     </div>
   );
 }

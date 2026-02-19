@@ -2,11 +2,11 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { TimelineContent } from "@/components/timeline/timeline-content";
 import { Skeleton } from "@/components/ui/skeleton";
-import { typography } from "@/lib/design-tokens";
+import { PageHeader } from "@/components/layout/page-header";
 
 export const metadata: Metadata = {
   title: "타임라인",
-  description: "시간순으로 정리된 독서 기록을 확인하세요 - 구절, 메모, 사진, 필사 모아보기",
+  description: "시간순으로 독서 기록을 살펴보세요",
 };
 
 /**
@@ -16,12 +16,7 @@ export const metadata: Metadata = {
 export default async function TimelinePage() {
   return (
     <div className="space-y-4 sm:space-y-6">
-      <div>
-        <h1 className={typography.pageTitle}>타임라인</h1>
-        <p className={typography.pageDescription}>
-          시간순으로 정리된 독서 기록을 확인하세요
-        </p>
-      </div>
+      <PageHeader titleKey="timeline.pageTitle" descriptionKey="timeline.pageDesc" />
 
       <Suspense
         fallback={

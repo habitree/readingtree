@@ -6,10 +6,11 @@ import {
   getUserVotedRequestIds,
 } from "@/app/actions/feature-requests";
 import type { FeatureRequestStatus } from "@/types/feature-request";
+import { PageHeader } from "@/components/layout/page-header";
 
 export const metadata: Metadata = {
-  title: "기능 요청 | Habitree Reading Hub",
-  description: "원하는 기능을 요청하고 투표해주세요.",
+  title: "기능 요청 | ReadTree",
+  description: "원하는 기능을 요청하고 투표하세요",
 };
 
 interface PageProps {
@@ -60,13 +61,7 @@ export default async function FeatureRequestsPage({ searchParams }: PageProps) {
 
   return (
     <div className="container max-w-3xl py-6 space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">기능 요청</h1>
-        <p className="text-muted-foreground">
-          원하는 기능을 요청하고 투표해주세요. 많은 투표를 받은 기능이 우선적으로
-          검토됩니다.
-        </p>
-      </div>
+      <PageHeader titleKey="featureRequests.pageTitle" descriptionKey="featureRequests.pageDesc" />
 
       <Suspense
         fallback={

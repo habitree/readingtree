@@ -2,11 +2,9 @@ import { notFound } from "next/navigation";
 import { getUserById } from "@/app/actions/profile";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
 import { getProxiedImageUrl } from "@/lib/utils/image";
-import { User, ArrowLeft } from "lucide-react";
-import { typography } from "@/lib/design-tokens";
-import Link from "next/link";
+import { User } from "lucide-react";
+import { UserProfilePageHeader, ProfileInfoCardTitle } from "@/components/profile/user-profile-page-header";
 
 interface ProfilePageProps {
   params: Promise<{ id: string }>;
@@ -27,23 +25,11 @@ export default async function UserProfilePage({ params }: ProfilePageProps) {
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" asChild>
-          <Link href="javascript:history.back()">
-            <ArrowLeft className="h-4 w-4" />
-          </Link>
-        </Button>
-        <div>
-          <h1 className={typography.pageTitle}>프로필</h1>
-          <p className={typography.pageDescription}>
-            사용자 프로필 정보
-          </p>
-        </div>
-      </div>
+      <UserProfilePageHeader />
 
       <Card>
         <CardHeader>
-          <CardTitle>프로필 정보</CardTitle>
+          <CardTitle><ProfileInfoCardTitle /></CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex items-center gap-4">

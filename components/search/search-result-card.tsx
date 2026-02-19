@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import Image from "next/image";
 import { Card, CardContent } from "@/components/ui/card";
@@ -6,6 +8,7 @@ import { getImageUrl, isValidImageUrl } from "@/lib/utils/image";
 import { formatSmartDate } from "@/lib/utils/date";
 import { getNoteTypeLabel, parsePageNumber } from "@/lib/utils/note";
 import { NoteContentViewer } from "@/components/notes/note-content-viewer";
+import { useTranslation } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import type { NoteWithBook } from "@/types/note";
 import { FileText, PenTool, Camera, ImageIcon, BookOpen, TrendingUp } from "lucide-react";
@@ -21,6 +24,7 @@ interface SearchResultCardProps {
  * 검색어 하이라이트 기능 포함
  */
 export function SearchResultCard({ note, searchQuery }: SearchResultCardProps) {
+  const { t } = useTranslation();
   const typeIcons = {
     quote: FileText,
     transcription: PenTool,
@@ -61,7 +65,7 @@ export function SearchResultCard({ note, searchQuery }: SearchResultCardProps) {
                   {hasBookCover ? (
                     <Image
                       src={getImageUrl(bookCoverImage!)}
-                      alt={book.title || "책 표지"}
+                      alt={book.title || t("books.coverAlt")}
                       fill
                       className="object-cover"
                       sizes="(max-width: 640px) 80px, 96px"
@@ -119,7 +123,7 @@ export function SearchResultCard({ note, searchQuery }: SearchResultCardProps) {
                   {book && (
                     <>
                       <p className="text-base font-bold line-clamp-1 text-foreground">
-                        {book.title || "제목 없음"}
+                        {book.title || t("books.noTitle")}
                       </p>
                       {book.author && (
                         <p className="text-sm text-muted-foreground line-clamp-1">
@@ -132,8 +136,8 @@ export function SearchResultCard({ note, searchQuery }: SearchResultCardProps) {
                   {isReadingReasonMatch && readingReason && (
                     <div className="mt-2 pt-2 border-t">
                       <div className="flex items-center gap-1 mb-1">
-                        <Badge variant="outline" className="text-xs">읽는 이유</Badge>
-                        <span className="text-xs text-primary font-medium">검색 매칭</span>
+                        <Badge variant="outline" className="text-xs">{t("search.readingReason")}</Badge>
+                        <span className="text-xs text-primary font-medium">{t("search.searchMatch")}</span>
                       </div>
                       <p className="text-sm text-foreground line-clamp-2 bg-primary/10 p-2 rounded border border-primary/20">
                         {readingReason}
@@ -144,14 +148,14 @@ export function SearchResultCard({ note, searchQuery }: SearchResultCardProps) {
                   {!isReadingReasonMatch && readingReason && book && (
                     <div className="mt-1">
                       <p className="text-xs text-muted-foreground line-clamp-1">
-                        읽는 이유: {readingReason}
+                        {t("search.readingReasonPrefix")}{readingReason}
                       </p>
                     </div>
                   )}
                 </div>
               ) : (
                 <div className="pb-1 border-b">
-                  <p className="text-sm text-muted-foreground italic">책 정보 없음</p>
+                  <p className="text-sm text-muted-foreground italic">{t("books.noBookInfo")}</p>
                 </div>
               )}
 

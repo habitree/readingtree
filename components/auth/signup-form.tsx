@@ -17,18 +17,18 @@ import Link from "next/link";
 import { useTranslation } from "@/lib/i18n";
 
 const signupFormSchema = z.object({
-  email: z.string().email("유효한 이메일 주소를 입력해주세요."),
-  password: z.string().min(8, "비밀번호는 최소 8자 이상이어야 합니다."),
-  passwordConfirm: z.string().min(8, "비밀번호 확인을 입력해주세요."),
-  name: z.string().min(1, "이름을 입력해주세요.").max(100, "이름은 100자 이하여야 합니다."),
+  email: z.string().email("Please enter a valid email address."),
+  password: z.string().min(8, "Password must be at least 8 characters."),
+  passwordConfirm: z.string().min(8, "Please confirm your password."),
+  name: z.string().min(1, "Please enter your name.").max(100, "Name must be 100 characters or less."),
   termsAgreed: z.boolean().refine((val) => val === true, {
-    message: "이용약관에 동의해주세요.",
+    message: "You must agree to the Terms of Service.",
   }),
   privacyAgreed: z.boolean().refine((val) => val === true, {
-    message: "개인정보처리방침에 동의해주세요.",
+    message: "You must agree to the Privacy Policy.",
   }),
 }).refine((data) => data.password === data.passwordConfirm, {
-  message: "비밀번호가 일치하지 않습니다.",
+  message: "Passwords do not match.",
   path: ["passwordConfirm"],
 });
 
@@ -73,12 +73,12 @@ export function SignupForm() {
         return;
       }
 
-      console.error("카카오 회원가입 오류:", error);
+      console.error("Kakao signup error:", error);
       setIsLoading(null);
       toast.error(
         error instanceof Error
           ? error.message
-          : "카카오 회원가입에 실패했습니다. 다시 시도해주세요."
+          : t("signup.kakaoFailed")
       );
     }
   };
@@ -95,12 +95,12 @@ export function SignupForm() {
         return;
       }
 
-      console.error("구글 회원가입 오류:", error);
+      console.error("Google signup error:", error);
       setIsLoading(null);
       toast.error(
         error instanceof Error
           ? error.message
-          : "구글 회원가입에 실패했습니다. 다시 시도해주세요."
+          : t("signup.googleFailed")
       );
     }
   };
@@ -116,11 +116,11 @@ export function SignupForm() {
         toast.success(result.message);
       }
     } catch (error) {
-      console.error("이메일 회원가입 오류:", error);
+      console.error("Email signup error:", error);
       toast.error(
         error instanceof Error
           ? error.message
-          : "회원가입에 실패했습니다. 다시 시도해주세요."
+          : t("signup.emailFailed")
       );
       setIsLoading(null);
     }

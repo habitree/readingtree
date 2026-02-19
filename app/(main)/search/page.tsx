@@ -13,12 +13,14 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { typography } from "@/lib/design-tokens";
+import { useTranslation } from "@/lib/i18n";
 
 /**
  * 검색 페이지
  * US-019~US-023: 검색 기능
  */
 export default function SearchPage() {
+  const { t } = useTranslation();
   const searchParams = useSearchParams();
   const router = useRouter();
   const { search, isLoading, error } = useSearch();
@@ -198,19 +200,19 @@ export default function SearchPage() {
 
   // 기록 유형 라벨
   const getTypeLabel = (type: string) => {
-    if (type.includes("transcription")) return "사진 필사";
-    if (type.includes("quote")) return "인용구";
-    if (type === "photo") return "사진";
-    if (type === "memo") return "기록";
+    if (type.includes("transcription")) return t("searchFilters.typeTranscription");
+    if (type.includes("quote")) return t("searchFilters.typeQuote");
+    if (type === "photo") return t("searchFilters.typePhoto");
+    if (type === "memo") return t("searchFilters.typeMemo");
     return type;
   };
 
   return (
     <div className="space-y-4 sm:space-y-6">
       <div>
-        <h1 className={typography.pageTitle}>검색</h1>
+        <h1 className={typography.pageTitle}>{t("search.search")}</h1>
         <p className={typography.pageDescription}>
-          저장한 모든 기록을 검색하세요
+          {t("search.pageDescription")}
         </p>
       </div>
 
@@ -222,7 +224,7 @@ export default function SearchPage() {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               type="search"
-              placeholder="책 제목, 저자, 기록 내용 검색..."
+              placeholder={t("search.searchInputPlaceholder")}
               value={query}
               onChange={(e) => handleQueryChange(e.target.value)}
               className="pl-10"
@@ -242,7 +244,7 @@ export default function SearchPage() {
           >
             <div className="flex items-center gap-2">
               <Filter className="h-4 w-4" />
-              <span>필터</span>
+              <span>{t("search.filters")}</span>
               {hasAnyFilter && (
                 <Badge variant="secondary" className="ml-1 h-5 w-5 p-0 text-xs justify-center">
                   {[hasBookFilter, hasDateFilter, hasTagFilter, hasTypeFilter].filter(Boolean).length}
@@ -263,7 +265,7 @@ export default function SearchPage() {
                 <button
                   onClick={() => clearFilter("bookId")}
                   className="ml-1 rounded-full hover:bg-destructive hover:text-destructive-foreground p-0.5"
-                  aria-label="책 필터 제거"
+                  aria-label={t("searchFilters.removeBookFilter")}
                 >
                   <X className="h-3 w-3" />
                 </button>
@@ -285,7 +287,7 @@ export default function SearchPage() {
                     clearFilter("endDate");
                   }}
                   className="ml-1 rounded-full hover:bg-destructive hover:text-destructive-foreground p-0.5"
-                  aria-label="날짜 필터 제거"
+                  aria-label={t("searchFilters.removeDateFilter")}
                 >
                   <X className="h-3 w-3" />
                 </button>
@@ -298,7 +300,7 @@ export default function SearchPage() {
                 <button
                   onClick={() => clearFilter("types")}
                   className="ml-1 rounded-full hover:bg-destructive hover:text-destructive-foreground p-0.5"
-                  aria-label="유형 필터 제거"
+                  aria-label={t("searchFilters.removeTypeFilter")}
                 >
                   <X className="h-3 w-3" />
                 </button>
@@ -324,7 +326,7 @@ export default function SearchPage() {
                     }
                   }}
                   className="ml-1 rounded-full hover:bg-destructive hover:text-destructive-foreground p-0.5"
-                  aria-label={`${tag} 태그 제거`}
+                  aria-label={`${t("searchFilters.removeTag")} ${tag}`}
                 >
                   <X className="h-3 w-3" />
                 </button>
@@ -341,7 +343,7 @@ export default function SearchPage() {
           !isFilterOpen && "hidden lg:block transition-all"
         )}>
           <div className="sticky top-20 bg-background/95 backdrop-blur p-4 rounded-lg border lg:border-none lg:p-0">
-            <h2 className="text-lg font-semibold mb-4 hidden lg:block">필터</h2>
+            <h2 className="text-lg font-semibold mb-4 hidden lg:block">{t("search.filters")}</h2>
             <SearchFilters onBooksLoaded={handleBooksLoaded} />
           </div>
         </div>
@@ -351,15 +353,15 @@ export default function SearchPage() {
           {/* 접근성: 검색 결과 상태 알림 */}
           <div aria-live="polite" aria-atomic="true" className="sr-only">
             {isLoading
-              ? "검색 중입니다..."
+              ? t("search.searching")
               : isInitialState
-              ? "검색어를 입력하거나 필터를 사용하세요."
-              : `${total}개의 검색 결과가 있어요.`}
+              ? t("search.searchTip")
+              : t("search.totalResults").replace("{total}", String(total))}
           </div>
 
           {error && (
             <div className="text-center py-8 text-destructive">
-              <p>검색 중 오류가 발생했습니다: {error.message}</p>
+              <p>{t("search.error").replace("{message}", error.message)}</p>
             </div>
           )}
 
@@ -367,7 +369,7 @@ export default function SearchPage() {
             <>
               {total > 0 && (
                 <p className="text-sm text-muted-foreground">
-                  총 {total}개의 결과를 찾았어요.
+                  {t("search.foundResults").replace("{total}", String(total))}
                 </p>
               )}
 

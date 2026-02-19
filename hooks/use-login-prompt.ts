@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { useAuth } from "@/hooks/use-auth";
+import { useTranslation } from "@/lib/i18n";
 
 interface LoginPromptOptions {
   title?: string;
@@ -47,10 +48,11 @@ interface UseLoginPromptReturn {
  */
 export function useLoginPrompt(): UseLoginPromptReturn {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
-  const [title, setTitle] = useState("로그인이 필요해요");
+  const [title, setTitle] = useState(() => t("loginPrompt.defaultTitle"));
   const [description, setDescription] = useState(
-    "이 기능을 사용하려면 로그인해주세요."
+    () => t("loginPrompt.defaultDescription")
   );
 
   const requireLogin = useCallback(

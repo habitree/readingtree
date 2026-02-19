@@ -1,4 +1,4 @@
-"use server";
+"use client";
 
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { AdminStatsCard } from "./admin-stats-card";
@@ -11,6 +11,7 @@ import { ko } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { useTranslation } from "@/lib/i18n";
 
 interface AdminDashboardProps {
     stats: any;
@@ -33,13 +34,14 @@ interface AdminDashboardProps {
     };
 }
 
-export async function AdminDashboard({ stats, growth, activity, ocrMonthlyUsage, ocrTotalStats }: AdminDashboardProps) {
+export function AdminDashboard({ stats, growth, activity, ocrMonthlyUsage, ocrTotalStats }: AdminDashboardProps) {
+    const { t } = useTranslation();
     return (
         <div className="space-y-8 pb-10">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div className="flex flex-col gap-2">
-                    <h1 className="text-3xl font-bold tracking-tight">시스템 대시보드_</h1>
-                    <p className="text-muted-foreground">ReadingTree 플랫폼의 전체 현황 및 활동 집계</p>
+                    <h1 className="text-3xl font-bold tracking-tight">{t("admin.dashboard.title")}</h1>
+                    <p className="text-muted-foreground">{t("admin.dashboard.subtitle")}</p>
                 </div>
                 <div className="flex items-center gap-2 flex-wrap">
                     <BatchOCRButton />
@@ -48,21 +50,21 @@ export async function AdminDashboard({ stats, growth, activity, ocrMonthlyUsage,
                         className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium text-sm"
                     >
                         <Bot className="h-4 w-4" />
-                        AI 설정
+                        {t("admin.dashboard.aiSettings")}
                     </Link>
                     <Link
                         href="/admin/ocr-settings"
                         className="inline-flex items-center gap-2 px-4 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700 transition-colors font-medium text-sm"
                     >
                         <ScanText className="h-4 w-4" />
-                        OCR 보정
+                        {t("admin.dashboard.ocrCorrection")}
                     </Link>
                     <Link
                         href="/admin/api-info"
                         className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors font-medium text-sm"
                     >
                         <Settings className="h-4 w-4" />
-                        API 연동 정보
+                        {t("admin.dashboard.apiInfo")}
                     </Link>
                 </div>
             </div>
@@ -70,35 +72,35 @@ export async function AdminDashboard({ stats, growth, activity, ocrMonthlyUsage,
             {/* Stats Overview */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <AdminStatsCard
-                    title="전체 사용자"
+                    title={t("admin.dashboard.totalUsers")}
                     value={stats.summary.users.toLocaleString()}
-                    description="총 가입 계정 수"
+                    description={t("admin.dashboard.totalUsersDesc")}
                     icon={Users}
                     trend={{ value: 12, isPositive: true }}
                     colorClassName="border-l-blue-500"
                     iconColorClassName="bg-blue-500/10 text-blue-600"
                 />
                 <AdminStatsCard
-                    title="등록된 도서"
+                    title={t("admin.dashboard.registeredBooks")}
                     value={stats.summary.books.toLocaleString()}
-                    description="시스템 등록 도서 총합"
+                    description={t("admin.dashboard.registeredBooksDesc")}
                     icon={BookOpen}
                     colorClassName="border-l-forest-500"
                     iconColorClassName="bg-forest-500/10 text-forest-600"
                 />
                 <AdminStatsCard
-                    title="전체 기록"
+                    title={t("admin.dashboard.totalNotes")}
                     value={stats.summary.notes.toLocaleString()}
-                    description="전체 사용자의 독서 노트"
+                    description={t("admin.dashboard.totalNotesDesc")}
                     icon={FileText}
                     trend={{ value: 8, isPositive: true }}
                     colorClassName="border-l-purple-500"
                     iconColorClassName="bg-purple-500/10 text-purple-600"
                 />
                 <AdminStatsCard
-                    title="활성 그룹"
+                    title={t("admin.dashboard.activeGroups")}
                     value={stats.summary.groups.toLocaleString()}
-                    description="운영 중인 독서 그룹"
+                    description={t("admin.dashboard.activeGroupsDesc")}
                     icon={LayoutGrid}
                     colorClassName="border-l-orange-500"
                     iconColorClassName="bg-orange-500/10 text-orange-600"
@@ -109,8 +111,8 @@ export async function AdminDashboard({ stats, growth, activity, ocrMonthlyUsage,
                 {/* Growth Statistics - Conceptual Placeholder or reuse MonthlyChart if possible */}
                 <Card className="col-span-4">
                     <CardHeader>
-                        <CardTitle>성장 추이</CardTitle>
-                        <CardDescription>최근 6개월간 신규 사용자 가입 현황</CardDescription>
+                        <CardTitle>{t("admin.dashboard.growthTrend")}</CardTitle>
+                        <CardDescription>{t("admin.dashboard.growthTrendDesc")}</CardDescription>
                     </CardHeader>
                     <CardContent className="h-[300px] flex items-end justify-between gap-2 px-6 pb-8">
                         {growth.map((item: any, i: number) => (
@@ -134,9 +136,9 @@ export async function AdminDashboard({ stats, growth, activity, ocrMonthlyUsage,
                     <CardHeader>
                         <div className="flex items-center gap-2">
                             <UserPlus className="h-5 w-5 text-blue-500" />
-                            <CardTitle>신규 가입자</CardTitle>
+                            <CardTitle>{t("admin.dashboard.newSignups")}</CardTitle>
                         </div>
-                        <CardDescription>가장 최근에 가입한 5명의 사용자</CardDescription>
+                        <CardDescription>{t("admin.dashboard.newSignupsDesc")}</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-6">
@@ -166,9 +168,9 @@ export async function AdminDashboard({ stats, growth, activity, ocrMonthlyUsage,
                     <CardHeader>
                         <div className="flex items-center gap-2">
                             <Zap className="h-5 w-5 text-yellow-500" />
-                            <CardTitle>OCR API 사용량</CardTitle>
+                            <CardTitle>{t("admin.dashboard.ocrApiUsage")}</CardTitle>
                         </div>
-                        <CardDescription>월별 OCR 처리 현황 (최근 6개월)</CardDescription>
+                        <CardDescription>{t("admin.dashboard.ocrApiUsageDesc")}</CardDescription>
                     </CardHeader>
                     <CardContent className="h-[300px] flex items-end justify-between gap-2 px-6 pb-8">
                         {ocrMonthlyUsage.map((item, i) => {
@@ -181,9 +183,9 @@ export async function AdminDashboard({ stats, growth, activity, ocrMonthlyUsage,
                                             style={{ height: `${Math.max((item.total / maxUsage) * 200, 10)}px` }}
                                         >
                                             <span className="absolute -top-8 text-xs font-bold opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap bg-background px-2 py-1 rounded border shadow-sm">
-                                                총 {item.total}건<br />
-                                                성공 {item.success}건<br />
-                                                실패 {item.failure}건
+                                                {t("admin.dashboard.totalItems", { count: item.total })}<br />
+                                                {t("admin.dashboard.successItems", { count: item.success })}<br />
+                                                {t("admin.dashboard.failureItems", { count: item.failure })}
                                             </span>
                                         </div>
                                     </div>
@@ -198,30 +200,30 @@ export async function AdminDashboard({ stats, growth, activity, ocrMonthlyUsage,
                     <CardHeader>
                         <div className="flex items-center gap-2">
                             <TrendingUp className="h-5 w-5 text-green-500" />
-                            <CardTitle>OCR 통계 요약</CardTitle>
+                            <CardTitle>{t("admin.dashboard.ocrStatsSummary")}</CardTitle>
                         </div>
-                        <CardDescription>전체 OCR 처리 통계 및 성공률</CardDescription>
+                        <CardDescription>{t("admin.dashboard.ocrStatsSummaryDesc")}</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <div className="space-y-3">
                             <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                                <span className="text-sm font-medium">전체 처리 횟수</span>
+                                <span className="text-sm font-medium">{t("admin.dashboard.totalProcessed")}</span>
                                 <span className="text-2xl font-bold">{ocrTotalStats.total.toLocaleString()}</span>
                             </div>
                             <div className="flex items-center justify-between p-3 bg-green-500/10 rounded-lg border border-green-500/20">
-                                <span className="text-sm font-medium">성공 횟수</span>
+                                <span className="text-sm font-medium">{t("admin.dashboard.successCount")}</span>
                                 <span className="text-2xl font-bold text-green-600">{ocrTotalStats.success.toLocaleString()}</span>
                             </div>
                             <div className="flex items-center justify-between p-3 bg-red-500/10 rounded-lg border border-red-500/20">
-                                <span className="text-sm font-medium">실패 횟수</span>
+                                <span className="text-sm font-medium">{t("admin.dashboard.failureCount")}</span>
                                 <span className="text-2xl font-bold text-red-600">{ocrTotalStats.failure.toLocaleString()}</span>
                             </div>
                             <div className="flex items-center justify-between p-3 bg-blue-500/10 rounded-lg border border-blue-500/20">
-                                <span className="text-sm font-medium">이번 달 사용량</span>
+                                <span className="text-sm font-medium">{t("admin.dashboard.thisMonthUsage")}</span>
                                 <span className="text-2xl font-bold text-blue-600">{ocrTotalStats.thisMonth.toLocaleString()}</span>
                             </div>
                             <div className="flex items-center justify-between p-3 bg-purple-500/10 rounded-lg border border-purple-500/20">
-                                <span className="text-sm font-medium">성공률</span>
+                                <span className="text-sm font-medium">{t("admin.dashboard.successRate")}</span>
                                 <span className="text-2xl font-bold text-purple-600">{ocrTotalStats.successRate}%</span>
                             </div>
                         </div>
@@ -232,17 +234,17 @@ export async function AdminDashboard({ stats, growth, activity, ocrMonthlyUsage,
             {/* OCR API Usage Statistics */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <AdminStatsCard
-                    title="OCR 총 사용량"
+                    title={t("admin.dashboard.ocrTotalUsage")}
                     value={ocrTotalStats.total.toLocaleString()}
-                    description="전체 OCR 처리 횟수"
+                    description={t("admin.dashboard.ocrTotalUsageDesc")}
                     icon={ScanLine}
                     colorClassName="border-l-purple-500"
                     iconColorClassName="bg-purple-500/10 text-purple-600"
                 />
                 <AdminStatsCard
-                    title="OCR 성공률"
+                    title={t("admin.dashboard.ocrSuccessRate")}
                     value={`${ocrTotalStats.successRate}%`}
-                    description={`성공: ${ocrTotalStats.success.toLocaleString()} / 실패: ${ocrTotalStats.failure.toLocaleString()}`}
+                    description={t("admin.dashboard.ocrSuccessRateDesc", { success: ocrTotalStats.success.toLocaleString(), failure: ocrTotalStats.failure.toLocaleString() })}
                     icon={CheckCircle2}
                     colorClassName="border-l-green-500"
                     iconColorClassName="bg-green-500/10 text-green-600"
@@ -252,17 +254,17 @@ export async function AdminDashboard({ stats, growth, activity, ocrMonthlyUsage,
                     }}
                 />
                 <AdminStatsCard
-                    title="이번 달 사용량"
+                    title={t("admin.dashboard.thisMonthUsageCard")}
                     value={ocrTotalStats.thisMonth.toLocaleString()}
-                    description="현재 월 OCR 처리 횟수"
+                    description={t("admin.dashboard.thisMonthUsageDesc")}
                     icon={Zap}
                     colorClassName="border-l-orange-500"
                     iconColorClassName="bg-orange-500/10 text-orange-600"
                 />
                 <AdminStatsCard
-                    title="OCR 실패 횟수"
+                    title={t("admin.dashboard.ocrFailureCount")}
                     value={ocrTotalStats.failure.toLocaleString()}
-                    description="전체 실패 건수"
+                    description={t("admin.dashboard.ocrFailureCountDesc")}
                     icon={XCircle}
                     colorClassName="border-l-red-500"
                     iconColorClassName="bg-red-500/10 text-red-600"
@@ -275,9 +277,9 @@ export async function AdminDashboard({ stats, growth, activity, ocrMonthlyUsage,
                     <CardHeader>
                         <div className="flex items-center gap-2">
                             <TrendingUp className="h-5 w-5 text-purple-500" />
-                            <CardTitle>OCR 월별 사용량</CardTitle>
+                            <CardTitle>{t("admin.dashboard.ocrMonthlyUsage")}</CardTitle>
                         </div>
-                        <CardDescription>최근 6개월간 OCR API 사용 추이</CardDescription>
+                        <CardDescription>{t("admin.dashboard.ocrMonthlyUsageDesc")}</CardDescription>
                     </CardHeader>
                     <CardContent className="h-[300px] flex items-end justify-between gap-2 px-6 pb-8">
                         {ocrMonthlyUsage.map((item, i) => {
@@ -294,7 +296,7 @@ export async function AdminDashboard({ stats, growth, activity, ocrMonthlyUsage,
                                             }}
                                         >
                                             <span className="absolute -top-6 text-xs font-bold opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                                                성공: {item.success}
+                                                {t("admin.dashboard.successLabel", { count: item.success })}
                                             </span>
                                         </div>
                                         {/* 실패 (빨간색) */}
@@ -307,7 +309,7 @@ export async function AdminDashboard({ stats, growth, activity, ocrMonthlyUsage,
                                                 }}
                                             >
                                                 <span className="absolute -top-6 text-xs font-bold opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                                                    실패: {item.failure}
+                                                    {t("admin.dashboard.failureLabel", { count: item.failure })}
                                                 </span>
                                             </div>
                                         )}
@@ -315,7 +317,7 @@ export async function AdminDashboard({ stats, growth, activity, ocrMonthlyUsage,
                                     <div className="text-center">
                                         <span className="text-xs text-muted-foreground font-medium block">{item.month}</span>
                                         <span className="text-[10px] text-muted-foreground block mt-0.5">
-                                            총 {item.total}
+                                            {t("admin.dashboard.totalLabel", { count: item.total })}
                                         </span>
                                     </div>
                                 </div>
@@ -329,20 +331,20 @@ export async function AdminDashboard({ stats, growth, activity, ocrMonthlyUsage,
                     <CardHeader>
                         <div className="flex items-center gap-2">
                             <ScanLine className="h-5 w-5 text-purple-500" />
-                            <CardTitle>월별 상세 통계</CardTitle>
+                            <CardTitle>{t("admin.dashboard.monthlyDetailStats")}</CardTitle>
                         </div>
-                        <CardDescription>월별 OCR 처리 상세 내역</CardDescription>
+                        <CardDescription>{t("admin.dashboard.monthlyDetailStatsDesc")}</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <div className="overflow-x-auto">
                             <Table>
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead className="text-xs">월</TableHead>
-                                        <TableHead className="text-xs text-right">총 사용량</TableHead>
-                                        <TableHead className="text-xs text-right">성공</TableHead>
-                                        <TableHead className="text-xs text-right">실패</TableHead>
-                                        <TableHead className="text-xs text-right">성공률</TableHead>
+                                        <TableHead className="text-xs">{t("admin.dashboard.tableMonth")}</TableHead>
+                                        <TableHead className="text-xs text-right">{t("admin.dashboard.tableTotalUsage")}</TableHead>
+                                        <TableHead className="text-xs text-right">{t("admin.dashboard.tableSuccess")}</TableHead>
+                                        <TableHead className="text-xs text-right">{t("admin.dashboard.tableFailure")}</TableHead>
+                                        <TableHead className="text-xs text-right">{t("admin.dashboard.tableSuccessRate")}</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -353,7 +355,7 @@ export async function AdminDashboard({ stats, growth, activity, ocrMonthlyUsage,
                                         return (
                                             <TableRow key={i}>
                                                 <TableCell className="font-medium text-sm">
-                                                    {item.year}년 {item.month}
+                                                    {item.year} {item.month}
                                                 </TableCell>
                                                 <TableCell className="text-right font-semibold">
                                                     {item.total.toLocaleString()}
@@ -387,9 +389,9 @@ export async function AdminDashboard({ stats, growth, activity, ocrMonthlyUsage,
                 <CardHeader>
                     <div className="flex items-center gap-2">
                         <Clock className="h-5 w-5 text-purple-500" />
-                        <CardTitle>최근 시스템 활동</CardTitle>
+                        <CardTitle>{t("admin.dashboard.recentActivity")}</CardTitle>
                     </div>
-                    <CardDescription>시스템 전체에서 발생한 실시간 기록 활동</CardDescription>
+                    <CardDescription>{t("admin.dashboard.recentActivityDesc")}</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <div className="space-y-6">
@@ -406,14 +408,14 @@ export async function AdminDashboard({ stats, growth, activity, ocrMonthlyUsage,
                                 </div>
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2 mb-1">
-                                        <span className="font-bold text-sm text-foreground">{note.users?.name || "익명"}</span>
-                                        <span className="text-xs text-muted-foreground">님이</span>
+                                        <span className="font-bold text-sm text-foreground">{note.users?.name || t("admin.dashboard.anonymous")}</span>
+                                        <span className="text-xs text-muted-foreground">{t("admin.dashboard.by")}</span>
                                         <Badge variant="secondary" className="text-[10px] px-1.5 h-4">
-                                            {note.books?.title || "알 수 없는 책"}
+                                            {note.books?.title || t("admin.dashboard.unknownBook")}
                                         </Badge>
                                     </div>
                                     <p className="text-sm text-muted-foreground line-clamp-1 italic">
-                                        {note.content || "이미지 기록"}
+                                        {note.content || t("admin.dashboard.imageRecord")}
                                     </p>
                                 </div>
                                 <div className="text-[10px] text-muted-foreground shrink-0 self-center">

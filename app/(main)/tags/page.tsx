@@ -7,8 +7,8 @@ import { PageHeader } from "@/components/layout/page-header";
 import { Tag } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "Tags | ReadTree",
-  description: "Browse your reading notes by tags",
+  title: "태그 | ReadTree",
+  description: "태그별로 독서 기록을 탐색하세요",
 };
 
 export default async function TagsPage() {

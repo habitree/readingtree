@@ -72,8 +72,8 @@ export async function getFeatureRequests(
   const { data, error, count } = await query;
 
   if (error) {
-    console.error("기능 요청 목록 조회 오류:", error);
-    throw new Error(`기능 요청 목록 조회 실패: ${error.message}`);
+    console.error("Failed to fetch feature requests:", error);
+    throw new Error(`Failed to fetch feature requests: ${error.message}`);
   }
 
   return {
@@ -108,7 +108,7 @@ export async function getTopFeatureRequests(
     .limit(limit);
 
   if (error) {
-    console.error("인기 기능 요청 조회 오류:", error);
+    console.error("Failed to fetch top feature requests:", error);
     return [];
   }
 
@@ -140,7 +140,7 @@ export async function getFeatureRequestById(
     .single();
 
   if (requestError || !request) {
-    console.error("기능 요청 상세 조회 오류:", requestError);
+    console.error("Failed to fetch feature request detail:", requestError);
     return null;
   }
 
@@ -194,7 +194,7 @@ export async function getUserVotedRequestIds(): Promise<string[]> {
     .eq("user_id", user.id);
 
   if (error) {
-    console.error("투표한 요청 조회 오류:", error);
+    console.error("Failed to fetch voted requests:", error);
     return [];
   }
 
@@ -220,20 +220,20 @@ export async function createFeatureRequest(
   } = await supabase.auth.getUser();
 
   if (authError || !user) {
-    return { success: false, error: "로그인이 필요합니다." };
+    return { success: false, error: "Login required." };
   }
 
   // 입력 검증
   if (!data.title || data.title.trim().length < 5) {
-    return { success: false, error: "제목은 5자 이상 입력해주세요." };
+    return { success: false, error: "Title must be at least 5 characters." };
   }
 
   if (!data.description || data.description.trim().length < 20) {
-    return { success: false, error: "설명은 20자 이상 입력해주세요." };
+    return { success: false, error: "Description must be at least 20 characters." };
   }
 
   if (data.title.length > 200) {
-    return { success: false, error: "제목은 200자 이하로 입력해주세요." };
+    return { success: false, error: "Title must be 200 characters or less." };
   }
 
   // 기능 요청 생성
@@ -248,8 +248,8 @@ export async function createFeatureRequest(
     .single();
 
   if (error) {
-    console.error("기능 요청 생성 오류:", error);
-    return { success: false, error: "기능 요청 생성에 실패했습니다." };
+    console.error("Failed to create feature request:", error);
+    return { success: false, error: "Failed to create feature request." };
   }
 
   revalidatePath("/feature-requests");
@@ -273,7 +273,7 @@ export async function updateFeatureRequest(
   } = await supabase.auth.getUser();
 
   if (authError || !user) {
-    return { success: false, error: "로그인이 필요합니다." };
+    return { success: false, error: "Login required." };
   }
 
   // 기존 요청 조회 (권한 확인)
@@ -284,7 +284,7 @@ export async function updateFeatureRequest(
     .single();
 
   if (existingError || !existing) {
-    return { success: false, error: "기능 요청을 찾을 수 없습니다." };
+    return { success: false, error: "Feature request not found." };
   }
 
   // 관리자 권한 확인
@@ -299,7 +299,7 @@ export async function updateFeatureRequest(
 
   // 권한 검증
   if (!isOwner && !isAdmin) {
-    return { success: false, error: "수정 권한이 없습니다." };
+    return { success: false, error: "You don't have permission to edit." };
   }
 
   // 일반 사용자는 제목/설명만 수정 가능
@@ -307,14 +307,14 @@ export async function updateFeatureRequest(
 
   if (data.title !== undefined) {
     if (data.title.trim().length < 5) {
-      return { success: false, error: "제목은 5자 이상 입력해주세요." };
+      return { success: false, error: "Title must be at least 5 characters." };
     }
     updateData.title = data.title.trim();
   }
 
   if (data.description !== undefined) {
     if (data.description.trim().length < 20) {
-      return { success: false, error: "설명은 20자 이상 입력해주세요." };
+      return { success: false, error: "Description must be at least 20 characters." };
     }
     updateData.description = data.description.trim();
   }
@@ -333,7 +333,7 @@ export async function updateFeatureRequest(
   }
 
   if (Object.keys(updateData).length === 0) {
-    return { success: false, error: "수정할 내용이 없습니다." };
+    return { success: false, error: "No changes to save." };
   }
 
   const { error } = await supabase
@@ -342,8 +342,8 @@ export async function updateFeatureRequest(
     .eq("id", id);
 
   if (error) {
-    console.error("기능 요청 수정 오류:", error);
-    return { success: false, error: "수정에 실패했습니다." };
+    console.error("Failed to update feature request:", error);
+    return { success: false, error: "Failed to update." };
   }
 
   revalidatePath("/feature-requests");
@@ -366,7 +366,7 @@ export async function deleteFeatureRequest(
   } = await supabase.auth.getUser();
 
   if (authError || !user) {
-    return { success: false, error: "로그인이 필요합니다." };
+    return { success: false, error: "Login required." };
   }
 
   // 기존 요청 조회 (권한 확인)
@@ -377,7 +377,7 @@ export async function deleteFeatureRequest(
     .single();
 
   if (existingError || !existing) {
-    return { success: false, error: "기능 요청을 찾을 수 없습니다." };
+    return { success: false, error: "Feature request not found." };
   }
 
   // 관리자 권한 확인
@@ -391,7 +391,7 @@ export async function deleteFeatureRequest(
   const isOwner = existing.user_id === user.id;
 
   if (!isOwner && !isAdmin) {
-    return { success: false, error: "삭제 권한이 없습니다." };
+    return { success: false, error: "You don't have permission to delete." };
   }
 
   const { error } = await supabase
@@ -400,8 +400,8 @@ export async function deleteFeatureRequest(
     .eq("id", id);
 
   if (error) {
-    console.error("기능 요청 삭제 오류:", error);
-    return { success: false, error: "삭제에 실패했습니다." };
+    console.error("Failed to delete feature request:", error);
+    return { success: false, error: "Failed to delete." };
   }
 
   revalidatePath("/feature-requests");
@@ -428,7 +428,7 @@ export async function toggleVote(
   } = await supabase.auth.getUser();
 
   if (authError || !user) {
-    return { success: false, voted: false, error: "로그인이 필요합니다." };
+    return { success: false, voted: false, error: "Login required." };
   }
 
   // 기존 투표 확인
@@ -440,8 +440,8 @@ export async function toggleVote(
     .maybeSingle();
 
   if (voteError) {
-    console.error("투표 확인 오류:", voteError);
-    return { success: false, voted: false, error: "투표 확인에 실패했습니다." };
+    console.error("Failed to verify vote:", voteError);
+    return { success: false, voted: false, error: "Failed to verify vote." };
   }
 
   if (existingVote) {
@@ -452,8 +452,8 @@ export async function toggleVote(
       .eq("id", existingVote.id);
 
     if (deleteError) {
-      console.error("투표 취소 오류:", deleteError);
-      return { success: false, voted: true, error: "투표 취소에 실패했습니다." };
+      console.error("Failed to cancel vote:", deleteError);
+      return { success: false, voted: true, error: "Failed to cancel vote." };
     }
 
     revalidatePath("/feature-requests");
@@ -469,8 +469,8 @@ export async function toggleVote(
       });
 
     if (insertError) {
-      console.error("투표 추가 오류:", insertError);
-      return { success: false, voted: false, error: "투표에 실패했습니다." };
+      console.error("Failed to vote:", insertError);
+      return { success: false, voted: false, error: "Failed to vote." };
     }
 
     revalidatePath("/feature-requests");
@@ -508,7 +508,7 @@ export async function getComments(
     .order("created_at", { ascending: true });
 
   if (error) {
-    console.error("댓글 조회 오류:", error);
+    console.error("Failed to fetch comments:", error);
     return [];
   }
 
@@ -531,12 +531,12 @@ export async function createComment(
   } = await supabase.auth.getUser();
 
   if (authError || !user) {
-    return { success: false, error: "로그인이 필요합니다." };
+    return { success: false, error: "Login required." };
   }
 
   // 입력 검증
   if (!data.content || data.content.trim().length < 2) {
-    return { success: false, error: "댓글을 2자 이상 입력해주세요." };
+    return { success: false, error: "Comment must be at least 2 characters." };
   }
 
   // 관리자 여부 확인
@@ -557,8 +557,8 @@ export async function createComment(
   });
 
   if (error) {
-    console.error("댓글 작성 오류:", error);
-    return { success: false, error: "댓글 작성에 실패했습니다." };
+    console.error("Failed to create comment:", error);
+    return { success: false, error: "Failed to create comment." };
   }
 
   revalidatePath(`/feature-requests/${featureRequestId}`);
@@ -581,12 +581,12 @@ export async function updateComment(
   } = await supabase.auth.getUser();
 
   if (authError || !user) {
-    return { success: false, error: "로그인이 필요합니다." };
+    return { success: false, error: "Login required." };
   }
 
   // 입력 검증
   if (!content || content.trim().length < 2) {
-    return { success: false, error: "댓글을 2자 이상 입력해주세요." };
+    return { success: false, error: "Comment must be at least 2 characters." };
   }
 
   // 기존 댓글 조회 (권한 확인)
@@ -597,11 +597,11 @@ export async function updateComment(
     .single();
 
   if (existingError || !existing) {
-    return { success: false, error: "댓글을 찾을 수 없습니다." };
+    return { success: false, error: "Comment not found." };
   }
 
   if (existing.user_id !== user.id) {
-    return { success: false, error: "수정 권한이 없습니다." };
+    return { success: false, error: "You don't have permission to edit." };
   }
 
   const { error } = await supabase
@@ -610,8 +610,8 @@ export async function updateComment(
     .eq("id", commentId);
 
   if (error) {
-    console.error("댓글 수정 오류:", error);
-    return { success: false, error: "댓글 수정에 실패했습니다." };
+    console.error("Failed to update comment:", error);
+    return { success: false, error: "Failed to update comment." };
   }
 
   revalidatePath(`/feature-requests/${existing.feature_request_id}`);
@@ -633,7 +633,7 @@ export async function deleteComment(
   } = await supabase.auth.getUser();
 
   if (authError || !user) {
-    return { success: false, error: "로그인이 필요합니다." };
+    return { success: false, error: "Login required." };
   }
 
   // 기존 댓글 조회 (권한 확인)
@@ -644,7 +644,7 @@ export async function deleteComment(
     .single();
 
   if (existingError || !existing) {
-    return { success: false, error: "댓글을 찾을 수 없습니다." };
+    return { success: false, error: "Comment not found." };
   }
 
   // 관리자 권한 확인
@@ -658,7 +658,7 @@ export async function deleteComment(
   const isOwner = existing.user_id === user.id;
 
   if (!isOwner && !isAdmin) {
-    return { success: false, error: "삭제 권한이 없습니다." };
+    return { success: false, error: "You don't have permission to delete." };
   }
 
   const { error } = await supabase
@@ -667,8 +667,8 @@ export async function deleteComment(
     .eq("id", commentId);
 
   if (error) {
-    console.error("댓글 삭제 오류:", error);
-    return { success: false, error: "댓글 삭제에 실패했습니다." };
+    console.error("Failed to delete comment:", error);
+    return { success: false, error: "Failed to delete comment." };
   }
 
   revalidatePath(`/feature-requests/${existing.feature_request_id}`);
@@ -696,7 +696,7 @@ export async function updateFeatureRequestStatus(
   } = await supabase.auth.getUser();
 
   if (authError || !user) {
-    return { success: false, error: "로그인이 필요합니다." };
+    return { success: false, error: "Login required." };
   }
 
   // 관리자 권한 확인
@@ -707,7 +707,7 @@ export async function updateFeatureRequestStatus(
     .single();
 
   if (userProfile?.is_admin !== true) {
-    return { success: false, error: "관리자 권한이 필요합니다." };
+    return { success: false, error: "Admin access required." };
   }
 
   const updateData: Record<string, unknown> = { status };
@@ -721,8 +721,8 @@ export async function updateFeatureRequestStatus(
     .eq("id", id);
 
   if (error) {
-    console.error("상태 변경 오류:", error);
-    return { success: false, error: "상태 변경에 실패했습니다." };
+    console.error("Failed to change status:", error);
+    return { success: false, error: "Failed to change status." };
   }
 
   revalidatePath("/feature-requests");
@@ -745,7 +745,7 @@ export async function togglePin(
   } = await supabase.auth.getUser();
 
   if (authError || !user) {
-    return { success: false, pinned: false, error: "로그인이 필요합니다." };
+    return { success: false, pinned: false, error: "Login required." };
   }
 
   // 관리자 권한 확인
@@ -756,7 +756,7 @@ export async function togglePin(
     .single();
 
   if (userProfile?.is_admin !== true) {
-    return { success: false, pinned: false, error: "관리자 권한이 필요합니다." };
+    return { success: false, pinned: false, error: "Admin access required." };
   }
 
   // 현재 상태 확인
@@ -767,7 +767,7 @@ export async function togglePin(
     .single();
 
   if (existingError || !existing) {
-    return { success: false, pinned: false, error: "기능 요청을 찾을 수 없습니다." };
+    return { success: false, pinned: false, error: "Feature request not found." };
   }
 
   const newPinnedState = !existing.is_pinned;
@@ -778,8 +778,8 @@ export async function togglePin(
     .eq("id", id);
 
   if (error) {
-    console.error("고정 상태 변경 오류:", error);
-    return { success: false, pinned: existing.is_pinned, error: "고정 상태 변경에 실패했습니다." };
+    console.error("Failed to change pin status:", error);
+    return { success: false, pinned: existing.is_pinned, error: "Failed to change pin status." };
   }
 
   revalidatePath("/feature-requests");

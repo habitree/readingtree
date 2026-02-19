@@ -6,6 +6,7 @@ import { NoteListSkeleton } from "@/components/ui/skeletons";
 import { FileText } from "lucide-react";
 import type { NoteWithBook } from "@/types/note";
 import { grids } from "@/lib/design-tokens";
+import { useTranslation } from "@/lib/i18n";
 
 interface NoteListProps {
   notes: NoteWithBook[];
@@ -18,6 +19,8 @@ interface NoteListProps {
  * 기록 목록 컴포넌트
  */
 export function NoteList({ notes, isLoading, excludeProgress = false, bookId }: NoteListProps) {
+  const { t } = useTranslation();
+
   if (isLoading) {
     return <NoteListSkeleton count={6} />;
   }
@@ -32,11 +35,11 @@ export function NoteList({ notes, isLoading, excludeProgress = false, bookId }: 
     return (
       <EmptyState
         icon={FileText}
-        title="기록이 없습니다"
-        description={bookId ? "이 책에 대한 첫 기록을 남겨보세요" : "첫 번째 기록을 작성하고 독서 여정을 시작해보세요!"}
+        title={t("notes.noNotesForBook")}
+        description={bookId ? t("notes.noNotesForBookDesc") : t("notes.noNotesStartJourney")}
         variant="encouraging"
         action={{
-          label: bookId ? "기록 추가" : "기록 작성하기",
+          label: bookId ? t("notes.addNote") : t("notes.startWriting"),
           href,
         }}
         actionVariant={bookId ? "outline" : undefined}

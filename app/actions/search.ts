@@ -167,7 +167,7 @@ export async function searchNotes(params: SearchParams, user?: User | null): Pro
 
   if (error) {
     const safeError = sanitizeErrorForLogging(error);
-    console.error("검색 오류:", safeError);
+    console.error("Search error:", safeError);
     throw new Error(sanitizeErrorMessage(error));
   }
 

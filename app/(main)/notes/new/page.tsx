@@ -6,8 +6,8 @@ import { isValidUUID } from "@/lib/utils/validation";
 import { PageHeader } from "@/components/layout/page-header";
 
 export const metadata: Metadata = {
-  title: "Write Note | ReadTree",
-  description: "Write a new note",
+  title: "기록 작성 | ReadTree",
+  description: "새로운 독서 기록을 작성하세요",
 };
 
 interface NewNotePageProps {

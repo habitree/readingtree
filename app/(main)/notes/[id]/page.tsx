@@ -1,22 +1,16 @@
 import { notFound } from "next/navigation";
 import { Metadata, Viewport } from "next";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { getNoteDetail } from "@/app/actions/notes";
 import { getCurrentUser } from "@/app/actions/auth";
 import { getSampleNoteDetail, getSampleUserBooksByIds } from "@/app/actions/sample";
-import { SimpleShareDialog } from "@/components/share/simple-share-dialog";
-import { NoteDeleteButton } from "@/components/notes/note-delete-button";
-import { Edit, ChevronLeft, ShieldCheck, ShieldAlert, BookOpen } from "lucide-react";
+import { NoteDetailNavBar } from "@/components/notes/note-detail-nav-bar";
 import { isValidUUID } from "@/lib/utils/validation";
 import { sanitizeErrorForLogging } from "@/lib/utils/validation";
 import { ShareNoteCard } from "@/components/share/share-note-card";
-import { OCRStatusChecker } from "@/components/notes/ocr-status-checker";
 import { Card, CardContent } from "@/components/ui/card";
 import type { NoteWithBook } from "@/types/note";
 import { getUserById } from "@/app/actions/profile";
-import { RelatedBooksManager, RelatedBooksDisplay } from "@/components/notes/related-books-manager";
+import { RelatedBooksDisplay } from "@/components/notes/related-books-manager";
 import { OcrTextViewer } from "@/components/notes/ocr-text-viewer";
 import { getUserBooks } from "@/app/actions/books";
 import type { RelatedBookInfo } from "@/components/share/share-note-card";
@@ -108,69 +102,12 @@ export default async function NoteDetailPage({ params }: NoteDetailPageProps) {
 
   return (
     <div className="max-w-5xl mx-auto space-y-4 sm:space-y-6 lg:space-y-8 pb-20">
-      {/* 1. 상단 내비게이션 및 액션 바 - 개선된 디자인 */}
-      <div className="sticky top-0 z-10 -mx-2 sm:-mx-4 px-2 sm:px-4 py-2 sm:py-3 bg-background/80 backdrop-blur-lg border-b border-transparent sm:relative sm:border-none sm:bg-transparent sm:backdrop-blur-none">
-        <div className="flex items-center justify-between gap-2">
-          {/* 뒤로가기 버튼 */}
-          <Button variant="ghost" size="sm" asChild className="group h-9 px-2 sm:px-3 -ml-2">
-            <Link href={backUrl}>
-              <ChevronLeft className="h-4 w-4 mr-0.5 sm:mr-1 transition-transform group-hover:-translate-x-1" />
-              <BookOpen className="h-4 w-4 mr-1 hidden sm:inline" />
-              <span className="text-sm font-medium">책으로</span>
-            </Link>
-          </Button>
-
-          {/* 상태 배지 + OCR 상태 */}
-          <div className="flex items-center gap-1.5 sm:gap-2">
-            <Badge
-              variant={noteWithBook.is_public ? "default" : "secondary"}
-              className={`gap-1 py-1 px-2.5 text-xs h-7 ${
-                noteWithBook.is_public
-                  ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400"
-                  : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400"
-              }`}
-            >
-              {noteWithBook.is_public ? (
-                <>
-                  <ShieldCheck className="w-3.5 h-3.5" />
-                  <span>공개</span>
-                </>
-              ) : (
-                <>
-                  <ShieldAlert className="w-3.5 h-3.5" />
-                  <span>비공개</span>
-                </>
-              )}
-            </Badge>
-            <OCRStatusChecker
-              noteId={noteWithBook.id}
-              noteType={noteWithBook.type}
-              hasImage={!!noteWithBook.image_url}
-            />
-          </div>
-        </div>
-
-        {/* 액션 버튼들 */}
-        <div className="flex items-center gap-2 mt-3 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide sm:justify-end">
-          <SimpleShareDialog note={noteWithBook} />
-          {!isGuest && (
-            <>
-              <RelatedBooksManager
-                noteId={noteWithBook.id}
-                currentRelatedBookIds={noteWithBook.related_user_book_ids || null}
-                mainBookId={noteWithBook.user_book_id || ""}
-              />
-              <Button variant="outline" size="sm" asChild className="gap-1.5 h-9 px-3 shrink-0 shadow-sm">
-                <Link href={`/notes/${noteWithBook.id}/edit`}>
-                  <Edit className="h-4 w-4" />
-                  <span className="text-sm">수정</span>
-                </Link>
-              </Button>
-              <NoteDeleteButton noteId={noteWithBook.id} />
-            </>
-          )}
-        </div>
-      </div>
+      {/* 1. 상단 내비게이션 및 액션 바 */}
+      <NoteDetailNavBar
+        note={noteWithBook}
+        backUrl={backUrl}
+        isGuest={isGuest}
+      />
 
       {/* 2. 메인 리딩 카드 (통합 디자인) - 개선된 장식 */}
       <div className="relative">
@@ -217,7 +154,7 @@ export async function generateMetadata({
   const noteId = resolvedParams.id;
 
   if (!noteId || !isValidUUID(noteId)) {
-    return { title: "기록 상세 | ReadingTree" };
+    return { title: "기록 상세 | ReadTree" };
   }
 
   try {
@@ -229,14 +166,14 @@ export async function generateMetadata({
       note = await getNoteDetail(noteId);
     }
     if (!note) {
-      return { title: "기록 상세 | ReadingTree" };
+      return { title: "기록 상세 | ReadTree" };
     }
     return {
-      title: `${note.type === 'quote' ? '인상깊은 구절' : '독서 기록'} | ReadingTree`,
-      description: note.book?.title || "기록 상세 정보",
+      title: `${note.type === 'quote' ? '인상적인 구절' : '독서 기록'} | ReadTree`,
+      description: note.book?.title || "기록 상세",
     };
   } catch {
-    return { title: "기록 상세 | ReadingTree" };
+    return { title: "기록 상세 | ReadTree" };
   }
 }
 

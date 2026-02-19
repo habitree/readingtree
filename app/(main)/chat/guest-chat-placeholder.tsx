@@ -4,19 +4,21 @@ import { useState, useCallback } from "react";
 import { Bot, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { LoginPromptModal } from "@/components/ui/login-prompt-modal";
-
-const EXAMPLE_QUESTIONS = [
-  "이번 달에 읽을 책을 추천해주세요",
-  "지금 읽고 있는 책과 비슷한 책이 있나요?",
-  "독서 습관을 만들려면 어떻게 해야 하나요?",
-];
+import { useTranslation } from "@/lib/i18n";
 
 /**
  * 게스트 사용자용 채팅 플레이스홀더
  * 빈 ChatInterface UI를 보여주고, 입력 시 로그인 유도
  */
 export function GuestChatPlaceholder() {
+  const { t } = useTranslation();
   const [loginOpen, setLoginOpen] = useState(false);
+
+  const EXAMPLE_QUESTIONS = [
+    t("guestChat.exampleQ1"),
+    t("guestChat.exampleQ2"),
+    t("guestChat.exampleQ3"),
+  ];
 
   const handleInteraction = useCallback(() => {
     setLoginOpen(true);
@@ -31,8 +33,8 @@ export function GuestChatPlaceholder() {
             <Bot className="h-4 w-4 text-primary" />
           </div>
           <div>
-            <h1 className="text-sm font-semibold">AI 독서 도우미</h1>
-            <p className="text-xs text-muted-foreground">나만의 독서 파트너</p>
+            <h1 className="text-sm font-semibold">{t("guestChat.heading")}</h1>
+            <p className="text-xs text-muted-foreground">{t("guestChat.subheading")}</p>
           </div>
         </div>
 
@@ -42,9 +44,9 @@ export function GuestChatPlaceholder() {
             <Bot className="h-8 w-8 text-primary" />
           </div>
           <div className="text-center space-y-2 max-w-md">
-            <h2 className="text-lg font-semibold">AI 독서 도우미와 대화해보세요</h2>
+            <h2 className="text-lg font-semibold">{t("guestChat.welcomeTitle")}</h2>
             <p className="text-sm text-muted-foreground">
-              나의 독서 성향을 이해하는 AI와 대화하며 책 추천, 독서 조언을 받을 수 있어요.
+              {t("guestChat.welcomeDesc")}
             </p>
           </div>
 
@@ -69,7 +71,7 @@ export function GuestChatPlaceholder() {
             className="flex items-center gap-2 rounded-xl border bg-background px-4 py-3 cursor-pointer hover:border-primary/30 transition-colors"
           >
             <span className="flex-1 text-sm text-muted-foreground">
-              메시지를 입력하세요...
+              {t("guestChat.placeholder")}
             </span>
             <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0">
               <Send className="h-4 w-4 text-muted-foreground" />
@@ -81,8 +83,8 @@ export function GuestChatPlaceholder() {
       <LoginPromptModal
         open={loginOpen}
         onOpenChange={setLoginOpen}
-        title="AI 채팅을 사용하려면"
-        description="로그인 후 AI 독서 파트너와 대화할 수 있어요."
+        title={t("guestChat.loginTitle")}
+        description={t("guestChat.loginDesc")}
       />
     </>
   );

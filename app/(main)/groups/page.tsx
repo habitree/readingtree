@@ -2,14 +2,11 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { GroupsContent } from "@/components/groups/groups-content";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Button } from "@/components/ui/button";
-import Link from "next/link";
-import { Plus } from "lucide-react";
-import { typography } from "@/lib/design-tokens";
+import { GroupsPageHeader } from "./groups-page-header";
 
 export const metadata: Metadata = {
-  title: "독서모임",
-  description: "함께 읽고 기록을 공유하는 독서모임에 참여하세요",
+  title: "독서 모임",
+  description: "함께 읽고 기록을 나누는 독서 모임",
 };
 
 /**
@@ -19,20 +16,7 @@ export const metadata: Metadata = {
 export default function GroupsPage() {
   return (
     <div className="space-y-4 sm:space-y-6">
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h1 className={typography.pageTitle}>독서모임</h1>
-          <p className={typography.pageDescription}>
-            함께 읽고 기록을 공유하는 독서모임에 참여하세요
-          </p>
-        </div>
-        <Button asChild className="shrink-0">
-          <Link href="/groups/new">
-            <Plus className="mr-2 h-4 w-4" />
-            모임 만들기
-          </Link>
-        </Button>
-      </div>
+      <GroupsPageHeader />
 
       <Suspense
         fallback={

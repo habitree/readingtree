@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import Image from "next/image";
 import { Card, CardContent } from "@/components/ui/card";
@@ -7,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { formatSmartDate } from "@/lib/utils/date";
 import { getNoteTypeLabel, parsePageNumber } from "@/lib/utils/note";
 import { NoteContentViewer } from "@/components/notes/note-content-viewer";
+import { useTranslation } from "@/lib/i18n";
 import type { NoteWithBook } from "@/types/note";
 import { FileText, PenTool, Camera, ImageIcon, BookOpen, TrendingUp } from "lucide-react";
 
@@ -19,6 +22,7 @@ interface TimelineItemProps {
  * 기록을 타임라인 형식으로 표시
  */
 export function TimelineItem({ note }: TimelineItemProps) {
+  const { t } = useTranslation();
   const typeIcons = {
     quote: FileText,
     transcription: PenTool,
@@ -51,7 +55,7 @@ export function TimelineItem({ note }: TimelineItemProps) {
                   {hasBookCover ? (
                     <Image
                       src={getImageUrl(bookCoverImage!)}
-                      alt={book.title || "책 표지"}
+                      alt={book.title || t("books.coverAlt")}
                       fill
                       className="object-cover"
                       sizes="(max-width: 640px) 80px, 96px"
@@ -97,7 +101,7 @@ export function TimelineItem({ note }: TimelineItemProps) {
               {book ? (
                 <div className="space-y-1 pb-1 border-b">
                   <p className="text-base font-bold line-clamp-1 text-foreground">
-                    {book.title || "제목 없음"}
+                    {book.title || t("books.noTitle")}
                   </p>
                   {book.author && (
                     <p className="text-sm text-muted-foreground line-clamp-1">
@@ -107,7 +111,7 @@ export function TimelineItem({ note }: TimelineItemProps) {
                 </div>
               ) : (
                 <div className="pb-1 border-b">
-                  <p className="text-sm text-muted-foreground italic">책 정보 없음</p>
+                  <p className="text-sm text-muted-foreground italic">{t("books.noBookInfo")}</p>
                 </div>
               )}
 

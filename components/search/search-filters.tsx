@@ -11,6 +11,7 @@ import { X, Search, BookOpen, RotateCcw } from "lucide-react";
 import Image from "next/image";
 import { getImageUrl, isValidImageUrl } from "@/lib/utils/image";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/lib/i18n";
 import { getUserBooks } from "@/app/actions/books";
 import { getUserTags } from "@/app/actions/notes";
 
@@ -23,6 +24,7 @@ interface SearchFiltersProps {
  * 책 제목, 날짜, 태그, 유형 필터 제공
  */
 export function SearchFilters({ onBooksLoaded }: SearchFiltersProps) {
+  const { t } = useTranslation();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [books, setBooks] = useState<Array<{ id: string; books: { title: string } }>>([]);
@@ -197,14 +199,14 @@ export function SearchFilters({ onBooksLoaded }: SearchFiltersProps) {
     <div className="space-y-4">
       {/* 책 제목 필터 - 자동완성 검색 */}
       <div className="space-y-2">
-        <Label>책 제목</Label>
+        <Label>{t("searchFilters.bookTitle")}</Label>
         <div className="relative">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               ref={bookInputRef}
               type="search"
-              placeholder={selectedBookTitle || "책 제목으로 검색..."}
+              placeholder={selectedBookTitle || t("searchFilters.searchByBookTitle")}
               value={bookSearchQuery}
               onChange={(e) => handleBookSearchChange(e.target.value)}
               onKeyDown={handleBookSearchKeyDown}
@@ -258,7 +260,7 @@ export function SearchFilters({ onBooksLoaded }: SearchFiltersProps) {
                       {hasValidImage ? (
                         <Image
                           src={getImageUrl(book.cover_image_url!)}
-                          alt={book.title || "책 표지"}
+                          alt={book.title || t("searchFilters.bookCover")}
                           fill
                           className="object-cover"
                           sizes="40px"
@@ -272,7 +274,7 @@ export function SearchFilters({ onBooksLoaded }: SearchFiltersProps) {
                     {/* 책 정보 */}
                     <div className="flex-1 min-w-0">
                       <div className="text-sm font-medium truncate">
-                        {book?.title || "제목 없음"}
+                        {book?.title || t("searchFilters.noTitle")}
                       </div>
                       {book?.author && (
                         <div className="text-xs text-muted-foreground truncate">
@@ -294,7 +296,7 @@ export function SearchFilters({ onBooksLoaded }: SearchFiltersProps) {
                 type="button"
                 onClick={() => clearFilter("bookId")}
                 className="ml-1 h-5 w-5 rounded-full flex items-center justify-center text-muted-foreground hover:bg-destructive hover:text-destructive-foreground transition-colors"
-                aria-label="책 필터 제거"
+                aria-label={t("searchFilters.removeBookFilter")}
               >
                 <X className="h-3 w-3" />
               </button>
@@ -306,7 +308,7 @@ export function SearchFilters({ onBooksLoaded }: SearchFiltersProps) {
       {/* 날짜 필터 */}
       <div className="grid grid-cols-2 gap-2">
         <div className="space-y-2">
-          <Label>시작일</Label>
+          <Label>{t("searchFilters.startDate")}</Label>
           <Input
             type="date"
             value={startDate}
@@ -315,7 +317,7 @@ export function SearchFilters({ onBooksLoaded }: SearchFiltersProps) {
           />
         </div>
         <div className="space-y-2">
-          <Label>종료일</Label>
+          <Label>{t("searchFilters.endDate")}</Label>
           <Input
             type="date"
             value={endDate}
@@ -327,7 +329,7 @@ export function SearchFilters({ onBooksLoaded }: SearchFiltersProps) {
       {/* 날짜 유효성 경고 */}
       {startDate && endDate && new Date(startDate) > new Date(endDate) && (
         <p className="text-xs text-destructive mt-1">
-          시작일이 종료일보다 늦을 수 없어요
+          {t("searchFilters.dateValidationError")}
         </p>
       )}
       {(startDate || endDate) && (
@@ -341,13 +343,13 @@ export function SearchFilters({ onBooksLoaded }: SearchFiltersProps) {
           className="h-6 px-2"
         >
           <X className="h-3 w-3 mr-1" />
-          날짜 필터 제거
+          {t("searchFilters.removeDateFilter")}
         </Button>
       )}
 
       {/* 유형 필터 */}
       <div className="space-y-2">
-        <Label>기록 유형</Label>
+        <Label>{t("searchFilters.noteType")}</Label>
         <Select 
           value={
             // types에 quote나 transcription이 포함되어 있으면 "transcription"으로 표시
@@ -367,13 +369,13 @@ export function SearchFilters({ onBooksLoaded }: SearchFiltersProps) {
           }}
         >
           <SelectTrigger>
-            <SelectValue placeholder="전체" />
+            <SelectValue placeholder={t("common.all")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">전체</SelectItem>
-            <SelectItem value="transcription">사진 필사</SelectItem>
-            <SelectItem value="photo">사진</SelectItem>
-            <SelectItem value="memo">기록</SelectItem>
+            <SelectItem value="all">{t("common.all")}</SelectItem>
+            <SelectItem value="transcription">{t("searchFilters.typeTranscription")}</SelectItem>
+            <SelectItem value="photo">{t("searchFilters.typePhoto")}</SelectItem>
+            <SelectItem value="memo">{t("searchFilters.typeMemo")}</SelectItem>
           </SelectContent>
         </Select>
         {types && (
@@ -384,14 +386,14 @@ export function SearchFilters({ onBooksLoaded }: SearchFiltersProps) {
             className="h-6 px-2"
           >
             <X className="h-3 w-3 mr-1" />
-            필터 제거
+            {t("searchFilters.removeFilter")}
           </Button>
         )}
       </div>
 
       {/* 태그 필터 */}
       <div className="space-y-2">
-        <Label>태그</Label>
+        <Label>{t("searchFilters.tags")}</Label>
         {userTags.length > 0 ? (
           <div className="space-y-2">
             <div className="flex flex-wrap gap-2 max-h-48 overflow-y-auto p-2 border rounded-md">
@@ -415,7 +417,7 @@ export function SearchFilters({ onBooksLoaded }: SearchFiltersProps) {
             </div>
             {selectedTags.length > 0 && (
               <div className="space-y-1">
-                <p className="text-xs text-muted-foreground">선택된 태그:</p>
+                <p className="text-xs text-muted-foreground">{t("searchFilters.selectedTags")}</p>
                 <div className="flex flex-wrap gap-1">
                   {selectedTags.map((tag, index) => (
                     <div
@@ -430,7 +432,7 @@ export function SearchFilters({ onBooksLoaded }: SearchFiltersProps) {
                           toggleTag(tag);
                         }}
                         className="ml-1 h-5 w-5 rounded-full flex items-center justify-center text-muted-foreground hover:bg-destructive hover:text-destructive-foreground transition-colors"
-                        aria-label={`${tag} 태그 제거`}
+                        aria-label={`${t("searchFilters.removeTag")} ${tag}`}
                       >
                         <X className="h-3 w-3" />
                       </button>
@@ -444,13 +446,13 @@ export function SearchFilters({ onBooksLoaded }: SearchFiltersProps) {
                   className="h-6 px-2 mt-1"
                 >
                   <X className="h-3 w-3 mr-1" />
-                  모든 태그 제거
+                  {t("searchFilters.removeAllTags")}
                 </Button>
               </div>
             )}
           </div>
         ) : (
-          <p className="text-sm text-muted-foreground">저장된 태그가 없습니다.</p>
+          <p className="text-sm text-muted-foreground">{t("searchFilters.noSavedTags")}</p>
         )}
       </div>
 
@@ -463,7 +465,7 @@ export function SearchFilters({ onBooksLoaded }: SearchFiltersProps) {
           className="w-full mt-4 text-muted-foreground hover:text-foreground"
         >
           <RotateCcw className="h-4 w-4 mr-2" />
-          필터 전체 초기화
+          {t("searchFilters.resetAllFilters")}
         </Button>
       )}
     </div>

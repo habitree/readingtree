@@ -30,6 +30,7 @@ interface ShareNoteCardProps {
     hideActions?: boolean; // 캡처 시 버튼 숨김용
     showTimestamp?: boolean; // 타임스탬프 표시 여부
     fixedHorizontal?: boolean; // 강제 가로 레이아웃 (캡처용)
+    includeBranding?: boolean; // 브랜딩(로고/URL) 표시 여부
     user?: {
         id: string;
         name: string;
@@ -193,7 +194,7 @@ const formatDateTime = (dateStr: string) => {
  * - [v4.0] 모든 케이스(이미지 유/무)에 대해 '좌우 분할' 단일 레이아웃 적용
  * - 표준 너비: max-w-[960px]
  */
-export function ShareNoteCard({ note, className, isPublicView = false, hideActions = false, showTimestamp = true, fixedHorizontal = false, user, relatedBooks }: ShareNoteCardProps) {
+export function ShareNoteCard({ note, className, isPublicView = false, hideActions = false, showTimestamp = true, fixedHorizontal = false, includeBranding = true, user, relatedBooks }: ShareNoteCardProps) {
     const { t } = useTranslation();
     const [imgError, setImgError] = useState(false);
     const handleImgError = useCallback(() => setImgError(true), []);
@@ -252,17 +253,17 @@ export function ShareNoteCard({ note, className, isPublicView = false, hideActio
                                     <div className="relative w-20 h-28 shrink-0 shadow-lg rounded-md overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800">
                                         <img
                                             src={getProxiedImageUrl(book?.cover_image_url || "/placeholder-book.png")}
-                                            alt={book?.title || "Book"}
+                                            alt={book?.title || "책 표지"}
                                             className="absolute inset-0 w-full h-full object-cover"
                                             crossOrigin="anonymous"
                                         />
                                     </div>
                                 ) : (
-                                    <ImageLightbox src={book?.cover_image_url || "/placeholder-book.png"} alt={book?.title || "Book"}>
+                                    <ImageLightbox src={book?.cover_image_url || "/placeholder-book.png"} alt={book?.title || "책 표지"}>
                                         <div className="relative w-20 h-28 shrink-0 shadow-lg rounded-md overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800">
                                             <Image
                                                 src={getImageUrl(book?.cover_image_url || "/placeholder-book.png")}
-                                                alt={book?.title || "Book"}
+                                                alt={book?.title || "책 표지"}
                                                 fill
                                                 className="object-cover"
                                                 sizes="80px"
@@ -322,7 +323,7 @@ export function ShareNoteCard({ note, className, isPublicView = false, hideActio
                                     <span suppressHydrationWarning>{formattedDate}</span>
                                 </div>
                                 <div className="flex items-center gap-3">
-                                    <FooterLogo />
+                                    {includeBranding && <FooterLogo />}
                                     {user && (
                                         <div className="flex items-center gap-1.5 text-xs text-slate-500">
                                             <span>by</span>
@@ -358,18 +359,18 @@ export function ShareNoteCard({ note, className, isPublicView = false, hideActio
                                 <div className="relative w-16 h-24 shrink-0 shadow-md rounded-sm overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 aspect-[2/3]">
                                     <img
                                         src={getProxiedImageUrl(book?.cover_image_url || "/placeholder-book.png")}
-                                        alt={book?.title || "Book"}
+                                        alt={book?.title || "책 표지"}
                                         className="absolute inset-0 w-full h-full object-cover"
                                         crossOrigin="anonymous"
                                     />
                                 </div>
                             ) : (
                                 // 일반 화면: ImageLightbox 사용
-                                <ImageLightbox src={book?.cover_image_url || "/placeholder-book.png"} alt={book?.title || "Book"}>
+                                <ImageLightbox src={book?.cover_image_url || "/placeholder-book.png"} alt={book?.title || "책 표지"}>
                                     <div className="relative w-16 h-24 shrink-0 shadow-md rounded-sm overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 aspect-[2/3]">
                                         <Image
                                             src={getImageUrl(book?.cover_image_url || "/placeholder-book.png")}
-                                            alt={book?.title || "Book"}
+                                            alt={book?.title || "책 표지"}
                                             fill
                                             className="object-cover"
                                             sizes="64px"
@@ -556,7 +557,7 @@ export function ShareNoteCard({ note, className, isPublicView = false, hideActio
 
                             {/* 푸터: 사용자 & 로고 */}
                             <div className="mt-auto pt-10 flex items-end justify-between gap-4">
-                                <FooterLogo />
+                                {includeBranding ? <FooterLogo /> : <div />}
                                 <div className="flex items-center gap-2.5 bg-slate-50 dark:bg-slate-900 pr-4 pl-1 py-1 rounded-full border border-slate-100 dark:border-slate-800">
                                     {/* 캡처 모드(hideActions) 확인 */}
                                     {hideActions ? (
@@ -564,7 +565,7 @@ export function ShareNoteCard({ note, className, isPublicView = false, hideActio
                                             {user?.avatar_url ? (
                                                 <img
                                                     src={getProxiedImageUrl(user.avatar_url)}
-                                                    alt={user.name || "User"}
+                                                    alt={user.name || "사용자"}
                                                     className="h-full w-full object-cover"
                                                     crossOrigin="anonymous"
                                                 />
@@ -579,7 +580,7 @@ export function ShareNoteCard({ note, className, isPublicView = false, hideActio
                                             <AvatarImage
                                                 src={user?.avatar_url ? getProxiedImageUrl(user.avatar_url) : undefined}
                                                 crossOrigin="anonymous"
-                                                alt={user?.name || "User"}
+                                                alt={user?.name || "사용자"}
                                                 className="object-cover"
                                             />
                                             <AvatarFallback className="bg-forest-100 text-forest-700 text-[10px] font-bold">

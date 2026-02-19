@@ -77,7 +77,7 @@ export function BookSearch({ onBookAdded, onSelectBook, excludeBookIds, showAlre
 
           if (!response.ok) {
             // API에서 반환한 에러 메시지 가져오기
-            let errorMessage = "검색에 실패했습니다.";
+            let errorMessage = t("books.searchFailedMsg");
             try {
               const errorData = await response.json();
               errorMessage = errorData.error || errorMessage;
@@ -115,17 +115,17 @@ export function BookSearch({ onBookAdded, onSelectBook, excludeBookIds, showAlre
       setResults(data.books || []);
     } catch (error) {
       console.error("책 검색 오류:", error);
-      const errorMessage = error instanceof Error ? error.message : "알 수 없는 오류";
-      
+      const errorMessage = error instanceof Error ? error.message : t("books.unknownErrorMsg");
+
       // 사용자 친화적인 에러 메시지 (이미 API에서 변환된 메시지일 수 있음)
       if (errorMessage.includes("일시적인 문제") || errorMessage.includes("잠시 후")) {
         toast.error(errorMessage, {
-          description: "잠시 후 다시 시도해주세요.",
+          description: t("books.searchRetryDesc"),
           duration: 5000,
         });
       } else if (errorMessage.includes("인터넷 연결") || errorMessage.includes("네트워크") || errorMessage.includes("fetch")) {
-        toast.error("인터넷 연결을 확인하고 다시 시도해주세요.", {
-          description: "네트워크 연결 상태를 확인해주세요.",
+        toast.error(t("books.networkErrorMsg"), {
+          description: t("books.networkErrorDesc"),
           duration: 5000,
         });
       } else if (errorMessage.includes("검색어")) {
@@ -133,8 +133,8 @@ export function BookSearch({ onBookAdded, onSelectBook, excludeBookIds, showAlre
           duration: 3000,
         });
       } else {
-        toast.error(errorMessage || "책 검색에 실패했어요. 다시 시도해주세요.", {
-          description: "문제가 계속되면 다른 검색어로 시도해보세요.",
+        toast.error(errorMessage || t("books.searchFailedMsg"), {
+          description: t("books.searchFailedDesc"),
           duration: 5000,
         });
       }
@@ -142,7 +142,7 @@ export function BookSearch({ onBookAdded, onSelectBook, excludeBookIds, showAlre
     } finally {
       setIsSearching(false);
     }
-  }, []);
+  }, [t]);
 
   // 디바운싱 (300ms) - 검색어가 2자 이상일 때만 검색
   // IME 조합 중에는 검색하지 않음
@@ -197,7 +197,7 @@ export function BookSearch({ onBookAdded, onSelectBook, excludeBookIds, showAlre
         
         if (!response.ok) {
           const error = await response.json();
-          throw new Error(error.message || "책 확인 실패");
+          throw new Error(error.message || t("books.bookAddFailed"));
         }
         
         const { bookId } = await response.json();

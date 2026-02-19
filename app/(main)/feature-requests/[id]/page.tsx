@@ -10,6 +10,7 @@ import {
   FeatureRequestVoteButton,
   FeatureRequestComments,
 } from "@/components/feature-requests";
+import { AdminResponseSection } from "@/components/feature-requests/admin-response-section";
 import {
   getFeatureRequestById,
   getComments,
@@ -174,14 +175,7 @@ export default async function FeatureRequestDetailPage({ params }: PageProps) {
 
           {/* 관리자 응답 */}
           {request.admin_response && (
-            <div className="mt-6 p-4 bg-primary/5 rounded-lg border border-primary/20">
-              <div className="flex items-center gap-2 mb-2">
-                <Badge variant="secondary">관리자 응답</Badge>
-              </div>
-              <p className="text-sm whitespace-pre-wrap">
-                {request.admin_response}
-              </p>
-            </div>
+            <AdminResponseSection adminResponse={request.admin_response} />
           )}
         </CardContent>
       </Card>

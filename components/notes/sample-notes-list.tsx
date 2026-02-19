@@ -1,6 +1,6 @@
 import { NoteCard } from "./note-card";
 import { getSampleNotes } from "@/app/actions/sample";
-import { FileText } from "lucide-react";
+import { SampleNotesEmptyState } from "./sample-notes-empty-state";
 
 interface SampleNotesListProps {
   bookId: string;
@@ -14,16 +14,7 @@ export async function SampleNotesList({ bookId }: SampleNotesListProps) {
   const notes = await getSampleNotes(bookId);
 
   if (notes.length === 0) {
-    return (
-      <div className="text-center py-12 space-y-4">
-        <div className="flex justify-center">
-          <div className="rounded-full bg-muted p-4">
-            <FileText className="h-8 w-8 text-muted-foreground" />
-          </div>
-        </div>
-        <p className="text-muted-foreground">아직 기록이 없습니다.</p>
-      </div>
-    );
+    return <SampleNotesEmptyState />;
   }
 
   return (

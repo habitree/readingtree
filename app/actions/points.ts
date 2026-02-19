@@ -55,7 +55,7 @@ export async function getUserPoints(user?: User | null): Promise<UserPoints | nu
     .maybeSingle();
 
   if (error) {
-    console.error("포인트 조회 오류:", error);
+    console.error("Failed to fetch points:", error);
     return null;
   }
 
@@ -75,7 +75,7 @@ export async function getUserPoints(user?: User | null): Promise<UserPoints | nu
       .single();
 
     if (createError) {
-      console.error("포인트 생성 오류:", createError);
+      console.error("Failed to create points:", createError);
       return null;
     }
 
@@ -104,7 +104,7 @@ export async function earnPoints(
   if (!currentUser) {
     const { data: { user: fetchedUser } } = await supabase.auth.getUser();
     if (!fetchedUser) {
-      return { success: false, points_earned: 0, new_total: 0, error: "로그인이 필요합니다." };
+      return { success: false, points_earned: 0, new_total: 0, error: "Login required." };
     }
     currentUser = fetchedUser;
   }
@@ -119,8 +119,8 @@ export async function earnPoints(
       .maybeSingle();
 
     if (configError || !actionConfig) {
-      console.warn(`포인트 액션 설정 없음: ${actionType}`);
-      return { success: false, points_earned: 0, new_total: 0, error: "유효하지 않은 액션입니다." };
+      console.warn(`Point action config not found: ${actionType}`);
+      return { success: false, points_earned: 0, new_total: 0, error: "Invalid action." };
     }
 
     // 2. 일일 제한 확인 (KST 기준)
@@ -136,7 +136,7 @@ export async function earnPoints(
         .lte("created_at", `${today}T23:59:59+09:00`);
 
       if (count && count >= actionConfig.daily_limit) {
-        return { success: false, points_earned: 0, new_total: 0, error: "일일 획득 한도에 도달했습니다." };
+        return { success: false, points_earned: 0, new_total: 0, error: "Daily limit reached." };
       }
     }
 
@@ -150,7 +150,7 @@ export async function earnPoints(
         .maybeSingle();
 
       if (existingTransaction) {
-        return { success: false, points_earned: 0, new_total: 0, error: "이미 획득한 보상입니다." };
+        return { success: false, points_earned: 0, new_total: 0, error: "Already claimed." };
       }
     }
 
@@ -172,7 +172,7 @@ export async function earnPoints(
         .single();
 
       if (createError || !newPoints) {
-        return { success: false, points_earned: 0, new_total: 0, error: "포인트 초기화 실패" };
+        return { success: false, points_earned: 0, new_total: 0, error: "Failed to initialize points." };
       }
       userPoints = newPoints as UserPoints;
     }
@@ -200,8 +200,8 @@ export async function earnPoints(
       });
 
     if (transactionError) {
-      console.error("거래 내역 생성 오류:", transactionError);
-      return { success: false, points_earned: 0, new_total: 0, error: "포인트 적립 실패" };
+      console.error("Failed to create transaction:", transactionError);
+      return { success: false, points_earned: 0, new_total: 0, error: "Failed to earn points." };
     }
 
     // 8. 레벨 업 확인
@@ -249,11 +249,11 @@ export async function earnPoints(
 
       if (noteCount === 1) {
         // 첫 번째 노트 보너스
-        await earnPoints("first_note", { user: currentUser, description: "첫 번째 노트 작성 보너스" });
+        await earnPoints("first_note", { user: currentUser, description: "First note bonus" });
         achievements.push({
           type: "first_time",
-          title: "첫 기록!",
-          description: "첫 번째 노트를 작성했습니다",
+          title: "First Note!",
+          description: "You wrote your first note",
           points_bonus: 25,
           icon: "Pencil",
         });
@@ -268,11 +268,11 @@ export async function earnPoints(
         .eq("action_type", "book_add");
 
       if (bookCount === 1) {
-        await earnPoints("first_book", { user: currentUser, description: "첫 번째 책 등록 보너스" });
+        await earnPoints("first_book", { user: currentUser, description: "First book bonus" });
         achievements.push({
           type: "first_time",
-          title: "독서 시작!",
-          description: "첫 번째 책을 등록했습니다",
+          title: "Reading Begins!",
+          description: "You registered your first book",
           points_bonus: 35,
           icon: "BookOpen",
         });
@@ -284,8 +284,8 @@ export async function earnPoints(
       const levelInfo = levels?.find((l) => l.level === newLevel);
       achievements.push({
         type: "level_up",
-        title: `레벨 ${newLevel} 달성!`,
-        description: levelInfo?.title || "새로운 레벨에 도달했습니다",
+        title: `Level ${newLevel} reached!`,
+        description: levelInfo?.title || "You reached a new level",
         points_bonus: 0,
         icon: levelInfo?.badge_icon || "Star",
       });
@@ -303,8 +303,8 @@ export async function earnPoints(
       achievements: achievements.length > 0 ? achievements : undefined,
     };
   } catch (error) {
-    console.error("포인트 적립 오류:", error);
-    return { success: false, points_earned: 0, new_total: 0, error: "알 수 없는 오류가 발생했습니다." };
+    console.error("Failed to earn points:", error);
+    return { success: false, points_earned: 0, new_total: 0, error: "An unknown error occurred." };
   }
 }
 
@@ -381,7 +381,7 @@ export async function updateStreak(user?: User | null): Promise<{
     if (newStreak === milestone.days) {
       streakBonus = await earnPoints(milestone.action, {
         user: currentUser,
-        description: `${milestone.days}일 연속 달성 보너스`,
+        description: `${milestone.days}-day streak bonus`,
       });
       break;
     }
@@ -390,7 +390,7 @@ export async function updateStreak(user?: User | null): Promise<{
   // 오늘 첫 활동 보너스
   const dailyBonus = await earnPoints("daily_first_activity", {
     user: currentUser,
-    description: "오늘 첫 활동 보너스",
+    description: "First activity of the day bonus",
   });
 
   return {
@@ -558,8 +558,8 @@ export async function getDailyMissions(user?: User | null): Promise<MissionWithD
   }[] = [
     {
       type: "first_read",
-      title: "오늘 첫 독서 기록",
-      description: "책을 열고 오늘의 첫 기록을 남겨보세요",
+      title: "First reading log today",
+      description: "Open a book and write your first log of the day",
       reward: 10,
       icon: "BookOpen",
       action_url: "/books",
@@ -567,8 +567,8 @@ export async function getDailyMissions(user?: User | null): Promise<MissionWithD
     },
     {
       type: "note",
-      title: "메모 1개 작성하기",
-      description: "인상 깊은 구절이나 생각을 기록해보세요",
+      title: "Write 1 note",
+      description: "Record a memorable passage or thought",
       reward: 15,
       icon: "PenLine",
       action_url: "/notes/new",
@@ -581,8 +581,8 @@ export async function getDailyMissions(user?: User | null): Promise<MissionWithD
   if (currentStreak >= 3) {
     missionDefinitions.push({
       type: "streak",
-      title: `${currentStreak}일 연속 기록 유지`,
-      description: "오늘도 기록을 남겨 연속 기록을 이어가세요",
+      title: `Maintain ${currentStreak}-day streak`,
+      description: "Keep your streak going by logging today",
       reward: 20,
       icon: "Flame",
       action_url: "/notes/new",
@@ -628,7 +628,7 @@ export async function getDailyMissions(user?: User | null): Promise<MissionWithD
       if (mission.status === "completed") {
         await earnPoints("mission_complete", {
           user: currentUser,
-          description: `일일 미션 완료: ${mission.title}`,
+          description: `Daily mission complete: ${mission.title}`,
           referenceId: mission.id,
           referenceType: "mission",
         });
@@ -646,7 +646,7 @@ export async function getDailyMissions(user?: User | null): Promise<MissionWithD
 
       await earnPoints("mission_complete", {
         user: currentUser,
-        description: `일일 미션 완료: ${mission.title}`,
+        description: `Daily mission complete: ${mission.title}`,
         referenceId: existingMission.id,
         referenceType: "mission",
       });
@@ -667,7 +667,7 @@ export async function getDailyMissions(user?: User | null): Promise<MissionWithD
     if (!allMissionBonus) {
       await earnPoints("all_missions_complete", {
         user: currentUser,
-        description: "오늘의 모든 미션 완료 보너스",
+        description: "All daily missions complete bonus",
       });
     }
   }
@@ -798,7 +798,7 @@ export async function getPointTransactions(
   const { data, error } = await query;
 
   if (error) {
-    console.error("거래 내역 조회 오류:", error);
+    console.error("Failed to fetch transactions:", error);
     return [];
   }
 

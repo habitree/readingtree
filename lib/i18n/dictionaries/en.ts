@@ -1456,6 +1456,21 @@ export const en: Dictionary = {
     bookshelfCtaDesc1: "Create your own bookshelf and start your reading journey.",
     bookshelfCtaDesc2: "Organize your books and record your thoughts.",
     makeMyBookshelf: "Create My Bookshelf",
+    // share landing CTA
+    ctaHeadline: "Don't let that inspiring line\nslip away",
+    ctaDesc: "It doesn't have to be from a book. Save quotes from social media,\nvideos, or conversations and turn them into beautiful cards.",
+    ctaCreateCard: "Create Your Own Card",
+    ctaStartRecord: "Get Started Free",
+    // use cases
+    useCaseTitle: "Who uses ReadTree?",
+    useCaseReaderTitle: "Avid Readers",
+    useCaseReaderDesc: "Organize highlights and reflections from books systematically",
+    useCaseCasualTitle: "Casual Readers",
+    useCaseCasualDesc: "Save a single quote and link it to a book later",
+    useCaseCreatorTitle: "Content Creators",
+    useCaseCreatorDesc: "Turn reading insights into shareable cards for social media",
+    bookshelfCtaHeadline: "Create your own bookshelf",
+    bookshelfCtaDesc: "Organize your books in one place\nand manage your reading journey with notes.",
   },
 
   landing: {

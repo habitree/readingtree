@@ -4,6 +4,7 @@ import { useEffect, useRef, useCallback, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 import type { RealtimeChannel, RealtimePostgresChangesPayload } from "@supabase/supabase-js";
+import { useTranslation } from "@/lib/i18n";
 
 interface RealtimeEvent {
   type: "INSERT" | "UPDATE" | "DELETE";
@@ -65,6 +66,7 @@ export function useGroupRealtime({
   showToast = true,
   onConnectionChange,
 }: UseGroupRealtimeOptions): UseGroupRealtimeReturn {
+  const { t } = useTranslation();
   const [isConnected, setIsConnected] = useState(false);
   const [lastEvent, setLastEvent] = useState<RealtimeEvent | null>(null);
   const channelRef = useRef<RealtimeChannel | null>(null);
@@ -91,13 +93,13 @@ export function useGroupRealtime({
 
       // 토스트 알림
       if (showToast && payload.new) {
-        toast.info("새 기록이 공유됐어요.", {
-          description: "모임에서 새로운 독서 기록을 확인해보세요.",
+        toast.info(t("groupRealtime.newNoteShared"), {
+          description: t("groupRealtime.newNoteSharedDesc"),
           duration: 5000,
         });
       }
     },
-    [currentUserId, onNewSharedNote, onEvent, showToast]
+    [currentUserId, onNewSharedNote, onEvent, showToast, t]
   );
 
   const handleMemberInsert = useCallback(
@@ -125,12 +127,12 @@ export function useGroupRealtime({
 
       // 토스트 알림
       if (showToast) {
-        toast.info("새 멤버가 모임에 참여했어요.", {
+        toast.info(t("groupRealtime.newMemberJoined"), {
           duration: 4000,
         });
       }
     },
-    [currentUserId, onMemberJoined, onEvent, showToast]
+    [currentUserId, onMemberJoined, onEvent, showToast, t]
   );
 
   const handleMemberDelete = useCallback(

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { AlertCircle, Home, RefreshCw } from "lucide-react";
+import { useTranslation } from "@/lib/i18n";
 
 export default function Error({
   error,
@@ -14,6 +15,7 @@ export default function Error({
   reset: () => void;
 }) {
   const router = useRouter();
+  const { t } = useTranslation();
 
   useEffect(() => {
     // 에러 로깅 (개발 환경에서만)
@@ -29,21 +31,21 @@ export default function Error({
           <div className="flex justify-center mb-4">
             <AlertCircle className="h-16 w-16 text-destructive" />
           </div>
-          <CardTitle className="text-2xl">오류</CardTitle>
+          <CardTitle className="text-2xl">{t("errorBoundary.pageTitle")}</CardTitle>
           <CardDescription>
-            다시 시도해 주세요
+            {t("errorBoundary.pageDesc")}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {process.env.NODE_ENV === "development" && error.message ? (
             <div className="p-3 bg-muted rounded-lg">
-              <p className="text-sm font-medium mb-1">에러 상세:</p>
+              <p className="text-sm font-medium mb-1">{t("errorBoundary.errorDetail")}</p>
               <p className="text-xs text-muted-foreground break-all">
                 {error.message}
               </p>
               {error.digest && (
                 <p className="text-xs text-muted-foreground mt-2">
-                  에러 ID: {error.digest}
+                  {t("errorBoundary.errorId")} {error.digest}
                 </p>
               )}
             </div>
@@ -52,7 +54,7 @@ export default function Error({
           <div className="flex flex-col gap-2">
             <Button onClick={reset} className="w-full">
               <RefreshCw className="mr-2 h-4 w-4" />
-              다시 시도
+              {t("errorBoundary.retry")}
             </Button>
             <Button
               onClick={() => router.push("/")}
@@ -60,12 +62,12 @@ export default function Error({
               className="w-full"
             >
               <Home className="mr-2 h-4 w-4" />
-              홈으로 돌아가기
+              {t("errorBoundary.goHome")}
             </Button>
           </div>
 
           <p className="text-xs text-center text-muted-foreground">
-            문제가 계속되면 페이지를 새로고침하거나 잠시 후 다시 시도해주세요.
+            {t("errorBoundary.helpText")}
           </p>
         </CardContent>
       </Card>

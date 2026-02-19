@@ -8,6 +8,7 @@ import { MobileBookshelfSelector } from "@/components/books/mobile-bookshelf-sel
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { BookshelfShareButton } from "@/components/bookshelves/bookshelf-share-button";
+import { BookshelfDefaultDesc, BookshelfSettingsLabel, BookshelfAddLabel } from "@/components/bookshelves/bookshelf-page-strings";
 import { ArrowLeft, Settings, Plus } from "lucide-react";
 import type { ReadingStatus } from "@/types/book";
 
@@ -108,7 +109,7 @@ export default async function BookshelfDetailPage({
                 {bookshelf.name}
               </h1>
               <p className="text-xs sm:text-sm text-muted-foreground hidden sm:block truncate">
-                {bookshelf.description || "내가 읽고 있는 책들을 관리하세요"}
+                {bookshelf.description || <BookshelfDefaultDesc />}
               </p>
             </div>
             {/* 모바일 서재 선택기 */}
@@ -125,14 +126,14 @@ export default async function BookshelfDetailPage({
                 <Button variant="outline" size="icon" asChild className="hidden sm:inline-flex h-9 w-9 sm:w-auto sm:px-3">
                   <Link href={`/bookshelves/${bookshelfId}/edit`}>
                     <Settings className="h-4 w-4 sm:mr-1" />
-                    <span className="hidden sm:inline">설정</span>
+                    <BookshelfSettingsLabel />
                   </Link>
                 </Button>
               )}
               <Button asChild size="icon" className="h-9 w-9 sm:h-10 sm:w-auto sm:px-4">
                 <Link href="/books/search">
                   <Plus className="h-4 w-4 sm:mr-1" />
-                  <span className="hidden sm:inline">추가</span>
+                  <BookshelfAddLabel />
                 </Link>
               </Button>
             </div>

@@ -5,6 +5,7 @@ import { Minus, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/lib/i18n";
 
 export interface StepperProps
   extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "onChange"> {
@@ -36,6 +37,7 @@ export const Stepper = React.forwardRef<HTMLInputElement, StepperProps>(
     },
     ref
   ) => {
+    const { t } = useTranslation();
     const [localValue, setLocalValue] = React.useState<number | undefined>(
       value
     );
@@ -111,7 +113,7 @@ export const Stepper = React.forwardRef<HTMLInputElement, StepperProps>(
           onClick={handleDecrement}
           disabled={disabled || (localValue !== undefined && localValue <= min)}
           className="h-10 w-10 shrink-0"
-          aria-label="감소"
+          aria-label={t("stepper.decrease")}
         >
           <Minus className="h-4 w-4" />
         </Button>
@@ -126,7 +128,7 @@ export const Stepper = React.forwardRef<HTMLInputElement, StepperProps>(
           step={step}
           disabled={disabled}
           className="text-center"
-          placeholder="선택사항"
+          placeholder={t("stepper.optional")}
           {...props}
         />
         <Button
@@ -136,7 +138,7 @@ export const Stepper = React.forwardRef<HTMLInputElement, StepperProps>(
           onClick={handleIncrement}
           disabled={disabled || (localValue !== undefined && localValue >= max)}
           className="h-10 w-10 shrink-0"
-          aria-label="증가"
+          aria-label={t("stepper.increase")}
         >
           <Plus className="h-4 w-4" />
         </Button>

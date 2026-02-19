@@ -4,10 +4,11 @@ import { getNoteDetail, updateNote } from "@/app/actions/notes";
 import { NoteEditForm } from "@/components/notes/note-edit-form";
 import { isValidUUID } from "@/lib/utils/validation";
 import { sanitizeErrorForLogging } from "@/lib/utils/validation";
+import { PageHeader } from "@/components/layout/page-header";
 
 export const metadata: Metadata = {
   title: "기록 수정 | ReadTree",
-  description: "기록을 수정하세요",
+  description: "독서 기록을 수정하세요",
 };
 
 interface NoteEditPageProps {
@@ -55,12 +56,10 @@ export default async function NoteEditPage({ params }: NoteEditPageProps) {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">기록 수정</h1>
-        <p className="text-muted-foreground">
-          기록 내용을 수정하세요
-        </p>
-      </div>
+      <PageHeader
+        titleKey="notes.editNotePageTitle"
+        descriptionKey="notes.editNotePageDesc"
+      />
 
       <NoteEditForm note={note} />
     </div>

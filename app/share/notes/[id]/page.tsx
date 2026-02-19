@@ -5,6 +5,7 @@ import { getAppUrl } from "@/lib/utils/url";
 import { parseNoteContentFields } from "@/lib/utils/note";
 import { isValidUUID } from "@/lib/utils/validation";
 import { ShareNoteCard } from "@/components/share/share-note-card";
+import { ShareCtaSection } from "@/components/share/share-cta-section";
 import type { NoteWithBook } from "@/types/note";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -160,29 +161,7 @@ export default async function ShareNotePage({
         </div>
 
         {/* 하단 푸터 / CTA */}
-        <div className="mt-16 text-center space-y-6">
-          <div className="space-y-2">
-            <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100 italic tracking-tight">
-              ReadTree
-            </h2>
-            <p className="text-slate-500 dark:text-slate-400 text-sm max-w-md mx-auto leading-relaxed">
-              당신의 독서 여정을 한 그루의 나무처럼 심고 가꾸어 보세요.<br />
-              기록은 생각의 깊이를 더해줍니다.
-            </p>
-          </div>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-            <Button asChild className="rounded-full px-8 h-12 text-sm font-bold shadow-xl shadow-primary/20 transition-all duration-300 hover:scale-105 active:scale-95">
-              <Link href="/login">
-                나도 문장 카드 만들기
-              </Link>
-            </Button>
-            <Button asChild variant="outline" className="rounded-full px-6 h-12 text-sm font-medium transition-all duration-300 hover:scale-105 active:scale-95">
-              <Link href="/login">
-                나도 기록 시작하기
-              </Link>
-            </Button>
-          </div>
-        </div>
+        <ShareCtaSection variant="note" />
       </div>
     </div>
   );

@@ -8,6 +8,7 @@ import { getUserBooksWithNotes } from "@/app/actions/books";
 import { getCurrentUser } from "@/app/actions/auth";
 import { BookshelfPageContent } from "@/components/books/bookshelf-page-content";
 import { MobileBookshelfSelector } from "@/components/books/mobile-bookshelf-selector";
+import { BooksPageTitle, BooksManageLabel, BooksAddLabel, BooksPageErrorHeading, BooksUnknownError } from "@/components/books/books-page-header";
 import type { ReadingStatus } from "@/types/book";
 
 export const dynamic = "force-dynamic";
@@ -55,23 +56,18 @@ export default async function BooksPage({ searchParams }: BooksPageProps) {
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 min-w-0">
             <div className="min-w-0">
-              <h1 className="text-lg sm:text-2xl lg:text-3xl font-bold tracking-tight truncate">
-                내 서재
-              </h1>
-              <p className="text-xs sm:text-sm text-muted-foreground hidden sm:block">
-                내가 읽고 있는 책들을 관리하세요
-              </p>
+              <BooksPageTitle />
             </div>
             <MobileBookshelfSelector />
           </div>
           <div className="flex items-center gap-1 sm:gap-2 shrink-0">
             <Button variant="outline" size="sm" asChild className="hidden sm:inline-flex">
-              <Link href="/bookshelves">서재 관리</Link>
+              <Link href="/bookshelves"><BooksManageLabel /></Link>
             </Button>
             <Button asChild size="icon" className="h-9 w-9 sm:h-10 sm:w-auto sm:px-4">
               <Link href="/books/search">
                 <Plus className="h-4 w-4 sm:mr-1" />
-                <span className="hidden sm:inline">추가</span>
+                <BooksAddLabel />
               </Link>
             </Button>
           </div>
@@ -89,19 +85,15 @@ export default async function BooksPage({ searchParams }: BooksPageProps) {
     );
   } catch (error) {
     console.error("BooksPage 렌더링 오류:", error);
+    const errorMessage = error instanceof Error ? error.message : undefined;
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">내 서재</h1>
-          <p className="text-muted-foreground">
-            페이지를 불러오는 중 오류가 발생했습니다.
-          </p>
+          <BooksPageErrorHeading />
         </div>
         <Card>
           <CardContent className="pt-6">
-            <p className="text-sm text-muted-foreground">
-              {error instanceof Error ? error.message : "알 수 없는 오류가 발생했습니다."}
-            </p>
+            <BooksUnknownError message={errorMessage} />
           </CardContent>
         </Card>
       </div>

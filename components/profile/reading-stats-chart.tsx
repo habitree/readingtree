@@ -118,7 +118,7 @@ export function ReadingStatsChart({
           <SummaryCard
             label={t("readingStats.yearlyBooks")}
             value={yearlyTotalBooks}
-            unit="권"
+            unit={t("readingStats.unitBooks")}
             icon={BookOpen}
             color="text-blue-500"
             bgColor="bg-blue-50 dark:bg-blue-950/30"
@@ -126,7 +126,7 @@ export function ReadingStatsChart({
           <SummaryCard
             label={t("readingStats.yearlyNotes")}
             value={yearlyTotalNotes}
-            unit="개"
+            unit={t("readingStats.unitCount")}
             icon={PenLine}
             color="text-amber-500"
             bgColor="bg-amber-50 dark:bg-amber-950/30"

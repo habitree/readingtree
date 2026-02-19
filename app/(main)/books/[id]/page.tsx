@@ -26,6 +26,18 @@ import { BookScrollHandler } from "@/components/books/book-scroll-handler";
 import { BookTitle } from "@/components/books/book-title";
 import { RelatedBooksList } from "@/components/books/related-books-list";
 import { RelatedBooksEditor } from "@/components/books/related-books-editor";
+import {
+  GuestCtaText,
+  GuestCtaButtonLabel,
+  CompletedBadgeLabel,
+  StartedDateSuffix,
+  CompletedDateSuffix,
+  ReadingReasonPrompt,
+  WriteNoteLabel,
+  ReadingRecordsHeading,
+  BookInfoSectionLabel,
+  RelatedBooksLabel,
+} from "@/components/books/book-detail-strings";
 
 // React cache()로 동일 요청 내 중복 호출 방지
 const getCachedCurrentUser = cache(() => getCurrentUser());
@@ -154,10 +166,10 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
         <div className="fixed bottom-14 sm:bottom-16 lg:bottom-0 left-0 right-0 z-30 border-t bg-background/95 backdrop-blur-sm p-3 sm:p-4 lg:ml-64">
           <div className="container max-w-7xl mx-auto flex items-center justify-between gap-3">
             <p className="text-sm text-muted-foreground">
-              이 책의 기록을 남기고 싶다면?
+              <GuestCtaText />
             </p>
             <Button asChild size="sm" className="shrink-0">
-              <Link href="/login">로그인하고 시작하기</Link>
+              <Link href="/login"><GuestCtaButtonLabel /></Link>
             </Button>
           </div>
         </div>
@@ -185,7 +197,7 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
                   <div className="absolute inset-0 bg-gradient-to-t from-emerald-600/20 to-transparent flex items-end justify-center pb-2 sm:pb-3">
                     <Badge className="bg-emerald-600 text-white shadow-lg text-[10px] sm:text-xs">
                       <Trophy className="w-2.5 h-2.5 sm:w-3 sm:h-3 mr-0.5 sm:mr-1" />
-                      완독
+                      <CompletedBadgeLabel />
                     </Badge>
                   </div>
                 )}
@@ -220,15 +232,15 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
                 <div className="flex items-center gap-1.5 mt-2 sm:mt-3 text-xs sm:text-sm text-muted-foreground flex-wrap">
                   <Calendar className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0 opacity-60" />
                   {userBook.started_at && (
-                    <span>{formatShortDate(userBook.started_at)} 시작</span>
+                    <span>{formatShortDate(userBook.started_at)}<StartedDateSuffix /></span>
                   )}
                   {userBook.started_at && completedDates.length > 0 && (
                     <span className="opacity-40">·</span>
                   )}
                   {completedDates.length > 0 && (
                     <span className="text-emerald-600 dark:text-emerald-400 font-medium">
-                      {formatShortDate(completedDates[completedDates.length - 1])} 완독
-                      {completedDates.length > 1 && ` (${completedDates.length}회)`}
+                      {formatShortDate(completedDates[completedDates.length - 1])}
+                      <CompletedDateSuffix count={completedDates.length} />
                     </span>
                   )}
                 </div>
@@ -260,7 +272,7 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
                 </p>
               ) : (
                 <p className="text-sm text-muted-foreground">
-                  &apos;{book.title}&apos;을 읽기로 한 계기를 기록해보세요
+                  <ReadingReasonPrompt bookTitle={book.title} />
                 </p>
               )}
             </div>
@@ -300,7 +312,7 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
                 <Button asChild size="sm" className="flex-1 shadow-sm bg-primary hover:bg-primary/90 h-9">
                   <Link href={`/notes/new?bookId=${userBook.id}`}>
                     <PenTool className="mr-2 h-4 w-4" />
-                    기록 작성
+                    <WriteNoteLabel />
                   </Link>
                 </Button>
                 <BookStatusSelector
@@ -332,7 +344,7 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
                 <Button asChild size="default" className="flex-1 shadow-sm bg-primary hover:bg-primary/90 h-10">
                   <Link href={`/notes/new?bookId=${userBook.id}`}>
                     <PenTool className="mr-2 h-4 w-4" />
-                    기록 작성
+                    <WriteNoteLabel />
                   </Link>
                 </Button>
                 <BookStatusSelector
@@ -358,7 +370,7 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
                 <div className="flex items-center gap-3">
                   <Quote className="w-4 h-4 text-primary/40 shrink-0" />
                   <p className="text-sm text-muted-foreground flex-1">
-                    &apos;{book.title}&apos;을 읽기로 한 계기를 기록해보세요
+                    <ReadingReasonPrompt bookTitle={book.title} />
                   </p>
                   <BookInfoEditor
                     userBookId={userBook.id}
@@ -379,7 +391,7 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <PenTool className="w-4 h-4 text-primary" />
-            <h2 className="text-lg sm:text-xl font-semibold tracking-tight">독서 기록</h2>
+            <h2 className="text-lg sm:text-xl font-semibold tracking-tight"><ReadingRecordsHeading /></h2>
             {notes.length > 0 && (
               <span className="text-xs bg-muted px-1.5 py-0.5 rounded-full text-muted-foreground">
                 {notes.length}
@@ -396,7 +408,7 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
         <summary className="flex items-center justify-between cursor-pointer p-3 sm:p-4 hover:bg-muted/30 transition-colors list-none [&::-webkit-details-marker]:hidden">
           <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
             <Info className="w-4 h-4" />
-            도서 정보
+            <BookInfoSectionLabel />
             {book.publisher && (
               <span className="text-xs opacity-60">· {book.publisher}</span>
             )}
@@ -417,7 +429,7 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
                   <Link2 className="w-3.5 h-3.5" />
-                  연결된 책
+                  <RelatedBooksLabel />
                   {relatedBooks.length > 0 && (
                     <span className="text-xs bg-muted px-1.5 py-0.5 rounded-full">
                       {relatedBooks.length}

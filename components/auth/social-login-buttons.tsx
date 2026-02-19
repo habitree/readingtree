@@ -35,12 +35,12 @@ export function SocialLoginButtons() {
       }
 
       // 실제 에러인 경우에만 처리
-      console.error("카카오톡 로그인 오류:", error);
+      console.error("Kakao login error:", error);
       setIsLoading(null);
       toast.error(
         error instanceof Error
           ? error.message
-          : "카카오톡 로그인에 실패했습니다. 다시 시도해주세요."
+          : t("socialLogin.kakaoFailed")
       );
     }
   };
@@ -63,12 +63,12 @@ export function SocialLoginButtons() {
       }
 
       // 실제 에러인 경우에만 처리
-      console.error("구글 로그인 오류:", error);
+      console.error("Google login error:", error);
       setIsLoading(null);
       toast.error(
         error instanceof Error
           ? error.message
-          : "구글 로그인에 실패했습니다. 다시 시도해주세요."
+          : t("socialLogin.googleFailed")
       );
     }
   };

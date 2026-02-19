@@ -162,7 +162,7 @@ export function NoteCard({ note, showDeleteButton = false, onDelete }: NoteCardP
                 ) : note.book?.cover_image_url ? (
                   <Image
                     src={getImageUrl(note.book.cover_image_url)}
-                    alt={note.book.title || "Book cover"}
+                    alt={note.book.title || "책 표지"}
                     fill
                     className="object-cover"
                     sizes="(max-width: 640px) 80px, 96px"
