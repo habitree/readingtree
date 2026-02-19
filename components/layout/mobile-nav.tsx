@@ -148,7 +148,7 @@ export function MobileNav() {
                   aria-label={label}
                 >
                   <div className="flex flex-col items-center gap-0.5 sm:gap-1 touch-manipulation">
-                    <div className="flex items-center justify-center w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-primary text-primary-foreground shadow-md -mt-3">
+                    <div className="flex items-center justify-center w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-primary text-primary-foreground shadow-md -mt-3 focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2">
                       <Icon className="h-5 w-5 sm:h-6 sm:w-6" aria-hidden="true" />
                     </div>
                     <span className="text-[10px] sm:text-xs leading-tight font-medium text-primary">

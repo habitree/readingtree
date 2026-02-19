@@ -71,6 +71,7 @@ function ExpandableText({
                     variant="ghost"
                     size="sm"
                     onClick={() => setIsExpanded(!isExpanded)}
+                    aria-expanded={isExpanded}
                     className="h-6 px-2 mt-1 text-[10px] font-bold text-forest-600 hover:bg-forest-50 gap-1 transition-all"
                 >
                     {isExpanded ? (

@@ -112,12 +112,13 @@ export async function signInWithEmail(email: string, password: string) {
   const supabase = await createServerSupabaseClient();
 
   // 유효성 검사
-  if (!email || !email.includes("@")) {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!email || !emailRegex.test(email)) {
     throw new Error("유효한 이메일 주소를 입력해주세요.");
   }
 
-  if (!password || password.length < 1) {
-    throw new Error("비밀번호를 입력해주세요.");
+  if (!password || password.length < 6) {
+    throw new Error("비밀번호는 최소 6자 이상이어야 합니다.");
   }
 
   // 이메일/비밀번호로 로그인
@@ -258,7 +259,8 @@ export async function signUpWithEmail(email: string, password: string, name: str
   const supabase = await createServerSupabaseClient();
 
   // 유효성 검사
-  if (!email || !email.includes("@")) {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!email || !emailRegex.test(email)) {
     throw new Error("유효한 이메일 주소를 입력해주세요.");
   }
 

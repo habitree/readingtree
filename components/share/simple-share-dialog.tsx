@@ -97,12 +97,16 @@ export function SimpleShareDialog({ note }: SimpleShareDialogProps) {
   const [includeBranding, setIncludeBranding] = useState(true);
   const cardRef = useRef<HTMLDivElement>(null);
   const captureRef = useRef<HTMLDivElement>(null); // 캡처 전용 Hidden 요소 Ref
+  const isCapturingRef = useRef(false); // race condition 방지용
+  const isMountedRef = useRef(true); // unmount 후 setState 방지용
 
   // 사용자 정보 + 연결된 책 정보 가져오기
   useEffect(() => {
+    isMountedRef.current = true;
+
     if (open && note.user_id) {
       getUserById(note.user_id).then((userData) => {
-        if (userData) {
+        if (userData && isMountedRef.current) {
           setUser(userData);
         }
       });
@@ -111,6 +115,7 @@ export function SimpleShareDialog({ note }: SimpleShareDialogProps) {
     // 연결된 책 정보 로드
     if (open && note.related_user_book_ids && note.related_user_book_ids.length > 0) {
       getUserBooks().then((allBooks) => {
+        if (!isMountedRef.current) return;
         const ids = note.related_user_book_ids!;
         const matched = (allBooks || [])
           .filter((ub: any) => ids.includes(ub.id))
@@ -127,6 +132,10 @@ export function SimpleShareDialog({ note }: SimpleShareDialogProps) {
     } else if (open) {
       setRelatedBooks([]);
     }
+
+    return () => {
+      isMountedRef.current = false;
+    };
   }, [open, note.user_id, note.related_user_book_ids]);
 
   // 이미지가 있는지 확인 (필사/사진 타입)
@@ -168,10 +177,11 @@ export function SimpleShareDialog({ note }: SimpleShareDialogProps) {
 
   // 2. 카드 복사 (디자인 캡처) - 완전 재구현
   const handleCopyCardImage = async (e?: React.MouseEvent) => {
-    // 중복 클릭 방지
-    if (isCapturing) {
+    // 중복 클릭 방지 (ref 기반으로 race condition 제거)
+    if (isCapturingRef.current) {
       return;
     }
+    isCapturingRef.current = true;
 
     // PC 버전 레이아웃 (captureRef) 사용
     const targetElement = captureRef.current;
@@ -343,6 +353,7 @@ export function SimpleShareDialog({ note }: SimpleShareDialogProps) {
       console.error("Card copy error:", error);
       toast.error(t("share.cardCopy") + " " + t("common.retry"));
     } finally {
+      isCapturingRef.current = false;
       setIsCapturing(false);
     }
   };
