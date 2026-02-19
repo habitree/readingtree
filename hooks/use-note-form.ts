@@ -317,7 +317,7 @@ export function useNoteForm(options: UseNoteFormOptions): UseNoteFormReturn {
 
           // transcription 타입이면 OCR 처리 요청
           if (noteType === "transcription" && result.noteId) {
-            await requestOCR(result.noteId, imageUrl, t);
+            await requestOCR(result.noteId, imageUrl, t as (key: string, params?: Record<string, string>) => string);
           }
         }
       } else {
@@ -373,7 +373,7 @@ export function useNoteForm(options: UseNoteFormOptions): UseNoteFormReturn {
 /**
  * OCR 처리 요청 헬퍼 함수
  */
-async function requestOCR(noteId: string, imageUrl: string, t: (key: string) => string): Promise<void> {
+async function requestOCR(noteId: string, imageUrl: string, t: (key: string, params?: Record<string, string>) => string): Promise<void> {
   try {
     console.log("[useNoteForm] OCR 요청 시작:", { noteId, imageUrl: imageUrl.substring(0, 50) + "..." });
 
