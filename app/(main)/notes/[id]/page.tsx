@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { Metadata, Viewport } from "next";
 import { getNoteDetail } from "@/app/actions/notes";
-import { getCurrentUser } from "@/app/actions/auth";
+import { getCachedCurrentUser } from "@/lib/cached";
 import { getSampleNoteDetail, getSampleUserBooksByIds } from "@/app/actions/sample";
 import { NoteDetailNavBar } from "@/components/notes/note-detail-nav-bar";
 import { isValidUUID } from "@/lib/utils/validation";
@@ -36,7 +36,7 @@ export default async function NoteDetailPage({ params }: NoteDetailPageProps) {
   }
 
   // 2. 사용자 확인 (게스트 여부)
-  const currentUser = await getCurrentUser();
+  const currentUser = await getCachedCurrentUser();
   const isGuest = !currentUser;
 
   let note;
@@ -158,7 +158,7 @@ export async function generateMetadata({
   }
 
   try {
-    const user = await getCurrentUser();
+    const user = await getCachedCurrentUser();
     let note;
     if (!user) {
       note = await getSampleNoteDetail(noteId);

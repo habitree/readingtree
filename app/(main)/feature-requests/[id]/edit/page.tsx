@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { FeatureRequestForm } from "@/components/feature-requests";
 import { getFeatureRequestById } from "@/app/actions/feature-requests";
-import { getCurrentUser } from "@/app/actions/auth";
+import { getCachedCurrentUser } from "@/lib/cached";
 import { ArrowLeft } from "lucide-react";
 
 interface PageProps {
@@ -21,7 +21,7 @@ export default async function EditFeatureRequestPage({ params }: PageProps) {
   const { id } = await params;
   const [request, currentUser] = await Promise.all([
     getFeatureRequestById(id),
-    getCurrentUser(),
+    getCachedCurrentUser(),
   ]);
 
   // 로그인 확인

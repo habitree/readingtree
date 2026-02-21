@@ -16,7 +16,7 @@ import {
   getComments,
   deleteFeatureRequest,
 } from "@/app/actions/feature-requests";
-import { getCurrentUser } from "@/app/actions/auth";
+import { getCachedCurrentUser } from "@/lib/cached";
 import { ArrowLeft, Pin, Pencil, Trash2, MessageCircle } from "lucide-react";
 import { formatDistanceToNow, format } from "date-fns";
 import { ko } from "date-fns/locale";
@@ -49,7 +49,7 @@ export default async function FeatureRequestDetailPage({ params }: PageProps) {
   const [request, comments, currentUser] = await Promise.all([
     getFeatureRequestById(id),
     getComments(id),
-    getCurrentUser(),
+    getCachedCurrentUser(),
   ]);
 
   if (!request) {

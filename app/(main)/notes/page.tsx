@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import { Metadata } from "next";
 import { NoteList } from "@/components/notes/note-list";
 import { getNotes } from "@/app/actions/notes";
-import { getCurrentUser } from "@/app/actions/auth";
+import { getCachedCurrentUser } from "@/lib/cached";
 import type { NoteType } from "@/types/note";
 import { typography } from "@/lib/design-tokens";
 
@@ -25,7 +25,7 @@ export default async function NotesPage({ searchParams }: NotesPageProps) {
   const type = searchParams.type as NoteType | undefined;
   const bookId = searchParams.bookId;
   // 서버에서 사용자 정보 조회 (쿠키 기반 세션)
-  const user = await getCurrentUser();
+  const user = await getCachedCurrentUser();
   const isGuest = !user;
 
   return (

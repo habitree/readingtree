@@ -6,6 +6,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/contexts/auth-context";
 import { ThemeProvider } from "@/components/theme/theme-provider";
 import { LanguageInitializer } from "@/components/language-initializer";
+import { getCachedCurrentUser, getCachedCurrentUserProfile } from "@/lib/cached";
 
 const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
 
@@ -111,14 +112,16 @@ export const viewport: Viewport = {
  * - light, dark, forest, forest-dark 4가지 테마
  * - 기본값: dark (밤 테마)
  */
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // 성능 최적화: 미들웨어에서 이미 세션을 갱신하므로 중복 조회 제거
-  // 각 페이지에서 필요할 때만 getCurrentUser() 호출
-  const initialUser = null;
+  // 서버에서 현재 사용자 정보를 가져와 AuthProvider에 전달
+  // → 클라이언트 hydration 시 즉시 인증 상태 반영 (로그인 버튼 깜빡임 방지)
+  const initialUser = await getCachedCurrentUser();
+  // user가 있을 때만 프로필 조회 (게스트는 skip)
+  const initialProfile = initialUser ? await getCachedCurrentUserProfile() : null;
 
   return (
     <html lang="ko" suppressHydrationWarning>
@@ -146,7 +149,7 @@ export default function RootLayout({
           enableSystem={false}
           disableTransitionOnChange
         >
-          <AuthProvider initialUser={initialUser}>
+          <AuthProvider initialUser={initialUser} initialProfile={initialProfile}>
             <LanguageInitializer />
             {children}
             <Toaster />

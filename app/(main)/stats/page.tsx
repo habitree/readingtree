@@ -1,8 +1,7 @@
 import { Suspense } from "react";
 import { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { getCachedCurrentUser } from "@/lib/cached";
-import { getCurrentUser } from "@/app/actions/auth";
+import { getCachedCurrentUser, getCachedPersonaDashboardData } from "@/lib/cached";
 import {
   getReadingStats,
   getMonthlyStats,
@@ -11,7 +10,6 @@ import {
 } from "@/app/actions/stats";
 import { getUserTagsWithCount } from "@/app/actions/notes";
 import { getDailyRecordsForCalendar } from "@/app/actions/stats";
-import { getPersonaDashboardData } from "@/app/actions/persona";
 import { getSamplePersonaDashboardData } from "@/app/actions/sample";
 import { PageHeader } from "@/components/layout/page-header";
 import { StatsContent } from "@/components/stats/stats-content";
@@ -24,7 +22,7 @@ export const metadata: Metadata = {
 };
 
 export default async function StatsPage() {
-  const user = await getCurrentUser();
+  const user = await getCachedCurrentUser();
   if (!user) redirect("/login");
 
   // 12주(약 3개월)치 캘린더 데이터
@@ -41,7 +39,7 @@ export default async function StatsPage() {
       getGoalProgress(user),
       getUserTagsWithCount(user),
       getDailyRecordsForCalendar(user, startDate, endDate),
-      getPersonaDashboardData(),
+      getCachedPersonaDashboardData(),
     ]);
 
   return (

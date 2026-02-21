@@ -2,7 +2,7 @@ import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getBookshelfWithStats } from "@/app/actions/bookshelves";
 import { getSampleBookshelfWithStats } from "@/app/actions/sample";
-import { getCurrentUser } from "@/app/actions/auth";
+import { getCachedCurrentUser } from "@/lib/cached";
 import { BookshelfPageContent } from "@/components/books/bookshelf-page-content";
 import { MobileBookshelfSelector } from "@/components/books/mobile-bookshelf-selector";
 import { Button } from "@/components/ui/button";
@@ -67,7 +67,7 @@ export default async function BookshelfDetailPage({
   params,
   searchParams,
 }: BookshelfDetailPageProps) {
-  const user = await getCurrentUser();
+  const user = await getCachedCurrentUser();
   const isGuest = !user;
 
   const resolvedParams = await params;

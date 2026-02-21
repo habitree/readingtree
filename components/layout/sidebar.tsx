@@ -20,8 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/use-auth";
 import { BookshelfTree } from "./bookshelf-tree";
-import { getCurrentUserProfile } from "@/app/actions/profile";
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useTranslation } from "@/lib/i18n";
 
 /**
@@ -42,7 +41,7 @@ interface SidebarItem {
  */
 export function Sidebar() {
   const pathname = usePathname();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { t } = useTranslation();
 
   const primaryItems: SidebarItem[] = [
@@ -59,32 +58,9 @@ export function Sidebar() {
     { icon: Bot, label: t("nav.aiChat"), href: "/chat" },
     { icon: Trees, label: t("nav.admin"), href: "/admin", adminOnly: true },
   ];
-  const [userProfile, setUserProfile] = useState<{ is_admin?: boolean } | null>(null);
   const [isMoreOpen, setIsMoreOpen] = useState(false);
-  const profileFetchedRef = useRef(false);
 
-  const fetchProfile = useCallback(async () => {
-    if (!user) {
-      setUserProfile(null);
-      profileFetchedRef.current = false;
-      return;
-    }
-    if (profileFetchedRef.current) return;
-    try {
-      const profile = await getCurrentUserProfile();
-      setUserProfile(profile || null);
-      profileFetchedRef.current = true;
-    } catch (error) {
-      console.error("프로필 조회 오류:", error);
-      setUserProfile(null);
-    }
-  }, [user]);
-
-  useEffect(() => {
-    fetchProfile();
-  }, [fetchProfile]);
-
-  const isAdmin = userProfile?.is_admin === true;
+  const isAdmin = profile?.is_admin === true;
 
   // 더보기 영역의 항목이 활성화되어 있으면 자동으로 열기
   useEffect(() => {

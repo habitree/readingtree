@@ -3,7 +3,7 @@ import { getBookshelves, getMainBookshelf } from "@/app/actions/bookshelves";
 import { getSampleBookshelves } from "@/app/actions/sample";
 import { BookshelfList } from "@/components/bookshelves/bookshelf-list";
 import { CreateBookshelfDialog } from "@/components/bookshelves/create-bookshelf-dialog";
-import { getCurrentUser } from "@/app/actions/auth";
+import { getCachedCurrentUser } from "@/lib/cached";
 import type { BookshelfWithStats } from "@/types/bookshelf";
 import { PageHeader } from "@/components/layout/page-header";
 
@@ -16,7 +16,7 @@ export const metadata: Metadata = {
  * 서재 목록 페이지
  */
 export default async function BookshelvesPage() {
-  const user = await getCurrentUser();
+  const user = await getCachedCurrentUser();
   const isGuest = !user;
 
   try {

@@ -1,4 +1,5 @@
 import { cache } from "react";
+import { getCachedCurrentUser } from "@/lib/cached";
 import { notFound } from "next/navigation";
 import { Metadata, Viewport } from "next";
 import Image from "next/image";
@@ -8,7 +9,6 @@ import { Badge } from "@/components/ui/badge";
 import { BookStatusBadge } from "@/components/books/book-status-badge";
 import { getBookDetail } from "@/app/actions/books";
 import { getSampleBookDetail, getSampleNotes } from "@/app/actions/sample";
-import { getCurrentUser } from "@/app/actions/auth";
 import { getImageUrl } from "@/lib/utils/image";
 import { BookStatusSelector } from "@/components/books/book-status-selector";
 import { BookDeleteButton } from "@/components/books/book-delete-button";
@@ -39,8 +39,7 @@ import {
   RelatedBooksLabel,
 } from "@/components/books/book-detail-strings";
 
-// React cache()로 동일 요청 내 중복 호출 방지
-const getCachedCurrentUser = cache(() => getCurrentUser());
+// React cache()로 동일 요청 내 중복 호출 방지 (책 상세 전용)
 const getCachedBookDetail = cache(
   (bookId: string, userId: string) => getBookDetail(bookId)
 );

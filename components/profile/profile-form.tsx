@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { Loader2, Upload, User } from "lucide-react";
 import { getImageUrl, smartCompressImage, formatFileSize } from "@/lib/utils/image";
 import { useTranslation } from "@/lib/i18n";
+import { useAuth } from "@/hooks/use-auth";
 import type { User as UserType } from "@/types/user";
 
 interface ProfileFormProps {
@@ -24,6 +25,7 @@ interface ProfileFormProps {
  */
 export function ProfileForm({ user }: ProfileFormProps) {
   const { t } = useTranslation();
+  const { refreshProfile } = useAuth();
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -51,6 +53,7 @@ export function ProfileForm({ user }: ProfileFormProps) {
       });
 
       toast.success(t("profile.saved"));
+      await refreshProfile();
       router.refresh();
     } catch (error) {
       console.error("프로필 수정 오류:", error);
@@ -100,6 +103,7 @@ export function ProfileForm({ user }: ProfileFormProps) {
       const result = await updateProfileImage(fileToUpload);
       setAvatarUrl(result.avatarUrl);
       toast.success(t("profile.saved"));
+      await refreshProfile();
       router.refresh();
     } catch (error) {
       console.error("이미지 업로드 오류:", error);

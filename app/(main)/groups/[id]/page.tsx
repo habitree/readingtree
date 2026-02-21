@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { GroupDashboard } from "@/components/groups/group-dashboard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getGroupDetail } from "@/app/actions/groups";
-import { getCurrentUser } from "@/app/actions/auth";
+import { getCachedCurrentUser } from "@/lib/cached";
 import { isValidUUID } from "@/lib/utils/validation";
 import { sanitizeErrorForLogging } from "@/lib/utils/validation";
 
@@ -36,7 +36,7 @@ export default async function GroupDetailPage({ params }: GroupDetailPageProps) 
   try {
     [groupData, currentUser] = await Promise.all([
       getGroupDetail(resolvedParams.id),
-      getCurrentUser(),
+      getCachedCurrentUser(),
     ]);
   } catch (error) {
     const safeError = sanitizeErrorForLogging(error);

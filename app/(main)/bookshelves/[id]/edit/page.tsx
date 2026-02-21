@@ -1,7 +1,7 @@
 import { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { getBookshelfWithStats, updateBookshelf, deleteBookshelf } from "@/app/actions/bookshelves";
-import { getCurrentUser } from "@/app/actions/auth";
+import { getCachedCurrentUser } from "@/lib/cached";
 import { BookshelfEditForm } from "@/components/bookshelves/bookshelf-edit-form";
 import { BookshelfEditTitle } from "@/components/bookshelves/bookshelf-page-strings";
 
@@ -35,7 +35,7 @@ export async function generateMetadata({
 export default async function BookshelfEditPage({
   params,
 }: BookshelfEditPageProps) {
-  const user = await getCurrentUser();
+  const user = await getCachedCurrentUser();
 
   if (!user) {
     redirect("/login");

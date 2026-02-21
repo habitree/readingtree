@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getGroupDetail, getGroupBookNotes } from "@/app/actions/groups";
 import { getBook } from "@/app/actions/books";
-import { getCurrentUser } from "@/app/actions/auth";
+import { getCachedCurrentUser } from "@/lib/cached";
 import { isValidUUID, sanitizeErrorForLogging } from "@/lib/utils/validation";
 import { GroupBookNotesPage } from "@/components/groups/group-book-notes-page";
 
@@ -40,7 +40,7 @@ export default async function GroupBookDetailPage({
     [groupData, book, currentUser] = await Promise.all([
       getGroupDetail(resolvedParams.id),
       getBook(resolvedParams.bookId),
-      getCurrentUser(),
+      getCachedCurrentUser(),
     ]);
   } catch (error) {
     const safeError = sanitizeErrorForLogging(error);

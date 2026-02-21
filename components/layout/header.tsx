@@ -21,9 +21,7 @@ import Link from "next/link";
 import { useTheme } from "next-themes";
 import { useAuth } from "@/hooks/use-auth";
 import { signOut } from "@/app/actions/auth";
-import { getCurrentUserProfile } from "@/app/actions/profile";
-import { useEffect, useState, useRef, useCallback } from "react";
-import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import { useTranslation } from "@/lib/i18n";
 import { LanguageToggle } from "@/components/ui/language-toggle";
 
@@ -32,66 +30,22 @@ import { LanguageToggle } from "@/components/ui/language-toggle";
  * 로고, 테마 토글, 알림, 프로필 메뉴 포함
  */
 export function Header() {
-  const { user, isLoading } = useAuth();
+  const { user, profile, isLoading } = useAuth();
   const { t } = useTranslation();
-  const pathname = usePathname();
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
-  const [userProfile, setUserProfile] = useState<{
-    id: string;
-    name: string;
-    avatar_url: string | null;
-    is_admin?: boolean;
-  } | null>(null);
-
-  const prevPathnameRef = useRef(pathname);
-  const profileFetchedRef = useRef(false);
 
   // 테마 관련 hydration mismatch 방지
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // 프로필 정보 fetch 함수 (useCallback으로 메모이제이션)
-  const fetchProfile = useCallback(async () => {
-    if (!user) {
-      setUserProfile(null);
-      return;
-    }
-    try {
-      const profile = await getCurrentUserProfile();
-      setUserProfile(profile || null);
-    } catch (error) {
-      console.error("프로필 조회 오류:", error);
-      setUserProfile(null);
-    }
-  }, [user]);
-
-  // 사용자 프로필 정보 가져오기 (user 변경 시에만)
-  useEffect(() => {
-    if (!profileFetchedRef.current || !user) {
-      fetchProfile();
-      profileFetchedRef.current = true;
-    }
-  }, [user, fetchProfile]);
-
-  // 프로필 페이지에서 돌아올 때만 프로필 정보 갱신
-  useEffect(() => {
-    const wasOnProfile = prevPathnameRef.current === "/profile";
-    const isLeavingProfile = wasOnProfile && pathname !== "/profile";
-    prevPathnameRef.current = pathname;
-
-    if (isLeavingProfile && user) {
-      fetchProfile();
-    }
-  }, [pathname, user, fetchProfile]);
-
   const userName =
-    userProfile?.name ||
+    profile?.name ||
     user?.user_metadata?.name ||
     user?.email?.split("@")[0] ||
     t("common.user");
-  const userAvatar = userProfile?.avatar_url || null;
+  const userAvatar = profile?.avatar_url || null;
   const isDarkMode = theme === "dark";
 
   const handleThemeToggle = () => {
@@ -139,7 +93,9 @@ export function Header() {
             </Tooltip>
 
             {/* 프로필 메뉴 */}
-            {user ? (
+            {isLoading ? (
+              <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-muted animate-pulse" />
+            ) : user ? (
               <DropdownMenu>
                 <Tooltip>
                   <TooltipTrigger asChild>

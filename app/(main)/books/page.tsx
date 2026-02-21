@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Plus } from "lucide-react";
 import Link from "next/link";
 import { getUserBooksWithNotes } from "@/app/actions/books";
-import { getCurrentUser } from "@/app/actions/auth";
+import { getCachedCurrentUser } from "@/lib/cached";
 import { BookshelfPageContent } from "@/components/books/bookshelf-page-content";
 import { MobileBookshelfSelector } from "@/components/books/mobile-bookshelf-selector";
 import { BooksPageTitle, BooksManageLabel, BooksAddLabel, BooksPageErrorHeading, BooksUnknownError } from "@/components/books/books-page-header";
@@ -47,7 +47,7 @@ export default async function BooksPage({ searchParams }: BooksPageProps) {
     const query = resolvedSearchParams.q || undefined;
 
     // 서버에서 사용자 정보 조회 (쿠키 기반 세션)
-    const user = await getCurrentUser();
+    const user = await getCachedCurrentUser();
     const isGuest = !user;
 
 

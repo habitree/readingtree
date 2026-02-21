@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { getProfile } from "@/app/actions/profile";
 import { ProfileForm } from "./profile-form";
 import { DeleteAccountSection } from "./delete-account-section";
@@ -9,56 +8,20 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { formatSmartDate } from "@/lib/utils/date";
 import { useTranslation } from "@/lib/i18n";
-import { User, AlertCircle, RefreshCw, Loader2 } from "lucide-react";
+import { User, AlertCircle, RefreshCw } from "lucide-react";
+
+interface ProfileContentProps {
+  initialProfile: Awaited<ReturnType<typeof getProfile>> | null;
+}
 
 /**
  * 프로필 컨텐츠 컴포넌트
- * 프로필 정보 표시 및 수정 폼
+ * 서버에서 전달받은 initialProfile을 즉시 표시 (클라이언트 fetch 제거)
  */
-export function ProfileContent() {
+export function ProfileContent({ initialProfile }: ProfileContentProps) {
   const { t } = useTranslation();
-  const [user, setUser] = useState<Awaited<ReturnType<typeof getProfile>> | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    getProfile()
-      .then((data) => {
-        if (!cancelled) {
-          setUser(data);
-          setError(null);
-        }
-      })
-      .catch((err) => {
-        if (!cancelled) {
-          console.error("프로필 조회 오류:", err);
-          setError(err instanceof Error ? err.message : "프로필을 불러올 수 없습니다");
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => { cancelled = true; };
-  }, []);
-
-  if (loading) {
-    return (
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (error || !user) {
-    const errorMessage = error || t("profile.loadError");
-    const isLoginRequired = errorMessage.includes("로그인이 필요합니다") || errorMessage.includes("Login required");
-
+  if (!initialProfile) {
     return (
       <Card>
         <CardContent className="pt-6">
@@ -67,24 +30,15 @@ export function ProfileContent() {
             <div className="text-center space-y-2">
               <p className="text-lg font-semibold">{t("profile.loadError")}</p>
               <p className="text-sm text-muted-foreground">
-                {isLoginRequired
-                  ? t("profile.loginRequiredMessage")
-                  : t("profile.temporaryError")}
+                {t("profile.temporaryError")}
               </p>
             </div>
-            <div className="flex gap-2">
-              <Button asChild variant="outline">
-                <a href="/profile">
-                  <RefreshCw className="mr-2 h-4 w-4" />
-                  {t("profile.retryButton")}
-                </a>
-              </Button>
-              {isLoginRequired && (
-                <Button asChild>
-                  <a href="/login">{t("profile.goToLogin")}</a>
-                </Button>
-              )}
-            </div>
+            <Button asChild variant="outline">
+              <a href="/profile">
+                <RefreshCw className="mr-2 h-4 w-4" />
+                {t("profile.retryButton")}
+              </a>
+            </Button>
           </div>
         </CardContent>
       </Card>
@@ -102,20 +56,20 @@ export function ProfileContent() {
           <div className="flex items-center gap-4">
             <Avatar className="h-16 w-16">
               <AvatarImage
-                src={user.avatar_url || undefined}
-                alt={user.name}
+                src={initialProfile.avatar_url || undefined}
+                alt={initialProfile.name}
               />
               <AvatarFallback>
-                {user.name[0]?.toUpperCase() || <User className="h-8 w-8" />}
+                {initialProfile.name[0]?.toUpperCase() || <User className="h-8 w-8" />}
               </AvatarFallback>
             </Avatar>
             <div className="space-y-1">
-              <p className="text-lg font-semibold">{user.name}</p>
-              {user.email && (
-                <p className="text-sm text-muted-foreground">{user.email}</p>
+              <p className="text-lg font-semibold">{initialProfile.name}</p>
+              {initialProfile.email && (
+                <p className="text-sm text-muted-foreground">{initialProfile.email}</p>
               )}
               <p className="text-sm text-muted-foreground">
-                {t("profile.joinDateLabel", { date: formatSmartDate(user.created_at) })}
+                {t("profile.joinDateLabel", { date: formatSmartDate(initialProfile.created_at) })}
               </p>
             </div>
           </div>
@@ -123,7 +77,7 @@ export function ProfileContent() {
       </Card>
 
       {/* 프로필 수정 폼 */}
-      <ProfileForm user={user} />
+      <ProfileForm user={initialProfile} />
 
       {/* 계정 삭제 섹션 */}
       <DeleteAccountSection />

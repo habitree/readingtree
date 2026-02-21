@@ -28,7 +28,6 @@ import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils/cn";
 import { useAuth } from "@/hooks/use-auth";
 import { useTranslation } from "@/lib/i18n";
-import { getCurrentUserProfile } from "@/app/actions/profile";
 
 interface MobileMenuSheetProps {
   open: boolean;
@@ -43,35 +42,16 @@ interface MobileMenuSheetProps {
 export function MobileMenuSheet({ open, onOpenChange }: MobileMenuSheetProps) {
   const { t } = useTranslation();
   const pathname = usePathname();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
-  const [userProfile, setUserProfile] = useState<{ is_admin?: boolean } | null>(
-    null
-  );
 
   // 테마 관련 hydration mismatch 방지
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // 사용자 프로필 정보 가져오기
-  useEffect(() => {
-    if (user) {
-      getCurrentUserProfile()
-        .then((profile) => {
-          setUserProfile(profile || null);
-        })
-        .catch((error) => {
-          console.error("프로필 조회 오류:", error);
-          setUserProfile(null);
-        });
-    } else {
-      setUserProfile(null);
-    }
-  }, [user]);
-
-  const isAdmin = userProfile?.is_admin === true;
+  const isAdmin = profile?.is_admin === true;
   const isDarkMode = theme === "dark";
 
   const handleThemeToggle = () => {

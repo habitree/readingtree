@@ -55,3 +55,21 @@ components/ → hooks/ → app/actions/ → Supabase
 - 상세 규칙: `doc/claude/RULES.md`
 - 데이터 모델: `doc/database/DATA_MODEL.md`
 - 타입 정의: `types/database.ts`
+
+---
+
+## Completion Summary (Task Report)
+
+Every task completion MUST end with the following summary format:
+
+---
+### Task Summary
+
+**Request:** (what the user asked for - 1~2 sentences)
+
+**Completed:**
+- (list of completed items as bullet points)
+
+**Changed Files:**
+- (list of modified/created/deleted files, if any)
+---

@@ -13,6 +13,14 @@ export interface User {
   updated_at: string;
 }
 
+/** 레이아웃 컴포넌트용 경량 프로필 (Header, Sidebar에서 사용) */
+export interface UserProfileSummary {
+  id: string;
+  name: string;
+  avatar_url: string | null;
+  is_admin?: boolean;
+}
+
 export interface UserProfile extends User {
   // 프로필 페이지에서 사용할 확장 정보
   total_books?: number;

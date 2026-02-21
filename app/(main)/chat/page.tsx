@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
-import { getCurrentUser } from "@/app/actions/auth";
+import { getCachedCurrentUser, getCachedCurrentUserProfile } from "@/lib/cached";
 import { ChatInterface } from "@/components/chat/chat-interface";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { GuestChatPlaceholder } from "./guest-chat-placeholder";
 
 export const metadata: Metadata = {
@@ -13,7 +12,7 @@ export const metadata: Metadata = {
  * AI 독서 도우미 채팅 페이지
  */
 export default async function ChatPage() {
-  const user = await getCurrentUser();
+  const user = await getCachedCurrentUser();
 
   // 게스트 사용자: 빈 채팅 UI 표시, 입력 시 로그인 유도
   if (!user) {
@@ -24,13 +23,8 @@ export default async function ChatPage() {
     );
   }
 
-  // 사용자 프로필 조회
-  const supabase = await createServerSupabaseClient();
-  const { data: profile } = await supabase
-    .from("users")
-    .select("name, avatar_url")
-    .eq("id", user.id)
-    .single();
+  // 캐시된 프로필 조회 (root layout과 공유)
+  const profile = await getCachedCurrentUserProfile();
 
   return (
     <div className="-m-4 sm:-m-6">

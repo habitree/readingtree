@@ -3,7 +3,7 @@ import { Metadata } from "next";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { FeatureRequestForm } from "@/components/feature-requests";
-import { getCurrentUser } from "@/app/actions/auth";
+import { getCachedCurrentUser } from "@/lib/cached";
 import { ArrowLeft } from "lucide-react";
 
 export const metadata: Metadata = {
@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 };
 
 export default async function NewFeatureRequestPage() {
-  const currentUser = await getCurrentUser();
+  const currentUser = await getCachedCurrentUser();
 
   // 로그인 확인
   if (!currentUser) {

@@ -1,5 +1,6 @@
 import { cache } from "react";
 import { getCurrentUser } from "@/app/actions/auth";
+import { getCurrentUserProfile } from "@/app/actions/profile";
 import { getPersonaDashboardData } from "@/app/actions/persona";
 import { getReadingStats, getStreakAndTodayData } from "@/app/actions/stats";
 import { getPointsDashboardData } from "@/app/actions/points";
@@ -12,6 +13,12 @@ import { checkHasFirstNote } from "@/app/actions/onboarding";
  * 각각 getCurrentUser()를 호출하므로 cache()로 1회로 통합
  */
 export const getCachedCurrentUser = cache(getCurrentUser);
+
+/**
+ * getCurrentUserProfile를 cache()로 래핑
+ * 동일 요청 내에서 여러 서버 컴포넌트가 프로필을 필요로 할 때 중복 쿼리 방지
+ */
+export const getCachedCurrentUserProfile = cache(getCurrentUserProfile);
 
 /**
  * getPersonaDashboardData를 cache()로 래핑
