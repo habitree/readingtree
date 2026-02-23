@@ -52,6 +52,14 @@ const NOTE_TYPE_LABELS: Record<string, string> = {
   progress: "독서 진행",
 };
 
+const NOTE_TYPE_COLORS: Record<string, string> = {
+  quote: "bg-amber-400 dark:bg-amber-500",
+  memo: "bg-stone-400 dark:bg-stone-500",
+  transcription: "bg-emerald-400 dark:bg-emerald-500",
+  progress: "bg-sky-400 dark:bg-sky-500",
+  photo: "bg-rose-400 dark:bg-rose-500",
+};
+
 interface SharedReportViewProps {
   report: SavedReport;
   publicNotes?: PublicNoteSummary[];
@@ -126,6 +134,24 @@ export function SharedReportView({
                 </span>
               )}
             </div>
+
+            {/* 독서 진행률 바 (완독 시 100%, 미완독 시 미표시) */}
+            {report.completedAt && (
+              <div className="space-y-1 pt-0.5">
+                <div className="flex justify-between items-center text-xs text-muted-foreground">
+                  <span className="flex items-center gap-1">
+                    <BookOpen className="h-3 w-3" />
+                    독서 진행률
+                  </span>
+                  <span className="text-amber-600 dark:text-amber-400 font-semibold">
+                    완독 (100%)
+                  </span>
+                </div>
+                <div className="w-full bg-stone-200/60 dark:bg-stone-700/50 rounded-full h-2 overflow-hidden">
+                  <div className="h-2 w-full rounded-full bg-gradient-to-r from-amber-400 to-orange-400 dark:from-amber-500 dark:to-orange-500" />
+                </div>
+              </div>
+            )}
           </div>
 
           {/* QW-1: 카드 다운로드 버튼 */}
@@ -203,39 +229,80 @@ export function SharedReportView({
       </div>
 
       {/* 공개된 기록 목록 */}
-      {publicNotes && publicNotes.length > 0 && (
-        <div className="space-y-3 pt-2">
-          <div className="space-y-0.5">
-            <h3 className="text-sm font-semibold flex items-center gap-2">
-              <StickyNote className="h-4 w-4 text-muted-foreground" />
-              {t("books.sharedNotesTitle")}
-              <span className="text-muted-foreground font-normal text-xs">({publicNotes.length})</span>
-            </h3>
-            <p className="text-xs text-muted-foreground pl-6">{t("books.sharedNotesDesc")}</p>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-            {publicNotes.map((note) => (
-              <Link
-                key={note.id}
-                href={`/share/notes/${note.id}`}
-                className="flex items-center gap-3 p-3 rounded-lg border bg-card/50 hover:bg-accent/50 transition-colors group"
-              >
-                <span className="text-xs px-2 py-0.5 rounded-full bg-muted font-medium shrink-0">
-                  {NOTE_TYPE_LABELS[note.type] || note.type}
+      {publicNotes && publicNotes.length > 0 && (() => {
+        const noteTypeStats = publicNotes.reduce<Record<string, number>>(
+          (acc, note) => { acc[note.type] = (acc[note.type] || 0) + 1; return acc; },
+          {}
+        );
+        const totalNotes = publicNotes.length;
+        return (
+          <div className="space-y-4 pt-2">
+            {/* 기록 통계 시각화 */}
+            <div className="rounded-xl border bg-card/50 dark:bg-card/30 p-4 space-y-3">
+              <h3 className="text-sm font-semibold flex items-center gap-2">
+                <StickyNote className="h-4 w-4 text-muted-foreground" />
+                {t("books.sharedNotesTitle")}
+                <span className="text-xs font-normal text-muted-foreground">
+                  — {totalNotes}개
                 </span>
-                <span className="text-sm truncate flex-1 group-hover:text-primary transition-colors">
-                  {note.title || `${NOTE_TYPE_LABELS[note.type] || note.type} 기록`}
-                </span>
-                {note.pageNumber && (
-                  <span className="text-xs text-muted-foreground shrink-0">
-                    p.{note.pageNumber}
+              </h3>
+              <p className="text-xs text-muted-foreground">{t("books.sharedNotesDesc")}</p>
+              <div className="space-y-2">
+                {Object.entries(noteTypeStats)
+                  .sort(([, a], [, b]) => b - a)
+                  .map(([type, count]) => {
+                    const pct = Math.round((count / totalNotes) * 100);
+                    const barColor = NOTE_TYPE_COLORS[type] || "bg-stone-400";
+                    return (
+                      <div key={type} className="flex items-center gap-2.5">
+                        <span className="text-xs text-muted-foreground w-14 shrink-0 tabular-nums">
+                          {NOTE_TYPE_LABELS[type] || type}
+                        </span>
+                        <div className="flex-1 bg-muted/40 dark:bg-muted/20 rounded-full h-2 overflow-hidden">
+                          <div
+                            className={cn("h-2 rounded-full transition-all", barColor)}
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                        <span className="text-xs text-muted-foreground w-12 text-right shrink-0 tabular-nums">
+                          {count}개 <span className="text-muted-foreground/60">({pct}%)</span>
+                        </span>
+                      </div>
+                    );
+                  })}
+              </div>
+            </div>
+
+            {/* 기록 목록 */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+              {publicNotes.map((note) => (
+                <Link
+                  key={note.id}
+                  href={`/share/notes/${note.id}`}
+                  className="flex items-center gap-3 p-3 rounded-lg border bg-card/50 hover:bg-accent/50 transition-colors group"
+                >
+                  <span
+                    className={cn(
+                      "text-xs px-2 py-0.5 rounded-full font-medium shrink-0 text-white/90",
+                      NOTE_TYPE_COLORS[note.type] || "bg-stone-400"
+                    )}
+                  >
+                    {NOTE_TYPE_LABELS[note.type] || note.type}
                   </span>
-                )}
-              </Link>
-            ))}
+                  <span className="text-sm truncate flex-1 group-hover:text-primary transition-colors">
+                    {note.title || `${NOTE_TYPE_LABELS[note.type] || note.type} 기록`}
+                  </span>
+                  {note.pageNumber && (
+                    <span className="text-xs text-muted-foreground shrink-0">
+                      p.{note.pageNumber}
+                    </span>
+                  )}
+                </Link>
+              ))}
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }
