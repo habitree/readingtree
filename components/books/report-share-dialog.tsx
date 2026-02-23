@@ -14,11 +14,11 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import {
   Save,
-  Share2,
   Check,
   Link as LinkIcon,
   Globe,
   Loader2,
+  StickyNote,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "@/lib/i18n";
@@ -34,6 +34,7 @@ interface ReportShareDialogProps {
   reportMarkdown: string;
   bookInfo: BookInfoForReport;
   noteCount: number;
+  noteIds: string[];
 }
 
 export function ReportShareDialog({
@@ -41,12 +42,14 @@ export function ReportShareDialog({
   reportMarkdown,
   bookInfo,
   noteCount,
+  noteIds,
 }: ReportShareDialogProps) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [shareId, setShareId] = useState<string | null>(null);
   const [isPublic, setIsPublic] = useState(false);
+  const [includeNotes, setIncludeNotes] = useState(true);
   const [linkCopied, setLinkCopied] = useState(false);
   const [kakaoShared, setKakaoShared] = useState(false);
 
@@ -58,7 +61,8 @@ export function ReportShareDialog({
         userBookId,
         reportMarkdown,
         bookInfo,
-        noteCount
+        noteCount,
+        noteIds
       );
       if (result.success && result.shareId) {
         setShareId(result.shareId);
@@ -76,7 +80,7 @@ export function ReportShareDialog({
   // 공개 토글
   const handleTogglePublic = async (checked: boolean) => {
     if (!shareId) return;
-    const result = await toggleReportPublic(shareId, checked);
+    const result = await toggleReportPublic(shareId, checked, includeNotes);
     if (result.success) {
       setIsPublic(checked);
       toast.success(
@@ -84,6 +88,19 @@ export function ReportShareDialog({
       );
     } else {
       toast.error(result.error || t("books.aiReportError"));
+    }
+  };
+
+  // 기록 함께 공유 토글
+  const handleToggleIncludeNotes = async (checked: boolean) => {
+    setIncludeNotes(checked);
+    // 이미 공개 상태면 즉시 반영
+    if (shareId && isPublic) {
+      const result = await toggleReportPublic(shareId, true, checked);
+      if (!result.success) {
+        toast.error(result.error || t("books.aiReportError"));
+        setIncludeNotes(!checked); // rollback
+      }
     }
   };
 
@@ -162,7 +179,7 @@ export function ReportShareDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 pt-2">
+        <div className="space-y-3 pt-2">
           {/* 저장 상태 */}
           {!shareId ? (
             <Button
@@ -200,6 +217,27 @@ export function ReportShareDialog({
                   id="report-public-toggle"
                   checked={isPublic}
                   onCheckedChange={handleTogglePublic}
+                />
+              </div>
+
+              {/* 기록도 함께 공유 토글 */}
+              <div className="flex items-center justify-between p-3 rounded-lg border bg-amber-50/50 dark:bg-amber-950/20 border-amber-200/60 dark:border-amber-800/40">
+                <Label
+                  htmlFor="include-notes-toggle"
+                  className="text-sm font-medium flex items-center gap-2 cursor-pointer"
+                >
+                  <StickyNote className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                  <span>
+                    {t("books.aiReportIncludeNotes")}
+                    <span className="text-xs text-muted-foreground ml-1">
+                      ({noteIds.length}개)
+                    </span>
+                  </span>
+                </Label>
+                <Switch
+                  id="include-notes-toggle"
+                  checked={includeNotes}
+                  onCheckedChange={handleToggleIncludeNotes}
                 />
               </div>
 

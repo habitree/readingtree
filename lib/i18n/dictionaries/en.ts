@@ -516,6 +516,7 @@ export const en: Dictionary = {
     aiReportMakePublicFirst: "Please enable the public link first",
     aiReportCopyLink: "Copy link",
     aiReportLinkCopied: "Link copied",
+    aiReportIncludeNotes: "Share notes too",
     // book-search errors
     searchRetryDesc: "Please try again in a moment.",
     networkErrorMsg: "Please check your internet connection and try again.",

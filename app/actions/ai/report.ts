@@ -11,7 +11,7 @@ import { getReportSettingsForGeneration } from "./report-settings";
 import { generateReportPrompt } from "@/lib/ai/prompts/report-prompts";
 import { generateText } from "@/lib/ai/providers";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
-import type { ReadingReportResult, SavedReport, BookInfoForReport } from "@/types/ai";
+import type { ReadingReportResult, SavedReport, BookInfoForReport, PublicNoteSummary } from "@/types/ai";
 
 const MIN_NOTES_FOR_REPORT = 3;
 
@@ -95,7 +95,8 @@ export async function saveReadingReport(
   userBookId: string,
   reportMarkdown: string,
   bookInfo: BookInfoForReport,
-  noteCount: number
+  noteCount: number,
+  noteIds: string[]
 ): Promise<{ success: boolean; shareId?: string; error?: string }> {
   try {
     const user = await getCurrentUser();
@@ -120,6 +121,7 @@ export async function saveReadingReport(
         .update({
           report_markdown: reportMarkdown,
           note_count: noteCount,
+          note_ids: noteIds,
           book_title: bookInfo.title,
           book_author: bookInfo.author,
           cover_image_url: bookInfo.coverImageUrl,
@@ -139,6 +141,7 @@ export async function saveReadingReport(
           user_book_id: userBookId,
           report_markdown: reportMarkdown,
           note_count: noteCount,
+          note_ids: noteIds,
           book_title: bookInfo.title,
           book_author: bookInfo.author,
           cover_image_url: bookInfo.coverImageUrl,
@@ -162,10 +165,12 @@ export async function saveReadingReport(
 
 /**
  * 리포트 공개/비공개 토글
+ * includeNotes=true이면 관련 노트도 함께 공개/비공개 처리
  */
 export async function toggleReportPublic(
   shareId: string,
-  isPublic: boolean
+  isPublic: boolean,
+  includeNotes: boolean = true
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const user = await getCurrentUser();
@@ -174,13 +179,31 @@ export async function toggleReportPublic(
     }
 
     const supabase = await createServerSupabaseClient();
-    const { error } = await supabase
-      .from("ai_generated_reports")
-      .update({ is_public: isPublic })
-      .eq("share_id", shareId)
-      .eq("user_id", user.id);
 
-    if (error) throw error;
+    // 리포트 업데이트 (include_notes 상태도 저장)
+    const { data: report, error: reportError } = await supabase
+      .from("ai_generated_reports")
+      .update({ is_public: isPublic, include_notes: includeNotes })
+      .eq("share_id", shareId)
+      .eq("user_id", user.id)
+      .select("note_ids")
+      .single();
+
+    if (reportError) throw reportError;
+
+    // 기록도 함께 공개/비공개 처리
+    if (includeNotes && report?.note_ids && report.note_ids.length > 0) {
+      const { error: notesError } = await supabase
+        .from("notes")
+        .update({ is_public: isPublic })
+        .in("id", report.note_ids)
+        .eq("user_id", user.id);
+
+      if (notesError) {
+        console.error("노트 공개 설정 실패 (리포트는 성공):", notesError);
+      }
+    }
+
     return { success: true };
   } catch (error) {
     console.error("리포트 공개 설정 실패:", error);
@@ -221,9 +244,44 @@ export async function getPublicReport(
       startedAt: data.started_at,
       completedAt: data.completed_at,
       createdAt: data.created_at,
+      noteIds: data.note_ids || [],
+      includeNotes: data.include_notes ?? true,
     };
   } catch (error) {
     console.error("공유 리포트 조회 실패:", error);
     return null;
+  }
+}
+
+/**
+ * 공유 리포트에 연결된 공개 노트 목록 조회
+ */
+export async function getPublicReportNotes(
+  noteIds: string[]
+): Promise<PublicNoteSummary[]> {
+  if (!noteIds || noteIds.length === 0) return [];
+
+  try {
+    const supabase = await createServerSupabaseClient();
+    const { data, error } = await supabase
+      .from("notes")
+      .select("id, type, title, page_number, content, created_at")
+      .in("id", noteIds)
+      .eq("is_public", true)
+      .order("created_at", { ascending: true });
+
+    if (error || !data) return [];
+
+    return data.map((note) => ({
+      id: note.id,
+      type: note.type,
+      title: note.title,
+      pageNumber: note.page_number,
+      content: note.content,
+      createdAt: note.created_at,
+    }));
+  } catch (error) {
+    console.error("공개 노트 조회 실패:", error);
+    return [];
   }
 }

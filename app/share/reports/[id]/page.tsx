@@ -2,7 +2,7 @@ import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getAppUrl } from "@/lib/utils/url";
 import { isValidUUID } from "@/lib/utils/validation";
-import { getPublicReport } from "@/app/actions/ai/report";
+import { getPublicReport, getPublicReportNotes } from "@/app/actions/ai/report";
 import { ShareCtaSection } from "@/components/share/share-cta-section";
 import { SharedReportView } from "./shared-report-view";
 import Link from "next/link";
@@ -77,6 +77,12 @@ export default async function ShareReportPage({
     notFound();
   }
 
+  // 기록도 함께 공유된 경우 공개 노트 조회
+  const publicNotes =
+    report.includeNotes && report.noteIds.length > 0
+      ? await getPublicReportNotes(report.noteIds)
+      : [];
+
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 selection:bg-primary/20">
       <div className="container mx-auto px-4 py-12 md:py-20 max-w-4xl">
@@ -100,7 +106,7 @@ export default async function ShareReportPage({
         </div>
 
         {/* 리포트 렌더링 */}
-        <SharedReportView report={report} />
+        <SharedReportView report={report} publicNotes={publicNotes} />
 
         {/* CTA */}
         <ShareCtaSection variant="note" />

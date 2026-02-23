@@ -277,6 +277,7 @@ export function ReadingReportContent({
                   reportMarkdown={result.report}
                   bookInfo={bookInfo}
                   noteCount={result.noteCount ?? noteCount}
+                  noteIds={noteSummaries?.map((n) => n.id) || []}
                 />
               )}
             </div>

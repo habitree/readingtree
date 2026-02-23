@@ -515,6 +515,7 @@ export const ko = {
     aiReportMakePublicFirst: "먼저 공개 링크를 활성화해주세요",
     aiReportCopyLink: "링크 복사",
     aiReportLinkCopied: "링크가 복사되었습니다",
+    aiReportIncludeNotes: "기록도 함께 공유",
     // book-search errors
     searchRetryDesc: "잠시 후 다시 시도해주세요.",
     networkErrorMsg: "인터넷 연결을 확인하고 다시 시도해주세요.",

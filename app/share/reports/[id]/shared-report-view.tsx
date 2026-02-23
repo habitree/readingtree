@@ -21,7 +21,8 @@ import {
   EARTH_TONE_COLORS,
 } from "@/lib/utils/report-parser";
 import { cn } from "@/lib/utils";
-import type { SavedReport } from "@/types/ai/report";
+import Link from "next/link";
+import type { SavedReport, PublicNoteSummary } from "@/types/ai/report";
 
 const ICON_MAP: Record<string, ComponentType<{ className?: string }>> = {
   BookOpen,
@@ -33,11 +34,20 @@ const ICON_MAP: Record<string, ComponentType<{ className?: string }>> = {
   FileText,
 };
 
+const NOTE_TYPE_LABELS: Record<string, string> = {
+  quote: "인용구",
+  memo: "메모",
+  photo: "사진",
+  transcription: "필사",
+  progress: "독서 진행",
+};
+
 interface SharedReportViewProps {
   report: SavedReport;
+  publicNotes?: PublicNoteSummary[];
 }
 
-export function SharedReportView({ report }: SharedReportViewProps) {
+export function SharedReportView({ report, publicNotes }: SharedReportViewProps) {
   const sections = parseReportSections(report.reportMarkdown);
 
   return (
@@ -129,6 +139,37 @@ export function SharedReportView({ report }: SharedReportViewProps) {
           );
         })}
       </div>
+
+      {/* 공개된 기록 목록 */}
+      {publicNotes && publicNotes.length > 0 && (
+        <div className="space-y-3 pt-2">
+          <h3 className="text-sm font-semibold text-muted-foreground flex items-center gap-2">
+            <StickyNote className="h-4 w-4" />
+            사용된 기록 ({publicNotes.length}개)
+          </h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+            {publicNotes.map((note) => (
+              <Link
+                key={note.id}
+                href={`/share/notes/${note.id}`}
+                className="flex items-center gap-3 p-3 rounded-lg border bg-card/50 hover:bg-accent/50 transition-colors group"
+              >
+                <span className="text-xs px-2 py-0.5 rounded-full bg-muted font-medium shrink-0">
+                  {NOTE_TYPE_LABELS[note.type] || note.type}
+                </span>
+                <span className="text-sm truncate flex-1 group-hover:text-primary transition-colors">
+                  {note.title || `${NOTE_TYPE_LABELS[note.type] || note.type} 기록`}
+                </span>
+                {note.pageNumber && (
+                  <span className="text-xs text-muted-foreground shrink-0">
+                    p.{note.pageNumber}
+                  </span>
+                )}
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -62,6 +62,18 @@ export interface SavedReport {
   startedAt: string | null;
   completedAt: string | null;
   createdAt: string;
+  noteIds: string[];
+  includeNotes: boolean;
+}
+
+/** 공유 페이지용 공개 노트 요약 */
+export interface PublicNoteSummary {
+  id: string;
+  type: string;
+  title: string | null;
+  pageNumber: string | null;
+  content: string | null;
+  createdAt: string;
 }
 
 /** 마크다운 파싱된 리포트 섹션 */
