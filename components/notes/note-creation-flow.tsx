@@ -129,9 +129,14 @@ export function NoteCreationFlow() {
             <div className="h-9 w-9 rounded-lg bg-slate-100 dark:bg-slate-800/50 flex items-center justify-center shrink-0 group-hover:bg-slate-200 dark:group-hover:bg-slate-700/50 transition-colors">
               <FileText className="h-4 w-4 text-slate-500 dark:text-slate-400" />
             </div>
-            <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
-              {t("notes.writeWithoutBook")}
-            </span>
+            <div className="text-left">
+              <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
+                {t("notes.writeWithoutBook")}
+              </span>
+              <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
+                {t("notes.writeWithoutBookShortDesc")}
+              </p>
+            </div>
           </div>
         </button>
       </div>

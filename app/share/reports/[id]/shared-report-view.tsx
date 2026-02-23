@@ -13,6 +13,7 @@ import {
   Calendar,
   Clock,
   Eye,
+  Info,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { Card } from "@/components/ui/card";
@@ -26,6 +27,7 @@ import Link from "next/link";
 import { incrementReportViewCount } from "@/app/actions/ai/report";
 import { ReportReactions } from "@/components/share/report-reactions";
 import { HighlightCardDownload } from "@/components/share/highlight-card-download";
+import { useTranslation } from "@/lib/i18n";
 import type {
   SavedReport,
   PublicNoteSummary,
@@ -61,6 +63,7 @@ export function SharedReportView({
   publicNotes,
   reactionCounts,
 }: SharedReportViewProps) {
+  const { t } = useTranslation();
   const sections = parseReportSections(report.reportMarkdown);
   const hasIncrementedRef = useRef(false);
 
@@ -143,6 +146,12 @@ export function SharedReportView({
         </div>
       </div>
 
+      {/* 리포트 설명 */}
+      <div className="flex items-center gap-2 px-1 text-xs text-muted-foreground">
+        <Info className="h-3.5 w-3.5 shrink-0" />
+        <span>{t("books.aiReportDesc")}</span>
+      </div>
+
       {/* Bento Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
         {sections.map((section) => {
@@ -196,10 +205,14 @@ export function SharedReportView({
       {/* 공개된 기록 목록 */}
       {publicNotes && publicNotes.length > 0 && (
         <div className="space-y-3 pt-2">
-          <h3 className="text-sm font-semibold text-muted-foreground flex items-center gap-2">
-            <StickyNote className="h-4 w-4" />
-            사용된 기록 ({publicNotes.length}개)
-          </h3>
+          <div className="space-y-0.5">
+            <h3 className="text-sm font-semibold flex items-center gap-2">
+              <StickyNote className="h-4 w-4 text-muted-foreground" />
+              {t("books.sharedNotesTitle")}
+              <span className="text-muted-foreground font-normal text-xs">({publicNotes.length})</span>
+            </h3>
+            <p className="text-xs text-muted-foreground pl-6">{t("books.sharedNotesDesc")}</p>
+          </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
             {publicNotes.map((note) => (
               <Link

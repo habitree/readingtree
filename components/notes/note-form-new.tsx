@@ -19,7 +19,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { Loader2, X, PenTool, Camera, Quote, MessageSquare, Sparkles, CheckCircle2, Info, ChevronDown, Settings2 } from "lucide-react";
+import { Loader2, X, PenTool, Camera, Quote, MessageSquare, Sparkles, CheckCircle2, Info, ChevronDown, Settings2, Lightbulb } from "lucide-react";
 import Image from "next/image";
 import { getImageUrl, isValidImageUrl } from "@/lib/utils/image";
 import { TagInput } from "./tag-input";
@@ -152,6 +152,19 @@ export function NoteFormNew({ bookId }: NoteFormNewProps) {
   return (
     <Form {...form}>
       <form onSubmit={handleFormSubmit} className="space-y-4">
+        {/* 책 없이 기록 - 안내 배너 */}
+        {!bookId && (
+          <div className="flex items-start gap-3 p-3 rounded-lg bg-violet-50/50 dark:bg-violet-950/20 border border-violet-100/60 dark:border-violet-900/30">
+            <div className="h-8 w-8 rounded-lg bg-violet-100 dark:bg-violet-900/50 flex items-center justify-center shrink-0 mt-0.5">
+              <Lightbulb className="h-4 w-4 text-violet-600 dark:text-violet-400" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-violet-800 dark:text-violet-300">{t("notes.freeNoteGuide")}</p>
+              <p className="text-xs text-violet-600/70 dark:text-violet-400/60 mt-0.5 leading-relaxed">{t("notes.freeNoteGuideDesc")}</p>
+            </div>
+          </div>
+        )}
+
         {/* 안내 메시지 */}
         <div className="flex items-center gap-2 p-2.5 rounded-lg bg-primary/5 border border-primary/10 text-sm text-muted-foreground">
           <Info className="w-4 h-4 text-primary shrink-0" />
@@ -356,7 +369,8 @@ export function NoteFormNew({ bookId }: NoteFormNewProps) {
         {/* 출처 입력 (책 없이 기록할 때) */}
         {!bookId && (
           <div className="p-3 bg-slate-50/50 dark:bg-slate-800/30 rounded-lg border border-slate-200 dark:border-slate-700">
-            <Label className="text-sm font-medium mb-2 block">{t("notes.sourceType")}</Label>
+            <Label className="text-sm font-medium mb-1 block">{t("notes.sourceType")}</Label>
+            <p className="text-xs text-muted-foreground mb-2">{t("notes.sourceHint")}</p>
             <SourceInput
               sourceType={sourceType}
               sourceLabel={sourceLabel}

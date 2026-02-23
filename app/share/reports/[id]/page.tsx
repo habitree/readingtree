@@ -103,9 +103,9 @@ export default async function ShareReportPage({
               메인으로
             </Link>
           </Button>
-          <div className="px-3 py-1 bg-white dark:bg-slate-900 rounded-full border border-slate-200 dark:border-slate-800 text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+          <div className="px-3 py-1 bg-white dark:bg-slate-900 rounded-full border border-slate-200 dark:border-slate-800 text-[10px] font-bold text-slate-400 tracking-widest flex items-center gap-2">
             <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-            AI Reading Report
+            AI 독서 리포트
           </div>
         </div>
 
