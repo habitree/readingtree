@@ -47,3 +47,47 @@ export interface ReportSettingsFormData {
   temperature: number;
   maxOutputTokens: number;
 }
+
+/** DB 저장된 리포트 */
+export interface SavedReport {
+  id: string;
+  shareId: string;
+  userBookId: string;
+  reportMarkdown: string;
+  noteCount: number;
+  isPublic: boolean;
+  bookTitle: string;
+  bookAuthor: string | null;
+  coverImageUrl: string | null;
+  startedAt: string | null;
+  completedAt: string | null;
+  createdAt: string;
+}
+
+/** 마크다운 파싱된 리포트 섹션 */
+export interface ReportSection {
+  id: string;
+  title: string;
+  content: string;
+  icon: string;
+  colorTheme: string;
+}
+
+/** 리포트에 사용된 노트 요약 */
+export interface NoteSummary {
+  id: string;
+  type: string;
+  title: string | null;
+  pageNumber: string | null;
+  createdAt: string;
+}
+
+/** 리포트용 책 정보 */
+export interface BookInfoForReport {
+  title: string;
+  author: string | null;
+  coverImageUrl: string | null;
+  startedAt: string | null;
+  completedAt: string | null;
+  status: string;
+}

@@ -10,7 +10,8 @@ import { getNotes } from "../notes";
 import { getReportSettingsForGeneration } from "./report-settings";
 import { generateReportPrompt } from "@/lib/ai/prompts/report-prompts";
 import { generateText } from "@/lib/ai/providers";
-import type { ReadingReportResult } from "@/types/ai";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
+import type { ReadingReportResult, SavedReport, BookInfoForReport } from "@/types/ai";
 
 const MIN_NOTES_FOR_REPORT = 3;
 
@@ -83,5 +84,146 @@ export async function generateReadingReport(
       success: false,
       error: error instanceof Error ? error.message : "리포트 생성 중 오류가 발생했습니다.",
     };
+  }
+}
+
+/**
+ * 리포트 저장 (upsert)
+ * 같은 user_book_id에 이미 저장된 리포트가 있으면 갱신, share_id는 유지
+ */
+export async function saveReadingReport(
+  userBookId: string,
+  reportMarkdown: string,
+  bookInfo: BookInfoForReport,
+  noteCount: number
+): Promise<{ success: boolean; shareId?: string; error?: string }> {
+  try {
+    const user = await getCurrentUser();
+    if (!user) {
+      return { success: false, error: "로그인이 필요합니다." };
+    }
+
+    const supabase = await createServerSupabaseClient();
+
+    // 기존 리포트 확인 (share_id 유지 위해)
+    const { data: existing } = await supabase
+      .from("ai_generated_reports")
+      .select("id, share_id")
+      .eq("user_id", user.id)
+      .eq("user_book_id", userBookId)
+      .single();
+
+    if (existing) {
+      // UPDATE: share_id 유지하면서 내용 갱신
+      const { error } = await supabase
+        .from("ai_generated_reports")
+        .update({
+          report_markdown: reportMarkdown,
+          note_count: noteCount,
+          book_title: bookInfo.title,
+          book_author: bookInfo.author,
+          cover_image_url: bookInfo.coverImageUrl,
+          started_at: bookInfo.startedAt,
+          completed_at: bookInfo.completedAt,
+        })
+        .eq("id", existing.id);
+
+      if (error) throw error;
+      return { success: true, shareId: existing.share_id };
+    } else {
+      // INSERT
+      const { data, error } = await supabase
+        .from("ai_generated_reports")
+        .insert({
+          user_id: user.id,
+          user_book_id: userBookId,
+          report_markdown: reportMarkdown,
+          note_count: noteCount,
+          book_title: bookInfo.title,
+          book_author: bookInfo.author,
+          cover_image_url: bookInfo.coverImageUrl,
+          started_at: bookInfo.startedAt,
+          completed_at: bookInfo.completedAt,
+        })
+        .select("share_id")
+        .single();
+
+      if (error) throw error;
+      return { success: true, shareId: data.share_id };
+    }
+  } catch (error) {
+    console.error("리포트 저장 실패:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "리포트 저장 중 오류가 발생했습니다.",
+    };
+  }
+}
+
+/**
+ * 리포트 공개/비공개 토글
+ */
+export async function toggleReportPublic(
+  shareId: string,
+  isPublic: boolean
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const user = await getCurrentUser();
+    if (!user) {
+      return { success: false, error: "로그인이 필요합니다." };
+    }
+
+    const supabase = await createServerSupabaseClient();
+    const { error } = await supabase
+      .from("ai_generated_reports")
+      .update({ is_public: isPublic })
+      .eq("share_id", shareId)
+      .eq("user_id", user.id);
+
+    if (error) throw error;
+    return { success: true };
+  } catch (error) {
+    console.error("리포트 공개 설정 실패:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "설정 변경 중 오류가 발생했습니다.",
+    };
+  }
+}
+
+/**
+ * 공유 리포트 조회 (공개된 리포트만)
+ */
+export async function getPublicReport(
+  shareId: string
+): Promise<SavedReport | null> {
+  try {
+    const supabase = await createServerSupabaseClient();
+    const { data, error } = await supabase
+      .from("ai_generated_reports")
+      .select("*")
+      .eq("share_id", shareId)
+      .eq("is_public", true)
+      .single();
+
+    if (error || !data) return null;
+
+    return {
+      id: data.id,
+      shareId: data.share_id,
+      userBookId: data.user_book_id,
+      reportMarkdown: data.report_markdown,
+      noteCount: data.note_count,
+      isPublic: data.is_public,
+      bookTitle: data.book_title,
+      bookAuthor: data.book_author,
+      coverImageUrl: data.cover_image_url,
+      startedAt: data.started_at,
+      completedAt: data.completed_at,
+      createdAt: data.created_at,
+    };
+  } catch (error) {
+    console.error("공유 리포트 조회 실패:", error);
+    return null;
   }
 }

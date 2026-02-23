@@ -4,6 +4,7 @@ import { getBookDetail } from "@/app/actions/books";
 import { getNotes } from "@/app/actions/notes";
 import { ReadingReportContent } from "@/components/books/reading-report-content";
 import type { Metadata } from "next";
+import type { BookInfoForReport, NoteSummary } from "@/types/ai/report";
 
 const MIN_NOTES = 3;
 
@@ -22,7 +23,7 @@ export default async function ReportPage({ params }: ReportPageProps) {
   }
 
   // 책 정보 조회
-  let bookDetail;
+  let bookDetail: Record<string, unknown>;
   try {
     bookDetail = await getBookDetail(userBookId, user);
   } catch {
@@ -31,17 +32,38 @@ export default async function ReportPage({ params }: ReportPageProps) {
 
   const book = bookDetail.books as Record<string, unknown>;
 
-  // 노트 수 조회
+  // 노트 조회
   const notes = await getNotes(userBookId, undefined, user, false);
   if (notes.length < MIN_NOTES) {
     redirect(`/books/${userBookId}`);
   }
 
+  // 리포트용 책 정보
+  const bookInfo: BookInfoForReport = {
+    title: (book.title as string) || "제목 없음",
+    author: (book.author as string | null) ?? null,
+    coverImageUrl: (book.cover_image_url as string | null) ?? null,
+    startedAt: (bookDetail.started_at as string | null) ?? null,
+    completedAt: (bookDetail.completed_at as string | null) ?? null,
+    status: (bookDetail.status as string) || "reading",
+  };
+
+  // 노트 간략 목록
+  const noteSummaries: NoteSummary[] = notes.map((note) => ({
+    id: note.id,
+    type: note.type,
+    title: note.title,
+    pageNumber: note.page_number,
+    createdAt: note.created_at,
+  }));
+
   return (
     <ReadingReportContent
       userBookId={userBookId}
-      bookTitle={book.title as string}
+      bookTitle={bookInfo.title}
       noteCount={notes.length}
+      bookInfo={bookInfo}
+      noteSummaries={noteSummaries}
     />
   );
 }
