@@ -135,22 +135,39 @@ export function SharedReportView({
               )}
             </div>
 
-            {/* 독서 진행률 바 (완독 시 100%, 미완독 시 미표시) */}
-            {report.completedAt && (
-              <div className="space-y-1 pt-0.5">
-                <div className="flex justify-between items-center text-xs text-muted-foreground">
-                  <span className="flex items-center gap-1">
-                    <BookOpen className="h-3 w-3" />
-                    독서 진행률
-                  </span>
-                  <span className="text-amber-600 dark:text-amber-400 font-semibold">
-                    완독 (100%)
-                  </span>
-                </div>
-                <div className="w-full bg-stone-200/60 dark:bg-stone-700/50 rounded-full h-2 overflow-hidden">
-                  <div className="h-2 w-full rounded-full bg-gradient-to-r from-amber-400 to-orange-400 dark:from-amber-500 dark:to-orange-500" />
-                </div>
-              </div>
+            {/* 독서 진행률 바 */}
+            {report.totalPages && report.totalPages > 0 && (
+              (() => {
+                const pct = report.completedAt
+                  ? 100
+                  : report.currentPage && report.currentPage > 0
+                  ? Math.min(100, Math.round((report.currentPage / report.totalPages) * 100))
+                  : 0;
+                return (
+                  <div className="space-y-1 pt-0.5">
+                    <div className="flex justify-between items-center text-xs text-muted-foreground">
+                      <span className="flex items-center gap-1">
+                        <BookOpen className="h-3 w-3" />
+                        독서 진행률
+                      </span>
+                      <span className="font-medium tabular-nums">
+                        {report.currentPage
+                          ? `${report.currentPage.toLocaleString()} / ${report.totalPages.toLocaleString()}쪽`
+                          : `총 ${report.totalPages.toLocaleString()}쪽`}
+                        <span className="ml-1 text-amber-600 dark:text-amber-400 font-semibold">
+                          ({pct}%)
+                        </span>
+                      </span>
+                    </div>
+                    <div className="w-full bg-stone-200/60 dark:bg-stone-700/50 rounded-full h-2 overflow-hidden">
+                      <div
+                        className="h-2 rounded-full bg-gradient-to-r from-amber-400 to-orange-400 dark:from-amber-500 dark:to-orange-500 transition-all"
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                  </div>
+                );
+              })()
             )}
           </div>
 

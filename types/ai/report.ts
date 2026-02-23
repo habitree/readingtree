@@ -65,6 +65,8 @@ export interface SavedReport {
   noteIds: string[];
   includeNotes: boolean;
   viewCount: number;
+  currentPage: number | null;
+  totalPages: number | null;
 }
 
 // ─── 이모지 반응 ────────────────────────────────────────────────────

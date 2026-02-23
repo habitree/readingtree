@@ -127,6 +127,8 @@ export async function saveReadingReport(
           cover_image_url: bookInfo.coverImageUrl,
           started_at: bookInfo.startedAt,
           completed_at: bookInfo.completedAt,
+          current_page: bookInfo.currentPage,
+          total_pages: bookInfo.totalPages,
         })
         .eq("id", existing.id);
 
@@ -147,6 +149,8 @@ export async function saveReadingReport(
           cover_image_url: bookInfo.coverImageUrl,
           started_at: bookInfo.startedAt,
           completed_at: bookInfo.completedAt,
+          current_page: bookInfo.currentPage,
+          total_pages: bookInfo.totalPages,
         })
         .select("share_id")
         .single();
@@ -247,6 +251,8 @@ export async function getPublicReport(
       noteIds: data.note_ids || [],
       includeNotes: data.include_notes ?? true,
       viewCount: data.view_count ?? 0,
+      currentPage: data.current_page ?? null,
+      totalPages: data.total_pages ?? null,
     };
   } catch (error) {
     console.error("공유 리포트 조회 실패:", error);
