@@ -64,7 +64,30 @@ export interface SavedReport {
   createdAt: string;
   noteIds: string[];
   includeNotes: boolean;
+  viewCount: number;
 }
+
+// ─── 이모지 반응 ────────────────────────────────────────────────────
+
+/** 리포트 반응 타입 */
+export type ReportReactionType = "impressive" | "want_to_read" | "insightful";
+
+/** 반응별 집계 */
+export interface ReportReactionCounts {
+  impressive: number;
+  want_to_read: number;
+  insightful: number;
+}
+
+/** 반응 메타 정보 */
+export const REACTION_META: Record<
+  ReportReactionType,
+  { emoji: string; label: string }
+> = {
+  impressive: { emoji: "👏", label: "멋지다" },
+  want_to_read: { emoji: "📚", label: "나도 읽어볼게" },
+  insightful: { emoji: "💡", label: "인사이트 얻었어" },
+};
 
 /** 공유 페이지용 공개 노트 요약 */
 export interface PublicNoteSummary {

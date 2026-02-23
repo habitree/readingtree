@@ -1,3 +1,5 @@
+import type { CustomApiService } from "@/types/custom-api-service";
+
 export interface ApiIntegrationInfoProps {
   apiInfo: {
     // 인증
@@ -179,6 +181,7 @@ export interface ApiIntegrationInfoProps {
     needingOcr: number;
     completionRate: number;
   };
+  customServices?: CustomApiService[];
 }
 
 export interface ServiceNodeConfig {
@@ -187,7 +190,7 @@ export interface ServiceNodeConfig {
   description: string;
   enabled: boolean;
   icon: string;
-  category: "auth" | "search" | "ocr" | "pageCount" | "deploy" | "ai";
+  category: "auth" | "search" | "ocr" | "pageCount" | "deploy" | "ai" | "custom";
   externalUrl?: string;
   scrollTarget?: string;
 }

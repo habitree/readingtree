@@ -246,6 +246,7 @@ export async function getPublicReport(
       createdAt: data.created_at,
       noteIds: data.note_ids || [],
       includeNotes: data.include_notes ?? true,
+      viewCount: data.view_count ?? 0,
     };
   } catch (error) {
     console.error("공유 리포트 조회 실패:", error);
@@ -283,5 +284,22 @@ export async function getPublicReportNotes(
   } catch (error) {
     console.error("공개 노트 조회 실패:", error);
     return [];
+  }
+}
+
+/**
+ * 공유 리포트 조회수 증가 (공개 리포트만)
+ * SECURITY DEFINER RPC 함수를 사용하여 비로그인 사용자도 호출 가능
+ */
+export async function incrementReportViewCount(
+  shareId: string
+): Promise<void> {
+  try {
+    const supabase = await createServerSupabaseClient();
+    await supabase.rpc("increment_report_view_count", {
+      p_share_id: shareId,
+    });
+  } catch {
+    // 조회수 증가 실패는 무시 (사용자 경험에 영향 없음)
   }
 }

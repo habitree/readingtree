@@ -1,6 +1,6 @@
 "use client";
 
-import { type ComponentType } from "react";
+import { type ComponentType, useEffect, useRef } from "react";
 import {
   BookOpen,
   Lightbulb,
@@ -12,6 +12,7 @@ import {
   StickyNote,
   Calendar,
   Clock,
+  Eye,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { Card } from "@/components/ui/card";
@@ -22,7 +23,14 @@ import {
 } from "@/lib/utils/report-parser";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
-import type { SavedReport, PublicNoteSummary } from "@/types/ai/report";
+import { incrementReportViewCount } from "@/app/actions/ai/report";
+import { ReportReactions } from "@/components/share/report-reactions";
+import { HighlightCardDownload } from "@/components/share/highlight-card-download";
+import type {
+  SavedReport,
+  PublicNoteSummary,
+  ReportReactionCounts,
+} from "@/types/ai/report";
 
 const ICON_MAP: Record<string, ComponentType<{ className?: string }>> = {
   BookOpen,
@@ -45,10 +53,24 @@ const NOTE_TYPE_LABELS: Record<string, string> = {
 interface SharedReportViewProps {
   report: SavedReport;
   publicNotes?: PublicNoteSummary[];
+  reactionCounts: ReportReactionCounts;
 }
 
-export function SharedReportView({ report, publicNotes }: SharedReportViewProps) {
+export function SharedReportView({
+  report,
+  publicNotes,
+  reactionCounts,
+}: SharedReportViewProps) {
   const sections = parseReportSections(report.reportMarkdown);
+  const hasIncrementedRef = useRef(false);
+
+  // QW-3: 조회수 증가 (마운트 시 1회만)
+  useEffect(() => {
+    if (!hasIncrementedRef.current) {
+      hasIncrementedRef.current = true;
+      incrementReportViewCount(report.shareId);
+    }
+  }, [report.shareId]);
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -93,8 +115,31 @@ export function SharedReportView({ report, publicNotes }: SharedReportViewProps)
                     : " 진행 중"}
                 </span>
               )}
+              {/* QW-3: 조회수 */}
+              {report.viewCount > 0 && (
+                <span className="flex items-center gap-1 bg-white/60 dark:bg-slate-800/60 px-2 py-0.5 rounded-full">
+                  <Eye className="h-3 w-3" />
+                  {report.viewCount.toLocaleString()}명이 읽었어요
+                </span>
+              )}
             </div>
           </div>
+
+          {/* QW-1: 카드 다운로드 버튼 */}
+          <div className="shrink-0 hidden sm:block">
+            <HighlightCardDownload
+              shareId={report.shareId}
+              bookTitle={report.bookTitle}
+            />
+          </div>
+        </div>
+
+        {/* QW-1: 모바일 카드 다운로드 (히어로 하단) */}
+        <div className="mt-3 sm:hidden">
+          <HighlightCardDownload
+            shareId={report.shareId}
+            bookTitle={report.bookTitle}
+          />
         </div>
       </div>
 
@@ -138,6 +183,14 @@ export function SharedReportView({ report, publicNotes }: SharedReportViewProps)
             </Card>
           );
         })}
+      </div>
+
+      {/* QW-4: 이모지 반응 */}
+      <div className="rounded-xl border bg-card/50 px-4">
+        <ReportReactions
+          reportId={report.id}
+          initialCounts={reactionCounts}
+        />
       </div>
 
       {/* 공개된 기록 목록 */}

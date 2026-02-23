@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { getAppUrl } from "@/lib/utils/url";
 import { isValidUUID } from "@/lib/utils/validation";
 import { getPublicReport, getPublicReportNotes } from "@/app/actions/ai/report";
+import { getReportReactionCounts } from "@/app/actions/ai/report-reactions";
 import { ShareCtaSection } from "@/components/share/share-cta-section";
 import { SharedReportView } from "./shared-report-view";
 import Link from "next/link";
@@ -83,6 +84,9 @@ export default async function ShareReportPage({
       ? await getPublicReportNotes(report.noteIds)
       : [];
 
+  // 이모지 반응 집계 (서버에서 초기값 로드)
+  const reactionCounts = await getReportReactionCounts(report.id);
+
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 selection:bg-primary/20">
       <div className="container mx-auto px-4 py-12 md:py-20 max-w-4xl">
@@ -106,7 +110,7 @@ export default async function ShareReportPage({
         </div>
 
         {/* 리포트 렌더링 */}
-        <SharedReportView report={report} publicNotes={publicNotes} />
+        <SharedReportView report={report} publicNotes={publicNotes} reactionCounts={reactionCounts} />
 
         {/* CTA */}
         <ShareCtaSection variant="note" />

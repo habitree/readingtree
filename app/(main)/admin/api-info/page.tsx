@@ -1,4 +1,4 @@
-import { getApiIntegrationInfo, getOcrMonthlyUsage, getOcrTotalStats, testOcrConnection, getTranscriptionStats } from "@/app/actions/admin";
+import { getApiIntegrationInfo, getOcrMonthlyUsage, getOcrTotalStats, testOcrConnection, getTranscriptionStats, getCustomApiServices } from "@/app/actions/admin";
 import { ApiInfoDashboard } from "@/components/admin/api-info/api-info-dashboard";
 import { Metadata } from "next";
 import { isAdmin } from "@/app/actions/auth";
@@ -19,12 +19,13 @@ export default async function ApiInfoPage() {
     }
 
     // API 연동 정보 및 OCR 사용량 조회
-    const [apiInfo, ocrMonthlyUsage, ocrTotalStats, ocrConnectionTest, transcriptionStats] = await Promise.all([
+    const [apiInfo, ocrMonthlyUsage, ocrTotalStats, ocrConnectionTest, transcriptionStats, customServices] = await Promise.all([
         getApiIntegrationInfo(),
         getOcrMonthlyUsage(),
         getOcrTotalStats(),
         testOcrConnection(),
         getTranscriptionStats(),
+        getCustomApiServices(),
     ]);
 
     return (
@@ -35,6 +36,7 @@ export default async function ApiInfoPage() {
                 ocrTotalStats={ocrTotalStats}
                 ocrConnectionTest={ocrConnectionTest}
                 transcriptionStats={transcriptionStats}
+                customServices={customServices}
             />
         </div>
     );

@@ -158,6 +158,32 @@ section { padding: var(--space-3xl) 0; }
 .hero-tagline .accent { color: var(--primary); }
 .hero-subtitle { font-size: 0.85rem; color: var(--text-muted); font-weight: 500; margin-bottom: var(--space-lg); }
 .hero-subtitle strong { color: var(--accent-gold-light); font-weight: 700; }
+.hero-team {
+  display: flex; align-items: flex-start; gap: 10px;
+  margin: 4px 0 14px; font-size: 0.72rem; color: var(--text-muted);
+  padding: 8px 10px;
+  border-radius: var(--radius-md);
+  background: hsla(130, 25%, 98%, 0.95);
+  border: 1px solid var(--border);
+}
+.hero-team-label {
+  font-weight: 800; font-size: 0.6rem; letter-spacing: 2px;
+  text-transform: uppercase; color: var(--primary); margin-top: 1px;
+}
+.hero-team-meta { display: flex; flex-direction: column; gap: 4px; }
+.hero-team-meta span { font-weight: 600; color: var(--text); font-size: 0.75rem; }
+.hero-team-social {
+  display: flex; flex-wrap: wrap; gap: 6px;
+}
+.hero-team-social a {
+  padding: 4px 10px; border-radius: var(--radius-pill);
+  border: 1px solid var(--border); font-size: 0.68rem; font-weight: 600;
+  color: var(--text-muted); background: hsla(130, 25%, 98%, 0.9);
+  transition: all 0.3s var(--ease-out);
+}
+.hero-team-social a:hover {
+  border-color: var(--primary); color: var(--primary); background: var(--primary-light);
+}
 .hero-buttons { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: var(--space-lg); }
 .hero-metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 .hero-metrics .card { padding: 12px var(--space-sm); }
@@ -411,12 +437,29 @@ section { padding: var(--space-3xl) 0; }
       <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 10v.2A3 3 0 0 1 8.9 16H5a3 3 0 0 1-1-5.8V10a3 3 0 0 1 6 0Z"/><path d="M7 16v6"/><path d="M13 19v3"/><path d="M12 19h8.3a1 1 0 0 0 .7-1.7L18 14h.3a1 1 0 0 0 .7-1.7L16 9h.2a1 1 0 0 0 .8-1.7L13 3l-1.4 1.5"/></svg>
       <span>ReadTree</span>
     </div>
-    <h1 class="hero-tagline">독서 기록의 단절,<br><span class="accent">AI로 연결합니다</span></h1>
+    <div class="hero-team">
+      <div class="hero-team-label">TEAM</div>
+      <div class="hero-team-meta">
+        <span>habitree · 1명 / 파트타임</span>
+        <div class="hero-team-social">
+          <a href="https://blog.naver.com/nevertheless-jos" target="_blank" rel="noopener">블로그</a>
+          <a href="https://www.threads.com/@donghyeog9015" target="_blank" rel="noopener">Threads</a>
+          <a href="https://www.instagram.com/habitree_ntl?igsh=MzJ3dHcwNmQ4Z250&amp;utm_source=qr" target="_blank" rel="noopener">Instagram</a>
+        </div>
+      </div>
+    </div>
+    <h1 class="hero-tagline">흩어진 독서 기록을<br><span class="accent">AI로 검색·정리·공유합니다</span></h1>
     <p class="hero-subtitle"><strong>1인 &times; Claude Code</strong> &middot; 2개월 MVP &middot; 라이브 서비스</p>
     <div class="hero-buttons">
       <a href="https://readingtree-tan.vercel.app" class="btn btn-primary" target="_blank" rel="noopener">Live 서비스 보기 &rarr;</a>
       <a href="https://github.com/habitree/readingtree" class="btn btn-outline" target="_blank" rel="noopener">Git Repo &rarr;</a>
       <a href="https://habitree.github.io/habitree_pr/#press-release" class="btn btn-outline" target="_blank" rel="noopener">Press Kit &rarr;</a>
+      <a href="https://www.youtube.com/watch?v=HphY6zuTqi8&amp;feature=youtu.be" class="btn btn-outline" target="_blank" rel="noopener">
+        <svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path fill="currentColor" d="M21.8 8s-.2-1.5-.8-2.1c-.8-.8-1.7-.8-2.1-.9C16.1 4.8 12 4.8 12 4.8h0s-4.1 0-6.9.2c-.4 0-1.3.1-2.1.9C2.4 6.5 2.2 8 2.2 8S2 9.7 2 11.3v1.4C2 14.3 2.2 16 2.2 16s.2 1.5.8 2.1c.8.8 1.8.8 2.3.9 1.7.2 6.7.2 6.7.2s4.1 0 6.9-.2c.4 0 1.3-.1 2.1-.9.6-.6.8-2.1.8-2.1s.2-1.7.2-3.3v-1.4C22 9.7 21.8 8 21.8 8zM10 14.8V8.8l5 3-5 3z"/>
+        </svg>
+        서비스 소개 영상
+      </a>
     </div>
     <div class="hero-metrics stagger">
       <div class="card metric"><span class="num">25</span><span class="label">DB Tables</span></div>
@@ -499,6 +542,7 @@ section { padding: var(--space-3xl) 0; }
   <div class="section-header">
     <div class="section-label">Product &amp; Traction</div>
     <h2>작동하는 제품, 검증된 실행력</h2>
+    <p class="subtitle">현재는 서비스 오픈 전 단계로, 아래 수치는 사용자 수나 매출이 아닌 제품·아키텍처 수준의 실행력 지표입니다.</p>
   </div>
   <div class="product-cards stagger">
     <div class="product-card"><div class="product-accent green"></div><div class="product-body"><div class="icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="1.5"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></div><h3>대시보드</h3><p>독서 현황&middot;습관&middot;캘린더 통합</p></div></div>

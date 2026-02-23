@@ -7,6 +7,7 @@ import { StatusOverviewBar } from "./status-overview-bar";
 import { BentoGrid } from "./bento-grid";
 import { RecommendationsAccordion } from "./recommendations-accordion";
 import { DocsLinksBar } from "./docs-links-bar";
+import { CustomServicesSection } from "./custom-services-section";
 import type { ApiIntegrationInfoProps, ServiceNodeConfig } from "./types";
 
 function buildServiceNodes(
@@ -106,9 +107,23 @@ export function ApiInfoDashboard({
   ocrTotalStats,
   ocrConnectionTest,
   transcriptionStats,
+  customServices,
 }: ApiIntegrationInfoProps) {
   const { t } = useTranslation();
-  const serviceNodes = buildServiceNodes(apiInfo, t);
+  const baseNodes = buildServiceNodes(apiInfo, t);
+
+  // 커스텀 서비스를 ServiceNodeConfig로 변환하여 병합
+  const customNodes: ServiceNodeConfig[] = (customServices ?? []).map((cs) => ({
+    id: `custom-${cs.id}`,
+    name: cs.name,
+    description: cs.description,
+    enabled: cs.is_active,
+    icon: cs.icon || "plug",
+    category: "custom" as const,
+    externalUrl: cs.external_doc_url || undefined,
+  }));
+
+  const serviceNodes = [...baseNodes, ...customNodes];
   const statusItems = serviceNodes.map((s) => ({
     name: s.name,
     enabled: s.enabled,
@@ -145,6 +160,9 @@ export function ApiInfoDashboard({
         ocrConnectionTest={ocrConnectionTest}
         transcriptionStats={transcriptionStats}
       />
+
+      {/* 커스텀 서비스 섹션 */}
+      <CustomServicesSection services={customServices ?? []} />
 
       {/* 권장 사항 */}
       <RecommendationsAccordion recommendations={apiInfo.recommendations} />

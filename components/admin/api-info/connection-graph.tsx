@@ -13,6 +13,7 @@ import {
   Users,
   ExternalLink,
   Bot,
+  Plug,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/lib/i18n";
@@ -32,6 +33,7 @@ const ICON_MAP: Record<string, React.ElementType> = {
   zap: Zap,
   cloud: Cloud,
   bot: Bot,
+  plug: Plug,
 };
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -41,6 +43,7 @@ const CATEGORY_COLORS: Record<string, string> = {
   pageCount: "from-amber-500/20 to-amber-500/5 border-amber-500/30",
   deploy: "from-sky-500/20 to-sky-500/5 border-sky-500/30",
   ai: "from-pink-500/20 to-pink-500/5 border-pink-500/30",
+  custom: "from-orange-500/20 to-orange-500/5 border-orange-500/30",
 };
 
 const CATEGORY_ICON_COLORS: Record<string, string> = {
@@ -50,6 +53,7 @@ const CATEGORY_ICON_COLORS: Record<string, string> = {
   pageCount: "text-amber-600 dark:text-amber-400",
   deploy: "text-sky-600 dark:text-sky-400",
   ai: "text-pink-600 dark:text-pink-400",
+  custom: "text-orange-600 dark:text-orange-400",
 };
 
 function ServiceNode({
@@ -127,6 +131,7 @@ export function ConnectionGraph({ services }: ConnectionGraphProps) {
   const pageCountServices = services.filter((s) => s.category === "pageCount");
   const aiServices = services.filter((s) => s.category === "ai");
   const deployServices = services.filter((s) => s.category === "deploy");
+  const customServices = services.filter((s) => s.category === "custom");
 
   return (
     <div className="relative rounded-2xl border bg-gradient-to-br from-slate-50/80 via-white/60 to-slate-100/80 dark:from-slate-900/80 dark:via-slate-800/60 dark:to-slate-900/80 backdrop-blur-sm p-6 overflow-hidden">
@@ -198,7 +203,7 @@ export function ConnectionGraph({ services }: ConnectionGraphProps) {
           </div>
         </div>
 
-        {/* Desktop: 하단 서비스 (페이지수 + 배포) */}
+        {/* Desktop: 하단 서비스 (페이지수 + 배포 + 커스텀) */}
         <div className="hidden md:block mt-4">
           <div className="h-px w-full bg-gradient-to-r from-transparent via-forest-400/30 to-transparent mb-4" />
           <div className="grid grid-cols-2 gap-4">
@@ -225,6 +230,22 @@ export function ConnectionGraph({ services }: ConnectionGraphProps) {
               </div>
             </div>
           </div>
+          {/* 커스텀 서비스 */}
+          {customServices.length > 0 && (
+            <>
+              <div className="h-px w-full bg-gradient-to-r from-transparent via-forest-400/30 to-transparent my-4" />
+              <div className="space-y-3">
+                <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider px-1">
+                  {t("admin.apiInfo.categoryCustom")}
+                </div>
+                <div className="grid grid-cols-3 lg:grid-cols-4 gap-2">
+                  {customServices.map((s, i) => (
+                    <ServiceNode key={s.id} service={s} index={i + 9} />
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
         </div>
 
         {/* Mobile: 세로 스택 */}
@@ -261,6 +282,7 @@ export function ConnectionGraph({ services }: ConnectionGraphProps) {
             { label: t("admin.apiInfo.categoryAi"), items: aiServices },
             { label: t("admin.apiInfo.categoryPageCount"), items: pageCountServices },
             { label: t("admin.apiInfo.categoryDeploy"), items: deployServices },
+            { label: t("admin.apiInfo.categoryCustom"), items: customServices },
           ]
             .filter((g) => g.items.length > 0)
             .map((group) => (

@@ -16,6 +16,7 @@ import {
   BookOpen,
   Zap,
   Bot,
+  Plug,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/lib/i18n";
@@ -29,6 +30,7 @@ const ICON_MAP: Record<string, React.ElementType> = {
   bookOpen: BookOpen,
   zap: Zap,
   bot: Bot,
+  plug: Plug,
 };
 
 const ACCENT_GRADIENTS: Record<string, string> = {
@@ -38,6 +40,7 @@ const ACCENT_GRADIENTS: Record<string, string> = {
   pageCount: "from-amber-400 to-amber-600",
   deploy: "from-sky-400 to-sky-600",
   ai: "from-pink-400 to-pink-600",
+  custom: "from-orange-400 to-orange-600",
 };
 
 interface ServiceCardProps {

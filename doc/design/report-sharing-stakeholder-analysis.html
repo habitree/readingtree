@@ -1,0 +1,1299 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>리포트 공유 기능 — 이해관계자 관점 분석</title>
+  <style>
+    :root {
+      --green-900: #1a2e1a;
+      --green-800: #1f3d1f;
+      --green-700: #2d5a27;
+      --green-600: #3d7a34;
+      --green-500: #4e9a42;
+      --green-400: #6dbf5e;
+      --green-300: #96d48a;
+      --green-100: #e8f5e4;
+      --green-50:  #f4faf2;
+      --amber-500: #f59e0b;
+      --amber-100: #fef3c7;
+      --blue-500:  #3b82f6;
+      --blue-100:  #dbeafe;
+      --purple-500:#8b5cf6;
+      --purple-100:#ede9fe;
+      --red-500:   #ef4444;
+      --red-100:   #fee2e2;
+      --gray-900:  #111827;
+      --gray-800:  #1f2937;
+      --gray-700:  #374151;
+      --gray-600:  #4b5563;
+      --gray-400:  #9ca3af;
+      --gray-200:  #e5e7eb;
+      --gray-100:  #f3f4f6;
+      --gray-50:   #f9fafb;
+      --white:     #ffffff;
+      --radius:    12px;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,.08);
+      --shadow-md: 0 4px 16px rgba(0,0,0,.10);
+      --shadow-lg: 0 8px 32px rgba(0,0,0,.12);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--gray-50);
+      color: var(--gray-800);
+      line-height: 1.7;
+      font-size: 15px;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      background: var(--green-900);
+      border-bottom: 2px solid var(--green-700);
+      padding: 0 32px;
+      display: flex; align-items: center; gap: 8px;
+      height: 56px;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    nav::-webkit-scrollbar { display: none; }
+    nav .logo {
+      font-weight: 800; font-size: 16px; color: var(--green-300);
+      white-space: nowrap; margin-right: 16px;
+    }
+    nav a {
+      color: var(--gray-400); text-decoration: none;
+      font-size: 13px; font-weight: 500;
+      padding: 6px 12px; border-radius: 6px;
+      white-space: nowrap;
+      transition: all .15s;
+    }
+    nav a:hover { background: rgba(255,255,255,.1); color: var(--white); }
+
+    /* ── HERO ── */
+    .hero {
+      background: linear-gradient(135deg, var(--green-900) 0%, var(--green-700) 60%, var(--green-600) 100%);
+      color: white;
+      padding: 80px 32px 60px;
+      text-align: center;
+    }
+    .hero .badge {
+      display: inline-block;
+      background: rgba(255,255,255,.15);
+      border: 1px solid rgba(255,255,255,.25);
+      padding: 4px 14px; border-radius: 99px;
+      font-size: 12px; font-weight: 600;
+      letter-spacing: .05em; text-transform: uppercase;
+      margin-bottom: 20px; color: var(--green-300);
+    }
+    .hero h1 {
+      font-size: clamp(24px, 4vw, 40px);
+      font-weight: 900; line-height: 1.2;
+      margin-bottom: 16px;
+    }
+    .hero p {
+      font-size: 16px; color: rgba(255,255,255,.75);
+      max-width: 600px; margin: 0 auto 28px;
+    }
+    .hero-meta {
+      display: flex; justify-content: center; gap: 24px; flex-wrap: wrap;
+    }
+    .hero-meta span {
+      font-size: 13px; color: rgba(255,255,255,.6);
+    }
+    .hero-meta strong { color: var(--green-300); }
+
+    /* ── LAYOUT ── */
+    .container {
+      max-width: 1040px; margin: 0 auto; padding: 48px 24px;
+    }
+
+    /* ── SECTION HEADING ── */
+    .section-title {
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 32px;
+    }
+    .section-title .num {
+      width: 36px; height: 36px;
+      background: var(--green-700); color: white;
+      border-radius: 8px; display: flex; align-items: center; justify-content: center;
+      font-size: 14px; font-weight: 800; flex-shrink: 0;
+    }
+    .section-title h2 {
+      font-size: 22px; font-weight: 800; color: var(--gray-900);
+    }
+    .section-title p {
+      font-size: 13px; color: var(--gray-500); margin-top: 2px;
+    }
+
+    section { margin-bottom: 72px; }
+
+    /* ── STATUS TABLE ── */
+    .info-table {
+      width: 100%; border-collapse: collapse;
+      background: white; border-radius: var(--radius);
+      overflow: hidden; box-shadow: var(--shadow-sm);
+    }
+    .info-table th, .info-table td {
+      padding: 12px 18px; text-align: left; border-bottom: 1px solid var(--gray-100);
+    }
+    .info-table th {
+      background: var(--green-50); color: var(--green-700);
+      font-size: 13px; font-weight: 700; width: 160px;
+    }
+    .info-table td { font-size: 14px; }
+    .info-table tr:last-child th,
+    .info-table tr:last-child td { border-bottom: none; }
+    code {
+      background: var(--gray-100); color: var(--green-700);
+      padding: 2px 6px; border-radius: 4px;
+      font-family: 'Fira Code', monospace; font-size: 12px;
+    }
+
+    /* ── SECTION LIST ── */
+    .section-list {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px;
+      margin-top: 20px;
+    }
+    .section-list li {
+      list-style: none;
+      background: white; border: 1px solid var(--gray-200);
+      border-radius: var(--radius); padding: 14px 16px;
+      display: flex; align-items: center; gap: 10px;
+      font-size: 14px; font-weight: 500;
+      box-shadow: var(--shadow-sm);
+    }
+    .section-list li .idx {
+      width: 24px; height: 24px; border-radius: 6px;
+      background: var(--green-100); color: var(--green-700);
+      font-size: 12px; font-weight: 800;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+
+    /* ── PERSONA GRID ── */
+    .persona-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px;
+    }
+    .persona-card {
+      background: white; border-radius: var(--radius);
+      border: 1px solid var(--gray-200);
+      padding: 20px; box-shadow: var(--shadow-sm);
+      display: flex; gap: 14px; align-items: flex-start;
+    }
+    .persona-card .icon {
+      font-size: 32px; flex-shrink: 0;
+      width: 52px; height: 52px;
+      background: var(--green-50); border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .persona-card .info h3 { font-size: 14px; font-weight: 700; color: var(--gray-900); }
+    .persona-card .info .en { font-size: 11px; color: var(--green-600); font-weight: 600; margin-bottom: 4px; }
+    .persona-card .info p { font-size: 13px; color: var(--gray-600); line-height: 1.5; }
+
+    /* ── SCENE ── */
+    .scene {
+      background: white; border-radius: var(--radius);
+      border: 1px solid var(--gray-200);
+      overflow: hidden; box-shadow: var(--shadow-sm);
+      margin-bottom: 24px;
+    }
+    .scene-header {
+      background: linear-gradient(90deg, var(--green-800), var(--green-700));
+      color: white; padding: 16px 24px;
+      display: flex; align-items: center; gap: 12px;
+    }
+    .scene-header .scene-num {
+      background: rgba(255,255,255,.15); border-radius: 6px;
+      padding: 2px 10px; font-size: 11px; font-weight: 700;
+      letter-spacing: .06em;
+    }
+    .scene-header h3 { font-size: 16px; font-weight: 700; }
+    .scene-header .context {
+      font-size: 12px; color: rgba(255,255,255,.65); margin-top: 2px;
+    }
+    .dialogue { padding: 24px; display: flex; flex-direction: column; gap: 18px; }
+    .dialogue-line { display: flex; gap: 14px; }
+    .dialogue-line .avatar {
+      font-size: 22px; flex-shrink: 0;
+      width: 44px; height: 44px; border-radius: 10px;
+      background: var(--green-50); border: 1px solid var(--green-200);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .dialogue-line .bubble-wrap { flex: 1; }
+    .dialogue-line .speaker {
+      font-size: 12px; font-weight: 700; color: var(--green-700);
+      margin-bottom: 4px;
+    }
+    .dialogue-line .bubble {
+      background: var(--gray-50); border: 1px solid var(--gray-200);
+      border-radius: 4px 12px 12px 12px;
+      padding: 12px 16px; font-size: 14px; line-height: 1.6;
+      color: var(--gray-700);
+    }
+
+    /* ── MATRIX TABLE ── */
+    .matrix-wrap { overflow-x: auto; border-radius: var(--radius); box-shadow: var(--shadow-sm); }
+    .matrix {
+      width: 100%; border-collapse: collapse; background: white;
+      white-space: nowrap;
+    }
+    .matrix th {
+      background: var(--green-800); color: white;
+      padding: 12px 16px; font-size: 12px; font-weight: 700;
+      text-align: left; letter-spacing: .03em;
+    }
+    .matrix td {
+      padding: 14px 16px; border-bottom: 1px solid var(--gray-100);
+      font-size: 13px; vertical-align: top; white-space: normal;
+    }
+    .matrix tr:last-child td { border-bottom: none; }
+    .matrix tr:hover td { background: var(--green-50); }
+    .matrix td:first-child { font-weight: 600; white-space: nowrap; }
+    .tag {
+      display: inline-block; padding: 2px 8px;
+      border-radius: 99px; font-size: 11px; font-weight: 600;
+    }
+    .tag-green { background: var(--green-100); color: var(--green-700); }
+    .tag-amber { background: var(--amber-100); color: #92400e; }
+    .tag-red   { background: var(--red-100); color: #991b1b; }
+    .tag-blue  { background: var(--blue-100); color: #1e40af; }
+    .tag-purple{ background: var(--purple-100); color: #5b21b6; }
+
+    /* ── FEATURE CARDS ── */
+    .phase-block { margin-bottom: 36px; }
+    .phase-label {
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 16px;
+    }
+    .phase-badge {
+      padding: 4px 14px; border-radius: 99px; font-size: 12px; font-weight: 700;
+    }
+    .badge-short { background: var(--green-100); color: var(--green-700); }
+    .badge-mid   { background: var(--amber-100); color: #92400e; }
+    .badge-long  { background: var(--purple-100); color: #5b21b6; }
+    .phase-desc  { font-size: 13px; color: var(--gray-500); }
+
+    .feature-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px;
+    }
+    .feature-card {
+      background: white; border-radius: var(--radius);
+      border: 1px solid var(--gray-200);
+      padding: 20px; box-shadow: var(--shadow-sm);
+      transition: box-shadow .2s, transform .2s;
+    }
+    .feature-card:hover {
+      box-shadow: var(--shadow-md); transform: translateY(-2px);
+    }
+    .feature-card .fc-top {
+      display: flex; align-items: flex-start; gap: 10px; margin-bottom: 12px;
+    }
+    .feature-card .fc-id {
+      background: var(--green-700); color: white;
+      border-radius: 6px; padding: 3px 8px;
+      font-size: 11px; font-weight: 800; flex-shrink: 0; margin-top: 2px;
+    }
+    .feature-card .fc-id.mid  { background: var(--amber-500); }
+    .feature-card .fc-id.long { background: var(--purple-500); }
+    .feature-card h4 { font-size: 15px; font-weight: 700; color: var(--gray-900); }
+    .feature-card p  { font-size: 13px; color: var(--gray-600); line-height: 1.6; }
+    .feature-card .fc-meta {
+      display: flex; gap: 6px; flex-wrap: wrap; margin-top: 12px;
+    }
+
+    /* ── ROADMAP ── */
+    .roadmap { display: flex; flex-direction: column; gap: 20px; }
+    .roadmap-phase {
+      background: white; border-radius: var(--radius);
+      border: 1px solid var(--gray-200); overflow: hidden;
+      box-shadow: var(--shadow-sm);
+    }
+    .rp-header {
+      padding: 18px 24px;
+      display: flex; align-items: center; gap: 12px;
+    }
+    .rp-header.phase1 { background: linear-gradient(90deg, #1a3d1a, #2d5a27); color: white; }
+    .rp-header.phase2 { background: linear-gradient(90deg, #78350f, #92400e); color: white; }
+    .rp-header.phase3 { background: linear-gradient(90deg, #3b0764, #5b21b6); color: white; }
+    .rp-header .rp-label {
+      background: rgba(255,255,255,.2); padding: 3px 10px;
+      border-radius: 6px; font-size: 11px; font-weight: 800; letter-spacing: .05em;
+    }
+    .rp-header h3 { font-size: 16px; font-weight: 700; }
+    .rp-header p { font-size: 12px; opacity: .75; margin-top: 2px; }
+    .rp-body { padding: 20px 24px; display: flex; gap: 24px; flex-wrap: wrap; }
+    .rp-col { flex: 1; min-width: 200px; }
+    .rp-col h4 {
+      font-size: 12px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .06em; color: var(--gray-400); margin-bottom: 10px;
+    }
+    .rp-col ul { list-style: none; display: flex; flex-direction: column; gap: 6px; }
+    .rp-col li {
+      font-size: 13px; color: var(--gray-700);
+      display: flex; align-items: flex-start; gap: 6px;
+    }
+    .rp-col li::before {
+      content: '├'; color: var(--gray-400); flex-shrink: 0; font-family: monospace;
+    }
+    .rp-col li:last-child::before { content: '└'; }
+    .rp-col .metric {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 13px; color: var(--gray-600); padding: 6px 0;
+      border-bottom: 1px dashed var(--gray-200);
+    }
+    .rp-col .metric:last-child { border-bottom: none; }
+    .rp-col .metric .dot {
+      width: 6px; height: 6px; border-radius: 50%; background: var(--green-500); flex-shrink: 0;
+    }
+
+    /* ── PRIORITY TABLE ── */
+    .priority-table {
+      width: 100%; border-collapse: collapse;
+      background: white; border-radius: var(--radius);
+      overflow: hidden; box-shadow: var(--shadow-sm);
+    }
+    .priority-table th {
+      background: var(--gray-800); color: white;
+      padding: 12px 16px; font-size: 12px; font-weight: 700;
+      text-align: left;
+    }
+    .priority-table td {
+      padding: 13px 16px; border-bottom: 1px solid var(--gray-100);
+      font-size: 13px;
+    }
+    .priority-table tr:last-child td { border-bottom: none; }
+    .priority-table tr:hover td { background: var(--green-50); }
+    .score {
+      font-size: 18px; font-weight: 900; color: var(--green-700);
+    }
+    .diff-badge {
+      display: inline-block; padding: 2px 10px; border-radius: 6px;
+      font-size: 12px; font-weight: 700;
+    }
+    .diff-low  { background: var(--green-100); color: var(--green-700); }
+    .diff-mid  { background: var(--amber-100); color: #92400e; }
+    .diff-high { background: var(--red-100); color: #991b1b; }
+
+    /* ── CONSIDERATIONS ── */
+    .consider-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px;
+    }
+    .consider-card {
+      background: white; border-radius: var(--radius);
+      border: 1px solid var(--gray-200); padding: 20px;
+      box-shadow: var(--shadow-sm);
+    }
+    .consider-card h4 {
+      font-size: 14px; font-weight: 700; color: var(--gray-900);
+      margin-bottom: 12px; display: flex; align-items: center; gap: 8px;
+    }
+    .consider-card ul { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+    .consider-card li {
+      font-size: 13px; color: var(--gray-600); line-height: 1.5;
+      padding-left: 14px; position: relative;
+    }
+    .consider-card li::before {
+      content: '•'; color: var(--green-500);
+      position: absolute; left: 0;
+    }
+
+    /* ── CONCLUSION ── */
+    .conclusion {
+      background: linear-gradient(135deg, var(--green-900), var(--green-700));
+      color: white; border-radius: var(--radius);
+      padding: 40px 36px;
+    }
+    .conclusion h2 { font-size: 20px; font-weight: 800; margin-bottom: 20px; }
+    .conclusion ol { list-style: none; display: flex; flex-direction: column; gap: 12px; margin-bottom: 28px; }
+    .conclusion ol li {
+      display: flex; gap: 12px; align-items: flex-start;
+      font-size: 14px; line-height: 1.6;
+    }
+    .conclusion ol li .num {
+      background: rgba(255,255,255,.15); border-radius: 6px;
+      width: 24px; height: 24px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 800;
+    }
+    .conclusion strong { color: var(--green-300); }
+    .conclusion .cta-box {
+      background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.2);
+      border-radius: var(--radius); padding: 20px 24px;
+    }
+    .conclusion .cta-box h3 { font-size: 14px; font-weight: 700; margin-bottom: 8px; color: var(--green-300); }
+    .conclusion .cta-box p { font-size: 14px; color: rgba(255,255,255,.8); line-height: 1.6; }
+
+    .footnote {
+      text-align: center; font-size: 12px; color: var(--gray-400);
+      margin-top: 48px; padding-top: 24px; border-top: 1px solid var(--gray-200);
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 640px) {
+      .container { padding: 32px 16px; }
+      .hero { padding: 48px 16px 40px; }
+      nav { padding: 0 16px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <span class="logo">📚 Habitree</span>
+  <a href="#status">현황</a>
+  <a href="#personas">페르소나</a>
+  <a href="#dialogue">대화</a>
+  <a href="#matrix">매트릭스</a>
+  <a href="#features">기능 후보</a>
+  <a href="#roadmap">로드맵</a>
+  <a href="#priority">우선순위</a>
+  <a href="#considerations">고려사항</a>
+  <a href="#conclusion">결론</a>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="badge">기획 분석 문서 · 2026-02-23</div>
+  <h1>리포트 공유 기능<br>다양한 이해관계자 관점 분석</h1>
+  <p>독자, 비독자, 예비독자, 서점인, 유통인, 저자 — 6개의 시선으로 바라본 AI 독서 리포트 공유 기능의 현재와 미래</p>
+  <div class="hero-meta">
+    <span>작성일 <strong>2026-02-23</strong></span>
+    <span>페르소나 <strong>6개</strong></span>
+    <span>대화 장면 <strong>3개</strong></span>
+    <span>기능 후보 <strong>14개</strong></span>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- 1. 현황 -->
+  <section id="status">
+    <div class="section-title">
+      <div class="num">1</div>
+      <div>
+        <h2>현재 기능 현황</h2>
+        <p>AI 독서 리포트의 현재 스펙과 공유 방식</p>
+      </div>
+    </div>
+
+    <table class="info-table">
+      <tr><th>분석 대상</th><td>최근 50개 독서 기록</td></tr>
+      <tr><th>생성 결과</th><td>6개 섹션 마크다운 리포트</td></tr>
+      <tr><th>공유 방식</th><td>고유 UUID 링크 <code>/share/reports/{shareId}</code></td></tr>
+      <tr><th>카카오 공유</th><td>카카오톡 링크 공유 지원</td></tr>
+      <tr><th>공개 데이터</th><td>책 제목·저자·표지, 리포트 본문, 독서 기록 (선택)</td></tr>
+      <tr><th>공유 페이지</th><td>히어로 + Bento Grid + 공개 기록 목록 + 앱 유도 CTA</td></tr>
+      <tr><th>DB 테이블</th><td><code>ai_generated_reports</code> — <code>is_public</code> + <code>include_notes</code> 토글</td></tr>
+    </table>
+
+    <ul class="section-list" style="margin-top:20px">
+      <li><span class="idx">1</span>독서 패턴 분석</li>
+      <li><span class="idx">2</span>선호 장르·주제</li>
+      <li><span class="idx">3</span>독서 속도와 집중도</li>
+      <li><span class="idx">4</span>인상 깊은 책 하이라이트</li>
+      <li><span class="idx">5</span>성장 영역 분석</li>
+      <li><span class="idx">6</span>다음 독서 추천</li>
+    </ul>
+  </section>
+
+  <!-- 2. 페르소나 -->
+  <section id="personas">
+    <div class="section-title">
+      <div class="num">2</div>
+      <div>
+        <h2>이해관계자 페르소나</h2>
+        <p>6개 관점에서 기능을 바라보는 등장인물</p>
+      </div>
+    </div>
+
+    <div class="persona-grid">
+      <div class="persona-card">
+        <div class="icon">📚</div>
+        <div class="info">
+          <div class="en">Active Reader</div>
+          <h3>독서인</h3>
+          <p>매달 5권 이상 읽는 헤비 리더, 35세 직장인. 독서 기록과 성과를 꼼꼼히 남긴다.</p>
+        </div>
+      </div>
+      <div class="persona-card">
+        <div class="icon">📵</div>
+        <div class="info">
+          <div class="en">Non-Reader</div>
+          <h3>비독서인</h3>
+          <p>바빠서 책을 읽지 않는 직장인, 32세 마케터. 자기계발 욕구는 있지만 실행이 어렵다.</p>
+        </div>
+      </div>
+      <div class="persona-card">
+        <div class="icon">🌱</div>
+        <div class="info">
+          <div class="en">Aspiring Reader</div>
+          <h3>예비독서인</h3>
+          <p>책 읽고 싶은데 어디서 시작할지 모르는 28세 대학원생. 좋은 큐레이션을 원한다.</p>
+        </div>
+      </div>
+      <div class="persona-card">
+        <div class="icon">🏪</div>
+        <div class="info">
+          <div class="en">Book Seller</div>
+          <h3>서점인</h3>
+          <p>온/오프라인 서점 운영자, 독립서점 대표. 커뮤니티와 큐레이션이 강점.</p>
+        </div>
+      </div>
+      <div class="persona-card">
+        <div class="icon">📦</div>
+        <div class="info">
+          <div class="en">Book Distributor</div>
+          <h3>유통인</h3>
+          <p>출판사·도서 유통 담당자, 마케팅팀. 데이터 기반 마케팅 인사이트에 관심.</p>
+        </div>
+      </div>
+      <div class="persona-card">
+        <div class="icon">✍️</div>
+        <div class="info">
+          <div class="en">Author</div>
+          <h3>저자</h3>
+          <p>책을 출간한 작가, 교양·자기계발 분야. 독자 피드백을 직접 듣고 싶어 한다.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. 대화 -->
+  <section id="dialogue">
+    <div class="section-title">
+      <div class="num">3</div>
+      <div>
+        <h2>이해관계자별 대화식 검토</h2>
+        <p>3개 장면에 걸쳐 6개 페르소나가 리포트 공유 기능을 검토한다</p>
+      </div>
+    </div>
+
+    <!-- 장면 1 -->
+    <div class="scene">
+      <div class="scene-header">
+        <span class="scene-num">SCENE 1</span>
+        <div>
+          <h3>처음 공유 리포트를 보았을 때</h3>
+          <div class="context">카카오톡으로 리포트 링크가 공유됨 — 각자 링크를 열어보는 상황</div>
+        </div>
+      </div>
+      <div class="dialogue">
+        <div class="dialogue-line">
+          <div class="avatar">📚</div>
+          <div class="bubble-wrap">
+            <div class="speaker">독서인</div>
+            <div class="bubble">와, 이거 내 연간 독서 리포트잖아. 시각적으로 꽤 예쁘게 나왔네. 내가 SF를 이렇게 좋아하는 줄 몰랐는데, AI가 잡아냈어. 근데... 이걸 공유해서 뭘 얻는 거지? 그냥 '나 책 많이 읽었어'를 자랑하는 건가?</div>
+          </div>
+        </div>
+        <div class="dialogue-line">
+          <div class="avatar">📵</div>
+          <div class="bubble-wrap">
+            <div class="speaker">비독서인</div>
+            <div class="bubble">(링크 열어보며) 어, 이게 뭐야? 독서 리포트? 친구가 올해 책을 28권 읽었다고? 대단하긴 한데... 그래서 나한테 뭘 해달라는 거지? 나보고 읽으라고? 솔직히 이 페이지 10초 보다가 닫았어.</div>
+          </div>
+        </div>
+        <div class="dialogue-line">
+          <div class="avatar">🌱</div>
+          <div class="bubble-wrap">
+            <div class="speaker">예비독서인</div>
+            <div class="bubble">(천천히 스크롤하며) 오 신기하다. 이 사람이 읽은 책들 제목이 보이네. 《원씽》, 《아주 작은 습관의 힘》... 어, 나도 이 책 읽고 싶었는데. 근데 어디서 사지? 클릭하면 살 수 있나? (눌러보지만 링크가 없음) 아, 아무것도 없네.</div>
+          </div>
+        </div>
+        <div class="dialogue-line">
+          <div class="avatar">🏪</div>
+          <div class="bubble-wrap">
+            <div class="speaker">서점인</div>
+            <div class="bubble">(업무 중 링크를 봄) 독서 리포트를 공유한다고? 흥미롭네. 이 사람이 읽은 책 목록을 보니 베스트셀러도 있고 독립출판물도 있어. 만약 이 리포트에 '저자 사인본 구매' 링크가 있었다면 우리 가게 트래픽이 됐을 텐데. 근데 지금은 아무 연결도 없어.</div>
+          </div>
+        </div>
+        <div class="dialogue-line">
+          <div class="avatar">📦</div>
+          <div class="bubble-wrap">
+            <div class="speaker">유통인</div>
+            <div class="bubble">(마케팅 시각으로) 이 기능... 데이터 관점에서 흥미롭네. 특정 책이 몇 번이나 리포트에 등장하는지 알 수 있다면 베스트셀러 예측 지표가 될 수도 있겠어. 근데 지금은 그 데이터가 아예 없고, 공개 피드도 없어. 아쉽다.</div>
+          </div>
+        </div>
+        <div class="dialogue-line">
+          <div class="avatar">✍️</div>
+          <div class="bubble-wrap">
+            <div class="speaker">저자</div>
+            <div class="bubble">(알림을 통해 발견) 누군가 내 책을 읽고 리포트를 공유했구나. 어떻게 느꼈는지 궁금한데... 리포트에 내 책이 언급된 부분을 찾아보려니 전체를 다 읽어야 해. 독자가 내 책에 대해 뭘 생각하는지 한눈에 보고 싶은데.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 장면 2 -->
+    <div class="scene">
+      <div class="scene-header">
+        <span class="scene-num">SCENE 2</span>
+        <div>
+          <h3>기능의 가능성과 한계 토론</h3>
+          <div class="context">6명이 한 자리에 모여 리포트 공유 기능에 대해 토론하는 상황</div>
+        </div>
+      </div>
+      <div class="dialogue">
+        <div class="dialogue-line">
+          <div class="avatar">🌱</div>
+          <div class="bubble-wrap">
+            <div class="speaker">예비독서인</div>
+            <div class="bubble">솔직히 말하면, 이 페이지에서 제일 궁금한 건 '저 사람이 읽은 책들 어떻게 사지?'예요. 근데 아무 링크가 없으니까 그냥 구글 검색해야 하잖아요. 독서 리포트가 책 구매로 이어질 수 있는 가장 자연스러운 순간인데, 그걸 놓치고 있어요.</div>
+          </div>
+        </div>
+        <div class="dialogue-line">
+          <div class="avatar">🏪</div>
+          <div class="bubble-wrap">
+            <div class="speaker">서점인</div>
+            <div class="bubble">맞아요. 독서 리포트는 사실 굉장히 강력한 구매 유발 콘텐츠예요. '이 사람이 읽고 감동받은 책'이라는 맥락이 붙으면 일반 광고보다 훨씬 신뢰도가 높거든요. 근데 지금은 그 가능성을 완전히 날리고 있어요.</div>
+          </div>
+        </div>
+        <div class="dialogue-line">
+          <div class="avatar">📚</div>
+          <div class="bubble-wrap">
+            <div class="speaker">독서인</div>
+            <div class="bubble">저도 공유하는 입장에서 솔직히 말하면, '와 대단하다'는 반응을 원하긴 해요. (웃음) 근데 그게 다예요. 공유하고 나서 친구가 '나도 이 앱 써보고 싶다'고 하면 뿌듯할 것 같은데, 지금 CTA가 너무 약한 것 같아요. '앱 다운로드' 버튼 하나만 있는데, 비독자한테는 동기부여가 없잖아요.</div>
+          </div>
+        </div>
+        <div class="dialogue-line">
+          <div class="avatar">📵</div>
+          <div class="bubble-wrap">
+            <div class="speaker">비독서인</div>
+            <div class="bubble">저한테는 솔직히 이 리포트가 '나는 책을 안 읽는 루저야'라는 느낌을 줘요. (웃음) 책 많이 읽는 사람의 자랑처럼 보이거든요. 만약 '당신도 한 달에 책 1권으로 이런 변화를 경험할 수 있어요'라는 메시지가 있었다면 달랐을 것 같아요.</div>
+          </div>
+        </div>
+        <div class="dialogue-line">
+          <div class="avatar">📦</div>
+          <div class="bubble-wrap">
+            <div class="speaker">유통인</div>
+            <div class="bubble">데이터 관점에서 가장 아쉬운 건 공개 피드가 없다는 거예요. 지금은 공유해도 그 리포트가 어딘가에 쌓이지 않잖아요. 만약 공개 피드가 생기면 '이번 달 가장 많이 읽힌 책', '이 책을 읽은 사람들의 공통점' 같은 집계 데이터가 나올 수 있어요. 출판사 입장에서는 황금 같은 마케팅 인사이트죠.</div>
+          </div>
+        </div>
+        <div class="dialogue-line">
+          <div class="avatar">✍️</div>
+          <div class="bubble-wrap">
+            <div class="speaker">저자</div>
+            <div class="bubble">저는 독자 피드백을 정말 갈망해요. SNS에서 '이 책 좋아요'라는 댓글은 많은데, 실제로 어떻게 읽었는지, 어떤 챕터가 인상 깊었는지는 잘 몰라요. 만약 AI 리포트에서 내 책이 언급된 내용만 저에게 알림이 간다면... 그건 정말 가치 있는 독자 인사이트가 될 것 같아요.</div>
+          </div>
+        </div>
+        <div class="dialogue-line">
+          <div class="avatar">📚</div>
+          <div class="bubble-wrap">
+            <div class="speaker">독서인</div>
+            <div class="bubble">그리고 인스타 공유! 지금은 카카오톡만 되는데, 인스타 스토리용 이미지가 있으면 확산력이 엄청 달라질 거예요. 텍스트 리포트를 시각적인 카드로 만들어서 '올해 나의 독서 결산'으로 공유하면 완전 바이럴될 것 같은데.</div>
+          </div>
+        </div>
+        <div class="dialogue-line">
+          <div class="avatar">🌱</div>
+          <div class="bubble-wrap">
+            <div class="speaker">예비독서인</div>
+            <div class="bubble">맞아요! 연말에 스포티파이 연간 결산처럼요. 독서 버전 '독서 레시피' 같은 거. 그게 있으면 저도 앱 설치할 것 같아요.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 장면 3 -->
+    <div class="scene">
+      <div class="scene-header">
+        <span class="scene-num">SCENE 3</span>
+        <div>
+          <h3>"이런 게 있으면 좋겠다" 아이디어 제안</h3>
+          <div class="context">각자 리포트 공유 기능에 대해 하나씩 원하는 기능을 제안하는 상황</div>
+        </div>
+      </div>
+      <div class="dialogue">
+        <div class="dialogue-line">
+          <div class="avatar">📚</div>
+          <div class="bubble-wrap">
+            <div class="speaker">독서인 — 독자 경험 최적화 관점</div>
+            <div class="bubble">리포트를 공유할 때 '하이라이트 카드' 기능이 있으면 좋겠어요. 예를 들어, 내가 올해 읽은 책 중 베스트 3를 뽑아서 인스타 스토리 비율(1:1이나 4:5)로 예쁜 이미지 카드를 만들어주는 거예요. 'AI가 분석한 나의 독서 성향' 같은 문구도 자동으로 들어가고요. 지금처럼 링크만 공유하는 것보다 훨씬 임팩트 있을 것 같아요.</div>
+          </div>
+        </div>
+        <div class="dialogue-line">
+          <div class="avatar">📵</div>
+          <div class="bubble-wrap">
+            <div class="speaker">비독서인 — 비사용자 유인 관점</div>
+            <div class="bubble">저 같은 비독자를 위한 '책 핵심 요약 카드' 기능이 있으면 어때요? 리포트를 보다가 관심 가는 책 제목을 클릭하면, AI가 그 책의 핵심 인사이트를 3문장으로 요약해주는 거예요. '5분 만에 이 책의 핵심 배우기' 같은 느낌으로요. 비독자가 독서에 진입하는 가장 낮은 허들이 될 수 있을 것 같아요.</div>
+          </div>
+        </div>
+        <div class="dialogue-line">
+          <div class="avatar">🌱</div>
+          <div class="bubble-wrap">
+            <div class="speaker">예비독서인 — 책 발견 및 구매 관점</div>
+            <div class="bubble">리포트에 있는 책마다 구매 링크가 자동으로 달렸으면 해요. ISBN 기반으로 알라딘, 교보문고, 예스24 딥링크가 바로 연결되면 좋겠어요. 리포트 보다가 '오, 이 책 읽고 싶다'는 순간이 오는데, 그 순간 바로 살 수 있어야 하잖아요. 지금은 구글 검색 → 서점 검색 → 구매로 3단계인데, 1단계로 줄일 수 있어요.</div>
+          </div>
+        </div>
+        <div class="dialogue-line">
+          <div class="avatar">🏪</div>
+          <div class="bubble-wrap">
+            <div class="speaker">서점인 — 판매 전환 관점</div>
+            <div class="bubble">서점 파트너십 기능이요. 특정 지역 독립서점과 연동해서, 리포트에 있는 책들이 해당 서점에 있으면 '가까운 서점에서 보기' 버튼이 뜨는 거예요. 대형 온라인 서점과 달리 독립서점은 큐레이션과 커뮤니티가 강점이잖아요. 독서인과 서점을 연결하는 허브 역할을 Habitree가 할 수 있다고 봐요.</div>
+          </div>
+        </div>
+        <div class="dialogue-line">
+          <div class="avatar">📦</div>
+          <div class="bubble-wrap">
+            <div class="speaker">유통인 — 데이터 및 마케팅 관점</div>
+            <div class="bubble">공개 리포트 피드와 집계 데이터요. 월간 '이 책이 가장 많이 리포트에 등장했어요' 같은 트렌딩 지표. 출판사가 이 데이터를 구독하면 마케팅 예산을 훨씬 효율적으로 쓸 수 있어요. 또 '이 책을 읽은 사람들이 다음에 읽은 책' 같은 연관 도서 데이터는 추천 알고리즘의 핵심이 될 수 있고요.</div>
+          </div>
+        </div>
+        <div class="dialogue-line">
+          <div class="avatar">✍️</div>
+          <div class="bubble-wrap">
+            <div class="speaker">저자 — 창작자 관점</div>
+            <div class="bubble">저자 대시보드를 만들어주세요. 내 책이 언제, 얼마나 읽혔는지, 독자들이 AI 리포트에서 내 책에 대해 어떤 말을 했는지 볼 수 있는 곳이요. 지금은 판매량 데이터는 있지만 '어떻게 읽혔는지' 데이터는 전혀 없어요. 저자 입장에서는 인세보다 더 가치 있는 피드백이에요.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. 매트릭스 -->
+  <section id="matrix">
+    <div class="section-title">
+      <div class="num">4</div>
+      <div>
+        <h2>관점별 Pain Point &amp; 기회 분석 매트릭스</h2>
+        <p>각 이해관계자의 현재 상태, 미충족 니즈, 기회, 제안 기능</p>
+      </div>
+    </div>
+
+    <div class="matrix-wrap">
+      <table class="matrix">
+        <thead>
+          <tr>
+            <th>페르소나</th>
+            <th>현재 충족 니즈</th>
+            <th>미충족 니즈 (Pain Points)</th>
+            <th>기회</th>
+            <th>제안 기능</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>📚 <strong>독서인</strong></td>
+            <td>독서 성과 시각화, 자기 이해</td>
+            <td>인스타 공유 불가<br>공유 후 반응 없음<br>소셜 동기부여 부재</td>
+            <td>독서 자랑 문화 + 소셜 바이럴</td>
+            <td>하이라이트 카드<br>조회수 표시<br>이모지 반응</td>
+          </tr>
+          <tr>
+            <td>📵 <strong>비독서인</strong></td>
+            <td>(현재 타겟 아님)</td>
+            <td>진입 장벽 높음<br>자랑처럼 느껴짐<br>CTA 없음</td>
+            <td>비독자 유입 채널</td>
+            <td>책 핵심 요약 카드<br>비독자용 CTA<br>'1권으로 시작하기'</td>
+          </tr>
+          <tr>
+            <td>🌱 <strong>예비독서인</strong></td>
+            <td>좋은 책 발견 기회</td>
+            <td>책 구매 링크 없음<br>어디서 살지 모름</td>
+            <td>구매 전환 퍼널</td>
+            <td>ISBN 기반 서점 딥링크<br>관심 책 저장<br>구매 의향 CTA</td>
+          </tr>
+          <tr>
+            <td>🏪 <strong>서점인</strong></td>
+            <td>(현재 연결 없음)</td>
+            <td>리포트-서점 연결 없음<br>트래픽 기회 소실</td>
+            <td>독립서점 파트너십 채널</td>
+            <td>지역 서점 연동<br>재고 연결<br>파트너 수수료 모델</td>
+          </tr>
+          <tr>
+            <td>📦 <strong>유통인</strong></td>
+            <td>(현재 연결 없음)</td>
+            <td>데이터 접근 불가<br>마케팅 인사이트 없음</td>
+            <td>도서 트렌드 데이터 플랫폼</td>
+            <td>공개 피드<br>집계 통계<br>연관 도서 데이터 API</td>
+          </tr>
+          <tr>
+            <td>✍️ <strong>저자</strong></td>
+            <td>(현재 연결 없음)</td>
+            <td>독자 피드백 없음<br>내 책 언급 알 수 없음</td>
+            <td>창작자와 독자 연결</td>
+            <td>저자 대시보드<br>책 언급 알림<br>독자 인사이트 요약</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 5. 기능 후보 -->
+  <section id="features">
+    <div class="section-title">
+      <div class="num">5</div>
+      <div>
+        <h2>도출된 기능 후보 목록</h2>
+        <p>단기·중기·장기로 분류된 14개 기능 후보</p>
+      </div>
+    </div>
+
+    <!-- 단기 -->
+    <div class="phase-block">
+      <div class="phase-label">
+        <span class="phase-badge badge-short">단기 Quick Wins · 1~2 sprint</span>
+        <span class="phase-desc">기존 아키텍처에서 빠르게 구현 가능한 기능</span>
+      </div>
+      <div class="feature-grid">
+        <div class="feature-card">
+          <div class="fc-top">
+            <span class="fc-id">QW-1</span>
+            <h4>리포트 하이라이트 카드 생성</h4>
+          </div>
+          <p>리포트 핵심 요소를 인스타그램용 이미지 카드로 생성. 1:1 스퀘어, 4:5 포트레이트, 9:16 스토리 비율 지원.</p>
+          <div class="fc-meta">
+            <span class="tag tag-green">독서인</span>
+            <span class="tag tag-amber">바이럴</span>
+            <span class="tag tag-blue">@vercel/og</span>
+          </div>
+        </div>
+        <div class="feature-card">
+          <div class="fc-top">
+            <span class="fc-id">QW-2</span>
+            <h4>책 구매 링크 자동 삽입</h4>
+          </div>
+          <p>ISBN 기반으로 알라딘·교보문고·yes24 딥링크 자동 연결. 리포트 내 책 제목 클릭 시 즉시 서점으로 이동.</p>
+          <div class="fc-meta">
+            <span class="tag tag-green">예비독자</span>
+            <span class="tag tag-amber">구매 전환</span>
+            <span class="tag tag-blue">ISBN API</span>
+          </div>
+        </div>
+        <div class="feature-card">
+          <div class="fc-top">
+            <span class="fc-id">QW-3</span>
+            <h4>공유 리포트 조회수 표시</h4>
+          </div>
+          <p>리포트 공유 시 조회수 카운터 표시 (n명이 읽었어요). <code>view_count</code> 컬럼 추가만으로 구현 가능.</p>
+          <div class="fc-meta">
+            <span class="tag tag-green">독서인</span>
+            <span class="tag tag-amber">참여도</span>
+          </div>
+        </div>
+        <div class="feature-card">
+          <div class="fc-top">
+            <span class="fc-id">QW-4</span>
+            <h4>리포트 이모지 반응 기능</h4>
+          </div>
+          <p>공개 리포트에 이모지 반응 추가 (👏 멋지다, 📚 나도 읽어볼게, 💡 인사이트 얻었어). <code>report_reactions</code> 테이블 신설.</p>
+          <div class="fc-meta">
+            <span class="tag tag-green">전체</span>
+            <span class="tag tag-amber">소셜 참여</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 중기 -->
+    <div class="phase-block">
+      <div class="phase-label">
+        <span class="phase-badge badge-mid">중기 Mid-term · 1~2 months</span>
+        <span class="phase-desc">새로운 데이터 구조나 기능이 필요한 기능</span>
+      </div>
+      <div class="feature-grid">
+        <div class="feature-card">
+          <div class="fc-top">
+            <span class="fc-id mid">MT-1</span>
+            <h4>공개 리포트 피드 (탐색 페이지)</h4>
+          </div>
+          <p><code>/explore/reports</code> — 공개된 리포트 모아보기. 최신/트렌딩/장르별 필터 지원.</p>
+          <div class="fc-meta">
+            <span class="tag tag-green">비독자·예비독자</span>
+            <span class="tag tag-amber">DAU</span>
+          </div>
+        </div>
+        <div class="feature-card">
+          <div class="fc-top">
+            <span class="fc-id mid">MT-2</span>
+            <h4>독서 통계 인포그래픽 삽입</h4>
+          </div>
+          <p>리포트 내 시각적 차트 추가. 월별 독서량 바 차트, 장르 파이 차트, 독서 속도 히스토그램. Recharts 기반.</p>
+          <div class="fc-meta">
+            <span class="tag tag-green">독서인</span>
+            <span class="tag tag-amber">공유 품질</span>
+            <span class="tag tag-blue">Recharts</span>
+          </div>
+        </div>
+        <div class="feature-card">
+          <div class="fc-top">
+            <span class="fc-id mid">MT-3</span>
+            <h4>저자/출판사 공식 뱃지</h4>
+          </div>
+          <p>리포트에 언급된 책의 저자/출판사가 등록된 경우 공식 뱃지 표시. B2B 파트너십의 시작점.</p>
+          <div class="fc-meta">
+            <span class="tag tag-green">저자</span>
+            <span class="tag tag-purple">B2B</span>
+          </div>
+        </div>
+        <div class="feature-card">
+          <div class="fc-top">
+            <span class="fc-id mid">MT-4</span>
+            <h4>비독자용 '책 핵심 3줄 요약' 카드</h4>
+          </div>
+          <p>리포트 내 책 클릭 시 AI가 생성한 3문장 핵심 요약 표시. Claude API 활용, 동일 책은 DB 캐싱.</p>
+          <div class="fc-meta">
+            <span class="tag tag-green">비독자</span>
+            <span class="tag tag-amber">전환율</span>
+            <span class="tag tag-blue">Claude API</span>
+          </div>
+        </div>
+        <div class="feature-card">
+          <div class="fc-top">
+            <span class="fc-id mid">MT-5</span>
+            <h4>리포트 '이 책도 읽어보세요' 추천</h4>
+          </div>
+          <p>리포트 하단에 AI 기반 유사 책 추천. 읽은 책들의 패턴 분석 → 리포트 생성 시 함께 생성.</p>
+          <div class="fc-meta">
+            <span class="tag tag-green">독서인·예비독자</span>
+            <span class="tag tag-amber">재사용률</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 장기 -->
+    <div class="phase-block">
+      <div class="phase-label">
+        <span class="phase-badge badge-long">장기 Long-term · 3~6 months</span>
+        <span class="phase-desc">새로운 비즈니스 모델이나 파트너십이 필요한 기능</span>
+      </div>
+      <div class="feature-grid">
+        <div class="feature-card">
+          <div class="fc-top">
+            <span class="fc-id long">LT-1</span>
+            <h4>저자 대시보드</h4>
+          </div>
+          <p>저자용 별도 뷰 — 내 책이 언급된 리포트 수, 독자 반응, 인용 문구 집계. B2B 수익 모델 (인사이트 구독).</p>
+          <div class="fc-meta">
+            <span class="tag tag-purple">저자·출판사</span>
+            <span class="tag tag-amber">B2B 수익</span>
+          </div>
+        </div>
+        <div class="feature-card">
+          <div class="fc-top">
+            <span class="fc-id long">LT-2</span>
+            <h4>서점/출판사 파트너십 API</h4>
+          </div>
+          <p>리포트 내 도서 클릭 → 파트너 서점으로 리다이렉트 → 수수료 정산. Affiliate 기반, 독립서점 우선.</p>
+          <div class="fc-meta">
+            <span class="tag tag-purple">서점인·유통인</span>
+            <span class="tag tag-amber">수익 다각화</span>
+          </div>
+        </div>
+        <div class="feature-card">
+          <div class="fc-top">
+            <span class="fc-id long">LT-3</span>
+            <h4>공개 독서 트렌드 리포트</h4>
+          </div>
+          <p>월간/연간 Habitree 유저 독서 트렌드 집계 공개. 이달의 베스트셀러, 연령대별 선호 장르, 지역별 패턴.</p>
+          <div class="fc-meta">
+            <span class="tag tag-purple">출판사·언론</span>
+            <span class="tag tag-amber">브랜드 미디어</span>
+          </div>
+        </div>
+        <div class="feature-card">
+          <div class="fc-top">
+            <span class="fc-id long">LT-4</span>
+            <h4>AI 리포트 기반 도서 추천 엔진</h4>
+          </div>
+          <p>전체 사용자 리포트 데이터 분석 → 협업 필터링 기반 추천. pgvector 임베딩 기반 유사도 검색.</p>
+          <div class="fc-meta">
+            <span class="tag tag-purple">전체 사용자</span>
+            <span class="tag tag-amber">핵심 가치</span>
+            <span class="tag tag-blue">pgvector</span>
+          </div>
+        </div>
+        <div class="feature-card">
+          <div class="fc-top">
+            <span class="fc-id long">LT-5</span>
+            <h4>SNS 자동 공유 예약</h4>
+          </div>
+          <p>독서 완료 시 "이 책 읽었어요" 카드를 인스타/X/쓰레드에 예약 공유. 소셜 API 연동 + 공유 이미지 자동 생성.</p>
+          <div class="fc-meta">
+            <span class="tag tag-purple">독서인</span>
+            <span class="tag tag-amber">오가닉 마케팅</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6. 로드맵 -->
+  <section id="roadmap">
+    <div class="section-title">
+      <div class="num">6</div>
+      <div>
+        <h2>리포트 고도화 로드맵</h2>
+        <p>3단계로 나뉜 고도화 계획과 각 단계의 성공 지표</p>
+      </div>
+    </div>
+
+    <div class="roadmap">
+      <div class="roadmap-phase">
+        <div class="rp-header phase1">
+          <span class="rp-label">PHASE 1</span>
+          <div>
+            <h3>공유 기능 강화</h3>
+            <p>단기 · 2026 Q1 · 기존 공유 UX를 개선하여 바이럴 잠재력 극대화</p>
+          </div>
+        </div>
+        <div class="rp-body">
+          <div class="rp-col">
+            <h4>작업 항목</h4>
+            <ul>
+              <li>QW-1. 하이라이트 카드 생성 (인스타용)</li>
+              <li>QW-2. 책 구매 링크 자동 삽입</li>
+              <li>QW-3. 조회수 카운터</li>
+              <li>QW-4. 이모지 반응 기능</li>
+            </ul>
+          </div>
+          <div class="rp-col">
+            <h4>성공 지표</h4>
+            <div class="metric"><div class="dot"></div> 리포트 공유 후 앱 설치 전환율 +30%</div>
+            <div class="metric"><div class="dot"></div> 리포트 조회수 (외부 유입) +50%</div>
+            <div class="metric"><div class="dot"></div> 책 구매 클릭률 측정 시작</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="roadmap-phase">
+        <div class="rp-header phase2">
+          <span class="rp-label">PHASE 2</span>
+          <div>
+            <h3>독서 생태계 확장</h3>
+            <p>중기 · 2026 Q2 · 비독자와 예비독자를 독서 생태계로 유입</p>
+          </div>
+        </div>
+        <div class="rp-body">
+          <div class="rp-col">
+            <h4>작업 항목</h4>
+            <ul>
+              <li>MT-1. 공개 리포트 탐색 피드</li>
+              <li>MT-2. 시각화 인포그래픽 (차트)</li>
+              <li>MT-4. 비독자용 책 핵심 요약 카드</li>
+              <li>MT-5. AI 기반 다음 책 추천</li>
+            </ul>
+          </div>
+          <div class="rp-col">
+            <h4>성공 지표</h4>
+            <div class="metric"><div class="dot" style="background:#f59e0b"></div> 비로그인 공유 페이지 체류시간 2분 이상</div>
+            <div class="metric"><div class="dot" style="background:#f59e0b"></div> 예비독자 → 앱 가입 전환율 측정</div>
+            <div class="metric"><div class="dot" style="background:#f59e0b"></div> 공개 피드 DAU 확보</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="roadmap-phase">
+        <div class="rp-header phase3">
+          <span class="rp-label">PHASE 3</span>
+          <div>
+            <h3>B2B 파트너십 및 플랫폼화</h3>
+            <p>장기 · 2026 Q3~Q4 · 도서 생태계 이해관계자 연결 플랫폼으로 성장</p>
+          </div>
+        </div>
+        <div class="rp-body">
+          <div class="rp-col">
+            <h4>작업 항목</h4>
+            <ul>
+              <li>MT-3. 저자/출판사 공식 뱃지</li>
+              <li>LT-1. 저자 대시보드</li>
+              <li>LT-2. 서점 파트너십 API</li>
+              <li>LT-3. 공개 독서 트렌드 리포트</li>
+            </ul>
+          </div>
+          <div class="rp-col">
+            <h4>성공 지표</h4>
+            <div class="metric"><div class="dot" style="background:#8b5cf6"></div> 저자/출판사 파트너 계정 10개 이상</div>
+            <div class="metric"><div class="dot" style="background:#8b5cf6"></div> 제휴 링크 클릭 → 구매 전환 데이터 확보</div>
+            <div class="metric"><div class="dot" style="background:#8b5cf6"></div> 언론 노출 (트렌드 리포트 기반)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7. 우선순위 -->
+  <section id="priority">
+    <div class="section-title">
+      <div class="num">7</div>
+      <div>
+        <h2>우선순위 결정 프레임워크</h2>
+        <p>임팩트·구현 난이도·사용자 가치·비즈니스 가치 기준 평가</p>
+      </div>
+    </div>
+
+    <div class="matrix-wrap">
+      <table class="priority-table">
+        <thead>
+          <tr>
+            <th>기능</th>
+            <th>임팩트</th>
+            <th>구현 난이도</th>
+            <th>사용자 가치</th>
+            <th>비즈니스 가치</th>
+            <th>총점</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="tag tag-green" style="margin-right:6px">QW-1</span>하이라이트 카드</td>
+            <td>⭐⭐⭐⭐⭐</td>
+            <td><span class="diff-badge diff-mid">중</span></td>
+            <td>독서인</td>
+            <td>바이럴</td>
+            <td><span class="score">10</span></td>
+          </tr>
+          <tr>
+            <td><span class="tag tag-green" style="margin-right:6px">QW-2</span>책 구매 링크</td>
+            <td>⭐⭐⭐⭐</td>
+            <td><span class="diff-badge diff-low">하</span></td>
+            <td>예비독자</td>
+            <td>수익 가능성</td>
+            <td><span class="score">9</span></td>
+          </tr>
+          <tr>
+            <td><span class="tag tag-amber" style="margin-right:6px">MT-1</span>공개 피드</td>
+            <td>⭐⭐⭐⭐</td>
+            <td><span class="diff-badge diff-mid">중</span></td>
+            <td>비독자·예비독자</td>
+            <td>DAU</td>
+            <td><span class="score">8</span></td>
+          </tr>
+          <tr>
+            <td><span class="tag tag-amber" style="margin-right:6px">MT-4</span>요약 카드</td>
+            <td>⭐⭐⭐⭐</td>
+            <td><span class="diff-badge diff-mid">중</span></td>
+            <td>비독자</td>
+            <td>전환율</td>
+            <td><span class="score">8</span></td>
+          </tr>
+          <tr>
+            <td><span class="tag tag-green" style="margin-right:6px">QW-3</span>조회수</td>
+            <td>⭐⭐⭐</td>
+            <td><span class="diff-badge diff-low">하</span></td>
+            <td>독서인</td>
+            <td>참여도</td>
+            <td><span class="score">7</span></td>
+          </tr>
+          <tr>
+            <td><span class="tag tag-green" style="margin-right:6px">QW-4</span>이모지 반응</td>
+            <td>⭐⭐⭐</td>
+            <td><span class="diff-badge diff-low">하</span></td>
+            <td>전체</td>
+            <td>참여도</td>
+            <td><span class="score">7</span></td>
+          </tr>
+          <tr>
+            <td><span class="tag tag-purple" style="margin-right:6px">LT-1</span>저자 대시보드</td>
+            <td>⭐⭐⭐⭐⭐</td>
+            <td><span class="diff-badge diff-high">상</span></td>
+            <td>저자</td>
+            <td>B2B</td>
+            <td><span class="score">7</span></td>
+          </tr>
+          <tr>
+            <td><span class="tag tag-purple" style="margin-right:6px">LT-2</span>서점 API</td>
+            <td>⭐⭐⭐⭐</td>
+            <td><span class="diff-badge diff-high">상</span></td>
+            <td>서점</td>
+            <td>수익</td>
+            <td><span class="score">6</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 8. 고려사항 -->
+  <section id="considerations">
+    <div class="section-title">
+      <div class="num">8</div>
+      <div>
+        <h2>구현 시 고려사항</h2>
+        <p>기술 제약, 개인정보 및 보안, UX 원칙</p>
+      </div>
+    </div>
+
+    <div class="consider-grid">
+      <div class="consider-card">
+        <h4>⚙️ 기술 제약</h4>
+        <ul>
+          <li><strong>이미지 생성</strong>: 서버사이드 <code>@vercel/og</code> 권장 (클라이언트 <code>html2canvas</code>는 CORS 이슈 가능)</li>
+          <li><strong>책 구매 링크</strong>: ISBN 기반 딥링크는 서점마다 URL 패턴이 다름, 테스트 필요</li>
+          <li><strong>공개 피드 성능</strong>: 페이지네이션 + Supabase RLS 정책 설계 중요</li>
+          <li><strong>AI 요약 캐싱</strong>: 동일 책의 요약은 DB에 캐싱하여 API 비용 절감</li>
+        </ul>
+      </div>
+      <div class="consider-card">
+        <h4>🔒 개인정보 및 보안</h4>
+        <ul>
+          <li>공유 리포트의 독서 노트 포함 여부는 사용자 선택 유지</li>
+          <li>저자 대시보드는 집계 데이터만 공개, 개별 독자 식별 불가</li>
+          <li>공개 피드 RLS: <code>is_public = true</code>인 리포트만 노출</li>
+          <li>신규 테이블 생성 시 RLS 4가지 정책 즉시 적용</li>
+        </ul>
+      </div>
+      <div class="consider-card">
+        <h4>✨ UX 원칙</h4>
+        <ul>
+          <li>공유 페이지는 비로그인 사용자 최적화 (앱 없어도 가치 있게)</li>
+          <li>CTA는 강요가 아닌 자연스러운 유입 유도</li>
+          <li>비독자에게는 '부담 없는 독서 시작' 메시지</li>
+          <li>서점 파트너십 링크는 독립서점 우선 노출로 커뮤니티 가치 유지</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- 9. 결론 -->
+  <section id="conclusion">
+    <div class="section-title">
+      <div class="num">9</div>
+      <div>
+        <h2>결론</h2>
+        <p>이해관계자 분석이 밝혀낸 리포트 공유의 진짜 잠재력</p>
+      </div>
+    </div>
+
+    <div class="conclusion">
+      <h2>리포트 공유 기능, 어디까지 갈 수 있을까?</h2>
+      <p style="color:rgba(255,255,255,.75);font-size:14px;margin-bottom:24px">
+        현재는 <strong>독서인의 자기 표현 도구</strong>에 머물고 있지만, 이해관계자 분석을 통해 확인한 것은 이것이다:
+      </p>
+      <ol>
+        <li>
+          <span class="num">1</span>
+          <span><strong>예비독자</strong>: 가장 직접적인 전환 기회 — 책 발견 → 구매 → 앱 가입 퍼널이 자연스럽게 연결된다</span>
+        </li>
+        <li>
+          <span class="num">2</span>
+          <span><strong>비독자</strong>: 바이럴 확산의 핵심 — 리포트를 보고 독서에 관심 갖게 되는 계기가 필요하다</span>
+        </li>
+        <li>
+          <span class="num">3</span>
+          <span><strong>저자/출판사</strong>: B2B 수익 모델의 시작점 — 독자 인사이트에 대한 수요가 실재한다</span>
+        </li>
+        <li>
+          <span class="num">4</span>
+          <span><strong>서점</strong>: 오프라인-디지털 연결의 새로운 채널 — 독립서점 생태계와 시너지를 낼 수 있다</span>
+        </li>
+      </ol>
+      <div class="cta-box">
+        <h3>첫 번째 액션: QW-1 + QW-2</h3>
+        <p>가장 임팩트 있고 빠른 첫 걸음은 <strong>하이라이트 카드 생성 (QW-1)</strong>과 <strong>책 구매 링크 자동 삽입 (QW-2)</strong>이다. 두 기능만으로 <strong>바이럴 잠재력</strong>과 <strong>구매 전환 퍼널</strong>을 동시에 열 수 있다. 다음 스프린트의 최우선 과제로 제안한다.</p>
+      </div>
+    </div>
+
+    <p class="footnote">이 문서는 기획 출발점이며, 개발 우선순위는 팀 리소스와 비즈니스 목표에 따라 조정될 수 있음 · Habitree Reading Hub 2026</p>
+  </section>
+
+</div>
+
+</body>
+</html>
