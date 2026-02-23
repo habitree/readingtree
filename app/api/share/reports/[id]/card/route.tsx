@@ -13,7 +13,16 @@ type CardRatio = keyof typeof CARD_SIZES;
 
 const FONT_FAMILY = '"NotoSansKR", sans-serif';
 
-async function loadKoreanFont(): Promise<ArrayBuffer | null> {
+async function loadKoreanFont(requestUrl?: string): Promise<ArrayBuffer | null> {
+  // 1순위: 동일 오리진 /public/fonts/ 에서 가져오기 (Vercel 정적 파일, 가장 안정적)
+  if (requestUrl) {
+    try {
+      const origin = new URL(requestUrl).origin;
+      const res = await fetch(`${origin}/fonts/NotoSansKR-SemiBold.otf`);
+      if (res.ok) return res.arrayBuffer();
+    } catch {}
+  }
+  // 2순위: import.meta.url 번들 경로 (로컬 개발)
   try {
     const res = await fetch(
       new URL(
@@ -23,9 +32,10 @@ async function loadKoreanFont(): Promise<ArrayBuffer | null> {
     );
     if (res.ok) return res.arrayBuffer();
   } catch {}
+  // 3순위: jsDelivr CDN (GitHub CDN 대비 안정적)
   try {
     const res = await fetch(
-      "https://github.com/google/fonts/raw/main/ofl/notosanskr/NotoSansKR-SemiBold.otf"
+      "https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/notosanskr/NotoSansKR-SemiBold.otf"
     );
     if (!res.ok) throw new Error("Font fetch failed");
     return res.arrayBuffer();
@@ -44,7 +54,14 @@ async function prefetchImageAsDataUri(url: string): Promise<string | null> {
     const buffer = await res.arrayBuffer();
     if (buffer.byteLength > 10 * 1024 * 1024) return null;
     const ct = res.headers.get("content-type") || "image/jpeg";
-    const base64 = Buffer.from(buffer).toString("base64");
+    // Edge Runtime 호환: Buffer 대신 btoa + Uint8Array 사용
+    const uint8 = new Uint8Array(buffer);
+    let binary = "";
+    const chunkSize = 8192;
+    for (let i = 0; i < uint8.length; i += chunkSize) {
+      binary += String.fromCharCode(...uint8.slice(i, i + chunkSize));
+    }
+    const base64 = btoa(binary);
     return `data:${ct};base64,${base64}`;
   } catch {
     return null;
@@ -106,7 +123,7 @@ export async function GET(
   }
 
   const [fontData, coverDataUri] = await Promise.all([
-    loadKoreanFont(),
+    loadKoreanFont(request.url),
     report.cover_image_url
       ? prefetchImageAsDataUri(report.cover_image_url)
       : Promise.resolve(null),
@@ -149,8 +166,6 @@ export async function GET(
           justifyContent: "center",
           fontFamily: FONT_FAMILY,
           backgroundColor: "#faf8f5",
-          backgroundImage:
-            "radial-gradient(circle at 20% 20%, rgba(180, 140, 80, 0.10) 0%, transparent 50%), radial-gradient(circle at 80% 80%, rgba(22, 163, 74, 0.08) 0%, transparent 50%)",
           padding: isPortrait ? "60px 80px" : "48px 80px",
         }}
       >

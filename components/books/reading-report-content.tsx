@@ -52,6 +52,15 @@ const NOTE_TYPE_LABELS: Record<string, string> = {
   progress: "독서 진행",
 };
 
+/** 노트 타입별 진행 바 색상 */
+const NOTE_TYPE_COLORS: Record<string, string> = {
+  quote: "bg-amber-400 dark:bg-amber-500",
+  memo: "bg-stone-400 dark:bg-stone-500",
+  transcription: "bg-emerald-400 dark:bg-emerald-500",
+  progress: "bg-sky-400 dark:bg-sky-500",
+  photo: "bg-rose-400 dark:bg-rose-500",
+};
+
 interface ReadingReportContentProps {
   userBookId: string;
   bookTitle: string;
@@ -172,6 +181,42 @@ export function ReadingReportContent({
                     </span>
                   )}
                 </div>
+
+                {/* 독서 진행률 바 */}
+                {bookInfo?.totalPages && bookInfo.totalPages > 0 && (
+                  (() => {
+                    const pct =
+                      bookInfo.status === "completed"
+                        ? 100
+                        : bookInfo.currentPage && bookInfo.currentPage > 0
+                        ? Math.min(100, Math.round((bookInfo.currentPage / bookInfo.totalPages) * 100))
+                        : 0;
+                    return (
+                      <div className="space-y-1 pt-0.5">
+                        <div className="flex justify-between items-center text-xs text-muted-foreground">
+                          <span className="flex items-center gap-1">
+                            <BookOpen className="h-3 w-3" />
+                            독서 진행률
+                          </span>
+                          <span className="font-medium tabular-nums">
+                            {bookInfo.currentPage
+                              ? `${bookInfo.currentPage.toLocaleString()} / ${bookInfo.totalPages.toLocaleString()}쪽`
+                              : `총 ${bookInfo.totalPages.toLocaleString()}쪽`}
+                            <span className="ml-1 text-amber-600 dark:text-amber-400 font-semibold">
+                              ({pct}%)
+                            </span>
+                          </span>
+                        </div>
+                        <div className="w-full bg-stone-200/60 dark:bg-stone-700/50 rounded-full h-2 overflow-hidden">
+                          <div
+                            className="h-2 rounded-full bg-gradient-to-r from-amber-400 to-orange-400 dark:from-amber-500 dark:to-orange-500 transition-all"
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })()
+                )}
               </div>
             </div>
           </div>
@@ -222,41 +267,87 @@ export function ReadingReportContent({
             })}
           </div>
 
-          {/* 3. 사용된 기록 섹션 */}
-          {noteSummaries && noteSummaries.length > 0 && (
-            <div className="space-y-3">
-              <h3 className="text-sm font-semibold text-muted-foreground flex items-center gap-2">
-                <StickyNote className="h-4 w-4" />
-                {t("books.aiReportUsedNotes")}
-              </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-                {noteSummaries.slice(0, 9).map((note) => (
-                  <Link
-                    key={note.id}
-                    href={`/notes/${note.id}`}
-                    className="flex items-center gap-3 p-3 rounded-lg border bg-card/50 hover:bg-accent/50 transition-colors group"
-                  >
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-muted font-medium shrink-0">
-                      {NOTE_TYPE_LABELS[note.type] || note.type}
+          {/* 3. 기록 통계 + 사용된 기록 섹션 */}
+          {noteSummaries && noteSummaries.length > 0 && (() => {
+            const noteTypeStats = noteSummaries.reduce<Record<string, number>>(
+              (acc, note) => { acc[note.type] = (acc[note.type] || 0) + 1; return acc; },
+              {}
+            );
+            const totalNotes = noteSummaries.length;
+            return (
+              <div className="space-y-4">
+                {/* 기록 통계 시각화 */}
+                <div className="rounded-xl border bg-card/50 dark:bg-card/30 p-4 space-y-3">
+                  <h3 className="text-sm font-semibold flex items-center gap-2">
+                    <StickyNote className="h-4 w-4 text-muted-foreground" />
+                    {t("books.aiReportUsedNotes")}
+                    <span className="text-xs font-normal text-muted-foreground">
+                      — 총 {totalNotes}개
                     </span>
-                    <span className="text-sm truncate flex-1 group-hover:text-primary transition-colors">
-                      {note.title || `${NOTE_TYPE_LABELS[note.type] || note.type} 기록`}
-                    </span>
-                    {note.pageNumber && (
-                      <span className="text-xs text-muted-foreground shrink-0">
-                        p.{note.pageNumber}
-                      </span>
-                    )}
-                  </Link>
-                ))}
+                  </h3>
+                  <div className="space-y-2">
+                    {Object.entries(noteTypeStats)
+                      .sort(([, a], [, b]) => b - a)
+                      .map(([type, count]) => {
+                        const pct = Math.round((count / totalNotes) * 100);
+                        const barColor = NOTE_TYPE_COLORS[type] || "bg-stone-400";
+                        return (
+                          <div key={type} className="flex items-center gap-2.5">
+                            <span className="text-xs text-muted-foreground w-14 shrink-0 tabular-nums">
+                              {NOTE_TYPE_LABELS[type] || type}
+                            </span>
+                            <div className="flex-1 bg-muted/40 dark:bg-muted/20 rounded-full h-2 overflow-hidden">
+                              <div
+                                className={cn("h-2 rounded-full transition-all", barColor)}
+                                style={{ width: `${pct}%` }}
+                              />
+                            </div>
+                            <span className="text-xs text-muted-foreground w-12 text-right shrink-0 tabular-nums">
+                              {count}개 <span className="text-muted-foreground/60">({pct}%)</span>
+                            </span>
+                          </div>
+                        );
+                      })}
+                  </div>
+                </div>
+
+                {/* 기록 목록 */}
+                <div className="space-y-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                    {noteSummaries.slice(0, 9).map((note) => (
+                      <Link
+                        key={note.id}
+                        href={`/notes/${note.id}`}
+                        className="flex items-center gap-3 p-3 rounded-lg border bg-card/50 hover:bg-accent/50 transition-colors group"
+                      >
+                        <span
+                          className={cn(
+                            "text-xs px-2 py-0.5 rounded-full font-medium shrink-0 text-white/90",
+                            NOTE_TYPE_COLORS[note.type] || "bg-stone-400"
+                          )}
+                        >
+                          {NOTE_TYPE_LABELS[note.type] || note.type}
+                        </span>
+                        <span className="text-sm truncate flex-1 group-hover:text-primary transition-colors">
+                          {note.title || `${NOTE_TYPE_LABELS[note.type] || note.type} 기록`}
+                        </span>
+                        {note.pageNumber && (
+                          <span className="text-xs text-muted-foreground shrink-0">
+                            p.{note.pageNumber}
+                          </span>
+                        )}
+                      </Link>
+                    ))}
+                  </div>
+                  {noteSummaries.length > 9 && (
+                    <p className="text-xs text-muted-foreground text-center">
+                      외 {noteSummaries.length - 9}개 기록
+                    </p>
+                  )}
+                </div>
               </div>
-              {noteSummaries.length > 9 && (
-                <p className="text-xs text-muted-foreground text-center">
-                  외 {noteSummaries.length - 9}개 기록
-                </p>
-              )}
-            </div>
-          )}
+            );
+          })()}
 
           {/* 4. 액션 바 */}
           <div className="flex items-center justify-between pt-4 border-t gap-2">

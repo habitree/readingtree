@@ -125,4 +125,6 @@ export interface BookInfoForReport {
   startedAt: string | null;
   completedAt: string | null;
   status: string;
+  currentPage: number | null;
+  totalPages: number | null;
 }

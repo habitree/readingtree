@@ -46,6 +46,8 @@ export default async function ReportPage({ params }: ReportPageProps) {
     startedAt: (bookDetail.started_at as string | null) ?? null,
     completedAt: (bookDetail.completed_at as string | null) ?? null,
     status: (bookDetail.status as string) || "reading",
+    currentPage: (bookDetail.current_page as number | null) ?? null,
+    totalPages: (book.total_pages as number | null) ?? null,
   };
 
   // 노트 간략 목록
