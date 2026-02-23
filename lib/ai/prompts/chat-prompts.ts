@@ -126,7 +126,7 @@ function generateRecentNotesSection(context: ChatContext, maxNotes: number): str
     quote: "인용구",
     memo: "메모",
     photo: "사진",
-    transcription: "사진 필사",
+    transcription: "필사",
   };
 
   const notes = context.recentNotes?.slice(0, maxNotes) || [];
@@ -239,7 +239,7 @@ export function generateSystemPrompt(context: ChatContext): string {
       quote: "인용구",
       memo: "메모",
       photo: "사진",
-      transcription: "사진 필사",
+      transcription: "필사",
     };
     context.recentNotes.slice(0, 5).forEach((note) => {
       const type = typeLabels[note.type] || note.type;

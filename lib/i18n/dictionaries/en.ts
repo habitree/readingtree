@@ -598,7 +598,7 @@ export const en: Dictionary = {
     thoughtLabel: "Thought",
     imageLabel: "Image",
     stamp: "Stamp",
-    photoTranscription: "Photo transcription",
+    photoTranscription: "Transcription",
     photoLabel: "Photo",
     uploadedImages: "Uploaded images ({count})",
     uploadedImageAlt: "Uploaded image {index}",

@@ -154,7 +154,7 @@ export function ReadingStats({ persona }: ReadingStatsProps) {
                 />
               </div>
 
-              {/* 사진 필사 */}
+              {/* 필사 */}
               <div className="space-y-1">
                 <div className="flex items-center justify-between text-sm">
                   <div className="flex items-center gap-2">

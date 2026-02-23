@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { getImageUrl, getProxiedImageUrl, isValidImageUrl } from "@/lib/utils/image";
 import { parseNoteContentFields, getNoteTypeLabel } from "@/lib/utils/note";
 import type { NoteWithBook } from "@/types/note";
-import { Quote, BookOpen, Calendar, ChevronDown, ChevronUp, Trees, TrendingUp, Sparkles, Link2, ImageOff } from "lucide-react";
+import { Quote, BookOpen, Calendar, ChevronDown, ChevronUp, Trees, TrendingUp, Sparkles, Link2, ImageOff, Youtube, Instagram, Globe, FileText as FileTextIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ImageLightbox } from "@/components/notes/image-lightbox";
@@ -16,6 +16,31 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { BookLinkRenderer } from "@/components/notes/book-link-renderer";
 import { BookTitle } from "@/components/books/book-title";
 import { READTREE_BOOK_ID } from "@/lib/constants/readtree";
+import type { ComponentType } from "react";
+
+const SOURCE_ICON_CONFIG: Record<string, { icon: ComponentType<{ className?: string }>; color: string; bg: string }> = {
+    youtube:   { icon: Youtube,       color: "text-red-500",   bg: "bg-red-50 dark:bg-red-950/30 border-red-100 dark:border-red-900/30" },
+    instagram: { icon: Instagram,     color: "text-pink-500",  bg: "bg-pink-50 dark:bg-pink-950/30 border-pink-100 dark:border-pink-900/30" },
+    article:   { icon: FileTextIcon,  color: "text-blue-500",  bg: "bg-blue-50 dark:bg-blue-950/30 border-blue-100 dark:border-blue-900/30" },
+    other:     { icon: Globe,         color: "text-slate-500", bg: "bg-slate-50 dark:bg-slate-900/30 border-slate-200 dark:border-slate-700" },
+};
+
+const SOURCE_TYPE_LABELS: Record<string, string> = {
+    youtube: "유튜브",
+    instagram: "인스타그램",
+    article: "아티클",
+    other: "기타",
+};
+
+function FreeNoteIconBox({ sourceType, className }: { sourceType: string | null; className?: string }) {
+    const config = SOURCE_ICON_CONFIG[(sourceType ?? "")] ?? SOURCE_ICON_CONFIG.other;
+    const Icon = config.icon;
+    return (
+        <div className={cn("flex items-center justify-center rounded-sm shadow-md border", config.bg, className)}>
+            <Icon className={cn("w-6 h-6", config.color)} />
+        </div>
+    );
+}
 
 export interface RelatedBookInfo {
     id: string; // user_books.id
@@ -251,8 +276,10 @@ export function ShareNoteCard({ note, className, isPublicView = false, hideActio
                         {/* 상단: 책 정보 + 진행 상태 */}
                         <div className="bg-gradient-to-br from-forest-50 to-emerald-50 dark:from-forest-950 dark:to-emerald-950 p-6">
                             <div className="flex items-start gap-4">
-                                {/* 책 표지 */}
-                                {hideActions ? (
+                                {/* 책 표지 / 자유 기록 아이콘 */}
+                                {isReadtreeNote ? (
+                                    <FreeNoteIconBox sourceType={note.source_type} className="w-20 h-28 shrink-0" />
+                                ) : hideActions ? (
                                     <div className="relative w-20 h-28 shrink-0 shadow-lg rounded-md overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800">
                                         <img
                                             src={getProxiedImageUrl(book?.cover_image_url || "")}
@@ -276,16 +303,22 @@ export function ShareNoteCard({ note, className, isPublicView = false, hideActio
                                     </ImageLightbox>
                                 )}
 
-                                {/* 책 정보 */}
+                                {/* 출처 / 책 정보 */}
                                 <div className="flex-1 min-w-0">
                                     <h3 className="font-bold text-lg text-slate-900 dark:text-slate-100 leading-tight mb-1">
                                         <BookTitle
-                                            title={isReadtreeNote ? t("notes.freeNote") : (book?.title || t("share.noTitle"))}
+                                            title={isReadtreeNote ? (note.source_label || t("notes.freeNote")) : (book?.title || t("share.noTitle"))}
                                             mainTitleClassName="text-slate-900 dark:text-slate-100"
                                             subtitleClassName="text-slate-500 dark:text-slate-400 text-sm font-normal block mt-0.5"
                                         />
                                     </h3>
-                                    {!isReadtreeNote && (
+                                    {isReadtreeNote ? (
+                                        note.source_type && (
+                                            <p className="text-xs text-slate-400 font-medium mb-3">
+                                                {SOURCE_TYPE_LABELS[note.source_type] ?? SOURCE_TYPE_LABELS.other}
+                                            </p>
+                                        )
+                                    ) : (
                                     <p className="text-sm text-forest-700 dark:text-forest-400 font-medium mb-3">
                                         {book?.author || t("share.unknownAuthor")}
                                     </p>
@@ -359,7 +392,10 @@ export function ShareNoteCard({ note, className, isPublicView = false, hideActio
                     )}>
                         {/* 상단: 책 정보 요약 (항상 표시) */}
                         <div className="flex items-start gap-4 mb-8">
-                            {hideActions ? (
+                            {isReadtreeNote ? (
+                                // 자유 기록: 출처 아이콘 표시
+                                <FreeNoteIconBox sourceType={note.source_type} className="w-16 h-24 shrink-0 aspect-[2/3]" />
+                            ) : hideActions ? (
                                 // 캡처 시: html2canvas 호환을 위해 일반 img 태그 사용
                                 <div className="relative w-16 h-24 shrink-0 shadow-md rounded-sm overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 aspect-[2/3]">
                                     <img
@@ -387,12 +423,18 @@ export function ShareNoteCard({ note, className, isPublicView = false, hideActio
                             <div className="flex-1 min-w-0 pt-0.5">
                                 <h3 className="font-black text-lg text-slate-900 dark:text-slate-100 leading-[1.3] tracking-tight break-keep">
                                     <BookTitle
-                                        title={isReadtreeNote ? t("notes.freeNote") : (book?.title || t("share.noTitle"))}
+                                        title={isReadtreeNote ? (note.source_label || t("notes.freeNote")) : (book?.title || t("share.noTitle"))}
                                         mainTitleClassName="text-slate-900 dark:text-slate-100"
                                         subtitleClassName="text-slate-600 dark:text-slate-400 text-sm font-normal block mt-1"
                                     />
                                 </h3>
-                                {!isReadtreeNote && (
+                                {isReadtreeNote ? (
+                                    note.source_type && (
+                                        <p className="text-xs text-slate-400 font-medium mt-1.5">
+                                            {SOURCE_TYPE_LABELS[note.source_type] ?? SOURCE_TYPE_LABELS.other}
+                                        </p>
+                                    )
+                                ) : (
                                 <p className="text-sm text-forest-700 font-bold mt-2">
                                     {book?.author || t("share.unknownAuthor")}
                                 </p>
