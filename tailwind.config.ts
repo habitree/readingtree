@@ -145,7 +145,7 @@ const config: Config = {
       serif: ["var(--font-noto-serif-kr)", "serif"],
     },
   },
-  plugins: [],
+  plugins: [require("@tailwindcss/typography")],
 };
 
 export default config;

@@ -26,6 +26,7 @@ import { BookScrollHandler } from "@/components/books/book-scroll-handler";
 import { BookTitle } from "@/components/books/book-title";
 import { RelatedBooksList } from "@/components/books/related-books-list";
 import { RelatedBooksEditor } from "@/components/books/related-books-editor";
+import { ReadingReportButton } from "@/components/books/reading-report-button";
 import {
   GuestCtaText,
   GuestCtaButtonLabel,
@@ -244,6 +245,15 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
                   )}
                 </div>
               )}
+
+              {/* AI 리포트 버튼 */}
+              <div className="mt-2 sm:mt-3">
+                <ReadingReportButton
+                  userBookId={userBook.id}
+                  noteCount={notes.length}
+                  isGuest={isGuest}
+                />
+              </div>
 
               {/* 읽는 이유 - PC에서만 히어로 안에 표시 */}
               {userBook.reading_reason && (

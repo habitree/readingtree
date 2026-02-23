@@ -42,6 +42,7 @@ import {
   Loader2,
   AlertCircle,
   Sparkles,
+  FileText,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "@/lib/i18n";
@@ -57,12 +58,18 @@ import {
   AI_MODELS,
   AI_PROVIDER_INFO,
   DEFAULT_AI_SETTINGS,
+  DEFAULT_REPORT_SETTINGS,
   type AIProvider,
   type AISettings,
+  type AIReportSettings,
   type ContextSettings,
   type GenerationSettings,
   type MemorySettings,
 } from "@/types/ai";
+import {
+  getReportSettings,
+  updateReportSettings,
+} from "@/app/actions/ai/report-settings";
 
 interface AISettingsPanelProps {
   initialSettings?: AISettings | null;
@@ -113,6 +120,15 @@ export function AISettingsPanel({
     settings?.memorySettings || DEFAULT_AI_SETTINGS.memorySettings
   );
 
+  // 리포트 설정 상태
+  const [reportProvider, setReportProvider] = useState<AIProvider>(DEFAULT_REPORT_SETTINGS.provider);
+  const [reportModelId, setReportModelId] = useState(DEFAULT_REPORT_SETTINGS.modelId);
+  const [reportSystemPrompt, setReportSystemPrompt] = useState(DEFAULT_REPORT_SETTINGS.systemPrompt);
+  const [reportTemperature, setReportTemperature] = useState(DEFAULT_REPORT_SETTINGS.temperature);
+  const [reportMaxTokens, setReportMaxTokens] = useState(DEFAULT_REPORT_SETTINGS.maxOutputTokens);
+  const [reportSettingsId, setReportSettingsId] = useState<string | null>(null);
+  const [isSavingReport, setIsSavingReport] = useState(false);
+
   // 초기 데이터 로드
   useEffect(() => {
     if (initialSettings) {
@@ -127,6 +143,20 @@ export function AISettingsPanel({
     }
   }, [initialSettings]);
 
+  // 리포트 설정 초기 로드
+  useEffect(() => {
+    getReportSettings().then((rs) => {
+      if (rs) {
+        setReportSettingsId(rs.id);
+        setReportProvider(rs.provider);
+        setReportModelId(rs.modelId);
+        setReportSystemPrompt(rs.systemPrompt);
+        setReportTemperature(rs.temperature);
+        setReportMaxTokens(rs.maxOutputTokens);
+      }
+    }).catch(() => {});
+  }, []);
+
   // 제공자 변경 시 모델 초기화
   useEffect(() => {
     const models = AI_MODELS[provider];
@@ -134,6 +164,14 @@ export function AISettingsPanel({
       setModelId(models[0].id);
     }
   }, [provider]);
+
+  // 리포트 제공자 변경 시 모델 초기화
+  useEffect(() => {
+    const models = AI_MODELS[reportProvider];
+    if (models.length > 0 && !models.find((m) => m.id === reportModelId)) {
+      setReportModelId(models[0].id);
+    }
+  }, [reportProvider]);
 
   // 설정 저장
   const handleSave = async () => {
@@ -185,6 +223,27 @@ export function AISettingsPanel({
       });
     } finally {
       setIsTesting(false);
+    }
+  };
+
+  // 리포트 설정 저장
+  const handleSaveReport = async () => {
+    setIsSavingReport(true);
+    try {
+      const result = await updateReportSettings({
+        provider: reportProvider,
+        modelId: reportModelId,
+        systemPrompt: reportSystemPrompt,
+        temperature: reportTemperature,
+        maxOutputTokens: reportMaxTokens,
+      });
+      setReportSettingsId(result.id);
+      toast.success(t("admin.aiSettings.savedSuccess"));
+    } catch (error) {
+      toast.error(t("admin.aiSettings.saveFailed"));
+      console.error(error);
+    } finally {
+      setIsSavingReport(false);
     }
   };
 
@@ -274,7 +333,7 @@ export function AISettingsPanel({
       </Card>
 
       <Tabs defaultValue="model" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="model" className="flex items-center gap-2">
             <Sparkles className="h-4 w-4" />
             {t("admin.aiSettings.tabModel")}
@@ -294,6 +353,10 @@ export function AISettingsPanel({
           <TabsTrigger value="memory" className="flex items-center gap-2">
             <Brain className="h-4 w-4" />
             {t("admin.aiSettings.tabMemory")}
+          </TabsTrigger>
+          <TabsTrigger value="report" className="flex items-center gap-2">
+            <FileText className="h-4 w-4" />
+            {t("admin.aiSettings.tabReport")}
           </TabsTrigger>
         </TabsList>
 
@@ -846,6 +909,150 @@ export function AISettingsPanel({
                   </p>
                 </div>
               )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* 리포트 설정 탭 */}
+        <TabsContent value="report">
+          <Card>
+            <CardHeader>
+              <CardTitle>{t("admin.aiSettings.reportTitle")}</CardTitle>
+              <CardDescription>
+                {t("admin.aiSettings.reportDesc")}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* 제공자 선택 */}
+              <div className="space-y-3">
+                <Label>{t("admin.aiSettings.reportProvider")}</Label>
+                <div className="grid grid-cols-3 gap-4">
+                  {(Object.keys(AI_PROVIDER_INFO) as AIProvider[]).map(
+                    (key) => {
+                      const info = AI_PROVIDER_INFO[key];
+                      const isAvailable = apiKeyStatus[key];
+                      return (
+                        <button
+                          key={key}
+                          onClick={() => isAvailable && setReportProvider(key)}
+                          disabled={!isAvailable}
+                          className={`p-4 rounded-lg border-2 transition-all text-left ${
+                            reportProvider === key
+                              ? "border-primary bg-primary/5"
+                              : isAvailable
+                              ? "border-border hover:border-primary/50"
+                              : "border-border opacity-50 cursor-not-allowed"
+                          }`}
+                        >
+                          <div className="font-semibold mb-1">{info.name}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {info.description}
+                          </div>
+                          {!isAvailable && (
+                            <Badge
+                              variant="outline"
+                              className="mt-2 text-xs bg-red-500/10 text-red-600"
+                            >
+                              {t("admin.aiSettings.noApiKey")}
+                            </Badge>
+                          )}
+                        </button>
+                      );
+                    }
+                  )}
+                </div>
+              </div>
+
+              {/* 모델 선택 */}
+              <div className="space-y-3">
+                <Label>{t("admin.aiSettings.reportModel")}</Label>
+                <Select value={reportModelId} onValueChange={setReportModelId}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder={t("admin.aiSettings.modelPlaceholder")} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {AI_MODELS[reportProvider].map((model) => (
+                      <SelectItem key={model.id} value={model.id}>
+                        <div className="flex flex-col">
+                          <span className="font-medium">{model.name}</span>
+                          <span className="text-xs text-muted-foreground">
+                            {model.description}
+                          </span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Temperature */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label>{t("admin.aiSettings.reportTemperature")}</Label>
+                  <p className="text-xs text-muted-foreground">
+                    {t("admin.aiSettings.temperatureDesc")}
+                  </p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Slider
+                    value={[reportTemperature]}
+                    onValueChange={([value]) => setReportTemperature(value)}
+                    max={2}
+                    min={0}
+                    step={0.1}
+                    className="w-40"
+                  />
+                  <span className="w-12 text-right font-mono">
+                    {reportTemperature.toFixed(1)}
+                  </span>
+                </div>
+              </div>
+
+              {/* Max Output Tokens */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label>{t("admin.aiSettings.reportMaxTokens")}</Label>
+                  <p className="text-xs text-muted-foreground">
+                    {t("admin.aiSettings.maxTokensDesc")}
+                  </p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Slider
+                    value={[reportMaxTokens]}
+                    onValueChange={([value]) => setReportMaxTokens(value)}
+                    max={16384}
+                    min={256}
+                    step={256}
+                    className="w-40"
+                  />
+                  <span className="w-16 text-right font-mono">
+                    {reportMaxTokens}
+                  </span>
+                </div>
+              </div>
+
+              {/* 시스템 프롬프트 */}
+              <div className="space-y-3">
+                <Label>{t("admin.aiSettings.reportPrompt")}</Label>
+                <Textarea
+                  value={reportSystemPrompt}
+                  onChange={(e) => setReportSystemPrompt(e.target.value)}
+                  placeholder={t("admin.aiSettings.reportPromptPlaceholder")}
+                  className="min-h-[200px] font-mono text-sm"
+                />
+              </div>
+
+              {/* 저장 버튼 */}
+              <div className="pt-4 border-t">
+                <Button onClick={handleSaveReport} disabled={isSavingReport}>
+                  {isSavingReport ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <Save className="h-4 w-4 mr-2" />
+                  )}
+                  {t("admin.aiSettings.save")}
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
