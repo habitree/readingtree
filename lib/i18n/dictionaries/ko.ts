@@ -225,9 +225,9 @@ export const ko = {
     noTitle: "제목 없음",
     noBookInfo: "책 정보 없음",
     noteCountBadge: "{count}개 기록",
-    addBookAction: "책 추가하기",
-    noBooksTitle: "책이 없습니다",
-    noBooksDesc: "첫 번째 책을 추가하여 나만의 서재를 만들어보세요",
+    addBookAction: "책 담기",
+    noBooksTitle: "아직 서재가 비어있어요",
+    noBooksDesc: "첫 번째 책을 담아 나만의 독서 여정을 시작해보세요",
     startedAt: "{date} 시작",
     completedTimes: "{count}회 완독",
     loadingBooks: "책 목록을 불러오는 중...",
@@ -427,8 +427,8 @@ export const ko = {
     bookUnlinkFailed: "책 연결 해제에 실패했습니다.",
     dataLoadFailed: "데이터를 불러오지 못했어요.",
     // book-list-view
-    noBooksListEmpty: "등록된 책이 없습니다",
-    noBooksListDesc: "첫 번째 책을 추가하고 독서 여정을 시작해보세요!",
+    noBooksListEmpty: "아직 담긴 책이 없어요",
+    noBooksListDesc: "읽고 싶은 책, 읽고 있는 책을 서재에 담아보세요",
     // book-search
     searchPlaceholderFull: "책 제목이나 저자를 검색하세요...",
     addingBook: "추가 중...",
@@ -437,12 +437,12 @@ export const ko = {
     bookAddedSuccess: "책이 추가됐어요.",
     bookAddFailed: "책 추가에 실패했어요.",
     // book-stats-cards
-    statTotal: "총등록",
+    statTotal: "전체",
     statNotStarted: "읽을 예정",
-    statReading: "읽는중",
+    statReading: "읽는 중",
     statCompleted: "완독",
     statRereading: "재독",
-    statPaused: "멈춤",
+    statPaused: "잠시 멈춤",
     statAriaLabel: "{label}: {value}권",
     statValue: "{value}권",
     // book-meta-info
@@ -457,7 +457,7 @@ export const ko = {
     allBookshelves: "전체 서재",
     selectBookshelf: "서재 선택",
     // book-search-input
-    searchInputPlaceholder: "검색",
+    searchInputPlaceholder: "제목이나 저자로 검색",
     searchInputAriaLabel: "책 검색",
     // status-filter
     statusFilterPlaceholder: "상태",
@@ -480,9 +480,9 @@ export const ko = {
     badgeNotStarted: "읽을 예정",
     badgeRereading: "재독",
     // books page
-    myBooksDesc: "내가 읽고 있는 책들을 관리하세요",
+    myBooksDesc: "지금까지의 독서 여정을 한눈에 담아보세요",
     manageBookshelves: "서재 관리",
-    addButtonLabel: "추가",
+    addButtonLabel: "책 담기",
     pageLoadError: "페이지를 불러오는 중 오류가 발생했습니다.",
     unknownError: "알 수 없는 오류가 발생했습니다.",
     // book search page

@@ -227,9 +227,9 @@ export const en: Dictionary = {
     noTitle: "No title",
     noBookInfo: "No book info",
     noteCountBadge: "{count} notes",
-    addBookAction: "Add a book",
-    noBooksTitle: "No books yet",
-    noBooksDesc: "Add your first book to build your personal library",
+    addBookAction: "Add book",
+    noBooksTitle: "Your shelf is empty",
+    noBooksDesc: "Add your first book and begin your reading journey",
     startedAt: "Started {date}",
     completedTimes: "Completed {count} times",
     loadingBooks: "Loading books...",
@@ -428,8 +428,8 @@ export const en: Dictionary = {
     bookUnlinkFailed: "Failed to unlink book.",
     dataLoadFailed: "Failed to load data.",
     // book-list-view
-    noBooksListEmpty: "No books registered",
-    noBooksListDesc: "Add your first book and start your reading journey!",
+    noBooksListEmpty: "Your shelf is empty",
+    noBooksListDesc: "Add books you're reading or want to read",
     // book-search
     searchPlaceholderFull: "Search by book title or author...",
     addingBook: "Adding...",
@@ -438,12 +438,12 @@ export const en: Dictionary = {
     bookAddedSuccess: "Book added.",
     bookAddFailed: "Failed to add book.",
     // book-stats-cards
-    statTotal: "Total",
+    statTotal: "All",
     statNotStarted: "To read",
     statReading: "Reading",
     statCompleted: "Completed",
     statRereading: "Re-reading",
-    statPaused: "On hold",
+    statPaused: "Paused",
     statAriaLabel: "{label}: {value} books",
     statValue: "{value} books",
     // book-meta-info
@@ -458,7 +458,7 @@ export const en: Dictionary = {
     allBookshelves: "All bookshelves",
     selectBookshelf: "Select shelf",
     // book-search-input
-    searchInputPlaceholder: "Search",
+    searchInputPlaceholder: "Search by title or author",
     searchInputAriaLabel: "Search books",
     // status-filter
     statusFilterPlaceholder: "Status",
@@ -481,9 +481,9 @@ export const en: Dictionary = {
     badgeNotStarted: "To read",
     badgeRereading: "Re-reading",
     // books page
-    myBooksDesc: "Manage the books you are reading",
+    myBooksDesc: "Your reading journey at a glance",
     manageBookshelves: "Manage shelves",
-    addButtonLabel: "Add",
+    addButtonLabel: "Add book",
     pageLoadError: "An error occurred while loading the page.",
     unknownError: "An unknown error occurred.",
     // book search page

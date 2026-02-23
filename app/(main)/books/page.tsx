@@ -15,7 +15,7 @@ export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "내 서재 | ReadTree",
-  description: "내가 읽고 있는 책들을 관리하세요",
+  description: "지금까지의 독서 여정을 한눈에 담아보세요",
 };
 
 interface BooksPageProps {
