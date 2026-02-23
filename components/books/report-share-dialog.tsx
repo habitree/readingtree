@@ -69,7 +69,15 @@ export function ReportShareDialog({
         setShareId(result.shareId);
         toast.success(t("books.aiReportSaved"));
       } else {
-        toast.error(result.error || t("books.aiReportError"));
+        const errMsg = result.error || t("books.aiReportError");
+        // DB 스키마 미적용 오류를 사용자 친화적으로 변환
+        const isSchemaError = errMsg.includes("does not exist") || errMsg.includes("column");
+        toast.error(
+          isSchemaError
+            ? "서버 설정을 업데이트 중이에요. 잠시 후 다시 시도해 주세요."
+            : errMsg,
+          { duration: 5000 }
+        );
       }
     } catch {
       toast.error(t("books.aiReportError"));
