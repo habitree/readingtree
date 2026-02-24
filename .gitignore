@@ -20,6 +20,10 @@
 .DS_Store
 *.pem
 
+# og image test files
+*temp_og_image.png
+og-test.png
+
 # debug
 npm-debug.log*
 yarn-debug.log*
