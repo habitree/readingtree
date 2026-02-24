@@ -6,6 +6,7 @@ import { resolveOpenLibraryCoverUrl } from "@/lib/api/open-library-covers";
 import type { ReadingStatus } from "@/types/book";
 import type { User } from "@supabase/supabase-js";
 import { OPEN_LIBRARY_COVER_BATCH_LIMIT, OPEN_LIBRARY_COVER_TIMEOUT_MS } from "./_shared";
+import { READTREE_BOOK_ID } from "@/lib/constants/readtree";
 
 export interface RelatedBookPreview {
   userBookId: string;
@@ -976,7 +977,7 @@ export async function getContinueReadingBooks(user?: User | null, maxCount: numb
     currentUser = fetchedUser;
   }
 
-  // 읽는 중인 책 목록 조회 (최근 업데이트순)
+  // 읽는 중인 책 목록 조회 (최근 업데이트순, 자유 기록 제외)
   const { data: readingBooks, error: booksError } = await supabase
     .from("user_books")
     .select(`
@@ -994,6 +995,7 @@ export async function getContinueReadingBooks(user?: User | null, maxCount: numb
     `)
     .eq("user_id", currentUser.id)
     .in("status", ["reading", "rereading"])
+    .neq("book_id", READTREE_BOOK_ID)
     .order("updated_at", { ascending: false })
     .limit(10);
 

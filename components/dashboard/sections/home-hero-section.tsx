@@ -29,6 +29,7 @@ import { ContinueReadingCard, NoReadingBookCard } from "./continue-reading-card"
 import { CollapsibleSection } from "./collapsible-section";
 import { OnboardingChecklist, type OnboardingItem } from "@/components/onboarding/onboarding-checklist";
 import { FirstNotePrompt } from "@/components/onboarding/first-note-prompt";
+import { FreeNotesEntryCard } from "./free-notes-entry-card";
 import type { DailyRecordByType } from "@/app/actions/stats";
 
 interface ContinueReadingData {
@@ -91,6 +92,8 @@ interface HomeHeroSectionProps {
   isGuest?: boolean;
   /** 첫 기록 작성 여부 (false이면 CTA 표시) */
   hasFirstNote?: boolean;
+  /** 자유 기록 통계 */
+  freeNoteStats?: { totalCount: number; todayCount: number };
 }
 
 /**
@@ -114,6 +117,7 @@ export const HomeHeroSection = memo(function HomeHeroSection({
   totalPoints = 0,
   isGuest = false,
   hasFirstNote = true,
+  freeNoteStats = { totalCount: 0, todayCount: 0 },
 }: HomeHeroSectionProps) {
   const [mounted, setMounted] = useState(false);
   const { greeting, getStreakMessage, getMotivationalMessage } = useStyle();
@@ -339,6 +343,14 @@ export const HomeHeroSection = memo(function HomeHeroSection({
             </div>
           ) : (
             <NoReadingBookCard />
+          )}
+
+          {/* 자유 기록 진입 카드 (로그인 사용자만) */}
+          {!isGuest && (
+            <FreeNotesEntryCard
+              totalCount={freeNoteStats.totalCount}
+              todayCount={freeNoteStats.todayCount}
+            />
           )}
         </div>
       )}

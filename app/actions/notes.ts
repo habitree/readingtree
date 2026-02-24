@@ -6,6 +6,7 @@ import type {
   CreateNoteInput,
   UpdateNoteInput,
   NoteType,
+  SourceType,
   NoteWithBook,
   Transcription,
 } from "@/types/note";
@@ -1225,5 +1226,121 @@ export async function updateTranscription(
  */
 export async function updateNoteContent(noteId: string, extractedText: string) {
   return createOrUpdateTranscription(noteId, extractedText);
+}
+
+/** KST 기준 현재 날짜의 자정(00:00:00) UTC ISO 문자열 반환 */
+function getKSTTodayISO(): string {
+  const now = new Date();
+  const kst = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+  const midnightUTC = new Date(
+    Date.UTC(kst.getUTCFullYear(), kst.getUTCMonth(), kst.getUTCDate()) - 9 * 60 * 60 * 1000
+  );
+  return midnightUTC.toISOString();
+}
+
+/**
+ * 자유 기록 통계 조회 (홈 카드용)
+ * @param user 선택적 사용자 정보
+ */
+export async function getFreeNoteStats(user?: User | null): Promise<{
+  totalCount: number;
+  todayCount: number;
+}> {
+  const supabase = await createServerSupabaseClient();
+
+  let currentUser = user;
+  if (!currentUser) {
+    const {
+      data: { user: fetchedUser },
+      error: authError,
+    } = await supabase.auth.getUser();
+    if (authError || !fetchedUser) {
+      return { totalCount: 0, todayCount: 0 };
+    }
+    currentUser = fetchedUser;
+  }
+
+  const todayISO = getKSTTodayISO();
+
+  const [totalResult, todayResult] = await Promise.all([
+    supabase
+      .from("notes")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", currentUser.id)
+      .eq("book_id", READTREE_BOOK_ID)
+      .neq("type", "progress"),
+    supabase
+      .from("notes")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", currentUser.id)
+      .eq("book_id", READTREE_BOOK_ID)
+      .neq("type", "progress")
+      .gte("created_at", todayISO),
+  ]);
+
+  return {
+    totalCount: totalResult.count ?? 0,
+    todayCount: todayResult.count ?? 0,
+  };
+}
+
+/**
+ * 자유 기록 목록 조회
+ * book_id = READTREE_BOOK_ID 기록만 반환, progress 타입 제외
+ * @param type 기록 유형 필터 (선택)
+ * @param sourceType 출처 유형 필터 (선택)
+ * @param user 선택적 사용자 정보
+ */
+export async function getFreeNotes(
+  type?: NoteType,
+  sourceType?: SourceType,
+  user?: User | null
+): Promise<NoteWithBook[]> {
+  const supabase = await createServerSupabaseClient();
+
+  let currentUser = user;
+  if (!currentUser) {
+    const {
+      data: { user: fetchedUser },
+      error: authError,
+    } = await supabase.auth.getUser();
+    if (authError || !fetchedUser) {
+      throw new Error("로그인이 필요합니다.");
+    }
+    currentUser = fetchedUser;
+  }
+
+  let query = supabase
+    .from("notes")
+    .select(`*, books (id, title, author, cover_image_url), transcriptions (extracted_text, raw_extracted_text, status)`)
+    .eq("user_id", currentUser.id)
+    .eq("book_id", READTREE_BOOK_ID)
+    .neq("type", "progress")
+    .order("created_at", { ascending: false });
+
+  if (type) {
+    query = query.eq("type", type);
+  }
+
+  if (sourceType) {
+    query = query.eq("source_type", sourceType);
+  }
+
+  const { data, error } = await query;
+
+  if (error) {
+    throw new Error(sanitizeErrorMessage(error));
+  }
+
+  return (data || []).map((note: any) => {
+    const book = Array.isArray(note.books) ? note.books[0] : (note.books || undefined);
+    const transcription = note.transcriptions || undefined;
+    const { books, transcriptions, ...restNote } = note;
+    return {
+      ...restNote,
+      book: book || undefined,
+      transcription: transcription || undefined,
+    };
+  }) as NoteWithBook[];
 }
 

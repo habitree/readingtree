@@ -119,6 +119,7 @@ export const ko = {
     writeNoteLoginTitle: "기록을 남기려면",
     writeNoteLoginDesc: "로그인 후 독서 기록을 남길 수 있어요.",
     stats: "통계",
+    freeNotes: "자유 기록",
   },
 
   auth: {
@@ -848,6 +849,11 @@ export const ko = {
     noteEditButton: "수정",
     noteTypeQuoteDisplay: "인상깊은 구절",
     noteTypeReadingRecord: "독서 기록",
+    // free notes page
+    freeNotesPageTitle: "자유 기록",
+    freeNotesPageDesc: "책 밖에서 발견한 인사이트를 모아보세요",
+    freeNotesWrite: "자유 기록 쓰기",
+    sourceAll: "전체",
   },
 
   dashboard: {
@@ -953,6 +959,12 @@ export const ko = {
     guestCtaFeature1: '독서 기록 & 통계',
     guestCtaFeature2: '독서나무 성장',
     guestCtaFeature3: '독서 그룹',
+    // free notes entry card
+    freeNotesTitle: '자유 기록',
+    freeNotesDesc: '책 밖에서 발견한 인사이트',
+    freeNotesEmpty: '첫 자유 기록을 남겨보세요',
+    freeNotesCount: '총 {count}개',
+    freeNotesToday: '오늘 {count}개',
   },
 
   search: {

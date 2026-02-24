@@ -119,6 +119,7 @@ export const en: Dictionary = {
     exploringReadTree: "Exploring ReadTree",
     writeNote: "Note",
     stats: "Stats",
+    freeNotes: "Free Notes",
     writeNoteLoginTitle: "To write notes",
     writeNoteLoginDesc: "Log in to write reading notes.",
   },
@@ -848,6 +849,11 @@ export const en: Dictionary = {
     noteEditButton: "Edit",
     noteTypeQuoteDisplay: "Impressive quote",
     noteTypeReadingRecord: "Reading note",
+    // free notes page
+    freeNotesPageTitle: "Free Notes",
+    freeNotesPageDesc: "Collect insights discovered beyond books",
+    freeNotesWrite: "Write Free Note",
+    sourceAll: "All",
   },
 
   dashboard: {
@@ -953,6 +959,12 @@ export const en: Dictionary = {
     guestCtaFeature1: 'Reading logs & stats',
     guestCtaFeature2: 'Growing reading tree',
     guestCtaFeature3: 'Reading groups',
+    // free notes entry card
+    freeNotesTitle: 'Free Notes',
+    freeNotesDesc: 'Insights discovered beyond books',
+    freeNotesEmpty: 'Write your first free note',
+    freeNotesCount: '{count} total',
+    freeNotesToday: '{count} today',
   },
 
   search: {

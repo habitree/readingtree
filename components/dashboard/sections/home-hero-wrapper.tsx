@@ -19,6 +19,7 @@ function getKSTToday(): Date {
   return new Date(Date.UTC(kst.getUTCFullYear(), kst.getUTCMonth(), kst.getUTCDate()) - 9 * 60 * 60 * 1000);
 }
 import { getContinueReadingBooks, getPopularBooks } from "@/app/actions/books";
+import { getFreeNoteStats } from "@/app/actions/notes";
 import {
   getSampleDashboardStats,
   getSampleContinueReadingBooks,
@@ -68,6 +69,7 @@ export async function HomeHeroWrapper() {
     currentBookProgress,
     pointsData,
     firstNoteData,
+    freeNoteStats,
   ] = await Promise.all([
     getCachedPersonaDashboardData().catch(() => null),
     getCachedReadingStats(user).catch(() => null),
@@ -79,6 +81,7 @@ export async function HomeHeroWrapper() {
     getCurrentBookProgress(user).catch(() => null),
     getCachedPointsDashboardData(user).catch(() => null),
     getCachedCheckHasFirstNote().catch(() => ({ hasFirstNote: true })),
+    getFreeNoteStats(user).catch(() => ({ totalCount: 0, todayCount: 0 })),
   ]);
 
   // 책 0권 사용자에게 인기 도서 위젯 표시
@@ -101,6 +104,7 @@ export async function HomeHeroWrapper() {
         levelTitle={pointsData?.currentLevel?.title}
         totalPoints={pointsData?.userPoints?.total_points ?? 0}
         hasFirstNote={firstNoteData.hasFirstNote}
+        freeNoteStats={freeNoteStats}
       />
       {hasNoBooks && popularBooks.length > 0 && (
         <PopularBooksWidget books={popularBooks} />

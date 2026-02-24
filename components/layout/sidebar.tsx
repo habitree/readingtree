@@ -12,6 +12,7 @@ import {
   Trees,
   Bot,
   Sparkles,
+  StickyNote,
   ChevronDown,
   type LucideIcon,
 } from "lucide-react";
@@ -53,6 +54,7 @@ export function Sidebar() {
   ];
 
   const secondaryItems: SidebarItem[] = [
+    { icon: StickyNote, label: t("nav.freeNotes"), href: "/notes/free" },
     { icon: Users, label: t("nav.groups"), href: "/groups" },
     { icon: Sparkles, label: t("persona.pageTitle"), href: "/stats" },
     { icon: Bot, label: t("nav.aiChat"), href: "/chat" },

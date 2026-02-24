@@ -1,6 +1,6 @@
 import { cache } from "react";
 import { getCachedCurrentUser } from "@/lib/cached";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { Metadata, Viewport } from "next";
 import Image from "next/image";
 import Link from "next/link";
@@ -22,6 +22,7 @@ import { getNotes } from "@/app/actions/notes";
 import { getRelatedBooks } from "@/app/actions/book-relations";
 import { isValidUUID } from "@/lib/utils/validation";
 import { sanitizeErrorForLogging } from "@/lib/utils/validation";
+import { READTREE_BOOK_ID } from "@/lib/constants/readtree";
 import { BookScrollHandler } from "@/components/books/book-scroll-handler";
 import { BookTitle } from "@/components/books/book-title";
 import { RelatedBooksList } from "@/components/books/related-books-list";
@@ -103,6 +104,12 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
   }
 
   const book = bookDetail.books as any;
+
+  // 자유 기록(READTREE_BOOK_ID) 접근 시 전용 페이지로 리다이렉트
+  if (book?.id === READTREE_BOOK_ID) {
+    redirect("/notes/free");
+  }
+
   const userBook = bookDetail;
 
   let notes: Awaited<ReturnType<typeof getNotes>> = [];
