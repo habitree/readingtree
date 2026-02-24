@@ -854,6 +854,18 @@ export const ko = {
     freeNotesPageDesc: "책 밖에서 발견한 인사이트를 모아보세요",
     freeNotesWrite: "자유 기록 쓰기",
     sourceAll: "전체",
+    // quick capture
+    quickCapturePlaceholder: "빠른 메모 기록… (Enter로 저장)",
+    quickCaptureSuccess: "기록됐어요!",
+    quickCaptureError: "저장에 실패했습니다",
+    // url parsing
+    urlParseButton: "URL 분석",
+    urlParsing: "분석 중…",
+    urlParseHint: "✦ URL 분석 버튼으로 제목·출처를 자동으로 채울 수 있어요",
+    urlParseFailed: "분석에 실패했습니다. 직접 입력해 주세요",
+    // tag cloud
+    tagCloud: "태그 탐색",
+    tagFilterClear: "필터 해제",
   },
 
   dashboard: {

@@ -8,12 +8,19 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { EmptyState } from "@/components/ui/empty-state";
 import { NoteCard } from "@/components/notes/note-card";
+import { TagCloud } from "@/components/notes/tag-cloud";
 import { useTranslation } from "@/lib/i18n";
 import type { NoteWithBook, NoteType, SourceType } from "@/types/note";
 import { cn } from "@/lib/utils";
 
+interface TagWithCount {
+  tag: string;
+  count: number;
+}
+
 interface FreeNotesPageClientProps {
   initialNotes: NoteWithBook[];
+  tags: TagWithCount[];
   activeType?: NoteType;
   activeSource?: SourceType;
 }
@@ -39,22 +46,30 @@ const SOURCE_TYPE_TABS: Array<{ value: SourceType | "all"; labelKey: string }> =
  */
 export function FreeNotesPageClient({
   initialNotes,
+  tags,
   activeType,
   activeSource,
 }: FreeNotesPageClientProps) {
   const { t } = useTranslation();
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
+  const [activeTag, setActiveTag] = useState<string | undefined>();
 
   const filteredNotes = useMemo(() => {
-    if (!searchQuery.trim()) return initialNotes;
+    let notes = initialNotes;
+
+    if (activeTag) {
+      notes = notes.filter((note) => note.tags?.includes(activeTag));
+    }
+
+    if (!searchQuery.trim()) return notes;
     const q = searchQuery.toLowerCase();
-    return initialNotes.filter((note) => {
+    return notes.filter((note) => {
       const content = note.content?.toLowerCase() ?? "";
       const title = note.title?.toLowerCase() ?? "";
       return content.includes(q) || title.includes(q);
     });
-  }, [initialNotes, searchQuery]);
+  }, [initialNotes, searchQuery, activeTag]);
 
   const handleTypeChange = (type: NoteType | "all") => {
     const params = new URLSearchParams();
@@ -95,6 +110,16 @@ export function FreeNotesPageClient({
           </Button>
         </Link>
       </div>
+
+      {/* 태그 클라우드 */}
+      {tags.length > 0 && (
+        <TagCloud
+          tags={tags}
+          activeTag={activeTag}
+          onTagClick={setActiveTag}
+          onClear={() => setActiveTag(undefined)}
+        />
+      )}
 
       {/* 검색바 */}
       <div className="relative">
@@ -147,6 +172,11 @@ export function FreeNotesPageClient({
       {filteredNotes.length > 0 && (
         <p className="text-xs text-slate-500 dark:text-slate-400">
           {t("notes.noteCount").replace("{count}", String(filteredNotes.length))}
+          {activeTag && (
+            <span className="ml-1 text-amber-600 dark:text-amber-400">
+              — #{activeTag}
+            </span>
+          )}
         </p>
       )}
 

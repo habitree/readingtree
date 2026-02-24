@@ -854,6 +854,18 @@ export const en: Dictionary = {
     freeNotesPageDesc: "Collect insights discovered beyond books",
     freeNotesWrite: "Write Free Note",
     sourceAll: "All",
+    // quick capture
+    quickCapturePlaceholder: "Quick memo… (Enter to save)",
+    quickCaptureSuccess: "Saved!",
+    quickCaptureError: "Failed to save",
+    // url parsing
+    urlParseButton: "Parse URL",
+    urlParsing: "Parsing…",
+    urlParseHint: "✦ Auto-fill title & source with the Parse URL button",
+    urlParseFailed: "Failed to parse. Please fill in manually",
+    // tag cloud
+    tagCloud: "Explore Tags",
+    tagFilterClear: "Clear filter",
   },
 
   dashboard: {
