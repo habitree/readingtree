@@ -51,7 +51,7 @@ const NOTE_TYPE_LABELS: Record<string, string> = {
   memo: "메모",
   photo: "사진",
   transcription: "필사",
-  progress: "독서 진행",
+  progress: "독서 여정",
 };
 
 /** 노트 타입별 진행 바 색상 */
@@ -222,7 +222,7 @@ export function ReadingReportContent({
                   )}
                 </div>
 
-                {/* 독서 진행률 바 */}
+                {/* 독서 여정 바 */}
                 {bookInfo?.totalPages && bookInfo.totalPages > 0 && (
                   (() => {
                     const pct =
@@ -236,7 +236,7 @@ export function ReadingReportContent({
                         <div className="flex justify-between items-center text-xs text-muted-foreground">
                           <span className="flex items-center gap-1">
                             <BookOpen className="h-3 w-3" />
-                            독서 진행률
+                            독서 여정
                           </span>
                           <span className="font-medium tabular-nums">
                             {bookInfo.currentPage

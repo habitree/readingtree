@@ -22,7 +22,7 @@ const NOTE_TYPE_LABELS: Record<string, string> = {
   quote: "인용",
   memo: "메모",
   transcription: "필사",
-  progress: "진행기록",
+  progress: "독서 여정",
   photo: "사진",
 };
 
