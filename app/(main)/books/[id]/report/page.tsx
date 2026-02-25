@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getCachedCurrentUser } from "@/lib/cached";
 import { getBookDetail } from "@/app/actions/books";
 import { getNotes } from "@/app/actions/notes";
+import { getSavedReport } from "@/app/actions/ai/report";
 import { ReadingReportContent } from "@/components/books/reading-report-content";
 import type { Metadata } from "next";
 import type { BookInfoForReport, NoteSummary } from "@/types/ai/report";
@@ -10,11 +11,14 @@ const MIN_NOTES = 3;
 
 interface ReportPageProps {
   params: { id: string };
+  searchParams: { view?: string };
 }
 
-export default async function ReportPage({ params }: ReportPageProps) {
+export default async function ReportPage({ params, searchParams }: ReportPageProps) {
   const resolvedParams = await params;
+  const resolvedSearch = await searchParams;
   const userBookId = resolvedParams.id;
+  const viewSaved = resolvedSearch.view === "saved";
 
   // 인증 확인
   const user = await getCachedCurrentUser();
@@ -38,6 +42,9 @@ export default async function ReportPage({ params }: ReportPageProps) {
     redirect(`/books/${userBookId}`);
   }
 
+  // 저장된 리포트 조회 (view=saved이거나 항상 메타 확인)
+  const savedReport = await getSavedReport(userBookId).catch(() => null);
+
   // 리포트용 책 정보
   const bookInfo: BookInfoForReport = {
     title: (book.title as string) || "제목 없음",
@@ -59,6 +66,18 @@ export default async function ReportPage({ params }: ReportPageProps) {
     createdAt: note.created_at,
   }));
 
+  // view=saved이고 저장된 리포트가 있으면 초기 데이터로 전달
+  const initialSavedReport =
+    viewSaved && savedReport
+      ? {
+          markdown: savedReport.reportMarkdown,
+          savedAt: savedReport.savedAt,
+          shareId: savedReport.shareId,
+          isPublic: savedReport.isPublic,
+          noteCount: savedReport.noteCount,
+        }
+      : undefined;
+
   return (
     <ReadingReportContent
       userBookId={userBookId}
@@ -66,6 +85,7 @@ export default async function ReportPage({ params }: ReportPageProps) {
       noteCount={notes.length}
       bookInfo={bookInfo}
       noteSummaries={noteSummaries}
+      initialSavedReport={initialSavedReport}
     />
   );
 }

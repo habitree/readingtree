@@ -15,12 +15,14 @@ import {
   Save,
   Clock,
   StickyNote,
+  CheckCircle2,
 } from "lucide-react";
 import Link from "next/link";
 import ReactMarkdown from "react-markdown";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ReadingReportSkeleton } from "./reading-report-skeleton";
+import { ReportSaveButton } from "./report-save-button";
 import { ReportShareDialog } from "./report-share-dialog";
 import { generateReadingReport } from "@/app/actions/ai/report";
 import { useTranslation } from "@/lib/i18n";
@@ -61,12 +63,21 @@ const NOTE_TYPE_COLORS: Record<string, string> = {
   photo: "bg-rose-400 dark:bg-rose-500",
 };
 
+interface InitialSavedReport {
+  markdown: string;
+  savedAt: string;
+  shareId: string;
+  isPublic: boolean;
+  noteCount: number;
+}
+
 interface ReadingReportContentProps {
   userBookId: string;
   bookTitle: string;
   noteCount: number;
   bookInfo?: BookInfoForReport;
   noteSummaries?: NoteSummary[];
+  initialSavedReport?: InitialSavedReport;
 }
 
 export function ReadingReportContent({
@@ -75,10 +86,26 @@ export function ReadingReportContent({
   noteCount,
   bookInfo,
   noteSummaries,
+  initialSavedReport,
 }: ReadingReportContentProps) {
   const { t } = useTranslation();
-  const [result, setResult] = useState<ReadingReportResult | null>(null);
+
+  // 저장된 리포트가 있으면 초기 상태로 사용
+  const [result, setResult] = useState<ReadingReportResult | null>(
+    initialSavedReport
+      ? {
+          success: true,
+          report: initialSavedReport.markdown,
+          noteCount: initialSavedReport.noteCount,
+          generatedAt: initialSavedReport.savedAt,
+        }
+      : null
+  );
   const [isPending, startTransition] = useTransition();
+  // 저장 버튼과 공유 다이얼로그가 공유하는 shareId
+  const [savedShareId, setSavedShareId] = useState<string | null>(
+    initialSavedReport?.shareId ?? null
+  );
 
   const fetchReport = () => {
     startTransition(async () => {
@@ -88,6 +115,8 @@ export function ReadingReportContent({
   };
 
   useEffect(() => {
+    // 저장된 리포트가 있으면 자동 생성 건너뜀
+    if (initialSavedReport) return;
     fetchReport();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userBookId]);
@@ -165,10 +194,21 @@ export function ReadingReportContent({
                     <StickyNote className="h-3 w-3" />
                     {t("books.aiReportBasedOn", { count: result.noteCount ?? noteCount })}
                   </span>
+                  {initialSavedReport && (
+                    <span className="flex items-center gap-1 bg-amber-100/80 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 px-2 py-0.5 rounded-full">
+                      <CheckCircle2 className="h-3 w-3" />
+                      저장된 리포트
+                    </span>
+                  )}
                   {result.generatedAt && (
                     <span className="flex items-center gap-1 bg-white/60 dark:bg-slate-800/60 px-2 py-0.5 rounded-full">
                       <Calendar className="h-3 w-3" />
-                      {new Date(result.generatedAt).toLocaleDateString("ko-KR")}
+                      {new Date(result.generatedAt).toLocaleDateString("ko-KR", {
+                        year: "numeric",
+                        month: "short",
+                        day: "numeric",
+                      })}
+                      {initialSavedReport && " 발행"}
                     </span>
                   )}
                   {bookInfo?.startedAt && (
@@ -358,18 +398,31 @@ export function ReadingReportContent({
               </Link>
             </Button>
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={fetchReport}>
-                <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
-                {t("books.aiReportRegenerate")}
+              <Button variant="outline" size="sm" onClick={fetchReport} disabled={isPending}>
+                <RefreshCw className={cn("h-3.5 w-3.5 mr-1.5", isPending && "animate-spin")} />
+                {initialSavedReport ? "새로 생성" : t("books.aiReportRegenerate")}
               </Button>
               {bookInfo && (
-                <ReportShareDialog
-                  userBookId={userBookId}
-                  reportMarkdown={result.report}
-                  bookInfo={bookInfo}
-                  noteCount={result.noteCount ?? noteCount}
-                  noteIds={noteSummaries?.map((n) => n.id) || []}
-                />
+                <>
+                  <ReportSaveButton
+                    userBookId={userBookId}
+                    reportMarkdown={result.report}
+                    bookInfo={bookInfo}
+                    noteCount={result.noteCount ?? noteCount}
+                    noteIds={noteSummaries?.map((n) => n.id) || []}
+                    initialShareId={savedShareId}
+                    onSaved={(id) => setSavedShareId(id)}
+                  />
+                  <ReportShareDialog
+                    userBookId={userBookId}
+                    reportMarkdown={result.report}
+                    bookInfo={bookInfo}
+                    noteCount={result.noteCount ?? noteCount}
+                    noteIds={noteSummaries?.map((n) => n.id) || []}
+                    initialShareId={savedShareId}
+                    onSaved={(id) => setSavedShareId(id)}
+                  />
+                </>
               )}
             </div>
           </div>

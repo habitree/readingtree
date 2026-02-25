@@ -28,6 +28,7 @@ import { BookTitle } from "@/components/books/book-title";
 import { RelatedBooksList } from "@/components/books/related-books-list";
 import { RelatedBooksEditor } from "@/components/books/related-books-editor";
 import { ReadingReportButton } from "@/components/books/reading-report-button";
+import { getSavedReport } from "@/app/actions/ai/report";
 import {
   GuestCtaText,
   GuestCtaButtonLabel,
@@ -114,6 +115,7 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
 
   let notes: Awaited<ReturnType<typeof getNotes>> = [];
   let relatedBooks: Awaited<ReturnType<typeof getRelatedBooks>> = [];
+  let savedReport: Awaited<ReturnType<typeof getSavedReport>> = null;
 
   if (isGuest) {
     // 게스트: 샘플 사용자의 노트 데이터를 그대로 표시
@@ -124,12 +126,14 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
       notes = [];
     }
   } else {
-    const [notesResult, relatedBooksResult] = await Promise.all([
+    const [notesResult, relatedBooksResult, savedReportResult] = await Promise.all([
       getNotes(userBook.id, undefined, user),
       getRelatedBooks(userBook.id, user).catch(() => []),
+      getSavedReport(userBook.id).catch(() => null),
     ]);
     notes = notesResult;
     relatedBooks = relatedBooksResult;
+    savedReport = savedReportResult;
   }
 
   // 완독 날짜 배열 계산
@@ -259,6 +263,7 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
                   userBookId={userBook.id}
                   noteCount={notes.length}
                   isGuest={isGuest}
+                  savedReport={savedReport}
                 />
               </div>
 

@@ -294,6 +294,42 @@ export async function getPublicReportNotes(
 }
 
 /**
+ * 현재 사용자의 저장된 리포트 메타 조회 (본인 리포트만)
+ */
+export async function getSavedReport(userBookId: string): Promise<{
+  shareId: string;
+  isPublic: boolean;
+  reportMarkdown: string;
+  savedAt: string;
+  noteCount: number;
+} | null> {
+  try {
+    const user = await getCurrentUser();
+    if (!user) return null;
+
+    const supabase = await createServerSupabaseClient();
+    const { data, error } = await supabase
+      .from("ai_generated_reports")
+      .select("share_id, is_public, report_markdown, updated_at, note_count")
+      .eq("user_id", user.id)
+      .eq("user_book_id", userBookId)
+      .single();
+
+    if (error || !data) return null;
+
+    return {
+      shareId: data.share_id,
+      isPublic: data.is_public,
+      reportMarkdown: data.report_markdown,
+      savedAt: data.updated_at,
+      noteCount: data.note_count,
+    };
+  } catch {
+    return null;
+  }
+}
+
+/**
  * 공유 리포트 조회수 증가 (공개 리포트만)
  * SECURITY DEFINER RPC 함수를 사용하여 비로그인 사용자도 호출 가능
  */
