@@ -458,6 +458,44 @@ const handleItemClick = useCallback(() => {
 | 10. 모바일 성능 | `mobile_performance_rule.md` |
 | 11. 컴포넌트 패턴 | `component_pattern_rule.md` |
 | 12. 코드 리뷰 | `code_review_checklist.md` |
+| 16. 자유기록 전담 에이전트 | `free-notes-agent.md` |
+
+---
+
+## 16. 자유기록(FreeNotes) 에이전트 v2
+
+> 원본: `.agent/rules/free-notes-agent.md`
+
+자유기록은 책과 직접 관련 없는 콘텐츠(YouTube, 아티클, Instagram 등)를 수집·큐레이션하는 **ReadTree의 지식 수집 엔진**.
+`book_id = READTREE_BOOK_ID ("00000000-0000-0000-0000-000000000001")` 로 책 기록과 구분.
+
+### 16.1 핵심 절대 규칙
+
+```typescript
+// 자유기록 쿼리 — 반드시 두 조건 모두 적용
+query = query.eq("book_id", READTREE_BOOK_ID).neq("type", "progress");
+```
+
+### 16.2 AI 모델 역할 분리
+
+| 구분 | 모델 | 용도 |
+|------|------|------|
+| Haiku급 | Gemini Flash | URL 파싱, 자동 태그 제안, 출처 타입 감지 (실시간, < 2초) |
+| Opus급 | Gemini Pro | 주간 인사이트 분석, 책↔메모 연결, 월간 지적 프로파일 (깊이 우선) |
+
+### 16.3 UX 설계 원칙 (인간 심리 기반)
+
+1. **마찰 제로 포착** — Quick Capture: Enter 한 번으로 저장
+2. **저장 확인의 안도감** — 저장 직후 시각 피드백 필수 (✓ 아이콘)
+3. **쌓임의 가시화** — 총 기록 수 + 오늘 기록 수 항상 노출
+4. **정체성 큐레이션** — 태그 클라우드로 "내 관심사 지형" 시각화
+
+### 16.4 프로젝트 방향성 수호
+
+```
+✅ 유지: is_public 기본값 false / READTREE_BOOK_ID 필터 / 포인트 격리 / 레이어 분리
+❌ 금지: 소셜 피드 방식 전환 / progress 타입 허용 / book_id null 허용
+```
 
 ---
 
@@ -476,6 +514,7 @@ const handleItemClick = useCallback(() => {
 | 2025-01-20 | 최초 생성 | 전체 |
 | 2025-02-06 | 모바일 성능, 컴포넌트 패턴, 코드 리뷰 규칙 추가 | `mobile_performance_rule.md`, `component_pattern_rule.md`, `code_review_checklist.md` |
 | 2026-02-16 | Supabase JOIN 정합성 체크 규칙 추가 (transcriptions JOIN 누락 이슈) | `code_review_checklist.md` |
+| 2026-02-25 | 자유기록 에이전트 v2 — 인간 심리 프레임워크·AI 모델 역할 분리·방향성 수호 규칙 추가 | `free-notes-agent.md` |
 
 ---
 
