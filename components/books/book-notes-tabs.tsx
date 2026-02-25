@@ -34,18 +34,12 @@ export function BookNotesTabs({
   const progressNotes = notes.filter((n) => n.type === "progress");
   const detailNotesCount = notes.filter((n) => n.type !== "progress").length;
 
+  const detailNotes = notes.filter((n) => n.type !== "progress");
+  const totalCount = notes.length;
+
   return (
-    <Tabs defaultValue="journey" className="w-full">
+    <Tabs defaultValue="notes" className="w-full">
       <TabsList className="grid w-full grid-cols-2 mb-4">
-        <TabsTrigger value="journey" className="flex items-center gap-1.5">
-          <Map className="h-4 w-4" />
-          <span>독서 여정</span>
-          {progressNotes.length > 0 && (
-            <span className="ml-1 text-xs bg-blue-500/20 text-blue-600 dark:text-blue-400 px-1.5 py-0.5 rounded-full">
-              {progressNotes.length}
-            </span>
-          )}
-        </TabsTrigger>
         <TabsTrigger value="notes" className="flex items-center gap-1.5">
           <FileText className="h-4 w-4" />
           <span>{t("books.detailedRecords")}</span>
@@ -55,7 +49,20 @@ export function BookNotesTabs({
             </span>
           )}
         </TabsTrigger>
+        <TabsTrigger value="journey" className="flex items-center gap-1.5">
+          <Map className="h-4 w-4" />
+          <span>독서 여정</span>
+          {totalCount > 0 && (
+            <span className="ml-1 text-xs bg-blue-500/20 text-blue-600 dark:text-blue-400 px-1.5 py-0.5 rounded-full">
+              {totalCount}
+            </span>
+          )}
+        </TabsTrigger>
       </TabsList>
+
+      <TabsContent value="notes">
+        <NoteList notes={notes} excludeProgress={true} />
+      </TabsContent>
 
       <TabsContent value="journey">
         <ReadingJourney
@@ -65,11 +72,8 @@ export function BookNotesTabs({
           currentPage={currentPage}
           totalPages={totalPages}
           progressNotes={progressNotes}
+          detailNotes={detailNotes}
         />
-      </TabsContent>
-
-      <TabsContent value="notes">
-        <NoteList notes={notes} excludeProgress={true} />
       </TabsContent>
     </Tabs>
   );

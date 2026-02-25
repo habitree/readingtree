@@ -9,9 +9,11 @@ import {
   TrendingUp,
   ChevronDown,
   ChevronUp,
+  PenTool,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { deriveReadingSessions } from "@/lib/utils/reading-sessions";
+import { NoteList } from "@/components/notes/note-list";
 import type { NoteWithBook } from "@/types/note";
 
 interface ReadingJourneyProps {
@@ -21,6 +23,7 @@ interface ReadingJourneyProps {
   currentPage: number;
   totalPages: number | null;
   progressNotes: NoteWithBook[];
+  detailNotes: NoteWithBook[];
 }
 
 function formatShortDate(dateStr: string): string {
@@ -49,6 +52,7 @@ export function ReadingJourney({
   currentPage,
   totalPages,
   progressNotes,
+  detailNotes,
 }: ReadingJourneyProps) {
   const [showAllLogs, setShowAllLogs] = useState(false);
 
@@ -69,7 +73,7 @@ export function ReadingJourney({
   }
 
   const totalDays = sessions.reduce((sum, s) => sum + s.durationDays, 0);
-  const totalLogs = progressNotes.length;
+  const totalLogs = progressNotes.length + detailNotes.length;
   const completedCount = sessions.filter((s) => !s.isCurrentSession).length;
   const activeCount = sessions.filter((s) => s.isCurrentSession).length;
 
@@ -342,15 +346,15 @@ export function ReadingJourney({
         </div>
       </div>
 
-      {/* ── 전체 기록 토글 ── */}
-      {totalLogs > 0 && (
+      {/* ── 전체 진행 기록 토글 ── */}
+      {progressNotes.length > 0 && (
         <>
           <button
             onClick={() => setShowAllLogs(!showAllLogs)}
             className="w-full flex items-center justify-center gap-2 p-3 rounded-xl border border-dashed border-border/60 text-sm text-muted-foreground hover:border-blue-300/70 hover:text-blue-600 hover:bg-blue-50/30 dark:hover:bg-blue-950/20 dark:hover:border-blue-700/50 transition-all"
           >
-            <FileText className="h-4 w-4" />
-            <span>전체 기록 {totalLogs}개 모아보기</span>
+            <TrendingUp className="h-4 w-4" />
+            <span>전체 진행 기록 {progressNotes.length}개 모아보기</span>
             {showAllLogs ? (
               <ChevronUp className="h-4 w-4" />
             ) : (
@@ -401,6 +405,20 @@ export function ReadingJourney({
             </div>
           )}
         </>
+      )}
+
+      {/* ── 상세 기록 섹션 ── */}
+      {detailNotes.length > 0 && (
+        <div>
+          <div className="flex items-center gap-2 mb-3 pt-2 border-t border-border/40">
+            <PenTool className="h-4 w-4 text-primary" />
+            <h3 className="text-sm font-semibold">독서 기록</h3>
+            <span className="text-xs bg-muted px-1.5 py-0.5 rounded-full text-muted-foreground">
+              {detailNotes.length}
+            </span>
+          </div>
+          <NoteList notes={detailNotes} excludeProgress={false} />
+        </div>
       )}
     </div>
   );
