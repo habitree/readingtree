@@ -327,6 +327,7 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
                 totalPages={book.total_pages}
                 status={userBook.status as string}
                 startedAt={userBook.started_at}
+                completedDates={completedDates}
               />
               {/* 버튼 그룹 */}
               <div className="flex items-center gap-2">
@@ -359,6 +360,7 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
                 totalPages={book.total_pages}
                 status={userBook.status as string}
                 startedAt={userBook.started_at}
+                completedDates={completedDates}
               />
               {/* 버튼 가로 배치 */}
               <div className="flex items-center gap-2 pt-1 border-t border-border/30">
@@ -421,7 +423,15 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
           </div>
         </div>
 
-        <BookNotesTabs userBookId={userBook.id} notes={notes} />
+        <BookNotesTabs
+          userBookId={userBook.id}
+          notes={notes}
+          startedAt={userBook.started_at}
+          completedDates={completedDates}
+          status={userBook.status}
+          currentPage={(userBook as any).current_page || 0}
+          totalPages={book.total_pages ?? null}
+        />
       </div>
 
       {/* ===== 4. 도서 정보 접이식 섹션 ===== */}

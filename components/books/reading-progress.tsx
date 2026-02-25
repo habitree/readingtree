@@ -25,6 +25,7 @@ interface ReadingProgressProps {
   totalPages: number | null | undefined;
   status: string;
   startedAt?: string | null;
+  completedDates?: string[];
   onUpdate?: (newPage: number) => void;
   onTotalPagesUpdate?: (newTotalPages: number | null) => void;
   onRecordCreated?: () => void;
@@ -43,6 +44,7 @@ export function ReadingProgress({
   totalPages: initialTotalPages,
   status,
   startedAt,
+  completedDates,
   onUpdate,
   onTotalPagesUpdate,
   onRecordCreated,
@@ -267,6 +269,11 @@ export function ReadingProgress({
         <Label className="text-sm text-muted-foreground flex items-center gap-1.5">
           <BookOpen className="h-4 w-4" />
           {t("books.readingProgress")}
+          {completedDates && completedDates.length > 0 && (
+            <span className="ml-1 text-[11px] font-semibold bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400 px-1.5 py-0.5 rounded-full">
+              {completedDates.length + 1}회독
+            </span>
+          )}
         </Label>
         {displayPercent !== null && (
           <div className="flex items-center gap-1.5">
