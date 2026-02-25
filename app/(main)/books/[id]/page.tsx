@@ -18,7 +18,7 @@ import { PenTool, Quote, Trophy, Link2, ChevronDown, Info, Calendar } from "luci
 import { BookMetaInfo } from "@/components/books/book-meta-info";
 import type { ReadingStatus } from "@/types/book";
 import { BookNotesTabs } from "@/components/books/book-notes-tabs";
-import { getNotes } from "@/app/actions/notes";
+import { getNotes, getFreeNotesForBook } from "@/app/actions/notes";
 import { getRelatedBooks } from "@/app/actions/book-relations";
 import { isValidUUID } from "@/lib/utils/validation";
 import { sanitizeErrorForLogging } from "@/lib/utils/validation";
@@ -26,6 +26,7 @@ import { READTREE_BOOK_ID } from "@/lib/constants/readtree";
 import { BookScrollHandler } from "@/components/books/book-scroll-handler";
 import { BookTitle } from "@/components/books/book-title";
 import { RelatedBooksList } from "@/components/books/related-books-list";
+import { BookLinkedFreeNotes } from "@/components/books/book-linked-free-notes";
 import { RelatedBooksEditor } from "@/components/books/related-books-editor";
 import { ReadingReportButton } from "@/components/books/reading-report-button";
 import { getSavedReport } from "@/app/actions/ai/report";
@@ -116,6 +117,7 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
   let notes: Awaited<ReturnType<typeof getNotes>> = [];
   let relatedBooks: Awaited<ReturnType<typeof getRelatedBooks>> = [];
   let savedReport: Awaited<ReturnType<typeof getSavedReport>> = null;
+  let linkedFreeNotes: Awaited<ReturnType<typeof getFreeNotesForBook>> = [];
 
   if (isGuest) {
     // 게스트: 샘플 사용자의 노트 데이터를 그대로 표시
@@ -126,14 +128,16 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
       notes = [];
     }
   } else {
-    const [notesResult, relatedBooksResult, savedReportResult] = await Promise.all([
+    const [notesResult, relatedBooksResult, savedReportResult, linkedFreeNotesResult] = await Promise.all([
       getNotes(userBook.id, undefined, user),
       getRelatedBooks(userBook.id, user).catch(() => []),
       getSavedReport(userBook.id).catch(() => null),
+      getFreeNotesForBook(userBook.id, user).catch(() => []),
     ]);
     notes = notesResult;
     relatedBooks = relatedBooksResult;
     savedReport = savedReportResult;
+    linkedFreeNotes = linkedFreeNotesResult;
   }
 
   // 완독 날짜 배열 계산
@@ -433,6 +437,11 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
           totalPages={book.total_pages ?? null}
         />
       </div>
+
+      {/* ===== 3-1. 연결된 자유기록 ===== */}
+      {!isGuest && linkedFreeNotes.length > 0 && (
+        <BookLinkedFreeNotes linkedNotes={linkedFreeNotes} />
+      )}
 
       {/* ===== 4. 도서 정보 접이식 섹션 ===== */}
       <details className="group rounded-lg border border-border/50 bg-card/50 overflow-hidden">

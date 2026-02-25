@@ -1344,3 +1344,50 @@ export async function getFreeNotes(
   }) as NoteWithBook[];
 }
 
+/**
+ * 특정 책(userBookId)과 연결된 자유기록 목록 반환
+ * related_user_book_ids 배열에 userBookId가 포함된 노트
+ */
+export async function getFreeNotesForBook(
+  userBookId: string,
+  user?: User | null
+): Promise<NoteWithBook[]> {
+  const supabase = await createServerSupabaseClient();
+
+  let currentUser = user;
+  if (!currentUser) {
+    const {
+      data: { user: fetchedUser },
+      error: authError,
+    } = await supabase.auth.getUser();
+    if (authError || !fetchedUser) {
+      throw new Error("로그인이 필요합니다.");
+    }
+    currentUser = fetchedUser;
+  }
+
+  const { data, error } = await supabase
+    .from("notes")
+    .select(`*, books (id, title, author, cover_image_url)`)
+    .eq("user_id", currentUser.id)
+    .eq("book_id", READTREE_BOOK_ID)
+    .neq("type", "progress")
+    .contains("related_user_book_ids", [userBookId])
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    throw new Error(sanitizeErrorMessage(error));
+  }
+
+  return (data || []).map((note: unknown) => {
+    const n = note as Record<string, unknown>;
+    const booksField = n.books;
+    const book = Array.isArray(booksField) ? booksField[0] : (booksField || undefined);
+    const { books: _, ...restNote } = n;
+    return {
+      ...restNote,
+      book: book || undefined,
+    };
+  }) as NoteWithBook[];
+}
+

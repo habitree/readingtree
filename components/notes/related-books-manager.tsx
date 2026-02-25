@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { X, Plus, BookOpen, Loader2, Search } from "lucide-react";
+import { X, BookOpen, Loader2, Search } from "lucide-react";
 import { getUserBooks } from "@/app/actions/books";
 import { updateNote } from "@/app/actions/notes";
 import { toast } from "sonner";
@@ -28,6 +28,7 @@ interface RelatedBooksManagerProps {
   currentRelatedBookIds: string[] | null;
   mainBookId: string; // 주 책의 user_books.id
   onUpdate?: (updatedIds: string[] | null) => void; // 연결된 책 목록 업데이트 콜백
+  noteTags?: string[] | null; // 태그 기반 추천용
 }
 
 /**
@@ -38,13 +39,14 @@ export function RelatedBooksManager({
   currentRelatedBookIds,
   mainBookId,
   onUpdate,
+  noteTags,
 }: RelatedBooksManagerProps) {
   const { t } = useTranslation();
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [isLoadingBooks, setIsLoadingBooks] = useState(false);
-  const [availableBooks, setAvailableBooks] = useState<any[]>([]);
+  const [availableBooks, setAvailableBooks] = useState<Record<string, unknown>[]>([]);
   const [selectedBookIds, setSelectedBookIds] = useState<string[]>(
     currentRelatedBookIds || []
   );
@@ -64,7 +66,7 @@ export function RelatedBooksManager({
       const result = await getUserBooks();
       // getUserBooks는 배열을 반환하므로 직접 사용
       // 주 책을 제외한 책들만 표시
-      const filtered = (result || []).filter((book: any) => book.id !== mainBookId);
+      const filtered = (result || []).filter((book: Record<string, unknown>) => book.id !== mainBookId);
       setAvailableBooks(filtered);
     } catch (error) {
       console.error("책 목록 로드 오류:", error);
@@ -100,28 +102,44 @@ export function RelatedBooksManager({
       
       setOpen(false);
       router.refresh();
-    } catch (error: any) {
-      console.error("관련 책 업데이트 오류:", error);
-      toast.error(error.message || t("notes.relatedBooksUpdateFailed"));
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : t("notes.relatedBooksUpdateFailed");
+      toast.error(message);
     } finally {
       setIsUpdating(false);
     }
   };
 
   const selectedBooks = availableBooks.filter((book) =>
-    selectedBookIds.includes(book.id)
+    selectedBookIds.includes(book.id as string)
   );
 
-  // 검색어로 필터링된 책 목록
-  const filteredBooks = availableBooks.filter((book) => {
-    if (!searchQuery.trim()) {
-      return true;
-    }
-    const query = searchQuery.toLowerCase();
-    const title = (book.books?.title || "").toLowerCase();
-    const author = (book.books?.author || "").toLowerCase();
-    return title.includes(query) || author.includes(query);
-  });
+  // 태그 기반 관련도 스코어 계산
+  const getRelevanceScore = (book: Record<string, unknown>): number => {
+    if (!noteTags || noteTags.length === 0) return 0;
+    const booksField = book.books as Record<string, unknown> | undefined;
+    const title = ((booksField?.title as string) || "").toLowerCase();
+    const author = ((booksField?.author as string) || "").toLowerCase();
+    return noteTags.reduce((score, tag) => {
+      const lowerTag = tag.toLowerCase();
+      if (title.includes(lowerTag) || author.includes(lowerTag)) return score + 1;
+      return score;
+    }, 0);
+  };
+
+  // 검색어로 필터링 + 태그 기반 관련도 정렬
+  const filteredBooks = availableBooks
+    .filter((book: Record<string, unknown>) => {
+      if (!searchQuery.trim()) return true;
+      const query = searchQuery.toLowerCase();
+      const booksField = book.books as Record<string, unknown> | undefined;
+      const title = ((booksField?.title as string) || "").toLowerCase();
+      const author = ((booksField?.author as string) || "").toLowerCase();
+      return title.includes(query) || author.includes(query);
+    })
+    .sort((a: Record<string, unknown>, b: Record<string, unknown>) =>
+      getRelevanceScore(b) - getRelevanceScore(a)
+    );
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -152,21 +170,26 @@ export function RelatedBooksManager({
                 {t("notes.selectedLabel", { count: selectedBooks.length })}
               </h4>
               <div className="flex flex-wrap gap-1.5 sm:gap-2">
-                {selectedBooks.map((book) => (
-                  <div
-                    key={book.id}
-                    className="inline-flex items-center gap-1 bg-primary text-primary-foreground rounded-full pl-2.5 pr-1 py-0.5 sm:pl-3 sm:py-1 text-xs sm:text-sm"
-                  >
-                    <span className="truncate max-w-[120px] sm:max-w-[180px]">{book.books.title}</span>
-                    <button
-                      onClick={() => handleToggleBook(book.id)}
-                      className="ml-0.5 h-5 w-5 rounded-full flex items-center justify-center text-primary-foreground/70 hover:bg-destructive hover:text-destructive-foreground transition-colors"
-                      aria-label={t("notes.removeAriaLabel", { title: book.books.title })}
+                {selectedBooks.map((book) => {
+                  const bk = book.books as Record<string, unknown> | undefined;
+                  const bkTitle = (bk?.title as string) || "";
+                  const bkId = book.id as string;
+                  return (
+                    <div
+                      key={bkId}
+                      className="inline-flex items-center gap-1 bg-primary text-primary-foreground rounded-full pl-2.5 pr-1 py-0.5 sm:pl-3 sm:py-1 text-xs sm:text-sm"
                     >
-                      <X className="w-3 h-3" />
-                    </button>
-                  </div>
-                ))}
+                      <span className="truncate max-w-[120px] sm:max-w-[180px]">{bkTitle}</span>
+                      <button
+                        onClick={() => handleToggleBook(bkId)}
+                        className="ml-0.5 h-5 w-5 rounded-full flex items-center justify-center text-primary-foreground/70 hover:bg-destructive hover:text-destructive-foreground transition-colors"
+                        aria-label={t("notes.removeAriaLabel", { title: bkTitle })}
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -210,35 +233,46 @@ export function RelatedBooksManager({
               </p>
             ) : (
               <div className="space-y-1.5 sm:space-y-2 max-h-[40vh] sm:max-h-[300px] overflow-y-auto -mx-1 px-1">
-                {filteredBooks.map((book) => {
-                  const isSelected = selectedBookIds.includes(book.id);
+                {filteredBooks.map((book: Record<string, unknown>) => {
+                  const bookId = book.id as string;
+                  const booksField = book.books as Record<string, unknown> | undefined;
+                  const bookTitle = (booksField?.title as string) || "";
+                  const bookAuthor = (booksField?.author as string) || "";
+                  const bookCoverUrl = (booksField?.cover_image_url as string) || null;
+                  const isSelected = selectedBookIds.includes(bookId);
+                  const relevanceScore = getRelevanceScore(book);
                   return (
                     <div
-                      key={book.id}
+                      key={bookId}
                       className={`flex items-center gap-2.5 sm:gap-3 p-2 sm:p-3 rounded-lg border cursor-pointer transition-colors active:scale-[0.98] ${
                         isSelected
                           ? "bg-primary/10 border-primary"
                           : "hover:bg-muted active:bg-muted"
                       }`}
-                      onClick={() => handleToggleBook(book.id)}
+                      onClick={() => handleToggleBook(bookId)}
                     >
                       <div className="relative w-10 h-14 sm:w-12 sm:h-16 shrink-0 overflow-hidden rounded bg-muted">
                         <Image
-                          src={getImageUrl(book.books.cover_image_url)}
-                          alt={book.books.title}
+                          src={getImageUrl(bookCoverUrl)}
+                          alt={bookTitle}
                           fill
                           className="object-cover"
                           sizes="48px"
                         />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm sm:font-medium truncate">{book.books.title}</p>
-                        {book.books.author && (
+                        <p className="text-sm sm:font-medium truncate">{bookTitle}</p>
+                        {bookAuthor && (
                           <p className="text-xs text-muted-foreground truncate">
-                            {book.books.author}
+                            {bookAuthor}
                           </p>
                         )}
                       </div>
+                      {relevanceScore > 0 && !isSelected && (
+                        <Badge variant="secondary" className="shrink-0 h-5 px-1.5 text-[10px] bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 border-0">
+                          추천
+                        </Badge>
+                      )}
                       {isSelected && (
                         <div className="shrink-0 w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-primary flex items-center justify-center">
                           <svg className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-primary-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
@@ -292,7 +326,7 @@ export function RelatedBooksManager({
 interface RelatedBooksDisplayProps {
   relatedBookIds: string[] | null;
   mainBookId: string;
-  initialBooks?: any[];
+  initialBooks?: Record<string, unknown>[];
 }
 
 export function RelatedBooksDisplay({
@@ -301,7 +335,7 @@ export function RelatedBooksDisplay({
   initialBooks,
 }: RelatedBooksDisplayProps) {
   const { t } = useTranslation();
-  const [relatedBooks, setRelatedBooks] = useState<any[]>(initialBooks || []);
+  const [relatedBooks, setRelatedBooks] = useState<Record<string, unknown>[]>(initialBooks || []);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
@@ -316,8 +350,8 @@ export function RelatedBooksDisplay({
     setIsLoading(true);
     try {
       const result = await getUserBooks();
-      const filtered = (result || []).filter((book: any) =>
-        relatedBookIds.includes(book.id)
+      const filtered = (result || []).filter((book: Record<string, unknown>) =>
+        relatedBookIds.includes(book.id as string)
       );
       setRelatedBooks(filtered);
     } catch (error) {
@@ -356,26 +390,32 @@ export function RelatedBooksDisplay({
       </h4>
       {/* 모바일: 가로 스크롤, 데스크탑: 래핑 */}
       <div className="flex gap-2 overflow-x-auto pb-1 sm:flex-wrap sm:overflow-visible scrollbar-hide -mx-1 px-1">
-        {relatedBooks.map((book) => (
-          <Link
-            key={book.id}
-            href={`/books/${book.id}`}
-            className="inline-flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg border bg-card hover:bg-accent active:scale-[0.98] transition-all shrink-0"
-          >
-            <div className="relative w-6 h-8 sm:w-8 sm:h-10 shrink-0 overflow-hidden rounded bg-muted">
-              <Image
-                src={getImageUrl(book.books.cover_image_url)}
-                alt={book.books.title}
-                fill
-                className="object-cover"
-                sizes="32px"
-              />
-            </div>
-            <span className="text-xs sm:text-sm font-medium truncate max-w-[100px] sm:max-w-[150px]">
-              {book.books.title}
-            </span>
-          </Link>
-        ))}
+        {relatedBooks.map((book) => {
+          const bk = book.books as Record<string, unknown> | undefined;
+          const bkTitle = (bk?.title as string) || "";
+          const bkCoverUrl = (bk?.cover_image_url as string) || null;
+          const bkId = book.id as string;
+          return (
+            <Link
+              key={bkId}
+              href={`/books/${bkId}`}
+              className="inline-flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg border bg-card hover:bg-accent active:scale-[0.98] transition-all shrink-0"
+            >
+              <div className="relative w-6 h-8 sm:w-8 sm:h-10 shrink-0 overflow-hidden rounded bg-muted">
+                <Image
+                  src={getImageUrl(bkCoverUrl)}
+                  alt={bkTitle}
+                  fill
+                  className="object-cover"
+                  sizes="32px"
+                />
+              </div>
+              <span className="text-xs sm:text-sm font-medium truncate max-w-[100px] sm:max-w-[150px]">
+                {bkTitle}
+              </span>
+            </Link>
+          );
+        })}
       </div>
     </div>
   );
