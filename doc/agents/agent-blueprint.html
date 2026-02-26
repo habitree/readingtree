@@ -1,0 +1,1862 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ReadTree Agent Blueprint v1.0</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --surface: #1e293b;
+      --surface-2: #334155;
+      --border: #475569;
+      --text: #e2e8f0;
+      --text-muted: #94a3b8;
+      --accent: #38bdf8;
+      --accent-2: #818cf8;
+      --green: #4ade80;
+      --yellow: #fbbf24;
+      --red: #f87171;
+      --orange: #fb923c;
+      --pink: #f472b6;
+      --cyan: #22d3ee;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+      padding: 0;
+    }
+
+    /* Header */
+    .hero {
+      background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 60px 40px;
+      text-align: center;
+    }
+    .hero h1 {
+      font-size: 2.5rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 12px;
+    }
+    .hero .subtitle {
+      font-size: 1.1rem;
+      color: var(--text-muted);
+      max-width: 600px;
+      margin: 0 auto;
+    }
+    .hero .meta {
+      margin-top: 20px;
+      display: flex;
+      gap: 24px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .hero .meta span {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      background: var(--surface);
+      padding: 6px 16px;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+    }
+
+    /* Navigation */
+    .toc {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(15, 23, 42, 0.95);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 40px;
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      flex-wrap: wrap;
+    }
+    .toc a {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.8rem;
+      padding: 6px 14px;
+      border-radius: 16px;
+      border: 1px solid transparent;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+    .toc a:hover {
+      color: var(--accent);
+      border-color: var(--accent);
+      background: rgba(56, 189, 248, 0.08);
+    }
+
+    /* Main container */
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 40px 40px 80px;
+    }
+
+    /* Section */
+    section {
+      margin-bottom: 60px;
+    }
+    section > h2 {
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 8px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid var(--surface-2);
+    }
+    section > .section-desc {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      margin-bottom: 28px;
+    }
+
+    /* Stats grid */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px;
+      margin-bottom: 40px;
+    }
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+    }
+    .stat-card .number {
+      font-size: 2rem;
+      font-weight: 800;
+      color: var(--accent);
+    }
+    .stat-card .label {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    /* Architecture diagram */
+    .arch-diagram {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 32px;
+      margin: 24px 0;
+      overflow-x: auto;
+    }
+    .arch-diagram pre {
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      font-size: 0.85rem;
+      color: var(--text);
+      line-height: 1.6;
+      white-space: pre;
+    }
+
+    /* Agent Card */
+    .agent-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 24px;
+    }
+    .agent-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      transition: border-color 0.3s;
+    }
+    .agent-card:hover {
+      border-color: var(--accent);
+    }
+    .agent-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 24px 28px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(56, 189, 248, 0.03);
+    }
+    .agent-icon {
+      width: 52px;
+      height: 52px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      flex-shrink: 0;
+    }
+    .agent-title-area h3 {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+    .agent-title-area .agent-id {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      font-family: monospace;
+    }
+    .agent-badges {
+      display: flex;
+      gap: 8px;
+      margin-left: auto;
+      flex-wrap: wrap;
+    }
+    .badge {
+      font-size: 0.7rem;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .badge-core { background: rgba(56, 189, 248, 0.15); color: var(--accent); }
+    .badge-domain { background: rgba(74, 222, 128, 0.15); color: var(--green); }
+    .badge-support { background: rgba(251, 191, 36, 0.15); color: var(--yellow); }
+    .badge-ops { background: rgba(248, 113, 113, 0.15); color: var(--red); }
+    .badge-new { background: rgba(244, 114, 182, 0.15); color: var(--pink); }
+    .badge-existing { background: rgba(129, 140, 248, 0.15); color: var(--accent-2); }
+
+    .agent-body {
+      padding: 24px 28px;
+    }
+    .agent-body p {
+      color: var(--text-muted);
+      font-size: 0.92rem;
+      margin-bottom: 16px;
+    }
+
+    .agent-section {
+      margin-bottom: 20px;
+    }
+    .agent-section h4 {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+
+    .file-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .file-tag {
+      font-size: 0.75rem;
+      font-family: monospace;
+      background: var(--surface-2);
+      color: var(--text-muted);
+      padding: 4px 10px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+    }
+
+    .responsibility-list {
+      list-style: none;
+      padding: 0;
+    }
+    .responsibility-list li {
+      font-size: 0.88rem;
+      color: var(--text);
+      padding: 6px 0;
+      padding-left: 20px;
+      position: relative;
+    }
+    .responsibility-list li::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 14px;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent);
+    }
+
+    .io-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .io-box {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px;
+    }
+    .io-box h5 {
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--green);
+      margin-bottom: 6px;
+    }
+    .io-box.output h5 { color: var(--orange); }
+    .io-box ul {
+      list-style: none;
+      padding: 0;
+    }
+    .io-box ul li {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      padding: 2px 0;
+    }
+    .io-box ul li::before {
+      content: '> ';
+      color: var(--border);
+    }
+
+    .escalation-box {
+      background: rgba(248, 113, 113, 0.06);
+      border: 1px solid rgba(248, 113, 113, 0.2);
+      border-radius: 10px;
+      padding: 14px;
+    }
+    .escalation-box h5 {
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--red);
+      margin-bottom: 6px;
+    }
+    .escalation-box ul {
+      list-style: none;
+      padding: 0;
+    }
+    .escalation-box ul li {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      padding: 2px 0;
+    }
+
+    /* Priority table */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0;
+      font-size: 0.88rem;
+    }
+    thead {
+      background: var(--surface-2);
+    }
+    th {
+      padding: 12px 16px;
+      text-align: left;
+      font-weight: 700;
+      color: var(--text);
+      border-bottom: 2px solid var(--border);
+    }
+    td {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      color: var(--text-muted);
+    }
+    tr:hover td {
+      background: rgba(56, 189, 248, 0.03);
+    }
+    .priority-p0 { color: var(--red); font-weight: 700; }
+    .priority-p1 { color: var(--orange); font-weight: 700; }
+    .priority-p2 { color: var(--yellow); font-weight: 700; }
+    .priority-p3 { color: var(--text-muted); font-weight: 700; }
+
+    /* Orchestration Flow */
+    .flow-container {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 32px;
+      margin: 20px 0;
+    }
+    .flow-step {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      margin-bottom: 20px;
+      position: relative;
+    }
+    .flow-step:not(:last-child)::after {
+      content: '';
+      position: absolute;
+      left: 19px;
+      top: 44px;
+      width: 2px;
+      height: calc(100% - 8px);
+      background: var(--border);
+    }
+    .flow-num {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--surface-2);
+      border: 2px solid var(--accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--accent);
+      flex-shrink: 0;
+    }
+    .flow-content h4 {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+    .flow-content p {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    /* Module dependency diagram */
+    .dep-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 16px;
+      margin: 20px 0;
+    }
+    .dep-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 18px;
+    }
+    .dep-card h4 {
+      font-size: 0.9rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    .dep-card ul {
+      list-style: none;
+      padding: 0;
+    }
+    .dep-card ul li {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      padding: 3px 0;
+    }
+
+    /* Footer */
+    .doc-footer {
+      border-top: 1px solid var(--border);
+      padding: 30px 40px;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.8rem;
+    }
+
+    @media (max-width: 768px) {
+      .hero { padding: 40px 20px; }
+      .hero h1 { font-size: 1.8rem; }
+      .container { padding: 24px 20px; }
+      .toc { padding: 10px 20px; }
+      .io-grid { grid-template-columns: 1fr; }
+      .agent-header { flex-wrap: wrap; }
+      .agent-badges { margin-left: 0; margin-top: 8px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Hero Header -->
+<div class="hero">
+  <h1>ReadTree Agent Blueprint</h1>
+  <p class="subtitle">
+    프로젝트 모듈 분석 기반 에이전트 설계 청사진.<br>
+    역할·책임·입출력이 정의된 12개 전문 에이전트 시스템.
+  </p>
+  <div class="meta">
+    <span>v1.0.0</span>
+    <span>2026-02-26</span>
+    <span>12 Agents</span>
+    <span>11 Modules</span>
+    <span>265+ Components</span>
+  </div>
+</div>
+
+<!-- Navigation -->
+<nav class="toc">
+  <a href="#overview">Overview</a>
+  <a href="#architecture">Architecture</a>
+  <a href="#orchestrator">Orchestrator</a>
+  <a href="#agent-library">Agent Library (Core)</a>
+  <a href="#agent-records">Records Agent</a>
+  <a href="#agent-ai">AI Agent</a>
+  <a href="#agent-groups">Groups Agent</a>
+  <a href="#agent-auth">Auth Agent</a>
+  <a href="#agent-search">Search Agent</a>
+  <a href="#agent-admin">Admin Agent</a>
+  <a href="#agent-perf">Performance Agent</a>
+  <a href="#agent-data">Data Agent</a>
+  <a href="#agent-deploy">Deploy Agent</a>
+  <a href="#agent-test">Test Agent</a>
+  <a href="#agent-freenotes">FreeNotes Agent</a>
+  <a href="#priority">Priority Matrix</a>
+  <a href="#orchestration">Orchestration Flow</a>
+</nav>
+
+<div class="container">
+
+  <!-- Section 1: Overview -->
+  <section id="overview">
+    <h2>1. Project Overview</h2>
+    <p class="section-desc">ReadTree(Habitree Reading Hub) 프로젝트의 현재 모듈화 현황과 에이전트 필요성 분석</p>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="number">265+</div>
+        <div class="label">Components</div>
+      </div>
+      <div class="stat-card">
+        <div class="number">17</div>
+        <div class="label">Custom Hooks</div>
+      </div>
+      <div class="stat-card">
+        <div class="number">45+</div>
+        <div class="label">Server Actions</div>
+      </div>
+      <div class="stat-card">
+        <div class="number">14</div>
+        <div class="label">API Routes</div>
+      </div>
+      <div class="stat-card">
+        <div class="number">33</div>
+        <div class="label">DB Tables</div>
+      </div>
+      <div class="stat-card">
+        <div class="number">75+</div>
+        <div class="label">Migrations</div>
+      </div>
+      <div class="stat-card">
+        <div class="number">47+</div>
+        <div class="label">App Routes</div>
+      </div>
+      <div class="stat-card">
+        <div class="number">11</div>
+        <div class="label">Agent Rules</div>
+      </div>
+    </div>
+
+    <div class="arch-diagram">
+      <pre>
+  ReadTree Module Structure
+  ========================
+
+  ┌────────────────────────────────────────────────────────────────┐
+  │                    C. UI Layer (Presentation)                  │
+  │         home(dashboard) / landing / shared(ui/layout)          │
+  └──────────────────────────┬─────────────────────────────────────┘
+                             │ uses
+  ┌──────────────────────────▼─────────────────────────────────────┐
+  │                B. Platform / Support Modules                   │
+  │     search │ ai(chat,ocr,report,persona) │ profile │ admin    │
+  └──────────────────────────┬─────────────────────────────────────┘
+                             │ uses
+  ┌──────────────────────────▼─────────────────────────────────────┐
+  │                   A. Domain Modules (Core)                     │
+  │   identity │ library(books,bookshelves) │ records(notes,ocr)   │
+  │            │ groups(members,shared)      │ sharing              │
+  └──────────────────────────┬─────────────────────────────────────┘
+                             │ uses
+  ┌──────────────────────────▼─────────────────────────────────────┐
+  │                        Shared Layer                            │
+  │   supabase │ utils │ types │ constants │ security │ i18n       │
+  └────────────────────────────────────────────────────────────────┘
+      </pre>
+    </div>
+  </section>
+
+  <!-- Section 2: Architecture -->
+  <section id="architecture">
+    <h2>2. Agent Architecture</h2>
+    <p class="section-desc">에이전트는 기능 단위가 아닌 <strong>판단 책임의 경계</strong>를 기준으로 분리합니다. 각 에이전트는 명확한 입출력 스키마를 가지며, 자신의 판단 범위를 초과하면 오케스트레이터로 에스컬레이션합니다.</p>
+
+    <div class="arch-diagram">
+      <pre>
+  Agent Orchestration Architecture
+  =================================
+
+                        ┌─────────────────────┐
+                        │   Orchestrator       │
+                        │   (의사결정·종합)     │
+                        └──────┬──────────────┘
+                               │
+            ┌──────────────────┼──────────────────────┐
+            │                  │                      │
+    ┌───────▼──────┐  ┌───────▼──────┐  ┌───────────▼────────┐
+    │  Core Domain │  │   Platform   │  │   Operations       │
+    │  Agents      │  │   Agents     │  │   Agents           │
+    ├──────────────┤  ├──────────────┤  ├────────────────────┤
+    │ Library      │  │ AI           │  │ Performance        │
+    │ Records      │  │ Search       │  │ Data (DB/Migration)│
+    │ Groups       │  │ Admin        │  │ Deploy             │
+    │ Auth/Identity│  │ FreeNotes    │  │ Test               │
+    └──────────────┘  └──────────────┘  └────────────────────┘
+
+  Design Principles:
+  ─────────────────
+  1. 에이전트는 "재료"를 제공, 오케스트레이터가 "결정"
+  2. 불확실성 라벨링 필수 (info_insufficient / conflicting / out_of_scope)
+  3. 구조화 출력(JSON/MD) = 다른 에이전트 입력용
+  4. 자연어 출력 = 최종 사용자 전달용
+      </pre>
+    </div>
+  </section>
+
+  <!-- Section 3: Orchestrator -->
+  <section id="orchestrator">
+    <h2>3. Orchestrator Agent</h2>
+    <p class="section-desc">모든 에이전트를 조율하는 최상위 의사결정자. 직접 코드를 작성하지 않으며, 각 도메인 에이전트에게 작업을 위임하고 결과를 종합합니다.</p>
+
+    <div class="agent-card">
+      <div class="agent-header" style="background: rgba(129, 140, 248, 0.08);">
+        <div class="agent-icon" style="background: linear-gradient(135deg, #6366f1, #818cf8);">
+          <span style="color: white;">O</span>
+        </div>
+        <div class="agent-title-area">
+          <h3>Orchestrator</h3>
+          <span class="agent-id">orchestrator.md</span>
+        </div>
+        <div class="agent-badges">
+          <span class="badge badge-core">CORE</span>
+          <span class="badge badge-new">NEW</span>
+        </div>
+      </div>
+      <div class="agent-body">
+        <p>유저 요청을 분석하여 적절한 도메인 에이전트에게 라우팅. 복수 에이전트의 결과를 종합하여 최종 의사결정을 수행합니다.</p>
+
+        <div class="agent-section">
+          <h4>Responsibilities</h4>
+          <ul class="responsibility-list">
+            <li>유저 요청 의도 파악 및 도메인 분류</li>
+            <li>적절한 에이전트에게 작업 위임 (병렬/순차)</li>
+            <li>에이전트 간 의존성 관리 및 순서 조율</li>
+            <li>에스컬레이션된 불확실성에 대한 최종 판단</li>
+            <li>Task Summary 생성 및 변경 파일 목록 취합</li>
+          </ul>
+        </div>
+
+        <div class="agent-section">
+          <h4>Routing Rules</h4>
+          <div class="arch-diagram" style="padding: 16px;">
+            <pre style="font-size: 0.78rem;">
+  Request Pattern                  → Agent
+  ──────────────────────────────────────────
+  "책 추가/삭제/상태 변경"         → Library Agent
+  "기록 작성/수정/OCR"             → Records Agent
+  "자유기록 관련"                   → FreeNotes Agent
+  "AI 채팅/리포트/페르소나"        → AI Agent
+  "모임 생성/멤버/공유"            → Groups Agent
+  "로그인/회원가입/온보딩"         → Auth Agent
+  "검색 기능"                       → Search Agent
+  "관리자 기능"                     → Admin Agent
+  "성능 최적화"                     → Performance Agent
+  "DB 스키마/마이그레이션"         → Data Agent
+  "배포/환경 설정"                  → Deploy Agent
+  "테스트 작성/실행"                → Test Agent
+  "복수 도메인 걸침"               → 병렬 위임 후 종합
+            </pre>
+          </div>
+        </div>
+
+        <div class="agent-section">
+          <h4>Escalation Handling</h4>
+          <div class="escalation-box">
+            <h5>Orchestrator가 직접 판단하는 경우</h5>
+            <ul>
+              <li>아키텍처 변경이 필요한 요청 (레이어 간 의존성 변경)</li>
+              <li>복수 에이전트의 결과가 상충할 때</li>
+              <li>보안 관련 의사결정 (RLS 정책, 인증 로직)</li>
+              <li>유저에게 되물어야 하는 애매한 요청</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Agent 1: Library -->
+  <section id="agent-library">
+    <h2>4. Library Agent (books)</h2>
+    <p class="section-desc">책과 서재 도메인의 전문가. 40개 컴포넌트 + 5개 액션 파일을 관할합니다.</p>
+
+    <div class="agent-card">
+      <div class="agent-header">
+        <div class="agent-icon" style="background: linear-gradient(135deg, #0ea5e9, #38bdf8);">
+          <span style="color: white;">L</span>
+        </div>
+        <div class="agent-title-area">
+          <h3>Library Agent</h3>
+          <span class="agent-id">library-agent.md</span>
+        </div>
+        <div class="agent-badges">
+          <span class="badge badge-domain">DOMAIN</span>
+          <span class="badge badge-new">NEW</span>
+        </div>
+      </div>
+      <div class="agent-body">
+        <p>서재(Library) 모듈 전반을 담당합니다. 책 추가/검색, 독서 상태 관리, 서재 구성, 진행률 추적, 관련 도서 연결 등 독서 관리의 핵심 기능을 관할합니다.</p>
+
+        <div class="agent-section">
+          <h4>Scope (Glob Patterns)</h4>
+          <div class="file-list">
+            <span class="file-tag">app/(main)/books/**</span>
+            <span class="file-tag">app/(main)/bookshelves/**</span>
+            <span class="file-tag">app/actions/books/**</span>
+            <span class="file-tag">app/actions/bookshelves.ts</span>
+            <span class="file-tag">app/actions/book-relations.ts</span>
+            <span class="file-tag">app/actions/progress.ts</span>
+            <span class="file-tag">app/api/books/**</span>
+            <span class="file-tag">components/books/**</span>
+            <span class="file-tag">components/bookshelves/**</span>
+            <span class="file-tag">hooks/use-books.ts</span>
+            <span class="file-tag">types/book.ts</span>
+            <span class="file-tag">types/bookshelf.ts</span>
+            <span class="file-tag">types/progress.ts</span>
+          </div>
+        </div>
+
+        <div class="agent-section">
+          <h4>Responsibilities</h4>
+          <ul class="responsibility-list">
+            <li>책 CRUD (추가, 수정, 삭제, 상세 조회)</li>
+            <li>외부 API 책 검색 (Naver, Google Books, Aladin)</li>
+            <li>서재 관리 (생성, 편집, 메인 서재 설정)</li>
+            <li>독서 상태 관리 (reading/completed/paused/rereading)</li>
+            <li>독서 여정(Reading Journey) 시각화 데이터 구성</li>
+            <li>진행률 기록 및 회독 세션 파생</li>
+            <li>관련 도서 연결 (user_book_relations)</li>
+            <li>총 페이지 수 업데이트 (외부 API + 수동)</li>
+          </ul>
+        </div>
+
+        <div class="agent-section">
+          <h4>Input / Output</h4>
+          <div class="io-grid">
+            <div class="io-box">
+              <h5>INPUT</h5>
+              <ul>
+                <li>ISBN / 책 제목 / 저자</li>
+                <li>독서 상태 변경 요청</li>
+                <li>진행 페이지 수</li>
+                <li>서재 관련 CRUD 요청</li>
+              </ul>
+            </div>
+            <div class="io-box output">
+              <h5>OUTPUT</h5>
+              <ul>
+                <li>책 데이터 (Book + UserBook)</li>
+                <li>서재 구조 (Bookshelf[])</li>
+                <li>독서 여정 세션 데이터</li>
+                <li>진행률 통계</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="agent-section">
+          <h4>DB Tables</h4>
+          <div class="file-list">
+            <span class="file-tag">books</span>
+            <span class="file-tag">user_books</span>
+            <span class="file-tag">bookshelves</span>
+            <span class="file-tag">reading_logs</span>
+            <span class="file-tag">user_book_relations</span>
+          </div>
+        </div>
+
+        <div class="agent-section">
+          <div class="escalation-box">
+            <h5>Escalation to Orchestrator</h5>
+            <ul>
+              <li>외부 API 장애 시 (Naver/Google Books 전체 다운)</li>
+              <li>책 삭제 시 연관 기록(notes) 처리 방침 필요</li>
+              <li>서재 구조 변경이 UI 레이아웃에 영향을 줄 때</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Agent 2: Records -->
+  <section id="agent-records">
+    <h2>5. Records Agent (notes)</h2>
+    <p class="section-desc">독서기록(노트) 도메인의 전문가. 33개 컴포넌트 + OCR 파이프라인을 관할합니다.</p>
+
+    <div class="agent-card">
+      <div class="agent-header">
+        <div class="agent-icon" style="background: linear-gradient(135deg, #10b981, #4ade80);">
+          <span style="color: white;">R</span>
+        </div>
+        <div class="agent-title-area">
+          <h3>Records Agent</h3>
+          <span class="agent-id">records-agent.md</span>
+        </div>
+        <div class="agent-badges">
+          <span class="badge badge-domain">DOMAIN</span>
+          <span class="badge badge-new">NEW</span>
+        </div>
+      </div>
+      <div class="agent-body">
+        <p>모든 유형의 독서 기록(인용구, 메모, 사진, 필사/OCR, 진행)을 관리합니다. 이미지 업로드, OCR 파이프라인, 태그 시스템, 책 연결까지 기록 생명주기 전체를 담당합니다.</p>
+
+        <div class="agent-section">
+          <h4>Scope (Glob Patterns)</h4>
+          <div class="file-list">
+            <span class="file-tag">app/(main)/notes/**</span>
+            <span class="file-tag">app/(main)/timeline/**</span>
+            <span class="file-tag">app/actions/notes.ts</span>
+            <span class="file-tag">app/actions/ai/ocr.ts</span>
+            <span class="file-tag">app/api/notes/**</span>
+            <span class="file-tag">app/api/ocr/**</span>
+            <span class="file-tag">app/api/upload/**</span>
+            <span class="file-tag">components/notes/**</span>
+            <span class="file-tag">components/timeline/**</span>
+            <span class="file-tag">hooks/use-notes.ts</span>
+            <span class="file-tag">hooks/use-note-form.ts</span>
+            <span class="file-tag">hooks/use-ocr-status.ts</span>
+            <span class="file-tag">hooks/use-mobile-note-sheet.ts</span>
+            <span class="file-tag">types/note.ts</span>
+          </div>
+        </div>
+
+        <div class="agent-section">
+          <h4>Responsibilities</h4>
+          <ul class="responsibility-list">
+            <li>기록 CRUD (5가지 타입: quote, memo, photo, transcription, progress)</li>
+            <li>이미지 업로드 파이프라인 (압축 + 스탬프 + 저장)</li>
+            <li>OCR 처리 파이프라인 (요청 -> 대기 -> 결과 수신)</li>
+            <li>태그 시스템 (자동 태깅 + 수동 입력 + 태그 클라우드)</li>
+            <li>책 멘션/연결 (related_user_book_ids)</li>
+            <li>기록 폼 공통 로직 (데스크톱 + 모바일 통합)</li>
+            <li>타임라인 시각화 데이터 구성</li>
+            <li>기록 공유/공개 설정</li>
+          </ul>
+        </div>
+
+        <div class="agent-section">
+          <h4>Input / Output</h4>
+          <div class="io-grid">
+            <div class="io-box">
+              <h5>INPUT</h5>
+              <ul>
+                <li>기록 내용 (텍스트, 이미지, 페이지)</li>
+                <li>기록 타입 (quote/memo/photo/...)</li>
+                <li>연결할 책 ID (book_id, related_user_book_ids)</li>
+                <li>태그 목록, 출처(source)</li>
+              </ul>
+            </div>
+            <div class="io-box output">
+              <h5>OUTPUT</h5>
+              <ul>
+                <li>생성/수정된 Note 데이터</li>
+                <li>OCR 결과 (transcription)</li>
+                <li>태그 클라우드 데이터</li>
+                <li>타임라인 구조화 데이터</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="agent-section">
+          <h4>DB Tables</h4>
+          <div class="file-list">
+            <span class="file-tag">notes</span>
+            <span class="file-tag">transcriptions</span>
+            <span class="file-tag">ocr_logs</span>
+            <span class="file-tag">ocr_usage_stats</span>
+            <span class="file-tag">point_transactions (via earnPoints)</span>
+          </div>
+        </div>
+
+        <div class="agent-section">
+          <div class="escalation-box">
+            <h5>Escalation to Orchestrator</h5>
+            <ul>
+              <li>OCR API 전체 장애 (Claude Vision + Tesseract 모두 실패)</li>
+              <li>이미지 저장소 용량 한계 근접</li>
+              <li>기록 삭제 시 그룹 공유 기록(group_notes) 동기화 정책</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Agent 3: AI -->
+  <section id="agent-ai">
+    <h2>6. AI Agent</h2>
+    <p class="section-desc">AI 기능 전체를 관할. 3개 프로바이더(Gemini, OpenAI, Anthropic) + 채팅, 리포트, 페르소나, 요약 기능.</p>
+
+    <div class="agent-card">
+      <div class="agent-header">
+        <div class="agent-icon" style="background: linear-gradient(135deg, #8b5cf6, #a78bfa);">
+          <span style="color: white;">AI</span>
+        </div>
+        <div class="agent-title-area">
+          <h3>AI Agent</h3>
+          <span class="agent-id">ai-agent.md</span>
+        </div>
+        <div class="agent-badges">
+          <span class="badge badge-support">PLATFORM</span>
+          <span class="badge badge-new">NEW</span>
+        </div>
+      </div>
+      <div class="agent-body">
+        <p>AI 채팅(독서친구), AI 리포트 생성, 페르소나 분석, 책 설명 요약, 자동 태깅 등 모든 AI 기능을 관할합니다. 3개 프로바이더 폴백 전략을 관리합니다.</p>
+
+        <div class="agent-section">
+          <h4>Scope (Glob Patterns)</h4>
+          <div class="file-list">
+            <span class="file-tag">app/(main)/chat/**</span>
+            <span class="file-tag">app/(main)/persona/**</span>
+            <span class="file-tag">app/actions/ai/**</span>
+            <span class="file-tag">app/api/ai/**</span>
+            <span class="file-tag">app/api/chat/**</span>
+            <span class="file-tag">components/ai/**</span>
+            <span class="file-tag">components/persona/**</span>
+            <span class="file-tag">lib/ai/**</span>
+            <span class="file-tag">types/ai/**</span>
+          </div>
+        </div>
+
+        <div class="agent-section">
+          <h4>Responsibilities</h4>
+          <ul class="responsibility-list">
+            <li>AI 채팅 세션 관리 (SSE 스트리밍, 대화 컨텍스트)</li>
+            <li>AI 리포트 생성 (주간/월간/온디맨드)</li>
+            <li>페르소나 분석 (독서 습관 기반 지적 프로필)</li>
+            <li>책 설명 요약 (description_summary)</li>
+            <li>자동 태깅 (기록 내용 기반)</li>
+            <li>프로바이더 폴백 체인 관리 (Gemini -> OpenAI -> Claude)</li>
+            <li>시스템 프롬프트 동적 생성 (유저 데이터 기반)</li>
+            <li>토큰 사용량 추적 및 비용 관리</li>
+          </ul>
+        </div>
+
+        <div class="agent-section">
+          <h4>Provider Fallback Chain</h4>
+          <div class="arch-diagram" style="padding: 16px;">
+            <pre style="font-size: 0.78rem;">
+  Default: Gemini 2.0 Flash (무료 티어)
+      |
+      └─ Fail? → OpenAI GPT-4o-mini
+                    |
+                    └─ Fail? → Anthropic Claude 3.5 Sonnet
+                                  |
+                                  └─ Fail? → 에러 + 에스컬레이션
+            </pre>
+          </div>
+        </div>
+
+        <div class="agent-section">
+          <h4>DB Tables</h4>
+          <div class="file-list">
+            <span class="file-tag">chat_sessions</span>
+            <span class="file-tag">chat_messages</span>
+            <span class="file-tag">ai_settings</span>
+            <span class="file-tag">ai_reports</span>
+            <span class="file-tag">report_reactions</span>
+            <span class="file-tag">user_personas</span>
+            <span class="file-tag">user_ai_memories</span>
+          </div>
+        </div>
+
+        <div class="agent-section">
+          <div class="escalation-box">
+            <h5>Escalation to Orchestrator</h5>
+            <ul>
+              <li>전체 프로바이더 장애 (3개 모두 실패)</li>
+              <li>토큰 비용이 일일 예산 초과</li>
+              <li>프롬프트 변경이 다른 도메인 데이터에 영향</li>
+              <li>새 AI 프로바이더 추가 시 아키텍처 결정</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Agent 4: Groups -->
+  <section id="agent-groups">
+    <h2>7. Groups Agent</h2>
+    <p class="section-desc">독서모임 도메인 전문가. 14개 컴포넌트 + 8개 분리된 액션 파일 + Realtime 구독.</p>
+
+    <div class="agent-card">
+      <div class="agent-header">
+        <div class="agent-icon" style="background: linear-gradient(135deg, #f59e0b, #fbbf24);">
+          <span style="color: white;">G</span>
+        </div>
+        <div class="agent-title-area">
+          <h3>Groups Agent</h3>
+          <span class="agent-id">groups-agent.md</span>
+        </div>
+        <div class="agent-badges">
+          <span class="badge badge-domain">DOMAIN</span>
+          <span class="badge badge-new">NEW</span>
+        </div>
+      </div>
+      <div class="agent-body">
+        <p>독서모임 생성, 멤버 관리, 기록/책 공유, 초대 링크, 실시간 활동 피드 등 협업 읽기 기능 전체를 담당합니다.</p>
+
+        <div class="agent-section">
+          <h4>Scope</h4>
+          <div class="file-list">
+            <span class="file-tag">app/(main)/groups/**</span>
+            <span class="file-tag">app/actions/groups/**</span>
+            <span class="file-tag">components/groups/**</span>
+            <span class="file-tag">hooks/use-groups.ts</span>
+            <span class="file-tag">hooks/use-group-realtime.ts</span>
+            <span class="file-tag">types/group.ts</span>
+          </div>
+        </div>
+
+        <div class="agent-section">
+          <h4>Responsibilities</h4>
+          <ul class="responsibility-list">
+            <li>모임 CRUD (생성, 설정, 삭제)</li>
+            <li>멤버 관리 (초대, 가입 승인, 역할 변경, 탈퇴)</li>
+            <li>초대 링크 생성 및 토큰 관리</li>
+            <li>모임 지정 도서 관리 (group_books)</li>
+            <li>개인 기록 모임 공유 (group_notes)</li>
+            <li>실시간 활동 피드 (Supabase Realtime)</li>
+            <li>모임 활동 통계 (group_activity_stats)</li>
+          </ul>
+        </div>
+
+        <div class="agent-section">
+          <h4>DB Tables</h4>
+          <div class="file-list">
+            <span class="file-tag">groups</span>
+            <span class="file-tag">group_members</span>
+            <span class="file-tag">group_books</span>
+            <span class="file-tag">group_notes</span>
+            <span class="file-tag">group_shared_books</span>
+            <span class="file-tag">group_activity_stats</span>
+          </div>
+        </div>
+
+        <div class="agent-section">
+          <div class="escalation-box">
+            <h5>Escalation to Orchestrator</h5>
+            <ul>
+              <li>모임 삭제 시 공유된 기록/책 처리 정책</li>
+              <li>Realtime 채널 연결 한계 (동시 접속 수)</li>
+              <li>모임 간 데이터 교차 참조 필요 시</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Agent 5: Auth -->
+  <section id="agent-auth">
+    <h2>8. Auth / Identity Agent</h2>
+    <p class="section-desc">인증, 세션, 온보딩, 구독, 포인트 시스템을 관할합니다.</p>
+
+    <div class="agent-card">
+      <div class="agent-header">
+        <div class="agent-icon" style="background: linear-gradient(135deg, #ef4444, #f87171);">
+          <span style="color: white;">ID</span>
+        </div>
+        <div class="agent-title-area">
+          <h3>Identity Agent</h3>
+          <span class="agent-id">identity-agent.md</span>
+        </div>
+        <div class="agent-badges">
+          <span class="badge badge-domain">DOMAIN</span>
+          <span class="badge badge-new">NEW</span>
+        </div>
+      </div>
+      <div class="agent-body">
+        <p>인증(로그인/회원가입/OAuth), 세션 관리, 온보딩 플로우, 프로필 관리, 포인트 시스템, 구독 관리를 담당합니다. 보안 민감 영역이므로 가장 엄격한 판단 경계를 가집니다.</p>
+
+        <div class="agent-section">
+          <h4>Scope</h4>
+          <div class="file-list">
+            <span class="file-tag">app/(auth)/**</span>
+            <span class="file-tag">app/(main)/profile/**</span>
+            <span class="file-tag">app/callback/**</span>
+            <span class="file-tag">app/actions/auth.ts</span>
+            <span class="file-tag">app/actions/profile.ts</span>
+            <span class="file-tag">app/actions/onboarding.ts</span>
+            <span class="file-tag">app/actions/points.ts</span>
+            <span class="file-tag">app/actions/subscription.ts</span>
+            <span class="file-tag">components/auth/**</span>
+            <span class="file-tag">components/onboarding/**</span>
+            <span class="file-tag">components/profile/**</span>
+            <span class="file-tag">components/points/**</span>
+            <span class="file-tag">contexts/auth-context.tsx</span>
+            <span class="file-tag">hooks/use-auth.ts</span>
+            <span class="file-tag">lib/supabase/**</span>
+            <span class="file-tag">proxy.ts</span>
+            <span class="file-tag">types/user.ts</span>
+            <span class="file-tag">types/points.ts</span>
+          </div>
+        </div>
+
+        <div class="agent-section">
+          <h4>Responsibilities</h4>
+          <ul class="responsibility-list">
+            <li>인증 흐름 (Email, Kakao OAuth, Google OAuth)</li>
+            <li>세션 갱신 (middleware / proxy.ts)</li>
+            <li>getCurrentUser() 단일 진입점 관리</li>
+            <li>온보딩 플로우 (약관 동의, 목표 설정, 튜토리얼)</li>
+            <li>프로필 CRUD (이름, 아바타, 독서 목표)</li>
+            <li>포인트 시스템 (earnPoints, spendPoints, streaks, levels)</li>
+            <li>구독/프리미엄 티어 관리 (feature gates)</li>
+            <li>계정 삭제 (CASCADE 영향 범위 관리)</li>
+          </ul>
+        </div>
+
+        <div class="agent-section">
+          <h4>DB Tables</h4>
+          <div class="file-list">
+            <span class="file-tag">users</span>
+            <span class="file-tag">user_points</span>
+            <span class="file-tag">point_transactions</span>
+            <span class="file-tag">point_action_configs</span>
+            <span class="file-tag">point_levels</span>
+            <span class="file-tag">daily_missions</span>
+            <span class="file-tag">user_subscriptions</span>
+            <span class="file-tag">subscription_tiers</span>
+          </div>
+        </div>
+
+        <div class="agent-section">
+          <div class="escalation-box">
+            <h5>Escalation to Orchestrator</h5>
+            <ul>
+              <li>인증 방식 변경 (새 OAuth 프로바이더 추가)</li>
+              <li>RLS 정책 변경 요청 (보안 임팩트)</li>
+              <li>포인트/구독 비즈니스 로직 변경</li>
+              <li>계정 삭제 시 데이터 보존 정책</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Agent 6: Search -->
+  <section id="agent-search">
+    <h2>9. Search Agent</h2>
+    <p class="section-desc">통합 검색 및 외부 API 연동을 담당합니다.</p>
+
+    <div class="agent-card">
+      <div class="agent-header">
+        <div class="agent-icon" style="background: linear-gradient(135deg, #06b6d4, #22d3ee);">
+          <span style="color: white;">S</span>
+        </div>
+        <div class="agent-title-area">
+          <h3>Search Agent</h3>
+          <span class="agent-id">search-agent.md</span>
+        </div>
+        <div class="agent-badges">
+          <span class="badge badge-support">PLATFORM</span>
+          <span class="badge badge-new">NEW</span>
+        </div>
+      </div>
+      <div class="agent-body">
+        <p>내부 기록/책 검색 (Supabase FTS) + 외부 책 검색 (Naver, Google Books, Open Library) 통합 검색 기능을 관할합니다.</p>
+
+        <div class="agent-section">
+          <h4>Scope</h4>
+          <div class="file-list">
+            <span class="file-tag">app/(main)/search/**</span>
+            <span class="file-tag">app/actions/search.ts</span>
+            <span class="file-tag">app/api/search/**</span>
+            <span class="file-tag">components/search/**</span>
+            <span class="file-tag">hooks/use-search.ts</span>
+            <span class="file-tag">hooks/use-search-history.ts</span>
+            <span class="file-tag">lib/api/naver.ts</span>
+            <span class="file-tag">lib/api/open-library-covers.ts</span>
+            <span class="file-tag">lib/utils/search.ts</span>
+          </div>
+        </div>
+
+        <div class="agent-section">
+          <h4>Responsibilities</h4>
+          <ul class="responsibility-list">
+            <li>내부 검색 (Supabase Full-Text Search)</li>
+            <li>외부 책 검색 (Naver API, Google Books API)</li>
+            <li>검색 결과 정규화 및 랭킹</li>
+            <li>검색 히스토리 관리 (localStorage)</li>
+            <li>필터링 (타입, 태그, 날짜 범위)</li>
+            <li>Open Library 커버 이미지 조회</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Agent 7: Admin -->
+  <section id="agent-admin">
+    <h2>10. Admin Agent</h2>
+    <p class="section-desc">관리자 기능 전체를 담당합니다. 모든 모듈에 읽기 접근 가능.</p>
+
+    <div class="agent-card">
+      <div class="agent-header">
+        <div class="agent-icon" style="background: linear-gradient(135deg, #dc2626, #ef4444);">
+          <span style="color: white;">A</span>
+        </div>
+        <div class="agent-title-area">
+          <h3>Admin Agent</h3>
+          <span class="agent-id">admin-agent.md</span>
+        </div>
+        <div class="agent-badges">
+          <span class="badge badge-support">PLATFORM</span>
+          <span class="badge badge-new">NEW</span>
+        </div>
+      </div>
+      <div class="agent-body">
+        <p>시스템 통계, OCR 배치 처리, AI 설정 관리, API 서비스 구성, 기능 요청 관리 등 운영자 기능을 담당합니다.</p>
+
+        <div class="agent-section">
+          <h4>Scope</h4>
+          <div class="file-list">
+            <span class="file-tag">app/(main)/admin/**</span>
+            <span class="file-tag">app/(main)/feature-requests/**</span>
+            <span class="file-tag">app/actions/admin/**</span>
+            <span class="file-tag">app/actions/feature-requests.ts</span>
+            <span class="file-tag">app/api/admin/**</span>
+            <span class="file-tag">components/admin/**</span>
+            <span class="file-tag">components/feature-requests/**</span>
+          </div>
+        </div>
+
+        <div class="agent-section">
+          <h4>Responsibilities</h4>
+          <ul class="responsibility-list">
+            <li>시스템 통계 대시보드 (전체 사용자, 기록, 활동)</li>
+            <li>OCR 배치 처리 및 보정 설정</li>
+            <li>AI 모델/프롬프트 설정 관리</li>
+            <li>커스텀 API 서비스 관리</li>
+            <li>기능 요청 게시판 (관리자 응답, 핀, 상태 변경)</li>
+            <li>이미지 정리 (orphaned images cleanup)</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Agent 8: Performance -->
+  <section id="agent-perf">
+    <h2>11. Performance Agent</h2>
+    <p class="section-desc">Core Web Vitals, 모바일 최적화, 번들 크기 관리를 담당하는 운영 에이전트.</p>
+
+    <div class="agent-card">
+      <div class="agent-header">
+        <div class="agent-icon" style="background: linear-gradient(135deg, #f59e0b, #fbbf24);">
+          <span style="color: white;">P</span>
+        </div>
+        <div class="agent-title-area">
+          <h3>Performance Agent</h3>
+          <span class="agent-id">performance-agent.md</span>
+        </div>
+        <div class="agent-badges">
+          <span class="badge badge-ops">OPS</span>
+          <span class="badge badge-existing">EXTENDS mobile_performance_rule.md</span>
+        </div>
+      </div>
+      <div class="agent-body">
+        <p>기존 <code>mobile_performance_rule.md</code>를 확장합니다. LCP/FID/CLS 기준 준수, React.memo/useCallback 최적화, 이미지 최적화, 번들 분석 등을 담당합니다.</p>
+
+        <div class="agent-section">
+          <h4>Responsibilities</h4>
+          <ul class="responsibility-list">
+            <li>Core Web Vitals 모니터링 (LCP &lt; 2.5s, FID &lt; 100ms, CLS &lt; 0.1)</li>
+            <li>컴포넌트 렌더링 최적화 (React.memo, useCallback 적용 여부)</li>
+            <li>번들 크기 분석 (next/bundle-analyzer)</li>
+            <li>이미지 최적화 (WebP 변환, lazy loading)</li>
+            <li>모바일 터치 타겟 크기 검증 (최소 44x44px)</li>
+            <li>Suspense/streaming SSR 최적화</li>
+            <li>transition-all 사용 금지 검증</li>
+          </ul>
+        </div>
+
+        <div class="agent-section">
+          <h4>Quality Criteria</h4>
+          <div class="arch-diagram" style="padding: 16px;">
+            <pre style="font-size: 0.78rem;">
+  Metric          │ Target     │ Current Rule Source
+  ─────────────────┼────────────┼──────────────────────────
+  LCP             │ < 2.5s     │ mobile_performance_rule.md
+  FID             │ < 100ms    │ mobile_performance_rule.md
+  CLS             │ < 0.1      │ mobile_performance_rule.md
+  Touch Target    │ >= 44x44px │ mobile_performance_rule.md
+  transition-all  │ BANNED     │ mobile_performance_rule.md
+  Bundle Size     │ < 200KB FP │ NEW
+  Image Format    │ WebP/AVIF  │ NEW
+            </pre>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Agent 9: Data -->
+  <section id="agent-data">
+    <h2>12. Data Agent (DB / Migration)</h2>
+    <p class="section-desc">데이터베이스 스키마, 마이그레이션, RLS 정책, 타입 동기화를 전담합니다.</p>
+
+    <div class="agent-card">
+      <div class="agent-header">
+        <div class="agent-icon" style="background: linear-gradient(135deg, #059669, #34d399);">
+          <span style="color: white;">D</span>
+        </div>
+        <div class="agent-title-area">
+          <h3>Data Agent</h3>
+          <span class="agent-id">data-agent.md</span>
+        </div>
+        <div class="agent-badges">
+          <span class="badge badge-ops">OPS</span>
+          <span class="badge badge-existing">EXTENDS datarule_1 + datarule_2 + db_rls_rule + migration_rule</span>
+        </div>
+      </div>
+      <div class="agent-body">
+        <p>기존 4개 데이터 규칙(datarule_1, datarule_2, db_rls_rule, migration_rule)을 통합한 데이터 거버넌스 에이전트입니다. 스키마 설계부터 마이그레이션, RLS 정책, 타입 동기화까지 데이터 생명주기 전체를 관리합니다.</p>
+
+        <div class="agent-section">
+          <h4>Scope</h4>
+          <div class="file-list">
+            <span class="file-tag">doc/database/**</span>
+            <span class="file-tag">types/database.ts</span>
+            <span class="file-tag">types/*.ts</span>
+            <span class="file-tag">lib/supabase/**</span>
+            <span class="file-tag">.agent/rules/datarule_*.md</span>
+            <span class="file-tag">.agent/rules/db_rls_rule.md</span>
+            <span class="file-tag">.agent/rules/migration_rule.md</span>
+          </div>
+        </div>
+
+        <div class="agent-section">
+          <h4>Responsibilities</h4>
+          <ul class="responsibility-list">
+            <li>스키마 설계 (DATA_MODEL.md 단일 진실 공급원)</li>
+            <li>마이그레이션 파일 작성 (idempotent, 네이밍 규칙 준수)</li>
+            <li>RLS 정책 작성 (4가지 정책 필수: SELECT/INSERT/UPDATE/DELETE)</li>
+            <li>인덱스 전략 (단일/복합/GIN/부분)</li>
+            <li>타입 동기화 (DATA_MODEL.md -> migration -> types/database.ts)</li>
+            <li>CASCADE 규칙 관리</li>
+            <li>RPC 함수 최적화</li>
+          </ul>
+        </div>
+
+        <div class="agent-section">
+          <h4>3-Part Sync Protocol</h4>
+          <div class="flow-container" style="padding: 20px;">
+            <div class="flow-step">
+              <div class="flow-num">1</div>
+              <div class="flow-content">
+                <h4>DATA_MODEL.md 업데이트</h4>
+                <p>스키마 변경사항을 먼저 문서에 반영 (Single Source of Truth)</p>
+              </div>
+            </div>
+            <div class="flow-step">
+              <div class="flow-num">2</div>
+              <div class="flow-content">
+                <h4>Migration SQL 작성</h4>
+                <p>migration-YYYYMMDDHHmm__feature__change.sql (idempotent)</p>
+              </div>
+            </div>
+            <div class="flow-step">
+              <div class="flow-num">3</div>
+              <div class="flow-content">
+                <h4>types/database.ts 동기화</h4>
+                <p>Supabase CLI gen types 또는 수동 업데이트</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Agent 10: Deploy -->
+  <section id="agent-deploy">
+    <h2>13. Deploy Agent</h2>
+    <p class="section-desc">Vercel 배포, 환경변수 관리, CI/CD 파이프라인을 담당합니다.</p>
+
+    <div class="agent-card">
+      <div class="agent-header">
+        <div class="agent-icon" style="background: linear-gradient(135deg, #7c3aed, #a78bfa);">
+          <span style="color: white;">DP</span>
+        </div>
+        <div class="agent-title-area">
+          <h3>Deploy Agent</h3>
+          <span class="agent-id">deploy-agent.md</span>
+        </div>
+        <div class="agent-badges">
+          <span class="badge badge-ops">OPS</span>
+          <span class="badge badge-new">NEW</span>
+        </div>
+      </div>
+      <div class="agent-body">
+        <p>Vercel 배포 관리, 환경변수 설정, 빌드 오류 디버깅, 프리뷰 배포 검증을 담당합니다.</p>
+
+        <div class="agent-section">
+          <h4>Scope</h4>
+          <div class="file-list">
+            <span class="file-tag">next.config.js</span>
+            <span class="file-tag">proxy.ts</span>
+            <span class="file-tag">package.json</span>
+            <span class="file-tag">tsconfig.json</span>
+            <span class="file-tag">.env.example</span>
+            <span class="file-tag">vercel.json (if exists)</span>
+            <span class="file-tag">doc/connect/**</span>
+            <span class="file-tag">scripts/setup-*.ps1</span>
+          </div>
+        </div>
+
+        <div class="agent-section">
+          <h4>Responsibilities</h4>
+          <ul class="responsibility-list">
+            <li>Vercel 배포 구성 및 프리뷰 검증</li>
+            <li>환경변수 관리 (.env.example 동기화)</li>
+            <li>빌드 에러 진단 및 수정</li>
+            <li>Next.js 16 설정 최적화 (proxy.ts, config)</li>
+            <li>의존성 관리 (package.json 업데이트)</li>
+            <li>배포 롤백 절차 관리 (doc/rollback.md)</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Agent 11: Test -->
+  <section id="agent-test">
+    <h2>14. Test Agent</h2>
+    <p class="section-desc">테스트 작성, 실행, 커버리지 관리를 담당합니다. (Phase 2 #12에서 vitest 설정 진행 중)</p>
+
+    <div class="agent-card">
+      <div class="agent-header">
+        <div class="agent-icon" style="background: linear-gradient(135deg, #0284c7, #38bdf8);">
+          <span style="color: white;">T</span>
+        </div>
+        <div class="agent-title-area">
+          <h3>Test Agent</h3>
+          <span class="agent-id">test-agent.md</span>
+        </div>
+        <div class="agent-badges">
+          <span class="badge badge-ops">OPS</span>
+          <span class="badge badge-new">NEW</span>
+        </div>
+      </div>
+      <div class="agent-body">
+        <p>vitest 기반 단위 테스트, 통합 테스트 작성 및 실행을 담당합니다. 코드 리뷰 체크리스트(code_review_checklist.md)와 연동됩니다.</p>
+
+        <div class="agent-section">
+          <h4>Scope</h4>
+          <div class="file-list">
+            <span class="file-tag">__tests__/**</span>
+            <span class="file-tag">vitest.config.ts</span>
+            <span class="file-tag">.agent/rules/code_review_checklist.md</span>
+          </div>
+        </div>
+
+        <div class="agent-section">
+          <h4>Responsibilities</h4>
+          <ul class="responsibility-list">
+            <li>단위 테스트 작성 (Server Actions, hooks, utils)</li>
+            <li>테스트 실행 및 결과 분석</li>
+            <li>코드 리뷰 체크리스트 검증 (8-point checklist)</li>
+            <li>테스트 커버리지 추적</li>
+            <li>Supabase 모킹 전략 관리</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Agent 12: FreeNotes (Existing) -->
+  <section id="agent-freenotes">
+    <h2>15. FreeNotes Agent (Existing)</h2>
+    <p class="section-desc">이미 존재하는 전문 에이전트. 자유기록(비-도서 기록) 도메인의 심리학적 프레임워크 기반 전문가.</p>
+
+    <div class="agent-card">
+      <div class="agent-header">
+        <div class="agent-icon" style="background: linear-gradient(135deg, #ec4899, #f472b6);">
+          <span style="color: white;">FN</span>
+        </div>
+        <div class="agent-title-area">
+          <h3>FreeNotes Agent</h3>
+          <span class="agent-id">free-notes-agent.md (EXISTING)</span>
+        </div>
+        <div class="agent-badges">
+          <span class="badge badge-support">PLATFORM</span>
+          <span class="badge badge-existing">EXISTING</span>
+        </div>
+      </div>
+      <div class="agent-body">
+        <p><strong>이미 구현됨</strong> (.agent/rules/free-notes-agent.md). 7가지 심리학적 프레임워크에 기반한 자유기록(YouTube, 기사, Instagram 등 비-도서 메모) 전문 에이전트입니다. READTREE_BOOK_ID 필터링, Haiku/Opus 이중 모델 전략이 이미 정의되어 있습니다.</p>
+
+        <div class="agent-section">
+          <h4>Scope</h4>
+          <div class="file-list">
+            <span class="file-tag">app/**/notes/free/**</span>
+            <span class="file-tag">components/notes/free-*</span>
+            <span class="file-tag">components/dashboard/sections/free-*</span>
+            <span class="file-tag">app/actions/notes.ts</span>
+            <span class="file-tag">types/note.ts</span>
+          </div>
+        </div>
+
+        <div class="agent-section">
+          <h4>Psychological Framework (7 Drivers)</h4>
+          <ul class="responsibility-list">
+            <li><strong>Capture Impulse</strong> - 포착 충동: 즉각적 기록 (Enter 키 저장)</li>
+            <li><strong>Identity Curation</strong> - 정체성 큐레이션: 태그 클라우드, 소스별 보기</li>
+            <li><strong>Cognitive Offloading</strong> - 인지 부하 외재화: GTD/Second Brain</li>
+            <li><strong>Understanding via Writing</strong> - 글쓰기를 통한 이해: 파인만 기법</li>
+            <li><strong>Joy of Connection</strong> - 연결의 쾌감: AI가 자유기록 ↔ 책 기록 연결</li>
+            <li><strong>Retrospection</strong> - 회고와 재발견: 주간 다이제스트</li>
+            <li><strong>Visualizing Progress</strong> - 진보의 가시화: 스트릭, 배지, 그래프</li>
+          </ul>
+        </div>
+
+        <div class="agent-section">
+          <h4>Model Strategy</h4>
+          <div class="io-grid">
+            <div class="io-box">
+              <h5>Haiku (Fast, ~2sec)</h5>
+              <ul>
+                <li>URL auto-parsing</li>
+                <li>Auto-tagging</li>
+                <li>Mood detection</li>
+              </ul>
+            </div>
+            <div class="io-box output">
+              <h5>Opus (Deep, async)</h5>
+              <ul>
+                <li>Weekly insight digests</li>
+                <li>Book-note connections</li>
+                <li>Monthly intellectual profile</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Priority Matrix -->
+  <section id="priority">
+    <h2>16. Priority Matrix</h2>
+    <p class="section-desc">구현 우선순위. P0 = 즉시 구현, P1 = 다음 스프린트, P2 = 중기, P3 = 장기.</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Priority</th>
+          <th>Agent</th>
+          <th>Status</th>
+          <th>Extends</th>
+          <th>Rationale</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="priority-p0">P0</td>
+          <td><strong>Orchestrator</strong></td>
+          <td>NEW</td>
+          <td>-</td>
+          <td>모든 에이전트의 조율자. 없으면 나머지가 작동 불가</td>
+        </tr>
+        <tr>
+          <td class="priority-p0">P0</td>
+          <td><strong>Data Agent</strong></td>
+          <td>EXTENDS</td>
+          <td>datarule_1/2 + db_rls + migration</td>
+          <td>스키마 안정성이 전체 시스템의 기반. 기존 4개 룰 통합</td>
+        </tr>
+        <tr>
+          <td class="priority-p0">P0</td>
+          <td><strong>FreeNotes Agent</strong></td>
+          <td>EXISTING</td>
+          <td>free-notes-agent.md</td>
+          <td>이미 구현됨. Orchestrator 연동만 필요</td>
+        </tr>
+        <tr>
+          <td class="priority-p1">P1</td>
+          <td><strong>Library Agent</strong></td>
+          <td>NEW</td>
+          <td>-</td>
+          <td>40개 컴포넌트, 5개 액션 파일 — 가장 큰 도메인</td>
+        </tr>
+        <tr>
+          <td class="priority-p1">P1</td>
+          <td><strong>Records Agent</strong></td>
+          <td>NEW</td>
+          <td>-</td>
+          <td>33개 컴포넌트, OCR 파이프라인 — 두 번째로 큰 도메인</td>
+        </tr>
+        <tr>
+          <td class="priority-p1">P1</td>
+          <td><strong>Identity Agent</strong></td>
+          <td>NEW</td>
+          <td>auth_session_rule.md</td>
+          <td>인증은 보안 민감. 명확한 판단 경계 필요</td>
+        </tr>
+        <tr>
+          <td class="priority-p2">P2</td>
+          <td><strong>AI Agent</strong></td>
+          <td>NEW</td>
+          <td>-</td>
+          <td>3개 프로바이더 관리 + 채팅/리포트/페르소나 통합</td>
+        </tr>
+        <tr>
+          <td class="priority-p2">P2</td>
+          <td><strong>Groups Agent</strong></td>
+          <td>NEW</td>
+          <td>-</td>
+          <td>14개 컴포넌트 + Realtime. 독립적이라 중기 가능</td>
+        </tr>
+        <tr>
+          <td class="priority-p2">P2</td>
+          <td><strong>Performance Agent</strong></td>
+          <td>EXTENDS</td>
+          <td>mobile_performance_rule.md</td>
+          <td>기존 모바일 성능 룰 확장. 번들 분석 추가</td>
+        </tr>
+        <tr>
+          <td class="priority-p2">P2</td>
+          <td><strong>Test Agent</strong></td>
+          <td>NEW</td>
+          <td>code_review_checklist.md</td>
+          <td>Phase 2 vitest 설정과 연동. 커버리지 목표 설정</td>
+        </tr>
+        <tr>
+          <td class="priority-p3">P3</td>
+          <td><strong>Search Agent</strong></td>
+          <td>NEW</td>
+          <td>-</td>
+          <td>상대적으로 작은 스코프 (4개 컴포넌트)</td>
+        </tr>
+        <tr>
+          <td class="priority-p3">P3</td>
+          <td><strong>Admin Agent</strong></td>
+          <td>NEW</td>
+          <td>-</td>
+          <td>관리자 전용. 빈도 낮음</td>
+        </tr>
+        <tr>
+          <td class="priority-p3">P3</td>
+          <td><strong>Deploy Agent</strong></td>
+          <td>NEW</td>
+          <td>-</td>
+          <td>배포 자동화. 현재 Vercel 기본 설정으로 충분</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- Orchestration Flow -->
+  <section id="orchestration">
+    <h2>17. Orchestration Flow Example</h2>
+    <p class="section-desc">실제 유저 요청이 처리되는 흐름 예시</p>
+
+    <h3 style="font-size: 1rem; margin: 24px 0 16px; color: var(--text);">Example: "책에 새 기록을 추가하고, AI 태그 자동 생성해줘"</h3>
+
+    <div class="flow-container">
+      <div class="flow-step">
+        <div class="flow-num">1</div>
+        <div class="flow-content">
+          <h4>Orchestrator: 요청 분석</h4>
+          <p>도메인 분류 → Records (기록 생성) + AI (자동 태깅). 두 에이전트 순차 호출 필요.</p>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">2</div>
+        <div class="flow-content">
+          <h4>Records Agent: 기록 생성</h4>
+          <p>useNoteForm 훅 → createNote action → notes 테이블 INSERT → 포인트 적립 (earnPoints). 생성된 note_id 반환.</p>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">3</div>
+        <div class="flow-content">
+          <h4>AI Agent: 자동 태깅</h4>
+          <p>note_id의 content를 입력으로 → /api/ai/auto-tag 호출 → Gemini 2.0 Flash → 태그 3-5개 생성 → notes.tags 업데이트.</p>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">4</div>
+        <div class="flow-content">
+          <h4>Orchestrator: 결과 종합</h4>
+          <p>Records Agent 결과 (note 생성 성공) + AI Agent 결과 (태그 5개 생성) → 유저에게 최종 응답 생성.</p>
+        </div>
+      </div>
+    </div>
+
+    <h3 style="font-size: 1rem; margin: 24px 0 16px; color: var(--text);">Example: "모임에 새 테이블 추가하고 관련 UI 만들어줘"</h3>
+
+    <div class="flow-container">
+      <div class="flow-step">
+        <div class="flow-num">1</div>
+        <div class="flow-content">
+          <h4>Orchestrator: 요청 분석</h4>
+          <p>도메인 분류 → Data (스키마 변경) + Groups (UI). Data Agent 먼저, Groups Agent 이후 (의존성).</p>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">2</div>
+        <div class="flow-content">
+          <h4>Data Agent: 스키마 설계</h4>
+          <p>DATA_MODEL.md 업데이트 → migration SQL 작성 (idempotent) → RLS 4개 정책 → types/database.ts 동기화.</p>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">3</div>
+        <div class="flow-content">
+          <h4>Groups Agent: UI 구현</h4>
+          <p>Data Agent의 스키마를 기반으로 → Server Action 작성 → 컴포넌트 구현 → 훅 연동.</p>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">4</div>
+        <div class="flow-content">
+          <h4>Orchestrator: 결과 종합 + Task Summary</h4>
+          <p>변경 파일 목록 취합 → Task Summary 생성 → 유저에게 전달.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Agent Rule File Template -->
+  <section id="template">
+    <h2>18. Agent Rule File Template</h2>
+    <p class="section-desc"><code>.agent/rules/</code>에 저장할 에이전트 정의 파일 최소 템플릿</p>
+
+    <div class="arch-diagram">
+      <pre>
+  ---
+  # .agent/rules/{agent-name}-agent.md
+  ---
+
+  # {Agent Name} Agent
+
+  ## Identity
+  - **Role**: {한 줄 역할 설명}
+  - **Scope**: {관할 모듈/파일 범위}
+  - **alwaysApply**: false  # glob 조건부 로드
+
+  ## Glob Patterns
+  - `{파일 패턴 1}`
+  - `{파일 패턴 2}`
+
+  ## Responsibilities
+  1. {책임 1}
+  2. {책임 2}
+  3. ...
+
+  ## Boundaries (절대 하지 말 것)
+  - {금지 사항 1}
+  - {금지 사항 2}
+
+  ## Input Schema
+  - {입력 1}: {타입} — {설명}
+  - {입력 2}: {타입} — {설명}
+
+  ## Output Schema
+  - {출력 1}: {타입} — {설명}
+  - {출력 2}: {타입} — {설명}
+
+  ## Quality Criteria
+  1. 입력 의미 왜곡 없음
+  2. 필요 정보 누락 없음
+  3. 출력 구조 일관성
+  4. 근거 추적 가능
+
+  ## Uncertainty Labels
+  - `info_insufficient`: 정보 부족
+  - `conflicting_signals`: 정보 상충
+  - `out_of_scope`: 권한/범위 밖
+
+  ## Escalation Target
+  - Orchestrator (모든 경우)
+
+  ## DB Tables
+  - {테이블 1}, {테이블 2}
+
+  ## Related Rules
+  - {관련 기존 룰 파일}
+      </pre>
+    </div>
+  </section>
+
+  <!-- Summary -->
+  <section id="summary">
+    <h2>19. Summary</h2>
+    <p class="section-desc">ReadTree Agent Blueprint 요약</p>
+
+    <div class="dep-grid">
+      <div class="dep-card">
+        <h4 style="color: var(--accent);">Total Agents: 12</h4>
+        <ul>
+          <li>1 Orchestrator (NEW)</li>
+          <li>4 Domain Agents (NEW)</li>
+          <li>4 Platform/Support Agents (2 NEW, 1 EXISTING, 1 EXTENDS)</li>
+          <li>4 Operations Agents (2 NEW, 2 EXTENDS)</li>
+        </ul>
+      </div>
+      <div class="dep-card">
+        <h4 style="color: var(--green);">Existing Rules Integrated</h4>
+        <ul>
+          <li>rdrule.md (alwaysApply baseline)</li>
+          <li>free-notes-agent.md → FreeNotes Agent</li>
+          <li>datarule_1/2, db_rls, migration → Data Agent</li>
+          <li>mobile_performance_rule → Performance Agent</li>
+          <li>auth_session_rule → Identity Agent</li>
+          <li>code_review_checklist → Test Agent</li>
+          <li>component_pattern_rule → All Component Agents</li>
+          <li>ui_datarule → All UI Agents</li>
+        </ul>
+      </div>
+      <div class="dep-card">
+        <h4 style="color: var(--yellow);">Next Steps</h4>
+        <ul>
+          <li>P0: Orchestrator + Data Agent 룰 파일 작성</li>
+          <li>P0: FreeNotes Agent 오케스트레이터 연동</li>
+          <li>P1: Library + Records + Identity Agent 작성</li>
+          <li>P2: AI + Groups + Performance + Test Agent</li>
+          <li>P3: Search + Admin + Deploy Agent</li>
+        </ul>
+      </div>
+      <div class="dep-card">
+        <h4 style="color: var(--orange);">Design Principles</h4>
+        <ul>
+          <li>판단 책임의 경계로 에이전트 분리</li>
+          <li>에이전트는 "재료" 제공, 오케스트레이터가 "결정"</li>
+          <li>불확실성은 구조화 (3가지 라벨)</li>
+          <li>기존 룰 파일 확장 (중복 생성 금지)</li>
+          <li>glob 조건부 로드 (컨텍스트 예산 관리)</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<div class="doc-footer">
+  <p>ReadTree Agent Blueprint v1.0.0 | Generated 2026-02-26 | Based on project analysis of 265+ components, 45+ actions, 33 DB tables</p>
+  <p>Reference: doc/subagent/subagent.md (Subagent design philosophy) | doc/architecture/MODULE_MAP.md (Module structure)</p>
+</div>
+
+</body>
+</html>

@@ -459,6 +459,18 @@ const handleItemClick = useCallback(() => {
 | 11. 컴포넌트 패턴 | `component_pattern_rule.md` |
 | 12. 코드 리뷰 | `code_review_checklist.md` |
 | 16. 자유기록 전담 에이전트 | `free-notes-agent.md` |
+| 17. 에이전트 시스템 — 오케스트레이터 | `orchestrator-agent.md` |
+| 17. 에이전트 시스템 — 서재 | `library-agent.md` |
+| 17. 에이전트 시스템 — 기록 | `records-agent.md` |
+| 17. 에이전트 시스템 — AI | `ai-agent.md` |
+| 17. 에이전트 시스템 — 그룹 | `groups-agent.md` |
+| 17. 에이전트 시스템 — 인증/프로필 | `identity-agent.md` |
+| 17. 에이전트 시스템 — 검색 | `search-agent.md` |
+| 17. 에이전트 시스템 — 관리자 | `admin-agent.md` |
+| 17. 에이전트 시스템 — 성능 | `performance-agent.md` |
+| 17. 에이전트 시스템 — 데이터 | `data-agent.md` |
+| 17. 에이전트 시스템 — 배포 | `deploy-agent.md` |
+| 17. 에이전트 시스템 — 테스트 | `test-agent.md` |
 
 ---
 
@@ -515,6 +527,7 @@ query = query.eq("book_id", READTREE_BOOK_ID).neq("type", "progress");
 | 2025-02-06 | 모바일 성능, 컴포넌트 패턴, 코드 리뷰 규칙 추가 | `mobile_performance_rule.md`, `component_pattern_rule.md`, `code_review_checklist.md` |
 | 2026-02-16 | Supabase JOIN 정합성 체크 규칙 추가 (transcriptions JOIN 누락 이슈) | `code_review_checklist.md` |
 | 2026-02-25 | 자유기록 에이전트 v2 — 인간 심리 프레임워크·AI 모델 역할 분리·방향성 수호 규칙 추가 | `free-notes-agent.md` |
+| 2026-02-26 | 12개 에이전트 오케스트레이션 시스템 구축 (섹션 17 추가) | `orchestrator-agent.md` 외 11개 |
 
 ---
 
@@ -535,3 +548,51 @@ query = query.eq("book_id", READTREE_BOOK_ID).neq("type", "progress");
 - 데이터 유출 (RLS 미적용)
 - 재현 불가능한 스키마 (마이그레이션 누락)
 - 401 에러 (권한 문제)
+
+---
+
+## 17. 에이전트 오케스트레이션 시스템
+
+> 원본: `.agent/rules/orchestrator-agent.md` + 11개 도메인 에이전트
+
+### 17.1 시스템 개요
+
+12개 전문 에이전트가 판단 책임 경계에 따라 분리되어 동작.
+오케스트레이터(`orchestrator-agent.md`)만 `alwaysApply: true`, 나머지는 glob 기반 조건부 로드.
+
+### 17.2 에이전트 목록
+
+| # | 에이전트 | 파일 | alwaysApply | 핵심 역할 |
+|---|---------|------|:-----------:|----------|
+| 1 | **Orchestrator** | `orchestrator-agent.md` | ✅ | 요청 라우팅, 에이전트 간 조율 |
+| 2 | **Library** | `library-agent.md` | ❌ | 책 CRUD, 서재, 독서 상태, 진행률 |
+| 3 | **Records** | `records-agent.md` | ❌ | 노트 CRUD, OCR, 필사, 기록 통합 |
+| 4 | **FreeNotes** | `free-notes-agent.md` | ❌ | 자유기록 (READTREE_BOOK_ID) |
+| 5 | **AI** | `ai-agent.md` | ❌ | AI 채팅, 리포트, 페르소나, 요약 |
+| 6 | **Groups** | `groups-agent.md` | ❌ | 독서 그룹, Realtime, 공유 |
+| 7 | **Identity** | `identity-agent.md` | ❌ | 인증, 프로필, 포인트, 구독 |
+| 8 | **Search** | `search-agent.md` | ❌ | 통합 검색, 외부 도서 API |
+| 9 | **Admin** | `admin-agent.md` | ❌ | 관리자 대시보드, OCR 배치 |
+| 10 | **Performance** | `performance-agent.md` | ❌ | CWV, 번들, 모바일 최적화 |
+| 11 | **Data** | `data-agent.md` | ❌ | DB 스키마, RLS, 마이그레이션, 타입 |
+| 12 | **Deploy** | `deploy-agent.md` | ❌ | Vercel 배포, 환경변수, 빌드 |
+| 13 | **Test** | `test-agent.md` | ❌ | Vitest, 코드 리뷰, 커버리지 |
+
+### 17.3 컨텍스트 로딩 전략
+
+- **Always loaded**: `rdrule.md` (13줄) + `orchestrator-agent.md` (~92줄)
+- **Conditional**: 나머지 11개 에이전트는 글로브 패턴 매칭 시만 로드
+- **EXTENDS 패턴**: 기존 규칙 파일을 참조만 하고 내용 중복 없음
+
+### 17.4 에스컬레이션 흐름
+
+```
+도메인 에이전트 → Orchestrator → 사용자 확인 필요 시 중단 보고
+                              → 다른 에이전트 영역 → 해당 에이전트 위임
+```
+
+### 17.5 설계 문서
+
+- 블루프린트: `doc/agents/agent-blueprint.html`
+- 서브에이전트 철학: `doc/subagent/subagent.md`
+- 모듈 맵: `doc/architecture/MODULE_MAP.md`
