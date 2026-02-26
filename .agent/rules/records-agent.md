@@ -15,6 +15,7 @@ globs:
   - "hooks/use-note-form.ts"
   - "hooks/use-ocr-status.ts"
   - "hooks/use-mobile-note-sheet.ts"
+  - "lib/utils/note.ts"
   - "types/note.ts"
 ---
 

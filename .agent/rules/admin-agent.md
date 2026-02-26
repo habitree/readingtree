@@ -30,12 +30,14 @@ globs:
 ## 3. Admin Check
 
 ```ts
-// 관리자 여부 확인
-import { isAdmin } from '@/app/actions/admin/_shared'
-// 관리자 이메일: cdhnaya@kakao.com
+// 관리자 여부 확인 — isAdmin()은 auth.ts에 정의
+import { isAdmin } from '@/app/actions/auth'
+
+// 관리자 액션 래퍼 — requireAdmin()은 _shared.ts에 정의
+import { requireAdmin } from '@/app/actions/admin/_shared'
 ```
 
-모든 관리자 액션은 `isAdmin()` 검증 후 실행. 미인증 시 즉시 에러 반환.
+모든 관리자 액션은 `requireAdmin()` (내부에서 `isAdmin()` 호출)로 검증 후 실행. 미인증 시 즉시 에러 반환.
 
 ## 4. Action Structure
 
@@ -45,7 +47,7 @@ import { isAdmin } from '@/app/actions/admin/_shared'
 | `app/actions/admin/stats.ts` | 통계 쿼리 |
 | `app/actions/admin/ocr.ts` | OCR 배치 및 보정 설정 |
 | `app/actions/admin/custom-api-services.ts` | API 서비스 CRUD |
-| `app/actions/admin/_shared.ts` | `isAdmin()` 공통 유틸 |
+| `app/actions/admin/_shared.ts` | `requireAdmin()` 권한 검증 (내부에서 `auth.ts`의 `isAdmin()` 호출) |
 | `app/actions/feature-requests.ts` | 기능 요청 CRUD + 투표 |
 
 ## 5. DB Tables

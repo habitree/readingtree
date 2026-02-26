@@ -10,6 +10,7 @@ globs:
   - "hooks/use-search-history.ts"
   - "lib/api/naver.ts"
   - "lib/api/open-library-covers.ts"
+  - "lib/api/book-page-count.ts"
   - "lib/utils/search.ts"
 ---
 

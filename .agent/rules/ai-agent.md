@@ -30,8 +30,8 @@ AI 기능 전체를 관할하는 에이전트. 채팅·리포트·페르소나·
 | Fallback 2 | Anthropic | claude-3-5-sonnet | 최후 수단 |
 | All fail | — | — | 에러 반환 + Orchestrator 에스컬레이션 |
 
-- 프로바이더 선택 로직은 `lib/ai/provider.ts`에서 관리한다.
-- 각 프로바이더 호출 실패 시 즉시 다음 순서로 전환하고 실패 이유를 로그에 남긴다.
+- 프로바이더 선택 로직은 `lib/ai/providers/index.ts`에서 관리한다.
+- 프로바이더는 `ai_settings` 테이블의 설정값에 따라 명시적으로 선택된다.
 - 토큰 사용량은 호출마다 `ai_settings` 테이블에 누적한다.
 
 ---
@@ -79,11 +79,11 @@ AI 기능 전체를 관할하는 에이전트. 채팅·리포트·페르소나·
 | `chat_sessions` | 채팅 세션 |
 | `chat_messages` | 메시지 기록 |
 | `ai_settings` | 프로바이더 설정 + 토큰 사용량 |
-| `ai_reports` | 생성된 리포트 |
+| `ai_generated_reports` | 생성된 리포트 |
 | `report_reactions` | 리포트 반응(좋아요 등) |
 | `user_personas` | 페르소나 분석 결과 |
 | `user_ai_memories` | 유저별 AI 장기 기억 |
-| `user_ai_report_settings` | 리포트 수신 설정 |
+| `ai_report_settings` | 리포트 수신 설정 |
 
 모든 테이블은 RLS 필수 (`auth.uid() = user_id` 패턴).
 

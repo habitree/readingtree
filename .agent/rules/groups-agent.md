@@ -78,6 +78,7 @@ app/actions/groups/
 | `group_notes` | 공유된 개인 기록 참조 |
 | `group_shared_books` | 모임 간 공유 도서 |
 | `group_activity_stats` | 활동 통계 집계 |
+| `group_invite_tokens` | 초대 토큰 (생성·만료·검증) |
 
 ---
 
