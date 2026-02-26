@@ -1068,6 +1068,268 @@ CREATE TYPE feature_request_status AS ENUM ('requested', 'under_review', 'planne
 
 ---
 
+### 4.20 reading_logs (독서 진행 기록)
+
+**목적**: 독서 진행 체크 기록을 저장하는 전용 테이블. 기존 notes 테이블의 progress 타입과 분리하여 관리.
+
+**소유 구조**: 개인 (`auth.uid() = user_id`)
+
+**주요 컬럼**:
+- `id` (UUID, PK): 기본 키
+- `user_id` (UUID, NOT NULL): 사용자 ID (`auth.users(id)` 참조, CASCADE)
+- `user_book_id` (UUID, NOT NULL): 사용자 책 ID (`user_books(id)` 참조, CASCADE)
+- `page_number` (INTEGER, NOT NULL): 기록 시점의 페이지 번호 (CHECK >= 0)
+- `memo` (TEXT): 한줄 메모 (선택)
+- `is_public` (BOOLEAN, DEFAULT TRUE): 공개 여부
+- `created_at`, `updated_at` (TIMESTAMPTZ): 생성/수정 시간
+
+**인덱스**:
+- `idx_reading_logs_user_id`: 사용자별 조회
+- `idx_reading_logs_user_book_id`: 책별 조회
+- `idx_reading_logs_created_at`: 시간순 정렬
+- `idx_reading_logs_user_book`: 복합 인덱스 (user_id, user_book_id, created_at DESC)
+
+**RLS 정책 요약**:
+- **SELECT/INSERT/UPDATE/DELETE**: 본인만 (`auth.uid() = user_id`)
+
+**트리거**: `set_reading_logs_updated_at` — UPDATE 시 `updated_at` 자동 갱신
+
+**마이그레이션**: `migration-202602041000__notes__create_reading_logs.sql`
+
+---
+
+### 4.21 group_invite_tokens (모임 초대 토큰)
+
+**목적**: 토큰 기반 독서모임 초대 링크를 지원.
+
+**소유 구조**: 그룹 관리자 (leader/moderator)
+
+**주요 컬럼**:
+- `id` (UUID, PK): 기본 키
+- `group_id` (UUID, NOT NULL): 모임 ID (`groups(id)` 참조, CASCADE)
+- `token` (TEXT, NOT NULL, UNIQUE): 초대 토큰 (16바이트 hex 인코딩)
+- `created_by` (UUID, NOT NULL): 생성자 ID (`auth.users(id)` 참조, CASCADE)
+- `max_uses` (INTEGER, DEFAULT NULL): 최대 사용 횟수 (NULL = 무제한)
+- `use_count` (INTEGER, DEFAULT 0): 현재 사용 횟수
+- `expires_at` (TIMESTAMPTZ, DEFAULT NOW() + 7일): 만료 시간
+- `is_active` (BOOLEAN, DEFAULT TRUE): 활성 상태
+- `created_at` (TIMESTAMPTZ): 생성 시간
+
+**인덱스**:
+- `idx_group_invite_tokens_token`: 토큰 조회 (WHERE is_active = TRUE)
+- `idx_group_invite_tokens_group_id`: 그룹별 토큰 조회
+
+**RLS 정책 요약**:
+- **SELECT**: leader/moderator 또는 유효한 토큰 조회 (is_active=true, 미만료)
+- **INSERT/UPDATE/DELETE**: leader/moderator만 (`group_members` 기준)
+
+**마이그레이션**: `migration-202602190002__groups__invite_tokens.sql`
+
+---
+
+### 4.22 ai_settings (AI 시스템 설정)
+
+**목적**: AI 챗봇의 모델, 프롬프트, 동작 방식을 관리자가 설정.
+
+**소유 구조**: 관리자 전용 (읽기는 인증된 사용자 모두 가능)
+
+**주요 컬럼**:
+- `id` (UUID, PK): 기본 키
+- `provider` (VARCHAR(20), NOT NULL): AI 프로바이더 (`openai` | `google` | `anthropic`)
+- `model_id` (VARCHAR(100), NOT NULL): AI 모델 ID
+- `system_prompt_template` (TEXT, NOT NULL): 시스템 프롬프트 템플릿
+- `welcome_message` (TEXT, NOT NULL): 환영 메시지
+- `context_settings` (JSONB): 컨텍스트 설정 (히스토리 개수, 포함 정보 등)
+- `generation_settings` (JSONB): 생성 파라미터 (temperature, max_tokens 등)
+- `memory_settings` (JSONB): 메모리 설정 (장기 메모리 등)
+- `is_active` (BOOLEAN, DEFAULT FALSE): 활성화 여부
+- `created_at`, `updated_at` (TIMESTAMPTZ): 생성/수정 시간
+
+**인덱스**:
+- `idx_ai_settings_is_active`: 활성 설정 조회
+- `idx_ai_settings_provider`: 프로바이더별 조회
+
+**RLS 정책 요약**:
+- **SELECT**: 인증된 사용자 전체 (설정 조회용)
+- **INSERT/UPDATE/DELETE**: 관리자만
+
+**마이그레이션**: `migration-202601211000__ai_settings__create_tables.sql`
+
+---
+
+### 4.23 user_ai_memories (사용자 AI 장기 기억)
+
+**목적**: AI가 각 사용자에 대해 기억하는 정보를 저장.
+
+**소유 구조**: 개인 (`auth.uid() = user_id`)
+
+**주요 컬럼**:
+- `id` (UUID, PK): 기본 키
+- `user_id` (UUID, NOT NULL): 사용자 ID (`auth.users(id)` 참조, CASCADE)
+- `memory_type` (VARCHAR(50), NOT NULL): 메모리 유형 (reading_preference, interest, goal 등)
+- `content` (TEXT, NOT NULL): 메모리 내용
+- `metadata` (JSONB): 추가 메타데이터 (추출 소스, 신뢰도 등)
+- `created_at`, `updated_at` (TIMESTAMPTZ): 생성/수정 시간
+
+**인덱스**:
+- `idx_user_ai_memories_user_id`: 사용자별 조회
+- `idx_user_ai_memories_memory_type`: 유형별 조회
+- `idx_user_ai_memories_created_at`: 시간순 정렬
+
+**RLS 정책 요약**:
+- **SELECT/INSERT/UPDATE/DELETE**: 본인만 (`auth.uid() = user_id`)
+
+**마이그레이션**: `migration-202601211000__ai_settings__create_tables.sql`
+
+---
+
+### 4.24 ai_report_settings (AI 리포트 설정)
+
+**목적**: 사용자별 AI 독서 리포트 생성 설정.
+
+**소유 구조**: 개인 (`auth.uid() = user_id`)
+
+**주요 컬럼**:
+- `id` (UUID, PK): 기본 키
+- `user_id` (UUID, NOT NULL): 사용자 ID (`auth.users(id)` 참조, CASCADE)
+- `provider` (TEXT, NOT NULL, DEFAULT 'openai'): AI 프로바이더
+- `model_id` (TEXT, NOT NULL, DEFAULT 'gpt-4o-mini'): 모델 ID
+- `system_prompt` (TEXT, NOT NULL, DEFAULT ''): 시스템 프롬프트
+- `temperature` (NUMERIC(3,2), DEFAULT 0.7): 온도 (CHECK 0~2)
+- `max_output_tokens` (INTEGER, DEFAULT 4096): 최대 출력 토큰 (CHECK 256~16384)
+- `created_at`, `updated_at` (TIMESTAMPTZ): 생성/수정 시간
+
+**인덱스**:
+- `idx_ai_report_settings_user_id`: 사용자별 조회
+
+**RLS 정책 요약**:
+- **SELECT/INSERT/UPDATE/DELETE**: 본인만 (`auth.uid() = user_id`)
+
+**마이그레이션**: `migration-202602230001__report_settings__create_table.sql`
+
+---
+
+### 4.25 ai_generated_reports (AI 생성 리포트)
+
+**목적**: 사용자의 AI 독서 리포트를 저장하고 공유.
+
+**소유 구조**: 개인 (공개 설정 시 전체 조회 가능)
+
+**주요 컬럼**:
+- `id` (UUID, PK): 기본 키
+- `user_id` (UUID, NOT NULL): 사용자 ID (`auth.users(id)` 참조, CASCADE)
+- `user_book_id` (UUID, NOT NULL): 사용자 책 ID
+- `share_id` (UUID, UNIQUE): 공유 링크용 ID
+- `report_markdown` (TEXT, NOT NULL): 리포트 마크다운 본문
+- `note_count` (INTEGER, DEFAULT 0): 참조 노트 수
+- `is_public` (BOOLEAN, DEFAULT FALSE): 공개 여부
+- `book_title` (TEXT, NOT NULL): 책 제목
+- `book_author` (TEXT): 저자
+- `cover_image_url` (TEXT): 표지 이미지 URL
+- `started_at`, `completed_at` (TIMESTAMPTZ): 독서 시작/완료일
+- `created_at`, `updated_at` (TIMESTAMPTZ): 생성/수정 시간
+- **UNIQUE 제약**: `(user_id, user_book_id)` — 책당 리포트 1개
+
+**인덱스**:
+- `idx_ai_generated_reports_user_id`: 사용자별 조회
+- `idx_ai_generated_reports_share_id`: 공유 링크 조회
+- `idx_ai_generated_reports_user_book`: 복합 인덱스
+
+**RLS 정책 요약**:
+- **SELECT**: 공개 리포트(`is_public = true`) 또는 본인
+- **INSERT/UPDATE/DELETE**: 본인만 (`auth.uid() = user_id`)
+
+**마이그레이션**: `migration-202602230002__ai_reports__create_table.sql`
+
+---
+
+### 4.26 report_reactions (리포트 반응)
+
+**목적**: 공유 리포트에 대한 이모지 반응 (로그인/비로그인 모두 가능).
+
+**소유 구조**: 개인 또는 익명
+
+**ENUM**: `report_reaction_type` — `'impressive'` | `'want_to_read'` | `'insightful'`
+
+**주요 컬럼**:
+- `id` (UUID, PK): 기본 키
+- `report_id` (UUID, NOT NULL): 리포트 ID (`ai_generated_reports(id)` 참조, CASCADE)
+- `reaction_type` (report_reaction_type, NOT NULL): 반응 유형
+- `user_id` (UUID, NULL): 로그인 사용자 ID (`auth.users(id)` 참조, CASCADE)
+- `anonymous_id` (UUID, NULL): 비로그인 사용자 식별자
+- `created_at` (TIMESTAMPTZ): 생성 시간
+- **CHECK 제약**: `user_id` 또는 `anonymous_id` 중 하나 필수
+- **UNIQUE 제약**: `(report_id, reaction_type, user_id, anonymous_id)` — 중복 반응 방지
+
+**인덱스**:
+- `idx_report_reactions_report_id`: 리포트별 반응 조회
+- `idx_report_reactions_user_id`: 사용자별 반응 (WHERE user_id IS NOT NULL)
+- `idx_report_reactions_anonymous_id`: 익명별 반응 (WHERE anonymous_id IS NOT NULL)
+
+**RLS 정책 요약**:
+- **SELECT**: 공개 리포트의 반응 조회 가능
+- **INSERT**: 로그인 사용자만 직접 삽입 (비로그인은 RPC `add_report_reaction` 사용)
+- **DELETE**: 본인 반응만 삭제 가능
+
+**RPC 함수**:
+- `add_report_reaction()`: SECURITY DEFINER, 비로그인 포함 반응 추가
+- `remove_report_reaction()`: SECURITY DEFINER, 반응 삭제
+- `get_report_reaction_counts()`: 리포트별 반응 집계
+- `get_user_report_reactions()`: 특정 유저의 반응 조회
+
+**마이그레이션**: `migration-202602230011__report_reactions__create_table.sql`
+
+---
+
+### 4.27 subscription_tiers (구독 티어)
+
+**목적**: 구독 등급 정보 (무료/프리미엄 등) 저장.
+
+**소유 구조**: 공개 (모든 사용자가 조회 가능)
+
+**주요 컬럼**:
+- `id` (UUID, PK): 기본 키
+- `name` (TEXT, NOT NULL, UNIQUE): 티어 코드명 (`free`, `premium`)
+- `display_name` (TEXT, NOT NULL): 표시명 (무료, 프리미엄)
+- `price_monthly` (INTEGER, DEFAULT 0): 월 가격 (원)
+- `features` (JSONB, DEFAULT '{}'): 기능 제한 (ai_chat_daily, ocr_daily, groups_create)
+- `is_active` (BOOLEAN, DEFAULT TRUE): 활성 상태
+- `created_at`, `updated_at` (TIMESTAMPTZ): 생성/수정 시간
+
+**RLS 정책 요약**:
+- **SELECT**: 모든 사용자 조회 가능 (공개)
+
+**시드 데이터**:
+- `free`: 무료, AI 채팅 3회/일, OCR 5회/일, 그룹 생성 2개
+- `premium`: 4,900원/월, 무제한
+
+**마이그레이션**: `migration-202602200002__subscription__create_tables.sql`
+
+---
+
+### 4.28 user_subscriptions (사용자 구독)
+
+**목적**: 사용자별 구독 상태 관리.
+
+**소유 구조**: 개인 (`auth.uid() = user_id`)
+
+**주요 컬럼**:
+- `id` (UUID, PK): 기본 키
+- `user_id` (UUID, NOT NULL, UNIQUE): 사용자 ID (`auth.users(id)` 참조, CASCADE)
+- `tier_id` (UUID, NOT NULL): 구독 티어 ID (`subscription_tiers(id)` 참조)
+- `status` (TEXT, DEFAULT 'active'): 상태 (`active` | `cancelled` | `expired`)
+- `started_at` (TIMESTAMPTZ): 구독 시작일
+- `expires_at` (TIMESTAMPTZ): 만료일
+- `created_at`, `updated_at` (TIMESTAMPTZ): 생성/수정 시간
+- **UNIQUE 제약**: `(user_id)` — 사용자당 구독 1개
+
+**RLS 정책 요약**:
+- **SELECT/INSERT/UPDATE/DELETE**: 본인만 (`auth.uid() = user_id`)
+
+**마이그레이션**: `migration-202602200002__subscription__create_tables.sql`
+
+---
+
 ## 5. 관계 요약
 
 ### 5.1 주요 관계 다이어그램
@@ -1113,14 +1375,24 @@ group_shared_books ←→ user_books (N:M)
 17. **users ↔ user_points**: 1:1 관계, 한 사용자는 하나의 포인트 레코드만 가짐
 18. **users ↔ point_transactions**: 1:N 관계, 한 사용자는 여러 포인트 거래 내역을 가짐
 19. **users ↔ daily_missions**: 1:N 관계, 한 사용자는 여러 일일 미션을 가짐
+20. **user_books ↔ reading_logs**: 1:N 관계, 한 사용자 책은 여러 진행 기록을 가짐
+21. **groups ↔ group_invite_tokens**: 1:N 관계, 한 모임은 여러 초대 토큰을 가짐
+22. **users ↔ ai_settings**: 관리자 전용 설정, 인증된 사용자 조회 가능
+23. **users ↔ user_ai_memories**: 1:N 관계, 한 사용자는 여러 AI 기억을 가짐
+24. **users ↔ ai_report_settings**: 1:1 관계, 한 사용자는 하나의 리포트 설정을 가짐
+25. **users ↔ ai_generated_reports**: 1:N 관계, 한 사용자는 여러 리포트를 가짐
+26. **ai_generated_reports ↔ report_reactions**: 1:N 관계, 한 리포트는 여러 반응을 가짐
+27. **users ↔ user_subscriptions**: 1:1 관계, 한 사용자는 하나의 구독만 가짐
+28. **subscription_tiers ↔ user_subscriptions**: 1:N 관계, 한 티어에 여러 구독자
 
 ### 5.3 CASCADE 규칙
 
-- **users 삭제 시**: `user_books`, `notes`, `groups` (리더인 경우), `group_members`, `ocr_usage_stats`, `ocr_logs`, `user_book_relations`, `user_points`, `point_transactions`, `daily_missions` CASCADE 삭제
+- **users 삭제 시**: `user_books`, `notes`, `groups` (리더인 경우), `group_members`, `ocr_usage_stats`, `ocr_logs`, `user_book_relations`, `user_points`, `point_transactions`, `daily_missions`, `reading_logs`, `user_ai_memories`, `ai_report_settings`, `ai_generated_reports`, `user_subscriptions`, `group_invite_tokens` (created_by) CASCADE 삭제
 - **books 삭제 시**: `user_books`, `notes`, `group_books` CASCADE 삭제
-- **groups 삭제 시**: `group_members`, `group_books`, `group_notes`, `group_shared_books` CASCADE 삭제
-- **user_books 삭제 시**: `group_shared_books`, `user_book_relations` CASCADE 삭제
+- **groups 삭제 시**: `group_members`, `group_books`, `group_notes`, `group_shared_books`, `group_invite_tokens` CASCADE 삭제
+- **user_books 삭제 시**: `group_shared_books`, `user_book_relations`, `reading_logs` CASCADE 삭제
 - **notes 삭제 시**: `group_notes` CASCADE 삭제, `ocr_logs`의 `note_id`는 SET NULL
+- **ai_generated_reports 삭제 시**: `report_reactions` CASCADE 삭제
 
 ---
 
@@ -1441,6 +1713,23 @@ RLS 정책은 데이터베이스 레벨에서 접근 제어를 강제하므로, 
   - `migration-202602011300__notes__add_progress_note_type.sql`
   - `migration-202602011330__points__add_note_progress_action.sql`
 - **목적**: 읽기 진행률 기록 기능 지원
+
+### 2026-02-26 (누락 테이블 9개 일괄 추가)
+
+- **변경 내용**: 에이전트 시스템 검증 과정에서 발견된 미문서화 테이블 9개를 DATA_MODEL에 추가
+  - `reading_logs` (4.20): 독서 진행 기록 — notes의 progress 타입에서 분리
+  - `group_invite_tokens` (4.21): 모임 초대 토큰
+  - `ai_settings` (4.22): AI 시스템 설정 (관리자 전용)
+  - `user_ai_memories` (4.23): 사용자 AI 장기 기억
+  - `ai_report_settings` (4.24): AI 리포트 생성 설정
+  - `ai_generated_reports` (4.25): AI 생성 리포트
+  - `report_reactions` (4.26): 리포트 반응 (이모지)
+  - `subscription_tiers` (4.27): 구독 티어 (무료/프리미엄)
+  - `user_subscriptions` (4.28): 사용자 구독 상태
+  - 관계 요약 및 CASCADE 규칙 업데이트
+- **영향받는 테이블**: 위 9개 (모두 기존 마이그레이션에 존재, 문서만 누락)
+- **마이그레이션 파일**: 기존 마이그레이션 참조 (신규 마이그레이션 없음)
+- **목적**: DATA_MODEL.md를 실제 DB 스키마와 완전 동기화
 
 ### 2026-02-04 (OCR 보정 설정 및 원본 텍스트 기능 추가)
 
