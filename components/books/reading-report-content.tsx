@@ -26,6 +26,7 @@ import { ReportSaveButton } from "./report-save-button";
 import { ReportShareDialog } from "./report-share-dialog";
 import { generateReadingReport } from "@/app/actions/ai/report";
 import { useTranslation } from "@/lib/i18n";
+import { useUpgradeModal, isUpgradeLimitError } from "@/hooks/use-upgrade-modal";
 import {
   parseReportSections,
   getSectionGridClass,
@@ -89,6 +90,7 @@ export function ReadingReportContent({
   initialSavedReport,
 }: ReadingReportContentProps) {
   const { t } = useTranslation();
+  const { showUpgradeModal } = useUpgradeModal();
 
   // 저장된 리포트가 있으면 초기 상태로 사용
   const [result, setResult] = useState<ReadingReportResult | null>(
@@ -110,6 +112,10 @@ export function ReadingReportContent({
   const fetchReport = () => {
     startTransition(async () => {
       const res = await generateReadingReport(userBookId);
+      if (!res.success && res.error && isUpgradeLimitError(res.error)) {
+        showUpgradeModal({ feature: "AI 독서 리포트", message: res.error });
+        return;
+      }
       setResult(res);
     });
   };

@@ -6,6 +6,7 @@ import { Footer } from "@/components/layout/footer";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { MobileNoteSheetProvider } from "@/components/notes/mobile-note-sheet";
 import { NavigationProgress } from "@/components/ui/navigation-progress";
+import { UpgradeModal } from "@/components/subscription/upgrade-modal";
 
 /**
  * 메인 레이아웃
@@ -38,6 +39,7 @@ export default function MainLayout({
         </div>
         <MobileNav />
         <MobileNoteSheetProvider />
+        <UpgradeModal />
       </div>
     </ErrorBoundary>
   );

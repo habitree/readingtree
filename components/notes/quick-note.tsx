@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/lib/i18n";
+import { useUpgradeModal, isUpgradeLimitError } from "@/hooks/use-upgrade-modal";
 import { getUserBooks } from "@/app/actions/books";
 import { createNote } from "@/app/actions/notes";
 import confetti from "canvas-confetti";
@@ -70,6 +71,7 @@ export function QuickNote({
 }: QuickNoteProps) {
   const { t } = useTranslation();
   const router = useRouter();
+  const { showUpgradeModal } = useUpgradeModal();
 
   const PRAISE_MESSAGES = [
     t("notes.praiseMsg1"),
@@ -170,8 +172,12 @@ export function QuickNote({
         onSaved?.();
       }, 1500);
     } catch (error) {
-      console.error("기록 저장 실패:", error);
-      toast.error(t("notes.noteSaveFailed"));
+      const errorMsg = error instanceof Error ? error.message : t("notes.noteSaveFailed");
+      if (isUpgradeLimitError(errorMsg)) {
+        showUpgradeModal({ feature: "독서 기록", message: errorMsg });
+      } else {
+        toast.error(errorMsg);
+      }
     } finally {
       setIsLoading(false);
     }

@@ -39,6 +39,7 @@ import {
 import { WELCOME_MESSAGE, EXAMPLE_QUESTIONS } from "@/lib/api/chat-prompts";
 import type { ChatSession, ChatMessage as ChatMessageType, ChatContext } from "@/types/ai";
 import { useTranslation } from "@/lib/i18n";
+import { useUpgradeModal, isUpgradeLimitError } from "@/hooks/use-upgrade-modal";
 
 interface ChatInterfaceProps {
   userId: string;
@@ -48,6 +49,7 @@ interface ChatInterfaceProps {
 
 export function ChatInterface({ userId, userAvatar, userName }: ChatInterfaceProps) {
   const { t } = useTranslation();
+  const { showUpgradeModal } = useUpgradeModal();
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [currentSession, setCurrentSession] = useState<ChatSession | null>(null);
   const [messages, setMessages] = useState<ChatMessageType[]>([]);
@@ -252,6 +254,21 @@ export function ChatInterface({ userId, userAvatar, userName }: ChatInterfacePro
       });
 
       if (!response.ok) {
+        if (response.status === 403) {
+          try {
+            const errorData = await response.json();
+            const errorMsg = errorData.error || "접근이 제한되었습니다.";
+            if (isUpgradeLimitError(errorMsg)) {
+              showUpgradeModal({ feature: "AI 채팅", message: errorMsg });
+              setIsLoading(false);
+              setIsTyping(false);
+              setMessages((prev) => prev.filter((m) => !m.id.startsWith("temp-")));
+              return;
+            }
+          } catch {
+            // JSON 파싱 실패 시 기본 에러로 폴백
+          }
+        }
         throw new Error("채팅 요청 실패");
       }
 

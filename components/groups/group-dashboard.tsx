@@ -54,6 +54,7 @@ import {
 import { formatSmartDate } from "@/lib/utils/date";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useTranslation } from "@/lib/i18n";
+import { useUpgradeModal, isUpgradeLimitError } from "@/hooks/use-upgrade-modal";
 
 interface GroupDashboardProps {
   groupData: {
@@ -79,6 +80,7 @@ interface GroupDashboardProps {
 export function GroupDashboard({ groupData, currentUserId }: GroupDashboardProps) {
   const router = useRouter();
   const { t } = useTranslation();
+  const { showUpgradeModal } = useUpgradeModal();
   const { group, members, myMembership, sharedNotes, isLeader, isPrivatePreview } = groupData;
   const [isJoining, setIsJoining] = useState(false);
   const [isLeaving, setIsLeaving] = useState(false);
@@ -116,10 +118,12 @@ export function GroupDashboard({ groupData, currentUserId }: GroupDashboardProps
       );
       router.refresh();
     } catch (error) {
-      console.error("모임 참여 오류:", error);
-      toast.error(
-        error instanceof Error ? error.message : t("groups.joinFailed")
-      );
+      const errorMsg = error instanceof Error ? error.message : t("groups.joinFailed");
+      if (isUpgradeLimitError(errorMsg)) {
+        showUpgradeModal({ feature: "모임", message: errorMsg });
+      } else {
+        toast.error(errorMsg);
+      }
     } finally {
       setIsJoining(false);
     }

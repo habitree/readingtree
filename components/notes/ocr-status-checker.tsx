@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { RefreshCw } from "lucide-react";
 import { getNoteDetail } from "@/app/actions/notes";
 import { useTranslation } from "@/lib/i18n";
+import { useUpgradeModal, isUpgradeLimitError } from "@/hooks/use-upgrade-modal";
 
 interface OCRStatusCheckerProps {
   noteId: string;
@@ -27,6 +28,7 @@ export function OCRStatusChecker({
 }: OCRStatusCheckerProps) {
   const { t } = useTranslation();
   const router = useRouter();
+  const { showUpgradeModal } = useUpgradeModal();
   const [isRetrying, setIsRetrying] = useState(false);
   const { status } = useOCRStatus({
     noteId,
@@ -72,6 +74,19 @@ export function OCRStatusChecker({
       });
 
       if (!response.ok) {
+        if (response.status === 403) {
+          try {
+            const errorData = await response.json();
+            const errorMsg = errorData.error || t("notes.ocrRetryFailed");
+            if (isUpgradeLimitError(errorMsg)) {
+              showUpgradeModal({ feature: "OCR 필사", message: errorMsg });
+              setIsRetrying(false);
+              return;
+            }
+          } catch {
+            // JSON 파싱 실패 시 기본 에러로 폴백
+          }
+        }
         throw new Error(t("notes.ocrRetryFailed"));
       }
 

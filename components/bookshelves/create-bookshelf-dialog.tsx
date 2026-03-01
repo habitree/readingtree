@@ -19,10 +19,12 @@ import { createBookshelf } from "@/app/actions/bookshelves";
 import { toast } from "sonner";
 import { Plus } from "lucide-react";
 import { useTranslation } from "@/lib/i18n";
+import { useUpgradeModal, isUpgradeLimitError } from "@/hooks/use-upgrade-modal";
 
 export function CreateBookshelfDialog() {
   const { t } = useTranslation();
   const router = useRouter();
+  const { showUpgradeModal } = useUpgradeModal();
   const [open, setOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [name, setName] = useState("");
@@ -48,13 +50,12 @@ export function CreateBookshelfDialog() {
       setDescription("");
       router.refresh();
     } catch (error) {
-      console.error("서재 생성 오류:", error);
       const errorMessage = error instanceof Error ? error.message : t("bookshelves.createFailed");
-      toast.error(errorMessage);
-      // 최대 개수 제한 오류인 경우 다이얼로그를 닫지 않음
-      if (errorMessage.includes("최대 5개")) {
-        setIsSubmitting(false);
-        return;
+      if (isUpgradeLimitError(errorMessage)) {
+        setOpen(false);
+        showUpgradeModal({ feature: "서재", message: errorMessage });
+      } else {
+        toast.error(errorMessage);
       }
     } finally {
       setIsSubmitting(false);
