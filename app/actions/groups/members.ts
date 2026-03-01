@@ -3,6 +3,7 @@
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import type { MemberStatus } from "./_shared";
+import { checkFeatureAccess } from "../subscription";
 
 /**
  * 모임 참여 신청
@@ -19,6 +20,14 @@ export async function joinGroup(groupId: string) {
 
   if (authError || !user) {
     throw new Error("로그인이 필요합니다.");
+  }
+
+  // 모임 참여 한도 체크 (구독 티어별)
+  const access = await checkFeatureAccess("groups_join", user);
+  if (!access.allowed) {
+    throw new Error(
+      `모임 참여 한도(${access.limit}개)에 도달했습니다. 구독을 업그레이드하면 더 많은 모임에 참여할 수 있습니다.`
+    );
   }
 
   // 모임 정보 조회

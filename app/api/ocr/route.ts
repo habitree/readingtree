@@ -3,6 +3,7 @@ import { after } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { verifyNoteOwnership, createTranscriptionInitial } from "@/app/actions/notes";
 import { checkRateLimit } from "@/lib/middleware/rate-limit";
+import { checkFeatureAccess } from "@/app/actions/subscription";
 
 /**
  * OCR 처리 요청 API
@@ -43,6 +44,15 @@ export async function POST(request: NextRequest) {
         hasUser: !!user,
       });
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // OCR 사용 한도 체크 (구독 티어별)
+    const access = await checkFeatureAccess("ocr", user);
+    if (!access.allowed) {
+      const msg = access.canUseWithPoints
+        ? `오늘의 OCR 한도(${access.limit}회)에 도달했습니다. ${access.pointCost} 포인트로 추가 사용하거나 구독을 업그레이드하세요.`
+        : `오늘의 OCR 한도(${access.limit}회)에 도달했습니다. 구독을 업그레이드하면 더 많이 사용할 수 있습니다.`;
+      return NextResponse.json({ error: msg }, { status: 403 });
     }
 
     const body = await request.json();

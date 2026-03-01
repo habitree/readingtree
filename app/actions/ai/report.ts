@@ -12,6 +12,7 @@ import { generateReportPrompt } from "@/lib/ai/prompts/report-prompts";
 import { generateText } from "@/lib/ai/providers";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import type { ReadingReportResult, SavedReport, BookInfoForReport, PublicNoteSummary } from "@/types/ai";
+import { checkFeatureAccess } from "../subscription";
 
 const MIN_NOTES_FOR_REPORT = 3;
 
@@ -27,6 +28,21 @@ export async function generateReadingReport(
     const user = await getCurrentUser();
     if (!user) {
       return { success: false, error: "로그인이 필요합니다." };
+    }
+
+    // 1.5. AI 리포트 사용 한도 체크
+    const access = await checkFeatureAccess("ai_report", user);
+    if (!access.allowed) {
+      if (access.limit === 0) {
+        return {
+          success: false,
+          error: "AI 리포트는 독서가 이상 구독에서 사용할 수 있습니다.",
+        };
+      }
+      return {
+        success: false,
+        error: `이번 달 AI 리포트 한도(${access.limit}회)에 도달했습니다. 구독을 업그레이드하면 더 많은 리포트를 생성할 수 있습니다.`,
+      };
     }
 
     // 2. 책 정보 조회

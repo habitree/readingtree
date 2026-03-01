@@ -17,6 +17,7 @@ import { earnPoints, updateStreak } from "./points";
 import type { PointActionType } from "@/types/points";
 import { getRandomDefaultCoverPath } from "@/lib/constants/default-covers";
 import { READTREE_BOOK_ID } from "@/lib/constants/readtree";
+import { checkFeatureAccess } from "./subscription";
 
 /**
  * 기록 생성
@@ -38,6 +39,14 @@ export async function createNote(data: CreateNoteInput, user?: User | null) {
       throw new Error("로그인이 필요합니다.");
     }
     currentUser = fetchedUser;
+  }
+
+  // 노트 생성 한도 체크 (월 30개 무료)
+  const access = await checkFeatureAccess("notes_create", currentUser);
+  if (!access.allowed) {
+    throw new Error(
+      `이번 달 기록 한도(${access.limit}개)에 도달했습니다. 구독을 업그레이드하면 무제한으로 기록할 수 있습니다.`
+    );
   }
 
   // book_id UUID 검증 (optional — 책 없이 저장 가능)

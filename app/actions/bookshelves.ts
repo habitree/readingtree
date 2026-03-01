@@ -9,6 +9,7 @@ import type {
   CreateBookshelfInput,
   UpdateBookshelfInput,
 } from "@/types/bookshelf";
+import { checkFeatureAccess } from "./subscription";
 
 /**
  * 사용자의 모든 서재 목록 조회
@@ -152,21 +153,12 @@ export async function createBookshelf(
 
   console.log("[createBookshelf] 사용자 확인:", { userId: user.id, email: user.email });
 
-  // 서재 개수 확인 (메인 서재 제외, 최대 5개)
-  const { data: existingBookshelves, error: countError } = await supabase
-    .from("bookshelves")
-    .select("id")
-    .eq("user_id", user.id)
-    .eq("is_main", false);
-
-  if (countError) {
-    console.error("[createBookshelf] 서재 개수 조회 오류:", countError);
-    throw new Error(`서재 개수 확인 실패: ${countError.message}`);
-  }
-
-  const subBookshelfCount = existingBookshelves?.length || 0;
-  if (subBookshelfCount >= 5) {
-    throw new Error("서재는 최대 5개까지 등록할 수 있습니다.");
+  // 서재 생성 한도 체크 (구독 티어별)
+  const access = await checkFeatureAccess("bookshelf_create", user);
+  if (!access.allowed) {
+    throw new Error(
+      `서재 한도(${access.limit}개)에 도달했습니다. 구독을 업그레이드하면 무제한으로 서재를 만들 수 있습니다.`
+    );
   }
 
   // 사용자의 최대 order 값 조회

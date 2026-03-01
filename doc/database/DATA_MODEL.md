@@ -1283,27 +1283,48 @@ CREATE TYPE feature_request_status AS ENUM ('requested', 'under_review', 'planne
 
 ### 4.27 subscription_tiers (구독 티어)
 
-**목적**: 구독 등급 정보 (무료/프리미엄 등) 저장.
+**목적**: 구독 등급 정보 (3단계 티어) 저장.
 
 **소유 구조**: 공개 (모든 사용자가 조회 가능)
 
 **주요 컬럼**:
 - `id` (UUID, PK): 기본 키
-- `name` (TEXT, NOT NULL, UNIQUE): 티어 코드명 (`free`, `premium`)
-- `display_name` (TEXT, NOT NULL): 표시명 (무료, 프리미엄)
+- `name` (TEXT, NOT NULL, UNIQUE): 티어 코드명 (`free`, `reader`, `reader_master`)
+- `display_name` (TEXT, NOT NULL): 표시명 (무료, 독서가, 독서마스터)
 - `price_monthly` (INTEGER, DEFAULT 0): 월 가격 (원)
-- `features` (JSONB, DEFAULT '{}'): 기능 제한 (ai_chat_daily, ocr_daily, groups_create)
+- `features` (JSONB, DEFAULT '{}'): 기능 제한 설정
+  - `ai_chat_daily` (number): AI 채팅 일일 한도 (-1 = 무제한)
+  - `ocr_daily` (number): OCR 일일 한도 (-1 = 무제한)
+  - `ai_report_monthly` (number): AI 리포트 월간 한도 (0 = 사용 불가, -1 = 무제한)
+  - `groups_create` (number): 그룹 생성 한도 (-1 = 무제한)
+  - `notes_monthly` (number): 노트 월간 생성 한도 (-1 = 무제한)
+  - `bookshelf_max` (number): 서재 최대 개수 (-1 = 무제한)
+  - `groups_join` (number): 그룹 참여 한도 (-1 = 무제한)
+  - `advanced_stats` (boolean): 고급 통계 사용 여부
+  - `data_export` (string|boolean): 데이터 내보내기 (`false`, `"csv"`, `"csv_pdf"`)
 - `is_active` (BOOLEAN, DEFAULT TRUE): 활성 상태
 - `created_at`, `updated_at` (TIMESTAMPTZ): 생성/수정 시간
 
 **RLS 정책 요약**:
 - **SELECT**: 모든 사용자 조회 가능 (공개)
 
-**시드 데이터**:
-- `free`: 무료, AI 채팅 3회/일, OCR 5회/일, 그룹 생성 2개
-- `premium`: 4,900원/월, 무제한
+**시드 데이터 (3단계 티어)**:
 
-**마이그레이션**: `migration-202602200002__subscription__create_tables.sql`
+| 기능 | free (무료) | reader (독서가, ₩3,900/월) | reader_master (독서마스터, ₩6,900/월) |
+|------|:-----------:|:--------------------------:|:------------------------------------:|
+| 노트 생성 | 월 30개 | 무제한 | 무제한 |
+| AI 채팅 | 3회/일 | 15회/일 | 무제한 |
+| OCR | 3회/일 | 15회/일 | 무제한 |
+| AI 리포트 | 불가 | 3회/월 | 무제한 |
+| 서재 | 3개 | 무제한 | 무제한 |
+| 그룹 참여 | 1개 | 3개 | 무제한 |
+| 그룹 생성 | 2개 | 무제한 | 무제한 |
+| 고급 통계 | 불가 | 기본 | 전체 |
+| 데이터 내보내기 | 불가 | CSV | CSV+PDF |
+
+**마이그레이션**:
+- `migration-202602200002__subscription__create_tables.sql` (초기 생성)
+- `migration-202603011300__subscription__add_3tier.sql` (3단계 티어 확장)
 
 ---
 
