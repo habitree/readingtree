@@ -471,6 +471,7 @@ const handleItemClick = useCallback(() => {
 | 17. 에이전트 시스템 — 데이터 | `data-agent.md` |
 | 17. 에이전트 시스템 — 배포 | `deploy-agent.md` |
 | 17. 에이전트 시스템 — 테스트 | `test-agent.md` |
+| 17. 에이전트 시스템 — 법률 | `legal-agent.md` |
 
 ---
 
@@ -553,11 +554,11 @@ query = query.eq("book_id", READTREE_BOOK_ID).neq("type", "progress");
 
 ## 17. 에이전트 오케스트레이션 시스템
 
-> 원본: `.agent/rules/orchestrator-agent.md` + 11개 도메인 에이전트
+> 원본: `.agent/rules/orchestrator-agent.md` + 12개 도메인 에이전트
 
 ### 17.1 시스템 개요
 
-12개 전문 에이전트가 판단 책임 경계에 따라 분리되어 동작.
+13개 전문 에이전트가 판단 책임 경계에 따라 분리되어 동작.
 오케스트레이터(`orchestrator-agent.md`)만 `alwaysApply: true`, 나머지는 glob 기반 조건부 로드.
 
 ### 17.2 에이전트 목록
@@ -577,11 +578,12 @@ query = query.eq("book_id", READTREE_BOOK_ID).neq("type", "progress");
 | 11 | **Data** | `data-agent.md` | ❌ | DB 스키마, RLS, 마이그레이션, 타입 |
 | 12 | **Deploy** | `deploy-agent.md` | ❌ | Vercel 배포, 환경변수, 빌드 |
 | 13 | **Test** | `test-agent.md` | ❌ | Vitest, 코드 리뷰, 커버리지 |
+| 14 | **Legal** | `legal-agent.md` | ❌ | 개인정보보호, AI규제, 전자상거래, 저작권, 접근성 |
 
 ### 17.3 컨텍스트 로딩 전략
 
 - **Always loaded**: `rdrule.md` (13줄) + `orchestrator-agent.md` (~92줄)
-- **Conditional**: 나머지 11개 에이전트는 글로브 패턴 매칭 시만 로드
+- **Conditional**: 나머지 12개 에이전트는 글로브 패턴 매칭 시만 로드
 - **EXTENDS 패턴**: 기존 규칙 파일을 참조만 하고 내용 중복 없음
 
 ### 17.4 에스컬레이션 흐름

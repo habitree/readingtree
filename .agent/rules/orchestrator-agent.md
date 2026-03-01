@@ -29,6 +29,7 @@ description: "오케스트레이터 에이전트 — 모든 도메인 에이전�
 | DB 스키마·마이그레이션·RLS | Data Agent |
 | 배포·환경변수·Vercel·CI | Deploy Agent |
 | 테스트·vitest·E2E | Test Agent |
+| 개인정보·이용약관·AI규제·저작권·접근성·법적 점검 | Legal Agent |
 | **복수 도메인** | 병렬 위임 후 종합 |
 
 ---
