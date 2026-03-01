@@ -38,7 +38,10 @@ export type PointActionType =
   // 소비
   | "ai_chat_spend"
   | "ocr_spend"
+  | "ai_report_spend"
   | "point_refund"
+  // 웰컴
+  | "welcome_bonus"
   // 시스템
   | "admin_adjust";
 
@@ -247,7 +250,10 @@ export const POINT_ACTION_DEFAULTS: Record<PointActionType, { base_points: numbe
   // AI / OCR 소비
   ai_chat_spend: { base_points: 0, description: "AI 채팅 포인트 소비", category: "system" },
   ocr_spend: { base_points: 0, description: "OCR 포인트 소비", category: "system" },
+  ai_report_spend: { base_points: 0, description: "AI 리포트 포인트 소비", category: "system" },
   point_refund: { base_points: 0, description: "포인트 환불", category: "system" },
+  // 웰컴
+  welcome_bonus: { base_points: 300, description: "가입 축하 보너스", category: "special" },
 
   // 시스템
   admin_adjust: { base_points: 0, description: "관리자 조정", category: "system" },
@@ -379,14 +385,20 @@ export function getLevelStyle(level: number): LevelStyle {
 /**
  * 포인트 소비 타입
  */
-export type PointSpendType = "ai_chat" | "ocr_process";
+export type PointSpendType = "ai_chat" | "ocr_process" | "ai_report";
 
 /**
  * 포인트 소비 비용 설정
+ *
+ * 비용 산정 기준: 실제 API 비용 대비 활동 유인 균형
+ * - AI 채팅: ~0.5원/회 → 100P (일반 사용자 2.3일분)
+ * - OCR: ~2.7원/회 → 80P (사용 빈도 높은 기능)
+ * - AI 리포트: ~1.5원/회 → 150P (고가치 기능)
  */
 export const POINT_SPEND_COSTS: Record<PointSpendType, number> = {
-  ai_chat: 500,
-  ocr_process: 300,
+  ai_chat: 100,
+  ocr_process: 80,
+  ai_report: 150,
 };
 
 /**

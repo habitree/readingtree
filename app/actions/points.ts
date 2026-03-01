@@ -861,7 +861,12 @@ export async function spendPoints(
     };
   }
 
-  const actionType: PointActionType = spendType === "ai_chat" ? "ai_chat_spend" : "ocr_spend";
+  const actionTypeMap: Record<PointSpendType, PointActionType> = {
+    ai_chat: "ai_chat_spend",
+    ocr_process: "ocr_spend",
+    ai_report: "ai_report_spend",
+  };
+  const actionType = actionTypeMap[spendType];
   const newTotal = userPoints.total_points - cost;
 
   // 트랜잭션 기록 (음수 포인트)
@@ -972,4 +977,41 @@ export async function refundPoints(
     points_spent: -refundAmount,
     new_total: newTotal,
   };
+}
+
+/**
+ * 웰컴 보너스 지급 (신규 가입 시 300P)
+ *
+ * 가입 직후 1회만 지급. 이미 지급된 경우 무시.
+ */
+export async function grantWelcomeBonus(
+  user?: User | null
+): Promise<EarnPointsResult> {
+  const supabase = await createServerSupabaseClient();
+
+  let currentUser = user;
+  if (!currentUser) {
+    const { data: { user: fetchedUser } } = await supabase.auth.getUser();
+    if (!fetchedUser) {
+      return { success: false, points_earned: 0, new_total: 0, error: "로그인이 필요합니다." };
+    }
+    currentUser = fetchedUser;
+  }
+
+  // 이미 웰컴 보너스를 받았는지 확인
+  const { data: existing } = await supabase
+    .from("point_transactions")
+    .select("id")
+    .eq("user_id", currentUser.id)
+    .eq("action_type", "welcome_bonus")
+    .maybeSingle();
+
+  if (existing) {
+    return { success: false, points_earned: 0, new_total: 0, error: "이미 웰컴 보너스를 받았습니다." };
+  }
+
+  return earnPoints("welcome_bonus", {
+    user: currentUser,
+    description: "가입 축하 보너스 300P",
+  });
 }

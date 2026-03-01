@@ -15,6 +15,31 @@ function getKSTToday(): string {
 }
 
 /**
+ * KST 기준 이번 달 1일 반환 (YYYY-MM-DD)
+ */
+function getKSTMonthStart(): string {
+  const now = new Date();
+  const kstOffset = 9 * 60 * 60 * 1000;
+  const kstDate = new Date(now.getTime() + kstOffset);
+  const year = kstDate.getUTCFullYear();
+  const month = String(kstDate.getUTCMonth() + 1).padStart(2, "0");
+  return `${year}-${month}-01`;
+}
+
+/**
+ * KST 기준 이번 달 마지막 날 반환 (YYYY-MM-DD)
+ */
+function getKSTMonthEnd(): string {
+  const now = new Date();
+  const kstOffset = 9 * 60 * 60 * 1000;
+  const kstDate = new Date(now.getTime() + kstOffset);
+  const year = kstDate.getUTCFullYear();
+  const month = kstDate.getUTCMonth() + 1;
+  const lastDay = new Date(year, month, 0).getDate();
+  return `${year}-${String(month).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
+}
+
+/**
  * 사용자 구독 티어 조회
  */
 export async function getUserTier(user?: User | null): Promise<{
@@ -29,7 +54,7 @@ export async function getUserTier(user?: User | null): Promise<{
   if (!currentUser) {
     const { data: { user: fetchedUser } } = await supabase.auth.getUser();
     if (!fetchedUser) {
-      return { tier: "free", displayName: "무료", features: { ai_chat_daily: 3, ocr_daily: 5, groups_create: 2 }, expiresAt: null };
+      return { tier: "free", displayName: "무료", features: { ai_chat_daily: 3, ocr_daily: 3, ai_report_monthly: 2, groups_create: 2 }, expiresAt: null };
     }
     currentUser = fetchedUser;
   }
@@ -46,20 +71,32 @@ export async function getUserTier(user?: User | null): Promise<{
     .maybeSingle();
 
   if (!subscription || !subscription.subscription_tiers) {
-    return { tier: "free", displayName: "무료", features: { ai_chat_daily: 3, ocr_daily: 5, groups_create: 2 }, expiresAt: null };
+    return { tier: "free", displayName: "무료", features: { ai_chat_daily: 3, ocr_daily: 3, ai_report_monthly: 2, groups_create: 2 }, expiresAt: null };
   }
 
-  const tierData = subscription.subscription_tiers as any;
+  const tierData = subscription.subscription_tiers as Record<string, unknown>;
   return {
-    tier: tierData.name,
-    displayName: tierData.display_name,
+    tier: tierData.name as string,
+    displayName: tierData.display_name as string,
     features: tierData.features as Record<string, number>,
     expiresAt: subscription.expires_at,
   };
 }
 
 /**
- * 기능 접근 확인 (일일 사용량 기반)
+ * feature → action_type 매핑
+ */
+function getActionTypeForFeature(feature: FeatureKey): string | null {
+  switch (feature) {
+    case "ai_chat": return "ai_chat_spend";
+    case "ocr": return "ocr_spend";
+    case "ai_report": return "ai_report_spend";
+    default: return null;
+  }
+}
+
+/**
+ * 기능 접근 확인 (일일/월간 사용량 기반)
  */
 export async function checkFeatureAccess(
   feature: FeatureKey,
@@ -94,32 +131,49 @@ export async function checkFeatureAccess(
     return { allowed: true, limit: -1, used: 0, tier: tierInfo.tier, canUseWithPoints: false, pointCost: 0 };
   }
 
-  // 오늘 사용량 조회
-  const today = getKSTToday();
-  const actionType = feature === "ai_chat" ? "ai_chat_spend" : feature === "ocr" ? "ocr_spend" : null;
-
+  // 사용량 조회
+  const actionType = getActionTypeForFeature(feature);
   let used = 0;
-  if (actionType) {
-    const { count } = await supabase
-      .from("point_transactions")
-      .select("*", { count: "exact", head: true })
-      .eq("user_id", currentUser.id)
-      .eq("action_type", actionType)
-      .gte("created_at", `${today}T00:00:00+09:00`)
-      .lte("created_at", `${today}T23:59:59+09:00`);
 
-    used = count || 0;
+  if (actionType) {
+    const countPeriod = gate.countPeriod ?? "daily";
+
+    if (countPeriod === "monthly") {
+      // 월간 카운트: KST 기준 이번 달 1일~말일
+      const monthStart = getKSTMonthStart();
+      const monthEnd = getKSTMonthEnd();
+
+      const { count } = await supabase
+        .from("point_transactions")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", currentUser.id)
+        .eq("action_type", actionType)
+        .gte("created_at", `${monthStart}T00:00:00+09:00`)
+        .lte("created_at", `${monthEnd}T23:59:59+09:00`);
+
+      used = count || 0;
+    } else {
+      // 일일 카운트: KST 기준 오늘
+      const today = getKSTToday();
+
+      const { count } = await supabase
+        .from("point_transactions")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", currentUser.id)
+        .eq("action_type", actionType)
+        .gte("created_at", `${today}T00:00:00+09:00`)
+        .lte("created_at", `${today}T23:59:59+09:00`);
+
+      used = count || 0;
+    }
   }
 
-  // 무료 사용량 카운트 (포인트 차감 없이 사용한 횟수)
-  // 무료 한도 내면 허용
-  const freeUsed = Math.max(0, used); // 모든 사용량을 카운트
-  const allowed = freeUsed < limit;
+  const allowed = used < limit;
 
   return {
     allowed,
     limit,
-    used: freeUsed,
+    used,
     tier: tierInfo.tier,
     canUseWithPoints: !allowed && gate.pointCostOnExceed > 0,
     pointCost: gate.pointCostOnExceed,
