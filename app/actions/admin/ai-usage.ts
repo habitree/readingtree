@@ -3,12 +3,10 @@
 import { requireAdmin } from "./_shared";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 
-// 단가 (원)
+// 건당 예상 단가 (원) - API 호출 비용 기준
 const COST_PER_AI_CHAT = 0.5;
 const COST_PER_OCR = 2.7;
 const COST_PER_AI_REPORT = 1.5;
-
-const AI_ACTION_TYPES = ["ai_chat_spend", "ocr_spend", "ai_report_spend"] as const;
 
 export interface AIUsageSummary {
   totalAiChat: number;
@@ -41,8 +39,19 @@ export interface AIUsageMonthlyTrend {
   aiReport: number;
 }
 
+function calcCost(aiChat: number, ocr: number, aiReport: number): number {
+  return Math.round(
+    aiChat * COST_PER_AI_CHAT +
+    ocr * COST_PER_OCR +
+    aiReport * COST_PER_AI_REPORT
+  );
+}
+
 /**
  * 전체 요약 통계
+ * - AI 채팅: chat_messages (role='assistant') 카운트
+ * - OCR: ocr_logs 카운트
+ * - 리포트: ai_generated_reports 카운트
  */
 export async function getAIUsageSummary(): Promise<AIUsageSummary> {
   await requireAdmin();
@@ -51,63 +60,85 @@ export async function getAIUsageSummary(): Promise<AIUsageSummary> {
   const now = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
 
-  // 전체 카운트
-  const { data: totalData } = await supabase
-    .from("point_transactions")
-    .select("action_type")
-    .in("action_type", [...AI_ACTION_TYPES]);
+  // 병렬 쿼리: 전체 + 이번 달
+  const [
+    { count: totalAiChat },
+    { count: monthAiChat },
+    { count: totalOcr },
+    { count: monthOcr },
+    { count: totalAiReport },
+    { count: monthAiReport },
+  ] = await Promise.all([
+    // AI 채팅 - assistant 응답 수 = API 호출 수
+    supabase
+      .from("chat_messages")
+      .select("*", { count: "exact", head: true })
+      .eq("role", "assistant"),
+    supabase
+      .from("chat_messages")
+      .select("*", { count: "exact", head: true })
+      .eq("role", "assistant")
+      .gte("created_at", monthStart),
+    // OCR
+    supabase
+      .from("ocr_logs")
+      .select("*", { count: "exact", head: true }),
+    supabase
+      .from("ocr_logs")
+      .select("*", { count: "exact", head: true })
+      .gte("created_at", monthStart),
+    // AI 리포트
+    supabase
+      .from("ai_generated_reports")
+      .select("*", { count: "exact", head: true }),
+    supabase
+      .from("ai_generated_reports")
+      .select("*", { count: "exact", head: true })
+      .gte("created_at", monthStart),
+  ]);
 
-  // 이번 달 카운트
-  const { data: monthData } = await supabase
-    .from("point_transactions")
-    .select("action_type")
-    .in("action_type", [...AI_ACTION_TYPES])
-    .gte("created_at", monthStart);
-
-  const countByType = (data: Array<{ action_type: string }> | null, type: string) =>
-    data?.filter((d) => d.action_type === type).length ?? 0;
-
-  const totalAiChat = countByType(totalData, "ai_chat_spend");
-  const totalOcr = countByType(totalData, "ocr_spend");
-  const totalAiReport = countByType(totalData, "ai_report_spend");
-
-  const monthAiChat = countByType(monthData, "ai_chat_spend");
-  const monthOcr = countByType(monthData, "ocr_spend");
-  const monthAiReport = countByType(monthData, "ai_report_spend");
+  const tAiChat = totalAiChat ?? 0;
+  const tOcr = totalOcr ?? 0;
+  const tAiReport = totalAiReport ?? 0;
+  const mAiChat = monthAiChat ?? 0;
+  const mOcr = monthOcr ?? 0;
+  const mAiReport = monthAiReport ?? 0;
 
   return {
-    totalAiChat,
-    totalOcr,
-    totalAiReport,
-    monthAiChat,
-    monthOcr,
-    monthAiReport,
-    monthEstimatedCost: Math.round(
-      monthAiChat * COST_PER_AI_CHAT +
-      monthOcr * COST_PER_OCR +
-      monthAiReport * COST_PER_AI_REPORT
-    ),
-    totalEstimatedCost: Math.round(
-      totalAiChat * COST_PER_AI_CHAT +
-      totalOcr * COST_PER_OCR +
-      totalAiReport * COST_PER_AI_REPORT
-    ),
+    totalAiChat: tAiChat,
+    totalOcr: tOcr,
+    totalAiReport: tAiReport,
+    monthAiChat: mAiChat,
+    monthOcr: mOcr,
+    monthAiReport: mAiReport,
+    monthEstimatedCost: calcCost(mAiChat, mOcr, mAiReport),
+    totalEstimatedCost: calcCost(tAiChat, tOcr, tAiReport),
   };
 }
 
 /**
  * 사용자별 사용량 테이블
+ * chat_sessions로 사용자별 AI 채팅 집계, ocr_logs/ai_generated_reports에서 user_id 집계
  */
 export async function getAIUsageByUser(): Promise<AIUsageByUser[]> {
   await requireAdmin();
   const supabase = createAdminSupabaseClient();
 
-  const { data: transactions } = await supabase
-    .from("point_transactions")
-    .select("user_id, action_type")
-    .in("action_type", [...AI_ACTION_TYPES]);
-
-  if (!transactions || transactions.length === 0) return [];
+  // 병렬로 3개 테이블 사용자별 집계
+  const [chatResult, ocrResult, reportResult] = await Promise.all([
+    // AI 채팅: chat_sessions의 message_count 합산 (assistant 메시지 ≈ message_count / 2)
+    supabase
+      .from("chat_sessions")
+      .select("user_id, message_count"),
+    // OCR
+    supabase
+      .from("ocr_logs")
+      .select("user_id"),
+    // 리포트
+    supabase
+      .from("ai_generated_reports")
+      .select("user_id"),
+  ]);
 
   // user_id별 집계
   const userMap = new Map<
@@ -115,13 +146,37 @@ export async function getAIUsageByUser(): Promise<AIUsageByUser[]> {
     { aiChat: number; ocr: number; aiReport: number }
   >();
 
-  for (const tx of transactions) {
-    const existing = userMap.get(tx.user_id) ?? { aiChat: 0, ocr: 0, aiReport: 0 };
-    if (tx.action_type === "ai_chat_spend") existing.aiChat++;
-    else if (tx.action_type === "ocr_spend") existing.ocr++;
-    else if (tx.action_type === "ai_report_spend") existing.aiReport++;
-    userMap.set(tx.user_id, existing);
+  const getOrCreate = (userId: string) => {
+    const existing = userMap.get(userId);
+    if (existing) return existing;
+    const entry = { aiChat: 0, ocr: 0, aiReport: 0 };
+    userMap.set(userId, entry);
+    return entry;
+  };
+
+  // AI 채팅: message_count / 2 ≈ assistant 응답 수
+  if (chatResult.data) {
+    for (const session of chatResult.data) {
+      const entry = getOrCreate(session.user_id);
+      entry.aiChat += Math.floor((session.message_count ?? 0) / 2);
+    }
   }
+
+  // OCR
+  if (ocrResult.data) {
+    for (const log of ocrResult.data) {
+      getOrCreate(log.user_id).ocr++;
+    }
+  }
+
+  // 리포트
+  if (reportResult.data) {
+    for (const report of reportResult.data) {
+      getOrCreate(report.user_id).aiReport++;
+    }
+  }
+
+  if (userMap.size === 0) return [];
 
   // 사용자 정보 조회
   const userIds = Array.from(userMap.keys());
@@ -145,11 +200,7 @@ export async function getAIUsageByUser(): Promise<AIUsageByUser[]> {
       ocrCount: counts.ocr,
       aiReportCount: counts.aiReport,
       totalCount,
-      estimatedCost: Math.round(
-        counts.aiChat * COST_PER_AI_CHAT +
-        counts.ocr * COST_PER_OCR +
-        counts.aiReport * COST_PER_AI_REPORT
-      ),
+      estimatedCost: calcCost(counts.aiChat, counts.ocr, counts.aiReport),
     });
   }
 
@@ -167,13 +218,24 @@ export async function getAIUsageMonthlyTrend(): Promise<AIUsageMonthlyTrend[]> {
 
   const now = new Date();
   const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+  const sinceISO = sixMonthsAgo.toISOString();
 
-  const { data: transactions } = await supabase
-    .from("point_transactions")
-    .select("action_type, created_at")
-    .in("action_type", [...AI_ACTION_TYPES])
-    .gte("created_at", sixMonthsAgo.toISOString())
-    .order("created_at", { ascending: true });
+  // 병렬로 3개 테이블 조회
+  const [chatResult, ocrResult, reportResult] = await Promise.all([
+    supabase
+      .from("chat_messages")
+      .select("created_at")
+      .eq("role", "assistant")
+      .gte("created_at", sinceISO),
+    supabase
+      .from("ocr_logs")
+      .select("created_at")
+      .gte("created_at", sinceISO),
+    supabase
+      .from("ai_generated_reports")
+      .select("created_at")
+      .gte("created_at", sinceISO),
+  ]);
 
   // 6개월 빈 배열 준비
   const months: AIUsageMonthlyTrend[] = [];
@@ -188,19 +250,17 @@ export async function getAIUsageMonthlyTrend(): Promise<AIUsageMonthlyTrend[]> {
     });
   }
 
-  if (transactions) {
-    for (const tx of transactions) {
-      const d = new Date(tx.created_at);
-      const key = `${d.getFullYear()}-${d.getMonth()}`;
-      const entry = months.find(
-        (m) => `${m.year}-${new Date(m.year, parseInt(m.month) - 1).getMonth()}` === key
-      );
-      if (!entry) continue;
-      if (tx.action_type === "ai_chat_spend") entry.aiChat++;
-      else if (tx.action_type === "ocr_spend") entry.ocr++;
-      else if (tx.action_type === "ai_report_spend") entry.aiReport++;
-    }
-  }
+  const addToMonth = (createdAt: string, field: "aiChat" | "ocr" | "aiReport") => {
+    const d = new Date(createdAt);
+    const entry = months.find(
+      (m) => m.year === d.getFullYear() && parseInt(m.month) - 1 === d.getMonth()
+    );
+    if (entry) entry[field]++;
+  };
+
+  chatResult.data?.forEach((r) => addToMonth(r.created_at, "aiChat"));
+  ocrResult.data?.forEach((r) => addToMonth(r.created_at, "ocr"));
+  reportResult.data?.forEach((r) => addToMonth(r.created_at, "aiReport"));
 
   return months;
 }
