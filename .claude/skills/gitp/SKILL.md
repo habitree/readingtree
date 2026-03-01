@@ -2,7 +2,7 @@
 name: gitp
 description: Git 커밋 + 푸시를 일괄 처리합니다. Linear 없이 빠르게 배포할 때 사용합니다.
 argument-hint: [커밋 메시지 또는 작업 요약]
-allowed-tools: Bash(git:*), Read, Grep
+allowed-tools: Bash(git:*), Bash(gh:*), Read, Grep
 ---
 
 # gitp: Git 커밋 + 푸시 일괄 처리
@@ -75,11 +75,25 @@ EOF
 
 **주의**: `.env`, `credentials`, 키 파일 등 민감 파일은 절대 스테이징하지 않습니다.
 
-### 5단계: 푸시
+### 5단계: GitHub 계정 확인 + 푸시
+
+이 PC는 GitHub CLI(`gh`)로 여러 계정을 관리합니다. 푸시 전 반드시 활성 계정을 확인합니다.
 
 ```bash
+# 현재 활성 계정 확인
+gh auth status
+
+# readingtree 리포는 habitree 계정 필요
+# 활성 계정이 habitree가 아니면 전환 후 푸시
+gh auth switch --user habitree
 git push origin main
 ```
+
+**계정 매핑**:
+- `habitree/readingtree` → `habitree` 계정
+- 다른 리포 → `setlog-ntl` 계정
+
+**Permission denied 발생 시**: `gh auth switch --user habitree` 실행 후 재시도
 
 ### 6단계: 결과 보고
 
