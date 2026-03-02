@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ReadTree 포인트 트리거 상세</title>
+<style>
+  :root {
+    --bg: #0f172a; --surface: #1e293b; --surface2: #334155;
+    --text: #f1f5f9; --text2: #94a3b8; --accent: #22c55e;
+    --accent2: #3b82f6; --warn: #f59e0b; --danger: #ef4444;
+    --purple: #a855f7; --pink: #ec4899; --teal: #14b8a6;
+    --radius: 12px;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family: -apple-system, 'Pretendard', sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+  .container { max-width: 1400px; margin: 0 auto; padding: 2rem; }
+  h1 { font-size: 2rem; margin-bottom: 0.5rem; }
+  .subtitle { color: var(--text2); margin-bottom: 2rem; font-size: 0.95rem; }
+  .grid { display: grid; gap: 1.5rem; }
+  .grid-2 { grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); }
+  .grid-3 { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+  .grid-4 { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+  .card { background: var(--surface); border-radius: var(--radius); padding: 1.5rem; border: 1px solid var(--surface2); }
+  .card-title { font-size: 0.85rem; color: var(--text2); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; }
+  .stat { font-size: 2.2rem; font-weight: 700; }
+  .stat-sm { font-size: 0.85rem; color: var(--text2); margin-top: 0.25rem; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.87rem; }
+  th { text-align: left; color: var(--text2); font-weight: 500; padding: 0.6rem 0.5rem; border-bottom: 1px solid var(--surface2); font-size: 0.8rem; }
+  td { padding: 0.6rem 0.5rem; border-bottom: 1px solid rgba(51,65,85,0.5); vertical-align: top; }
+  tr:hover td { background: rgba(51,65,85,0.2); }
+  .badge { display: inline-block; padding: 0.15rem 0.6rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; }
+  .badge-green { background: rgba(34,197,94,0.15); color: var(--accent); }
+  .badge-blue { background: rgba(59,130,246,0.15); color: var(--accent2); }
+  .badge-yellow { background: rgba(245,158,11,0.15); color: var(--warn); }
+  .badge-red { background: rgba(239,68,68,0.15); color: var(--danger); }
+  .badge-purple { background: rgba(168,85,247,0.15); color: var(--purple); }
+  .badge-teal { background: rgba(20,184,166,0.15); color: var(--teal); }
+  .badge-gray { background: rgba(148,163,184,0.15); color: var(--text2); }
+  .section { margin-top: 2.5rem; }
+  .section-title { font-size: 1.2rem; font-weight: 700; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; }
+  .tab-container { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+  .tab { padding: 0.5rem 1rem; border-radius: 8px; cursor: pointer; font-size: 0.85rem; background: var(--surface2); color: var(--text2); border: none; transition: all 0.2s; }
+  .tab.active { background: var(--accent); color: #000; font-weight: 600; }
+  .section-panel { display: none; }
+  .section-panel.active { display: block; }
+  .callout { background: rgba(34,197,94,0.08); border-left: 3px solid var(--accent); padding: 1rem 1.25rem; border-radius: 0 8px 8px 0; margin: 1rem 0; font-size: 0.88rem; }
+  .callout-warn { background: rgba(245,158,11,0.08); border-left-color: var(--warn); }
+  .callout-blue { background: rgba(59,130,246,0.08); border-left-color: var(--accent2); }
+  .callout-purple { background: rgba(168,85,247,0.08); border-left-color: var(--purple); }
+  .metric-row { display: flex; justify-content: space-between; align-items: center; padding: 0.4rem 0; border-bottom: 1px solid rgba(51,65,85,0.3); }
+  .metric-row:last-child { border-bottom: none; }
+  .page-nav { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; flex-wrap: wrap; background: var(--surface); border-radius: var(--radius); padding: 0.75rem 1rem; border: 1px solid var(--surface2); align-items: center; }
+  .page-nav-label { color: var(--text2); font-size: 0.78rem; margin-right: 0.25rem; white-space: nowrap; flex-shrink: 0; }
+  .page-nav-link { padding: 0.35rem 0.85rem; border-radius: 8px; font-size: 0.82rem; text-decoration: none; background: var(--surface2); color: var(--text2); transition: all 0.2s; }
+  .page-nav-link:hover { background: var(--accent2); color: #fff; }
+  .page-nav-link.active { background: var(--accent); color: #000; font-weight: 600; }
+  /* Onboarding flow */
+  .flow-day { display: flex; gap: 1rem; margin-bottom: 1.25rem; position: relative; }
+  .flow-day::before { content: ""; position: absolute; left: 23px; top: 40px; bottom: -16px; width: 2px; background: var(--surface2); }
+  .flow-day:last-child::before { display: none; }
+  .flow-badge { width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.9rem; flex-shrink: 0; border: 2px solid; }
+  .flow-content { flex: 1; padding-top: 0.25rem; }
+  .flow-content h4 { font-size: 1rem; font-weight: 700; margin-bottom: 0.25rem; }
+  .flow-content p { font-size: 0.83rem; color: var(--text2); margin-bottom: 0.4rem; }
+  .flow-events { display: flex; flex-wrap: wrap; gap: 0.3rem; }
+  .flow-earn { font-size: 0.82rem; font-weight: 700; margin-top: 0.5rem; }
+  /* Streak roadmap */
+  .streak-item { display: flex; align-items: center; gap: 1rem; padding: 0.75rem 0; border-bottom: 1px solid rgba(51,65,85,0.3); }
+  .streak-item:last-child { border-bottom: none; }
+  .streak-day { width: 80px; font-size: 1.1rem; font-weight: 700; flex-shrink: 0; }
+  .streak-emoji { font-size: 1.5rem; flex-shrink: 0; width: 36px; text-align: center; }
+  .streak-info { flex: 1; }
+  .streak-info h5 { font-size: 0.92rem; font-weight: 600; margin-bottom: 0.15rem; }
+  .streak-info p { font-size: 0.8rem; color: var(--text2); }
+  .streak-pts { font-size: 1.1rem; font-weight: 700; color: var(--accent); flex-shrink: 0; }
+  /* Max earn calc */
+  .max-row { display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0.75rem; border-bottom: 1px solid rgba(51,65,85,0.3); font-size: 0.85rem; }
+  .max-row:last-child { border-bottom: none; }
+  .max-pts { font-weight: 700; color: var(--accent); }
+  @media (max-width: 768px) {
+    .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+    .container { padding: 1rem; }
+    h1 { font-size: 1.5rem; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+<!-- Page Navigation -->
+<nav class="page-nav">
+  <span class="page-nav-label">&#128194; 포인트 전략:</span>
+  <a href="dashboard.html" class="page-nav-link">&#128202; 대시보드</a>
+  <a href="user-segments.html" class="page-nav-link">&#128101; 사용자 세그먼트</a>
+  <a href="point-triggers.html" class="page-nav-link active">&#9889; 포인트 트리거</a>
+  <a href="marketing-psychology.html" class="page-nav-link">&#129504; 마케팅·심리</a>
+</nav>
+
+<h1>&#9889; 포인트 트리거 상세</h1>
+<p class="subtitle">전체 이벤트/트리거 조건, 일일 적립 한도, 온보딩 플로우, 스트릭 로드맵 | 2026.03.02</p>
+
+<!-- Internal Tabs -->
+<div class="tab-container">
+  <button class="tab active" onclick="showPanel('pan-events')">&#128203; 전체 이벤트 18개</button>
+  <button class="tab" onclick="showPanel('pan-daily')">&#128336; 일일 적립 분석</button>
+  <button class="tab" onclick="showPanel('pan-onboarding')">&#127891; 7일 온보딩 플로우</button>
+  <button class="tab" onclick="showPanel('pan-streak')">&#128293; 스트릭 마일스톤</button>
+  <button class="tab" onclick="showPanel('pan-spend')">&#128181; 소비처 비교</button>
+</div>
+
+<!-- ========== Panel: 전체 이벤트 ========== -->
+<div id="pan-events" class="section-panel active">
+<div class="section">
+  <div class="section-title">&#128203; 활성 포인트 이벤트 전체 목록 (18개)</div>
+
+  <div class="card" style="margin-bottom:1.5rem">
+    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(160px,1fr)); gap:1rem; text-align:center">
+      <div>
+        <div class="stat" style="color:var(--accent)">18</div>
+        <div class="stat-sm">활성 적립 이벤트</div>
+      </div>
+      <div>
+        <div class="stat" style="color:var(--accent2)">1,024P</div>
+        <div class="stat-sm">일일 이론적 최대 적립</div>
+      </div>
+      <div>
+        <div class="stat" style="color:var(--warn)">300P</div>
+        <div class="stat-sm">가입 즉시 웰컴 보너스</div>
+      </div>
+      <div>
+        <div class="stat" style="color:var(--danger)">3</div>
+        <div class="stat-sm">포인트 소비처</div>
+      </div>
+      <div>
+        <div class="stat" style="color:var(--purple)">750P</div>
+        <div class="stat-sm">일회성 보너스 최대 (온보딩)</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 반복 이벤트 -->
+  <div class="section-title" style="font-size:1rem; color:var(--accent); margin-top:0">&#128260; 반복 이벤트 (매일/매번 적립)</div>
+  <div class="card" style="margin-bottom:1.5rem">
+    <table>
+      <thead>
+        <tr>
+          <th>이벤트 ID</th>
+          <th>트리거 조건</th>
+          <th>포인트</th>
+          <th>일일 한도</th>
+          <th>이론적 일일 최대</th>
+          <th>심리학 태그</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>daily_first_activity</code></td>
+          <td>하루 첫 번째 앱 활동 수행 시</td>
+          <td><span class="badge badge-green">+8P</span></td>
+          <td>1회/일</td>
+          <td>8P</td>
+          <td><span class="badge badge-blue">Habit Loop</span></td>
+        </tr>
+        <tr>
+          <td><code>note_create</code></td>
+          <td>텍스트 노트 작성 완료 시</td>
+          <td><span class="badge badge-green">+10P</span></td>
+          <td>20회/일</td>
+          <td>200P</td>
+          <td><span class="badge badge-green">Action Reward</span></td>
+        </tr>
+        <tr>
+          <td><code>note_quote</code></td>
+          <td>인용구 노트 작성 완료 시</td>
+          <td><span class="badge badge-green">+15P</span></td>
+          <td>10회/일</td>
+          <td>150P</td>
+          <td><span class="badge badge-green">Action Reward</span></td>
+        </tr>
+        <tr>
+          <td><code>note_memo</code></td>
+          <td>메모 노트 작성 완료 시</td>
+          <td><span class="badge badge-green">+10P</span></td>
+          <td>20회/일</td>
+          <td>200P</td>
+          <td><span class="badge badge-green">Action Reward</span></td>
+        </tr>
+        <tr>
+          <td><code>note_photo</code></td>
+          <td>사진 노트 등록 완료 시</td>
+          <td><span class="badge badge-green">+12P</span></td>
+          <td>10회/일</td>
+          <td>120P</td>
+          <td><span class="badge badge-teal">Novelty</span></td>
+        </tr>
+        <tr>
+          <td><code>note_progress</code></td>
+          <td>독서 진행률 업데이트 시</td>
+          <td><span class="badge badge-green">+5P</span></td>
+          <td>10회/일</td>
+          <td>50P</td>
+          <td><span class="badge badge-blue">Progress Effect</span></td>
+        </tr>
+        <tr>
+          <td><code>book_add</code></td>
+          <td>독서 목록에 책 추가 시</td>
+          <td><span class="badge badge-green">+8P</span></td>
+          <td>10회/일</td>
+          <td>80P</td>
+          <td><span class="badge badge-teal">Intent Signal</span></td>
+        </tr>
+        <tr>
+          <td><code>book_complete</code></td>
+          <td>책 완독 처리 시</td>
+          <td><span class="badge badge-green">+60P</span></td>
+          <td>무제한</td>
+          <td>60P (현실적 1권/일)</td>
+          <td><span class="badge badge-purple">Peak Reward</span></td>
+        </tr>
+        <tr>
+          <td><code>mission_complete</code></td>
+          <td>일일 미션 개별 완료 시</td>
+          <td><span class="badge badge-green">+12P</span></td>
+          <td>3회/일</td>
+          <td>36P</td>
+          <td><span class="badge badge-yellow">Completion Bias</span></td>
+        </tr>
+        <tr>
+          <td><code>all_missions_complete</code></td>
+          <td>당일 모든 미션 완료 시</td>
+          <td><span class="badge badge-green">+40P</span></td>
+          <td>1회/일</td>
+          <td>40P</td>
+          <td><span class="badge badge-yellow">Full Completion</span></td>
+        </tr>
+        <tr>
+          <td><code>note_share</code></td>
+          <td>노트 공유 완료 시</td>
+          <td><span class="badge badge-green">+8P</span></td>
+          <td>10회/일</td>
+          <td>80P</td>
+          <td><span class="badge badge-pink">Social Proof</span></td>
+        </tr>
+        <tr style="background:rgba(34,197,94,0.05)">
+          <td colspan="4"><strong>반복 이벤트 일일 최대 합계</strong></td>
+          <td style="color:var(--accent); font-weight:700; font-size:1.05rem">1,024P</td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 일회성 이벤트 -->
+  <div class="section-title" style="font-size:1rem; color:var(--purple); margin-top:0">&#127775; 일회성 이벤트 (계정당 1회)</div>
+  <div class="card">
+    <table>
+      <thead>
+        <tr>
+          <th>이벤트 ID</th>
+          <th>트리거 조건</th>
+          <th>포인트</th>
+          <th>특성</th>
+          <th>심리학 태그</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>welcome_bonus</code></td>
+          <td>회원가입 완료 직후</td>
+          <td><span class="badge badge-purple">+300P</span></td>
+          <td>즉시 지급, 만료 없음</td>
+          <td><span class="badge badge-purple">Endowed Progress</span></td>
+        </tr>
+        <tr>
+          <td><code>first_note</code></td>
+          <td>생애 첫 노트 작성 시</td>
+          <td><span class="badge badge-purple">+25P</span></td>
+          <td>온보딩 Day 1</td>
+          <td><span class="badge badge-blue">Peak Experience</span></td>
+        </tr>
+        <tr>
+          <td><code>first_book</code></td>
+          <td>생애 첫 책 추가 시</td>
+          <td><span class="badge badge-purple">+35P</span></td>
+          <td>온보딩 Day 1</td>
+          <td><span class="badge badge-blue">Peak Experience</span></td>
+        </tr>
+        <tr>
+          <td><code>streak_7_days</code></td>
+          <td>7일 연속 활동 달성</td>
+          <td><span class="badge badge-yellow">+50P</span></td>
+          <td>마일스톤. 재설정 후 재달성 가능</td>
+          <td><span class="badge badge-yellow">Milestone</span></td>
+        </tr>
+        <tr>
+          <td><code>streak_30_days</code></td>
+          <td>30일 연속 활동 달성</td>
+          <td><span class="badge badge-yellow">+200P</span></td>
+          <td>마일스톤</td>
+          <td><span class="badge badge-yellow">Milestone</span></td>
+        </tr>
+        <tr>
+          <td><code>streak_100_days</code></td>
+          <td>100일 연속 활동 달성</td>
+          <td><span class="badge badge-yellow">+500P</span></td>
+          <td>마스터 마일스톤</td>
+          <td><span class="badge badge-yellow">Identity Lock-in</span></td>
+        </tr>
+        <tr style="background:rgba(168,85,247,0.05)">
+          <td colspan="2"><strong>일회성 이벤트 최대 합계 (온보딩 완벽 완료 시)</strong></td>
+          <td style="color:var(--purple); font-weight:700; font-size:1.05rem">+1,110P</td>
+          <td colspan="2" style="color:var(--text2); font-size:0.82rem">welcome(300)+first_note(25)+first_book(35)+7d(50)+30d(200)+100d(500)</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+</div>
+
+<!-- ========== Panel: 일일 적립 분석 ========== -->
+<div id="pan-daily" class="section-panel">
+<div class="section">
+  <div class="section-title">&#128336; 일일 적립 분석: 이론 vs 현실</div>
+  <div class="grid grid-2">
+    <div class="card">
+      <div class="card-title">&#127958; 이론적 일일 최대 1,024P 계산</div>
+      <div class="max-row"><span>daily_first_activity ×1</span><span class="max-pts">8P</span></div>
+      <div class="max-row"><span>note_create ×20</span><span class="max-pts">200P</span></div>
+      <div class="max-row"><span>note_quote ×10</span><span class="max-pts">150P</span></div>
+      <div class="max-row"><span>note_memo ×20</span><span class="max-pts">200P</span></div>
+      <div class="max-row"><span>note_photo ×10</span><span class="max-pts">120P</span></div>
+      <div class="max-row"><span>note_progress ×10</span><span class="max-pts">50P</span></div>
+      <div class="max-row"><span>book_add ×10</span><span class="max-pts">80P</span></div>
+      <div class="max-row"><span>book_complete ×1</span><span class="max-pts">60P</span></div>
+      <div class="max-row"><span>mission_complete ×3</span><span class="max-pts">36P</span></div>
+      <div class="max-row"><span>all_missions_complete ×1</span><span class="max-pts">40P</span></div>
+      <div class="max-row"><span>note_share ×10</span><span class="max-pts">80P</span></div>
+      <div class="max-row" style="background:rgba(34,197,94,0.1); border-radius:6px; padding:0.75rem; margin-top:0.5rem">
+        <span style="font-size:1rem; font-weight:700">일일 최대 (이론)</span>
+        <span style="font-size:1.3rem; font-weight:700; color:var(--accent)">1,024P</span>
+      </div>
+      <div class="callout callout-warn" style="margin-top:0.75rem">
+        <strong>현실적으로는 불가:</strong> 하루에 책 60권을 읽거나, 노트 50개를 쓰는 것은 물리적으로 불가능. 최대치는 포인트 경제의 안전 상한선 확인용.
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">&#128104;&#8205;&#128187; 유형별 현실적 일일 적립</div>
+      <div style="margin-bottom:1.25rem">
+        <div style="display:flex; justify-content:space-between; margin-bottom:0.4rem">
+          <span style="color:var(--purple); font-weight:600">&#128081; A 파워독서가</span>
+          <span style="font-weight:700; color:var(--accent)">~47P/일 (달력 기준)</span>
+        </div>
+        <div style="background:var(--surface2); border-radius:6px; height:24px; overflow:hidden">
+          <div style="width:100%; height:100%; background:var(--purple); border-radius:6px; display:flex; align-items:center; padding:0 8px; font-size:0.78rem; color:#fff; font-weight:600; justify-content:space-between">
+            <span>매일 활동 · 1,420P/월 ÷ 30일</span>
+            <span>이론 최대의 4.6%</span>
+          </div>
+        </div>
+      </div>
+      <div style="margin-bottom:1.25rem">
+        <div style="display:flex; justify-content:space-between; margin-bottom:0.4rem">
+          <span style="color:var(--accent2); font-weight:600">&#128218; B 주말독서가</span>
+          <span style="font-weight:700; color:var(--accent)">~36P/활동일 (달력 ~15P)</span>
+        </div>
+        <div style="background:var(--surface2); border-radius:6px; height:24px; overflow:hidden">
+          <div style="width:76.5%; height:100%; background:var(--accent2); border-radius:6px; display:flex; align-items:center; padding:0 8px; font-size:0.78rem; color:#fff; font-weight:600; justify-content:space-between">
+            <span>주 3~4회 활동 · 450P ÷ 12일</span>
+            <span>활동일 기준</span>
+          </div>
+        </div>
+      </div>
+      <div style="margin-bottom:1.25rem">
+        <div style="display:flex; justify-content:space-between; margin-bottom:0.4rem">
+          <span style="color:var(--warn); font-weight:600">&#128214; C 가끔독서가</span>
+          <span style="font-weight:700; color:var(--accent)">~18P/활동일 (달력 ~4.7P)</span>
+        </div>
+        <div style="background:var(--surface2); border-radius:6px; height:24px; overflow:hidden">
+          <div style="width:38.3%; height:100%; background:var(--warn); border-radius:6px; display:flex; align-items:center; padding:0 8px; font-size:0.78rem; color:#000; font-weight:600; justify-content:space-between">
+            <span>주 1~2회 활동 · 135P ÷ 7.5일</span>
+            <span>활동일 기준</span>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div style="display:flex; justify-content:space-between; margin-bottom:0.4rem">
+          <span style="color:var(--text2); font-weight:600">&#128123; D 유령독자</span>
+          <span style="font-weight:700; color:var(--text2)">~12P/활동일 (달력 ~1.2P)</span>
+        </div>
+        <div style="background:var(--surface2); border-radius:6px; height:24px; overflow:hidden">
+          <div style="width:25.5%; height:100%; background:var(--surface2); border: 1px solid var(--text2); border-radius:6px; display:flex; align-items:center; padding:0 8px; font-size:0.78rem; color:var(--text2); font-weight:600; justify-content:space-between">
+            <span>월 2~3회 활동 · 36P ÷ 3일</span>
+            <span></span>
+          </div>
+        </div>
+      </div>
+      <div class="callout callout-blue" style="margin-top:1rem">
+        <strong>핵심 인사이트:</strong> 활동일 기준 적립량 A(47) vs B(36) vs C(18) vs D(12). 활동 빈도보다 활동 강도(노트 수, 미션 완료율)의 차이가 더 큼. 미션 완료 유도가 핵심 레버.
+      </div>
+    </div>
+  </div>
+
+  <div class="section" style="margin-top:1.5rem">
+    <div class="section-title" style="font-size:1rem">&#128200; 월간 누적 가능 포인트 범위</div>
+    <div class="card">
+      <table>
+        <thead><tr><th>시나리오</th><th>월간 적립</th><th>누적 6개월</th><th>누적 12개월</th><th>도달 레벨 (6개월)</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><span class="badge badge-purple">상한선 (이론)</span><br><span style="color:var(--text2);font-size:0.78rem">1,024P/일 × 30일</span></td>
+            <td style="color:var(--accent); font-weight:700">30,720P</td>
+            <td>184,320P</td>
+            <td>368,640P</td>
+            <td>&#129293; 황금숲 이상</td>
+          </tr>
+          <tr>
+            <td><span class="badge badge-purple">A 파워독서가</span></td>
+            <td style="color:var(--purple); font-weight:700">~1,420P</td>
+            <td>~8,520P</td>
+            <td>~17,040P</td>
+            <td>&#127827; 열매나무</td>
+          </tr>
+          <tr>
+            <td><span class="badge badge-blue">B 주말독서가</span></td>
+            <td style="color:var(--accent2); font-weight:700">~450P</td>
+            <td>~2,700P</td>
+            <td>~5,400P</td>
+            <td>&#127826; 꽃나무</td>
+          </tr>
+          <tr>
+            <td><span class="badge badge-yellow">C 가끔독서가</span></td>
+            <td style="color:var(--warn); font-weight:700">~140P</td>
+            <td>~840P</td>
+            <td>~1,680P</td>
+            <td>&#127823; 큰나무</td>
+          </tr>
+          <tr>
+            <td><span class="badge badge-gray">D 유령독자</span></td>
+            <td style="color:var(--text2); font-weight:700">~36P</td>
+            <td>~216P</td>
+            <td>~432P</td>
+            <td>&#127810; 어린나무 (웰컴 포함)</td>
+          </tr>
+          <tr>
+            <td><span class="badge badge-gray">하한선 (최소)</span><br><span style="color:var(--text2);font-size:0.78rem">월 1회 접속</span></td>
+            <td style="color:var(--text2); font-weight:700">~8P</td>
+            <td>~48P</td>
+            <td>~96P</td>
+            <td>&#127793; 새싹 (웰컴 이후 정체)</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ========== Panel: 7일 온보딩 ========== -->
+<div id="pan-onboarding" class="section-panel">
+<div class="section">
+  <div class="section-title">&#127891; 7일 온보딩 포인트 플로우</div>
+  <div class="callout callout-blue" style="margin-bottom:1.5rem">
+    <strong>목표:</strong> 신규 가입자가 7일 이내에 첫 번째 "Aha Moment"(AI 채팅 3~5회 체험)를 경험하도록 설계. 300P 웰컴 보너스 + 일일 적립으로 자연스러운 유료 전환 유도.
+  </div>
+
+  <!-- Day 0 -->
+  <div class="flow-day">
+    <div class="flow-badge" style="background:rgba(168,85,247,0.15); border-color:var(--purple); color:var(--purple)">D-0</div>
+    <div class="flow-content">
+      <h4 style="color:var(--purple)">가입 즉시 — 300P+ 즉각 지급</h4>
+      <p>회원가입 완료와 함께 웰컴 보너스 지급. 온보딩 체크리스트 시작.</p>
+      <div class="flow-events">
+        <span class="badge badge-purple">welcome_bonus +300P</span>
+        <span class="badge badge-purple">first_book +35P (첫 책 추가 시)</span>
+        <span class="badge badge-purple">first_note +25P (첫 노트 시)</span>
+        <span class="badge badge-green">daily_first_activity +8P</span>
+      </div>
+      <div class="flow-earn" style="color:var(--purple)">Day 0 총 누적: 최대 <strong>368P</strong> (Lv.3 어린나무 즉시 달성)</div>
+    </div>
+  </div>
+
+  <!-- Day 1 -->
+  <div class="flow-day">
+    <div class="flow-badge" style="background:rgba(34,197,94,0.15); border-color:var(--accent); color:var(--accent)">D-1</div>
+    <div class="flow-content">
+      <h4 style="color:var(--accent)">1일차 — 독서 루틴 시작</h4>
+      <p>첫 AI 채팅 체험 (100P 소비). 노트 작성 습관 형성 시작.</p>
+      <div class="flow-events">
+        <span class="badge badge-green">daily_first_activity +8P</span>
+        <span class="badge badge-green">note_create ×3 +30P</span>
+        <span class="badge badge-green">mission_complete ×1 +12P</span>
+        <span class="badge badge-red">ai_chat_spend -100P (첫 체험 강추)</span>
+      </div>
+      <div class="flow-earn" style="color:var(--accent)">Day 1 말 잔액 예상: ~268P (소비 후 268P+ 남음)</div>
+    </div>
+  </div>
+
+  <!-- Day 2 -->
+  <div class="flow-day">
+    <div class="flow-badge" style="background:rgba(34,197,94,0.15); border-color:var(--accent); color:var(--accent)">D-2</div>
+    <div class="flow-content">
+      <h4 style="color:var(--accent)">2일차 — 노트 심화 + 두 번째 AI 채팅</h4>
+      <p>인용구 노트와 독서 진행률 기록. AI 채팅 두 번째 체험으로 Aha Moment 강화.</p>
+      <div class="flow-events">
+        <span class="badge badge-green">daily_first_activity +8P</span>
+        <span class="badge badge-green">note_quote ×2 +30P</span>
+        <span class="badge badge-green">note_progress ×2 +10P</span>
+        <span class="badge badge-green">mission_complete ×2 +24P</span>
+        <span class="badge badge-red">ai_chat_spend -100P</span>
+      </div>
+      <div class="flow-earn" style="color:var(--accent)">Day 2 말 잔액 예상: ~240P</div>
+    </div>
+  </div>
+
+  <!-- Day 3 -->
+  <div class="flow-day">
+    <div class="flow-badge" style="background:rgba(245,158,11,0.15); border-color:var(--warn); color:var(--warn)">D-3</div>
+    <div class="flow-content">
+      <h4 style="color:var(--warn)">3일차 — 습관 강화 구간</h4>
+      <p>3일 연속 접속 시점. 스트릭 의식 시작. OCR 기능 시도 유도.</p>
+      <div class="flow-events">
+        <span class="badge badge-green">daily_first_activity +8P</span>
+        <span class="badge badge-green">note_create ×4 +40P</span>
+        <span class="badge badge-green">mission_complete ×3 +36P</span>
+        <span class="badge badge-green">all_missions_complete +40P</span>
+        <span class="badge badge-red">ocr_spend -80P (OCR 첫 체험)</span>
+      </div>
+      <div class="flow-earn" style="color:var(--warn)">Day 3 말 잔액 예상: ~284P</div>
+    </div>
+  </div>
+
+  <!-- Day 4-5 -->
+  <div class="flow-day">
+    <div class="flow-badge" style="background:rgba(59,130,246,0.15); border-color:var(--accent2); color:var(--accent2)">D 4~5</div>
+    <div class="flow-content">
+      <h4 style="color:var(--accent2)">4~5일차 — 안정적 루틴 (각 ~50P 적립)</h4>
+      <p>일일 미션 완료 패턴 형성. 포인트 잔액이 200P 내외로 수렴 시작.</p>
+      <div class="flow-events">
+        <span class="badge badge-green">daily_first_activity +8P/일</span>
+        <span class="badge badge-green">note ×3~5 +30~50P/일</span>
+        <span class="badge badge-green">mission ×2 +24P/일</span>
+        <span class="badge badge-yellow">잔액 150~200P 경고존 진입 가능</span>
+      </div>
+      <div class="flow-earn" style="color:var(--accent2)">Day 5 말 잔액 예상: ~200~250P (사용 패턴에 따라 변동)</div>
+    </div>
+  </div>
+
+  <!-- Day 6 -->
+  <div class="flow-day">
+    <div class="flow-badge" style="background:rgba(245,158,11,0.15); border-color:var(--warn); color:var(--warn)">D-6</div>
+    <div class="flow-content">
+      <h4 style="color:var(--warn)">6일차 — 전환 임박 시그널</h4>
+      <p>잔액 100P 미만 경고 가능. 스트릭 6일 알림으로 내일 달성 예고.</p>
+      <div class="flow-events">
+        <span class="badge badge-yellow">&#9888; 잔액 50~100P 이하 경고 발생</span>
+        <span class="badge badge-green">일반 활동 ~40P</span>
+        <span class="badge badge-blue">스트릭 6일 알림: "내일 7일 달성 시 +50P!"</span>
+      </div>
+      <div class="flow-earn" style="color:var(--warn)">충전 전환 최적 타이밍 — A유형 35%, B유형 18% 전환 예상</div>
+    </div>
+  </div>
+
+  <!-- Day 7 -->
+  <div class="flow-day" style="margin-bottom:0">
+    <div class="flow-badge" style="background:rgba(236,72,153,0.15); border-color:var(--pink); color:var(--pink)">D-7</div>
+    <div class="flow-content">
+      <h4 style="color:var(--pink)">7일차 — 스트릭 마일스톤 🎉</h4>
+      <p>7일 스트릭 달성 → +50P 보너스. 축하 모달 + 충전 유도 CTA 최적 시점.</p>
+      <div class="flow-events">
+        <span class="badge badge-yellow">streak_7_days +50P 🎊</span>
+        <span class="badge badge-green">daily_first_activity +8P</span>
+        <span class="badge badge-green">일반 활동 ~40P</span>
+        <span class="badge badge-purple">충전 CTA: "스트릭 보너스 50P 달성! 이 기세로 AI 리포트 도전?"</span>
+      </div>
+      <div class="flow-earn" style="color:var(--pink)">7일 총 누적 적립: 웰컴 포함 최대 ~780P | 정상 패턴 ~450~550P</div>
+    </div>
+  </div>
+
+  <div class="callout" style="margin-top:1.5rem">
+    <strong>&#128200; 7일 온보딩 최적화 목표:</strong>
+    <ul style="margin-top:0.5rem; padding-left:1.25rem; font-size:0.88rem; color:var(--text2)">
+      <li>AI 채팅 3회 이상 체험 → Aha Moment 달성 (Day 1~3)</li>
+      <li>7일 스트릭 달성률 목표: 30% (현재 EdTech 평균 12~15%)</li>
+      <li>7일 내 첫 충전 전환율 목표: A유형 35%, B유형 12%, C유형 4%</li>
+      <li>Day 7 리텐션 → Day 30 리텐션 상관계수 0.68 (업계 평균)</li>
+    </ul>
+  </div>
+</div>
+</div>
+
+<!-- ========== Panel: 스트릭 마일스톤 ========== -->
+<div id="pan-streak" class="section-panel">
+<div class="section">
+  <div class="section-title">&#128293; 스트릭 마일스톤 달성 로드맵</div>
+  <div class="callout callout-blue" style="margin-bottom:1.5rem">
+    <strong>설계 원칙:</strong> 3일 → 7일 → 14일 → 21일 → 30일 → 60일 → 100일 (제안 기준). 각 마일스톤 직전에 이탈 위험이 가장 높음 → 스트릭 프리즈 기능과 결합 시 이탈률 -21% 예상.
+  </div>
+
+  <div class="card">
+    <div class="streak-item">
+      <div class="streak-day" style="color:var(--accent2)">3일</div>
+      <div class="streak-emoji">&#127793;</div>
+      <div class="streak-info">
+        <h5>초기 습관 루프 시작점 <span class="badge badge-green">신규 제안</span></h5>
+        <p>3일이 지나면 포기 확률이 절반으로 줄어듦. 첫 번째 가시적 마일스톤으로 조기 성공 경험 제공. 현재 미구현.</p>
+      </div>
+      <div class="streak-pts">+20P</div>
+    </div>
+    <div class="streak-item">
+      <div class="streak-day" style="color:var(--accent)">7일</div>
+      <div class="streak-emoji">&#127823;</div>
+      <div class="streak-info">
+        <h5>첫 번째 주간 마일스톤 <span class="badge badge-blue">기존 구현</span></h5>
+        <p>Duolingo 데이터: 7일 스트릭 달성자의 장기 참여 확률 3.6배 상승. 가장 중요한 습관 형성 분기점.</p>
+      </div>
+      <div class="streak-pts">+50P</div>
+    </div>
+    <div class="streak-item">
+      <div class="streak-day" style="color:var(--accent2)">14일</div>
+      <div class="streak-emoji">&#127825;</div>
+      <div class="streak-info">
+        <h5>2주 완주 <span class="badge badge-green">신규 제안</span></h5>
+        <p>2주 차에 이탈 2차 피크 발생. 14일 보너스로 돌파 동기 부여. 현재 미구현.</p>
+      </div>
+      <div class="streak-pts">+100P</div>
+    </div>
+    <div class="streak-item">
+      <div class="streak-day" style="color:var(--warn)">21일</div>
+      <div class="streak-emoji">&#127826;</div>
+      <div class="streak-info">
+        <h5>3주 완주 (21일 신화) <span class="badge badge-green">신규 제안</span></h5>
+        <p>"21일이면 습관이 생긴다"는 통념 활용 (실제는 66일이지만 인식 효과 존재). 현재 미구현.</p>
+      </div>
+      <div class="streak-pts">+150P</div>
+    </div>
+    <div class="streak-item">
+      <div class="streak-day" style="color:var(--accent)">30일</div>
+      <div class="streak-emoji">&#127795;</div>
+      <div class="streak-info">
+        <h5>한 달 완주 <span class="badge badge-blue">기존 구현</span></h5>
+        <p>30일 스트릭 달성 시 이탈률 -35% 감소 (업계 데이터). 가장 강력한 리텐션 마일스톤 중 하나.</p>
+      </div>
+      <div class="streak-pts">+200P</div>
+    </div>
+    <div class="streak-item">
+      <div class="streak-day" style="color:var(--teal)">60일</div>
+      <div class="streak-emoji">&#127807;</div>
+      <div class="streak-info">
+        <h5>Lally 연구 기반 실질 습관화 <span class="badge badge-green">신규 제안</span></h5>
+        <p>Phillippa Lally(2010) 연구: 실제 습관 고착화까지 평균 66일 소요. 60일 마일스톤으로 진짜 습관 형성 구간 커버.</p>
+      </div>
+      <div class="streak-pts">+350P</div>
+    </div>
+    <div class="streak-item">
+      <div class="streak-day" style="color:var(--purple)">100일</div>
+      <div class="streak-emoji">&#129293;</div>
+      <div class="streak-info">
+        <h5>마스터 스트릭 — 정체성 확립 <span class="badge badge-blue">기존 구현</span></h5>
+        <p>밀리의 서재 100일 챌린지 데이터: 독서량 2.5배 증가. "나는 독서가다"라는 강한 자기 정체성 확립. 최고 보너스.</p>
+      </div>
+      <div class="streak-pts">+500P</div>
+    </div>
+  </div>
+
+  <div class="grid grid-2" style="margin-top:1.5rem">
+    <div class="card">
+      <div class="card-title">&#128200; 스트릭 마일스톤 총 포인트 (현재 vs 제안)</div>
+      <div class="metric-row">
+        <span class="metric-label">현재 (7, 30, 100일)</span>
+        <span style="color:var(--warn); font-weight:700">750P</span>
+      </div>
+      <div class="metric-row">
+        <span class="metric-label">제안 (3, 7, 14, 21, 30, 60, 100일)</span>
+        <span style="color:var(--accent); font-weight:700">1,370P</span>
+      </div>
+      <div class="metric-row">
+        <span class="metric-label">추가 비용 (사용자당 최대)</span>
+        <span style="color:var(--danger); font-weight:700">+620P (~&#8361;1,730 원가)</span>
+      </div>
+      <div class="callout" style="margin-top:0.75rem">
+        100일 달성자 비율 예상 1~3%를 감안하면 <strong>실제 비용은 이론값의 10~20%</strong>. 리텐션 개선 효과 대비 비용 효율 매우 높음.
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">&#128737; 스트릭 프리즈 연계</div>
+      <div class="metric-row"><span class="metric-label">스트릭 프리즈 비용</span><span style="color:var(--warn); font-weight:700">500P/회</span></div>
+      <div class="metric-row"><span class="metric-label">이탈률 감소 효과</span><span style="color:var(--accent); font-weight:700">-21%</span></div>
+      <div class="metric-row"><span class="metric-label">도입 권장 시점</span><span style="color:var(--accent2); font-weight:700">7일+ 스트릭 사용자</span></div>
+      <div class="metric-row"><span class="metric-label">현금 환산 가치</span><span style="color:var(--warn); font-weight:700">~&#8361;1,395 (스탠다드 기준)</span></div>
+      <div class="callout callout-warn" style="margin-top:0.75rem">
+        스트릭 프리즈는 <strong>충전 유도의 핵심 트리거</strong>. 30일 스트릭 보유자가 스트릭을 잃을 위기 시 충전 전환율 <strong>3배 상승</strong> (업계 사례).
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ========== Panel: 소비처 비교 ========== -->
+<div id="pan-spend" class="section-panel">
+<div class="section">
+  <div class="section-title">&#128181; 포인트 소비처 상세 비교</div>
+  <div class="card" style="margin-bottom:1.5rem">
+    <table>
+      <thead>
+        <tr>
+          <th>기능</th>
+          <th>소비 포인트</th>
+          <th>현금 환산 (스탠다드)</th>
+          <th>API 원가</th>
+          <th>마진율</th>
+          <th>사용 빈도 (A 기준)</th>
+          <th>핵심 가치 제안</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>ai_chat_spend</strong><br><span style="color:var(--text2);font-size:0.78rem">AI 독서 채팅</span></td>
+          <td><span class="badge badge-red">-100P</span></td>
+          <td>&#8361;279/회</td>
+          <td>~&#8361;3.5/회</td>
+          <td style="color:var(--accent); font-weight:600">98.7%</td>
+          <td>28회/월</td>
+          <td>책 내용 Q&amp;A, 심층 이해, 독서 토론</td>
+        </tr>
+        <tr>
+          <td><strong>ocr_spend</strong><br><span style="color:var(--text2);font-size:0.78rem">OCR 필사</span></td>
+          <td><span class="badge badge-red">-80P</span></td>
+          <td>&#8361;223/회</td>
+          <td>~&#8361;2/회</td>
+          <td style="color:var(--accent); font-weight:600">99.1%</td>
+          <td>10회/월</td>
+          <td>사진→텍스트 변환, 필사 노트 자동화</td>
+        </tr>
+        <tr>
+          <td><strong>ai_report_spend</strong><br><span style="color:var(--text2);font-size:0.78rem">AI 독서 리포트</span></td>
+          <td><span class="badge badge-red">-150P</span></td>
+          <td>&#8361;419/회</td>
+          <td>~&#8361;49/회</td>
+          <td style="color:var(--warn); font-weight:600">88.3%</td>
+          <td>2회/월</td>
+          <td>완독 후 종합 분석, 인사이트 추출, SNS 공유</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="grid grid-3">
+    <div class="card" style="text-align:center">
+      <div class="card-title" style="justify-content:center">&#129302; AI 채팅 가성비</div>
+      <div class="stat" style="color:var(--accent)">79.7배</div>
+      <div class="stat-sm">포인트 가격 대비 API 원가 배율<br>(100P 가격 vs 1P 원가)</div>
+    </div>
+    <div class="card" style="text-align:center">
+      <div class="card-title" style="justify-content:center">&#128247; OCR 가성비</div>
+      <div class="stat" style="color:var(--accent)">111.5배</div>
+      <div class="stat-sm">포인트 가격 대비 API 원가 배율<br>(80P 가격 vs 0.72P 원가)</div>
+    </div>
+    <div class="card" style="text-align:center">
+      <div class="card-title" style="justify-content:center">&#128196; 리포트 가성비</div>
+      <div class="stat" style="color:var(--warn)">8.6배</div>
+      <div class="stat-sm">포인트 가격 대비 API 원가 배율<br>(150P 가격 vs 17.4P 원가)</div>
+    </div>
+  </div>
+
+  <div class="section" style="margin-top:1.5rem">
+    <div class="section-title" style="font-size:1rem">&#127919; 소비처 확장 로드맵 (제안)</div>
+    <div class="card">
+      <table>
+        <thead><tr><th>기능 (제안)</th><th>예상 비용</th><th>타겟 유형</th><th>우선순위</th><th>기대 효과</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>스트릭 프리즈</td>
+            <td>-500P</td>
+            <td><span class="badge badge-purple">A 파워</span> <span class="badge badge-blue">B 주말</span></td>
+            <td><span class="badge badge-green">P2</span></td>
+            <td>이탈률 -21%, 충전 전환 3x</td>
+          </tr>
+          <tr>
+            <td>AI 독서 퀴즈 생성</td>
+            <td>-50P</td>
+            <td><span class="badge badge-blue">B 주말</span> <span class="badge badge-yellow">C 가끔</span></td>
+            <td><span class="badge badge-blue">P2</span></td>
+            <td>라이트 유저 사용 진입장벽 낮춤</td>
+          </tr>
+          <tr>
+            <td>나무 꾸미기 (스킨)</td>
+            <td>-200~500P</td>
+            <td><span class="badge badge-purple">A 파워</span> <span class="badge badge-blue">B 주말</span></td>
+            <td><span class="badge badge-blue">P2</span></td>
+            <td>소유 효과, 정체성 강화</td>
+          </tr>
+          <tr>
+            <td>독서 챌린지 참가권</td>
+            <td>-300P</td>
+            <td>전체</td>
+            <td><span class="badge badge-purple">P3</span></td>
+            <td>커뮤니티 참여, 리텐션 3x</td>
+          </tr>
+          <tr>
+            <td>AI 북 매칭 (다음 책 추천)</td>
+            <td>-80P</td>
+            <td><span class="badge badge-purple">A 파워</span> <span class="badge badge-blue">B 주말</span></td>
+            <td><span class="badge badge-purple">P3</span></td>
+            <td>콘텐츠 발견, 완독 사이클 가속</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- Footer -->
+<div style="text-align:center; margin-top:3rem; padding:2rem; color:var(--text2); font-size:0.8rem; border-top:1px solid var(--surface2)">
+  <p>ReadTree 포인트 트리거 상세 v1.0 | Generated 2026-03-02</p>
+  <p style="margin-top:0.5rem">&#8592; <a href="user-segments.html" style="color:var(--accent2)">사용자 세그먼트로</a> | <a href="marketing-psychology.html" style="color:var(--accent2)">마케팅·심리 보기 &#8594;</a></p>
+</div>
+
+</div>
+<script>
+function showPanel(id) {
+  document.querySelectorAll('.section-panel').forEach(p => { p.style.display = 'none'; p.classList.remove('active'); });
+  const el = document.getElementById(id);
+  el.style.display = 'block';
+  el.classList.add('active');
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  event.target.classList.add('active');
+}
+</script>
+</body>
+</html>

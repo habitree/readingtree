@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ReadTree 사용자 세그먼트 분석</title>
+<style>
+  :root {
+    --bg: #0f172a; --surface: #1e293b; --surface2: #334155;
+    --text: #f1f5f9; --text2: #94a3b8; --accent: #22c55e;
+    --accent2: #3b82f6; --warn: #f59e0b; --danger: #ef4444;
+    --purple: #a855f7; --pink: #ec4899; --teal: #14b8a6;
+    --radius: 12px;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family: -apple-system, 'Pretendard', sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+  .container { max-width: 1400px; margin: 0 auto; padding: 2rem; }
+  h1 { font-size: 2rem; margin-bottom: 0.5rem; }
+  .subtitle { color: var(--text2); margin-bottom: 2rem; font-size: 0.95rem; }
+  .grid { display: grid; gap: 1.5rem; }
+  .grid-2 { grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); }
+  .grid-3 { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+  .grid-4 { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+  .card { background: var(--surface); border-radius: var(--radius); padding: 1.5rem; border: 1px solid var(--surface2); }
+  .card-title { font-size: 0.85rem; color: var(--text2); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; }
+  .stat { font-size: 2.2rem; font-weight: 700; }
+  .stat-sm { font-size: 0.85rem; color: var(--text2); margin-top: 0.25rem; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+  th { text-align: left; color: var(--text2); font-weight: 500; padding: 0.6rem 0.5rem; border-bottom: 1px solid var(--surface2); font-size: 0.82rem; }
+  td { padding: 0.6rem 0.5rem; border-bottom: 1px solid rgba(51,65,85,0.5); }
+  tr:hover td { background: rgba(51,65,85,0.2); }
+  .badge { display: inline-block; padding: 0.15rem 0.6rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; }
+  .badge-green { background: rgba(34,197,94,0.15); color: var(--accent); }
+  .badge-blue { background: rgba(59,130,246,0.15); color: var(--accent2); }
+  .badge-yellow { background: rgba(245,158,11,0.15); color: var(--warn); }
+  .badge-red { background: rgba(239,68,68,0.15); color: var(--danger); }
+  .badge-purple { background: rgba(168,85,247,0.15); color: var(--purple); }
+  .badge-gray { background: rgba(148,163,184,0.15); color: var(--text2); }
+  .section { margin-top: 2.5rem; }
+  .section-title { font-size: 1.2rem; font-weight: 700; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; }
+  .tab-container { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+  .tab { padding: 0.5rem 1rem; border-radius: 8px; cursor: pointer; font-size: 0.85rem; background: var(--surface2); color: var(--text2); border: none; transition: all 0.2s; }
+  .tab.active { background: var(--accent); color: #000; font-weight: 600; }
+  .section-panel { display: none; }
+  .section-panel.active { display: block; }
+  .callout { background: rgba(34,197,94,0.08); border-left: 3px solid var(--accent); padding: 1rem 1.25rem; border-radius: 0 8px 8px 0; margin: 1rem 0; font-size: 0.88rem; }
+  .callout-warn { background: rgba(245,158,11,0.08); border-left-color: var(--warn); }
+  .callout-blue { background: rgba(59,130,246,0.08); border-left-color: var(--accent2); }
+  .metric-row { display: flex; justify-content: space-between; align-items: center; padding: 0.4rem 0; border-bottom: 1px solid rgba(51,65,85,0.3); }
+  .metric-row:last-child { border-bottom: none; }
+  .metric-label { font-size: 0.85rem; color: var(--text2); }
+  .metric-value { font-size: 0.88rem; font-weight: 600; }
+  .page-nav { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; flex-wrap: wrap; background: var(--surface); border-radius: var(--radius); padding: 0.75rem 1rem; border: 1px solid var(--surface2); align-items: center; }
+  .page-nav-label { color: var(--text2); font-size: 0.78rem; margin-right: 0.25rem; white-space: nowrap; flex-shrink: 0; }
+  .page-nav-link { padding: 0.35rem 0.85rem; border-radius: 8px; font-size: 0.82rem; text-decoration: none; background: var(--surface2); color: var(--text2); transition: all 0.2s; }
+  .page-nav-link:hover { background: var(--accent2); color: #fff; }
+  .page-nav-link.active { background: var(--accent); color: #000; font-weight: 600; }
+  /* Profile card */
+  .profile-card { border-radius: var(--radius); padding: 1.5rem; border: 2px solid; }
+  .profile-header { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; }
+  .profile-emoji { font-size: 2rem; }
+  .profile-tag { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; opacity: 0.75; }
+  .profile-name { font-size: 1.2rem; font-weight: 700; }
+  .profile-desc { font-size: 0.85rem; color: var(--text2); margin-bottom: 1rem; line-height: 1.5; }
+  .kpi-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 1rem; }
+  .kpi-box { background: var(--surface2); border-radius: 8px; padding: 0.6rem; text-align: center; }
+  .kpi-label { font-size: 0.7rem; color: var(--text2); }
+  .kpi-val { font-size: 1.1rem; font-weight: 700; }
+  .earn-badge { display: flex; justify-content: space-between; padding: 0.4rem 0.6rem; border-radius: 6px; margin-bottom: 0.3rem; font-size: 0.82rem; }
+  /* Level timeline */
+  .level-row { display: flex; align-items: center; gap: 0.75rem; padding: 0.6rem 0; border-bottom: 1px solid rgba(51,65,85,0.3); }
+  .level-emoji { width: 32px; text-align: center; font-size: 1.1rem; }
+  .level-name { width: 80px; font-size: 0.85rem; font-weight: 600; }
+  .level-threshold { width: 70px; font-size: 0.82rem; color: var(--text2); }
+  .level-timeline { flex: 1; display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+  .level-cell { border-radius: 4px; padding: 0.2rem 0.4rem; font-size: 0.75rem; text-align: center; }
+  /* LTV bar */
+  .ltv-bar-track { width: 100%; background: var(--surface2); border-radius: 6px; height: 24px; position: relative; overflow: hidden; margin-top: 0.25rem; }
+  .ltv-bar-fill { height: 100%; border-radius: 6px; display: flex; align-items: center; padding-left: 0.5rem; font-size: 0.78rem; font-weight: 600; }
+  @media (max-width: 768px) {
+    .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+    .container { padding: 1rem; }
+    h1 { font-size: 1.5rem; }
+    .level-timeline { grid-template-columns: repeat(2, 1fr); }
+    .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+<!-- Page Navigation -->
+<nav class="page-nav">
+  <span class="page-nav-label">&#128194; 포인트 전략:</span>
+  <a href="dashboard.html" class="page-nav-link">&#128202; 대시보드</a>
+  <a href="user-segments.html" class="page-nav-link active">&#128101; 사용자 세그먼트</a>
+  <a href="point-triggers.html" class="page-nav-link">&#9889; 포인트 트리거</a>
+  <a href="marketing-psychology.html" class="page-nav-link">&#129504; 마케팅·심리</a>
+</nav>
+
+<!-- Header -->
+<h1>&#128101; 사용자 세그먼트 분석</h1>
+<p class="subtitle">4가지 사용자 유형별 포인트 적립/소비 시뮬레이션 및 LTV 예측 | 2026.03.02</p>
+
+<!-- Internal Tabs -->
+<div class="tab-container">
+  <button class="tab active" onclick="showPanel('pan-profiles')">&#128100; 유형 프로필</button>
+  <button class="tab" onclick="showPanel('pan-earn')">&#128200; 월간 적립 상세</button>
+  <button class="tab" onclick="showPanel('pan-spend')">&#128201; 월간 소비 상세</button>
+  <button class="tab" onclick="showPanel('pan-levels')">&#127795; 레벨 성장 타임라인</button>
+  <button class="tab" onclick="showPanel('pan-ltv')">&#128176; 전환 예상 &amp; LTV</button>
+</div>
+
+<!-- ========== Panel: 유형 프로필 ========== -->
+<div id="pan-profiles" class="section-panel active">
+
+<div class="grid grid-2" style="margin-bottom:1.5rem">
+
+  <!-- Type A -->
+  <div class="profile-card" style="border-color:var(--purple)">
+    <div class="profile-header">
+      <div class="profile-emoji">&#128081;</div>
+      <div>
+        <div class="profile-tag" style="color:var(--purple)">Heavy User · 상위 10%</div>
+        <div class="profile-name" style="color:var(--purple)">파워독서가 A</div>
+      </div>
+    </div>
+    <div class="profile-desc">매일 앱을 사용하며 스트릭을 유지하는 헤비 유저. AI 기능을 적극 활용하고 완독 기록을 꾸준히 쌓는다. ReadTree의 핵심 매출 기여 세그먼트.</div>
+    <div class="kpi-grid">
+      <div class="kpi-box">
+        <div class="kpi-label">활동일/월</div>
+        <div class="kpi-val" style="color:var(--purple)">30일</div>
+      </div>
+      <div class="kpi-box">
+        <div class="kpi-label">노트/월</div>
+        <div class="kpi-val" style="color:var(--purple)">50개</div>
+      </div>
+      <div class="kpi-box">
+        <div class="kpi-label">AI 채팅</div>
+        <div class="kpi-val" style="color:var(--purple)">28회</div>
+      </div>
+      <div class="kpi-box">
+        <div class="kpi-label">완독</div>
+        <div class="kpi-val" style="color:var(--purple)">2권/월</div>
+      </div>
+    </div>
+    <div class="earn-badge" style="background:rgba(34,197,94,0.1)">
+      <span style="color:var(--text2)">월간 적립</span>
+      <span style="color:var(--accent); font-weight:700">+1,420P</span>
+    </div>
+    <div class="earn-badge" style="background:rgba(239,68,68,0.1)">
+      <span style="color:var(--text2)">월간 소비</span>
+      <span style="color:var(--danger); font-weight:700">-3,900P</span>
+    </div>
+    <div class="earn-badge" style="background:rgba(168,85,247,0.1)">
+      <span style="color:var(--text2)">연간 LTV</span>
+      <span style="color:var(--warn); font-weight:700">&#8361;93,600</span>
+    </div>
+    <div class="callout" style="margin-top:1rem; margin-bottom:0">
+      <strong>특징:</strong> 스탠다드/프리미엄 패키지 월 2회 구매. 웰컴 보너스는 3~4일 내 소진. 가장 높은 LTV와 NPS 기여자.
+    </div>
+  </div>
+
+  <!-- Type B -->
+  <div class="profile-card" style="border-color:var(--accent2)">
+    <div class="profile-header">
+      <div class="profile-emoji">&#128218;</div>
+      <div>
+        <div class="profile-tag" style="color:var(--accent2)">Regular User · 상위 30%</div>
+        <div class="profile-name" style="color:var(--accent2)">주말독서가 B</div>
+      </div>
+    </div>
+    <div class="profile-desc">주로 주말이나 여가 시간에 앱을 사용. AI 기능을 간헐적으로 사용하며 스트릭이 불규칙하다. 올바른 넛지로 파워독서가로 전환 가능한 잠재층.</div>
+    <div class="kpi-grid">
+      <div class="kpi-box">
+        <div class="kpi-label">활동일/월</div>
+        <div class="kpi-val" style="color:var(--accent2)">12~14일</div>
+      </div>
+      <div class="kpi-box">
+        <div class="kpi-label">노트/월</div>
+        <div class="kpi-val" style="color:var(--accent2)">24개</div>
+      </div>
+      <div class="kpi-box">
+        <div class="kpi-label">AI 채팅</div>
+        <div class="kpi-val" style="color:var(--accent2)">8회</div>
+      </div>
+      <div class="kpi-box">
+        <div class="kpi-label">완독</div>
+        <div class="kpi-val" style="color:var(--accent2)">1권/월</div>
+      </div>
+    </div>
+    <div class="earn-badge" style="background:rgba(34,197,94,0.1)">
+      <span style="color:var(--text2)">월간 적립</span>
+      <span style="color:var(--accent); font-weight:700">+450P</span>
+    </div>
+    <div class="earn-badge" style="background:rgba(239,68,68,0.1)">
+      <span style="color:var(--text2)">월간 소비</span>
+      <span style="color:var(--danger); font-weight:700">-1,110P</span>
+    </div>
+    <div class="earn-badge" style="background:rgba(59,130,246,0.1)">
+      <span style="color:var(--text2)">연간 LTV</span>
+      <span style="color:var(--warn); font-weight:700">&#8361;15,600</span>
+    </div>
+    <div class="callout callout-blue" style="margin-top:1rem; margin-bottom:0">
+      <strong>특징:</strong> 스탠다드 패키지 분기 1회 구매. 웰컴 보너스는 약 2~3주 소진. AI 리포트 경험 후 전환율 높아짐.
+    </div>
+  </div>
+
+  <!-- Type C -->
+  <div class="profile-card" style="border-color:var(--warn)">
+    <div class="profile-header">
+      <div class="profile-emoji">&#128214;</div>
+      <div>
+        <div class="profile-tag" style="color:var(--warn)">Casual User · 중간 40%</div>
+        <div class="profile-name" style="color:var(--warn)">가끔독서가 C</div>
+      </div>
+    </div>
+    <div class="profile-desc">독서는 좋아하지만 앱 사용이 불규칙하다. AI 기능을 가끔 사용하며 포인트 소비가 적다. 리텐션 개선 캠페인의 핵심 타겟.</div>
+    <div class="kpi-grid">
+      <div class="kpi-box">
+        <div class="kpi-label">활동일/월</div>
+        <div class="kpi-val" style="color:var(--warn)">6~8일</div>
+      </div>
+      <div class="kpi-box">
+        <div class="kpi-label">노트/월</div>
+        <div class="kpi-val" style="color:var(--warn)">8개</div>
+      </div>
+      <div class="kpi-box">
+        <div class="kpi-label">AI 채팅</div>
+        <div class="kpi-val" style="color:var(--warn)">2회</div>
+      </div>
+      <div class="kpi-box">
+        <div class="kpi-label">완독</div>
+        <div class="kpi-val" style="color:var(--warn)">0~1권/분기</div>
+      </div>
+    </div>
+    <div class="earn-badge" style="background:rgba(34,197,94,0.1)">
+      <span style="color:var(--text2)">월간 적립</span>
+      <span style="color:var(--accent); font-weight:700">+140P</span>
+    </div>
+    <div class="earn-badge" style="background:rgba(239,68,68,0.1)">
+      <span style="color:var(--text2)">월간 소비</span>
+      <span style="color:var(--danger); font-weight:700">-200P</span>
+    </div>
+    <div class="earn-badge" style="background:rgba(245,158,11,0.1)">
+      <span style="color:var(--text2)">연간 LTV</span>
+      <span style="color:var(--warn); font-weight:700">&#8361;3,800</span>
+    </div>
+    <div class="callout callout-warn" style="margin-top:1rem; margin-bottom:0">
+      <strong>특징:</strong> 라이트 패키지 반기 1회 구매. 웰컴 보너스가 5~7주 지속. 이메일/푸시 리마인더로 재활성화 가능.
+    </div>
+  </div>
+
+  <!-- Type D -->
+  <div class="profile-card" style="border-color:var(--surface2)">
+    <div class="profile-header">
+      <div class="profile-emoji">&#128123;</div>
+      <div>
+        <div class="profile-tag" style="color:var(--text2)">Churning User · 하위 20%</div>
+        <div class="profile-name" style="color:var(--text2)">유령독자 D</div>
+      </div>
+    </div>
+    <div class="profile-desc">월 2~3회 가입 후 산발적으로 접속. AI 기능을 거의 사용하지 않으며 포인트 소비가 없다. 재활성화 캠페인 대상 또는 자연 이탈 예정.</div>
+    <div class="kpi-grid">
+      <div class="kpi-box">
+        <div class="kpi-label">활동일/월</div>
+        <div class="kpi-val" style="color:var(--text2)">2~3일</div>
+      </div>
+      <div class="kpi-box">
+        <div class="kpi-label">노트/월</div>
+        <div class="kpi-val" style="color:var(--text2)">2개</div>
+      </div>
+      <div class="kpi-box">
+        <div class="kpi-label">AI 채팅</div>
+        <div class="kpi-val" style="color:var(--text2)">0회</div>
+      </div>
+      <div class="kpi-box">
+        <div class="kpi-label">완독</div>
+        <div class="kpi-val" style="color:var(--text2)">0권</div>
+      </div>
+    </div>
+    <div class="earn-badge" style="background:rgba(148,163,184,0.1)">
+      <span style="color:var(--text2)">월간 적립</span>
+      <span style="color:var(--text2); font-weight:700">+36P</span>
+    </div>
+    <div class="earn-badge" style="background:rgba(148,163,184,0.1)">
+      <span style="color:var(--text2)">월간 소비</span>
+      <span style="color:var(--text2); font-weight:700">0P</span>
+    </div>
+    <div class="earn-badge" style="background:rgba(148,163,184,0.1)">
+      <span style="color:var(--text2)">연간 LTV</span>
+      <span style="color:var(--text2); font-weight:700">~&#8361;0</span>
+    </div>
+    <div class="callout" style="margin-top:1rem; margin-bottom:0; background:rgba(148,163,184,0.05); border-left-color:var(--text2)">
+      <strong>특징:</strong> 웰컴 보너스 300P로 수개월 생존. 재활성화율 5~8% (이메일 + 한정 보너스 조합 시). 장기 방치 시 이탈 처리.
+    </div>
+  </div>
+
+</div>
+
+<div class="callout">
+  <strong>&#128161; 세그먼트 인사이트:</strong> 파워독서가(10%)가 전체 매출 <strong>72%</strong> 기여. 이 세그먼트의 이탈을 막는 것이 최우선 과제. 가끔독서가(40%)는 가장 많은 수이지만 매출 기여는 4%에 불과 — 주말독서가로의 업그레이드가 성장 핵심.
+</div>
+</div>
+
+<!-- ========== Panel: 월간 적립 상세 ========== -->
+<div id="pan-earn" class="section-panel">
+<div class="section">
+  <div class="section-title">&#128200; 월간 이벤트별 포인트 적립 상세</div>
+  <div class="card">
+    <table>
+      <thead>
+        <tr>
+          <th>이벤트</th>
+          <th>P/회</th>
+          <th>일일 한도</th>
+          <th style="color:var(--purple)">&#128081; A 파워</th>
+          <th style="color:var(--accent2)">&#128218; B 주말</th>
+          <th style="color:var(--warn)">&#128214; C 가끔</th>
+          <th style="color:var(--text2)">&#128123; D 유령</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>daily_first_activity</strong><br><span style="color:var(--text2);font-size:0.78rem">매일 첫 활동</span></td>
+          <td><span class="badge badge-green">+8P</span></td>
+          <td>1회</td>
+          <td style="color:var(--purple)">30회 × 8 = <strong>240P</strong></td>
+          <td style="color:var(--accent2)">12회 × 8 = <strong>96P</strong></td>
+          <td style="color:var(--warn)">5회 × 8 = <strong>40P</strong></td>
+          <td style="color:var(--text2)">2회 × 8 = <strong>16P</strong></td>
+        </tr>
+        <tr>
+          <td><strong>note_create</strong><br><span style="color:var(--text2);font-size:0.78rem">노트 작성</span></td>
+          <td><span class="badge badge-green">+10P</span></td>
+          <td>20회</td>
+          <td style="color:var(--purple)">50개 × 10 = <strong>500P</strong></td>
+          <td style="color:var(--accent2)">24개 × 10 = <strong>240P</strong></td>
+          <td style="color:var(--warn)">8개 × 10 = <strong>80P</strong></td>
+          <td style="color:var(--text2)">2개 × 10 = <strong>20P</strong></td>
+        </tr>
+        <tr>
+          <td><strong>note_quote</strong><br><span style="color:var(--text2);font-size:0.78rem">인용구 노트</span></td>
+          <td><span class="badge badge-green">+15P</span></td>
+          <td>10회</td>
+          <td style="color:var(--purple)">16개 × 15 = <strong>240P</strong></td>
+          <td style="color:var(--accent2)">4개 × 15 = <strong>60P</strong></td>
+          <td style="color:var(--warn)">1개 × 15 = <strong>15P</strong></td>
+          <td style="color:var(--text2)">0 = <strong>0P</strong></td>
+        </tr>
+        <tr>
+          <td><strong>note_photo</strong><br><span style="color:var(--text2);font-size:0.78rem">사진 노트</span></td>
+          <td><span class="badge badge-green">+12P</span></td>
+          <td>10회</td>
+          <td style="color:var(--purple)">4개 × 12 = <strong>48P</strong></td>
+          <td style="color:var(--accent2)">0 = <strong>0P</strong></td>
+          <td style="color:var(--warn)">0 = <strong>0P</strong></td>
+          <td style="color:var(--text2)">0 = <strong>0P</strong></td>
+        </tr>
+        <tr>
+          <td><strong>book_complete</strong><br><span style="color:var(--text2);font-size:0.78rem">완독</span></td>
+          <td><span class="badge badge-green">+60P</span></td>
+          <td>무제한</td>
+          <td style="color:var(--purple)">2권 × 60 = <strong>120P</strong></td>
+          <td style="color:var(--accent2)">1권 × 60 = <strong>60P</strong></td>
+          <td style="color:var(--warn)">0 = <strong>0P</strong></td>
+          <td style="color:var(--text2)">0 = <strong>0P</strong></td>
+        </tr>
+        <tr>
+          <td><strong>book_add</strong><br><span style="color:var(--text2);font-size:0.78rem">책 추가</span></td>
+          <td><span class="badge badge-green">+8P</span></td>
+          <td>10회</td>
+          <td style="color:var(--purple)">2권 × 8 = <strong>16P</strong></td>
+          <td style="color:var(--accent2)">1권 × 8 = <strong>8P</strong></td>
+          <td style="color:var(--warn)">0 = <strong>0P</strong></td>
+          <td style="color:var(--text2)">0 = <strong>0P</strong></td>
+        </tr>
+        <tr>
+          <td><strong>mission_complete</strong><br><span style="color:var(--text2);font-size:0.78rem">미션 완료</span></td>
+          <td><span class="badge badge-green">+12P</span></td>
+          <td>3회</td>
+          <td style="color:var(--purple)">18회 × 12 = <strong>216P</strong></td>
+          <td style="color:var(--accent2)">3회 × 12 = <strong>36P</strong></td>
+          <td style="color:var(--warn)">0 = <strong>0P</strong></td>
+          <td style="color:var(--text2)">0 = <strong>0P</strong></td>
+        </tr>
+        <tr>
+          <td><strong>note_share</strong><br><span style="color:var(--text2);font-size:0.78rem">노트 공유</span></td>
+          <td><span class="badge badge-green">+8P</span></td>
+          <td>10회</td>
+          <td style="color:var(--purple)">5회 × 8 = <strong>40P</strong></td>
+          <td style="color:var(--accent2)">1회 × 8 = <strong>8P</strong></td>
+          <td style="color:var(--warn)">0 = <strong>0P</strong></td>
+          <td style="color:var(--text2)">0 = <strong>0P</strong></td>
+        </tr>
+        <tr style="background:rgba(51,65,85,0.3)">
+          <td colspan="3"><strong>월간 합계 (반복 이벤트)</strong></td>
+          <td style="color:var(--purple); font-size:1rem; font-weight:700">1,420P</td>
+          <td style="color:var(--accent2); font-size:1rem; font-weight:700">508P</td>
+          <td style="color:var(--warn); font-size:1rem; font-weight:700">135P</td>
+          <td style="color:var(--text2); font-size:1rem; font-weight:700">36P</td>
+        </tr>
+        <tr>
+          <td><strong>welcome_bonus</strong><br><span style="color:var(--text2);font-size:0.78rem">가입 보너스 (1회)</span></td>
+          <td><span class="badge badge-purple">+300P</span></td>
+          <td>—</td>
+          <td colspan="4" style="color:var(--text2); font-size:0.82rem">가입 시 1회. 4유형 공통. 첫 달에만 적용.</td>
+        </tr>
+        <tr>
+          <td><strong>first_note</strong><br><span style="color:var(--text2);font-size:0.78rem">첫 노트 (1회)</span></td>
+          <td><span class="badge badge-purple">+25P</span></td>
+          <td>—</td>
+          <td colspan="4" style="color:var(--text2); font-size:0.82rem">가입 첫날 완료 가능. A/B/C 대부분 달성.</td>
+        </tr>
+        <tr>
+          <td><strong>first_book</strong><br><span style="color:var(--text2);font-size:0.78rem">첫 책 추가 (1회)</span></td>
+          <td><span class="badge badge-purple">+35P</span></td>
+          <td>—</td>
+          <td colspan="4" style="color:var(--text2); font-size:0.82rem">온보딩에서 완료. A/B 대부분, C 일부 달성.</td>
+        </tr>
+        <tr>
+          <td><strong>streak_7_days</strong></td>
+          <td><span class="badge badge-yellow">+50P</span></td>
+          <td>—</td>
+          <td style="color:var(--purple)">1회 달성</td>
+          <td style="color:var(--accent2)">불규칙 (3개월 1회)</td>
+          <td style="color:var(--warn)">거의 없음</td>
+          <td style="color:var(--text2)">없음</td>
+        </tr>
+        <tr>
+          <td><strong>streak_30_days</strong></td>
+          <td><span class="badge badge-yellow">+200P</span></td>
+          <td>—</td>
+          <td style="color:var(--purple)">1개월차 달성</td>
+          <td style="color:var(--accent2)">없음</td>
+          <td style="color:var(--warn)">없음</td>
+          <td style="color:var(--text2)">없음</td>
+        </tr>
+        <tr>
+          <td><strong>streak_100_days</strong></td>
+          <td><span class="badge badge-yellow">+500P</span></td>
+          <td>—</td>
+          <td style="color:var(--purple)">3~4개월차</td>
+          <td style="color:var(--accent2)">없음</td>
+          <td style="color:var(--warn)">없음</td>
+          <td style="color:var(--text2)">없음</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout callout-warn" style="margin-top:1rem">
+    <strong>&#9888; 주의:</strong> 위 수치는 월간 활동 패턴 기반 추정치입니다. 실제 값은 개인별 행동 패턴에 따라 ±20~30% 차이 발생 가능. 스트릭 보너스는 일회성이므로 첫 달에만 크게 보이며, 이후 달에는 포함되지 않습니다.
+  </div>
+</div>
+</div>
+
+<!-- ========== Panel: 월간 소비 상세 ========== -->
+<div id="pan-spend" class="section-panel">
+<div class="section">
+  <div class="section-title">&#128201; 월간 AI 기능 소비 상세</div>
+  <div class="card">
+    <table>
+      <thead>
+        <tr>
+          <th>기능</th>
+          <th>비용/회</th>
+          <th>현금 환산 (스탠다드)</th>
+          <th style="color:var(--purple)">&#128081; A 파워</th>
+          <th style="color:var(--accent2)">&#128218; B 주말</th>
+          <th style="color:var(--warn)">&#128214; C 가끔</th>
+          <th style="color:var(--text2)">&#128123; D 유령</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>ai_chat_spend</strong><br><span style="color:var(--text2);font-size:0.78rem">AI 독서 채팅</span></td>
+          <td><span class="badge badge-red">-100P</span></td>
+          <td>&#8361;279/회</td>
+          <td style="color:var(--purple)">28회 = <strong>-2,800P</strong><br><span style="color:var(--text2);font-size:0.78rem">~&#8361;7,812</span></td>
+          <td style="color:var(--accent2)">8회 = <strong>-800P</strong><br><span style="color:var(--text2);font-size:0.78rem">~&#8361;2,232</span></td>
+          <td style="color:var(--warn)">2회 = <strong>-200P</strong><br><span style="color:var(--text2);font-size:0.78rem">~&#8361;558</span></td>
+          <td style="color:var(--text2)">0회 = <strong>0P</strong></td>
+        </tr>
+        <tr>
+          <td><strong>ocr_spend</strong><br><span style="color:var(--text2);font-size:0.78rem">OCR 필사</span></td>
+          <td><span class="badge badge-red">-80P</span></td>
+          <td>&#8361;223/회</td>
+          <td style="color:var(--purple)">10회 = <strong>-800P</strong><br><span style="color:var(--text2);font-size:0.78rem">~&#8361;2,232</span></td>
+          <td style="color:var(--accent2)">2회 = <strong>-160P</strong><br><span style="color:var(--text2);font-size:0.78rem">~&#8361;447</span></td>
+          <td style="color:var(--warn)">0 = <strong>0P</strong></td>
+          <td style="color:var(--text2)">0 = <strong>0P</strong></td>
+        </tr>
+        <tr>
+          <td><strong>ai_report_spend</strong><br><span style="color:var(--text2);font-size:0.78rem">AI 독서 리포트</span></td>
+          <td><span class="badge badge-red">-150P</span></td>
+          <td>&#8361;419/회</td>
+          <td style="color:var(--purple)">2회 = <strong>-300P</strong><br><span style="color:var(--text2);font-size:0.78rem">~&#8361;837</span></td>
+          <td style="color:var(--accent2)">1회 = <strong>-150P</strong><br><span style="color:var(--text2);font-size:0.78rem">~&#8361;419</span></td>
+          <td style="color:var(--warn)">0 = <strong>0P</strong></td>
+          <td style="color:var(--text2)">0 = <strong>0P</strong></td>
+        </tr>
+        <tr style="background:rgba(239,68,68,0.08)">
+          <td colspan="3"><strong>월간 소비 합계</strong></td>
+          <td style="color:var(--danger); font-size:1rem; font-weight:700">-3,900P<br><span style="color:var(--text2);font-size:0.78rem">~&#8361;10,881</span></td>
+          <td style="color:var(--danger); font-size:1rem; font-weight:700">-1,110P<br><span style="color:var(--text2);font-size:0.78rem">~&#8361;3,097</span></td>
+          <td style="color:var(--danger); font-size:1rem; font-weight:700">-200P<br><span style="color:var(--text2);font-size:0.78rem">~&#8361;558</span></td>
+          <td style="color:var(--text2); font-size:1rem; font-weight:700">0P</td>
+        </tr>
+        <tr style="background:rgba(34,197,94,0.08)">
+          <td colspan="3"><strong>월간 적립 합계</strong></td>
+          <td style="color:var(--accent); font-size:1rem; font-weight:700">+1,420P</td>
+          <td style="color:var(--accent); font-size:1rem; font-weight:700">+450P</td>
+          <td style="color:var(--accent); font-size:1rem; font-weight:700">+140P</td>
+          <td style="color:var(--accent); font-size:1rem; font-weight:700">+36P</td>
+        </tr>
+        <tr style="background:rgba(51,65,85,0.3)">
+          <td colspan="3"><strong>순 밸런스 (월간)</strong></td>
+          <td style="color:var(--danger); font-size:1.1rem; font-weight:700">-2,480P</td>
+          <td style="color:var(--danger); font-size:1rem; font-weight:700">-660P</td>
+          <td style="color:var(--danger); font-size:0.9rem; font-weight:700">-60P</td>
+          <td style="color:var(--accent); font-size:0.9rem; font-weight:700">+36P</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="grid grid-3" style="margin-top:1.5rem">
+    <div class="card" style="text-align:center">
+      <div style="font-size:0.85rem; color:var(--text2); margin-bottom:0.5rem">파워독서가 AI 채팅 점유율</div>
+      <div style="font-size:2rem; font-weight:700; color:var(--purple)">71.8%</div>
+      <div style="font-size:0.8rem; color:var(--text2)">전체 AI 채팅 소비 중</div>
+    </div>
+    <div class="card" style="text-align:center">
+      <div style="font-size:0.85rem; color:var(--text2); margin-bottom:0.5rem">평균 AI 리포트 사용 빈도</div>
+      <div style="font-size:2rem; font-weight:700; color:var(--accent2)">0.75회</div>
+      <div style="font-size:0.8rem; color:var(--text2)">유료 사용자 기준 월간</div>
+    </div>
+    <div class="card" style="text-align:center">
+      <div style="font-size:0.85rem; color:var(--text2); margin-bottom:0.5rem">유령독자 잠재 재활성화</div>
+      <div style="font-size:2rem; font-weight:700; color:var(--warn)">5~8%</div>
+      <div style="font-size:0.8rem; color:var(--text2)">타겟 캠페인 전환율</div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ========== Panel: 레벨 성장 타임라인 ========== -->
+<div id="pan-levels" class="section-panel">
+<div class="section">
+  <div class="section-title">&#127795; 레벨 성장 타임라인 (나무 성장 스토리)</div>
+  <div class="callout callout-blue" style="margin-bottom:1.5rem">
+    <strong>계산 기준:</strong> 레벨은 누적 <em>적립</em> 포인트 기반 (소비 무관). 가입 즉시 웰컴 보너스 300P + first_note 25P + first_book 35P = <strong>360P</strong> 순간 적립 가능. 일일 적립: A=47P, B=15P, C=4.7P, D=1.2P
+  </div>
+
+  <div class="card">
+    <table>
+      <thead>
+        <tr>
+          <th>레벨</th>
+          <th>이름</th>
+          <th>필요P</th>
+          <th style="color:var(--purple)">&#128081; A 파워</th>
+          <th style="color:var(--accent2)">&#128218; B 주말</th>
+          <th style="color:var(--warn)">&#128214; C 가끔</th>
+          <th style="color:var(--text2)">&#128123; D 유령</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Lv.0</td>
+          <td>&#127807; 씨앗</td>
+          <td>0P</td>
+          <td><span class="badge badge-purple">Day 0</span></td>
+          <td><span class="badge badge-blue">Day 0</span></td>
+          <td><span class="badge badge-yellow">Day 0</span></td>
+          <td><span class="badge badge-gray">Day 0</span></td>
+        </tr>
+        <tr>
+          <td>Lv.1</td>
+          <td>&#127793; 새싹</td>
+          <td>50P</td>
+          <td><span class="badge badge-purple">Day 0 즉시</span></td>
+          <td><span class="badge badge-blue">Day 0 즉시</span></td>
+          <td><span class="badge badge-yellow">Day 0 즉시</span></td>
+          <td><span class="badge badge-gray">Day 0 즉시</span></td>
+        </tr>
+        <tr>
+          <td>Lv.2</td>
+          <td>&#127809; 떡잎</td>
+          <td>150P</td>
+          <td><span class="badge badge-purple">Day 0 즉시</span></td>
+          <td><span class="badge badge-blue">Day 0 즉시</span></td>
+          <td><span class="badge badge-yellow">Day 0 즉시</span></td>
+          <td><span class="badge badge-gray">Day 0 즉시</span></td>
+        </tr>
+        <tr>
+          <td>Lv.3</td>
+          <td>&#127810; 어린나무</td>
+          <td>350P</td>
+          <td><span class="badge badge-purple">Day 0 즉시</span></td>
+          <td><span class="badge badge-blue">Day 0 즉시</span></td>
+          <td><span class="badge badge-yellow">Day 0 즉시</span></td>
+          <td><span class="badge badge-gray">Day 0 즉시</span></td>
+        </tr>
+        <tr>
+          <td>Lv.4</td>
+          <td>&#127795; 나무</td>
+          <td>650P</td>
+          <td><span class="badge badge-purple">Day 0~1</span></td>
+          <td><span class="badge badge-blue">Day 1~3</span></td>
+          <td><span class="badge badge-yellow">Day 62</span></td>
+          <td><span class="badge badge-gray">Day 291</span></td>
+        </tr>
+        <tr>
+          <td>Lv.5</td>
+          <td>&#127823; 큰나무</td>
+          <td>1,100P</td>
+          <td><span class="badge badge-purple">Day 17</span></td>
+          <td><span class="badge badge-blue">Month 2</span></td>
+          <td><span class="badge badge-yellow">Month 5.7</span></td>
+          <td><span class="badge badge-gray">Month 22</span></td>
+        </tr>
+        <tr>
+          <td>Lv.6</td>
+          <td>&#127826; 꽃나무</td>
+          <td>1,800P</td>
+          <td><span class="badge badge-purple">Month 1.1</span></td>
+          <td><span class="badge badge-blue">Month 3.3</span></td>
+          <td><span class="badge badge-yellow">Month 10.6</span></td>
+          <td><span class="badge badge-gray">Month 41</span></td>
+        </tr>
+        <tr>
+          <td>Lv.7</td>
+          <td>&#127827; 열매나무</td>
+          <td>2,800P</td>
+          <td><span class="badge badge-purple">Month 1.8</span></td>
+          <td><span class="badge badge-blue">Month 5.6</span></td>
+          <td><span class="badge badge-yellow">Month 17.7</span></td>
+          <td><span class="badge badge-gray">실질 불가</span></td>
+        </tr>
+        <tr>
+          <td>Lv.8</td>
+          <td>&#127807; 세계수</td>
+          <td>4,200P</td>
+          <td><span class="badge badge-purple">Month 2.8</span></td>
+          <td><span class="badge badge-blue">Month 8.7</span></td>
+          <td><span class="badge badge-yellow">Month 27.7</span></td>
+          <td><span class="badge badge-gray">—</span></td>
+        </tr>
+        <tr>
+          <td>Lv.9</td>
+          <td>&#129293; 황금숲</td>
+          <td>6,500P</td>
+          <td><span class="badge badge-purple">Month 4.5</span></td>
+          <td><span class="badge badge-blue">Month 13.8</span></td>
+          <td><span class="badge badge-yellow">Month 44</span></td>
+          <td><span class="badge badge-gray">—</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout" style="margin-top:1.5rem">
+    <strong>&#128161; 레벨 설계 인사이트:</strong> 웰컴 보너스 360P(즉시 지급 최대값)로 <strong>Lv.0→Lv.3(어린나무)</strong>까지 즉시 달성. 이 &ldquo;시작부터 성장한 나무&rdquo; 경험이 Endowed Progress Effect를 극대화함. Lv.4→Lv.5 구간(나무→큰나무)이 첫 번째 유료 전환 최적 시점 (레벨업 욕구 + 포인트 고갈 동시 발생).
+  </div>
+</div>
+</div>
+
+<!-- ========== Panel: 전환 예상 & LTV ========== -->
+<div id="pan-ltv" class="section-panel">
+<div class="section">
+  <div class="section-title">&#128176; 유형별 첫 충전 전환 예상 시점</div>
+  <div class="card">
+    <table>
+      <thead>
+        <tr>
+          <th>유형</th>
+          <th>웰컴 보너스 소진 예상</th>
+          <th>첫 충전 전환 예상</th>
+          <th>전환 촉발 이벤트</th>
+          <th>추천 패키지</th>
+          <th>전환율 예상</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="badge badge-purple">A 파워독서가</span></td>
+          <td>가입 후 <strong>3~5일</strong></td>
+          <td><strong>Day 5~10</strong></td>
+          <td>AI 채팅 포인트 부족 알림</td>
+          <td><span class="badge badge-purple">스탠다드 &#8361;3,900</span></td>
+          <td style="color:var(--accent); font-weight:600">~35%</td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-blue">B 주말독서가</span></td>
+          <td>가입 후 <strong>2~3주</strong></td>
+          <td><strong>Week 3~6</strong></td>
+          <td>책 완독 후 AI 리포트 시도 시 포인트 부족</td>
+          <td><span class="badge badge-blue">스탠다드 &#8361;3,900</span></td>
+          <td style="color:var(--accent2); font-weight:600">~18%</td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-yellow">C 가끔독서가</span></td>
+          <td>가입 후 <strong>5~7주</strong></td>
+          <td><strong>Month 2~4</strong></td>
+          <td>포인트 잔액 50P 미만 경고</td>
+          <td><span class="badge badge-yellow">라이트 &#8361;1,900</span></td>
+          <td style="color:var(--warn); font-weight:600">~8%</td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-gray">D 유령독자</span></td>
+          <td>소진 없음 (6개월+ 지속)</td>
+          <td>사실상 미전환</td>
+          <td>재활성화 캠페인 필요</td>
+          <td>—</td>
+          <td style="color:var(--text2); font-weight:600">~1~2%</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title">&#128200; 12개월 LTV 추정</div>
+  <div class="grid grid-2">
+    <div class="card">
+      <div class="card-title">&#128181; 유형별 연간 수익 구조</div>
+      <div style="margin-bottom:1.5rem">
+        <div style="display:flex; justify-content:space-between; margin-bottom:0.5rem">
+          <span style="font-weight:600; color:var(--purple)">&#128081; A 파워독서가</span>
+          <span style="color:var(--warn); font-weight:700">&#8361;93,600/년</span>
+        </div>
+        <div style="font-size:0.82rem; color:var(--text2); margin-bottom:0.4rem">스탠다드(&#8361;3,900) × 월 2회 × 12개월</div>
+        <div style="background:var(--surface2); border-radius:6px; height:20px; overflow:hidden">
+          <div style="width:100%; height:100%; background:var(--purple); border-radius:6px; display:flex; align-items:center; padding-left:8px; font-size:0.75rem; font-weight:600; color:#fff">93,600원</div>
+        </div>
+      </div>
+      <div style="margin-bottom:1.5rem">
+        <div style="display:flex; justify-content:space-between; margin-bottom:0.5rem">
+          <span style="font-weight:600; color:var(--accent2)">&#128218; B 주말독서가</span>
+          <span style="color:var(--warn); font-weight:700">&#8361;15,600/년</span>
+        </div>
+        <div style="font-size:0.82rem; color:var(--text2); margin-bottom:0.4rem">스탠다드(&#8361;3,900) × 분기 1회 × 4회</div>
+        <div style="background:var(--surface2); border-radius:6px; height:20px; overflow:hidden">
+          <div style="width:16.7%; height:100%; background:var(--accent2); border-radius:6px; display:flex; align-items:center; padding-left:8px; font-size:0.75rem; font-weight:600; color:#fff; min-width:80px">15,600원</div>
+        </div>
+      </div>
+      <div style="margin-bottom:1.5rem">
+        <div style="display:flex; justify-content:space-between; margin-bottom:0.5rem">
+          <span style="font-weight:600; color:var(--warn)">&#128214; C 가끔독서가</span>
+          <span style="color:var(--warn); font-weight:700">&#8361;3,800/년</span>
+        </div>
+        <div style="font-size:0.82rem; color:var(--text2); margin-bottom:0.4rem">라이트(&#8361;1,900) × 반기 1회 × 2회</div>
+        <div style="background:var(--surface2); border-radius:6px; height:20px; overflow:hidden">
+          <div style="width:4.1%; height:100%; background:var(--warn); border-radius:6px; display:flex; align-items:center; padding-left:8px; font-size:0.75rem; font-weight:600; color:#000; min-width:60px">3,800원</div>
+        </div>
+      </div>
+      <div>
+        <div style="display:flex; justify-content:space-between; margin-bottom:0.5rem">
+          <span style="font-weight:600; color:var(--text2)">&#128123; D 유령독자</span>
+          <span style="color:var(--text2); font-weight:700">~&#8361;0/년</span>
+        </div>
+        <div style="font-size:0.82rem; color:var(--text2); margin-bottom:0.4rem">미전환 (재활성화 5~8% 가능)</div>
+        <div style="background:var(--surface2); border-radius:6px; height:20px; overflow:hidden">
+          <div style="width:0%; height:100%; background:var(--text2); min-width:40px; display:flex; align-items:center; padding-left:8px; font-size:0.75rem; color:var(--text2)">0원</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">&#128202; 세그먼트별 매출 집중도</div>
+      <div style="margin-bottom:1.5rem">
+        <table>
+          <thead><tr><th>유형</th><th>비율</th><th>LTV</th><th>매출 기여</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><span class="badge badge-purple">A 파워</span> 10%</td>
+              <td>10%</td>
+              <td style="color:var(--warn); font-weight:600">&#8361;93,600</td>
+              <td>
+                <div style="background:var(--surface2); border-radius:4px; height:16px; overflow:hidden">
+                  <div style="width:72%; height:100%; background:var(--purple); border-radius:4px; display:flex; align-items:center; padding-left:4px; font-size:0.7rem; color:#fff; font-weight:600">72%</div>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td><span class="badge badge-blue">B 주말</span> 20%</td>
+              <td>20%</td>
+              <td style="color:var(--warn); font-weight:600">&#8361;15,600</td>
+              <td>
+                <div style="background:var(--surface2); border-radius:4px; height:16px; overflow:hidden">
+                  <div style="width:24%; height:100%; background:var(--accent2); border-radius:4px; display:flex; align-items:center; padding-left:4px; font-size:0.7rem; color:#fff; font-weight:600">24%</div>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td><span class="badge badge-yellow">C 가끔</span> 40%</td>
+              <td>40%</td>
+              <td style="color:var(--warn); font-weight:600">&#8361;3,800</td>
+              <td>
+                <div style="background:var(--surface2); border-radius:4px; height:16px; overflow:hidden">
+                  <div style="width:4%; height:100%; background:var(--warn); border-radius:4px; min-width:30px; display:flex; align-items:center; padding-left:4px; font-size:0.7rem; color:#000; font-weight:600">4%</div>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td><span class="badge badge-gray">D 유령</span> 20%</td>
+              <td>20%</td>
+              <td style="color:var(--text2); font-weight:600">~&#8361;0</td>
+              <td>
+                <div style="background:var(--surface2); border-radius:4px; height:16px; overflow:hidden">
+                  <div style="width:0%; height:100%; min-width:30px; display:flex; align-items:center; padding-left:4px; font-size:0.7rem; color:var(--text2)">~0%</div>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout callout-warn">
+        <strong>파레토 법칙 적용:</strong> 상위 10%(파워독서가)가 매출의 72%를 담당. 이 층의 이탈 방지가 수익 안정의 핵심. C&rarr;B 업그레이드 1%p 달성 시 연간 매출 <strong>+&#8361;2.36M</strong> 추가 (사용자 1만명 기준).
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- Footer -->
+<div style="text-align:center; margin-top:3rem; padding:2rem; color:var(--text2); font-size:0.8rem; border-top:1px solid var(--surface2)">
+  <p>ReadTree 사용자 세그먼트 분석 v1.0 | Generated 2026-03-02</p>
+  <p style="margin-top:0.5rem">&#8592; <a href="dashboard.html" style="color:var(--accent2)">대시보드로 돌아가기</a> | <a href="point-triggers.html" style="color:var(--accent2)">포인트 트리거 보기 &#8594;</a></p>
+</div>
+
+</div>
+<script>
+function showPanel(id) {
+  document.querySelectorAll('.section-panel').forEach(p => { p.style.display = 'none'; p.classList.remove('active'); });
+  const el = document.getElementById(id);
+  el.style.display = 'block';
+  el.classList.add('active');
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  event.target.classList.add('active');
+}
+</script>
+</body>
+</html>

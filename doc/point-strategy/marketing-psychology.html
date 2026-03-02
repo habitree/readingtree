@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ReadTree 마케팅·심리 분석</title>
+<style>
+  :root {
+    --bg: #0f172a; --surface: #1e293b; --surface2: #334155;
+    --text: #f1f5f9; --text2: #94a3b8; --accent: #22c55e;
+    --accent2: #3b82f6; --warn: #f59e0b; --danger: #ef4444;
+    --purple: #a855f7; --pink: #ec4899; --teal: #14b8a6;
+    --radius: 12px;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family: -apple-system, 'Pretendard', sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+  .container { max-width: 1400px; margin: 0 auto; padding: 2rem; }
+  h1 { font-size: 2rem; margin-bottom: 0.5rem; }
+  .subtitle { color: var(--text2); margin-bottom: 2rem; font-size: 0.95rem; }
+  .grid { display: grid; gap: 1.5rem; }
+  .grid-2 { grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); }
+  .grid-3 { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+  .grid-4 { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+  .card { background: var(--surface); border-radius: var(--radius); padding: 1.5rem; border: 1px solid var(--surface2); }
+  .card-title { font-size: 0.85rem; color: var(--text2); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; }
+  .stat { font-size: 2.2rem; font-weight: 700; }
+  .stat-sm { font-size: 0.85rem; color: var(--text2); margin-top: 0.25rem; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.87rem; }
+  th { text-align: left; color: var(--text2); font-weight: 500; padding: 0.6rem 0.5rem; border-bottom: 1px solid var(--surface2); font-size: 0.8rem; }
+  td { padding: 0.6rem 0.5rem; border-bottom: 1px solid rgba(51,65,85,0.5); vertical-align: top; }
+  tr:hover td { background: rgba(51,65,85,0.2); }
+  .badge { display: inline-block; padding: 0.15rem 0.6rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; }
+  .badge-green { background: rgba(34,197,94,0.15); color: var(--accent); }
+  .badge-blue { background: rgba(59,130,246,0.15); color: var(--accent2); }
+  .badge-yellow { background: rgba(245,158,11,0.15); color: var(--warn); }
+  .badge-red { background: rgba(239,68,68,0.15); color: var(--danger); }
+  .badge-purple { background: rgba(168,85,247,0.15); color: var(--purple); }
+  .badge-pink { background: rgba(236,72,153,0.15); color: var(--pink); }
+  .badge-teal { background: rgba(20,184,166,0.15); color: var(--teal); }
+  .badge-gray { background: rgba(148,163,184,0.15); color: var(--text2); }
+  .section { margin-top: 2.5rem; }
+  .section-title { font-size: 1.2rem; font-weight: 700; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; }
+  .tab-container { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+  .tab { padding: 0.5rem 1rem; border-radius: 8px; cursor: pointer; font-size: 0.85rem; background: var(--surface2); color: var(--text2); border: none; transition: all 0.2s; }
+  .tab.active { background: var(--accent); color: #000; font-weight: 600; }
+  .section-panel { display: none; }
+  .section-panel.active { display: block; }
+  .callout { background: rgba(34,197,94,0.08); border-left: 3px solid var(--accent); padding: 1rem 1.25rem; border-radius: 0 8px 8px 0; margin: 1rem 0; font-size: 0.88rem; }
+  .callout-warn { background: rgba(245,158,11,0.08); border-left-color: var(--warn); }
+  .callout-blue { background: rgba(59,130,246,0.08); border-left-color: var(--accent2); }
+  .callout-purple { background: rgba(168,85,247,0.08); border-left-color: var(--purple); }
+  .callout-danger { background: rgba(239,68,68,0.08); border-left-color: var(--danger); }
+  .metric-row { display: flex; justify-content: space-between; align-items: center; padding: 0.4rem 0; border-bottom: 1px solid rgba(51,65,85,0.3); }
+  .metric-row:last-child { border-bottom: none; }
+  .page-nav { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; flex-wrap: wrap; background: var(--surface); border-radius: var(--radius); padding: 0.75rem 1rem; border: 1px solid var(--surface2); align-items: center; }
+  .page-nav-label { color: var(--text2); font-size: 0.78rem; margin-right: 0.25rem; white-space: nowrap; flex-shrink: 0; }
+  .page-nav-link { padding: 0.35rem 0.85rem; border-radius: 8px; font-size: 0.82rem; text-decoration: none; background: var(--surface2); color: var(--text2); transition: all 0.2s; }
+  .page-nav-link:hover { background: var(--accent2); color: #fff; }
+  .page-nav-link.active { background: var(--accent); color: #000; font-weight: 600; }
+  /* Psychology card */
+  .psy-card { display: flex; gap: 1rem; align-items: flex-start; margin-bottom: 1.5rem; padding-bottom: 1.5rem; border-bottom: 1px solid rgba(51,65,85,0.4); }
+  .psy-card:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+  .psy-icon { font-size: 2rem; flex-shrink: 0; width: 44px; text-align: center; }
+  .psy-body { flex: 1; }
+  .psy-body h4 { font-size: 1rem; font-weight: 700; margin-bottom: 0.2rem; }
+  .psy-body .theory-ref { font-size: 0.78rem; color: var(--text2); margin-bottom: 0.5rem; }
+  .psy-body p { font-size: 0.85rem; color: var(--text2); line-height: 1.6; margin-bottom: 0.5rem; }
+  .psy-events { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-top: 0.4rem; }
+  /* Scenario card */
+  .scenario { border-radius: var(--radius); padding: 1.25rem; border: 1px solid var(--surface2); margin-bottom: 1.25rem; }
+  .scenario-header { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; }
+  .scenario-num { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1rem; flex-shrink: 0; }
+  .scenario-title { font-size: 1rem; font-weight: 700; }
+  .scenario-sub { font-size: 0.82rem; color: var(--text2); }
+  .scenario-steps { display: flex; flex-direction: column; gap: 0.5rem; }
+  .step { display: flex; gap: 0.75rem; align-items: flex-start; }
+  .step-arrow { color: var(--text2); font-size: 0.75rem; padding-top: 0.2rem; flex-shrink: 0; }
+  .step-content { font-size: 0.85rem; flex: 1; }
+  /* Decision tree */
+  .dtree { background: var(--surface); border-radius: var(--radius); padding: 1.25rem; font-size: 0.85rem; }
+  .dtree-node { border-left: 2px solid var(--surface2); padding-left: 1rem; margin-left: 0.5rem; margin-bottom: 0.75rem; }
+  .dtree-q { font-weight: 700; color: var(--accent2); margin-bottom: 0.4rem; }
+  .dtree-y { color: var(--accent); }
+  .dtree-n { color: var(--danger); }
+  .dtree-result { background: var(--surface2); border-radius: 6px; padding: 0.4rem 0.75rem; display: inline-block; margin-top: 0.25rem; font-size: 0.82rem; }
+  /* Priority matrix */
+  .priority-row { display: grid; grid-template-columns: 60px 200px 100px 1fr 80px 80px; gap: 0.5rem; align-items: center; padding: 0.6rem 0; border-bottom: 1px solid rgba(51,65,85,0.3); font-size: 0.83rem; }
+  .priority-row:last-child { border-bottom: none; }
+  .priority-header { font-size: 0.78rem; color: var(--text2); font-weight: 500; }
+  @media (max-width: 768px) {
+    .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+    .container { padding: 1rem; }
+    h1 { font-size: 1.5rem; }
+    .priority-row { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+<!-- Page Navigation -->
+<nav class="page-nav">
+  <span class="page-nav-label">&#128194; 포인트 전략:</span>
+  <a href="dashboard.html" class="page-nav-link">&#128202; 대시보드</a>
+  <a href="user-segments.html" class="page-nav-link">&#128101; 사용자 세그먼트</a>
+  <a href="point-triggers.html" class="page-nav-link">&#9889; 포인트 트리거</a>
+  <a href="marketing-psychology.html" class="page-nav-link active">&#129504; 마케팅·심리</a>
+</nav>
+
+<h1>&#129504; 마케팅·심리 분석</h1>
+<p class="subtitle">행동경제학 기반 포인트 설계 원칙, 전환 시나리오, 의사결정 가이드 | 2026.03.02</p>
+
+<!-- Internal Tabs -->
+<div class="tab-container">
+  <button class="tab active" onclick="showPanel('pan-psychology')">&#129504; 심리학 매핑</button>
+  <button class="tab" onclick="showPanel('pan-scenarios')">&#128161; 전환 시나리오</button>
+  <button class="tab" onclick="showPanel('pan-timing')">&#8987; 최적 충전 시점</button>
+  <button class="tab" onclick="showPanel('pan-roi')">&#128200; 캠페인 ROI</button>
+  <button class="tab" onclick="showPanel('pan-priority')">&#127919; 구현 우선순위</button>
+</div>
+
+<!-- ========== Panel: 심리학 매핑 ========== -->
+<div id="pan-psychology" class="section-panel active">
+<div class="section">
+  <div class="section-title">&#129504; 심리학 원리 × 포인트 이벤트 매핑</div>
+  <div class="card">
+
+    <div class="psy-card">
+      <div class="psy-icon">&#127942;</div>
+      <div class="psy-body">
+        <h4 style="color:var(--accent2)">Endowed Progress Effect (부여된 진행 효과)</h4>
+        <div class="theory-ref">Nunes &amp; Dreze (2006) 세차장 실험 — 미리 채워진 카드 그룹 완료율 34% vs 빈 카드 19% (1.8배)</div>
+        <p>시작할 때 이미 진행 중이라고 느끼면 완료할 확률이 크게 오른다. 300P 웰컴 보너스와 온보딩 체크리스트를 연동하면 첫 단계가 이미 완료된 것처럼 느껴진다.</p>
+        <p><strong>현재 적용:</strong> welcome_bonus 300P 즉시 지급 → Lv.3 어린나무 즉시 달성 → "이미 성장한 나무" 경험</p>
+        <p><strong>개선 제안:</strong> 300P 일괄 지급을 <strong>200P(즉시) + 50P(프로필 완성) + 50P(첫 노트)</strong>로 분할하면 행동 유도력 1.8배 강화.</p>
+        <div class="psy-events">
+          <span class="badge badge-purple">welcome_bonus</span>
+          <span class="badge badge-purple">first_note</span>
+          <span class="badge badge-purple">first_book</span>
+          <span class="badge badge-blue">온보딩 체크리스트</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="psy-card">
+      <div class="psy-icon">&#128561;</div>
+      <div class="psy-body">
+        <h4 style="color:var(--danger)">Loss Aversion (손실 회피)</h4>
+        <div class="theory-ref">Kahneman &amp; Tversky, Prospect Theory (1979) — 손실의 고통 = 동일한 이득의 기쁨 × 2.0~2.5배</div>
+        <p>사람들은 같은 크기라도 얻는 것보다 잃는 것을 훨씬 크게 느낀다. "스트릭을 잃을 수 있다"는 경고가 "스트릭을 얻을 수 있다"는 약속보다 2배 강력하게 동기를 유발한다.</p>
+        <p><strong>현재 적용:</strong> streak 시스템이 이미 이 효과를 내포. 30일 스트릭 보유자는 하루 접속을 빠뜨리지 않으려는 강한 동기 존재.</p>
+        <p><strong>개선 제안:</strong> <strong>스트릭 프리즈(500P)</strong> — "스트릭이 끊기지 않게 보호"라는 프레이밍이 핵심. 포인트 충전 최강 트리거.</p>
+        <div class="psy-events">
+          <span class="badge badge-yellow">streak_7_days</span>
+          <span class="badge badge-yellow">streak_30_days</span>
+          <span class="badge badge-yellow">streak_100_days</span>
+          <span class="badge badge-red">스트릭 위기 알림 (제안)</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="psy-card">
+      <div class="psy-icon">&#127926;</div>
+      <div class="psy-body">
+        <h4 style="color:var(--warn)">Variable Ratio Reinforcement (가변 비율 강화)</h4>
+        <div class="theory-ref">B.F. Skinner, 조작적 조건형성 — 슬롯머신 원리. 예측 불가한 보상이 가장 강한 습관을 만든다.</div>
+        <p>예측 가능한 보상(고정 포인트)은 습관 형성에 효과적이지만 도파민 반응이 점차 감소한다. 예측 불가한 가변 보상은 지속적인 흥미와 참여를 유발한다.</p>
+        <p><strong>현재 문제:</strong> 모든 이벤트가 고정 포인트 → 몇 주 후 "지루함" 발생.</p>
+        <p><strong>개선 제안:</strong> <strong>"행운의 열매"</strong> — 완독 시 10~25% 확률로 20~200P 랜덤 보너스 지급. 보장 최소값 + 랜덤 최대값 구조.</p>
+        <div class="psy-events">
+          <span class="badge badge-green">book_complete (랜덤 보너스 적용 제안)</span>
+          <span class="badge badge-teal">행운의 열매 (제안)</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="psy-card">
+      <div class="psy-icon">&#9989;</div>
+      <div class="psy-body">
+        <h4 style="color:var(--accent)">Completion Bias (완성 편향)</h4>
+        <div class="theory-ref">Ovsiankina Effect (1928), Zeigarnik Effect — 미완성 과제에 대한 강박적 완성 욕구.</div>
+        <p>미완성 체크리스트가 눈에 보이면 완성하고 싶은 충동이 발생한다. 매일 미션 3개가 화면에 표시되면 "다 채워야 한다"는 심리가 작동한다.</p>
+        <p><strong>현재 적용:</strong> mission_complete(+12P × 3회) + all_missions_complete(+40P). 3개를 모두 완성하면 추가 40P = 76P vs 개별 36P. 완전 완성에 2.1배 보상.</p>
+        <p><strong>개선 제안:</strong> 남은 미션 수를 숫자 배지로 표시 ("2개 남음") + 완성 임박 시 알림.</p>
+        <div class="psy-events">
+          <span class="badge badge-yellow">mission_complete</span>
+          <span class="badge badge-yellow">all_missions_complete</span>
+          <span class="badge badge-blue">일일 체크리스트 UI</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="psy-card">
+      <div class="psy-icon">&#11088;</div>
+      <div class="psy-body">
+        <h4 style="color:var(--purple)">Peak Experience (절정 경험)</h4>
+        <div class="theory-ref">Peak-End Rule (Kahneman) — 경험의 전체 기억은 절정 순간과 마지막 순간에 의해 결정된다.</div>
+        <p>사용자가 앱에 대해 갖는 기억과 평가는 일상적인 사용보다 "최고의 순간"에 의해 결정된다. 첫 번째 노트, 첫 완독, 100일 달성 등이 바로 이 순간들이다.</p>
+        <p><strong>현재 적용:</strong> first_note(+25P), first_book(+35P)가 온보딩 절정 경험으로 설계되어 있음. 축하 애니메이션/모달이 있다면 효과 극대화.</p>
+        <p><strong>개선 제안:</strong> 완독 시 <strong>나무 성장 애니메이션</strong> + SNS 공유 카드. "내 나무가 꽃을 피웠어요!" 순간이 바이럴 트리거.</p>
+        <div class="psy-events">
+          <span class="badge badge-purple">first_note</span>
+          <span class="badge badge-purple">first_book</span>
+          <span class="badge badge-green">book_complete</span>
+          <span class="badge badge-yellow">streak_100_days</span>
+          <span class="badge badge-pink">SNS 공유 카드 (제안)</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="psy-card" style="border-bottom:none; margin-bottom:0; padding-bottom:0">
+      <div class="psy-icon">&#128101;</div>
+      <div class="psy-body">
+        <h4 style="color:var(--teal)">Social Proof + Identity Lock-in (사회적 증거 + 정체성 고착)</h4>
+        <div class="theory-ref">Cialdini (Influence), Deci &amp; Ryan (Self-Determination Theory)</div>
+        <p>공유 행동(note_share)은 사회적 증거를 만들고, 동시에 "나는 독서가다"라는 자기 정체성을 강화한다. 100일 스트릭 달성자가 앱을 떠나기 어려운 이유: 이미 앱이 자신의 정체성의 일부가 됐기 때문.</p>
+        <p><strong>현재 적용:</strong> note_share(+8P × 10회). 공유 유인이 포인트만으로는 약함.</p>
+        <p><strong>개선 제안:</strong> 공유 후 바이럴 계수(K-Factor) 측정. "친구가 가입하면 양쪽 50P" 구조로 획득 비용 절감.</p>
+        <div class="psy-events">
+          <span class="badge badge-pink">note_share</span>
+          <span class="badge badge-yellow">streak_100_days</span>
+          <span class="badge badge-teal">친구 초대 양면 보상 (제안)</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</div>
+
+<!-- ========== Panel: 전환 시나리오 ========== -->
+<div id="pan-scenarios" class="section-panel">
+<div class="section">
+  <div class="section-title">&#128161; 충전 전환 3대 시나리오</div>
+
+  <!-- Scenario 1 -->
+  <div class="scenario" style="border-color:var(--warn)">
+    <div class="scenario-header">
+      <div class="scenario-num" style="background:rgba(245,158,11,0.2); color:var(--warn)">1</div>
+      <div>
+        <div class="scenario-title" style="color:var(--warn)">웰컴 소진 시나리오</div>
+        <div class="scenario-sub">타겟: C 가끔독서가 · 발생 시점: Week 2~4 · 전환율 예상 ~22%</div>
+      </div>
+    </div>
+    <div class="scenario-steps">
+      <div class="step">
+        <div class="step-arrow">1</div>
+        <div class="step-content"><strong>트리거:</strong> 잔액 50P 이하 달성. 시스템이 잔액 경고 팝업 발송.</div>
+      </div>
+      <div class="step">
+        <div class="step-arrow">2</div>
+        <div class="step-content"><strong>메시지:</strong> "포인트가 50P 남았어요. AI 채팅을 0.5회 쓸 수 있는 양이에요. 충전하면 더 많은 독서 대화가 가능해요!"</div>
+      </div>
+      <div class="step">
+        <div class="step-arrow">3</div>
+        <div class="step-content"><strong>CTA:</strong> 라이트(₩1,900) 또는 스탠다드(₩3,900) 버튼. 스탠다드에 "가장 인기" 배지.</div>
+      </div>
+      <div class="step">
+        <div class="step-arrow">4</div>
+        <div class="step-content"><strong>심리학:</strong> Endowed Progress (잔액이 너무 적다 → 원래 상태 회복 욕구) + Anchoring (50P 남음 vs 500P 충전 비교).</div>
+      </div>
+    </div>
+    <div class="callout callout-warn" style="margin-top:0.75rem; margin-bottom:0">
+      <strong>최적화 팁:</strong> "남은 포인트로 할 수 있는 것" 시각화가 전환율 +15% 상승. "AI 채팅 0.5회" 보다 "오늘 독서 한 챕터의 인사이트를 AI와 함께 정리할 수 없어요" 프레이밍이 더 효과적.
+    </div>
+  </div>
+
+  <!-- Scenario 2 -->
+  <div class="scenario" style="border-color:var(--danger)">
+    <div class="scenario-header">
+      <div class="scenario-num" style="background:rgba(239,68,68,0.2); color:var(--danger)">2</div>
+      <div>
+        <div class="scenario-title" style="color:var(--danger)">스트릭 위기 시나리오</div>
+        <div class="scenario-sub">타겟: A 파워독서가, B 주말독서가 · 발생 시점: 아무 때나 (연속 위기 시) · 전환율 예상 ~35%</div>
+      </div>
+    </div>
+    <div class="scenario-steps">
+      <div class="step">
+        <div class="step-arrow">1</div>
+        <div class="step-content"><strong>트리거:</strong> 당일 자정까지 접속 없음 + 스트릭 7일 이상 보유 중. 저녁 9시 푸시 알림 발송.</div>
+      </div>
+      <div class="step">
+        <div class="step-arrow">2</div>
+        <div class="step-content"><strong>메시지 (스트릭 30일 이상):</strong> "🌳 30일 스트릭이 오늘 자정에 끊길 위기예요. 지금 바로 접속하거나 스트릭 프리즈(500P)로 보호하세요!"</div>
+      </div>
+      <div class="step">
+        <div class="step-arrow">3</div>
+        <div class="step-content"><strong>CTA:</strong> [지금 접속하기] [스트릭 프리즈 사용하기 — 500P] 두 버튼. 포인트 부족 시 충전 유도.</div>
+      </div>
+      <div class="step">
+        <div class="step-arrow">4</div>
+        <div class="step-content"><strong>심리학:</strong> Loss Aversion × 2배. "30일의 노력이 오늘 사라진다"는 공포가 즉각 행동 유발. 가장 강력한 결제 트리거.</div>
+      </div>
+    </div>
+    <div class="callout callout-danger" style="margin-top:0.75rem; margin-bottom:0">
+      <strong>주의사항:</strong> 스트릭 프리즈 기능이 먼저 구현되어야 함. 없는 기능을 CTA로 쓰면 사용자 신뢰 하락. 스트릭 프리즈 구현 전까지는 "오늘 접속하기" CTA만 사용.
+    </div>
+  </div>
+
+  <!-- Scenario 3 -->
+  <div class="scenario" style="border-color:var(--accent2)">
+    <div class="scenario-header">
+      <div class="scenario-num" style="background:rgba(59,130,246,0.2); color:var(--accent2)">3</div>
+      <div>
+        <div class="scenario-title" style="color:var(--accent2)">AI 리포트 경험 시나리오</div>
+        <div class="scenario-sub">타겟: B 주말독서가 · 발생 시점: 첫 완독 직후 · 전환율 예상 ~18%</div>
+      </div>
+    </div>
+    <div class="scenario-steps">
+      <div class="step">
+        <div class="step-arrow">1</div>
+        <div class="step-content"><strong>트리거:</strong> book_complete 이벤트 발생. 완독 축하 모달 + AI 리포트 CTA 표시.</div>
+      </div>
+      <div class="step">
+        <div class="step-arrow">2</div>
+        <div class="step-content"><strong>메시지:</strong> "🎉 완독 축하해요! 이 책의 핵심 인사이트를 AI가 정리해줄게요. 나만의 독서 리포트를 만들어보세요! (150P)"</div>
+      </div>
+      <div class="step">
+        <div class="step-arrow">3</div>
+        <div class="step-content"><strong>포인트 부족 시:</strong> "잔액이 부족해요. 스탠다드 충전(₩3,900)으로 AI 리포트 9회분을 받으세요!" — 완독 직후 감정이 살아있는 타이밍.</div>
+      </div>
+      <div class="step">
+        <div class="step-arrow">4</div>
+        <div class="step-content"><strong>심리학:</strong> Peak Experience (완독 직후 절정 감정) + Recency Effect (방금 책을 다 읽은 성취감이 지갑을 열게 함).</div>
+      </div>
+    </div>
+    <div class="callout callout-blue" style="margin-top:0.75rem; margin-bottom:0">
+      <strong>최적화 팁:</strong> AI 리포트 결과물을 SNS 공유하도록 유도하면 바이럴 계수(K) 증가. "이 책을 읽고 깨달은 것들"이라는 공유 프레임은 자기 표현 욕구와 연결되어 공유율 높음.
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ========== Panel: 최적 충전 시점 ========== -->
+<div id="pan-timing" class="section-panel">
+<div class="section">
+  <div class="section-title">&#8987; 충전 유도 최적 시점 분석표</div>
+  <div class="card">
+    <table>
+      <thead>
+        <tr>
+          <th>시점/상황</th>
+          <th>발생 조건</th>
+          <th>타겟 세그먼트</th>
+          <th>심리적 레버</th>
+          <th>예상 전환율</th>
+          <th>메시지 예시</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>잔액 50P 이하</strong></td>
+          <td>현재 잔액 &le; 50P</td>
+          <td><span class="badge badge-yellow">C 가끔</span> <span class="badge badge-blue">B 주말</span></td>
+          <td>결핍 회피</td>
+          <td style="color:var(--accent); font-weight:600">~22%</td>
+          <td>"포인트가 거의 바닥났어요"</td>
+        </tr>
+        <tr>
+          <td><strong>잔액 100P 이하</strong></td>
+          <td>현재 잔액 &le; 100P</td>
+          <td><span class="badge badge-purple">A 파워</span> <span class="badge badge-blue">B 주말</span></td>
+          <td>예방적 충전 욕구</td>
+          <td style="color:var(--accent); font-weight:600">~15%</td>
+          <td>"AI 채팅 1회분밖에 없어요"</td>
+        </tr>
+        <tr>
+          <td><strong>완독 직후</strong></td>
+          <td>book_complete 이벤트</td>
+          <td><span class="badge badge-blue">B 주말</span> <span class="badge badge-purple">A 파워</span></td>
+          <td>절정 경험 + 성취감</td>
+          <td style="color:var(--accent); font-weight:600">~18%</td>
+          <td>"AI 리포트로 이 책을 완전히 소화하세요"</td>
+        </tr>
+        <tr>
+          <td><strong>스트릭 위기</strong></td>
+          <td>당일 미접속 + 스트릭 7일+</td>
+          <td><span class="badge badge-purple">A 파워</span> <span class="badge badge-blue">B 주말</span></td>
+          <td>손실 회피 (2x)</td>
+          <td style="color:var(--accent); font-weight:600">~35%</td>
+          <td>"스트릭이 오늘 끊깁니다!"</td>
+        </tr>
+        <tr>
+          <td><strong>스트릭 마일스톤</strong></td>
+          <td>7/30/100일 달성 직후</td>
+          <td><span class="badge badge-purple">A 파워</span></td>
+          <td>성취감 + 상승 모멘텀</td>
+          <td style="color:var(--accent2); font-weight:600">~25%</td>
+          <td>"30일 달성! 이 기세를 계속 이어가요"</td>
+        </tr>
+        <tr>
+          <td><strong>레벨업 임박</strong></td>
+          <td>레벨까지 필요 P &le; 50P</td>
+          <td><span class="badge badge-yellow">C 가끔</span> <span class="badge badge-blue">B 주말</span></td>
+          <td>완성 욕구 + 끝맺음</td>
+          <td style="color:var(--warn); font-weight:600">~12%</td>
+          <td>"꽃나무까지 50P만 더!"</td>
+        </tr>
+        <tr>
+          <td><strong>연속 AI 채팅</strong></td>
+          <td>하루 3회 이상 AI 채팅 사용</td>
+          <td><span class="badge badge-purple">A 파워</span></td>
+          <td>사용 흥미 절정</td>
+          <td style="color:var(--warn); font-weight:600">~28%</td>
+          <td>"AI 채팅이 마음에 드시나요? 더 많이 사용하려면"</td>
+        </tr>
+        <tr>
+          <td><strong>친구 가입</strong></td>
+          <td>초대 링크로 친구 가입</td>
+          <td>전체</td>
+          <td>호혜성 + 소속감</td>
+          <td style="color:var(--warn); font-weight:600">~20%</td>
+          <td>"친구도 함께 독서해요! 양쪽 50P 지급"</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout" style="margin-top:1.5rem">
+    <strong>&#128161; 최우선 구현:</strong> "잔액 50P 이하" 알림은 개발 비용이 낮고 효과가 즉각적. 스트릭 위기 알림은 전환율 35%로 가장 높지만 스트릭 프리즈 기능 선행 필요. <strong>단기: 잔액 알림 → 중기: 완독/마일스톤 CTA → 장기: 스트릭 프리즈</strong> 순으로 구현 권장.
+  </div>
+</div>
+</div>
+
+<!-- ========== Panel: 캠페인 ROI ========== -->
+<div id="pan-roi" class="section-panel">
+<div class="section">
+  <div class="section-title">&#128200; 마케팅 캠페인 예상 ROI</div>
+  <div class="grid grid-2">
+
+    <div class="card">
+      <div class="card-title"><span>&#128101;</span> 친구 초대 양면 보상</div>
+      <div class="metric-row"><span class="metric-label">보상 구조</span><span style="font-weight:600">초대자 +50P / 신규 +50P</span></div>
+      <div class="metric-row"><span class="metric-label">포인트 원가 (총 100P)</span><span style="color:var(--danger)">~&#8361;279 (스탠다드 기준)</span></div>
+      <div class="metric-row"><span class="metric-label">신규 사용자 CAC (업계 평균)</span><span style="color:var(--warn); font-weight:600">&#8361;3,000~8,000</span></div>
+      <div class="metric-row"><span class="metric-label">절감 효과 (최소)</span><span style="color:var(--accent); font-weight:600">&#8361;2,721/사용자</span></div>
+      <div class="metric-row"><span class="metric-label">K-Factor 예상</span><span style="color:var(--accent2); font-weight:600">0.15~0.35</span></div>
+      <div class="metric-row"><span class="metric-label">획득 가속 배율</span><span style="color:var(--accent); font-weight:600">2~3x</span></div>
+      <div class="callout" style="margin-top:0.75rem">
+        투자 대비 최소 <strong>10배 ROI</strong>. K &gt; 0.3 달성 시 바이럴 루프 형성으로 CAC가 0에 수렴.
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span>&#128197;</span> 시즌 이벤트 (독서의 달 9월)</div>
+      <div class="metric-row"><span class="metric-label">이벤트 구조</span><span style="font-weight:600">9월 충전 시 +20% 보너스</span></div>
+      <div class="metric-row"><span class="metric-label">보너스 원가 (스탠다드 기준)</span><span style="color:var(--danger)">+280P → ~&#8361;781</span></div>
+      <div class="metric-row"><span class="metric-label">충전 유발 MAU 대비</span><span style="color:var(--warn); font-weight:600">예상 +35% 매출 피크</span></div>
+      <div class="metric-row"><span class="metric-label">신규 첫 충전 유입</span><span style="color:var(--accent2); font-weight:600">C유형 → B유형 전환 2배</span></div>
+      <div class="metric-row"><span class="metric-label">캠페인 비용 (사용자 1만 기준)</span><span style="color:var(--danger)">~&#8361;2.8M (원가 기준)</span></div>
+      <div class="metric-row"><span class="metric-label">예상 추가 매출</span><span style="color:var(--accent); font-weight:600">~&#8361;35M (평월 대비 +35%)</span></div>
+      <div class="callout" style="margin-top:0.75rem">
+        API 마진율 98.7% 덕분에 보너스 포인트 비용이 매우 저렴. 시즌 이벤트 <strong>ROI 12.5배</strong> 예상.
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span>&#128293;</span> 웰컴 보너스 분할 지급 개선</div>
+      <div class="metric-row"><span class="metric-label">현재 방식</span><span style="font-weight:600">300P 일괄 지급</span></div>
+      <div class="metric-row"><span class="metric-label">제안 방식</span><span style="font-weight:600">200P+50P+50P 분할</span></div>
+      <div class="metric-row"><span class="metric-label">추가 개발 비용</span><span style="color:var(--accent); font-weight:600">낮음 (조건 분기만 추가)</span></div>
+      <div class="metric-row"><span class="metric-label">Day 7 리텐션 기대 효과</span><span style="color:var(--accent); font-weight:600">+20~30%</span></div>
+      <div class="metric-row"><span class="metric-label">온보딩 완료율 기대 효과</span><span style="color:var(--accent); font-weight:600">1.8배</span></div>
+      <div class="metric-row"><span class="metric-label">LTV 영향 (B유형 기준)</span><span style="color:var(--warn); font-weight:600">+&#8361;3,120/사용자</span></div>
+      <div class="callout" style="margin-top:0.75rem">
+        <strong>최고 ROI 개선 항목.</strong> 개발 비용 낮고, 효과 즉각적. 가장 먼저 구현 권장.
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span>&#128247;</span> SNS 공유 카드 (완독/스트릭)</div>
+      <div class="metric-row"><span class="metric-label">트리거</span><span style="font-weight:600">book_complete / 스트릭 마일스톤</span></div>
+      <div class="metric-row"><span class="metric-label">공유 시 포인트</span><span style="font-weight:600">note_share +8P (기존)</span></div>
+      <div class="metric-row"><span class="metric-label">예상 공유율</span><span style="color:var(--accent2); font-weight:600">완독 후 15~25%</span></div>
+      <div class="metric-row"><span class="metric-label">공유 클릭→가입율</span><span style="color:var(--accent2); font-weight:600">5~8%</span></div>
+      <div class="metric-row"><span class="metric-label">바이럴 CAC</span><span style="color:var(--accent); font-weight:600">~&#8361;0 (유기적)</span></div>
+      <div class="metric-row"><span class="metric-label">개발 비용</span><span style="color:var(--warn); font-weight:600">중간 (카드 디자인 필요)</span></div>
+      <div class="callout callout-blue" style="margin-top:0.75rem">
+        완독 카드는 자기 표현 욕구와 연결 → 공유 의향 높음. "올해 23번째 완독" 같은 맥락 정보가 공유욕 자극.
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ========== Panel: 구현 우선순위 ========== -->
+<div id="pan-priority" class="section-panel">
+<div class="section">
+  <div class="section-title">&#127919; P0~P3 구현 우선순위 매트릭스</div>
+  <div class="callout callout-blue" style="margin-bottom:1.5rem">
+    <strong>우선순위 기준:</strong> 개발 비용(낮음/중간/높음) × 기대 효과(매출 영향, 리텐션 효과). P0 = 즉시 구현, P1 = 1~2개월, P2 = 3~6개월, P3 = 6개월+.
+  </div>
+
+  <div class="card">
+    <div style="overflow-x:auto">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:60px">우선순위</th>
+            <th style="width:220px">기능/개선</th>
+            <th style="width:90px">개발 비용</th>
+            <th>예상 효과</th>
+            <th style="width:90px">매출 영향</th>
+            <th style="width:90px">리텐션 영향</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- P0 -->
+          <tr style="background:rgba(34,197,94,0.05)">
+            <td><span class="badge badge-green">P0</span></td>
+            <td><strong>웰컴 보너스 분할 지급</strong><br><span style="color:var(--text2);font-size:0.78rem">200P즉시 + 50P 프로필 + 50P 첫노트</span></td>
+            <td><span class="badge badge-green">낮음</span></td>
+            <td>Day 7 리텐션 +20~30%, 온보딩 완료율 1.8x, Endowed Progress 최대 활용</td>
+            <td style="color:var(--accent); font-weight:600">+15~30%</td>
+            <td style="color:var(--accent); font-weight:600">+20~30%</td>
+          </tr>
+          <tr style="background:rgba(34,197,94,0.05)">
+            <td><span class="badge badge-green">P0</span></td>
+            <td><strong>잔액 부족 알림 시스템</strong><br><span style="color:var(--text2);font-size:0.78rem">50P/100P 이하 시 푸시+인앱 알림</span></td>
+            <td><span class="badge badge-green">낮음</span></td>
+            <td>소진 시점 충전 전환율 2.3x. 즉각적인 매출 개선.</td>
+            <td style="color:var(--accent); font-weight:600">+25%</td>
+            <td style="color:var(--text2)">중립</td>
+          </tr>
+          <!-- P1 -->
+          <tr style="background:rgba(245,158,11,0.05)">
+            <td><span class="badge badge-yellow">P1</span></td>
+            <td><strong>스트릭 마일스톤 확장</strong><br><span style="color:var(--text2);font-size:0.78rem">3일/14일/21일/60일 추가</span></td>
+            <td><span class="badge badge-green">낮음</span></td>
+            <td>이탈률 -35% (30일 스트릭 보유자 기준). 초기 3일 마일스톤이 가장 중요.</td>
+            <td style="color:var(--accent2); font-weight:600">+10~15%</td>
+            <td style="color:var(--accent); font-weight:600">-35% 이탈</td>
+          </tr>
+          <tr style="background:rgba(245,158,11,0.05)">
+            <td><span class="badge badge-yellow">P1</span></td>
+            <td><strong>완독 CTA (AI 리포트)</strong><br><span style="color:var(--text2);font-size:0.78rem">완독 직후 AI 리포트 유도 모달</span></td>
+            <td><span class="badge badge-green">낮음</span></td>
+            <td>절정 경험 활용. 완독 직후 전환율 18%. Peak-End Rule 최대 활용.</td>
+            <td style="color:var(--accent2); font-weight:600">+15~20%</td>
+            <td style="color:var(--accent2); font-weight:600">+10%</td>
+          </tr>
+          <tr style="background:rgba(245,158,11,0.05)">
+            <td><span class="badge badge-yellow">P1</span></td>
+            <td><strong>친구 초대 양면 보상</strong><br><span style="color:var(--text2);font-size:0.78rem">초대자+신규 각 50P</span></td>
+            <td><span class="badge badge-yellow">중간</span></td>
+            <td>획득 2~3배. CAC 80~90% 절감. K &gt; 0.3 달성 시 바이럴 루프.</td>
+            <td style="color:var(--accent); font-weight:600">사용자 수 ×2~3배</td>
+            <td style="color:var(--text2)">간접 영향</td>
+          </tr>
+          <!-- P2 -->
+          <tr style="background:rgba(59,130,246,0.05)">
+            <td><span class="badge badge-blue">P2</span></td>
+            <td><strong>스트릭 프리즈 기능</strong><br><span style="color:var(--text2);font-size:0.78rem">500P로 스트릭 하루 보호</span></td>
+            <td><span class="badge badge-yellow">중간</span></td>
+            <td>이탈률 -21%. 충전 전환율 3배. 스트릭 위기 시나리오 가능.</td>
+            <td style="color:var(--accent); font-weight:600">+20~30%</td>
+            <td style="color:var(--accent); font-weight:600">-21% 이탈</td>
+          </tr>
+          <tr style="background:rgba(59,130,246,0.05)">
+            <td><span class="badge badge-blue">P2</span></td>
+            <td><strong>가변 보상 "행운의 열매"</strong><br><span style="color:var(--text2);font-size:0.78rem">완독 시 10~25% 확률 랜덤 보너스</span></td>
+            <td><span class="badge badge-yellow">중간</span></td>
+            <td>Variable Ratio 강화. 참여 +20~30%. 장기 습관 유지력 강화.</td>
+            <td style="color:var(--accent2); font-weight:600">+5~10%</td>
+            <td style="color:var(--accent); font-weight:600">+20~30%</td>
+          </tr>
+          <tr style="background:rgba(59,130,246,0.05)">
+            <td><span class="badge badge-blue">P2</span></td>
+            <td><strong>SNS 공유 카드 디자인</strong><br><span style="color:var(--text2);font-size:0.78rem">완독/스트릭 달성 공유 카드</span></td>
+            <td><span class="badge badge-yellow">중간</span></td>
+            <td>바이럴 CAC≈0. 공유율 15~25% 예상. 브랜드 인지도 상승.</td>
+            <td style="color:var(--accent2); font-weight:600">장기적 +15%</td>
+            <td style="color:var(--text2)">간접 영향</td>
+          </tr>
+          <tr style="background:rgba(59,130,246,0.05)">
+            <td><span class="badge badge-blue">P2</span></td>
+            <td><strong>시즌 이벤트 캘린더</strong><br><span style="color:var(--text2);font-size:0.78rem">독서의 달, 신년, 블프 등</span></td>
+            <td><span class="badge badge-yellow">중간</span></td>
+            <td>시즌 충전 +35% 피크. C유형 첫 충전 전환 2배. 연간 ROI 12.5배.</td>
+            <td style="color:var(--accent); font-weight:600">+35% (시즌)</td>
+            <td style="color:var(--text2)">간접 영향</td>
+          </tr>
+          <!-- P3 -->
+          <tr style="background:rgba(168,85,247,0.05)">
+            <td><span class="badge badge-purple">P3</span></td>
+            <td><strong>7일 챌린지 시스템</strong><br><span style="color:var(--text2);font-size:0.78rem">테마별 7일 독서 챌린지</span></td>
+            <td><span class="badge badge-red">높음</span></td>
+            <td>리텐션 3배 (업계 사례). 커뮤니티 형성. 강한 정체성 확립.</td>
+            <td style="color:var(--accent2); font-weight:600">+20~40%</td>
+            <td style="color:var(--accent); font-weight:600">3배</td>
+          </tr>
+          <tr style="background:rgba(168,85,247,0.05)">
+            <td><span class="badge badge-purple">P3</span></td>
+            <td><strong>정기충전 패스</strong><br><span style="color:var(--text2);font-size:0.78rem">월정액 1,500P/월 구독</span></td>
+            <td><span class="badge badge-red">높음</span></td>
+            <td>MRR 예측 가능. 이탈 시 포인트 만료 손실 회피. LTV 2배.</td>
+            <td style="color:var(--accent); font-weight:600">MRR 확보</td>
+            <td style="color:var(--accent); font-weight:600">+40%</td>
+          </tr>
+          <tr style="background:rgba(168,85,247,0.05)">
+            <td><span class="badge badge-purple">P3</span></td>
+            <td><strong>나무 꾸미기 &amp; 숲 컬렉션</strong><br><span style="color:var(--text2);font-size:0.78rem">스킨/장식 구매 소비처 확장</span></td>
+            <td><span class="badge badge-red">높음</span></td>
+            <td>소유 효과(Endowment Effect). LTV 증가. 캐릭터 애착 형성.</td>
+            <td style="color:var(--accent2); font-weight:600">+10~20%</td>
+            <td style="color:var(--accent); font-weight:600">+25%</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title">&#127992; 의사결정 트리: 이번 분기 집중 항목</div>
+  <div class="dtree">
+    <div style="font-size:1rem; font-weight:700; color:var(--accent2); margin-bottom:1rem">&#10067; 이번 분기(Q2 2026) 무엇을 먼저 구현해야 하는가?</div>
+
+    <div class="dtree-node">
+      <div class="dtree-q">Q1. 현재 Day 7 리텐션이 30% 미만인가?</div>
+      <div class="dtree-y">✅ YES → <strong>웰컴 보너스 분할 지급 (P0)</strong> 즉시 구현. 개발 2일, ROI 10배+</div>
+      <div class="dtree-n">❌ NO → Q2로 이동</div>
+    </div>
+
+    <div class="dtree-node">
+      <div class="dtree-q">Q2. 사용자가 포인트 소진 후 충전 없이 이탈하는 비율이 70% 이상인가?</div>
+      <div class="dtree-y">✅ YES → <strong>잔액 알림 시스템 (P0)</strong> + <strong>완독 CTA (P1)</strong> 동시 구현</div>
+      <div class="dtree-n">❌ NO → Q3으로 이동</div>
+    </div>
+
+    <div class="dtree-node">
+      <div class="dtree-q">Q3. 스트릭 보유 사용자(7일+)의 월간 이탈률이 15% 이상인가?</div>
+      <div class="dtree-y">✅ YES → <strong>스트릭 마일스톤 확장 (P1)</strong> + 스트릭 위기 알림 구현</div>
+      <div class="dtree-n">❌ NO → Q4로 이동</div>
+    </div>
+
+    <div class="dtree-node">
+      <div class="dtree-q">Q4. 사용자 획득 비용(CAC)이 ₩5,000 이상인가?</div>
+      <div class="dtree-y">✅ YES → <strong>친구 초대 양면 보상 (P1)</strong> 우선 구현으로 CAC 80% 절감</div>
+      <div class="dtree-n">❌ NO → <strong>가변 보상 "행운의 열매" (P2)</strong>로 장기 참여율 강화</div>
+    </div>
+  </div>
+</div>
+
+<div class="grid grid-4" style="margin-top:1.5rem">
+  <div class="card" style="text-align:center; border-color:var(--accent)">
+    <div style="font-size:0.78rem; color:var(--text2); margin-bottom:0.3rem">P0 구현 시 즉각 효과</div>
+    <div style="font-size:1.8rem; font-weight:700; color:var(--accent)">+25%</div>
+    <div style="font-size:0.8rem; color:var(--text2)">잔액 알림 전환율 향상</div>
+  </div>
+  <div class="card" style="text-align:center; border-color:var(--accent2)">
+    <div style="font-size:0.78rem; color:var(--text2); margin-bottom:0.3rem">P1 완료 시 DAU</div>
+    <div style="font-size:1.8rem; font-weight:700; color:var(--accent2)">+40~60%</div>
+    <div style="font-size:0.8rem; color:var(--text2)">스트릭 마일스톤 + CTA</div>
+  </div>
+  <div class="card" style="text-align:center; border-color:var(--warn)">
+    <div style="font-size:0.78rem; color:var(--text2); margin-bottom:0.3rem">P2 완료 시 이탈 감소</div>
+    <div style="font-size:1.8rem; font-weight:700; color:var(--warn)">-21%</div>
+    <div style="font-size:0.8rem; color:var(--text2)">스트릭 프리즈 효과</div>
+  </div>
+  <div class="card" style="text-align:center; border-color:var(--purple)">
+    <div style="font-size:0.78rem; color:var(--text2); margin-bottom:0.3rem">P3 완료 시 리텐션</div>
+    <div style="font-size:1.8rem; font-weight:700; color:var(--purple)">3배</div>
+    <div style="font-size:0.8rem; color:var(--text2)">7일 챌린지 시스템</div>
+  </div>
+</div>
+</div>
+</div>
+
+<!-- Footer -->
+<div style="text-align:center; margin-top:3rem; padding:2rem; color:var(--text2); font-size:0.8rem; border-top:1px solid var(--surface2)">
+  <p>ReadTree 마케팅·심리 분석 v1.0 | Generated 2026-03-02</p>
+  <p style="margin-top:0.5rem">심리학 근거: Nir Eyal (Hooked), Kahneman &amp; Tversky (Prospect Theory), Nunes &amp; Dreze (Endowed Progress), B.F. Skinner (Variable Ratio), Phillippa Lally (Habit Formation 66 Days)</p>
+  <p style="margin-top:0.5rem">&#8592; <a href="point-triggers.html" style="color:var(--accent2)">포인트 트리거로</a> | <a href="dashboard.html" style="color:var(--accent2)">대시보드로 돌아가기 &#8594;</a></p>
+</div>
+
+</div>
+<script>
+function showPanel(id) {
+  document.querySelectorAll('.section-panel').forEach(p => { p.style.display = 'none'; p.classList.remove('active'); });
+  const el = document.getElementById(id);
+  el.style.display = 'block';
+  el.classList.add('active');
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  event.target.classList.add('active');
+}
+</script>
+</body>
+</html>
