@@ -8,6 +8,7 @@ import {
   HomeHeroWrapper,
   MobileQuickActions,
   MonthlyBookCalendarSkeleton,
+  PricingBanner,
 } from "./sections";
 
 // 스켈레톤 컴포넌트
@@ -60,6 +61,9 @@ export default async function DashboardContent() {
           <Suspense fallback={null}>
             <AuthenticatedQuickActions />
           </Suspense>
+
+          {/* 구독 플랜 배너 */}
+          <PricingBanner />
         </div>
 
         {/* 우측 컬럼: Tertiary Zone */}

@@ -7,3 +7,4 @@ export { ContinueReadingCard, ContinueReadingCardSkeleton, NoReadingBookCard } f
 export { FeatureRequestPreviewWrapper, FeatureRequestPreviewSkeleton } from "./feature-request-preview-wrapper";
 export { CollapsibleSection } from "./collapsible-section";
 export { MonthlyBookCalendar, MonthlyBookCalendarSkeleton } from "./monthly-book-calendar";
+export { PricingBanner } from "./pricing-banner";
