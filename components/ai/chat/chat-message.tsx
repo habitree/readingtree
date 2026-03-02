@@ -15,7 +15,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Bot, User, Trash2, BookOpen, FileText } from "lucide-react";
+import { Bot, User, Trash2, BookOpen, FileText, ThumbsUp, ThumbsDown } from "lucide-react";
 import { getImageUrl } from "@/lib/utils/image";
 import type { ChatMessage as ChatMessageType } from "@/types/ai";
 import { useTranslation, type TranslationKey } from "@/lib/i18n";
@@ -145,13 +145,17 @@ interface ChatMessageProps {
   userAvatar?: string | null;
   userName?: string;
   onDelete?: (messageId: string) => void;
+  onFeedback?: (messageId: string, feedback: "positive" | "negative" | null) => void;
   bookMetadataMap?: Map<string, BookMetadata>;
 }
 
-export function ChatMessage({ message, userAvatar, userName, onDelete, bookMetadataMap }: ChatMessageProps) {
+export function ChatMessage({ message, userAvatar, userName, onDelete, onFeedback, bookMetadataMap }: ChatMessageProps) {
   const { t } = useTranslation();
   const isUser = message.role === "user";
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [feedback, setFeedback] = useState<"positive" | "negative" | null>(
+    (message.feedback as "positive" | "negative" | null) ?? null
+  );
 
   // AI 응답에서만 링크 파싱 (사용자 메시지는 그대로 표시)
   const parsedContent = useMemo(() => {
@@ -259,21 +263,63 @@ export function ChatMessage({ message, userAvatar, userName, onDelete, bookMetad
             </div>
           )}
 
-          {/* 삭제 버튼 - 호버 시 표시 */}
-          {onDelete && !message.id.startsWith('temp-') && (
+          {/* AI 메시지 피드백 + 삭제 버튼 */}
+          {!message.id.startsWith('temp-') && (
             <div className={cn(
-              "opacity-0 group-hover:opacity-100 transition-opacity",
+              "flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity",
               isUser ? "self-end" : "self-start"
             )}>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-6 px-2 text-xs text-muted-foreground hover:text-destructive"
-                onClick={() => setShowDeleteDialog(true)}
-              >
-                <Trash2 className="h-3 w-3 mr-1" />
-                {t("common.delete")}
-              </Button>
+              {/* 피드백 버튼 (AI 메시지만) */}
+              {!isUser && onFeedback && (
+                <>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className={cn(
+                      "h-6 w-6 p-0",
+                      feedback === "positive"
+                        ? "text-primary opacity-100"
+                        : "text-muted-foreground hover:text-primary"
+                    )}
+                    onClick={() => {
+                      const newFeedback = feedback === "positive" ? null : "positive";
+                      setFeedback(newFeedback);
+                      onFeedback(message.id, newFeedback);
+                    }}
+                  >
+                    <ThumbsUp className="h-3 w-3" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className={cn(
+                      "h-6 w-6 p-0",
+                      feedback === "negative"
+                        ? "text-destructive opacity-100"
+                        : "text-muted-foreground hover:text-destructive"
+                    )}
+                    onClick={() => {
+                      const newFeedback = feedback === "negative" ? null : "negative";
+                      setFeedback(newFeedback);
+                      onFeedback(message.id, newFeedback);
+                    }}
+                  >
+                    <ThumbsDown className="h-3 w-3" />
+                  </Button>
+                </>
+              )}
+              {/* 삭제 버튼 */}
+              {onDelete && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 px-2 text-xs text-muted-foreground hover:text-destructive"
+                  onClick={() => setShowDeleteDialog(true)}
+                >
+                  <Trash2 className="h-3 w-3 mr-1" />
+                  {t("common.delete")}
+                </Button>
+              )}
             </div>
           )}
         </div>

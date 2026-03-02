@@ -6,3 +6,4 @@ export * from './ocr';
 export * from './summarization';
 export * from './report';
 export * from './report-settings';
+export * from './memory';

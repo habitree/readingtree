@@ -24,7 +24,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Bot, Menu, X, MoreVertical, Trash2, Plus, RefreshCw } from "lucide-react";
+import {
+  Bot, Menu, X, MoreVertical, Trash2, Plus, RefreshCw,
+  MessageCircle, MessagesSquare, BookMarked, Target, BrainCircuit,
+} from "lucide-react";
 import { toast } from "sonner";
 import {
   createChatSession,
@@ -36,8 +39,15 @@ import {
   getChatContext,
   generateSessionTitle,
 } from "@/app/actions/ai";
-import { WELCOME_MESSAGE, EXAMPLE_QUESTIONS } from "@/lib/api/chat-prompts";
-import type { ChatSession, ChatMessage as ChatMessageType, ChatContext } from "@/types/ai";
+import {
+  ONBOARDING_WELCOME,
+  ONBOARDING_QUESTIONS,
+  generateQuickActions,
+  getFeatureLevel,
+  getAvailableModes,
+} from "@/lib/ai/prompts/chat-prompts";
+import { CHAT_MODE_INFO } from "@/types/ai/chat";
+import type { ChatSession, ChatMessage as ChatMessageType, ChatContext, ChatMode } from "@/types/ai";
 import { useTranslation } from "@/lib/i18n";
 import { useUpgradeModal, isUpgradeLimitError } from "@/hooks/use-upgrade-modal";
 
@@ -61,7 +71,30 @@ export function ChatInterface({ userId, userAvatar, userName }: ChatInterfacePro
   const [showDeleteAllDialog, setShowDeleteAllDialog] = useState(false);
   const [lastFailedMessage, setLastFailedMessage] = useState<string | null>(null);
   const [isTyping, setIsTyping] = useState(false);
+  const [chatMode, setChatMode] = useState<ChatMode>("general");
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // 점진적 기능 공개 수준
+  const featureLevel = useMemo(() => getFeatureLevel(sessions.length), [sessions.length]);
+  const availableModes = useMemo(() => getAvailableModes(featureLevel), [featureLevel]);
+  const isFirstUser = sessions.length === 0 && messages.length === 0 && !currentSession;
+
+  // 동적 퀵 액션
+  const quickActions = useMemo(
+    () => isFirstUser
+      ? ONBOARDING_QUESTIONS
+      : generateQuickActions(context, chatMode, sessions.length),
+    [context, chatMode, sessions.length, isFirstUser]
+  );
+
+  // 모드 아이콘 맵
+  const modeIcons: Record<string, React.ReactNode> = {
+    MessageCircle: <MessageCircle className="h-3.5 w-3.5" />,
+    MessagesSquare: <MessagesSquare className="h-3.5 w-3.5" />,
+    BookMarked: <BookMarked className="h-3.5 w-3.5" />,
+    Target: <Target className="h-3.5 w-3.5" />,
+    BrainCircuit: <BrainCircuit className="h-3.5 w-3.5" />,
+  };
 
   // context에서 책 메타데이터 맵 생성 (표지 이미지 표시용)
   const bookMetadataMap = useMemo(() => {
@@ -231,6 +264,7 @@ export function ChatInterface({ userId, userAvatar, userName }: ChatInterfacePro
       content: message,
       context_books: null,
       context_notes: null,
+      feedback: null,
       created_at: new Date().toISOString(),
     };
     setMessages((prev) => [...prev, userMessage]);
@@ -250,6 +284,7 @@ export function ChatInterface({ userId, userAvatar, userName }: ChatInterfacePro
           sessionId,
           message,
           context,
+          mode: chatMode,
         }),
       });
 
@@ -310,6 +345,7 @@ export function ChatInterface({ userId, userAvatar, userName }: ChatInterfacePro
                   content: data.processedContent || fullContent,
                   context_books: null,
                   context_notes: null,
+                  feedback: null,
                   created_at: new Date().toISOString(),
                 };
                 setMessages((prev) => [...prev, assistantMessage]);
@@ -337,6 +373,16 @@ export function ChatInterface({ userId, userAvatar, userName }: ChatInterfacePro
       setMessages((prev) => prev.filter((m) => !m.id.startsWith("temp-")));
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // 피드백 핸들러
+  const handleFeedback = async (messageId: string, feedback: "positive" | "negative" | null) => {
+    try {
+      const { updateMessageFeedback } = await import("@/app/actions/ai/chat");
+      await updateMessageFeedback(messageId, feedback);
+    } catch {
+      // 피드백 저장 실패는 무시 (UX 방해하지 않음)
     }
   };
 
@@ -456,6 +502,29 @@ export function ChatInterface({ userId, userAvatar, userName }: ChatInterfacePro
 
         {currentSession || messages.length > 0 ? (
           <>
+            {/* 모드 선택 칩 (대화 중) */}
+            {availableModes.length > 1 && (
+              <div className="shrink-0 flex items-center gap-2 px-4 py-2 border-b bg-background/95 backdrop-blur-sm overflow-x-auto">
+                {availableModes.map((mode) => {
+                  const info = CHAT_MODE_INFO[mode];
+                  return (
+                    <button
+                      key={mode}
+                      onClick={() => setChatMode(mode)}
+                      className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium whitespace-nowrap transition-colors ${
+                        chatMode === mode
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-muted text-muted-foreground hover:bg-muted/80"
+                      }`}
+                    >
+                      {modeIcons[info.icon]}
+                      {info.label}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
             {/* 메시지 목록 - 스크롤 영역 */}
             <div className="flex-1 overflow-y-auto overscroll-contain scroll-smooth">
               <div className="min-h-full">
@@ -466,6 +535,7 @@ export function ChatInterface({ userId, userAvatar, userName }: ChatInterfacePro
                     userAvatar={userAvatar}
                     userName={userName}
                     onDelete={handleDeleteMessage}
+                    onFeedback={handleFeedback}
                     bookMetadataMap={bookMetadataMap}
                   />
                 ))}
@@ -509,20 +579,43 @@ export function ChatInterface({ userId, userAvatar, userName }: ChatInterfacePro
                   <Bot className="h-7 w-7 text-primary sm:h-8 sm:w-8" />
                 </div>
                 <h2 className="mb-2 text-xl font-bold sm:text-2xl">{t("chat.readingFriend")}</h2>
-                <p className="mb-6 max-w-md text-center text-sm text-muted-foreground sm:mb-8 sm:text-base">
-                  {WELCOME_MESSAGE}
+                <p className="mb-6 max-w-md text-center text-sm text-muted-foreground sm:mb-8 sm:text-base whitespace-pre-line">
+                  {isFirstUser ? ONBOARDING_WELCOME : `책 이야기를 나누고, 맞춤 추천을 받고, 독서 목표를 관리해보세요.`}
                 </p>
 
-                {/* 예시 질문 */}
+                {/* 모드 선택 칩 (첫 사용자가 아닌 경우) */}
+                {!isFirstUser && availableModes.length > 1 && (
+                  <div className="flex flex-wrap justify-center gap-2 mb-6">
+                    {availableModes.map((mode) => {
+                      const info = CHAT_MODE_INFO[mode];
+                      return (
+                        <button
+                          key={mode}
+                          onClick={() => setChatMode(mode)}
+                          className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
+                            chatMode === mode
+                              ? "bg-primary text-primary-foreground"
+                              : "bg-muted text-muted-foreground hover:bg-muted/80"
+                          }`}
+                        >
+                          {modeIcons[info.icon]}
+                          {info.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* 동적 퀵 액션 */}
                 <div className="grid w-full max-w-lg gap-2 sm:grid-cols-2 px-2">
-                  {EXAMPLE_QUESTIONS.map((question, index) => (
+                  {quickActions.map((action, index) => (
                     <Button
                       key={index}
                       variant="outline"
                       className="h-auto whitespace-normal px-3 py-2.5 text-left text-sm sm:px-4 sm:py-3"
-                      onClick={() => handleExampleClick(question)}
+                      onClick={() => handleExampleClick(action.message)}
                     >
-                      {question}
+                      {action.label}
                     </Button>
                   ))}
                 </div>

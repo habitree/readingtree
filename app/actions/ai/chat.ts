@@ -456,7 +456,68 @@ export async function getChatContext(): Promise<ChatContext> {
     };
   }
 
+  // 장기 기억 조회
+  const { data: memories } = await supabase
+    .from("user_ai_memories")
+    .select("memory_type, content")
+    .eq("user_id", user.id)
+    .order("updated_at", { ascending: false })
+    .limit(50);
+
+  if (memories && memories.length > 0) {
+    context.memories = memories.map((m) => ({
+      memory_type: m.memory_type,
+      content: m.content,
+    }));
+  }
+
   return context;
+}
+
+/**
+ * 메시지 피드백 업데이트 (좋아요/싫어요)
+ */
+export async function updateMessageFeedback(
+  messageId: string,
+  feedback: "positive" | "negative" | null
+): Promise<void> {
+  const user = await getCurrentUser();
+  if (!user) {
+    throw new Error("로그인이 필요합니다.");
+  }
+
+  const supabase = await createServerSupabaseClient();
+
+  // 메시지가 사용자의 세션에 속하는지 확인
+  const { data: message } = await supabase
+    .from("chat_messages")
+    .select("session_id")
+    .eq("id", messageId)
+    .single();
+
+  if (!message) {
+    throw new Error("메시지를 찾을 수 없습니다.");
+  }
+
+  const { data: session } = await supabase
+    .from("chat_sessions")
+    .select("id")
+    .eq("id", message.session_id)
+    .eq("user_id", user.id)
+    .single();
+
+  if (!session) {
+    throw new Error("권한이 없습니다.");
+  }
+
+  const { error } = await supabase
+    .from("chat_messages")
+    .update({ feedback })
+    .eq("id", messageId);
+
+  if (error) {
+    throw new Error(`피드백 업데이트 실패: ${error.message}`);
+  }
 }
 
 /**

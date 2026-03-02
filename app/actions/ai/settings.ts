@@ -416,6 +416,7 @@ export async function getAISettingsForChat(): Promise<{
   systemPromptTemplate: string;
   contextSettings: ContextSettings;
   generationSettings: GenerationSettings;
+  memorySettings: MemorySettings;
 }> {
   const settings = await getActiveAISettings();
 
@@ -427,6 +428,7 @@ export async function getAISettingsForChat(): Promise<{
       systemPromptTemplate: DefaultSettings.systemPromptTemplate,
       contextSettings: DefaultSettings.contextSettings,
       generationSettings: DefaultSettings.generationSettings,
+      memorySettings: DefaultSettings.memorySettings,
     };
   }
 
@@ -436,5 +438,6 @@ export async function getAISettingsForChat(): Promise<{
     systemPromptTemplate: settings.systemPromptTemplate,
     contextSettings: settings.contextSettings,
     generationSettings: settings.generationSettings,
+    memorySettings: settings.memorySettings,
   };
 }

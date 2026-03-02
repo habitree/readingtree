@@ -196,6 +196,7 @@ export type Database = {
           context_books: string[] | null
           context_notes: string[] | null
           created_at: string
+          feedback: string | null
           id: string
           role: string
           session_id: string
@@ -205,6 +206,7 @@ export type Database = {
           context_books?: string[] | null
           context_notes?: string[] | null
           created_at?: string
+          feedback?: string | null
           id?: string
           role: string
           session_id: string
@@ -214,6 +216,7 @@ export type Database = {
           context_books?: string[] | null
           context_notes?: string[] | null
           created_at?: string
+          feedback?: string | null
           id?: string
           role?: string
           session_id?: string

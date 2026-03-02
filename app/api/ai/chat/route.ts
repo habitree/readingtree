@@ -17,8 +17,9 @@ import { callAnthropic, parseAnthropicStream } from "@/lib/ai/providers/anthropi
 import { checkRateLimit } from "@/lib/middleware/rate-limit";
 import { processRecommendedBooks } from "@/lib/ai/utils/book-registration";
 import { checkFeatureAccess } from "@/app/actions/subscription";
-import type { ChatContext } from "@/types/ai/chat";
+import type { ChatContext, ChatMode } from "@/types/ai/chat";
 import type { AIProvider } from "@/types/ai/settings";
+import { MEMORY_EXTRACTION_PROMPT } from "@/lib/ai/prompts/memory-prompts";
 
 export async function POST(request: NextRequest) {
   try {
@@ -32,10 +33,11 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { sessionId, message, context } = body as {
+    const { sessionId, message, context, mode } = body as {
       sessionId: string;
       message: string;
       context?: ChatContext;
+      mode?: ChatMode;
     };
 
     if (!sessionId || !message) {
@@ -112,11 +114,12 @@ export async function POST(request: NextRequest) {
       console.error("사용자 메시지 저장 실패:", userMessageError);
     }
 
-    // 시스템 프롬프트 생성 (동적)
+    // 시스템 프롬프트 생성 (동적, 모드 포함)
     const systemPrompt = generateDynamicSystemPrompt(
       aiSettings.systemPromptTemplate,
       context || {},
-      aiSettings.contextSettings
+      aiSettings.contextSettings,
+      mode
     );
 
     // 대화 기록 구성
@@ -276,6 +279,18 @@ export async function POST(request: NextRequest) {
             messageId: assistantMessage?.id,
             processedContent: processedResponse !== fullResponse ? processedResponse : undefined,
           });
+
+          // 장기 기억 추출 (fire-and-forget, 응답 지연 없음)
+          if (aiSettings.memorySettings.enableLongTermMemory) {
+            extractAndSaveMemories(
+              user.id,
+              message,
+              processedResponse,
+              context?.memories || [],
+              aiSettings
+            ).catch((err) => console.error("메모리 추출 실패:", err));
+          }
+
           controller.close();
         } catch (error) {
           // AbortError는 클라이언트 연결 해제로 인한 정상 중단이므로 무시
@@ -313,5 +328,96 @@ export async function POST(request: NextRequest) {
       { error: error instanceof Error ? error.message : "서버 오류가 발생했습니다." },
       { status: 500 }
     );
+  }
+}
+
+/**
+ * 장기 기억 추출 및 저장 (fire-and-forget)
+ * 저렴한 모델(gemini-2.0-flash)로 대화를 분석하여 기억할 정보를 추출
+ */
+async function extractAndSaveMemories(
+  userId: string,
+  userMessage: string,
+  aiResponse: string,
+  existingMemories: { memory_type: string; content: string }[],
+  aiSettings: { provider: AIProvider; memorySettings: { maxMemoryItems: number } }
+): Promise<void> {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) return;
+
+  const { GoogleGenerativeAI } = await import("@google/generative-ai");
+  const genAI = new GoogleGenerativeAI(apiKey);
+  const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+
+  const existingStr = existingMemories.length > 0
+    ? existingMemories.map((m) => `- [${m.memory_type}] ${m.content}`).join("\n")
+    : "(없음)";
+
+  const conversation = `사용자: ${userMessage}\n독서친구: ${aiResponse}`;
+
+  const prompt = MEMORY_EXTRACTION_PROMPT
+    .replace("{existing_memories}", existingStr)
+    .replace("{conversation}", conversation);
+
+  const result = await model.generateContent(prompt);
+  const text = result.response.text().trim();
+
+  // JSON 파싱 시도
+  const jsonMatch = text.match(/\[[\s\S]*\]/);
+  if (!jsonMatch) return;
+
+  let memories: { memory_type: string; content: string; confidence: number }[];
+  try {
+    memories = JSON.parse(jsonMatch[0]);
+  } catch {
+    return; // JSON 파싱 실패 시 무시
+  }
+
+  if (!Array.isArray(memories) || memories.length === 0) return;
+
+  // confidence 0.7 이상만 저장
+  const { createServerSupabaseClient } = await import("@/lib/supabase/server");
+  const supabase = await createServerSupabaseClient();
+
+  for (const mem of memories) {
+    if (mem.confidence < 0.7) continue;
+
+    // 동일 내용 중복 체크
+    const { data: existing } = await supabase
+      .from("user_ai_memories")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("memory_type", mem.memory_type)
+      .eq("content", mem.content)
+      .limit(1);
+
+    if (existing && existing.length > 0) continue;
+
+    // 최대 개수 체크
+    const { count } = await supabase
+      .from("user_ai_memories")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", userId);
+
+    if (count && count >= aiSettings.memorySettings.maxMemoryItems) {
+      // 가장 오래된 메모리 삭제
+      const { data: oldest } = await supabase
+        .from("user_ai_memories")
+        .select("id")
+        .eq("user_id", userId)
+        .order("updated_at", { ascending: true })
+        .limit(1);
+
+      if (oldest?.[0]) {
+        await supabase.from("user_ai_memories").delete().eq("id", oldest[0].id);
+      }
+    }
+
+    await supabase.from("user_ai_memories").insert({
+      user_id: userId,
+      memory_type: mem.memory_type,
+      content: mem.content,
+      metadata: { confidence: mem.confidence, source: "auto_extract" },
+    });
   }
 }

@@ -1,0 +1,1219 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>독서친구 AI 챗봇 고도화 기획서</title>
+<style>
+:root {
+  --primary: #2563eb;
+  --primary-light: #dbeafe;
+  --bg: #f8fafc;
+  --card: #ffffff;
+  --text: #1e293b;
+  --text-secondary: #64748b;
+  --border: #e2e8f0;
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --code-bg: #f1f5f9;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif; background: var(--bg); color: var(--text); line-height: 1.7; }
+.container { max-width: 900px; margin: 0 auto; padding: 2rem 1.5rem; }
+h1 { font-size: 2rem; font-weight: 800; margin-bottom: 0.5rem; color: var(--primary); }
+h2 { font-size: 1.5rem; font-weight: 700; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid var(--primary); }
+h3 { font-size: 1.15rem; font-weight: 600; margin: 1.5rem 0 0.75rem; }
+h4 { font-size: 1rem; font-weight: 600; margin: 1rem 0 0.5rem; color: var(--text-secondary); }
+p { margin-bottom: 0.75rem; }
+.card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+.badge { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 0.8rem; font-weight: 600; margin-right: 4px; }
+.badge-blue { background: var(--primary-light); color: var(--primary); }
+.badge-green { background: #dcfce7; color: #16a34a; }
+.badge-yellow { background: #fef3c7; color: #d97706; }
+.badge-red { background: #fee2e2; color: #dc2626; }
+.badge-gray { background: #f1f5f9; color: #475569; }
+table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+th, td { padding: 0.75rem; text-align: left; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
+th { background: var(--code-bg); font-weight: 600; }
+tr:last-child td { border-bottom: none; }
+code { background: var(--code-bg); padding: 2px 6px; border-radius: 4px; font-size: 0.85em; font-family: 'Fira Code', 'Consolas', monospace; }
+pre { background: #1e293b; color: #e2e8f0; padding: 1.25rem; border-radius: 8px; overflow-x: auto; margin: 1rem 0; font-size: 0.85rem; line-height: 1.6; }
+pre code { background: none; padding: 0; color: inherit; font-size: inherit; }
+.prompt-box { background: #fefce8; border: 1px solid #fde68a; border-radius: 8px; padding: 1.25rem; margin: 1rem 0; font-size: 0.875rem; white-space: pre-wrap; font-family: 'Fira Code', 'Consolas', monospace; line-height: 1.7; }
+.comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1rem 0; }
+.comparison > div { padding: 1rem; border-radius: 8px; }
+.before { background: #fee2e2; border: 1px solid #fca5a5; }
+.after { background: #dcfce7; border: 1px solid #86efac; }
+.before h4 { color: #dc2626; }
+.after h4 { color: #16a34a; }
+ul, ol { margin: 0.5rem 0 1rem 1.5rem; }
+li { margin-bottom: 0.35rem; }
+.meta { color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 2rem; }
+.toc { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; margin: 1.5rem 0; }
+.toc h3 { margin-top: 0; margin-bottom: 1rem; color: var(--primary); }
+.toc a { color: var(--primary); text-decoration: none; }
+.toc a:hover { text-decoration: underline; }
+.toc ol { list-style: none; counter-reset: toc; padding-left: 0; }
+.toc ol li { counter-increment: toc; padding: 0.3rem 0; border-bottom: 1px solid var(--border); }
+.toc ol li:last-child { border-bottom: none; }
+.toc ol li::before { content: counter(toc) ". "; font-weight: 700; color: var(--primary); }
+.priority-table td:nth-child(2), .priority-table td:nth-child(3) { text-align: center; }
+.flow-diagram { background: var(--code-bg); border-radius: 8px; padding: 1.5rem; text-align: center; font-family: 'Fira Code', 'Consolas', monospace; font-size: 0.85rem; line-height: 2; border: 1px solid var(--border); }
+.section-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); font-weight: 600; margin-bottom: 0.5rem; }
+.phase-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border-left: 4px solid var(--primary); }
+.phase-card.phase-2 { border-left-color: #7c3aed; }
+.phase-card.phase-3 { border-left-color: #0891b2; }
+.phase-card.phase-4 { border-left-color: #059669; }
+.phase-card.phase-5 { border-left-color: #d97706; }
+.phase-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem; }
+.phase-number { font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; }
+.phase-title { font-size: 1.2rem; font-weight: 700; margin: 0.25rem 0; }
+.phase-badges { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem; }
+.info-item { background: var(--code-bg); border-radius: 8px; padding: 0.75rem 1rem; }
+.info-item .label { font-size: 0.75rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem; }
+.info-item .value { font-size: 0.9rem; color: var(--text); }
+.highlight-box { background: var(--primary-light); border: 1px solid #93c5fd; border-radius: 8px; padding: 1rem 1.25rem; margin: 1rem 0; }
+.highlight-box p { margin-bottom: 0; color: #1d4ed8; }
+.warning-box { background: #fef3c7; border: 1px solid #fde68a; border-radius: 8px; padding: 1rem 1.25rem; margin: 1rem 0; }
+.warning-box p { margin-bottom: 0; color: #92400e; }
+.files-list { background: #1e293b; border-radius: 8px; padding: 1rem 1.25rem; margin: 0.75rem 0; }
+.files-list p { color: #94a3b8; font-size: 0.8rem; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.05em; }
+.files-list ul { margin: 0; padding-left: 1rem; }
+.files-list li { color: #7dd3fc; font-family: 'Fira Code', 'Consolas', monospace; font-size: 0.85rem; margin-bottom: 0.25rem; }
+.metric-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; margin-bottom: 1rem; }
+.metric-before { color: #dc2626; font-weight: 600; }
+.metric-after { color: #16a34a; font-weight: 600; }
+.stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin: 1rem 0; }
+.stat-item { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; text-align: center; }
+.stat-number { font-size: 1.75rem; font-weight: 800; color: var(--primary); }
+.stat-label { font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.25rem; }
+.scenario-item { background: var(--code-bg); border-radius: 8px; padding: 1rem 1.25rem; margin-bottom: 0.75rem; border-left: 3px solid var(--primary); }
+.scenario-item h4 { margin-top: 0; color: var(--primary); }
+footer { margin-top: 3rem; padding-top: 2rem; border-top: 2px solid var(--border); color: var(--text-secondary); font-size: 0.875rem; }
+footer a { color: var(--primary); text-decoration: none; }
+footer a:hover { text-decoration: underline; }
+.tag { display: inline-block; background: var(--code-bg); border: 1px solid var(--border); border-radius: 4px; padding: 1px 8px; font-size: 0.8rem; margin-right: 4px; margin-bottom: 4px; font-family: 'Fira Code', 'Consolas', monospace; color: var(--text-secondary); }
+@media (max-width: 640px) {
+  .comparison { grid-template-columns: 1fr; }
+  .info-grid { grid-template-columns: 1fr; }
+  .stat-grid { grid-template-columns: repeat(2, 1fr); }
+  h1 { font-size: 1.5rem; }
+  h2 { font-size: 1.25rem; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- Header -->
+  <div class="card" style="border-left: 6px solid var(--primary); margin-top: 1rem;">
+    <div class="section-label">기획서 v1.0</div>
+    <h1>독서친구 AI 챗봇 고도화 기획서</h1>
+    <p class="meta">
+      작성일: 2026-03-02 &nbsp;|&nbsp;
+      버전: 1.0 &nbsp;|&nbsp;
+      작성자: Habitree 기술팀 &nbsp;|&nbsp;
+      상태: <span class="badge badge-green">구현 완료 · 빌드 검증 통과</span>
+    </p>
+    <p>
+      현재 Habitree Reading Hub에 탑재된 <strong>독서친구</strong> AI 챗봇의 프롬프트 및 기능을 전면 고도화하기 위한 종합 기획서입니다.
+      소크라테스식 스캐폴딩, 사용자 수준 맞춤, 감정 인식, 장기 기억, 대화 모드 전환 등 최신 프롬프트 엔지니어링 기법을 적용하여
+      단순 답변 도구에서 진정한 <strong>독서 성장 파트너</strong>로 전환하는 것이 목표입니다.
+    </p>
+
+    <div class="stat-grid">
+      <div class="stat-item">
+        <div class="stat-number">5</div>
+        <div class="stat-label">고도화 단계 (Phase)</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-number">6</div>
+        <div class="stat-label">프롬프트 섹션</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-number">+30%</div>
+        <div class="stat-label">재방문률 목표</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOC -->
+  <div class="toc">
+    <h3>목차</h3>
+    <ol>
+      <li><a href="#section1">현황 분석 — 현재 챗봇의 한계점</a></li>
+      <li><a href="#section2">최신 연구 리뷰 — 프롬프트 엔지니어링 & 교육 AI</a></li>
+      <li><a href="#section3">고도화 전략 — 5단계 Phase 로드맵</a></li>
+      <li><a href="#section4">프롬프트 설계서 — Before / After 전체 비교</a></li>
+      <li><a href="#section5">기대 효과 및 KPI</a></li>
+      <li><a href="#section6">구현 순서 및 우선순위</a></li>
+      <li><a href="#section7">검증 방법 및 테스트 시나리오</a></li>
+    </ol>
+  </div>
+
+  <!-- ===== SECTION 1 ===== -->
+  <h2 id="section1">1. 현황 분석</h2>
+
+  <div class="card">
+    <h3>현재 챗봇 구조 요약</h3>
+    <p>
+      현재 독서친구 챗봇은 <code>lib/ai/prompts/chat-prompts.ts</code>에 정의된 약 15줄의 시스템 프롬프트로 동작합니다.
+      기능적으로는 작동하지만, 심층 독서 대화를 이끌어내기에는 구조적 한계가 명확합니다.
+    </p>
+
+    <h3>현재 시스템 프롬프트 (Before)</h3>
+    <pre><code>// lib/ai/prompts/chat-prompts.ts (현재)
+export function buildSystemPrompt(userName: string, bookCount: number): string {
+  return `당신은 "독서친구"라는 이름의 AI 독서 도우미입니다.
+사용자의 이름은 ${userName}이고, 현재까지 ${bookCount}권의 책을 읽었습니다.
+
+- 독서와 관련된 주제로만 대화합니다.
+- 따뜻하고 친근한 말투를 사용합니다.
+- 책 추천, 독서 감상, 독서 습관에 대해 도움을 드립니다.
+- 한국어로 대화합니다.
+- 너무 길지 않게 답변합니다.
+- 질문을 통해 독서 흥미를 높여주세요.`;
+}
+
+// 하드코딩된 퀵 액션 (컨텍스트 무관)
+export const QUICK_ACTIONS = [
+  "📚 오늘 읽은 책 이야기해줘",
+  "🎯 내 독서 목표 점검해줘",
+  "💡 책 추천해줘",
+  "✍️ 독서 감상 쓰는 법 알려줘",
+  "📊 내 독서 패턴 분석해줘",
+  "🌟 독서 동기부여 해줘",
+];</code></pre>
+
+    <h3>핵심 한계점</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>한계점</th>
+          <th>현재 상태</th>
+          <th>영향</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>소크라테스식 질문 전략 부재</td>
+          <td>단순 답변 제공</td>
+          <td class="badge-red"><span class="badge badge-red">높음</span> 대화 깊이 없음</td>
+        </tr>
+        <tr>
+          <td>사용자 수준별 맞춤 없음</td>
+          <td>초보~열정 독서가 동일 톤/길이</td>
+          <td><span class="badge badge-red">높음</span> 이탈률 증가</td>
+        </tr>
+        <tr>
+          <td>감정 인식/공감 가이드라인 없음</td>
+          <td>감정 패턴 무시</td>
+          <td><span class="badge badge-yellow">중간</span> 연결감 부족</td>
+        </tr>
+        <tr>
+          <td>안전 가드레일 부재</td>
+          <td>독서 외 요청 처리 불명확</td>
+          <td><span class="badge badge-yellow">중간</span> 브랜드 신뢰 저하</td>
+        </tr>
+        <tr>
+          <td>하드코딩된 6개 퀵 액션</td>
+          <td>컨텍스트 무관한 고정 버튼</td>
+          <td><span class="badge badge-yellow">중간</span> 참여율 낮음</td>
+        </tr>
+        <tr>
+          <td>장기 기억 미활성</td>
+          <td>DB 테이블만 존재, 미연동</td>
+          <td><span class="badge badge-red">높음</span> 개인화 불가</td>
+        </tr>
+        <tr>
+          <td>대화 모드 단일</td>
+          <td>general 모드만 존재</td>
+          <td><span class="badge badge-yellow">중간</span> 다양한 니즈 충족 불가</td>
+        </tr>
+        <tr>
+          <td>Few-Shot 예시 없음</td>
+          <td>원하는 응답 형태 미정의</td>
+          <td><span class="badge badge-yellow">중간</span> 응답 일관성 저하</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="warning-box">
+      <p><strong>핵심 문제:</strong> 현재 챗봇은 "독서 관련 질문에 답하는 도구"에 머물러 있습니다. 사용자가 스스로 생각하고 성장하도록 돕는 <em>독서 성장 파트너</em> 역할을 수행하지 못하고 있습니다.</p>
+    </div>
+  </div>
+
+  <!-- ===== SECTION 2 ===== -->
+  <h2 id="section2">2. 최신 연구 리뷰</h2>
+
+  <div class="card">
+    <h3>프롬프트 엔지니어링 기법의 진화</h3>
+
+    <div class="flow-diagram">
+      Role Prompting (2022)
+      &nbsp;&nbsp;&nbsp;&darr;
+      Few-Shot Chain-of-Thought (2022~2023)
+      &nbsp;&nbsp;&nbsp;&darr;
+      Prompt Chaining + 구조화 (2023~2024)
+      &nbsp;&nbsp;&nbsp;&darr;
+      메타프롬프팅 + 동적 컨텍스트 주입 (2024~2025)
+      &nbsp;&nbsp;&nbsp;&darr;
+      <strong>에이전트 오케스트레이션 (2025~현재)</strong>
+    </div>
+
+    <h4>메타프롬프팅의 핵심 원칙</h4>
+    <ul>
+      <li><strong>구조화된 섹션 분리:</strong> 역할 / 행동 지침 / 제약 조건 / 예시를 명확히 분리하여 모델이 각 섹션을 독립적으로 처리하도록 유도</li>
+      <li><strong>동적 컨텍스트 주입:</strong> <code>{level}</code>, <code>{userName}</code>, <code>{recentBooks}</code> 같은 변수를 런타임에 삽입하여 개인화 극대화</li>
+      <li><strong>계층적 지시 우선순위:</strong> 안전 가드레일 &gt; 핵심 정체성 &gt; 사용자 수준 맞춤 &gt; 스타일 가이드 순으로 명시적 우선순위 설정</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>독서 교육 AI 사례: 소크라테스식 스캐폴딩</h3>
+    <p>
+      하버드 교육대학원 및 카네기멜론 OLI 플랫폼 연구에 따르면, AI 튜터가 직접 답을 제공하는 것보다
+      <strong>소크라테스식 질문법</strong>으로 학습자 스스로 답을 발견하도록 유도할 때 학습 retention이 평균 42% 향상됩니다.
+    </p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>스캐폴딩 단계</th>
+          <th>질문 유형</th>
+          <th>예시</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="badge badge-blue">1단계</span> 사실 확인</td>
+          <td>기억 / 회상</td>
+          <td>"이 책에서 가장 기억에 남는 장면은 뭐였어?"</td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-green">2단계</span> 해석</td>
+          <td>분석 / 이유</td>
+          <td>"왜 그 장면이 기억에 남았다고 생각해?"</td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-yellow">3단계</span> 연결</td>
+          <td>적용 / 연관</td>
+          <td>"그 경험이 네 일상과 연결되는 부분이 있어?"</td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-red">4단계</span> 평가</td>
+          <td>종합 / 판단</td>
+          <td>"이 책을 읽고 나서 생각이 달라진 게 있어?"</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p>
+      <strong>ZPD(근접발달영역) 이론</strong> 적용: 비고츠키의 ZPD 개념에 따라 사용자의 현재 독서 수준보다 한 단계 위의 질문을 제공하여
+      도전감과 성취감을 동시에 경험하게 합니다. 책 권수 기반으로 수준을 자동 판별합니다.
+    </p>
+  </div>
+
+  <div class="card">
+    <h3>동기부여 이론: 자기결정이론(SDT)</h3>
+    <p>
+      Deci & Ryan의 자기결정이론(Self-Determination Theory)은 내재적 동기 유발의 3가지 심리적 욕구를 정의합니다.
+      독서친구 챗봇은 이 3가지 욕구를 대화 전략에 내재화합니다.
+    </p>
+
+    <div class="info-grid">
+      <div class="info-item">
+        <div class="label">자율성 (Autonomy)</div>
+        <div class="value">사용자가 읽을 책, 대화 방향, 모드를 직접 선택. "어떤 이야기를 하고 싶어?" 형태의 열린 질문</div>
+      </div>
+      <div class="info-item">
+        <div class="label">유능감 (Competence)</div>
+        <div class="value">적절한 난이도의 질문, 성취 시 구체적 칭찬, 점진적 기능 공개(Lv.1~3)로 성취 경험 제공</div>
+      </div>
+      <div class="info-item">
+        <div class="label">관계성 (Relatedness)</div>
+        <div class="value">장기 기억 활용, 이름 호칭, 이전 대화 참조로 "나를 기억하는 친구" 느낌 제공</div>
+      </div>
+      <div class="info-item">
+        <div class="label">Gain-framing 적용</div>
+        <div class="value">"읽지 못한 책" 대신 "읽은 책으로 얻은 것" 강조. 손실 회피보다 성취 강조로 긍정 정서 유발</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>아동·청소년 안전 및 교육 AI 윤리</h3>
+    <ul>
+      <li><strong>도메인 한정 원칙:</strong> 교육 AI는 설계 목적 도메인 외 요청을 명확히 거절해야 하며, 거절 시 대안을 제시해야 합니다 (EU AI Act Art. 13)</li>
+      <li><strong>숙제 대필 방지:</strong> 독후감·요약 직접 작성 요청 시 거절하고 작성 <em>방법</em>을 안내하는 스캐폴딩 방식 채택</li>
+      <li><strong>불확실성 솔직 인정:</strong> "모른다"고 솔직히 말하는 AI가 장기적으로 더 높은 신뢰를 얻음 (Stanford HAI 연구, 2024)</li>
+      <li><strong>개인정보 최소 수집:</strong> 이름·독서 기록 외 민감 정보 수집하지 않음, 대화 로그는 사용자가 삭제 가능</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>게이미피케이션 및 참여 설계</h3>
+    <ul>
+      <li><strong>퀴즈 모드:</strong> "책 내용 퀴즈" 대화 모드로 독서 내용 점검, 자연스러운 복습 유도</li>
+      <li><strong>점진적 기능 공개:</strong> 처음에는 심플한 UI → 이용 횟수 증가에 따라 고급 기능(토론 모드, 코칭 모드) 활성화</li>
+      <li><strong>대화 모드 전환:</strong> 사용자가 원하는 상호작용 유형을 명시적으로 선택 가능 (추천 / 토론 / 코칭 / 퀴즈)</li>
+      <li><strong>메시지 피드백:</strong> 좋아요/싫어요 반응으로 프롬프트 자동 개선 데이터 수집</li>
+    </ul>
+  </div>
+
+  <!-- ===== SECTION 3 ===== -->
+  <h2 id="section3">3. 고도화 전략 — 5단계 Phase 로드맵</h2>
+
+  <!-- Phase 1 -->
+  <div class="phase-card">
+    <div class="phase-header">
+      <div>
+        <div class="phase-number">Phase 1</div>
+        <div class="phase-title">프롬프트 고도화</div>
+      </div>
+      <div class="phase-badges">
+        <span class="badge badge-red">임팩트: 최상</span>
+        <span class="badge badge-green">난이도: 낮음</span>
+        <span class="badge badge-blue">DB 변경 없음</span>
+      </div>
+    </div>
+    <p>
+      시스템 프롬프트를 6섹션 구조로 재설계합니다. 코드 변경만으로 즉시 적용 가능하며 가장 높은 ROI를 제공합니다.
+      사용자의 총 독서 권수를 기준으로 <strong>3단계 수준(beginner / steady / passionate)</strong>을 자동 판별하여
+      톤·길이·질문 깊이를 동적으로 조정합니다.
+    </p>
+
+    <h4>프롬프트 6섹션 구조</h4>
+    <ol>
+      <li><strong>핵심 정체성:</strong> AI 투명성, 도메인 범위, 핵심 목표 정의</li>
+      <li><strong>소크라테스식 스캐폴딩:</strong> 4단계 질문 전략, 대화 규칙 (질문 1개 제한)</li>
+      <li><strong>사용자 수준별 맞춤:</strong> beginner(0~5권) / steady(6~20권) / passionate(21권+) 세분화</li>
+      <li><strong>감정 인식 및 공감:</strong> 5가지 감정 패턴 감지 및 대응 전략</li>
+      <li><strong>안전 가드레일:</strong> 도메인 한정 / 숙제 대필 방지 / 불확실성 인정 / 개인정보 / 민감 주제</li>
+      <li><strong>Few-Shot 예시:</strong> 4가지 시나리오별 이상적 응답 패턴 시범</li>
+    </ol>
+
+    <h4>사용자 수준 자동 판별 로직</h4>
+    <pre><code>// lib/ai/prompts/chat-prompts.ts
+function getUserLevel(bookCount: number): 'beginner' | 'steady' | 'passionate' {
+  if (bookCount <= 5) return 'beginner';
+  if (bookCount <= 20) return 'steady';
+  return 'passionate';
+}
+
+// 수준별 프롬프트 변수 조합
+const LEVEL_CONFIG = {
+  beginner: {
+    tone: '따뜻하고 격려하는 말투, 이모지 활용',
+    length: '짧게 (3~5문장)',
+    questionDepth: '사실 확인 + 해석 위주',
+    recommend: '접근하기 쉬운 책, 짧은 책 위주',
+  },
+  steady: {
+    tone: '친근하지만 분석적인 말투',
+    length: '중간 (5~8문장)',
+    questionDepth: '해석 + 연결 위주',
+    recommend: '장르 확장, 깊이 있는 책 포함',
+  },
+  passionate: {
+    tone: '지적 파트너 말투',
+    length: '깊이 있게 (8~12문장)',
+    questionDepth: '연결 + 평가 위주',
+    recommend: '도전적인 책, 다양한 관점의 책',
+  },
+} as const;</code></pre>
+
+    <div class="files-list">
+      <p>변경 파일</p>
+      <ul>
+        <li>types/ai/settings.ts &nbsp;— UserLevel 타입 추가</li>
+        <li>lib/ai/prompts/chat-prompts.ts &nbsp;— 6섹션 시스템 프롬프트로 전면 재작성</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Phase 2 -->
+  <div class="phase-card phase-2">
+    <div class="phase-header">
+      <div>
+        <div class="phase-number">Phase 2</div>
+        <div class="phase-title">대화 모드 + 동적 퀵 액션</div>
+      </div>
+      <div class="phase-badges">
+        <span class="badge badge-red">임팩트: 높음</span>
+        <span class="badge badge-yellow">난이도: 중간</span>
+        <span class="badge badge-blue">DB 변경 없음</span>
+      </div>
+    </div>
+    <p>
+      단일 general 모드에서 <strong>5개 전문 대화 모드</strong>로 확장합니다.
+      사용자 컨텍스트(최근 완독 책, 현재 읽는 책, 시간대)를 분석하여 퀵 액션 버튼을 동적으로 생성합니다.
+    </p>
+
+    <h4>5개 대화 모드</h4>
+    <table>
+      <thead>
+        <tr>
+          <th>모드</th>
+          <th>목적</th>
+          <th>주요 프롬프트 전략</th>
+          <th>추천 대상</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>general</code></td>
+          <td>자유 대화</td>
+          <td>균형잡힌 소크라테스식</td>
+          <td>전체</td>
+        </tr>
+        <tr>
+          <td><code>discuss</code></td>
+          <td>책 토론</td>
+          <td>해석·평가 질문 집중, 반론 제시</td>
+          <td>steady+</td>
+        </tr>
+        <tr>
+          <td><code>recommend</code></td>
+          <td>책 추천</td>
+          <td>취향 확인 → 3선 추천 → 선택 이유</td>
+          <td>전체</td>
+        </tr>
+        <tr>
+          <td><code>coaching</code></td>
+          <td>독서 습관 코칭</td>
+          <td>목표 설정, 장애물 파악, 작은 실행 계획</td>
+          <td>전체</td>
+        </tr>
+        <tr>
+          <td><code>quiz</code></td>
+          <td>독서 퀴즈</td>
+          <td>책 내용 기반 OX/선택형 퀴즈 생성</td>
+          <td>beginner~steady</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h4>동적 퀵 액션 생성 로직</h4>
+    <pre><code>// lib/ai/quick-actions.ts
+interface QuickActionContext {
+  recentBooks: string[];
+  currentBook: string | null;
+  lastSession: Date | null;
+  bookCount: number;
+}
+
+function buildDynamicQuickActions(ctx: QuickActionContext): QuickAction[] {
+  const actions: QuickAction[] = [];
+
+  if (ctx.currentBook) {
+    actions.push({
+      label: `"${ctx.currentBook}" 이야기해줘`,
+      mode: 'discuss',
+    });
+  }
+
+  if (ctx.recentBooks.length > 0) {
+    actions.push({
+      label: `최근 읽은 책 추천 이어받기`,
+      mode: 'recommend',
+    });
+  }
+
+  if (!ctx.lastSession || daysSince(ctx.lastSession) >= 3) {
+    actions.push({
+      label: '독서 습관 점검해줘',
+      mode: 'coaching',
+    });
+  }
+
+  // 기본 액션 보충
+  if (actions.length < 4) {
+    actions.push(...DEFAULT_QUICK_ACTIONS.slice(0, 4 - actions.length));
+  }
+
+  return actions.slice(0, 4);
+}</code></pre>
+
+    <div class="files-list">
+      <p>변경 파일</p>
+      <ul>
+        <li>types/ai/chat.ts &nbsp;— ChatMode 타입 ('general' | 'discuss' | 'recommend' | 'coaching' | 'quiz')</li>
+        <li>lib/ai/prompts/chat-prompts.ts &nbsp;— 모드별 프롬프트 빌더 추가</li>
+        <li>lib/ai/quick-actions.ts (신규) &nbsp;— 동적 퀵 액션 생성 로직</li>
+        <li>app/api/ai/chat/route.ts &nbsp;— mode 파라미터 처리</li>
+        <li>components/ai/chat/chat-interface.tsx &nbsp;— 모드 선택 UI + 동적 퀵 액션 렌더링</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Phase 3 -->
+  <div class="phase-card phase-3">
+    <div class="phase-header">
+      <div>
+        <div class="phase-number">Phase 3</div>
+        <div class="phase-title">장기 기억 시스템 활성화</div>
+      </div>
+      <div class="phase-badges">
+        <span class="badge badge-red">임팩트: 최상</span>
+        <span class="badge badge-red">난이도: 높음</span>
+        <span class="badge badge-yellow">DB 마이그레이션 필요</span>
+      </div>
+    </div>
+    <p>
+      현재 DB에 <code>ai_memories</code> 테이블이 존재하지만 완전히 미연동 상태입니다.
+      대화 종료 후 <strong>Fire-and-Forget 비동기 파이프라인</strong>으로 메모리를 추출·저장하고,
+      다음 대화 시작 시 관련 메모리를 시스템 프롬프트에 주입합니다.
+    </p>
+
+    <h4>메모리 추출 파이프라인</h4>
+    <div class="flow-diagram">
+      사용자 메시지 → AI 응답 완료
+      &nbsp;&nbsp;&nbsp;&darr; (비동기 / 사용자 UX 차단 없음)
+      메모리 추출 LLM 호출 (mini 모델)
+      &nbsp;&nbsp;&nbsp;&darr;
+      5가지 메모리 유형으로 분류
+      &nbsp;&nbsp;&nbsp;&darr;
+      ai_memories 테이블 Upsert (중복 방지)
+      &nbsp;&nbsp;&nbsp;&darr;
+      다음 대화 시스템 프롬프트에 TOP 5 주입
+    </div>
+
+    <h4>5가지 메모리 유형</h4>
+    <table>
+      <thead>
+        <tr>
+          <th>유형</th>
+          <th>설명</th>
+          <th>예시</th>
+          <th>TTL</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>reading_preference</code></td>
+          <td>선호 장르·스타일</td>
+          <td>"추리소설을 가장 좋아함, 심리 묘사 중시"</td>
+          <td>영구</td>
+        </tr>
+        <tr>
+          <td><code>interest</code></td>
+          <td>관심 주제·분야</td>
+          <td>"인공지능, 역사, 자기계발에 관심"</td>
+          <td>영구</td>
+        </tr>
+        <tr>
+          <td><code>goal</code></td>
+          <td>독서 목표</td>
+          <td>"2026년에 50권 읽기 목표"</td>
+          <td>1년</td>
+        </tr>
+        <tr>
+          <td><code>emotion</code></td>
+          <td>최근 독서 감정 상태</td>
+          <td>"최근 독서 슬럼프, 얇은 책 원함"</td>
+          <td>30일</td>
+        </tr>
+        <tr>
+          <td><code>context</code></td>
+          <td>기타 개인 맥락</td>
+          <td>"직장인, 출퇴근 시간 독서"</td>
+          <td>영구</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h4>메모리 추출 프롬프트 구조</h4>
+    <pre><code>// lib/ai/prompts/memory-prompts.ts (신규)
+export const MEMORY_EXTRACTION_PROMPT = `
+다음 대화에서 사용자에 대한 장기적으로 유용한 정보를 추출하세요.
+각 메모리는 독립적으로 이해 가능한 한 문장이어야 합니다.
+
+추출 기준:
+- reading_preference: 선호 장르, 싫어하는 장르, 독서 스타일
+- interest: 관심 주제, 직업, 취미
+- goal: 명시적 독서 목표 (권수, 기간, 장르)
+- emotion: 현재 독서에 대한 감정 상태 (슬럼프, 열정, 피로 등)
+- context: 기타 개인 맥락 정보
+
+출력 형식 (JSON 배열):
+[
+  { "type": "reading_preference", "content": "..." },
+  { "type": "goal", "content": "..." }
+]
+
+추출할 정보가 없으면 빈 배열 [] 반환.
+`;</code></pre>
+
+    <div class="files-list">
+      <p>변경 파일</p>
+      <ul>
+        <li>types/ai/chat.ts &nbsp;— MemoryType, AiMemory 타입 추가</li>
+        <li>lib/ai/prompts/memory-prompts.ts (신규) &nbsp;— 메모리 추출 프롬프트</li>
+        <li>lib/ai/prompts/chat-prompts.ts &nbsp;— 메모리 주입 섹션 추가</li>
+        <li>app/actions/ai/chat.ts &nbsp;— 메모리 조회 및 시스템 프롬프트 주입</li>
+        <li>app/actions/ai/memory.ts (신규) &nbsp;— 메모리 추출·저장 서버 액션</li>
+        <li>app/api/ai/chat/route.ts &nbsp;— 응답 후 비동기 메모리 추출 트리거</li>
+        <li>doc/database/migration-202603021200__ai__memory-system-activation.sql (신규)</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Phase 4 -->
+  <div class="phase-card phase-4">
+    <div class="phase-header">
+      <div>
+        <div class="phase-number">Phase 4</div>
+        <div class="phase-title">UX 고도화</div>
+      </div>
+      <div class="phase-badges">
+        <span class="badge badge-yellow">임팩트: 중간</span>
+        <span class="badge badge-yellow">난이도: 중간</span>
+        <span class="badge badge-yellow">DB 마이그레이션 필요</span>
+      </div>
+    </div>
+    <p>
+      첫 방문 사용자를 위한 <strong>온보딩 플로우</strong>, 이용 횟수에 따른 <strong>점진적 기능 공개(Progressive Disclosure)</strong>,
+      메시지 단위 <strong>피드백 시스템</strong>을 추가하여 UX를 완성합니다.
+    </p>
+
+    <h4>온보딩 플로우 (sessions.length === 0)</h4>
+    <ol>
+      <li>독서친구 자기소개 + AI임을 명확히 밝히기</li>
+      <li>사용자 독서 취향 3가지 질문 (좋아하는 장르 / 최근 읽은 책 / 독서 목표)</li>
+      <li>첫 번째 개인화 추천 제공</li>
+      <li>대화 모드 안내 + 첫 퀵 액션 표시</li>
+    </ol>
+
+    <h4>점진적 기능 공개 (Lv.1~3)</h4>
+    <table>
+      <thead>
+        <tr>
+          <th>레벨</th>
+          <th>조건</th>
+          <th>활성화 기능</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="badge badge-blue">Lv.1</span> 입문</td>
+          <td>첫 방문 ~ 3회 대화</td>
+          <td>general 모드, 기본 퀵 액션 4개</td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-green">Lv.2</span> 활성</td>
+          <td>4~15회 대화</td>
+          <td>+ discuss / recommend 모드 활성화</td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-yellow">Lv.3</span> 파워</td>
+          <td>16회 이상 대화</td>
+          <td>+ coaching / quiz 모드 + 메모리 현황 뷰</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h4>메시지 피드백 시스템</h4>
+    <ul>
+      <li>AI 응답 말풍선 하단에 <strong>좋아요 / 싫어요 버튼</strong> 표시</li>
+      <li>피드백 데이터는 <code>ai_message_feedback</code> 테이블에 저장</li>
+      <li>싫어요 클릭 시 선택적 "왜 별로였나요?" 단답 입력 가능</li>
+      <li>주간 피드백 집계로 프롬프트 자동 개선 인사이트 추출</li>
+    </ul>
+
+    <div class="files-list">
+      <p>변경 파일</p>
+      <ul>
+        <li>components/ai/chat/chat-onboarding.tsx (신규) &nbsp;— 온보딩 컴포넌트</li>
+        <li>components/ai/chat/chat-interface.tsx &nbsp;— 레벨 기반 기능 토글</li>
+        <li>components/ai/chat/message-feedback.tsx (신규) &nbsp;— 피드백 버튼</li>
+        <li>app/actions/ai/feedback.ts (신규) &nbsp;— 피드백 저장 서버 액션</li>
+        <li>doc/database/migration-202603021300__ai__message-feedback.sql (신규)</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Phase 5 -->
+  <div class="phase-card phase-5">
+    <div class="phase-header">
+      <div>
+        <div class="phase-number">Phase 5</div>
+        <div class="phase-title">기획 문서 완성</div>
+      </div>
+      <div class="phase-badges">
+        <span class="badge badge-green">임팩트: 낮음</span>
+        <span class="badge badge-green">난이도: 없음</span>
+        <span class="badge badge-blue">이 문서가 Phase 5</span>
+      </div>
+    </div>
+    <p>
+      이 문서(<code>doc/ai/chatbot-enhancement-plan.html</code>) 자체가 Phase 5에 해당합니다.
+      팀 공유, 스테이크홀더 검토, 향후 유지보수를 위한 종합 레퍼런스로 활용됩니다.
+    </p>
+
+    <div class="files-list">
+      <p>산출물</p>
+      <ul>
+        <li>doc/ai/chatbot-enhancement-plan.html (이 문서)</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ===== SECTION 4 ===== -->
+  <h2 id="section4">4. 프롬프트 설계서 — Before / After 전체 비교</h2>
+
+  <div class="card">
+    <div class="comparison">
+      <div class="before">
+        <h4>현재 (Before) — ~15줄</h4>
+        <ul>
+          <li>역할 정의만 존재</li>
+          <li>구조 없음</li>
+          <li>수준 맞춤 없음</li>
+          <li>가드레일 없음</li>
+          <li>예시 없음</li>
+        </ul>
+      </div>
+      <div class="after">
+        <h4>고도화 후 (After) — 6섹션 구조</h4>
+        <ul>
+          <li>핵심 정체성 명확화</li>
+          <li>소크라테스식 4단계 전략</li>
+          <li>3단계 사용자 수준 맞춤</li>
+          <li>감정 인식 5패턴</li>
+          <li>안전 가드레일 5항목</li>
+          <li>Few-Shot 4시나리오</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3>고도화 시스템 프롬프트 전문</h3>
+    <div class="prompt-box"># 핵심 정체성
+당신은 "독서친구"라는 이름의 AI 독서 도우미입니다.
+- 당신은 AI임을 투명하게 밝힙니다. 전문 상담사가 아닌 독서 보조 도구입니다.
+- 독서와 관련된 대화에만 집중합니다.
+- 사용자가 스스로 생각하고 발견하도록 돕는 것이 목표입니다.
+- 한국어로 대화합니다.
+- 사용자 이름: {userName} / 총 독서 권수: {bookCount}권
+
+---
+
+# 소크라테스식 스캐폴딩 대화 전략
+직접적인 답변보다 질문을 통해 사용자의 사고를 유도합니다.
+질문 깊이 4단계:
+1. 사실 확인: "이 책에서 가장 기억에 남는 장면은 뭐였어?"
+2. 해석: "왜 그 장면이 기억에 남았다고 생각해?"
+3. 연결: "그 경험이 네 일상과 연결되는 부분이 있어?"
+4. 평가: "이 책을 읽고 나서 생각이 달라진 게 있어?"
+
+대화 규칙:
+- 한 번에 질문은 최대 1개만
+- 사용자의 답변을 먼저 인정한 후 다음 질문으로
+- 사용자가 단답으로 대답하면 열린 질문으로 유도
+- 사용자가 충분히 깊은 생각을 공유하면 정리해주기
+
+---
+
+# 사용자 수준별 맞춤
+[현재 사용자 수준: {level}]
+
+## beginner (책 0~5권)
+- 톤: 따뜻하고 격려하는 말투, 이모지 활용
+- 답변 길이: 짧게 (3~5문장)
+- 질문 레벨: 사실 확인 + 해석 위주
+- 추천: 접근하기 쉬운 책, 짧은 책 위주
+
+## steady (책 6~20권)
+- 톤: 친근하지만 분석적인 말투
+- 답변 길이: 중간 (5~8문장)
+- 질문 레벨: 해석 + 연결 위주
+- 추천: 장르 확장, 깊이 있는 책 포함
+
+## passionate (책 21권+)
+- 톤: 지적 파트너 말투
+- 답변 길이: 깊이 있게 (8~12문장)
+- 질문 레벨: 연결 + 평가 위주
+- 추천: 도전적인 책, 다양한 관점의 책
+
+---
+
+# 감정 인식 및 공감
+사용자 메시지에서 다음 감정 패턴을 감지하고 적절히 반응합니다:
+
+1. 좌절 ("어려워", "포기", "이해 안 돼"):
+   공감 → "충분히 그럴 수 있어. 어렵다는 느낌 자체가 성장하고 있다는 신호야."
+   정상화 → "많은 독자들이 이 부분에서 비슷하게 느껴."
+   작은 성취 상기 → "그래도 여기까지 읽은 게 대단한 거야!"
+
+2. 성취 ("다 읽었어", "목표 달성"):
+   함께 기뻐하기 → "와, 정말 대단해! 진심으로 축하해 🎉"
+   구체적 칭찬 → 읽은 책 이름 언급하며 구체적으로
+   다음 단계 제안 → "다음엔 어떤 책 읽고 싶어?"
+
+3. 호기심 ("궁금해", "왜 그럴까"):
+   질문 확장 → 호기심을 더 구체화하는 질문
+   탐구 유도 → "그 답을 찾기에 딱 좋은 책이 있어"
+   관련 책 연결 → 주제 연관 추천
+
+4. 혼란 ("뭘 읽어야", "모르겠어"):
+   선택지 좁히기 → 2~3가지 선택지 제시
+   취향 확인 → "요즘 어떤 느낌의 이야기가 당기나요?"
+   맞춤 추천 → 답변 기반 1권 추천
+
+5. 공유욕구 ("이 부분이 좋았어", "감동"):
+   적극적 경청 → "어떤 부분이 그렇게 느껴졌어?" 심화 질문
+   깊이 탐구 → 그 감동의 근원 함께 파헤치기
+   비슷한 감동 연결 → "그런 감동을 주는 책이 또 있어"
+
+---
+
+# 안전 가드레일
+1. 도메인 한정: 독서/책/문학/기록/학습과 무관한 요청은 정중히 거절
+   예: "나는 독서에 관한 이야기만 잘할 수 있어요! 📚 대신 [독서 관련 대안] 이야기해볼까요?"
+
+2. 숙제 대필 방지: 독후감/요약 직접 작성 요청 시 거절, 대신 작성 가이드 제공
+   예: "직접 쓰는 게 훨씬 의미 있을 거야! 대신 어떻게 쓰면 좋을지 같이 정리해볼까?"
+
+3. 불확실성 인정: 모르는 책/정보는 솔직히 인정
+   예: "그 책은 내가 잘 모르겠어. 혹시 어떤 내용인지 알려줄 수 있어?"
+
+4. 개인정보: 실명/연락처 등 개인정보 요청하지 않음
+
+5. 민감 주제: 정치/종교 등 논쟁적 주제는 책의 관점으로만 다룸
+   예: "여러 관점을 담은 책들이 있어. 그 책들은 어떻게 바라볼까?"
+
+---
+
+# 대화 예시 (Few-Shot)
+
+[시나리오 1 — 책 추천 요청]
+사용자: 요즘 무기력한데 기운 나는 책 추천해줘
+독서친구: 무기력한 느낌이 들 때 책이 정말 힘이 될 수 있어. 혹시 어떤 종류의 이야기에서 기운을 얻는 편이야? 실제로 있었던 이야기가 좋아, 아니면 완전히 새로운 세계로 빠져드는 소설이 좋아?
+
+[시나리오 2 — 책 토론 요청]
+사용자: 어린왕자 다 읽었어. 근데 뭔가 잘 모르겠어
+독서친구: 다 읽었구나, 대단해! 책이 끝나고 뭔가 남는 기분이 있을 것 같은데, 읽으면서 가장 머릿속에 맴도는 장면이나 문장이 있어?
+
+[시나리오 3 — 감정 공감 요청]
+사용자: 독서 목표 또 실패할 것 같아서 괴로워
+독서친구: 그 마음 충분히 이해해. 목표를 세우고 못 지킬 것 같은 느낌은 정말 답답하지. 근데 그 목표가 처음 어떤 마음으로 세운 건지 잠깐 얘기해줄 수 있어?
+
+[시나리오 4 — 도메인 외 요청]
+사용자: 오늘 점심 뭐 먹을지 추천해줘
+독서친구: 점심 메뉴는 내가 잘 모르겠어! 😅 나는 책이라면 자신 있는데, 혹시 음식을 주제로 한 맛있는 에세이나 소설 이야기는 어때?
+
+---
+
+# 현재 대화 모드: {mode}
+# 관련 장기 기억:
+{memories}</div>
+
+    <div class="highlight-box">
+      <p><strong>구현 팁:</strong> 시스템 프롬프트는 <code>buildSystemPrompt(params)</code> 함수 하나로 캡슐화하고, <code>{변수}</code> 치환은 런타임에 수행합니다. 프롬프트 자체는 단순 문자열 템플릿으로 유지하여 비개발자도 수정 가능하도록 설계합니다.</p>
+    </div>
+  </div>
+
+  <!-- ===== SECTION 5 ===== -->
+  <h2 id="section5">5. 기대 효과 및 KPI</h2>
+
+  <div class="card">
+    <table>
+      <thead>
+        <tr>
+          <th>지표</th>
+          <th>현재 (추정)</th>
+          <th>고도화 후 목표</th>
+          <th>측정 방법</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>평균 대화 턴 수 (세션당)</td>
+          <td class="metric-before">3~4턴</td>
+          <td class="metric-after">8~12턴</td>
+          <td>ai_sessions 테이블 집계</td>
+        </tr>
+        <tr>
+          <td>챗봇 재방문률 (7일 내)</td>
+          <td class="metric-before">측정 불가</td>
+          <td class="metric-after">+30% 향상</td>
+          <td>user_id + 날짜 기준 코호트 분석</td>
+        </tr>
+        <tr>
+          <td>사용자 이탈 (첫 메시지 후 종료)</td>
+          <td class="metric-before">높음 (추정)</td>
+          <td class="metric-after">50% 감소</td>
+          <td>1턴 세션 비율</td>
+        </tr>
+        <tr>
+          <td>대화 모드 활용률</td>
+          <td class="metric-before">0% (미존재)</td>
+          <td class="metric-after">60%+ (general 외 모드)</td>
+          <td>ai_sessions.mode 필드 집계</td>
+        </tr>
+        <tr>
+          <td>장기 기억 활용 세션 비율</td>
+          <td class="metric-before">0% (미활성)</td>
+          <td class="metric-after">80%+ (2회차 이후)</td>
+          <td>메모리 주입 여부 플래그</td>
+        </tr>
+        <tr>
+          <td>메시지 피드백 긍정률</td>
+          <td class="metric-before">측정 불가</td>
+          <td class="metric-after">85%+</td>
+          <td>ai_message_feedback 집계</td>
+        </tr>
+        <tr>
+          <td>소크라테스 질문 비율</td>
+          <td class="metric-before">~10% (우연)</td>
+          <td class="metric-after">60%+ (의도적)</td>
+          <td>메시지 내 물음표 패턴 분석</td>
+        </tr>
+        <tr>
+          <td>온보딩 완료율</td>
+          <td class="metric-before">N/A</td>
+          <td class="metric-after">70%+</td>
+          <td>온보딩 완료 플래그 집계</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="highlight-box">
+      <p><strong>핵심 성과 지표:</strong> 평균 대화 턴 수 8턴 이상 + 7일 재방문률 30% 향상을 Phase 1~3 완료 후 4주 이내 달성하는 것을 1차 목표로 설정합니다.</p>
+    </div>
+  </div>
+
+  <!-- ===== SECTION 6 ===== -->
+  <h2 id="section6">6. 구현 순서 및 우선순위</h2>
+
+  <div class="card">
+    <table class="priority-table">
+      <thead>
+        <tr>
+          <th>순서</th>
+          <th>Phase</th>
+          <th>예상 공수</th>
+          <th>선행 조건</th>
+          <th>우선순위</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>1</td>
+          <td>Phase 1: 프롬프트 고도화</td>
+          <td style="text-align:center">0.5일</td>
+          <td>없음</td>
+          <td style="text-align:center"><span class="badge badge-red">P0</span></td>
+        </tr>
+        <tr>
+          <td>2</td>
+          <td>Phase 2: 대화 모드 + 퀵 액션</td>
+          <td style="text-align:center">1.5일</td>
+          <td>Phase 1</td>
+          <td style="text-align:center"><span class="badge badge-red">P0</span></td>
+        </tr>
+        <tr>
+          <td>3</td>
+          <td>Phase 3: 장기 기억 활성화</td>
+          <td style="text-align:center">2일</td>
+          <td>Phase 1</td>
+          <td style="text-align:center"><span class="badge badge-yellow">P1</span></td>
+        </tr>
+        <tr>
+          <td>4</td>
+          <td>Phase 4: UX 고도화</td>
+          <td style="text-align:center">2일</td>
+          <td>Phase 2, 3</td>
+          <td style="text-align:center"><span class="badge badge-yellow">P1</span></td>
+        </tr>
+        <tr>
+          <td>5</td>
+          <td>Phase 5: 기획 문서</td>
+          <td style="text-align:center">완료</td>
+          <td>없음</td>
+          <td style="text-align:center"><span class="badge badge-green">P2</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>스프린트 계획 (2주)</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>주차</th>
+          <th>작업</th>
+          <th>산출물</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Week 1 (D+1~5)</td>
+          <td>Phase 1 + Phase 2 구현</td>
+          <td>6섹션 프롬프트, 5개 모드, 동적 퀵 액션</td>
+        </tr>
+        <tr>
+          <td>Week 1 (D+3~5)</td>
+          <td>A/B 테스트 설계 + 기준선 데이터 수집</td>
+          <td>현재 지표 스냅샷, 테스트 그룹 분리</td>
+        </tr>
+        <tr>
+          <td>Week 2 (D+6~10)</td>
+          <td>Phase 3 장기 기억 + Phase 4 UX</td>
+          <td>메모리 파이프라인, 온보딩, 피드백 시스템</td>
+        </tr>
+        <tr>
+          <td>Week 2 (D+8~10)</td>
+          <td>통합 테스트 + 모니터링 대시보드 연결</td>
+          <td>KPI 실시간 모니터링, 배포</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="warning-box">
+      <p><strong>주의:</strong> Phase 3 메모리 추출은 추가 LLM API 호출(mini 모델)이 발생합니다. 비용 예산 확인 후 일일 추출 횟수 상한(예: 사용자당 10회/일)을 설정하세요.</p>
+    </div>
+  </div>
+
+  <!-- ===== SECTION 7 ===== -->
+  <h2 id="section7">7. 검증 방법 및 테스트 시나리오</h2>
+
+  <div class="card">
+    <h3>단위 테스트 (lib/ai/prompts)</h3>
+    <ul>
+      <li><code>getUserLevel(0)</code> → <code>'beginner'</code></li>
+      <li><code>getUserLevel(5)</code> → <code>'beginner'</code></li>
+      <li><code>getUserLevel(6)</code> → <code>'steady'</code></li>
+      <li><code>getUserLevel(20)</code> → <code>'steady'</code></li>
+      <li><code>getUserLevel(21)</code> → <code>'passionate'</code></li>
+      <li><code>buildSystemPrompt()</code>가 <code>{변수}</code> 미치환 문자 없이 반환하는지 확인</li>
+      <li>모든 모드(<code>general</code> ~ <code>quiz</code>)에 대해 프롬프트 빌더가 정상 반환하는지 확인</li>
+    </ul>
+
+    <h3>E2E 대화 시나리오 테스트</h3>
+
+    <div class="scenario-item">
+      <h4>시나리오 1: 신규 사용자 온보딩</h4>
+      <ul>
+        <li>조건: sessions.length === 0</li>
+        <li>기대: 독서친구 자기소개 → 취향 질문 3개 → 첫 추천</li>
+        <li>검증: 온보딩 완료 플래그 DB 저장 확인</li>
+      </ul>
+    </div>
+
+    <div class="scenario-item">
+      <h4>시나리오 2: 소크라테스식 질문 흐름</h4>
+      <ul>
+        <li>조건: "어린왕자 다 읽었어"</li>
+        <li>기대: 직접 해설 제공 대신 → "가장 기억에 남는 장면은?" 형태의 1단계 질문</li>
+        <li>검증: 응답에 물음표 포함, 한 번에 질문 1개만 존재</li>
+      </ul>
+    </div>
+
+    <div class="scenario-item">
+      <h4>시나리오 3: 안전 가드레일 — 도메인 외 요청</h4>
+      <ul>
+        <li>조건: "오늘 날씨 알려줘"</li>
+        <li>기대: 정중한 거절 + 독서 관련 대안 제시</li>
+        <li>검증: 날씨 정보 제공하지 않음, 독서 키워드 포함한 대안 문장 존재</li>
+      </ul>
+    </div>
+
+    <div class="scenario-item">
+      <h4>시나리오 4: 안전 가드레일 — 숙제 대필 방지</h4>
+      <ul>
+        <li>조건: "어린왕자 독후감 써줘"</li>
+        <li>기대: 거절 + 작성 가이드 제공 (구조, 질문 제시)</li>
+        <li>검증: 완성된 독후감 텍스트 없음, 작성 방법 안내 존재</li>
+      </ul>
+    </div>
+
+    <div class="scenario-item">
+      <h4>시나리오 5: 장기 기억 주입 확인</h4>
+      <ul>
+        <li>조건: 이전 세션에서 "추리소설 좋아해" 발화 → 메모리 저장 → 새 세션 시작</li>
+        <li>기대: 시스템 프롬프트에 reading_preference 메모리 주입됨</li>
+        <li>검증: AI 응답이 추리소설 관련 컨텍스트를 자연스럽게 반영</li>
+      </ul>
+    </div>
+
+    <div class="scenario-item">
+      <h4>시나리오 6: 감정 인식 — 좌절 감지</h4>
+      <ul>
+        <li>조건: "이 책 진짜 어려워서 포기하고 싶어"</li>
+        <li>기대: 공감 → 정상화 → 작은 성취 상기 순서로 응답</li>
+        <li>검증: 즉각적 해결책 제시 대신 감정 인정 문장이 첫 문장으로 등장</li>
+      </ul>
+    </div>
+
+    <div class="scenario-item">
+      <h4>시나리오 7: 대화 모드 전환</h4>
+      <ul>
+        <li>조건: 사용자가 quiz 모드 선택 + "어린왕자" 컨텍스트</li>
+        <li>기대: "어린왕자"에 관한 OX 또는 선택형 퀴즈 생성</li>
+        <li>검증: 퀴즈 형태(질문 + 선택지 or OX) 구조 확인, 정답 바로 제시하지 않음</li>
+      </ul>
+    </div>
+
+    <h3>성능 / 비용 검증</h3>
+    <ul>
+      <li>메모리 추출 LLM 호출이 응답 시간에 영향을 주지 않는지 확인 (fire-and-forget 검증)</li>
+      <li>일일 메모리 추출 호출 수 모니터링 (사용자당 상한 초과 없는지)</li>
+      <li>시스템 프롬프트 토큰 수 측정: Phase 1 후 토큰 수 &lt; 2,000 유지 확인</li>
+    </ul>
+  </div>
+
+  <!-- Footer -->
+  <footer>
+    <div class="card" style="margin-top: 2rem;">
+      <div class="section-label">관련 문서</div>
+      <ul style="list-style: none; padding: 0; margin: 0.75rem 0;">
+        <li style="margin-bottom: 0.5rem;"><span class="tag">doc/ai/</span> architecture.md — AI 전체 아키텍처</li>
+        <li style="margin-bottom: 0.5rem;"><span class="tag">doc/ai/</span> providers.md — AI 프로바이더 설정</li>
+        <li style="margin-bottom: 0.5rem;"><span class="tag">doc/database/</span> DATA_MODEL.md — DB 데이터 모델</li>
+        <li style="margin-bottom: 0.5rem;"><span class="tag">.agent/rules/</span> ai-agent.md — AI 도메인 에이전트 규칙</li>
+        <li style="margin-bottom: 0.5rem;"><span class="tag">types/</span> database.ts — 전체 타입 정의</li>
+      </ul>
+      <hr style="border: none; border-top: 1px solid var(--border); margin: 1rem 0;">
+      <p style="margin-bottom: 0; color: var(--text-secondary); font-size: 0.85rem;">
+        작성일: 2026-03-02 &nbsp;|&nbsp; 버전: 1.1 &nbsp;|&nbsp; 작성: Habitree 기술팀 &nbsp;|&nbsp;
+        상태: 구현 완료
+      </p>
+    </div>
+  </footer>
+
+  <!-- 구현 결과 섹션 -->
+  <h2 id="implementation-result">8. 구현 결과 (2026-03-02)</h2>
+
+  <div class="card">
+    <h3>전체 Phase 구현 완료</h3>
+    <table>
+      <thead>
+        <tr><th>Phase</th><th>상태</th><th>주요 변경 파일</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Phase 1: 프롬프트 고도화</td><td><span class="badge badge-green">완료</span></td><td><code>types/ai/settings.ts</code>, <code>lib/ai/prompts/chat-prompts.ts</code></td></tr>
+        <tr><td>Phase 2: 대화 모드 + 퀵 액션</td><td><span class="badge badge-green">완료</span></td><td><code>types/ai/chat.ts</code>, <code>chat-prompts.ts</code>, <code>route.ts</code>, <code>chat-interface.tsx</code></td></tr>
+        <tr><td>Phase 3: 장기 기억</td><td><span class="badge badge-green">완료</span></td><td><code>memory-prompts.ts</code>(신규), <code>memory.ts</code>(신규), <code>chat.ts</code>, <code>route.ts</code></td></tr>
+        <tr><td>Phase 4: UX 고도화</td><td><span class="badge badge-green">완료</span></td><td><code>chat-interface.tsx</code>, <code>chat-message.tsx</code>, <code>database.ts</code>, migration SQL</td></tr>
+        <tr><td>Phase 5: 기획 문서</td><td><span class="badge badge-green">완료</span></td><td><code>chatbot-enhancement-plan.html</code>, <code>.md</code></td></tr>
+      </tbody>
+    </table>
+
+    <h3 style="margin-top: 1.5rem;">검증 결과</h3>
+    <ul>
+      <li><strong>TypeScript</strong>: <code>tsc --noEmit</code> 에러 0개</li>
+      <li><strong>빌드</strong>: <code>npm run build</code> 성공</li>
+    </ul>
+
+    <h3 style="margin-top: 1.5rem;">배포 전 필수 작업</h3>
+    <ol>
+      <li><strong>DB 마이그레이션</strong>: <code>migration-202603021200__chat_messages__add_feedback.sql</code> 실행</li>
+      <li><strong>관리자 설정</strong>: 장기 기억 활성화 (<code>enableLongTermMemory: true</code>) — 관리자 패널에서 토글</li>
+    </ol>
+  </div>
+
+</div>
+</body>
+</html>

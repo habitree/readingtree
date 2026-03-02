@@ -4,7 +4,7 @@
  * 관리자 설정에 따라 동적으로 프롬프트를 생성합니다.
  */
 
-import type { ChatContext } from "@/types/ai";
+import type { ChatContext, ChatMode } from "@/types/ai";
 import type { ContextSettings } from "@/types/ai";
 
 /**
@@ -13,13 +13,19 @@ import type { ContextSettings } from "@/types/ai";
 export function generateDynamicSystemPrompt(
   template: string,
   context: ChatContext,
-  contextSettings: ContextSettings
+  contextSettings: ContextSettings,
+  mode?: ChatMode
 ): string {
   let prompt = template;
 
   // 페르소나 정보 추가
   if (contextSettings.includePersona && context.persona) {
     prompt += generatePersonaSection(context);
+  }
+
+  // 사용자 수준 섹션 추가
+  if (context.persona?.reading_stats) {
+    prompt += generateUserLevelSection(context);
   }
 
   // 최근 읽은 책 정보 추가
@@ -37,6 +43,16 @@ export function generateDynamicSystemPrompt(
     prompt += generateReadingGoalSection(context);
   }
 
+  // 장기 기억 섹션 추가
+  if (context.memories && context.memories.length > 0) {
+    prompt += generateMemorySection(context);
+  }
+
+  // 대화 모드 지시문 추가
+  if (mode && mode !== "general") {
+    prompt += generateModeInstruction(mode);
+  }
+
   // 링크 형식 사용 지시 추가
   prompt += `\n\n## 응답 형식 규칙
 - 책을 언급할 때는 반드시 [[book:ID:「제목」]] 형식을 사용하세요
@@ -49,6 +65,66 @@ export function generateDynamicSystemPrompt(
 위 정보를 바탕으로 사용자에게 맞춤형 응답을 제공하세요.`;
 
   return prompt;
+}
+
+/**
+ * 사용자 수준 판별 타입
+ */
+type UserLevel = "beginner" | "steady" | "passionate";
+
+/**
+ * 사용자 수준 자동 판별
+ * totalBooks/totalNotes 기반으로 3단계 판별
+ */
+function determineUserLevel(context: ChatContext): UserLevel {
+  const totalBooks = context.persona?.reading_stats?.totalBooks ?? 0;
+  const totalNotes = context.persona?.reading_stats?.totalNotes ?? 0;
+
+  if (totalBooks <= 5 && totalNotes <= 10) return "beginner";
+  if (totalBooks <= 20 && totalNotes <= 50) return "steady";
+  return "passionate";
+}
+
+/**
+ * 사용자 수준별 프롬프트 섹션 생성
+ */
+function generateUserLevelSection(context: ChatContext): string {
+  const level = determineUserLevel(context);
+  const totalBooks = context.persona?.reading_stats?.totalBooks ?? 0;
+
+  const levelConfig: Record<UserLevel, { label: string; description: string }> = {
+    beginner: {
+      label: "초보 독서가",
+      description: `이 사용자는 독서 초보입니다 (총 ${totalBooks}권 읽음).
+- 톤: 따뜻하고 격려하는 말투를 사용하세요
+- 답변 길이: 짧게 (3~5문장)
+- 질문 레벨: 사실 확인 + 해석 위주
+- 추천: 접근하기 쉬운 책, 짧은 책 위주
+- 독서 자체에 대한 흥미를 유발해주세요`,
+    },
+    steady: {
+      label: "꾸준한 독서가",
+      description: `이 사용자는 꾸준히 읽는 독서가입니다 (총 ${totalBooks}권 읽음).
+- 톤: 친근하지만 분석적인 말투
+- 답변 길이: 중간 (5~8문장)
+- 질문 레벨: 해석 + 연결 위주
+- 추천: 장르 확장, 깊이 있는 책 포함
+- 독서 패턴에 대한 인사이트를 제공해주세요`,
+    },
+    passionate: {
+      label: "열정적 독서가",
+      description: `이 사용자는 열정적인 독서가입니다 (총 ${totalBooks}권 읽음).
+- 톤: 지적 파트너 말투
+- 답변 길이: 깊이 있게 (8~12문장)
+- 질문 레벨: 연결 + 평가 위주
+- 추천: 도전적인 책, 다양한 관점의 책
+- 심화 분석과 비교 관점을 제공해주세요`,
+    },
+  };
+
+  const config = levelConfig[level];
+  return `\n\n## 사용자 수준: ${config.label}
+${config.description}`;
 }
 
 /**
@@ -284,7 +360,7 @@ export const WELCOME_MESSAGE = `안녕하세요! 저는 당신의 독서친구�
 무엇을 도와드릴까요?`;
 
 /**
- * 예시 질문들
+ * 예시 질문들 (레거시, 하위 호환용)
  */
 export const EXAMPLE_QUESTIONS = [
   "요즘 뭘 읽을지 고민이야",
@@ -294,3 +370,199 @@ export const EXAMPLE_QUESTIONS = [
   "가볍게 읽을 책 있을까?",
   "내가 밑줄 친 부분들에서 공통점이 뭐야?",
 ];
+
+/**
+ * 대화 모드별 프롬프트 지시문 생성
+ */
+export function generateModeInstruction(mode: ChatMode): string {
+  if (mode === "general") return "";
+
+  const instructions: Record<Exclude<ChatMode, "general">, string> = {
+    discuss: `\n\n## 현재 모드: 책 토론
+- 소크라테스식 질문을 적극적으로 활용하세요
+- 다양한 관점과 해석을 제시하세요
+- 사용자의 의견에 대해 "왜 그렇게 생각해?" 등 깊이 있는 후속 질문을 하세요
+- 저자의 의도, 시대적 배경, 다른 독자의 해석 등을 소개하세요
+- 대립적이지 않은 지적 토론 분위기를 유지하세요`,
+
+    recommend: `\n\n## 현재 모드: 책 추천
+- 3단계 추천을 제공하세요: 맞춤 추천(취향 기반) / 도전 추천(새로운 장르) / 의외의 추천(예상 밖)
+- 추천 이유를 구체적으로 설명하세요 (이 책이 이 사용자에게 맞는 이유)
+- 사용자의 최근 읽은 책, 선호 장르, 독서 수준을 고려하세요
+- [[recommend:「제목」:저자명]] 형식을 반드시 사용하세요`,
+
+    coaching: `\n\n## 현재 모드: 독서 코칭
+- 자기결정이론(SDT)에 기반하여 자율성/유능감/관계성을 지원하세요
+- SMART 목표 설정을 도와주세요 (구체적/측정가능/달성가능/관련성/시간제한)
+- 사용자의 독서 목표와 진행률을 참조하여 현실적인 조언을 하세요
+- 작은 성취도 적극적으로 인정하고 칭찬하세요
+- 강요하지 않고 선택지를 제시하세요`,
+
+    quiz: `\n\n## 현재 모드: 독서 퀴즈
+- 4가지 유형의 문제를 출제합니다: 내용 확인 / 해석 / 적용 / 비평
+- 한 번에 1문제씩만 출제하세요
+- 사용자의 답변에 대해 먼저 인정하고 해설을 제공하세요
+- 틀렸을 경우 정답을 알려주기보다 힌트를 주고 다시 생각하게 하세요
+- 사용자가 읽은 책 목록을 참고하여 출제하세요
+- 재미있고 도전적이되 너무 어렵지 않게 출제하세요`,
+  };
+
+  return instructions[mode];
+}
+
+/**
+ * 장기 기억 섹션 생성
+ */
+function generateMemorySection(context: ChatContext): string {
+  if (!context.memories || context.memories.length === 0) return "";
+
+  const typeLabels: Record<string, string> = {
+    reading_preference: "독서 취향",
+    interest: "관심 분야",
+    goal: "독서 목표",
+    emotion: "감정 상태",
+    context: "상황 정보",
+  };
+
+  let section = `\n\n## 이 사용자에 대해 기억하고 있는 정보`;
+  const grouped = new Map<string, string[]>();
+
+  for (const mem of context.memories) {
+    const label = typeLabels[mem.memory_type] || mem.memory_type;
+    if (!grouped.has(label)) grouped.set(label, []);
+    grouped.get(label)!.push(mem.content);
+  }
+
+  for (const [label, items] of grouped) {
+    section += `\n### ${label}`;
+    for (const item of items) {
+      section += `\n- ${item}`;
+    }
+  }
+
+  section += `\n\n이 정보를 자연스럽게 활용하되, "지난번에 말씀하셨듯이" 등으로 기억하고 있음을 보여주세요.`;
+  return section;
+}
+
+/**
+ * 동적 퀵 액션 생성 (사용자 컨텍스트 + 모드 기반)
+ */
+export function generateQuickActions(
+  context: ChatContext,
+  mode: ChatMode,
+  sessionCount: number
+): { label: string; message: string }[] {
+  const actions: { label: string; message: string }[] = [];
+
+  // 모드별 기본 액션
+  if (mode === "quiz" && context.recentBooks?.length) {
+    const book = context.recentBooks[0];
+    actions.push({ label: `「${book.title}」 퀴즈`, message: `「${book.title}」에서 퀴즈 내줘!` });
+  }
+
+  if (mode === "discuss" && context.recentBooks?.length) {
+    const book = context.recentBooks[0];
+    actions.push({ label: `「${book.title}」 토론`, message: `「${book.title}」에 대해 이야기하고 싶어` });
+  }
+
+  // 읽고 있는 책이 있으면 관련 액션
+  const readingBook = context.recentBooks?.find((b) => b.status === "reading");
+  if (readingBook && mode === "general") {
+    actions.push({
+      label: `「${readingBook.title}」 이야기`,
+      message: `요즘 「${readingBook.title}」 읽고 있어, 이야기하고 싶어`,
+    });
+  }
+
+  // 독서 목표 관련
+  if (context.readingGoal && mode !== "quiz") {
+    const { completed, goal } = context.readingGoal;
+    actions.push({
+      label: `올해 목표 점검 (${completed}/${goal}권)`,
+      message: `올해 독서 목표 진행 상황이 어떤지 같이 봐줘`,
+    });
+  }
+
+  // 기본 액션들
+  const defaults: Record<ChatMode, { label: string; message: string }[]> = {
+    general: [
+      { label: "책 추천받기", message: "요즘 뭘 읽을지 고민이야, 추천해줘" },
+      { label: "가벼운 책", message: "가볍게 읽을 수 있는 책 있을까?" },
+      { label: "독서 패턴 분석", message: "내 독서 패턴을 분석해줘" },
+    ],
+    discuss: [
+      { label: "인상 깊은 구절 나누기", message: "최근에 읽은 책에서 인상 깊었던 구절을 이야기하고 싶어" },
+      { label: "책 비교하기", message: "최근에 읽은 책들을 비교해서 이야기해볼까?" },
+    ],
+    recommend: [
+      { label: "비슷한 책", message: "최근에 읽은 책이랑 비슷한 느낌의 책 추천해줘" },
+      { label: "새로운 장르 도전", message: "평소에 안 읽던 장르에 도전해보고 싶어" },
+      { label: "짧은 책", message: "빨리 읽을 수 있는 짧은 책 추천해줘" },
+    ],
+    coaching: [
+      { label: "독서 습관 만들기", message: "독서 습관을 만들고 싶은데 어떻게 시작하면 좋을까?" },
+      { label: "목표 세우기", message: "현실적인 독서 목표를 세우고 싶어" },
+    ],
+    quiz: [
+      { label: "쉬운 퀴즈", message: "쉬운 독서 퀴즈부터 시작해볼게!" },
+      { label: "어려운 퀴즈", message: "좀 어려운 퀴즈를 내줘!" },
+    ],
+  };
+
+  // 현재 모드의 기본 액션에서 부족한 만큼 채우기 (최대 6개)
+  const modeDefaults = defaults[mode] || defaults.general;
+  for (const d of modeDefaults) {
+    if (actions.length >= 6) break;
+    // 중복 방지
+    if (!actions.some((a) => a.message === d.message)) {
+      actions.push(d);
+    }
+  }
+
+  return actions.slice(0, 6);
+}
+
+/**
+ * 온보딩 환영 메시지 (첫 사용자)
+ */
+export const ONBOARDING_WELCOME = `반가워요! 저는 독서친구예요.
+
+함께 책 이야기를 나누고, 맞춤 추천도 해주고, 독서 목표도 같이 관리해줄 수 있어요.
+
+어떤 걸 해볼까요?`;
+
+/**
+ * 온보딩 질문 (첫 사용자용 퀵 액션)
+ */
+export const ONBOARDING_QUESTIONS = [
+  { label: "최근 읽은 책 이야기", message: "최근에 읽은 책에 대해 이야기하고 싶어" },
+  { label: "책 추천받기", message: "나한테 맞는 책을 추천해줘" },
+  { label: "독서 목표 세우기", message: "독서 목표를 세우고 싶어, 도와줘" },
+  { label: "독서친구 뭘 할 수 있어?", message: "독서친구가 도와줄 수 있는 게 뭐가 있어?" },
+];
+
+/**
+ * 점진적 기능 공개 수준 판별
+ * Lv.1 (세션 0~2): 자유 대화, 책 추천
+ * Lv.2 (세션 3~5): + 책 토론, 독서 코칭
+ * Lv.3 (세션 6+): + 독서 퀴즈
+ */
+export function getFeatureLevel(sessionCount: number): 1 | 2 | 3 {
+  if (sessionCount <= 2) return 1;
+  if (sessionCount <= 5) return 2;
+  return 3;
+}
+
+/**
+ * 기능 수준별 사용 가능한 모드 목록
+ */
+export function getAvailableModes(featureLevel: 1 | 2 | 3): ChatMode[] {
+  switch (featureLevel) {
+    case 1:
+      return ["general", "recommend"];
+    case 2:
+      return ["general", "recommend", "discuss", "coaching"];
+    case 3:
+      return ["general", "recommend", "discuss", "coaching", "quiz"];
+  }
+}
