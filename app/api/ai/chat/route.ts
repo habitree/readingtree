@@ -59,12 +59,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // AI 채팅 사용 한도 체크 (구독 티어별)
+    // AI 채팅 사용 한도 체크
     const access = await checkFeatureAccess("ai_chat", user);
     if (!access.allowed) {
       const msg = access.canUseWithPoints
-        ? `오늘의 AI 채팅 한도(${access.limit}회)에 도달했습니다. ${access.pointCost} 포인트로 추가 사용하거나 구독을 업그레이드하세요.`
-        : `오늘의 AI 채팅 한도(${access.limit}회)에 도달했습니다. 구독을 업그레이드하면 더 많이 사용할 수 있습니다.`;
+        ? `오늘의 AI 채팅 한도(${access.limit}회)에 도달했습니다. ${access.pointCost}P로 추가 사용할 수 있습니다.`
+        : `오늘의 AI 채팅 한도(${access.limit}회)에 도달했습니다.`;
       return NextResponse.json(
         { error: msg },
         { status: 403 }

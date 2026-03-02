@@ -2,7 +2,7 @@
 
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import type { User } from "@supabase/supabase-js";
-import { FEATURE_GATES, getLimitForTier, type FeatureKey, type TierName } from "@/lib/subscription/gates";
+import { FEATURE_GATES, type FeatureKey } from "@/lib/subscription/gates";
 
 /**
  * KST 기준 오늘 날짜 반환 (YYYY-MM-DD)
@@ -39,69 +39,6 @@ function getKSTMonthEnd(): string {
   return `${year}-${String(month).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
 }
 
-/** 무료 티어 기본 features */
-const FREE_TIER_FEATURES: Record<string, number> = {
-  ai_chat_daily: 3,
-  ocr_daily: 3,
-  ai_report_monthly: 0,
-  groups_create: 2,
-  notes_monthly: 30,
-  bookshelf_max: 3,
-  groups_join: 1,
-};
-
-/**
- * 사용자 구독 티어 조회
- */
-export async function getUserTier(user?: User | null): Promise<{
-  tier: TierName;
-  displayName: string;
-  features: Record<string, number>;
-  expiresAt: string | null;
-}> {
-  const supabase = await createServerSupabaseClient();
-
-  let currentUser = user;
-  if (!currentUser) {
-    const { data: { user: fetchedUser } } = await supabase.auth.getUser();
-    if (!fetchedUser) {
-      return { tier: "free", displayName: "무료", features: FREE_TIER_FEATURES, expiresAt: null };
-    }
-    currentUser = fetchedUser;
-  }
-
-  // 사용자 구독 조회
-  const { data: subscription } = await supabase
-    .from("user_subscriptions")
-    .select(`
-      *,
-      subscription_tiers (name, display_name, features)
-    `)
-    .eq("user_id", currentUser.id)
-    .eq("status", "active")
-    .maybeSingle();
-
-  if (!subscription || !subscription.subscription_tiers) {
-    return { tier: "free", displayName: "무료", features: FREE_TIER_FEATURES, expiresAt: null };
-  }
-
-  const tierData = subscription.subscription_tiers as Record<string, unknown>;
-  const tierName = tierData.name as string;
-
-  // 유효한 TierName 검증
-  const validTiers: TierName[] = ["free", "reader", "reader_master"];
-  const resolvedTier: TierName = validTiers.includes(tierName as TierName)
-    ? (tierName as TierName)
-    : "free";
-
-  return {
-    tier: resolvedTier,
-    displayName: tierData.display_name as string,
-    features: tierData.features as Record<string, number>,
-    expiresAt: subscription.expires_at,
-  };
-}
-
 /**
  * feature → action_type 매핑 (point_transactions 기반 카운트용)
  */
@@ -120,13 +57,11 @@ function getActionTypeForFeature(feature: FeatureKey): string | null {
 async function getTableCount(
   feature: FeatureKey,
   userId: string,
-  period?: "daily" | "monthly"
 ): Promise<number> {
   const supabase = await createServerSupabaseClient();
 
   switch (feature) {
     case "notes_create": {
-      // 월간 노트 생성 수
       const monthStart = getKSTMonthStart();
       const monthEnd = getKSTMonthEnd();
       const { count } = await supabase
@@ -138,7 +73,6 @@ async function getTableCount(
       return count || 0;
     }
     case "bookshelf_create": {
-      // 서재 수 (메인 서재 제외)
       const { count } = await supabase
         .from("bookshelves")
         .select("*", { count: "exact", head: true })
@@ -147,7 +81,6 @@ async function getTableCount(
       return count || 0;
     }
     case "groups_create": {
-      // 생성한 그룹 수
       const { count } = await supabase
         .from("groups")
         .select("*", { count: "exact", head: true })
@@ -182,7 +115,6 @@ export async function checkFeatureAccess(
   allowed: boolean;
   limit: number;
   used: number;
-  tier: TierName;
   canUseWithPoints: boolean;
   pointCost: number;
   upgradeMessage?: string;
@@ -193,20 +125,17 @@ export async function checkFeatureAccess(
   if (!currentUser) {
     const { data: { user: fetchedUser } } = await supabase.auth.getUser();
     if (!fetchedUser) {
-      return { allowed: false, limit: 0, used: 0, tier: "free", canUseWithPoints: false, pointCost: 0 };
+      return { allowed: false, limit: 0, used: 0, canUseWithPoints: false, pointCost: 0 };
     }
     currentUser = fetchedUser;
   }
 
-  const tierInfo = await getUserTier(currentUser);
   const gate = FEATURE_GATES[feature];
-
-  // 티어별 한도 결정
-  const limit = getLimitForTier(gate, tierInfo.tier);
+  const limit = gate.limit;
 
   // 무제한이면 즉시 허용
   if (limit === -1) {
-    return { allowed: true, limit: -1, used: 0, tier: tierInfo.tier, canUseWithPoints: false, pointCost: 0 };
+    return { allowed: true, limit: -1, used: 0, canUseWithPoints: false, pointCost: 0 };
   }
 
   // 사용 불가 (0)이면 즉시 차단
@@ -215,9 +144,8 @@ export async function checkFeatureAccess(
       allowed: false,
       limit: 0,
       used: 0,
-      tier: tierInfo.tier,
-      canUseWithPoints: gate.pointCostOnExceed > 0,
-      pointCost: gate.pointCostOnExceed,
+      canUseWithPoints: gate.pointCost > 0,
+      pointCost: gate.pointCost,
     };
   }
 
@@ -255,7 +183,7 @@ export async function checkFeatureAccess(
       break;
     }
     case "table_count": {
-      used = await getTableCount(feature, currentUser.id, gate.countPeriod);
+      used = await getTableCount(feature, currentUser.id);
       break;
     }
     case "membership_count": {
@@ -263,12 +191,10 @@ export async function checkFeatureAccess(
       break;
     }
     case "boolean": {
-      // boolean 타입: limit > 0이면 허용
       return {
         allowed: true,
         limit,
         used: 0,
-        tier: tierInfo.tier,
         canUseWithPoints: false,
         pointCost: 0,
       };
@@ -281,8 +207,7 @@ export async function checkFeatureAccess(
     allowed,
     limit,
     used,
-    tier: tierInfo.tier,
-    canUseWithPoints: !allowed && gate.pointCostOnExceed > 0,
-    pointCost: gate.pointCostOnExceed,
+    canUseWithPoints: !allowed && gate.pointCost > 0,
+    pointCost: gate.pointCost,
   };
 }

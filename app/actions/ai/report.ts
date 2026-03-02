@@ -33,16 +33,10 @@ export async function generateReadingReport(
     // 1.5. AI 리포트 사용 한도 체크
     const access = await checkFeatureAccess("ai_report", user);
     if (!access.allowed) {
-      if (access.limit === 0) {
-        return {
-          success: false,
-          error: "AI 리포트는 독서가 이상 구독에서 사용할 수 있습니다.",
-        };
-      }
-      return {
-        success: false,
-        error: `이번 달 AI 리포트 한도(${access.limit}회)에 도달했습니다. 구독을 업그레이드하면 더 많은 리포트를 생성할 수 있습니다.`,
-      };
+      const msg = access.canUseWithPoints
+        ? `이번 달 AI 리포트 한도(${access.limit}회)에 도달했습니다. ${access.pointCost}P로 추가 사용할 수 있습니다.`
+        : `이번 달 AI 리포트 한도(${access.limit}회)에 도달했습니다.`;
+      return { success: false, error: msg };
     }
 
     // 2. 책 정보 조회

@@ -41,11 +41,11 @@ export async function createNote(data: CreateNoteInput, user?: User | null) {
     currentUser = fetchedUser;
   }
 
-  // 노트 생성 한도 체크 (월 30개 무료)
+  // 노트 생성 한도 체크
   const access = await checkFeatureAccess("notes_create", currentUser);
   if (!access.allowed) {
     throw new Error(
-      `이번 달 기록 한도(${access.limit}개)에 도달했습니다. 구독을 업그레이드하면 무제한으로 기록할 수 있습니다.`
+      `이번 달 기록 한도(${access.limit}개)에 도달했습니다.`
     );
   }
 

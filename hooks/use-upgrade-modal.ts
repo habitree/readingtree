@@ -29,11 +29,10 @@ export const useUpgradeModal = create<UpgradeModalState>((set) => ({
     set({ open: false, feature: "", message: "" }),
 }));
 
-/** 에러 메시지가 구독 한도 관련인지 판별 */
+/** 에러 메시지가 기능 한도 관련인지 판별 */
 export function isUpgradeLimitError(message: string): boolean {
   return (
     message.includes("한도") ||
-    message.includes("구독을 업그레이드") ||
-    message.includes("이상 구독에서")
+    message.includes("포인트로 추가")
   );
 }

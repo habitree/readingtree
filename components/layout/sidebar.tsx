@@ -13,6 +13,7 @@ import {
   Bot,
   Sparkles,
   StickyNote,
+  Coins,
   ChevronDown,
   type LucideIcon,
 } from "lucide-react";
@@ -58,6 +59,7 @@ export function Sidebar() {
     { icon: Users, label: t("nav.groups"), href: "/groups" },
     { icon: Sparkles, label: t("persona.pageTitle"), href: "/stats" },
     { icon: Bot, label: t("nav.aiChat"), href: "/chat" },
+    { icon: Coins, label: "포인트", href: "/pricing" },
     { icon: Trees, label: t("nav.admin"), href: "/admin", adminOnly: true },
   ];
   const [isMoreOpen, setIsMoreOpen] = useState(false);

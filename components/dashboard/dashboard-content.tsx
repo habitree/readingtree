@@ -62,7 +62,7 @@ export default async function DashboardContent() {
             <AuthenticatedQuickActions />
           </Suspense>
 
-          {/* 구독 플랜 배너 */}
+          {/* 포인트 안내 배너 */}
           <PricingBanner />
         </div>
 

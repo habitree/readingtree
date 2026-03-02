@@ -153,11 +153,11 @@ export async function createBookshelf(
 
   console.log("[createBookshelf] 사용자 확인:", { userId: user.id, email: user.email });
 
-  // 서재 생성 한도 체크 (구독 티어별)
+  // 서재 생성 한도 체크
   const access = await checkFeatureAccess("bookshelf_create", user);
   if (!access.allowed) {
     throw new Error(
-      `서재 한도(${access.limit}개)에 도달했습니다. 구독을 업그레이드하면 무제한으로 서재를 만들 수 있습니다.`
+      `서재 한도(${access.limit}개)에 도달했습니다.`
     );
   }
 
