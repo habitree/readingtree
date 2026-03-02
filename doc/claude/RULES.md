@@ -578,7 +578,7 @@ query = query.eq("book_id", READTREE_BOOK_ID).neq("type", "progress");
 | 11 | **Data** | `data-agent.md` | ❌ | DB 스키마, RLS, 마이그레이션, 타입 |
 | 12 | **Deploy** | `deploy-agent.md` | ❌ | Vercel 배포, 환경변수, 빌드 |
 | 13 | **Test** | `test-agent.md` | ❌ | Vitest, 코드 리뷰, 커버리지 |
-| 14 | **Legal** | `legal-agent.md` | ❌ | 개인정보보호, AI규제, 전자상거래, 저작권, 접근성 |
+| 14 | **Legal** | `legal-agent.md` | ❌ | 개인정보보호, AI규제, 전자상거래, 저작권, 접근성, 전자금융거래, 미성년자보호, 부가세 |
 
 ### 17.3 컨텍스트 로딩 전략
 
