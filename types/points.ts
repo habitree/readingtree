@@ -35,6 +35,7 @@ export type PointActionType =
   // 특별 보상
   | "first_book"
   | "first_note"
+  | "profile_complete"
   // 소비
   | "ai_chat_spend"
   | "ocr_spend"
@@ -245,7 +246,8 @@ export const POINT_ACTION_DEFAULTS: Record<PointActionType, { base_points: numbe
 
   // 특별 보상 (첫 경험 강화)
   first_book: { base_points: 35, description: "첫 번째 책 등록", category: "special" },
-  first_note: { base_points: 25, description: "첫 번째 노트 작성", category: "special" },
+  first_note: { base_points: 50, description: "첫 번째 노트 작성", category: "special" },
+  profile_complete: { base_points: 50, description: "프로필 완성 보너스", category: "special" },
 
   // AI / OCR 소비
   ai_chat_spend: { base_points: 0, description: "AI 채팅 포인트 소비", category: "system" },
@@ -253,7 +255,7 @@ export const POINT_ACTION_DEFAULTS: Record<PointActionType, { base_points: numbe
   ai_report_spend: { base_points: 0, description: "AI 리포트 포인트 소비", category: "system" },
   point_refund: { base_points: 0, description: "포인트 환불", category: "system" },
   // 웰컴
-  welcome_bonus: { base_points: 300, description: "가입 축하 보너스", category: "special" },
+  welcome_bonus: { base_points: 200, description: "가입 축하 보너스", category: "special" },
 
   // 시스템
   admin_adjust: { base_points: 0, description: "관리자 조정", category: "system" },

@@ -4,6 +4,7 @@ import type { NextRequest } from "next/server";
 import { revalidatePath } from "next/cache";
 import { getAppUrl } from "@/lib/utils/url";
 import { copySocialAvatarToStorage } from "@/lib/supabase/copy-social-avatar";
+import { grantWelcomeBonus } from "@/app/actions/points";
 
 /**
  * OAuth 및 이메일 인증 콜백 처리
@@ -190,6 +191,9 @@ export async function GET(request: NextRequest) {
       const baseUrl = getAppUrl();
       return NextResponse.redirect(new URL("/onboarding/goal", baseUrl));
     }
+
+    // 온보딩 완료 시 웰컴 보너스 지급 (첫 가입 시 200P, 이미 지급된 경우 무시)
+    await grantWelcomeBonus(user);
 
     // 온보딩 완료 시 메인으로 리다이렉트 (캐시 무효화 후)
     // getAppUrl()을 사용하여 올바른 프로덕션 URL로 리다이렉트

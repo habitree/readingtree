@@ -258,7 +258,7 @@ export async function earnPoints(
           type: "first_time",
           title: "First Note!",
           description: "You wrote your first note",
-          points_bonus: 25,
+          points_bonus: 50,
           icon: "Pencil",
         });
       }
@@ -980,9 +980,10 @@ export async function refundPoints(
 }
 
 /**
- * 웰컴 보너스 지급 (신규 가입 시 300P)
+ * 웰컴 보너스 지급 (신규 가입 시 200P)
  *
  * 가입 직후 1회만 지급. 이미 지급된 경우 무시.
+ * 나머지 100P는 온보딩 미션(프로필 완성 50P + 첫 노트 50P)으로 분할 지급.
  */
 export async function grantWelcomeBonus(
   user?: User | null
@@ -1012,6 +1013,6 @@ export async function grantWelcomeBonus(
 
   return earnPoints("welcome_bonus", {
     user: currentUser,
-    description: "가입 축하 보너스 300P",
+    description: "가입 축하 보너스 200P",
   });
 }

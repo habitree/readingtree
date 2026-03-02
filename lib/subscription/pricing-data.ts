@@ -7,6 +7,7 @@ export interface PointPackageInfo {
   displayName: string;
   points: number;
   bonusPoints: number;
+  firstPurchaseBonusPoints: number;
   price: number;
   highlighted: boolean;
 }
@@ -19,9 +20,9 @@ export interface FeatureInfoRow {
 }
 
 export const POINT_PACKAGES: PointPackageInfo[] = [
-  { id: "light", displayName: "라이트", points: 500, bonusPoints: 0, price: 1900, highlighted: false },
-  { id: "standard", displayName: "스탠다드", points: 1200, bonusPoints: 200, price: 3900, highlighted: true },
-  { id: "premium", displayName: "프리미엄", points: 3000, bonusPoints: 500, price: 6900, highlighted: false },
+  { id: "light", displayName: "라이트", points: 500, bonusPoints: 0, firstPurchaseBonusPoints: 500, price: 1900, highlighted: false },
+  { id: "standard", displayName: "스탠다드", points: 1200, bonusPoints: 200, firstPurchaseBonusPoints: 1200, price: 3900, highlighted: true },
+  { id: "premium", displayName: "프리미엄", points: 3000, bonusPoints: 800, firstPurchaseBonusPoints: 3000, price: 6900, highlighted: false },
 ];
 
 export const FEATURE_INFO_ROWS: FeatureInfoRow[] = [

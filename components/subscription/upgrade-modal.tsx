@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Coins, ArrowRight } from "lucide-react";
+import { Coins, ArrowRight, Sparkles, Lightbulb, Gift, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -20,16 +20,17 @@ import {
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { useUpgradeModal } from "@/hooks/use-upgrade-modal";
 
-const POINT_COSTS = [
-  { label: "AI 채팅", cost: "100P" },
-  { label: "OCR 필사", cost: "80P" },
-  { label: "AI 리포트", cost: "150P" },
+/** 포인트로 가능한 사용 횟수 예시 */
+const POINT_VALUE_EXAMPLES = [
+  { label: "AI 채팅", uses: "5회", points: "500P", icon: "chat" },
+  { label: "OCR 필사", uses: "6회", points: "480P", icon: "ocr" },
+  { label: "AI 리포트", uses: "3회", points: "450P", icon: "report" },
 ];
 
 /**
- * 기능 한도 도달 모달
+ * Gain-framing 업그레이드 모달
  * 모바일: 바텀시트 / 데스크톱: Dialog
- * 한도 도달 시 전역 zustand store에서 트리거
+ * 심리학적 Gain-framing으로 전환율 극대화
  */
 export function UpgradeModal() {
   const router = useRouter();
@@ -41,25 +42,48 @@ export function UpgradeModal() {
     router.push("/pricing");
   };
 
+  const handleGoToMissions = () => {
+    closeUpgradeModal();
+    router.push("/dashboard");
+  };
+
   const content = (
     <div className="space-y-5">
-      {/* 한도 도달 메시지 */}
-      <div className="rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 p-4">
-        <p className="text-sm text-amber-800 dark:text-amber-200">{message}</p>
+      {/* 한도 도달 메시지 (간결) */}
+      <div className="rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 p-4">
+        <p className="text-sm text-blue-800 dark:text-blue-200">{message}</p>
       </div>
 
-      {/* 포인트 비용 안내 */}
-      <div className="rounded-lg border p-4 space-y-2">
-        <p className="text-xs font-medium text-muted-foreground mb-2">
-          포인트로 추가 사용 가능
-        </p>
-        <div className="grid grid-cols-3 gap-2 text-center">
-          {POINT_COSTS.map((item) => (
-            <div key={item.label} className="space-y-0.5">
+      {/* Gain-framing: 포인트로 할 수 있는 것들 */}
+      <div className="space-y-2">
+        <div className="flex items-center gap-1.5">
+          <Sparkles className="h-4 w-4 text-amber-500" />
+          <p className="text-sm font-medium">포인트로 할 수 있는 것들</p>
+        </div>
+        <div className="grid grid-cols-3 gap-2">
+          {POINT_VALUE_EXAMPLES.map((item) => (
+            <div
+              key={item.label}
+              className="rounded-lg border bg-card p-3 text-center space-y-1"
+            >
               <p className="text-xs text-muted-foreground">{item.label}</p>
-              <p className="text-sm font-semibold">{item.cost}</p>
+              <p className="text-base font-bold text-primary">{item.uses}</p>
+              <p className="text-[10px] text-muted-foreground">{item.points}</p>
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* 첫 충전 2배 보너스 배너 */}
+      <div className="rounded-lg bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 border border-amber-200 dark:border-amber-800 p-3 flex items-center gap-3">
+        <Gift className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0" />
+        <div>
+          <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">
+            첫 충전 시 포인트 2배!
+          </p>
+          <p className="text-xs text-amber-700/80 dark:text-amber-400/80">
+            지금 충전하면 2배의 포인트를 드려요
+          </p>
         </div>
       </div>
 
@@ -71,12 +95,19 @@ export function UpgradeModal() {
           <ArrowRight className="h-4 w-4" />
         </Button>
         <Button
-          variant="ghost"
-          onClick={closeUpgradeModal}
-          className="w-full h-10 text-muted-foreground"
+          variant="outline"
+          onClick={handleGoToMissions}
+          className="w-full h-10 gap-2"
         >
-          닫기
+          <Trophy className="h-4 w-4" />
+          미션으로 포인트 얻기
         </Button>
+        <button
+          onClick={closeUpgradeModal}
+          className="text-sm text-muted-foreground hover:text-foreground transition-colors py-1"
+        >
+          나중에 하기
+        </button>
       </div>
     </div>
   );
@@ -93,11 +124,11 @@ export function UpgradeModal() {
           <div className="mx-auto w-12 h-1.5 rounded-full bg-muted mb-6" />
           <SheetHeader className="mb-4">
             <SheetTitle className="text-center text-lg flex items-center justify-center gap-2">
-              <Coins className="h-5 w-5 text-amber-500" />
-              기능 한도 도달
+              <Lightbulb className="h-5 w-5 text-amber-500" />
+              더 깊은 독서를 이어가세요
             </SheetTitle>
-            <SheetDescription className="text-center">
-              포인트를 사용하세요
+            <SheetDescription className="text-center sr-only">
+              포인트 충전 안내
             </SheetDescription>
           </SheetHeader>
           {content}
@@ -108,14 +139,14 @@ export function UpgradeModal() {
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && closeUpgradeModal()}>
-      <DialogContent className="sm:max-w-[420px]">
+      <DialogContent className="sm:max-w-[440px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Coins className="h-5 w-5 text-amber-500" />
-            기능 한도 도달
+            <Lightbulb className="h-5 w-5 text-amber-500" />
+            더 깊은 독서를 이어가세요
           </DialogTitle>
-          <DialogDescription>
-            포인트를 사용하세요
+          <DialogDescription className="sr-only">
+            포인트 충전 안내
           </DialogDescription>
         </DialogHeader>
         {content}

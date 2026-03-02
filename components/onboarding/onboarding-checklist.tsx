@@ -47,14 +47,14 @@ export const ONBOARDING_CHECKLIST: Omit<OnboardingItem, "completed" | "title" | 
   },
   {
     id: "first_note",
-    reward: 25,
+    reward: 50,
     icon: "note",
     href: "/notes/new",
   },
   {
-    id: "set_goal",
-    reward: 20,
-    icon: "goal",
+    id: "profile_complete",
+    reward: 50,
+    icon: "persona",
     href: "/profile",
   },
 ];
