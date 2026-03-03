@@ -117,10 +117,17 @@ export function generateReportPrompt(
 
   const tags = collectTags(limitedNotes);
 
-  // 진행률 계산
-  const progressStr = book.totalPages && book.currentPage
-    ? `${book.currentPage}/${book.totalPages}쪽 (${Math.round((book.currentPage / book.totalPages) * 100)}%)`
-    : "정보 없음";
+  // 진행률 계산 (완독 시 100% 표시)
+  let progressStr: string;
+  if (book.status === "completed") {
+    progressStr = book.totalPages
+      ? `${book.totalPages}/${book.totalPages}쪽 (100% 완독)`
+      : "100% 완독";
+  } else if (book.totalPages && book.currentPage) {
+    progressStr = `${book.currentPage}/${book.totalPages}쪽 (${Math.round((book.currentPage / book.totalPages) * 100)}%)`;
+  } else {
+    progressStr = "정보 없음";
+  }
 
   const systemPart = customSystemPrompt || "";
 
@@ -170,6 +177,7 @@ ${tags.length > 0 ? `## 사용된 태그\n${tags.join(", ")}` : ""}
 ### 5. 독서 여정
 - 시간순으로 독서 진행 과정 요약
 - 독서 패턴이나 특이사항 언급
+- 완독한 경우 시작일~완독일 기간, 완독 성과를 강조
 
 ### 6. 종합 요약
 - 이 책이 독자에게 준 핵심 가치를 2~3문장으로 정리

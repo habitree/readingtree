@@ -124,12 +124,20 @@ export function ReadingProgress({
 
     setIsInlineSaving(true);
     try {
-      await updateBookProgress(userBookId, pendingPageUpdate);
+      const result = await updateBookProgress(userBookId, pendingPageUpdate);
       setCurrentPage(pendingPageUpdate);
       setInputValue(String(pendingPageUpdate));
       setDragValue(pendingPageUpdate);
       onUpdate?.(pendingPageUpdate);
-      toast.success(t("books.progressUpdatedTo", { page: pendingPageUpdate }));
+
+      if (result.autoCompleted) {
+        toast.success("완독을 축하합니다! 🎉", { duration: 4000 });
+        // 완독 상태 반영을 위해 페이지 새로고침
+        window.location.reload();
+      } else {
+        toast.success(t("books.progressUpdatedTo", { page: pendingPageUpdate }));
+      }
+
       setShowInlineMemo(false);
       setPendingPageUpdate(null);
     } catch (error) {
@@ -146,7 +154,7 @@ export function ReadingProgress({
     setIsInlineSaving(true);
     try {
       // 진행률 업데이트
-      await updateBookProgress(userBookId, pendingPageUpdate);
+      const result = await updateBookProgress(userBookId, pendingPageUpdate);
 
       // 진행 기록 생성 (메모 포함)
       const { createNote } = await import("@/app/actions/notes");
@@ -167,7 +175,14 @@ export function ReadingProgress({
       setDragValue(pendingPageUpdate);
       onUpdate?.(pendingPageUpdate);
       onRecordCreated?.();
-      toast.success(t("books.progressRecordSaved"));
+
+      if (result.autoCompleted) {
+        toast.success("완독을 축하합니다! 🎉", { duration: 4000 });
+        window.location.reload();
+      } else {
+        toast.success(t("books.progressRecordSaved"));
+      }
+
       setShowInlineMemo(false);
       setPendingPageUpdate(null);
       setInlineMemo("");
@@ -196,12 +211,18 @@ export function ReadingProgress({
 
     startTransition(async () => {
       try {
-        await updateBookProgress(userBookId, newPage);
+        const result = await updateBookProgress(userBookId, newPage);
         setCurrentPage(newPage);
         setDragValue(newPage);
         setIsEditing(false);
         onUpdate?.(newPage);
-        toast.success(t("books.progressUpdatedSuccess"));
+
+        if (result.autoCompleted) {
+          toast.success("완독을 축하합니다! 🎉", { duration: 4000 });
+          window.location.reload();
+        } else {
+          toast.success(t("books.progressUpdatedSuccess"));
+        }
       } catch (error) {
         toast.error(t("books.progressUpdateFailed"));
       }

@@ -101,8 +101,13 @@ export const ContinueReadingCard = memo(function ContinueReadingCard({
     setLocalProgress(newProgress);
 
     try {
-      await updateBookProgress(userBookId, page);
-      toast.success(t("dashboard.updatePageSuccess"));
+      const result = await updateBookProgress(userBookId, page);
+      if (result.autoCompleted) {
+        toast.success("완독을 축하합니다! 🎉", { duration: 4000 });
+        window.location.reload();
+      } else {
+        toast.success(t("dashboard.updatePageSuccess"));
+      }
     } catch {
       // 롤백
       setLocalPage(currentPage);
