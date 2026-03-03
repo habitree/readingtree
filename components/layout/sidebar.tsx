@@ -14,6 +14,7 @@ import {
   Sparkles,
   StickyNote,
   Coins,
+  Lightbulb,
   ChevronDown,
   type LucideIcon,
 } from "lucide-react";
@@ -60,6 +61,7 @@ export function Sidebar() {
     { icon: Sparkles, label: t("persona.pageTitle"), href: "/stats" },
     { icon: Bot, label: t("nav.aiChat"), href: "/chat" },
     { icon: Coins, label: "포인트", href: "/pricing" },
+    { icon: Lightbulb, label: t("nav.featureRequests"), href: "/feature-requests" },
     { icon: Trees, label: t("nav.admin"), href: "/admin", adminOnly: true },
   ];
   const [isMoreOpen, setIsMoreOpen] = useState(false);

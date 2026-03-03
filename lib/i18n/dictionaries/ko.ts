@@ -120,6 +120,7 @@ export const ko = {
     writeNoteLoginDesc: "로그인 후 독서 기록을 남길 수 있어요.",
     stats: "통계",
     freeNotes: "자유 기록",
+    featureRequests: "기능 요청",
   },
 
   auth: {

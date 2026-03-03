@@ -7,6 +7,7 @@ import {
   Search,
   Users,
   Bot,
+  Lightbulb,
   Sparkles,
   Trees,
   Moon,
@@ -180,6 +181,21 @@ export function MobileMenuSheet({ open, onOpenChange }: MobileMenuSheetProps) {
               >
                 <Bot className="h-5 w-5" />
                 <span>{t("nav.aiChat")}</span>
+              </Button>
+            </Link>
+          </SheetClose>
+
+          <SheetClose asChild>
+            <Link href="/feature-requests" onClick={handleMenuClick}>
+              <Button
+                variant={pathname.startsWith("/feature-requests") ? "secondary" : "ghost"}
+                className={cn(
+                  "w-full justify-start gap-3 h-12",
+                  pathname.startsWith("/feature-requests") && "bg-secondary font-medium"
+                )}
+              >
+                <Lightbulb className="h-5 w-5" />
+                <span>{t("nav.featureRequests")}</span>
               </Button>
             </Link>
           </SheetClose>

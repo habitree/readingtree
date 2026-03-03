@@ -120,6 +120,7 @@ export const en: Dictionary = {
     writeNote: "Note",
     stats: "Stats",
     freeNotes: "Free Notes",
+    featureRequests: "Feature Requests",
     writeNoteLoginTitle: "To write notes",
     writeNoteLoginDesc: "Log in to write reading notes.",
   },
