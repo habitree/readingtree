@@ -62,8 +62,10 @@ export default async function DashboardContent() {
             <AuthenticatedQuickActions />
           </Suspense>
 
-          {/* 포인트 안내 배너 */}
-          <PricingBanner />
+          {/* 포인트 안내 배너 (데스크톱: 좌측 컬럼에 표시) */}
+          <div className="hidden lg:block">
+            <PricingBanner />
+          </div>
         </div>
 
         {/* 우측 컬럼: Tertiary Zone */}
@@ -72,6 +74,11 @@ export default async function DashboardContent() {
             <TertiaryZoneWrapper />
           </Suspense>
         </div>
+      </div>
+
+      {/* 포인트 안내 배너 (모바일: 전체 레이아웃 최하단) */}
+      <div className="mt-4 lg:hidden">
+        <PricingBanner />
       </div>
     </>
   );

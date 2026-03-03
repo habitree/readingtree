@@ -17,6 +17,7 @@ const MonthlyBookCalendar = dynamic(
 );
 import { getMonthlyBookActivities } from "@/app/actions/stats";
 import { getSampleMonthlyActivities } from "@/app/actions/sample";
+import { generateDemoMonthlyActivities } from "@/lib/demo-calendar-data";
 import type { DailyBookActivity } from "@/app/actions/stats";
 import type { UserPersona, ReadingStats } from "@/types/persona";
 
@@ -107,9 +108,16 @@ export function TertiaryZoneClient({
     // 없으면 서버에서 조회
     setIsLoading(true);
     try {
-      const newActivities = isGuest
-        ? await getSampleMonthlyActivities(newYear, newMonth)
-        : await getMonthlyBookActivities(null, newYear, newMonth);
+      let newActivities: Record<string, DailyBookActivity>;
+      if (isGuest) {
+        const sampleData = await getSampleMonthlyActivities(newYear, newMonth);
+        // 샘플 데이터가 없으면 데모 데이터로 대체
+        newActivities = Object.keys(sampleData || {}).length > 0
+          ? sampleData
+          : generateDemoMonthlyActivities(newYear, newMonth);
+      } else {
+        newActivities = await getMonthlyBookActivities(null, newYear, newMonth);
+      }
       setCachedData(prev => ({
         ...prev,
         [cacheKey]: newActivities,
@@ -118,7 +126,14 @@ export function TertiaryZoneClient({
       setYear(newYear);
       setMonth(newMonth);
     } catch (error) {
-      console.error("월별 활동 조회 오류:", error);
+      if (isGuest) {
+        // 에러 시에도 게스트는 데모 데이터 표시
+        const demoData = generateDemoMonthlyActivities(newYear, newMonth);
+        setCachedData(prev => ({ ...prev, [cacheKey]: demoData }));
+        setActivities(demoData);
+        setYear(newYear);
+        setMonth(newMonth);
+      }
     } finally {
       setIsLoading(false);
     }
