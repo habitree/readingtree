@@ -1,6 +1,6 @@
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { getAppUrl } from "@/lib/utils/url";
 import { parseNoteContentFields } from "@/lib/utils/note";
 import { isValidUUID } from "@/lib/utils/validation";
@@ -28,7 +28,7 @@ export async function generateMetadata({
     return { title: "기록을 찾을 수 없습니다" };
   }
 
-  const supabase = await createServerSupabaseClient();
+  const supabase = createAdminSupabaseClient();
   const { data: note } = await supabase
     .from("notes")
     .select(`*, books (id, title, author, cover_image_url), transcriptions (extracted_text, raw_extracted_text, status)`)
@@ -105,7 +105,7 @@ export default async function ShareNotePage({
     notFound();
   }
 
-  const supabase = await createServerSupabaseClient();
+  const supabase = createAdminSupabaseClient();
   const { data: note, error } = await supabase
     .from("notes")
     .select(`*, books (id, title, author, cover_image_url), transcriptions (extracted_text, raw_extracted_text, status)`)

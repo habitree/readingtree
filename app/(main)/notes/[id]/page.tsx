@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { Metadata, Viewport } from "next";
 import { getNoteDetail } from "@/app/actions/notes";
 import { getCachedCurrentUser } from "@/lib/cached";
@@ -42,10 +42,10 @@ export default async function NoteDetailPage({ params }: NoteDetailPageProps) {
   let note;
   try {
     if (isGuest) {
-      // 게스트: 샘플 사용자의 노트만 조회 가능
+      // 게스트: 샘플 노트 조회 시도, 없으면 공유 페이지로 리다이렉트
       const sampleNote = await getSampleNoteDetail(noteId);
       if (!sampleNote) {
-        notFound();
+        redirect(`/share/notes/${noteId}`);
       }
       note = sampleNote;
     } else {

@@ -468,7 +468,7 @@ function buildNoteSection(noteSummaries: NoteSummary[], baseUrl: string): string
         const page = note.pageNumber
           ? ` <span style="color:${COLOR_META};font-size:13px;">(p.${note.pageNumber})</span>`
           : "";
-        const noteUrl = `${baseUrl}/notes/${note.id}`;
+        const noteUrl = `${baseUrl}/share/notes/${note.id}`;
         const isLast = groupIdx === entries.length - 1 && i === notes.length - 1;
 
         // 타입 뱃지
@@ -666,7 +666,7 @@ export function buildBlogPlainText(options: BuildBlogHtmlOptions): string {
         for (const note of notes) {
           const title = note.title || `${label} 기록`;
           const page = note.pageNumber ? ` (p.${note.pageNumber})` : "";
-          const link = isLinkable && baseUrl ? ` → ${baseUrl}/notes/${note.id}` : "";
+          const link = isLinkable && baseUrl ? ` → ${baseUrl}/share/notes/${note.id}` : "";
           lines.push(`- [${label}] ${title}${page}${link}`);
         }
       }
