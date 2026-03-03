@@ -521,6 +521,9 @@ export const ko = {
     aiReportCopyLink: "링크 복사",
     aiReportLinkCopied: "링크가 복사되었습니다",
     aiReportIncludeNotes: "기록도 함께 공유",
+    blogCopy: "블로그용 복사",
+    blogCopied: "블로그용으로 복사됨",
+    blogCopyToast: "블로그 에디터에서 Ctrl+V(⌘+V)로 붙여넣기 하세요",
     // book-search errors
     searchRetryDesc: "잠시 후 다시 시도해주세요.",
     networkErrorMsg: "인터넷 연결을 확인하고 다시 시도해주세요.",

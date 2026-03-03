@@ -455,6 +455,8 @@ export function ReadingReportContent({
                     bookInfo={bookInfo}
                     noteCount={result.noteCount ?? noteCount}
                     noteIds={noteSummaries?.map((n) => n.id) || []}
+                    noteSummaries={noteSummaries}
+                    generatedAt={result.generatedAt}
                     initialShareId={savedShareId}
                     onSaved={(id) => setSavedShareId(id)}
                   />

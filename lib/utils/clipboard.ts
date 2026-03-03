@@ -44,6 +44,72 @@ export async function copyImageToClipboard(
 /**
  * 모바일에서 클립보드 복사 지원 여부 확인
  */
+/**
+ * HTML 리치 텍스트를 클립보드에 복사 (text/html + text/plain)
+ * 네이버 블로그 에디터에서 서식 유지 붙여넣기 지원
+ */
+export async function copyHtmlToClipboard(
+  html: string,
+  plainText: string
+): Promise<boolean> {
+  // 1차: Clipboard API write (text/html + text/plain)
+  if (
+    typeof navigator !== "undefined" &&
+    "clipboard" in navigator &&
+    "write" in navigator.clipboard &&
+    typeof ClipboardItem !== "undefined"
+  ) {
+    try {
+      const htmlBlob = new Blob([html], { type: "text/html" });
+      const textBlob = new Blob([plainText], { type: "text/plain" });
+      const item = new ClipboardItem({
+        "text/html": htmlBlob,
+        "text/plain": textBlob,
+      });
+      await navigator.clipboard.write([item]);
+      return true;
+    } catch {
+      // fallback으로 진행
+    }
+  }
+
+  // 2차: contenteditable div + execCommand
+  try {
+    const container = document.createElement("div");
+    container.setAttribute("contenteditable", "true");
+    container.innerHTML = html;
+    container.style.position = "fixed";
+    container.style.left = "-9999px";
+    container.style.opacity = "0";
+    document.body.appendChild(container);
+
+    const range = document.createRange();
+    range.selectNodeContents(container);
+    const selection = window.getSelection();
+    if (selection) {
+      selection.removeAllRanges();
+      selection.addRange(range);
+    }
+
+    const success = document.execCommand("copy");
+    document.body.removeChild(container);
+    if (success) return true;
+  } catch {
+    // fallback으로 진행
+  }
+
+  // 3차: 평문 텍스트 복사
+  try {
+    await navigator.clipboard.writeText(plainText);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * 모바일에서 클립보드 복사 지원 여부 확인
+ */
 export function isMobileClipboardSupported(): boolean {
   if (typeof window === "undefined") return false;
   

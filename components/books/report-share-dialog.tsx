@@ -19,6 +19,7 @@ import {
   Globe,
   Loader2,
   StickyNote,
+  FileText,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "@/lib/i18n";
@@ -27,7 +28,9 @@ import {
   toggleReportPublic,
 } from "@/app/actions/ai/report";
 import { loadKakaoSdk, isKakaoShareAvailable } from "@/lib/kakao/sdk";
-import type { BookInfoForReport } from "@/types/ai/report";
+import { buildBlogHtml, buildBlogPlainText } from "@/lib/utils/blog-html-builder";
+import { copyHtmlToClipboard } from "@/lib/utils/clipboard";
+import type { BookInfoForReport, NoteSummary } from "@/types/ai/report";
 
 interface ReportShareDialogProps {
   userBookId: string;
@@ -35,6 +38,8 @@ interface ReportShareDialogProps {
   bookInfo: BookInfoForReport;
   noteCount: number;
   noteIds: string[];
+  noteSummaries?: NoteSummary[];
+  generatedAt?: string;
   /** 이미 저장된 경우 초기 shareId */
   initialShareId?: string | null;
   onSaved?: (shareId: string) => void;
@@ -46,6 +51,8 @@ export function ReportShareDialog({
   bookInfo,
   noteCount,
   noteIds,
+  noteSummaries,
+  generatedAt,
   initialShareId,
   onSaved,
 }: ReportShareDialogProps) {
@@ -56,6 +63,7 @@ export function ReportShareDialog({
   const [isPublic, setIsPublic] = useState(false);
   const [includeNotes, setIncludeNotes] = useState(true);
   const [linkCopied, setLinkCopied] = useState(false);
+  const [blogCopied, setBlogCopied] = useState(false);
   const [kakaoShared, setKakaoShared] = useState(false);
 
   // 다이얼로그 열릴 때 미저장이면 자동 저장
@@ -139,6 +147,33 @@ export function ReportShareDialog({
       toast.error(t("common.retry"));
     }
   };
+
+  // 블로그용 복사
+  const handleBlogCopy = useCallback(async () => {
+    const html = buildBlogHtml({
+      reportMarkdown,
+      bookInfo,
+      noteCount,
+      noteSummaries,
+      includeNotes,
+      generatedAt,
+    });
+    const plain = buildBlogPlainText({
+      reportMarkdown,
+      bookInfo,
+      noteCount,
+      noteSummaries,
+      includeNotes,
+    });
+    const success = await copyHtmlToClipboard(html, plain);
+    if (success) {
+      setBlogCopied(true);
+      toast.success(t("books.blogCopyToast"));
+      setTimeout(() => setBlogCopied(false), 2000);
+    } else {
+      toast.error(t("common.retry"));
+    }
+  }, [reportMarkdown, bookInfo, noteCount, noteSummaries, includeNotes, generatedAt, t]);
 
   // 카카오 공유
   const showKakao = isKakaoShareAvailable();
@@ -255,6 +290,25 @@ export function ReportShareDialog({
               <>
                 <LinkIcon className="h-4 w-4" />
                 {t("books.aiReportCopyLink")}
+              </>
+            )}
+          </Button>
+
+          {/* 블로그용 복사 */}
+          <Button
+            onClick={handleBlogCopy}
+            variant={blogCopied ? "success" : "outline"}
+            className="w-full gap-2"
+          >
+            {blogCopied ? (
+              <>
+                <Check className="h-4 w-4" />
+                {t("books.blogCopied")}
+              </>
+            ) : (
+              <>
+                <FileText className="h-4 w-4" />
+                {t("books.blogCopy")}
               </>
             )}
           </Button>

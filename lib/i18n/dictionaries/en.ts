@@ -522,6 +522,9 @@ export const en: Dictionary = {
     aiReportCopyLink: "Copy link",
     aiReportLinkCopied: "Link copied",
     aiReportIncludeNotes: "Share notes too",
+    blogCopy: "Copy for Blog",
+    blogCopied: "Copied for blog",
+    blogCopyToast: "Paste with Ctrl+V (⌘+V) in your blog editor",
     // book-search errors
     searchRetryDesc: "Please try again in a moment.",
     networkErrorMsg: "Please check your internet connection and try again.",
