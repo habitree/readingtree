@@ -11,6 +11,7 @@ import { getReportSettingsForGeneration } from "./report-settings";
 import { generateReportPrompt } from "@/lib/ai/prompts/report-prompts";
 import { generateText } from "@/lib/ai/providers";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import type { ReadingReportResult, SavedReport, BookInfoForReport, PublicNoteSummary } from "@/types/ai";
 import { checkFeatureAccess } from "../subscription";
 
@@ -235,7 +236,7 @@ export async function getPublicReport(
   shareId: string
 ): Promise<SavedReport | null> {
   try {
-    const supabase = await createServerSupabaseClient();
+    const supabase = createAdminSupabaseClient();
     const { data, error } = await supabase
       .from("ai_generated_reports")
       .select("*")
@@ -279,7 +280,7 @@ export async function getPublicReportNotes(
   if (!noteIds || noteIds.length === 0) return [];
 
   try {
-    const supabase = await createServerSupabaseClient();
+    const supabase = createAdminSupabaseClient();
     const { data, error } = await supabase
       .from("notes")
       .select("id, type, title, page_number, content, created_at")

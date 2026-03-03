@@ -1,6 +1,7 @@
 "use server";
 
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { getCurrentUser } from "../auth";
 import type {
   ReportReactionType,
@@ -94,7 +95,7 @@ export async function getReportReactionCounts(
   };
 
   try {
-    const supabase = await createServerSupabaseClient();
+    const supabase = createAdminSupabaseClient();
     const { data, error } = await supabase.rpc("get_report_reaction_counts", {
       p_report_id: reportId,
     });
