@@ -150,21 +150,19 @@ export function ReportShareDialog({
 
   // 블로그용 복사
   const handleBlogCopy = useCallback(async () => {
-    const html = buildBlogHtml({
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
+    const blogOptions = {
       reportMarkdown,
       bookInfo,
       noteCount,
       noteSummaries,
       includeNotes,
       generatedAt,
-    });
-    const plain = buildBlogPlainText({
-      reportMarkdown,
-      bookInfo,
-      noteCount,
-      noteSummaries,
-      includeNotes,
-    });
+      baseUrl: origin,
+      shareId,
+    };
+    const html = buildBlogHtml(blogOptions);
+    const plain = buildBlogPlainText(blogOptions);
     const success = await copyHtmlToClipboard(html, plain);
     if (success) {
       setBlogCopied(true);
@@ -173,7 +171,7 @@ export function ReportShareDialog({
     } else {
       toast.error(t("common.retry"));
     }
-  }, [reportMarkdown, bookInfo, noteCount, noteSummaries, includeNotes, generatedAt, t]);
+  }, [reportMarkdown, bookInfo, noteCount, noteSummaries, includeNotes, generatedAt, shareId, t]);
 
   // 카카오 공유
   const showKakao = isKakaoShareAvailable();
