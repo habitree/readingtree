@@ -26,7 +26,6 @@ import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { incrementReportViewCount } from "@/app/actions/ai/report";
 import { ReportReactions } from "@/components/share/report-reactions";
-import { HighlightCardDownload } from "@/components/share/highlight-card-download";
 import { useTranslation } from "@/lib/i18n";
 import type {
   SavedReport,
@@ -171,21 +170,6 @@ export function SharedReportView({
             )}
           </div>
 
-          {/* QW-1: 카드 다운로드 버튼 */}
-          <div className="shrink-0 hidden sm:block">
-            <HighlightCardDownload
-              shareId={report.shareId}
-              bookTitle={report.bookTitle}
-            />
-          </div>
-        </div>
-
-        {/* QW-1: 모바일 카드 다운로드 (히어로 하단) */}
-        <div className="mt-3 sm:hidden">
-          <HighlightCardDownload
-            shareId={report.shareId}
-            bookTitle={report.bookTitle}
-          />
         </div>
       </div>
 
@@ -290,33 +274,63 @@ export function SharedReportView({
               </div>
             </div>
 
-            {/* 기록 목록 */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-              {publicNotes.map((note) => (
-                <Link
-                  key={note.id}
-                  href={`/share/notes/${note.id}`}
-                  className="flex items-center gap-3 p-3 rounded-lg border bg-card/50 hover:bg-accent/50 transition-colors group"
-                >
-                  <span
-                    className={cn(
-                      "text-xs px-2 py-0.5 rounded-full font-medium shrink-0 text-white/90",
-                      NOTE_TYPE_COLORS[note.type] || "bg-stone-400"
-                    )}
-                  >
-                    {NOTE_TYPE_LABELS[note.type] || note.type}
-                  </span>
-                  <span className="text-sm truncate flex-1 group-hover:text-primary transition-colors">
-                    {note.title || `${NOTE_TYPE_LABELS[note.type] || note.type} 기록`}
-                  </span>
-                  {note.pageNumber && (
-                    <span className="text-xs text-muted-foreground shrink-0">
-                      p.{note.pageNumber}
-                    </span>
+            {/* 기록 목록 (독서여정은 건수로 그룹화) */}
+            {(() => {
+              const progressItems = publicNotes.filter((n) => n.type === "progress");
+              const otherItems = publicNotes.filter((n) => n.type !== "progress");
+
+              return (
+                <div className="space-y-2">
+                  {/* 독서여정 그룹 요약 */}
+                  {progressItems.length > 0 && (
+                    <div className="flex items-center gap-3 p-3 rounded-lg border border-sky-200/60 dark:border-sky-800/40 bg-sky-50/50 dark:bg-sky-950/20">
+                      <span className={cn(
+                        "text-xs px-2 py-0.5 rounded-full font-medium shrink-0 text-white/90",
+                        NOTE_TYPE_COLORS.progress
+                      )}>
+                        {NOTE_TYPE_LABELS.progress}
+                      </span>
+                      <span className="text-sm flex-1 font-medium text-sky-700 dark:text-sky-300">
+                        {progressItems.length}건의 진행 기록
+                      </span>
+                      {progressItems[0].pageNumber && progressItems[progressItems.length - 1].pageNumber && (
+                        <span className="text-xs text-muted-foreground shrink-0 tabular-nums">
+                          p.{progressItems[progressItems.length - 1].pageNumber} → p.{progressItems[0].pageNumber}
+                        </span>
+                      )}
+                    </div>
                   )}
-                </Link>
-              ))}
-            </div>
+
+                  {/* 기타 기록 개별 표시 */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                    {otherItems.map((note) => (
+                      <Link
+                        key={note.id}
+                        href={`/share/notes/${note.id}`}
+                        className="flex items-center gap-3 p-3 rounded-lg border bg-card/50 hover:bg-accent/50 transition-colors group"
+                      >
+                        <span
+                          className={cn(
+                            "text-xs px-2 py-0.5 rounded-full font-medium shrink-0 text-white/90",
+                            NOTE_TYPE_COLORS[note.type] || "bg-stone-400"
+                          )}
+                        >
+                          {NOTE_TYPE_LABELS[note.type] || note.type}
+                        </span>
+                        <span className="text-sm truncate flex-1 group-hover:text-primary transition-colors">
+                          {note.title || `${NOTE_TYPE_LABELS[note.type] || note.type} 기록`}
+                        </span>
+                        {note.pageNumber && (
+                          <span className="text-xs text-muted-foreground shrink-0">
+                            p.{note.pageNumber}
+                          </span>
+                        )}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         );
       })()}

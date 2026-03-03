@@ -27,7 +27,6 @@ import {
   toggleReportPublic,
 } from "@/app/actions/ai/report";
 import { loadKakaoSdk, isKakaoShareAvailable } from "@/lib/kakao/sdk";
-import { HighlightCardDownload } from "@/components/share/highlight-card-download";
 import type { BookInfoForReport } from "@/types/ai/report";
 
 interface ReportShareDialogProps {
@@ -291,17 +290,6 @@ export function ReportShareDialog({
                 </>
               )}
             </Button>
-          )}
-
-          {/* 카드 다운로드 */}
-          {isPublic && shareId && (
-            <div className="pt-1">
-              <p className="text-xs text-muted-foreground mb-2">인스타그램 공유용 이미지 카드</p>
-              <HighlightCardDownload
-                shareId={shareId}
-                bookTitle={bookInfo.title}
-              />
-            </div>
           )}
 
           {/* 비공개 안내 */}
