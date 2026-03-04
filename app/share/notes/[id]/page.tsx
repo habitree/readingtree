@@ -40,31 +40,61 @@ export async function generateMetadata({
     return { title: "기록을 찾을 수 없습니다" };
   }
 
-  const book = note.books as any;
+  const book = note.books as unknown as { id: string; title: string; author: string | null; cover_image_url: string | null } | null;
   const bookTitle = book?.title || "제목 없음";
+  // 카카오톡 제목 최적화: 부제(괄호) 제거하여 간결하게
+  const cleanTitle = bookTitle.replace(/\s*\(.*?\)\s*$/, "").trim() || bookTitle;
   const { quote, memo } = parseNoteContentFields(note.content);
 
   // 필사(transcription) 타입일 때 OCR 보정 텍스트 사용 (JOIN으로 이미 조회됨)
-  const transcription = (note as any).transcriptions;
+  const transcription = (note as Record<string, unknown>).transcriptions as { extracted_text?: string } | null;
   const transcriptionText = (note.type === "transcription" && transcription?.extracted_text)
     ? transcription.extracted_text
     : null;
 
+  // 사용자 이름 조회 (OG 제목에 소셜 프루프 추가)
+  let userName: string | null = null;
+  if (note.user_id) {
+    const user = await getUserById(note.user_id);
+    userName = user?.name || null;
+  }
+
   const baseUrl = getAppUrl();
   const shareUrl = `${baseUrl}/share/notes/${note.id}`;
 
-  // OG 설명 구성 (필사 타입이면 OCR 텍스트, 그 외에는 인상깊은 구절 우선, 없으면 생각)
-  let description = transcriptionText || quote || memo || "기록 내용을 확인해보세요.";
-  if (description.length > 100) description = description.substring(0, 97) + "...";
+  // OG 설명 구성: 날짜/제목 접두어 제거 → 핵심 문장만 인용 형태로
+  let rawDesc = transcriptionText || quote || memo || "";
+  // 날짜 접두어 제거 (예: "25.10.15", "2025-10-15")
+  rawDesc = rawDesc.replace(/^\d{2,4}[.\-/]\d{1,2}[.\-/]\d{1,2}\s*/, "");
+  // 본문 앞에 반복된 책 제목 제거
+  if (book?.title) {
+    const escaped = book.title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    rawDesc = rawDesc.replace(new RegExp(`^${escaped}\\s*`), "");
+  }
+  rawDesc = rawDesc.trim();
+
+  let description: string;
+  if (rawDesc) {
+    const truncated = rawDesc.length > 75 ? rawDesc.substring(0, 72) + "..." : rawDesc;
+    description = `"${truncated}"`;
+  } else {
+    description = `${cleanTitle}에 대한 독서 기록을 확인해보세요.`;
+  }
+
+  // OG 제목: 사용자명으로 소셜 프루프 + 간결한 책 제목
+  const ogTitle = userName
+    ? `${userName}님이 ${cleanTitle}에서 발견한 문장`
+    : `${cleanTitle} - 독서 기록`;
+  const pageTitle = `${cleanTitle} - 독서 기록 | ReadTree`;
 
   // OG 이미지: 해당 링크 페이지 화면과 동일한 레이아웃의 동적 이미지 사용
   const ogImageUrl = `${baseUrl}/share/notes/${note.id}/opengraph-image`;
 
   return {
-    title: `${bookTitle} - 독서 기록`,
+    title: pageTitle,
     description: description,
     openGraph: {
-      title: `${bookTitle} - 독서 기록`,
+      title: ogTitle,
       description: description,
       type: "article",
       url: shareUrl,
@@ -73,7 +103,7 @@ export async function generateMetadata({
           url: ogImageUrl,
           width: 1200,
           height: 630,
-          alt: `${bookTitle} - ${book?.author || ""}`.trim() || "독서 기록",
+          alt: `${cleanTitle} - ${book?.author || ""}`.trim() || "독서 기록",
         },
       ],
       siteName: "ReadTree",
@@ -81,7 +111,7 @@ export async function generateMetadata({
     },
     twitter: {
       card: "summary_large_image",
-      title: `${bookTitle} - 독서 기록`,
+      title: ogTitle,
       description: description,
       images: [ogImageUrl],
     },
@@ -159,6 +189,7 @@ export default async function ShareNotePage({
             isPublicView={true}
             className="relative z-10"
             user={user}
+            rawTranscriptionText={transcriptions?.raw_extracted_text}
           />
         </div>
 
