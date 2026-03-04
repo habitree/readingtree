@@ -63,6 +63,7 @@ interface ShareNoteCardProps {
         avatar_url: string | null;
     } | null; // 사용자 정보
     relatedBooks?: RelatedBookInfo[]; // 연결된 책 정보
+    rawTranscriptionText?: string | null; // 필사 원본 OCR 텍스트 (보정 전)
 }
 
 /**
@@ -117,13 +118,20 @@ function ExpandableText({
  */
 function CollapsibleAiSection({
     text,
+    rawText,
     hideActions = false
 }: {
     text: string;
+    rawText?: string | null;
     hideActions?: boolean;
 }) {
     const { t } = useTranslation();
     const [isOpen, setIsOpen] = useState(false);
+    const [showRaw, setShowRaw] = useState(false);
+
+    // 원본과 보정본이 같으면 토글 불필요
+    const hasRawText = !!rawText && rawText !== text;
+    const displayText = showRaw && rawText ? rawText : text;
 
     // PC에서는 더 긴 미리보기, 모바일은 짧게
     const getPreviewText = () => {
@@ -180,13 +188,39 @@ function CollapsibleAiSection({
             {/* 펼쳐진 콘텐츠 영역 - 전체 너비 활용 */}
             <div className={cn(
                 "overflow-hidden transition-all duration-300 ease-in-out",
-                isOpen || hideActions ? "max-h-[1000px] opacity-100 mt-4" : "max-h-0 opacity-0 mt-0"
+                isOpen || hideActions ? "max-h-[2000px] opacity-100 mt-4" : "max-h-0 opacity-0 mt-0"
             )}>
+                {/* 보정/원문 토글 + 안내 라벨 */}
+                {(isOpen || hideActions) && hasRawText && (
+                    <div className="flex items-center justify-between mb-3">
+                        <span className="text-xs font-semibold text-forest-600 dark:text-forest-400 flex items-center gap-1.5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-forest-500" />
+                            {showRaw ? t("notes.extractedRawText") : t("notes.aiCorrectedText")}
+                        </span>
+                        <Button
+                            variant={showRaw ? "default" : "outline"}
+                            size="sm"
+                            onClick={(e) => { e.stopPropagation(); setShowRaw(!showRaw); }}
+                            className="h-7 px-2.5 text-xs gap-1.5"
+                        >
+                            <FileTextIcon className="w-3.5 h-3.5" />
+                            {showRaw ? t("notes.aiCorrectedBtn") : t("notes.rawExtractedBtn")}
+                        </Button>
+                    </div>
+                )}
+
                 <div className="bg-white dark:bg-slate-900 rounded-xl p-4 md:p-6 border border-slate-200 dark:border-slate-700 shadow-sm">
                     <p className="text-[13px] md:text-sm lg:text-base leading-relaxed md:leading-loose text-slate-700 dark:text-slate-300 whitespace-pre-wrap">
-                        {text}
+                        {displayText}
                     </p>
                 </div>
+
+                {/* 안내 문구 */}
+                {hasRawText && (
+                    <p className="mt-2 text-xs text-slate-400 dark:text-slate-500 text-right">
+                        {showRaw ? t("notes.rawTextNote") : t("notes.correctedTextNote")}
+                    </p>
+                )}
             </div>
         </div>
     );
@@ -221,7 +255,7 @@ const formatDateTime = (dateStr: string) => {
  * - [v4.0] 모든 케이스(이미지 유/무)에 대해 '좌우 분할' 단일 레이아웃 적용
  * - 표준 너비: max-w-[960px]
  */
-export function ShareNoteCard({ note, className, isPublicView = false, hideActions = false, showTimestamp = true, fixedHorizontal = false, includeBranding = true, user, relatedBooks }: ShareNoteCardProps) {
+export function ShareNoteCard({ note, className, isPublicView = false, hideActions = false, showTimestamp = true, fixedHorizontal = false, includeBranding = true, user, relatedBooks, rawTranscriptionText }: ShareNoteCardProps) {
     const { t } = useTranslation();
     const [imgError, setImgError] = useState(false);
     const handleImgError = useCallback(() => setImgError(true), []);
@@ -671,6 +705,7 @@ export function ShareNoteCard({ note, className, isPublicView = false, hideActio
                     <div className="border-t border-slate-100 dark:border-slate-800">
                         <CollapsibleAiSection
                             text={aiAnalysisText!}
+                            rawText={rawTranscriptionText}
                             hideActions={hideActions}
                         />
                     </div>

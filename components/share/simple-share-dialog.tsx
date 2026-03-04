@@ -659,7 +659,7 @@ export function SimpleShareDialog({ note }: SimpleShareDialogProps) {
             <div className="mb-6 group bg-slate-50 dark:bg-slate-900/50 p-4 sm:p-6 rounded-[2rem] border border-slate-100 dark:border-slate-800">
               {/* 중복 UI 제거하고 ShareNoteCard 재사용 (표준 규격 적용) - 화면 표시용 (반응형) */}
               <div ref={cardRef} className="rounded-3xl overflow-hidden shadow-2xl ring-1 ring-slate-200 dark:ring-slate-800 bg-white">
-                <ShareNoteCard note={note} hideActions={isCapturing} showTimestamp={false} user={user} relatedBooks={relatedBooks} includeBranding={includeBranding} />
+                <ShareNoteCard note={note} hideActions={isCapturing} showTimestamp={false} user={user} relatedBooks={relatedBooks} includeBranding={includeBranding} rawTranscriptionText={note.transcription?.raw_extracted_text} />
               </div>
             </div>
 
@@ -691,7 +691,7 @@ export function SimpleShareDialog({ note }: SimpleShareDialogProps) {
                 }}
               >
                 {/* fixedHorizontal=true로 가로 강제, hideActions=true로 버튼 숨김 */}
-                <ShareNoteCard note={note} hideActions={true} showTimestamp={false} user={user} fixedHorizontal={true} relatedBooks={relatedBooks} includeBranding={includeBranding} />
+                <ShareNoteCard note={note} hideActions={true} showTimestamp={false} user={user} fixedHorizontal={true} relatedBooks={relatedBooks} includeBranding={includeBranding} rawTranscriptionText={note.transcription?.raw_extracted_text} />
               </div>
             </div>
 

@@ -11,7 +11,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import type { NoteWithBook } from "@/types/note";
 import { getUserById } from "@/app/actions/profile";
 import { RelatedBooksDisplay } from "@/components/notes/related-books-manager";
-import { OcrTextViewer } from "@/components/notes/ocr-text-viewer";
 import { getUserBooks } from "@/app/actions/books";
 import type { RelatedBookInfo } from "@/components/share/share-note-card";
 
@@ -119,6 +118,7 @@ export default async function NoteDetailPage({ params }: NoteDetailPageProps) {
           note={noteWithBook}
           user={user}
           relatedBooks={relatedBooksForCard}
+          rawTranscriptionText={transcription?.raw_extracted_text}
           className="shadow-xl sm:shadow-2xl border border-slate-100/80 dark:border-slate-800/80 backdrop-blur-sm"
         />
       </div>
@@ -136,13 +136,6 @@ export default async function NoteDetailPage({ params }: NoteDetailPageProps) {
         </Card>
       )}
 
-      {/* 4. 상세 분석 정보 (필사 데이터 - AI 보정/원문 토글) */}
-      {transcription && (transcription.status === "completed" || transcription.extracted_text) && transcription.extracted_text && (
-        <OcrTextViewer
-          correctedText={transcription.extracted_text}
-          rawText={transcription.raw_extracted_text}
-        />
-      )}
     </div>
   );
 }
