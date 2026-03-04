@@ -464,21 +464,36 @@ const StackedBookCovers = memo(function StackedBookCovers({ books, isHovered }: 
   const remainingCount = Math.max(0, books.length - 3);
   const bookCount = displayBooks.length;
 
+  // 이미지 로딩 실패 시 fallback 처리
+  const handleImgError = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    const target = e.currentTarget;
+    target.style.display = "none";
+    const fallback = target.nextElementSibling as HTMLElement | null;
+    if (fallback) fallback.style.display = "flex";
+  };
+
   // 1권: 전체 표시
   if (bookCount === 1) {
     const book = displayBooks[0];
     return (
       <div className="w-full h-full relative">
         {book.coverImageUrl ? (
-          <img
-            src={book.coverImageUrl}
-            alt={book.title}
-            loading="lazy"
-            className={cn(
-              "w-full h-full object-cover transition-transform duration-150",
-              isHovered && "scale-105"
-            )}
-          />
+          <>
+            <img
+              src={book.coverImageUrl}
+              alt={book.title}
+              loading="lazy"
+              referrerPolicy="no-referrer"
+              onError={handleImgError}
+              className={cn(
+                "w-full h-full object-cover transition-transform duration-150",
+                isHovered && "scale-105"
+              )}
+            />
+            <div className="w-full h-full bg-gradient-to-br from-forest-200 to-forest-400 dark:from-forest-700 dark:to-forest-900 items-center justify-center hidden">
+              <BookOpen className="w-4 h-4 text-forest-700 dark:text-forest-300" />
+            </div>
+          </>
         ) : (
           <div className="w-full h-full bg-gradient-to-br from-forest-200 to-forest-400 dark:from-forest-700 dark:to-forest-900 flex items-center justify-center">
             <BookOpen className="w-4 h-4 text-forest-700 dark:text-forest-300" />
@@ -528,12 +543,26 @@ const StackedBookCovers = memo(function StackedBookCovers({ books, isHovered }: 
             }}
           >
             {book.coverImageUrl ? (
-              <img
-                src={book.coverImageUrl}
-                alt={book.title}
-                loading="lazy"
-                className="w-full h-full object-cover"
-              />
+              <>
+                <img
+                  src={book.coverImageUrl}
+                  alt={book.title}
+                  loading="lazy"
+                  referrerPolicy="no-referrer"
+                  onError={handleImgError}
+                  className="w-full h-full object-cover"
+                />
+                <div className={cn(
+                  "w-full h-full items-center justify-center hidden",
+                  index === 0
+                    ? "bg-gradient-to-br from-forest-200 to-forest-400 dark:from-forest-700 dark:to-forest-900"
+                    : index === 1
+                      ? "bg-gradient-to-br from-indigo-200 to-indigo-400 dark:from-indigo-700 dark:to-indigo-900"
+                      : "bg-gradient-to-br from-amber-200 to-amber-400 dark:from-amber-700 dark:to-amber-900"
+                )}>
+                  <BookOpen className="w-3 h-3 text-slate-600 dark:text-slate-300" />
+                </div>
+              </>
             ) : (
               <div className={cn(
                 "w-full h-full flex items-center justify-center",
@@ -659,12 +688,24 @@ function SelectedDateDetail({ date, books, noteTypes, onClose }: SelectedDateDet
               {/* 책 표지 - 크게 표시 */}
               <div className="w-12 h-16 rounded overflow-hidden bg-slate-200 dark:bg-slate-600 shrink-0 shadow-sm">
                 {book.coverImageUrl ? (
-                  <img
-                    src={book.coverImageUrl}
-                    alt={book.title}
-                    loading="lazy"
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-150"
-                  />
+                  <>
+                    <img
+                      src={book.coverImageUrl}
+                      alt={book.title}
+                      loading="lazy"
+                      referrerPolicy="no-referrer"
+                      onError={(e) => {
+                        const target = e.currentTarget;
+                        target.style.display = "none";
+                        const fallback = target.nextElementSibling as HTMLElement | null;
+                        if (fallback) fallback.style.display = "flex";
+                      }}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-150"
+                    />
+                    <div className="w-full h-full items-center justify-center bg-gradient-to-br from-forest-200 to-forest-300 dark:from-forest-700 dark:to-forest-800 hidden">
+                      <BookOpen className="w-4 h-4 text-forest-600 dark:text-forest-300" />
+                    </div>
+                  </>
                 ) : (
                   <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-forest-200 to-forest-300 dark:from-forest-700 dark:to-forest-800">
                     <BookOpen className="w-4 h-4 text-forest-600 dark:text-forest-300" />

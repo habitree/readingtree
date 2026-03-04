@@ -8,12 +8,13 @@ export function generateDemoMonthlyActivities(
   year: number,
   month: number
 ): Record<string, DailyBookActivity> {
+  const DEFAULT_COVER = "https://pkdhhtfomhhuiirzurhs.supabase.co/storage/v1/object/public/images/covers/default/cover-09-library.png";
   const demoBooks = [
-    { bookId: "demo-1", userBookId: "demo-ub-1", title: "어린 왕자", coverImageUrl: null },
-    { bookId: "demo-2", userBookId: "demo-ub-2", title: "나미야 잡화점의 기적", coverImageUrl: null },
-    { bookId: "demo-3", userBookId: "demo-ub-3", title: "소년이 온다", coverImageUrl: null },
-    { bookId: "demo-4", userBookId: "demo-ub-4", title: "달러구트 꿈 백화점", coverImageUrl: null },
-    { bookId: "demo-5", userBookId: "demo-ub-5", title: "불편한 편의점", coverImageUrl: null },
+    { bookId: "demo-1", userBookId: "demo-ub-1", title: "어린 왕자", coverImageUrl: DEFAULT_COVER },
+    { bookId: "demo-2", userBookId: "demo-ub-2", title: "나미야 잡화점의 기적", coverImageUrl: DEFAULT_COVER },
+    { bookId: "demo-3", userBookId: "demo-ub-3", title: "소년이 온다", coverImageUrl: DEFAULT_COVER },
+    { bookId: "demo-4", userBookId: "demo-ub-4", title: "달러구트 꿈 백화점", coverImageUrl: DEFAULT_COVER },
+    { bookId: "demo-5", userBookId: "demo-ub-5", title: "불편한 편의점", coverImageUrl: DEFAULT_COVER },
   ];
 
   // 해당 월의 총 일수
