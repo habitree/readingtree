@@ -37,6 +37,9 @@ const NOTE_TYPE_LABELS: Record<string, string> = {
 /** 링크 가능한 노트 타입 (사진, 필사) */
 const LINKABLE_NOTE_TYPES = new Set(["photo", "transcription"]);
 
+/** 노트 타입 표시 순서 (필사 → 사진 → 인용구 → 메모 → 독서여정) */
+const NOTE_TYPE_ORDER: string[] = ["transcription", "photo", "quote", "memo", "progress"];
+
 // ─── 공통 스타일 상수 ─────────────────────────────────────────
 
 const FONT_FAMILY = "'Pretendard','Noto Sans KR','Malgun Gothic',sans-serif";
@@ -449,7 +452,9 @@ function buildNoteSection(noteSummaries: NoteSummary[], baseUrl: string): string
     return acc;
   }, {});
 
-  const entries = Object.entries(grouped);
+  const entries = Object.entries(grouped).sort(
+    ([a], [b]) => (NOTE_TYPE_ORDER.indexOf(a) === -1 ? 999 : NOTE_TYPE_ORDER.indexOf(a)) - (NOTE_TYPE_ORDER.indexOf(b) === -1 ? 999 : NOTE_TYPE_ORDER.indexOf(b))
+  );
   entries.forEach(([type, notes], groupIdx) => {
     const label = NOTE_TYPE_LABELS[type] || type;
     const isLinkable = LINKABLE_NOTE_TYPES.has(type);
@@ -657,7 +662,10 @@ export function buildBlogPlainText(options: BuildBlogHtmlOptions): string {
       acc[note.type].push(note);
       return acc;
     }, {});
-    for (const [type, notes] of Object.entries(grouped)) {
+    const sortedEntries = Object.entries(grouped).sort(
+      ([a], [b]) => (NOTE_TYPE_ORDER.indexOf(a) === -1 ? 999 : NOTE_TYPE_ORDER.indexOf(a)) - (NOTE_TYPE_ORDER.indexOf(b) === -1 ? 999 : NOTE_TYPE_ORDER.indexOf(b))
+    );
+    for (const [type, notes] of sortedEntries) {
       const label = NOTE_TYPE_LABELS[type] || type;
       if (type === "progress") {
         lines.push(`- ${label} ${notes.length}건`);

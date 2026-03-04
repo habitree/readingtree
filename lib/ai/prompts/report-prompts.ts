@@ -26,6 +26,9 @@ const NOTE_TYPE_LABELS: Record<string, string> = {
   photo: "사진",
 };
 
+/** 노트 타입 표시 순서 (필사 → 사진 → 인용 → 메모 → 독서 여정) */
+const NOTE_TYPE_ORDER: string[] = ["transcription", "photo", "quote", "memo", "progress"];
+
 /** 노트 content JSON 파싱 */
 function parseNoteContent(content: string | null): { quote?: string; memo?: string; text?: string } {
   if (!content) return {};
@@ -52,7 +55,11 @@ function formatNotesByType(notes: NoteWithBook[]): string {
 
   const sections: string[] = [];
 
-  for (const [type, typeNotes] of Object.entries(grouped)) {
+  const sortedEntries = Object.entries(grouped).sort(
+    ([a], [b]) => (NOTE_TYPE_ORDER.indexOf(a) === -1 ? 999 : NOTE_TYPE_ORDER.indexOf(a)) - (NOTE_TYPE_ORDER.indexOf(b) === -1 ? 999 : NOTE_TYPE_ORDER.indexOf(b))
+  );
+
+  for (const [type, typeNotes] of sortedEntries) {
     const label = NOTE_TYPE_LABELS[type] || type;
     const items = typeNotes.map((note, i) => {
       const parsed = parseNoteContent(note.content);
