@@ -1,0 +1,1423 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI 독서친구 챗봇 고도화 업데이트 리포트</title>
+<style>
+  :root {
+    --bg: #f8faf9;
+    --surface: #ffffff;
+    --surface2: #f1f5f3;
+    --border: #e2e8e5;
+    --text: #1a2e23;
+    --text2: #5a7265;
+    --text3: #8a9e93;
+    --primary: #059669;
+    --primary-light: #10b981;
+    --primary-lighter: #d1fae5;
+    --primary-dark: #047857;
+    --accent: #0d9488;
+    --accent-light: #ccfbf1;
+    --blue: #3b82f6;
+    --blue-light: #dbeafe;
+    --purple: #8b5cf6;
+    --purple-light: #ede9fe;
+    --amber: #d97706;
+    --amber-light: #fef3c7;
+    --red: #dc2626;
+    --red-light: #fee2e2;
+    --pink: #ec4899;
+    --pink-light: #fce7f3;
+    --radius: 12px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    --shadow-md: 0 4px 6px rgba(0,0,0,0.05), 0 2px 4px rgba(0,0,0,0.03);
+    --shadow-lg: 0 10px 15px rgba(0,0,0,0.06), 0 4px 6px rgba(0,0,0,0.04);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, 'Pretendard', 'Noto Sans KR', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    font-size: 15px;
+  }
+  a { color: var(--primary); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  /* Hero */
+  .hero {
+    background: linear-gradient(135deg, #047857 0%, #059669 30%, #0d9488 70%, #0891b2 100%);
+    color: white;
+    padding: 3rem 2rem 2.5rem;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle at 30% 70%, rgba(255,255,255,0.08) 0%, transparent 50%);
+  }
+  .hero h1 {
+    font-size: 2.2rem;
+    font-weight: 800;
+    margin-bottom: 0.5rem;
+    position: relative;
+  }
+  .hero .subtitle {
+    font-size: 1rem;
+    opacity: 0.9;
+    position: relative;
+  }
+  .hero .meta {
+    margin-top: 1rem;
+    font-size: 0.82rem;
+    opacity: 0.75;
+    position: relative;
+  }
+  .hero .badge-row {
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-top: 1rem;
+    flex-wrap: wrap;
+    position: relative;
+  }
+  .hero .badge-hero {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    background: rgba(255,255,255,0.2);
+    padding: 0.3rem 0.8rem;
+    border-radius: 9999px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    backdrop-filter: blur(4px);
+  }
+
+  /* Container */
+  .container { max-width: 1100px; margin: 0 auto; padding: 0 1.5rem 3rem; }
+
+  /* TOC */
+  .toc {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.5rem 2rem;
+    margin: -1.5rem auto 2rem;
+    max-width: 1100px;
+    box-shadow: var(--shadow-lg);
+    position: relative;
+    z-index: 10;
+  }
+  .toc h3 {
+    font-size: 0.82rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text3);
+    margin-bottom: 0.75rem;
+  }
+  .toc-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 0.4rem;
+  }
+  .toc a {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 0.6rem;
+    border-radius: 8px;
+    font-size: 0.88rem;
+    color: var(--text);
+    transition: background 0.15s;
+  }
+  .toc a:hover { background: var(--primary-lighter); text-decoration: none; }
+  .toc .toc-num {
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    background: var(--primary-lighter);
+    color: var(--primary);
+    font-size: 0.72rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  /* Sections */
+  .section { margin-top: 2.5rem; }
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid var(--primary-lighter);
+  }
+  .section-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    flex-shrink: 0;
+  }
+  .section-header h2 { font-size: 1.4rem; font-weight: 700; }
+  .section-header .phase-tag {
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 0.15rem 0.6rem;
+    border-radius: 9999px;
+    margin-left: auto;
+    white-space: nowrap;
+  }
+
+  /* Cards */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    box-shadow: var(--shadow);
+    margin-bottom: 1rem;
+  }
+  .card-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .card-title .icon { font-size: 1.1rem; }
+
+  /* Grids */
+  .grid { display: grid; gap: 1rem; }
+  .grid-2 { grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); }
+  .grid-3 { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+  .grid-4 { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+
+  /* Tables */
+  table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+  th {
+    text-align: left;
+    color: var(--text2);
+    font-weight: 600;
+    padding: 0.65rem 0.75rem;
+    border-bottom: 2px solid var(--border);
+    background: var(--surface2);
+    font-size: 0.82rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+  td {
+    padding: 0.6rem 0.75rem;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  tr:last-child td { border-bottom: none; }
+  tr:nth-child(even) { background: var(--surface2); }
+  table { border-radius: var(--radius); overflow: hidden; border: 1px solid var(--border); }
+
+  /* Badges */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.2rem;
+    padding: 0.12rem 0.55rem;
+    border-radius: 9999px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .badge-green { background: var(--primary-lighter); color: var(--primary-dark); }
+  .badge-blue { background: var(--blue-light); color: var(--blue); }
+  .badge-purple { background: var(--purple-light); color: var(--purple); }
+  .badge-amber { background: var(--amber-light); color: var(--amber); }
+  .badge-red { background: var(--red-light); color: var(--red); }
+  .badge-pink { background: var(--pink-light); color: var(--pink); }
+
+  /* Code blocks */
+  .code-block {
+    background: #1e293b;
+    color: #e2e8f0;
+    border-radius: 10px;
+    padding: 1.25rem;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+    font-size: 0.82rem;
+    line-height: 1.6;
+    overflow-x: auto;
+    margin: 0.75rem 0;
+  }
+  .code-block .comment { color: #64748b; }
+  .code-block .keyword { color: #c084fc; }
+  .code-block .string { color: #86efac; }
+  .code-block .type { color: #67e8f9; }
+  .code-block .func { color: #fbbf24; }
+  .code-block .num { color: #f9a8d4; }
+
+  /* Inline code */
+  code {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    padding: 0.1rem 0.4rem;
+    border-radius: 5px;
+    font-family: 'JetBrains Mono', 'Consolas', monospace;
+    font-size: 0.82em;
+    color: var(--primary-dark);
+  }
+
+  /* File path */
+  .file-path {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    padding: 0.2rem 0.6rem;
+    border-radius: 6px;
+    font-family: 'JetBrains Mono', 'Consolas', monospace;
+    font-size: 0.78rem;
+    color: var(--text2);
+    white-space: nowrap;
+  }
+
+  /* Callouts */
+  .callout {
+    border-radius: 10px;
+    padding: 1rem 1.25rem;
+    margin: 0.75rem 0;
+    font-size: 0.88rem;
+    display: flex;
+    gap: 0.75rem;
+    align-items: flex-start;
+  }
+  .callout-icon { font-size: 1.2rem; flex-shrink: 0; margin-top: 0.1rem; }
+  .callout-green { background: var(--primary-lighter); border: 1px solid #a7f3d0; }
+  .callout-amber { background: var(--amber-light); border: 1px solid #fde68a; }
+  .callout-blue { background: var(--blue-light); border: 1px solid #93c5fd; }
+  .callout-red { background: var(--red-light); border: 1px solid #fca5a5; }
+
+  /* Steps */
+  .step-list { counter-reset: step; list-style: none; padding: 0; }
+  .step-item {
+    counter-increment: step;
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    align-items: flex-start;
+  }
+  .step-num {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--primary);
+    color: white;
+    font-size: 0.82rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .step-content { flex: 1; }
+  .step-content h4 { font-size: 0.92rem; font-weight: 600; margin-bottom: 0.2rem; }
+  .step-content p { font-size: 0.85rem; color: var(--text2); }
+
+  /* Flow diagram */
+  .flow-diagram {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 2rem;
+    text-align: center;
+    overflow-x: auto;
+    box-shadow: var(--shadow);
+  }
+  .flow-box {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.6rem 1rem;
+    border-radius: 10px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    white-space: nowrap;
+    vertical-align: middle;
+  }
+  .flow-arrow {
+    display: inline-block;
+    color: var(--text3);
+    font-size: 1.2rem;
+    margin: 0 0.3rem;
+    vertical-align: middle;
+  }
+  .flow-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+    margin-bottom: 0.75rem;
+  }
+  .flow-row:last-child { margin-bottom: 0; }
+
+  /* Mode chips display */
+  .mode-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.35rem 0.8rem;
+    border-radius: 9999px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    border: 2px solid;
+  }
+
+  /* Detail list */
+  .detail-list { list-style: none; padding: 0; }
+  .detail-list li {
+    padding: 0.4rem 0;
+    padding-left: 1.2rem;
+    position: relative;
+    font-size: 0.88rem;
+  }
+  .detail-list li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0.75rem;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--primary-light);
+  }
+
+  /* Sub-section */
+  .subsection { margin-top: 1.5rem; }
+  .subsection h3 {
+    font-size: 1.05rem;
+    font-weight: 700;
+    margin-bottom: 0.75rem;
+    padding-left: 0.75rem;
+    border-left: 3px solid var(--primary-light);
+    color: var(--text);
+  }
+  .subsection h4 {
+    font-size: 0.92rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: var(--text2);
+  }
+
+  /* Stats row */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+  }
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1rem;
+    text-align: center;
+    box-shadow: var(--shadow);
+  }
+  .stat-value { font-size: 1.8rem; font-weight: 800; color: var(--primary); }
+  .stat-label { font-size: 0.78rem; color: var(--text2); margin-top: 0.2rem; }
+
+  /* Print */
+  @media print {
+    body { background: white; font-size: 12px; }
+    .hero { -webkit-print-color-adjust: exact; print-color-adjust: exact; padding: 1.5rem; }
+    .toc { box-shadow: none; border: 1px solid #ccc; }
+    .card { box-shadow: none; break-inside: avoid; }
+    .section { break-before: auto; }
+    .code-block { background: #f1f5f9 !important; color: #1e293b !important; border: 1px solid #ccc; }
+    .flow-diagram { break-inside: avoid; }
+  }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .hero h1 { font-size: 1.6rem; }
+    .container { padding: 0 1rem 2rem; }
+    .grid-2 { grid-template-columns: 1fr; }
+    .grid-3 { grid-template-columns: 1fr; }
+    .toc-grid { grid-template-columns: 1fr 1fr; }
+    .flow-row { flex-direction: column; }
+    .stats-row { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body>
+
+<!-- Hero -->
+<div class="hero">
+  <h1>AI 독서친구 챗봇 고도화 리포트</h1>
+  <p class="subtitle">Habitree Reading Hub &mdash; 소크라테스식 스캐폴딩, 대화 모드, 장기 기억, UX 고도화 전체 구현 결과</p>
+  <p class="meta">2026-03-02 | Habitree 기술팀 | v1.0</p>
+  <div class="badge-row">
+    <span class="badge-hero">5 Phases 완료</span>
+    <span class="badge-hero">6섹션 프롬프트</span>
+    <span class="badge-hero">5개 대화 모드</span>
+    <span class="badge-hero">장기 기억 파이프라인</span>
+    <span class="badge-hero">빌드 검증 통과</span>
+  </div>
+</div>
+
+<!-- TOC -->
+<div class="container" style="padding-bottom:0;">
+  <div class="toc">
+    <h3>목차</h3>
+    <div class="toc-grid">
+      <a href="#overview"><span class="toc-num">1</span> 개요</a>
+      <a href="#phase1"><span class="toc-num">2</span> Phase 1: 프롬프트 고도화</a>
+      <a href="#phase2"><span class="toc-num">3</span> Phase 2: 대화 모드 + 퀵 액션</a>
+      <a href="#phase3"><span class="toc-num">4</span> Phase 3: 장기 기억 파이프라인</a>
+      <a href="#phase4"><span class="toc-num">5</span> Phase 4: UX 고도화</a>
+      <a href="#phase5"><span class="toc-num">6</span> Phase 5: 기획 문서</a>
+      <a href="#architecture"><span class="toc-num">7</span> 아키텍처 흐름도</a>
+      <a href="#remaining"><span class="toc-num">8</span> 남은 작업</a>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+
+<!-- ============================== -->
+<!-- 1. 개요 -->
+<!-- ============================== -->
+<div class="section" id="overview">
+  <div class="section-header">
+    <div class="section-icon" style="background: var(--primary-lighter); color: var(--primary);">&#128218;</div>
+    <h2>1. 개요</h2>
+  </div>
+
+  <p style="margin-bottom: 1rem; color: var(--text2);">
+    Habitree Reading Hub에 탑재된 <strong>독서친구</strong> AI 챗봇을 5단계(Phase)에 걸쳐 전면 고도화한 결과를 정리합니다.
+    소크라테스식 스캐폴딩, 사용자 수준 자동 판별, 5개 대화 모드, 장기 기억 파이프라인, 온보딩/피드백 UX까지
+    프롬프트 엔지니어링과 기능 구현 모두를 포괄하는 종합 업데이트입니다.
+  </p>
+
+  <!-- 통계 카드 -->
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-value">5</div>
+      <div class="stat-label">Phase 완료</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">6</div>
+      <div class="stat-label">프롬프트 섹션</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">5</div>
+      <div class="stat-label">대화 모드</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">5</div>
+      <div class="stat-label">메모리 유형</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">11+</div>
+      <div class="stat-label">변경 파일</div>
+    </div>
+  </div>
+
+  <!-- Phase 요약 테이블 -->
+  <div class="card">
+    <div class="card-title"><span class="icon">&#128203;</span> 5개 Phase 요약</div>
+    <table>
+      <thead>
+        <tr>
+          <th>Phase</th>
+          <th>내용</th>
+          <th>임팩트</th>
+          <th>상태</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="badge badge-green">Phase 1</span></td>
+          <td>프롬프트 고도화 (6섹션 구조, 수준 판별, Few-Shot)</td>
+          <td>최상</td>
+          <td><span class="badge badge-green">완료</span></td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-blue">Phase 2</span></td>
+          <td>대화 모드 5종 + 동적 퀵 액션 + 점진적 기능 공개</td>
+          <td>높음</td>
+          <td><span class="badge badge-green">완료</span></td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-purple">Phase 3</span></td>
+          <td>장기 기억 파이프라인 (추출 &rarr; 저장 &rarr; 주입)</td>
+          <td>최상</td>
+          <td><span class="badge badge-green">완료</span></td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-amber">Phase 4</span></td>
+          <td>UX 고도화 (온보딩, 피드백, DB 마이그레이션)</td>
+          <td>중간</td>
+          <td><span class="badge badge-green">완료</span></td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-pink">Phase 5</span></td>
+          <td>기획 문서 (HTML/MD 기획서, 실행 진행표)</td>
+          <td>낮음</td>
+          <td><span class="badge badge-green">완료</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 변경 파일 목록 -->
+  <div class="card">
+    <div class="card-title"><span class="icon">&#128193;</span> 변경 파일 총 목록</div>
+    <table>
+      <thead>
+        <tr><th>파일 경로</th><th>유형</th><th>Phase</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>types/ai/settings.ts</code></td><td>수정</td><td>1</td></tr>
+        <tr><td><code>lib/ai/prompts/chat-prompts.ts</code></td><td>수정</td><td>1, 2, 3</td></tr>
+        <tr><td><code>types/ai/chat.ts</code></td><td>수정</td><td>2</td></tr>
+        <tr><td><code>app/api/ai/chat/route.ts</code></td><td>수정</td><td>2, 3</td></tr>
+        <tr><td><code>components/ai/chat/chat-interface.tsx</code></td><td>수정</td><td>2, 4</td></tr>
+        <tr><td><code>lib/ai/prompts/memory-prompts.ts</code></td><td><span class="badge badge-blue">신규</span></td><td>3</td></tr>
+        <tr><td><code>app/actions/ai/memory.ts</code></td><td><span class="badge badge-blue">신규</span></td><td>3</td></tr>
+        <tr><td><code>app/actions/ai/chat.ts</code></td><td>수정</td><td>3, 4</td></tr>
+        <tr><td><code>components/ai/chat/chat-message.tsx</code></td><td>수정</td><td>4</td></tr>
+        <tr><td><code>types/database.ts</code></td><td>수정</td><td>4</td></tr>
+        <tr><td><code>doc/database/migration-202603021200__chat_messages__add_feedback.sql</code></td><td><span class="badge badge-blue">신규</span></td><td>4</td></tr>
+        <tr><td><code>doc/ai/chatbot-enhancement-plan.html</code></td><td><span class="badge badge-blue">신규</span></td><td>5</td></tr>
+        <tr><td><code>doc/ai/chatbot-enhancement-plan.md</code></td><td><span class="badge badge-blue">신규</span></td><td>5</td></tr>
+        <tr><td><code>doc/ai/execution-progress.md</code></td><td><span class="badge badge-blue">신규</span></td><td>5</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+
+<!-- ============================== -->
+<!-- 2. Phase 1: 프롬프트 고도화 -->
+<!-- ============================== -->
+<div class="section" id="phase1">
+  <div class="section-header">
+    <div class="section-icon" style="background: var(--primary-lighter); color: var(--primary);">&#129504;</div>
+    <h2>2. Phase 1: 프롬프트 고도화</h2>
+    <span class="phase-tag badge badge-green">P0 핵심</span>
+  </div>
+
+  <p style="margin-bottom: 1rem; color: var(--text2);">
+    기존 약 15줄의 단순 시스템 프롬프트를 <strong>6섹션 구조</strong>로 전면 재설계했습니다.
+    관리자 패널에서 편집 가능한 템플릿 기반으로, 런타임에 사용자 컨텍스트가 동적으로 주입됩니다.
+  </p>
+
+  <!-- 6섹션 구조 설명 -->
+  <div class="subsection">
+    <h3>시스템 프롬프트 6섹션 구조</h3>
+    <p style="margin-bottom:0.75rem; font-size:0.88rem; color:var(--text2);">
+      구현 위치: <span class="file-path">types/ai/settings.ts</span> &mdash; <code>DEFAULT_AI_SETTINGS.systemPromptTemplate</code>
+    </p>
+
+    <div class="grid grid-2">
+      <!-- 섹션 1 -->
+      <div class="card">
+        <div class="card-title"><span style="color:var(--primary);">&#10102;</span> 핵심 정체성 &amp; AI 투명성</div>
+        <ul class="detail-list">
+          <li>AI임을 투명하게 밝히며, 전문 상담사가 아닌 독서 보조 도구로 포지셔닝</li>
+          <li>독서와 관련된 대화에만 집중</li>
+          <li>사용자가 스스로 생각하고 발견하도록 돕는 것이 핵심 목표</li>
+          <li>친근하고 따뜻한 말투, 한국어로 대화</li>
+        </ul>
+      </div>
+      <!-- 섹션 2 -->
+      <div class="card">
+        <div class="card-title"><span style="color:var(--blue);">&#10103;</span> 소크라테스식 스캐폴딩 대화 전략</div>
+        <p style="font-size:0.85rem; color:var(--text2); margin-bottom:0.5rem;">직접적인 답변보다 질문을 통해 사용자의 사고를 자연스럽게 유도합니다.</p>
+        <table style="font-size:0.82rem;">
+          <thead><tr><th>단계</th><th>유형</th><th>예시 질문</th></tr></thead>
+          <tbody>
+            <tr><td><span class="badge badge-green">1단계</span></td><td>사실 확인</td><td>"이 책에서 가장 기억에 남는 장면은 뭐였어?"</td></tr>
+            <tr><td><span class="badge badge-blue">2단계</span></td><td>해석</td><td>"왜 그 장면이 기억에 남았다고 생각해?"</td></tr>
+            <tr><td><span class="badge badge-purple">3단계</span></td><td>연결</td><td>"그 경험이 네 일상과 연결되는 부분이 있어?"</td></tr>
+            <tr><td><span class="badge badge-amber">4단계</span></td><td>평가</td><td>"이 책을 읽고 나서 생각이 달라진 게 있어?"</td></tr>
+          </tbody>
+        </table>
+        <p style="font-size:0.82rem; color:var(--text2); margin-top:0.5rem;"><strong>대화 규칙:</strong> 한 번에 질문 최대 1개 / 답변 먼저 인정 후 다음 단계 / 단답 시 열린 질문 유도 / 충분한 생각 공유 시 정리</p>
+      </div>
+      <!-- 섹션 3 -->
+      <div class="card">
+        <div class="card-title"><span style="color:var(--purple);">&#10104;</span> 사용자 수준별 맞춤 응답</div>
+        <table style="font-size:0.82rem;">
+          <thead><tr><th>수준</th><th>판별 기준</th><th>톤</th><th>답변 길이</th><th>질문 레벨</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><span class="badge badge-green">beginner</span><br/>초보 독서가</td>
+              <td>totalBooks &le; 5<br/>totalNotes &le; 10</td>
+              <td>따뜻하고 격려</td>
+              <td>짧게 (3~5문장)</td>
+              <td>사실 확인 + 해석</td>
+            </tr>
+            <tr>
+              <td><span class="badge badge-blue">steady</span><br/>꾸준한 독서가</td>
+              <td>totalBooks &le; 20<br/>totalNotes &le; 50</td>
+              <td>친근+분석적</td>
+              <td>중간 (5~8문장)</td>
+              <td>해석 + 연결</td>
+            </tr>
+            <tr>
+              <td><span class="badge badge-purple">passionate</span><br/>열정적 독서가</td>
+              <td>totalBooks &gt; 20<br/>totalNotes &gt; 50</td>
+              <td>지적 파트너</td>
+              <td>깊이 있게 (8~12문장)</td>
+              <td>연결 + 평가</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <!-- 섹션 4 -->
+      <div class="card">
+        <div class="card-title"><span style="color:var(--pink);">&#10105;</span> 감정 인식 및 공감 응답</div>
+        <table style="font-size:0.82rem;">
+          <thead><tr><th>감정 패턴</th><th>키워드</th><th>대응 전략</th></tr></thead>
+          <tbody>
+            <tr><td>좌절</td><td>"어려워", "포기", "이해 안 돼"</td><td>공감 &rarr; 정상화 &rarr; 작은 성취 상기</td></tr>
+            <tr><td>성취</td><td>"다 읽었어", "목표 달성"</td><td>함께 기뻐하기 &rarr; 구체적 칭찬 &rarr; 다음 단계 제안</td></tr>
+            <tr><td>호기심</td><td>"궁금해", "왜 그럴까"</td><td>질문 확장 &rarr; 탐구 유도 &rarr; 관련 책 연결</td></tr>
+            <tr><td>혼란</td><td>"뭘 읽어야", "모르겠어"</td><td>선택지 좁히기 &rarr; 취향 확인 &rarr; 맞춤 추천</td></tr>
+            <tr><td>공유 욕구</td><td>"이 부분이 좋았어", "감동"</td><td>적극적 경청 &rarr; 깊이 탐구 &rarr; 비슷한 감동 연결</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <!-- 섹션 5 -->
+      <div class="card">
+        <div class="card-title"><span style="color:var(--red);">&#10106;</span> 안전 가드레일</div>
+        <ol class="detail-list" style="list-style:decimal; padding-left:1.5rem;">
+          <li style="padding-left:0.2rem;"><strong>도메인 한정:</strong> 독서/책/문학/기록/학습과 무관한 요청은 정중히 거절 + 독서 관련 대안 제시</li>
+          <li style="padding-left:0.2rem;"><strong>숙제 대필 방지:</strong> 독후감/요약 직접 작성 요청 거절, 작성 가이드 제공</li>
+          <li style="padding-left:0.2rem;"><strong>불확실성 인정:</strong> 모르는 책/정보는 솔직히 인정</li>
+          <li style="padding-left:0.2rem;"><strong>개인정보:</strong> 실명/연락처 등 개인정보를 요청하지 않음</li>
+          <li style="padding-left:0.2rem;"><strong>민감 주제:</strong> 정치/종교 등 논쟁적 주제는 책의 관점에서만</li>
+        </ol>
+      </div>
+      <!-- 섹션 6 -->
+      <div class="card">
+        <div class="card-title"><span style="color:var(--accent);">&#10107;</span> Few-Shot 대화 예시</div>
+        <p style="font-size:0.85rem; color:var(--text2); margin-bottom:0.5rem;">4가지 시나리오의 이상적 응답 패턴을 프롬프트에 포함하여 응답 일관성을 확보합니다.</p>
+        <table style="font-size:0.82rem;">
+          <thead><tr><th>시나리오</th><th>사용자 발화 (예시)</th><th>독서친구 응답 패턴</th></tr></thead>
+          <tbody>
+            <tr><td>책 추천</td><td>"요즘 뭐 읽을지 모르겠어"</td><td>기분/취향 확인 질문으로 시작</td></tr>
+            <tr><td>책 토론</td><td>"방금 데미안 다 읽었어"</td><td>완독 축하 + 인상적 부분 질문</td></tr>
+            <tr><td>감정 공감</td><td>"독서 목표 달성이 너무 어려워"</td><td>공감 &rarr; 목표 조정 제안</td></tr>
+            <tr><td>도메인 외</td><td>"수학 문제 풀어줘"</td><td>정중 거절 + 독서 관련 대안</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- 사용자 수준 판별 로직 -->
+  <div class="subsection">
+    <h3>사용자 수준 자동 판별 로직</h3>
+    <p style="margin-bottom:0.5rem; font-size:0.88rem; color:var(--text2);">
+      구현 위치: <span class="file-path">lib/ai/prompts/chat-prompts.ts</span> &mdash; <code>determineUserLevel()</code>, <code>generateUserLevelSection()</code>
+    </p>
+    <div class="code-block">
+<span class="keyword">type</span> <span class="type">UserLevel</span> = <span class="string">"beginner"</span> | <span class="string">"steady"</span> | <span class="string">"passionate"</span>;
+
+<span class="keyword">function</span> <span class="func">determineUserLevel</span>(context: <span class="type">ChatContext</span>): <span class="type">UserLevel</span> {
+  <span class="keyword">const</span> totalBooks = context.persona?.reading_stats?.totalBooks ?? <span class="num">0</span>;
+  <span class="keyword">const</span> totalNotes = context.persona?.reading_stats?.totalNotes ?? <span class="num">0</span>;
+
+  <span class="keyword">if</span> (totalBooks &lt;= <span class="num">5</span> && totalNotes &lt;= <span class="num">10</span>) <span class="keyword">return</span> <span class="string">"beginner"</span>;
+  <span class="keyword">if</span> (totalBooks &lt;= <span class="num">20</span> && totalNotes &lt;= <span class="num">50</span>) <span class="keyword">return</span> <span class="string">"steady"</span>;
+  <span class="keyword">return</span> <span class="string">"passionate"</span>;
+}
+    </div>
+  </div>
+
+  <!-- 동적 프롬프트 생성 -->
+  <div class="subsection">
+    <h3>동적 시스템 프롬프트 생성</h3>
+    <p style="margin-bottom:0.5rem; font-size:0.88rem; color:var(--text2);">
+      구현 위치: <span class="file-path">lib/ai/prompts/chat-prompts.ts</span> &mdash; <code>generateDynamicSystemPrompt()</code>
+    </p>
+    <p style="font-size:0.88rem; color:var(--text2);">
+      관리자 설정 템플릿을 기반으로, 다음 섹션들을 런타임에 동적으로 조합합니다:
+    </p>
+    <ol class="detail-list" style="list-style:decimal; padding-left:1.5rem; margin-top:0.5rem;">
+      <li style="padding-left:0.2rem;"><code>generatePersonaSection()</code> &mdash; 사용자 페르소나 (독서 속도, 기록 스타일, 활동 시간, 선호 장르)</li>
+      <li style="padding-left:0.2rem;"><code>generateUserLevelSection()</code> &mdash; 사용자 수준별 톤/길이/질문 조정</li>
+      <li style="padding-left:0.2rem;"><code>generateRecentBooksSection()</code> &mdash; 최근 읽은 책 (<code>[[book:ID:제목]]</code> 링크 형식)</li>
+      <li style="padding-left:0.2rem;"><code>generateRecentNotesSection()</code> &mdash; 최근 기록 (<code>[[note:ID:타입]]</code> 링크 형식)</li>
+      <li style="padding-left:0.2rem;"><code>generateReadingGoalSection()</code> &mdash; 올해 독서 목표/진행률</li>
+      <li style="padding-left:0.2rem;"><code>generateMemorySection()</code> &mdash; 장기 기억 주입</li>
+      <li style="padding-left:0.2rem;"><code>generateModeInstruction()</code> &mdash; 대화 모드별 지시문</li>
+    </ol>
+  </div>
+</div>
+
+
+<!-- ============================== -->
+<!-- 3. Phase 2: 대화 모드 + 퀵 액션 -->
+<!-- ============================== -->
+<div class="section" id="phase2">
+  <div class="section-header">
+    <div class="section-icon" style="background: var(--blue-light); color: var(--blue);">&#128172;</div>
+    <h2>3. Phase 2: 대화 모드 + 퀵 액션</h2>
+    <span class="phase-tag badge badge-blue">P0 핵심</span>
+  </div>
+
+  <!-- 5가지 대화 모드 -->
+  <div class="subsection">
+    <h3>5가지 대화 모드</h3>
+    <p style="margin-bottom:0.5rem; font-size:0.88rem; color:var(--text2);">
+      타입 정의: <span class="file-path">types/ai/chat.ts</span> &mdash; <code>ChatMode</code>, <code>CHAT_MODE_INFO</code>
+    </p>
+
+    <div class="grid grid-3" style="margin-bottom: 1rem;">
+      <!-- general -->
+      <div class="card" style="border-top: 3px solid var(--primary);">
+        <div class="card-title">
+          <span class="mode-chip" style="background: var(--primary-lighter); color: var(--primary); border-color: var(--primary);">&#128172; 자유 대화</span>
+        </div>
+        <p style="font-size:0.82rem; color:var(--text2); margin-bottom:0.5rem;"><code>general</code> &mdash; 아이콘: MessageCircle</p>
+        <p style="font-size:0.85rem;">독서에 대해 자유롭게 이야기합니다. 기본 모드로, 별도의 모드 지시문 없이 6섹션 기본 프롬프트만 적용됩니다.</p>
+      </div>
+      <!-- discuss -->
+      <div class="card" style="border-top: 3px solid var(--blue);">
+        <div class="card-title">
+          <span class="mode-chip" style="background: var(--blue-light); color: var(--blue); border-color: var(--blue);">&#128490; 책 토론</span>
+        </div>
+        <p style="font-size:0.82rem; color:var(--text2); margin-bottom:0.5rem;"><code>discuss</code> &mdash; 아이콘: MessagesSquare</p>
+        <p style="font-size:0.85rem;">소크라테스식 질문을 적극 활용하여 다양한 관점과 해석을 제시합니다. 저자의 의도, 시대적 배경, 다른 독자의 해석 등을 소개하며 지적 토론 분위기를 유지합니다.</p>
+      </div>
+      <!-- recommend -->
+      <div class="card" style="border-top: 3px solid var(--accent);">
+        <div class="card-title">
+          <span class="mode-chip" style="background: var(--accent-light); color: var(--accent); border-color: var(--accent);">&#128278; 책 추천</span>
+        </div>
+        <p style="font-size:0.82rem; color:var(--text2); margin-bottom:0.5rem;"><code>recommend</code> &mdash; 아이콘: BookMarked</p>
+        <p style="font-size:0.85rem;">3단계 추천: 맞춤 추천(취향 기반) / 도전 추천(새로운 장르) / 의외의 추천. <code>[[recommend:「제목」:저자명]]</code> 형식으로 자동 서재 등록을 지원합니다.</p>
+      </div>
+      <!-- coaching -->
+      <div class="card" style="border-top: 3px solid var(--amber);">
+        <div class="card-title">
+          <span class="mode-chip" style="background: var(--amber-light); color: var(--amber); border-color: var(--amber);">&#127919; 독서 코칭</span>
+        </div>
+        <p style="font-size:0.82rem; color:var(--text2); margin-bottom:0.5rem;"><code>coaching</code> &mdash; 아이콘: Target</p>
+        <p style="font-size:0.85rem;">자기결정이론(SDT) 기반으로 자율성/유능감/관계성을 지원합니다. SMART 목표 설정, 진행률 참조, 작은 성취 인정, 선택지 제시 전략을 사용합니다.</p>
+      </div>
+      <!-- quiz -->
+      <div class="card" style="border-top: 3px solid var(--purple);">
+        <div class="card-title">
+          <span class="mode-chip" style="background: var(--purple-light); color: var(--purple); border-color: var(--purple);">&#129504; 독서 퀴즈</span>
+        </div>
+        <p style="font-size:0.82rem; color:var(--text2); margin-bottom:0.5rem;"><code>quiz</code> &mdash; 아이콘: BrainCircuit</p>
+        <p style="font-size:0.85rem;">4가지 유형(내용 확인/해석/적용/비평) 문제를 1개씩 출제합니다. 틀리면 정답 대신 힌트를 제공하여 다시 생각하게 유도합니다.</p>
+      </div>
+    </div>
+
+    <div class="callout callout-blue">
+      <span class="callout-icon">&#128161;</span>
+      <div>
+        <strong>모드 지시문 구현:</strong>
+        <span class="file-path">lib/ai/prompts/chat-prompts.ts</span> &mdash; <code>generateModeInstruction(mode)</code> 함수가 <code>general</code> 외 모드에 대해 추가 프롬프트 지시문을 반환합니다.
+        이 지시문은 <code>generateDynamicSystemPrompt()</code>에서 시스템 프롬프트 끝에 추가됩니다.
+      </div>
+    </div>
+  </div>
+
+  <!-- 동적 퀵 액션 -->
+  <div class="subsection">
+    <h3>동적 퀵 액션</h3>
+    <p style="margin-bottom:0.5rem; font-size:0.88rem; color:var(--text2);">
+      구현 위치: <span class="file-path">lib/ai/prompts/chat-prompts.ts</span> &mdash; <code>generateQuickActions(context, mode, sessionCount)</code>
+    </p>
+
+    <div class="grid grid-2">
+      <div class="card">
+        <div class="card-title"><span class="icon">&#128218;</span> 컨텍스트 기반 동적 생성</div>
+        <table style="font-size:0.82rem;">
+          <thead><tr><th>조건</th><th>생성되는 퀵 액션</th></tr></thead>
+          <tbody>
+            <tr><td>quiz 모드 + 읽은 책 존재</td><td>「{책제목}」 퀴즈</td></tr>
+            <tr><td>discuss 모드 + 읽은 책 존재</td><td>「{책제목}」 토론</td></tr>
+            <tr><td>general 모드 + 읽는 중인 책</td><td>「{읽는중책}」 이야기</td></tr>
+            <tr><td>독서 목표 존재</td><td>올해 목표 점검 ({completed}/{goal}권)</td></tr>
+          </tbody>
+        </table>
+        <p style="font-size:0.82rem; color:var(--text2); margin-top:0.5rem;">부족한 수는 모드별 기본 액션으로 채우며, 최대 6개까지 표시합니다.</p>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="icon">&#128204;</span> 모드별 기본 퀵 액션</div>
+        <table style="font-size:0.82rem;">
+          <thead><tr><th>모드</th><th>기본 액션 예시</th></tr></thead>
+          <tbody>
+            <tr><td><code>general</code></td><td>책 추천받기, 가벼운 책, 독서 패턴 분석</td></tr>
+            <tr><td><code>discuss</code></td><td>인상 깊은 구절 나누기, 책 비교하기</td></tr>
+            <tr><td><code>recommend</code></td><td>비슷한 책, 새로운 장르 도전, 짧은 책</td></tr>
+            <tr><td><code>coaching</code></td><td>독서 습관 만들기, 목표 세우기</td></tr>
+            <tr><td><code>quiz</code></td><td>쉬운 퀴즈, 어려운 퀴즈</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- 점진적 기능 공개 -->
+  <div class="subsection">
+    <h3>점진적 기능 공개 (Progressive Disclosure)</h3>
+    <p style="margin-bottom:0.5rem; font-size:0.88rem; color:var(--text2);">
+      구현 위치: <span class="file-path">lib/ai/prompts/chat-prompts.ts</span> &mdash; <code>getFeatureLevel(sessionCount)</code>, <code>getAvailableModes(featureLevel)</code>
+    </p>
+
+    <div class="card">
+      <table>
+        <thead><tr><th>레벨</th><th>세션 수 기준</th><th>활성화 모드</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><span class="badge badge-green">Lv.1 입문</span></td>
+            <td>세션 0~2회</td>
+            <td><code>general</code>, <code>recommend</code></td>
+          </tr>
+          <tr>
+            <td><span class="badge badge-blue">Lv.2 활성</span></td>
+            <td>세션 3~5회</td>
+            <td>+ <code>discuss</code>, <code>coaching</code></td>
+          </tr>
+          <tr>
+            <td><span class="badge badge-purple">Lv.3 파워</span></td>
+            <td>세션 6회 이상</td>
+            <td>+ <code>quiz</code> (전 모드 활성화)</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="code-block">
+<span class="keyword">export function</span> <span class="func">getFeatureLevel</span>(sessionCount: <span class="type">number</span>): <span class="num">1</span> | <span class="num">2</span> | <span class="num">3</span> {
+  <span class="keyword">if</span> (sessionCount &lt;= <span class="num">2</span>) <span class="keyword">return</span> <span class="num">1</span>;
+  <span class="keyword">if</span> (sessionCount &lt;= <span class="num">5</span>) <span class="keyword">return</span> <span class="num">2</span>;
+  <span class="keyword">return</span> <span class="num">3</span>;
+}
+    </div>
+  </div>
+
+  <!-- UI 구현 -->
+  <div class="subsection">
+    <h3>모드 선택 UI</h3>
+    <p style="font-size:0.88rem; color:var(--text2);">
+      구현 위치: <span class="file-path">components/ai/chat/chat-interface.tsx</span> &mdash; <code>ChatInterface</code> 컴포넌트
+    </p>
+    <ul class="detail-list">
+      <li>시작 화면과 대화 중 화면 모두에 모드 칩(pill) UI를 렌더링</li>
+      <li>활성 모드는 <code>bg-primary text-primary-foreground</code> 스타일, 비활성은 <code>bg-muted</code></li>
+      <li>모드 변경 시 <code>chatMode</code> state 업데이트 &rarr; 다음 메시지에 모드 반영</li>
+      <li>API 호출 시 <code>body.mode</code>로 전달: <span class="file-path">app/api/ai/chat/route.ts</span> 에서 수신</li>
+    </ul>
+  </div>
+</div>
+
+
+<!-- ============================== -->
+<!-- 4. Phase 3: 장기 기억 파이프라인 -->
+<!-- ============================== -->
+<div class="section" id="phase3">
+  <div class="section-header">
+    <div class="section-icon" style="background: var(--purple-light); color: var(--purple);">&#129504;</div>
+    <h2>4. Phase 3: 장기 기억 파이프라인</h2>
+    <span class="phase-tag badge badge-purple">P1</span>
+  </div>
+
+  <!-- 파이프라인 도식 -->
+  <div class="subsection">
+    <h3>메모리 추출 파이프라인</h3>
+    <div class="flow-diagram">
+      <div class="flow-row">
+        <span class="flow-box" style="background: var(--primary-lighter); color: var(--primary-dark);">&#128172; AI 응답 완료</span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-box" style="background: var(--blue-light); color: var(--blue);">&#128640; fire-and-forget 비동기 추출</span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-box" style="background: var(--purple-light); color: var(--purple);">&#129302; gemini-2.0-flash 분석</span>
+      </div>
+      <div class="flow-row">
+        <span class="flow-box" style="background: var(--amber-light); color: var(--amber);">&#128203; JSON 구조 추출</span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-box" style="background: var(--red-light); color: var(--red);">&#9989; confidence &ge; 0.7 필터</span>
+        <span class="flow-arrow">&rarr;</span>
+        <span class="flow-box" style="background: var(--primary-lighter); color: var(--primary-dark);">&#128190; DB 저장 (LRU 50개)</span>
+      </div>
+      <div class="flow-row">
+        <span class="flow-box" style="background: var(--accent-light); color: var(--accent);">&#128260; 다음 대화 시 시스템 프롬프트에 주입</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 파이프라인 상세 단계 -->
+  <div class="subsection">
+    <h3>파이프라인 상세 동작</h3>
+    <div class="card">
+      <div class="step-list">
+        <div class="step-item">
+          <div class="step-num">1</div>
+          <div class="step-content">
+            <h4>AI 응답 완료 후 비동기 트리거</h4>
+            <p>
+              <span class="file-path">app/api/ai/chat/route.ts</span> &mdash; <code>extractAndSaveMemories()</code> 를 <code>.catch()</code>로 감싸서 fire-and-forget 호출.
+              <code>enableLongTermMemory</code> 플래그가 <code>true</code>일 때만 실행. 사용자 응답 지연 없음.
+            </p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">2</div>
+          <div class="step-content">
+            <h4>Gemini 2.0 Flash로 대화 분석</h4>
+            <p>
+              비용 효율적인 <code>gemini-2.0-flash</code> 모델로 사용자 메시지 + AI 응답 쌍을 분석합니다.
+              <span class="file-path">lib/ai/prompts/memory-prompts.ts</span> &mdash; <code>MEMORY_EXTRACTION_PROMPT</code> 템플릿에 기존 기억과 대화 내용을 주입합니다.
+            </p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">3</div>
+          <div class="step-content">
+            <h4>JSON 구조 추출 및 파싱</h4>
+            <p>응답에서 <code>[{memory_type, content, confidence}]</code> JSON 배열을 정규식으로 추출합니다. 파싱 실패 시 조용히 무시하여 안정성을 확보합니다.</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">4</div>
+          <div class="step-content">
+            <h4>Confidence 필터링 (0.7 이상)</h4>
+            <p>추측이 아닌 명확히 드러난 정보만 저장합니다. <code>confidence &lt; 0.7</code>인 항목은 건너뜁니다.</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">5</div>
+          <div class="step-content">
+            <h4>LRU 관리 (최대 50개)</h4>
+            <p>동일 <code>memory_type + content</code> 중복 체크 후 저장. 최대 50개 초과 시 가장 오래된 메모리 삭제 (<code>updated_at</code> 기준 LRU).</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">6</div>
+          <div class="step-content">
+            <h4>다음 대화 시 시스템 프롬프트에 주입</h4>
+            <p>
+              <span class="file-path">app/actions/ai/chat.ts</span> &mdash; <code>getChatContext()</code> 에서 <code>user_ai_memories</code> 테이블 조회 &rarr;
+              <span class="file-path">lib/ai/prompts/chat-prompts.ts</span> &mdash; <code>generateMemorySection()</code>에서 유형별 그룹핑 후 프롬프트에 삽입.
+              "지난번에 말씀하셨듯이" 등 자연스러운 활용을 유도합니다.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 메모리 5가지 유형 -->
+  <div class="subsection">
+    <h3>메모리 5가지 유형</h3>
+    <p style="margin-bottom:0.5rem; font-size:0.88rem; color:var(--text2);">
+      정의 위치: <span class="file-path">lib/ai/prompts/memory-prompts.ts</span> &mdash; <code>MEMORY_EXTRACTION_PROMPT</code>, <code>MEMORY_TYPE_LABELS</code>
+    </p>
+    <div class="card">
+      <table>
+        <thead><tr><th>유형</th><th>라벨</th><th>설명</th><th>예시</th></tr></thead>
+        <tbody>
+          <tr><td><code>reading_preference</code></td><td>독서 취향</td><td>선호 장르, 작가, 스타일</td><td>"SF와 판타지 장르를 좋아함"</td></tr>
+          <tr><td><code>interest</code></td><td>관심 분야</td><td>독서 외 취미, 직업, 관심사</td><td>"인공지능, 역사에 관심"</td></tr>
+          <tr><td><code>goal</code></td><td>독서 목표</td><td>올해 목표, 읽고 싶은 책</td><td>"2026년에 50권 읽기"</td></tr>
+          <tr><td><code>emotion</code></td><td>감정 상태</td><td>독서에 대한 감정, 최근 기분</td><td>"독서 슬럼프, 얇은 책 원함"</td></tr>
+          <tr><td><code>context</code></td><td>상황 정보</td><td>학생/직장인, 환경 등</td><td>"직장인, 출퇴근 시간 독서"</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 활성화 조건 -->
+  <div class="callout callout-amber">
+    <span class="callout-icon">&#9888;&#65039;</span>
+    <div>
+      <strong>활성화 조건:</strong> 관리자 패널에서 <code>enableLongTermMemory: true</code> 설정이 필요합니다.
+      기본값은 <code>false</code>로 비활성 상태입니다.
+      설정 위치: <span class="file-path">types/ai/settings.ts</span> &mdash; <code>DEFAULT_AI_SETTINGS.memorySettings</code>
+    </div>
+  </div>
+
+  <!-- CRUD -->
+  <div class="subsection">
+    <h3>메모리 CRUD 서버 액션</h3>
+    <p style="margin-bottom:0.5rem; font-size:0.88rem; color:var(--text2);">
+      구현 위치: <span class="file-path">app/actions/ai/memory.ts</span>
+    </p>
+    <div class="card">
+      <table style="font-size:0.82rem;">
+        <thead><tr><th>함수</th><th>기능</th><th>특이사항</th></tr></thead>
+        <tbody>
+          <tr><td><code>getUserMemories(limit)</code></td><td>사용자 메모리 조회</td><td>기본 50개, <code>updated_at</code> 내림차순</td></tr>
+          <tr><td><code>saveMemory(type, content, metadata)</code></td><td>메모리 저장 (upsert)</td><td>동일 내용 중복 시 <code>updated_at</code>만 갱신, 50개 초과 시 LRU 삭제</td></tr>
+          <tr><td><code>deleteMemory(memoryId)</code></td><td>개별 메모리 삭제</td><td><code>user_id</code> 일치 확인</td></tr>
+          <tr><td><code>deleteAllMemories()</code></td><td>전체 메모리 삭제</td><td>사용자 전체 메모리 초기화</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+
+<!-- ============================== -->
+<!-- 5. Phase 4: UX 고도화 -->
+<!-- ============================== -->
+<div class="section" id="phase4">
+  <div class="section-header">
+    <div class="section-icon" style="background: var(--amber-light); color: var(--amber);">&#10024;</div>
+    <h2>5. Phase 4: UX 고도화</h2>
+    <span class="phase-tag badge badge-amber">P1</span>
+  </div>
+
+  <div class="grid grid-2">
+    <!-- 온보딩 -->
+    <div class="card">
+      <div class="card-title"><span class="icon">&#128075;</span> 온보딩 플로우</div>
+      <p style="font-size:0.85rem; color:var(--text2); margin-bottom:0.75rem;">
+        구현 위치: <span class="file-path">components/ai/chat/chat-interface.tsx</span> &mdash; <code>isFirstUser</code> 판별,
+        <span class="file-path">lib/ai/prompts/chat-prompts.ts</span> &mdash; <code>ONBOARDING_WELCOME</code>, <code>ONBOARDING_QUESTIONS</code>
+      </p>
+
+      <h4 style="font-size:0.88rem; margin-bottom:0.4rem;">첫 사용자 감지 조건</h4>
+      <div class="code-block" style="font-size:0.78rem;">
+<span class="keyword">const</span> isFirstUser = sessions.length === <span class="num">0</span> && messages.length === <span class="num">0</span> && !currentSession;
+      </div>
+
+      <h4 style="font-size:0.88rem; margin-bottom:0.4rem;">환영 메시지</h4>
+      <div style="background:var(--primary-lighter); border-radius:10px; padding:0.75rem; font-size:0.85rem; margin-bottom:0.5rem;">
+        "반가워요! 저는 독서친구예요.<br/>
+        함께 책 이야기를 나누고, 맞춤 추천도 해주고, 독서 목표도 같이 관리해줄 수 있어요.<br/>
+        어떤 걸 해볼까요?"
+      </div>
+
+      <h4 style="font-size:0.88rem; margin-bottom:0.4rem;">온보딩 퀵 액션 (4개 버튼)</h4>
+      <table style="font-size:0.82rem;">
+        <tbody>
+          <tr><td>&#128218;</td><td>최근 읽은 책 이야기</td></tr>
+          <tr><td>&#127775;</td><td>책 추천받기</td></tr>
+          <tr><td>&#127919;</td><td>독서 목표 세우기</td></tr>
+          <tr><td>&#10067;</td><td>독서친구 뭘 할 수 있어?</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 피드백 -->
+    <div class="card">
+      <div class="card-title"><span class="icon">&#128077;</span> 메시지 피드백</div>
+      <p style="font-size:0.85rem; color:var(--text2); margin-bottom:0.75rem;">
+        구현 위치: <span class="file-path">components/ai/chat/chat-message.tsx</span> &mdash; <code>ChatMessage</code> 컴포넌트 (ThumbsUp/ThumbsDown),
+        <span class="file-path">app/actions/ai/chat.ts</span> &mdash; <code>updateMessageFeedback()</code>
+      </p>
+
+      <h4 style="font-size:0.88rem; margin-bottom:0.4rem;">동작 방식</h4>
+      <ul class="detail-list">
+        <li>AI 메시지 말풍선에 마우스 호버 시 좋아요(ThumbsUp)/싫어요(ThumbsDown) 버튼 표시</li>
+        <li>클릭 시 로컬 state 즉시 반영 + 서버 액션 비동기 호출</li>
+        <li>같은 버튼 재클릭 시 피드백 취소 (<code>null</code>)</li>
+        <li>피드백 저장 실패 시 UX 방해하지 않음 (silent catch)</li>
+      </ul>
+
+      <h4 style="font-size:0.88rem; margin-top:0.75rem; margin-bottom:0.4rem;">서버 액션</h4>
+      <div class="code-block" style="font-size:0.78rem;">
+<span class="keyword">export async function</span> <span class="func">updateMessageFeedback</span>(
+  messageId: <span class="type">string</span>,
+  feedback: <span class="string">"positive"</span> | <span class="string">"negative"</span> | <span class="type">null</span>
+): <span class="type">Promise</span>&lt;<span class="type">void</span>&gt;
+<span class="comment">// 메시지 소유권 검증 후 chat_messages.feedback 컬럼 업데이트</span>
+      </div>
+
+      <h4 style="font-size:0.88rem; margin-top:0.75rem; margin-bottom:0.4rem;">피드백 핸들러 (클라이언트)</h4>
+      <p style="font-size:0.82rem; color:var(--text2);">
+        <span class="file-path">components/ai/chat/chat-interface.tsx</span> &mdash; <code>handleFeedback()</code> 에서
+        <code>updateMessageFeedback</code>를 동적 import로 호출합니다.
+      </p>
+    </div>
+  </div>
+
+  <!-- DB 마이그레이션 -->
+  <div class="subsection">
+    <h3>DB 마이그레이션</h3>
+    <div class="card">
+      <div class="card-title"><span class="icon">&#128190;</span> feedback 컬럼 추가</div>
+      <p style="font-size:0.85rem; color:var(--text2); margin-bottom:0.5rem;">
+        파일: <span class="file-path">doc/database/migration-202603021200__chat_messages__add_feedback.sql</span>
+      </p>
+      <div class="code-block" style="font-size:0.78rem;">
+<span class="comment">-- 채팅 메시지에 피드백 컬럼 추가</span>
+<span class="keyword">ALTER TABLE</span> public.chat_messages
+<span class="keyword">ADD COLUMN IF NOT EXISTS</span> feedback <span class="type">VARCHAR(10)</span> <span class="keyword">DEFAULT</span> <span class="type">NULL</span>;
+
+<span class="keyword">COMMENT ON COLUMN</span> public.chat_messages.feedback <span class="keyword">IS</span>
+  <span class="string">'사용자 피드백: positive (좋아요), negative (싫어요), NULL (없음)'</span>;
+
+<span class="comment">-- 피드백 통계 조회용 인덱스</span>
+<span class="keyword">CREATE INDEX IF NOT EXISTS</span> idx_chat_messages_feedback
+<span class="keyword">ON</span> public.chat_messages(feedback) <span class="keyword">WHERE</span> feedback <span class="keyword">IS NOT NULL</span>;
+      </div>
+
+      <div class="callout callout-amber" style="margin-top:0.75rem;">
+        <span class="callout-icon">&#9888;&#65039;</span>
+        <div>
+          <strong>주의:</strong> 이 마이그레이션은 아직 Supabase에 실행되지 않은 상태입니다.
+          <code>types/database.ts</code>에는 <code>feedback: string | null</code> 필드가 이미 반영되어 있어 타입 검사는 통과합니다.
+          배포 전 반드시 마이그레이션을 실행해야 합니다.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 점진적 기능 공개 (UX 관점) -->
+  <div class="subsection">
+    <h3>점진적 기능 공개 (UX 관점)</h3>
+    <p style="font-size:0.88rem; color:var(--text2);">
+      구현 위치: <span class="file-path">components/ai/chat/chat-interface.tsx</span>
+    </p>
+    <ul class="detail-list">
+      <li><code>featureLevel</code>은 <code>sessions.length</code> 기반으로 <code>useMemo</code>를 통해 계산</li>
+      <li><code>availableModes</code>에 포함된 모드만 칩(pill) UI로 렌더링</li>
+      <li>첫 사용자(<code>isFirstUser</code>)는 모드 칩 대신 온보딩 전용 퀵 액션 표시</li>
+      <li>세션 수가 늘어남에 따라 자연스럽게 고급 기능이 활성화됨</li>
+    </ul>
+  </div>
+</div>
+
+
+<!-- ============================== -->
+<!-- 6. Phase 5: 기획 문서 -->
+<!-- ============================== -->
+<div class="section" id="phase5">
+  <div class="section-header">
+    <div class="section-icon" style="background: var(--pink-light); color: var(--pink);">&#128196;</div>
+    <h2>6. Phase 5: 기획 문서</h2>
+    <span class="phase-tag badge badge-pink">P2</span>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="icon">&#128203;</span> 생성된 문서 목록</div>
+    <table>
+      <thead><tr><th>파일</th><th>내용</th><th>형식</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><code>doc/ai/chatbot-enhancement-plan.html</code></td>
+          <td>종합 고도화 기획서 (현황 분석, 연구 리뷰, 5 Phase 로드맵, 프롬프트 설계서, KPI, 테스트 시나리오, 구현 결과)</td>
+          <td>HTML</td>
+        </tr>
+        <tr>
+          <td><code>doc/ai/chatbot-enhancement-plan.md</code></td>
+          <td>위 기획서의 Markdown 버전 (동일 내용)</td>
+          <td>Markdown</td>
+        </tr>
+        <tr>
+          <td><code>doc/ai/execution-progress.md</code></td>
+          <td>7단계 실행 진행표 (Step 1~7: DB 타입 확보, Phase 1~4 검증, 통합 테스트, 기획 문서)</td>
+          <td>Markdown</td>
+        </tr>
+        <tr>
+          <td><code>doc/ai/chatbot-update-report.html</code></td>
+          <td>이 문서 &mdash; 구현 완료 후 상세 업데이트 리포트</td>
+          <td>HTML</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+
+<!-- ============================== -->
+<!-- 7. 아키텍처 흐름도 -->
+<!-- ============================== -->
+<div class="section" id="architecture">
+  <div class="section-header">
+    <div class="section-icon" style="background: var(--accent-light); color: var(--accent);">&#128736;</div>
+    <h2>7. 아키텍처 흐름도</h2>
+  </div>
+
+  <p style="margin-bottom:1rem; font-size:0.88rem; color:var(--text2);">
+    사용자 메시지 전송부터 AI 응답, 메모리 추출까지의 전체 데이터 흐름입니다.
+  </p>
+
+  <div class="flow-diagram" style="text-align: left; padding: 1.5rem;">
+    <pre style="font-family: 'JetBrains Mono', 'Consolas', monospace; font-size: 0.78rem; line-height: 1.8; overflow-x: auto; color: var(--text); margin: 0;">
+&#9484;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9488;
+&#9474;                           <strong>&#128100; CLIENT (chat-interface.tsx)</strong>                             &#9474;
+&#9474;  &#9484;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9488;   &#9484;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9488;   &#9484;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9488;  &#9474;
+&#9474;  &#9474; handleSendMessage()   &#9474;   &#9474; &#128172; chatMode state &#9474;   &#9474; &#128075; isFirstUser?      &#9474;  &#9474;
+&#9474;  &#9474; message + mode + ctx  &#9474;   &#9474; general/discuss/ &#9474;   &#9474;  &#8594; ONBOARDING_WELCOME&#9474;  &#9474;
+&#9474;  &#9474;    &#8594; POST /api/chat  &#9474;   &#9474; recommend/coach/ &#9474;   &#9474;  &#8594; ONBOARDING_QUES.  &#9474;  &#9474;
+&#9474;  &#9474; SSE &#8592; streaming      &#9474;   &#9474; quiz             &#9474;   &#9474;  &#8594; quickActions      &#9474;  &#9474;
+&#9474;  &#9492;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9496;   &#9492;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9496;   &#9492;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9496;  &#9474;
+&#9492;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9496;
+                                          &#9474;
+                                  POST /api/ai/chat
+                                  { sessionId, message, context, mode }
+                                          &#9474;
+&#9484;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9488;
+&#9474;                           <strong>&#9881;  API Route (route.ts)</strong>                                &#9474;
+&#9474;                                                                                          &#9474;
+&#9474;  1. &#128274; Rate Limit (20/min) + Auth + Session &#44160;&#51613;                                   &#9474;
+&#9474;  2. &#128190; &#49324;&#50857;&#51088; &#47700;&#49884;&#51648; DB &#51200;&#51109; (chat_messages)                                          &#9474;
+&#9474;  3. &#129504; &#49884;&#49828;&#53596; &#54532;&#47212;&#54532;&#53944; &#49373;&#49457;:                                                         &#9474;
+&#9474;     &#9484;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9488;  &#9474;
+&#9474;     &#9474;  generateDynamicSystemPrompt(template, context, settings, mode)   &#9474;  &#9474;
+&#9474;     &#9474;  &#9484;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9488;  &#9474;  &#9474;
+&#9474;     &#9474;  &#9474; &#9312; 6&#49465;&#49496; &#53596;&#54540;&#47551; + &#9313; &#54168;&#47476;&#49548;&#45208; + &#9314; &#49688;&#51456; &#54032;&#48324; + &#9315; &#52293; + &#44592;&#47197;       &#9474;  &#9474;  &#9474;
+&#9474;     &#9474;  &#9474; &#9316; &#46021;&#49436; &#47785;&#54364; + &#9317; &#51109;&#44592; &#44592;&#50613; &#51452;&#51077; + &#9318; &#47784;&#46300; &#51648;&#49884;&#47928; + &#9319; &#51025;&#45813; &#54805;&#49885;   &#9474;  &#9474;  &#9474;
+&#9474;     &#9474;  &#9492;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9496;  &#9474;  &#9474;
+&#9474;     &#9492;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9496;  &#9474;
+&#9474;  4. &#129302; AI API &#54840;&#52636; (Google Gemini / OpenAI / Anthropic) &#8594; SSE &#49828;&#53944;&#47532;&#48141;            &#9474;
+&#9474;  5. &#128218; &#52628;&#52380; &#52293; &#51088;&#46041; &#46321;&#47197; (processRecommendedBooks)                              &#9474;
+&#9474;  6. &#128190; AI &#51025;&#45813; DB &#51200;&#51109; (chat_messages)                                              &#9474;
+&#9474;  7. &#128640; &#51109;&#44592; &#44592;&#50613; &#52628;&#52636; (fire-and-forget, enableLongTermMemory &#49884;&#47564;)              &#9474;
+&#9474;     &#8594; extractAndSaveMemories() &#8594; gemini-2.0-flash &#8594; user_ai_memories       &#9474;
+&#9492;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9496;
+                                          &#9474;
+                              SSE (content / done / error)
+                                          &#9474;
+                                    &#128100; CLIENT &#49688;&#49888;
+                                  &#8594; &#49828;&#53944;&#47532;&#48141; &#54364;&#49884;
+                                  &#8594; &#47700;&#49884;&#51648; &#52628;&#44032;
+                                  &#8594; &#54588;&#46300;&#48177; &#48260;&#53948; &#54364;&#49884;
+    </pre>
+  </div>
+
+  <!-- 데이터 흐름 요약 테이블 -->
+  <div class="card" style="margin-top:1rem;">
+    <div class="card-title"><span class="icon">&#128260;</span> 핵심 데이터 흐름 요약</div>
+    <table style="font-size:0.82rem;">
+      <thead><tr><th>단계</th><th>위치</th><th>입력</th><th>출력</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>1. 컨텍스트 수집</td>
+          <td><code>app/actions/ai/chat.ts</code> &mdash; <code>getChatContext()</code></td>
+          <td>user_id</td>
+          <td>persona, recentBooks, recentNotes, readingGoal, memories</td>
+        </tr>
+        <tr>
+          <td>2. 프롬프트 생성</td>
+          <td><code>lib/ai/prompts/chat-prompts.ts</code> &mdash; <code>generateDynamicSystemPrompt()</code></td>
+          <td>template, context, settings, mode</td>
+          <td>완성된 시스템 프롬프트 문자열</td>
+        </tr>
+        <tr>
+          <td>3. AI 호출</td>
+          <td><code>app/api/ai/chat/route.ts</code></td>
+          <td>systemPrompt, chatHistory, message</td>
+          <td>SSE 스트리밍 응답</td>
+        </tr>
+        <tr>
+          <td>4. 추천 책 처리</td>
+          <td><code>lib/ai/utils/book-registration.ts</code> &mdash; <code>processRecommendedBooks()</code></td>
+          <td>AI 응답 텍스트</td>
+          <td>[[recommend:...]] &rarr; [[book:...]] 치환</td>
+        </tr>
+        <tr>
+          <td>5. 메모리 추출</td>
+          <td><code>app/api/ai/chat/route.ts</code> &mdash; <code>extractAndSaveMemories()</code></td>
+          <td>user msg + AI response + existing memories</td>
+          <td>user_ai_memories 테이블 upsert</td>
+        </tr>
+        <tr>
+          <td>6. 피드백 저장</td>
+          <td><code>app/actions/ai/chat.ts</code> &mdash; <code>updateMessageFeedback()</code></td>
+          <td>messageId, feedback</td>
+          <td>chat_messages.feedback 업데이트</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+
+<!-- ============================== -->
+<!-- 8. 남은 작업 -->
+<!-- ============================== -->
+<div class="section" id="remaining">
+  <div class="section-header">
+    <div class="section-icon" style="background: var(--red-light); color: var(--red);">&#9888;&#65039;</div>
+    <h2>8. 남은 작업</h2>
+  </div>
+
+  <div class="grid grid-3">
+    <div class="card" style="border-left: 4px solid var(--red);">
+      <div class="card-title"><span style="color:var(--red);">&#128308;</span> DB 마이그레이션 실행</div>
+      <p style="font-size:0.85rem; color:var(--text2);">
+        <code>chat_messages.feedback</code> 컬럼 추가 마이그레이션이 아직 Supabase에 실행되지 않았습니다.
+      </p>
+      <div style="margin-top:0.5rem;">
+        <span class="file-path">doc/database/migration-202603021200__chat_messages__add_feedback.sql</span>
+      </div>
+      <p style="font-size:0.82rem; color:var(--red); margin-top:0.5rem; font-weight:600;">
+        배포 전 필수 실행
+      </p>
+    </div>
+
+    <div class="card" style="border-left: 4px solid var(--amber);">
+      <div class="card-title"><span style="color:var(--amber);">&#128992;</span> 장기 기억 활성화</div>
+      <p style="font-size:0.85rem; color:var(--text2);">
+        관리자 패널에서 <code>enableLongTermMemory</code>를 <code>true</code>로 토글해야 메모리 추출이 시작됩니다.
+      </p>
+      <p style="font-size:0.82rem; color:var(--text2); margin-top:0.5rem;">
+        기본값: <code>false</code> (비활성)
+      </p>
+      <p style="font-size:0.82rem; color:var(--amber); margin-top:0.5rem; font-weight:600;">
+        배포 후 관리자가 설정
+      </p>
+    </div>
+
+    <div class="card" style="border-left: 4px solid var(--blue);">
+      <div class="card-title"><span style="color:var(--blue);">&#128309;</span> 실제 대화 테스트</div>
+      <p style="font-size:0.85rem; color:var(--text2);">
+        코드 레벨 검증과 빌드 검증은 완료되었으나, 실제 AI 모델과의 E2E 대화 테스트가 필요합니다.
+      </p>
+      <ul style="font-size:0.82rem; color:var(--text2); margin-top:0.5rem; padding-left:1rem;">
+        <li>소크라테스식 질문 생성 여부</li>
+        <li>모드별 프롬프트 반영 확인</li>
+        <li>안전 가드레일 동작 검증</li>
+        <li>메모리 추출 정확도</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- 검증 결과 요약 -->
+  <div class="callout callout-green" style="margin-top:1rem;">
+    <span class="callout-icon">&#9989;</span>
+    <div>
+      <strong>검증 완료 항목:</strong>
+      <code>tsc --noEmit</code> 에러 0개 &middot; <code>npm run build</code> 성공 &middot;
+      7단계 실행 진행표 전체 완료 (<span class="file-path">doc/ai/execution-progress.md</span>)
+    </div>
+  </div>
+</div>
+
+
+<!-- Footer -->
+<div style="margin-top:3rem; padding-top:1.5rem; border-top:1px solid var(--border); text-align:center; color:var(--text3); font-size:0.82rem;">
+  <p>Habitree Reading Hub &mdash; AI 독서친구 챗봇 고도화 업데이트 리포트</p>
+  <p>2026-03-02 | Habitree 기술팀</p>
+</div>
+
+</div><!-- container -->
+
+</body>
+</html>
