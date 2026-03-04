@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      access_logs: {
+        Row: {
+          id: string
+          user_id: string | null
+          session_id: string | null
+          ip_address: string | null
+          user_agent: string | null
+          path: string
+          referer: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id?: string | null
+          session_id?: string | null
+          ip_address?: string | null
+          user_agent?: string | null
+          path: string
+          referer?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string | null
+          session_id?: string | null
+          ip_address?: string | null
+          user_agent?: string | null
+          path?: string
+          referer?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
       ai_settings: {
         Row: {
           context_settings: Json
@@ -649,6 +682,42 @@ export type Database = {
           updated_at?: string | null
           user_id?: string
           vote_count?: number | null
+        }
+        Relationships: []
+      }
+      login_logs: {
+        Row: {
+          id: string
+          user_id: string | null
+          email: string | null
+          ip_address: string | null
+          user_agent: string | null
+          provider: string | null
+          success: boolean
+          error_message: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id?: string | null
+          email?: string | null
+          ip_address?: string | null
+          user_agent?: string | null
+          provider?: string | null
+          success?: boolean
+          error_message?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string | null
+          email?: string | null
+          ip_address?: string | null
+          user_agent?: string | null
+          provider?: string | null
+          success?: boolean
+          error_message?: string | null
+          created_at?: string
         }
         Relationships: []
       }

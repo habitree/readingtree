@@ -1774,5 +1774,28 @@ RLS 정책은 데이터베이스 레벨에서 접근 제어를 강제하므로, 
 
 ---
 
+### 2026-03-04 (접속/로그인 추적 기능 추가)
+
+- **변경 내용**: IP별 접속/로그인 기록 추적 테이블 생성
+  - `login_logs` 테이블 생성: 로그인 이벤트 기록
+    - `id` (uuid PK), `user_id` (nullable FK→auth.users), `email`, `ip_address`, `user_agent`
+    - `provider` (email/kakao/google/unknown), `success` (boolean), `error_message`, `created_at`
+    - RLS: 관리자만 SELECT 허용
+    - 인덱스: created_at DESC, user_id, ip_address
+  - `access_logs` 테이블 생성: 페이지 방문 기록 (로그인/미로그인 모두)
+    - `id` (uuid PK), `user_id` (nullable FK→auth.users), `session_id`, `ip_address`, `user_agent`
+    - `path`, `referer`, `created_at`
+    - RLS: 관리자만 SELECT 허용
+    - 인덱스: created_at DESC, user_id, ip_address, path
+  - `cleanup_old_logs()` 함수: 30일 이전 로그 자동 삭제
+- **영향받는 테이블**:
+  - `login_logs` (신규)
+  - `access_logs` (신규)
+- **마이그레이션 파일**:
+  - `migration-202603041200__tracking__create_login_access_logs.sql`
+- **목적**: 관리자 대시보드에서 IP별 접속/로그인 패턴 분석 및 서비스 사용 현황 파악
+
+---
+
 **이 문서는 프로젝트의 데이터 모델 단일 기준 문서입니다. 모든 스키마 변경은 이 문서에 반영되어야 합니다.**
 

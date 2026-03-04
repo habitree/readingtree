@@ -8,6 +8,8 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { getAppUrl } from "@/lib/utils/url";
 import { copySocialAvatarToStorage } from "@/lib/supabase/copy-social-avatar";
+import { headers } from "next/headers";
+import { recordLoginLog } from "@/app/actions/admin/tracking";
 
 /**
  * 카카오톡 OAuth 로그인
@@ -111,6 +113,11 @@ export async function signInWithGoogle() {
 export async function signInWithEmail(email: string, password: string) {
   const supabase = await createServerSupabaseClient();
 
+  // IP, User-Agent 캡처
+  const headersList = await headers();
+  const ipAddress = headersList.get("x-forwarded-for")?.split(",")[0]?.trim() ?? headersList.get("x-real-ip") ?? null;
+  const userAgent = headersList.get("user-agent") ?? null;
+
   // 유효성 검사
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!email || !emailRegex.test(email)) {
@@ -128,6 +135,16 @@ export async function signInWithEmail(email: string, password: string) {
   });
 
   if (error) {
+    // 로그인 실패 기록
+    recordLoginLog({
+      email,
+      ipAddress,
+      userAgent,
+      provider: "email",
+      success: false,
+      errorMessage: error.message,
+    });
+
     // 에러 메시지 처리
     if (error.message.includes("Invalid login credentials") || error.message.includes("invalid")) {
       throw new Error("이메일 또는 비밀번호가 올바르지 않습니다.");
@@ -137,6 +154,16 @@ export async function signInWithEmail(email: string, password: string) {
     }
     throw new Error(`로그인 실패: ${error.message}`);
   }
+
+  // 로그인 성공 기록
+  recordLoginLog({
+    userId: data.user?.id,
+    email,
+    ipAddress,
+    userAgent,
+    provider: "email",
+    success: true,
+  });
 
   // 로그인 성공 - 세션 생성됨
   // 사용자 프로필 확인 및 온보딩 상태 체크

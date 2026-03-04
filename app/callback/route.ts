@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { getAppUrl } from "@/lib/utils/url";
 import { copySocialAvatarToStorage } from "@/lib/supabase/copy-social-avatar";
 import { grantWelcomeBonus } from "@/app/actions/points";
+import { recordLoginLog } from "@/app/actions/admin/tracking";
 
 /**
  * OAuth 및 이메일 인증 콜백 처리
@@ -21,6 +22,10 @@ export async function GET(request: NextRequest) {
   const token = requestUrl.searchParams.get("token");
   const type = requestUrl.searchParams.get("type");
   const next = requestUrl.searchParams.get("next") || "/";
+
+  // IP/User-Agent 추출
+  const ipAddress = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? request.headers.get("x-real-ip") ?? null;
+  const userAgent = request.headers.get("user-agent") ?? null;
 
   const supabase = await createServerSupabaseClient();
 
@@ -96,12 +101,31 @@ export async function GET(request: NextRequest) {
         error: userError,
         hasUser: !!user,
       });
+      // 로그인 실패 기록
+      recordLoginLog({
+        ipAddress,
+        userAgent,
+        provider: "unknown",
+        success: false,
+        errorMessage: userError?.message ?? "사용자 정보 조회 실패",
+      });
       // getAppUrl()을 사용하여 올바른 프로덕션 URL로 리다이렉트
       const baseUrl = getAppUrl();
       return NextResponse.redirect(
         new URL("/login?error=사용자 정보를 가져올 수 없습니다. 다시 로그인해주세요.", baseUrl)
       );
     }
+
+    // OAuth 로그인 성공 기록
+    const oauthProvider = user.app_metadata?.provider as string;
+    recordLoginLog({
+      userId: user.id,
+      email: user.email,
+      ipAddress,
+      userAgent,
+      provider: (oauthProvider === "kakao" || oauthProvider === "google") ? oauthProvider : "unknown",
+      success: true,
+    });
 
     // 사용자 프로필 확인 (TASK-00의 handle_new_user 트리거가 자동 생성)
     // 트리거가 즉시 실행되지 않을 수 있으므로 재시도 로직 추가
