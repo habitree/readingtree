@@ -1051,3 +1051,50 @@ export const getSamplePersonaDashboardData = cache(async (): Promise<{
     };
   }
 });
+
+/**
+ * 샘플 사용자(관리자)의 포인트 대시보드 데이터 조회 (게스트 대시보드용)
+ * Admin Client를 사용하여 RLS 우회
+ */
+export async function getSamplePointsDashboardData(): Promise<{
+  userLevel: number;
+  levelTitle: string | undefined;
+  totalPoints: number;
+}> {
+  try {
+    const sampleUserId = await getSampleUserId();
+    const supabase = createAdminSupabaseClient();
+
+    // 병렬로 포인트 + 레벨 조회
+    const [userPointsResult, levelsResult] = await Promise.all([
+      supabase
+        .from("user_points")
+        .select("total_points, current_level, lifetime_points")
+        .eq("user_id", sampleUserId)
+        .maybeSingle(),
+      supabase
+        .from("point_levels")
+        .select("level, title, required_points")
+        .order("required_points", { ascending: true }),
+    ]);
+
+    const userPoints = userPointsResult.data;
+    const levels = levelsResult.data || [];
+
+    if (!userPoints) {
+      return { userLevel: 1, levelTitle: undefined, totalPoints: 0 };
+    }
+
+    const currentLevel = levels.find(
+      (l) => l.level === (userPoints.current_level || 1)
+    );
+
+    return {
+      userLevel: userPoints.current_level || 1,
+      levelTitle: currentLevel?.title ?? undefined,
+      totalPoints: userPoints.total_points || 0,
+    };
+  } catch {
+    return { userLevel: 1, levelTitle: undefined, totalPoints: 0 };
+  }
+}

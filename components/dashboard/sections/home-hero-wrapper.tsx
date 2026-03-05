@@ -23,6 +23,7 @@ import { getFreeNoteStats } from "@/app/actions/notes";
 import {
   getSampleDashboardStats,
   getSampleContinueReadingBooks,
+  getSamplePointsDashboardData,
 } from "@/app/actions/sample";
 import { HomeHeroSection } from "./home-hero-section";
 import { PopularBooksWidget } from "./popular-books-widget";
@@ -35,10 +36,11 @@ export async function HomeHeroWrapper() {
   const user = await getCachedCurrentUser();
 
   if (!user) {
-    // 게스트 사용자: 샘플 데이터 조회
-    const [sampleStats, sampleBooks] = await Promise.all([
+    // 게스트 사용자: 샘플 데이터 조회 (관리자 데이터와 동일하게 표시)
+    const [sampleStats, sampleBooks, samplePoints] = await Promise.all([
       getSampleDashboardStats().catch(() => ({ streak: 0, todayNotes: 0, weeklyNotes: 0 })),
       getSampleContinueReadingBooks(6).catch(() => []),
+      getSamplePointsDashboardData().catch(() => ({ userLevel: 1, levelTitle: undefined, totalPoints: 0 })),
     ]);
 
     return (
@@ -50,6 +52,9 @@ export async function HomeHeroWrapper() {
         weeklyNotes={sampleStats.weeklyNotes}
         continueReadingBooks={sampleBooks}
         isGuest={true}
+        userLevel={samplePoints.userLevel}
+        levelTitle={samplePoints.levelTitle}
+        totalPoints={samplePoints.totalPoints}
       />
     );
   }
