@@ -1,6 +1,7 @@
 "use server";
 
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { revalidatePath } from "next/cache";
 import type {
   CreateNoteInput,
@@ -18,6 +19,7 @@ import type { PointActionType } from "@/types/points";
 import { getRandomDefaultCoverPath } from "@/lib/constants/default-covers";
 import { READTREE_BOOK_ID } from "@/lib/constants/readtree";
 import { checkFeatureAccess } from "./subscription";
+import { getSampleUserId } from "./sample";
 
 /**
  * 기록 생성
@@ -582,18 +584,21 @@ export async function getNotes(bookId?: string, type?: NoteType, user?: User | n
     authError = fetchedError;
   }
 
-  // 게스트 사용자인 경우 샘플 데이터 반환
+  // 게스트 사용자인 경우 관리자(샘플 사용자)의 최신 데이터 반환
   if (authError || !currentUser) {
+    const sampleUserId = await getSampleUserId();
+    const adminSupabase = createAdminSupabaseClient();
+
     const selectQuery = includeBook
       ? `*, books (id, title, author, cover_image_url), transcriptions (extracted_text, raw_extracted_text, status)`
       : `*, transcriptions (extracted_text, raw_extracted_text, status)`;
 
-    let query = supabase
+    let query = adminSupabase
       .from("notes")
       .select(selectQuery)
-      .eq("is_sample", true)
+      .eq("user_id", sampleUserId)
       .order("created_at", { ascending: false })
-      .limit(50); // 샘플 데이터는 최대 50개
+      .limit(50);
 
     if (bookId) {
       query = query.eq("book_id", bookId);
@@ -606,17 +611,13 @@ export async function getNotes(bookId?: string, type?: NoteType, user?: User | n
     const { data: sampleNotes, error: sampleError } = await query;
 
     if (sampleError) {
-      // 샘플 데이터가 없어도 빈 배열 반환 (에러 발생하지 않음)
       return [];
     }
 
-    // Supabase 조인 결과가 배열로 반환될 수 있으므로 객체로 변환
     const notes = (sampleNotes || []).map((note: any) => {
-      // books가 배열인 경우 첫 번째 요소 사용, 객체인 경우 그대로 사용
       const book = Array.isArray(note.books) ? note.books[0] : (note.books || note.book);
-      // transcriptions: UNIQUE 제약조건으로 단일 객체 반환 (1:1 관계)
       const transcription = note.transcriptions || undefined;
-      const { books, transcriptions, ...restNote } = note; // books, transcriptions 키 제거
+      const { books, transcriptions, ...restNote } = note;
       return {
         ...restNote,
         book: book || undefined,
