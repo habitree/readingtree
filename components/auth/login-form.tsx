@@ -12,8 +12,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Loader2, ChevronDown } from "lucide-react";
+import { Loader2, ChevronDown, Eye } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useTranslation, type TranslationKey } from "@/lib/i18n";
 
 const createLoginFormSchema = (t: (key: TranslationKey) => string) =>
@@ -30,6 +31,7 @@ type LoginFormValues = z.infer<ReturnType<typeof createLoginFormSchema>>;
  */
 export function LoginForm() {
   const { t } = useTranslation();
+  const router = useRouter();
   const [isLoading, setIsLoading] = useState<"kakao" | "google" | "email" | null>(null);
   const [showEmailLogin, setShowEmailLogin] = useState(false);
 
@@ -148,13 +150,31 @@ export function LoginForm() {
           {t("auth.loginTermsNotice")}
         </p>
 
-        <div className="text-center">
+        <div className="text-center space-y-3">
           <p className="text-sm text-muted-foreground">
             {t("auth.dontHaveAccount")}{" "}
             <Link href="/signup" className="text-primary hover:underline font-medium">
               {t("auth.signup")}
             </Link>
           </p>
+
+          <Separator />
+
+          <div>
+            <Button
+              variant="ghost"
+              size="lg"
+              fullWidth
+              onClick={() => router.push("/")}
+              className="text-muted-foreground hover:text-foreground"
+            >
+              <Eye className="mr-2 h-4 w-4" />
+              {t("auth.browseAsGuest")}
+            </Button>
+            <p className="text-xs text-muted-foreground mt-1">
+              {t("auth.browseAsGuestDesc")}
+            </p>
+          </div>
         </div>
 
         <div className="pt-4 border-t">

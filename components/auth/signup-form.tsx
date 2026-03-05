@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, Eye } from "lucide-react";
 import Link from "next/link";
 import { useTranslation } from "@/lib/i18n";
 
@@ -390,13 +390,31 @@ export function SignupForm() {
           </Button>
         </form>
 
-        <div className="text-center">
+        <div className="text-center space-y-3">
           <p className="text-sm text-muted-foreground">
             {t("auth.alreadyHaveAccount")}{" "}
             <Link href="/login" className="text-primary hover:underline">
               {t("auth.login")}
             </Link>
           </p>
+
+          <Separator />
+
+          <div>
+            <Button
+              variant="ghost"
+              size="lg"
+              fullWidth
+              onClick={() => router.push("/")}
+              className="text-muted-foreground hover:text-foreground"
+            >
+              <Eye className="mr-2 h-4 w-4" />
+              {t("auth.browseAsGuest")}
+            </Button>
+            <p className="text-xs text-muted-foreground mt-1">
+              {t("auth.browseAsGuestDesc")}
+            </p>
+          </div>
         </div>
       </CardContent>
     </Card>

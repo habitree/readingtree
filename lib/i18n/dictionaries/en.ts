@@ -141,6 +141,8 @@ export const en: Dictionary = {
     signupWithEmail: "Sign up with email",
     alreadyHaveAccount: "Already have an account?",
     dontHaveAccount: "Don't have an account?",
+    browseAsGuest: "Browse",
+    browseAsGuestDesc: "Continue without logging in",
     agreeToTerms: "I agree to the terms of service",
     privacyPolicy: "Privacy Policy",
     termsOfService: "Terms of Service",

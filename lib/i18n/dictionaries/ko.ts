@@ -139,6 +139,8 @@ export const ko = {
     signupWithEmail: "이메일로 회원가입",
     alreadyHaveAccount: "이미 계정이 있으신가요?",
     dontHaveAccount: "계정이 없으신가요?",
+    browseAsGuest: "둘러보기",
+    browseAsGuestDesc: "로그인 없이 둘러보기",
     agreeToTerms: "이용약관에 동의합니다",
     privacyPolicy: "개인정보 처리방침",
     termsOfService: "이용약관",
