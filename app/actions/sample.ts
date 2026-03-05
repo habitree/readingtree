@@ -944,7 +944,7 @@ export async function getSampleMonthlyActivities(
     const endDate = new Date(Date.UTC(year, month, 0, 23, 59, 59) - 9 * 60 * 60 * 1000);
 
     // 해당 월의 노트 조회 (표지 이미지 포함)
-    const { data: notes } = await supabase
+    const { data: notes, error: notesError } = await supabase
       .from("notes")
       .select("created_at, type, book_id, books(id, title, cover_image_url)")
       .eq("user_id", sampleUserId)
@@ -952,17 +952,25 @@ export async function getSampleMonthlyActivities(
       .lte("created_at", endDate.toISOString())
       .order("created_at", { ascending: true });
 
-    if (!notes || notes.length === 0) {
+    if (notesError) {
+      console.error("[getSampleMonthlyActivities] notes 조회 오류:", notesError.message, { sampleUserId, start: startDate.toISOString(), end: endDate.toISOString() });
       return {};
     }
 
-    // user_books ID 매핑 조회
-    const bookIds = [...new Set(notes.map((n) => n.book_id))];
-    const { data: userBooksData } = await supabase
-      .from("user_books")
-      .select("id, book_id")
-      .eq("user_id", sampleUserId)
-      .in("book_id", bookIds);
+    if (!notes || notes.length === 0) {
+      console.warn("[getSampleMonthlyActivities] 해당 월에 노트 없음:", { sampleUserId, year, month });
+      return {};
+    }
+
+    // user_books ID 매핑 조회 (null book_id 제외)
+    const bookIds = [...new Set(notes.map((n) => n.book_id).filter((id): id is string => id != null))];
+    const { data: userBooksData } = bookIds.length > 0
+      ? await supabase
+          .from("user_books")
+          .select("id, book_id")
+          .eq("user_id", sampleUserId)
+          .in("book_id", bookIds)
+      : { data: [] };
 
     const userBookIdMap = new Map<string, string>();
     if (userBooksData) {
@@ -1015,7 +1023,8 @@ export async function getSampleMonthlyActivities(
     }
 
     return dailyActivities;
-  } catch {
+  } catch (error) {
+    console.error("[getSampleMonthlyActivities] 예외 발생:", error instanceof Error ? error.message : error);
     return {};
   }
 }
