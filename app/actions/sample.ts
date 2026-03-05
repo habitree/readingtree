@@ -19,20 +19,49 @@ export async function getSampleUserId(): Promise<string> {
     return envSampleUserId;
   }
 
-  // 환경 변수가 없으면 is_admin = TRUE인 사용자 조회
+  // 환경 변수가 없으면 is_admin = TRUE인 사용자 중 노트가 가장 많은 사용자 조회
   const supabase = createAdminSupabaseClient();
-  const { data, error } = await supabase
+  const { data: admins, error } = await supabase
     .from("users")
     .select("id")
-    .eq("is_admin", true)
-    .limit(1)
-    .maybeSingle();
+    .eq("is_admin", true);
 
-  if (error || !data) {
+  if (error || !admins || admins.length === 0) {
     throw new Error("샘플 사용자(관리자)를 찾을 수 없습니다.");
   }
 
-  return data.id;
+  // 관리자가 1명이면 바로 반환
+  if (admins.length === 1) {
+    return admins[0].id;
+  }
+
+  // 여러 관리자 중 노트가 가장 많은 관리자 선택
+  const adminIds = admins.map((a) => a.id);
+  const { data: noteCounts } = await supabase
+    .from("notes")
+    .select("user_id")
+    .in("user_id", adminIds);
+
+  if (!noteCounts || noteCounts.length === 0) {
+    return admins[0].id;
+  }
+
+  const countMap = new Map<string, number>();
+  for (const n of noteCounts) {
+    countMap.set(n.user_id, (countMap.get(n.user_id) || 0) + 1);
+  }
+
+  // 노트가 가장 많은 관리자 ID 반환
+  let bestId = admins[0].id;
+  let maxCount = 0;
+  for (const [userId, count] of countMap) {
+    if (count > maxCount) {
+      maxCount = count;
+      bestId = userId;
+    }
+  }
+
+  return bestId;
 }
 
 /**
