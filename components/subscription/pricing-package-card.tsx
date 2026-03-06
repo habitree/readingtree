@@ -1,4 +1,7 @@
-import { Coins, Sparkles } from "lucide-react";
+"use client";
+
+import { Coins, Sparkles, Loader2 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import {
   Card,
   CardHeader,
@@ -11,6 +14,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { PointPackageInfo } from "@/lib/subscription/pricing-data";
 import { formatPrice } from "@/lib/subscription/pricing-data";
+import { useTossPayment } from "@/hooks/use-toss-payment";
+import { useAuth } from "@/contexts/auth-context";
 
 interface PricingPackageCardProps {
   pkg: PointPackageInfo;
@@ -19,6 +24,17 @@ interface PricingPackageCardProps {
 export function PricingPackageCard({ pkg }: PricingPackageCardProps) {
   const totalPoints = pkg.points + pkg.bonusPoints;
   const firstPurchaseTotal = totalPoints + pkg.firstPurchaseBonusPoints;
+  const { requestPayment, isLoading, error } = useTossPayment();
+  const { user } = useAuth();
+  const router = useRouter();
+
+  const handlePurchase = async () => {
+    if (!user) {
+      router.push("/login");
+      return;
+    }
+    await requestPayment(pkg.id);
+  };
 
   return (
     <Card
@@ -70,14 +86,25 @@ export function PricingPackageCard({ pkg }: PricingPackageCardProps) {
         </div>
       </CardContent>
 
-      <CardFooter>
+      <CardFooter className="flex-col gap-2">
         <Button
           variant={pkg.highlighted ? "default" : "outline"}
           className="w-full"
-          disabled
+          onClick={handlePurchase}
+          disabled={isLoading}
         >
-          준비 중
+          {isLoading ? (
+            <>
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              결제 진행 중...
+            </>
+          ) : (
+            "충전하기"
+          )}
         </Button>
+        {error && (
+          <p className="text-xs text-destructive text-center">{error}</p>
+        )}
       </CardFooter>
     </Card>
   );

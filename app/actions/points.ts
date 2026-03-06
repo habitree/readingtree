@@ -114,145 +114,58 @@ export async function earnPoints(
   }
 
   try {
-    // 1. 액션 설정 조회 (.maybeSingle() 사용으로 에러 방지)
-    const { data: actionConfig, error: configError } = await supabase
-      .from("point_action_configs")
-      .select("*")
-      .eq("action_type", actionType)
-      .eq("is_active", true)
-      .maybeSingle();
-
-    if (configError || !actionConfig) {
-      console.warn(`Point action config not found: ${actionType}`);
-      return { success: false, points_earned: 0, new_total: 0, error: "Invalid action." };
-    }
-
-    // 2. 일일 제한 확인 (KST 기준)
-    if (actionConfig.daily_limit) {
-      const today = getKSTToday();
-      // KST 기준 오늘 00:00 ~ 23:59 → UTC로 변환 (KST-9h)
-      const { count } = await supabase
-        .from("point_transactions")
-        .select("*", { count: "exact", head: true })
-        .eq("user_id", currentUser.id)
-        .eq("action_type", actionType)
-        .gte("created_at", `${today}T00:00:00+09:00`)
-        .lte("created_at", `${today}T23:59:59+09:00`);
-
-      if (count && count >= actionConfig.daily_limit) {
-        return { success: false, points_earned: 0, new_total: 0, error: "Daily limit reached." };
+    // 원자적 RPC로 포인트 적립 (일일 한도, 중복 방지, 잔액 업데이트를 단일 트랜잭션에서 처리)
+    const { data: rpcResult, error: rpcError } = await supabase.rpc(
+      "earn_points_atomic",
+      {
+        p_user_id: currentUser.id,
+        p_action_type: actionType,
+        p_description: options?.description || null,
+        p_reference_id: options?.referenceId || null,
+        p_reference_type: options?.referenceType || null,
+        p_metadata: options?.metadata || null,
       }
-    }
+    );
 
-    // 3. 반복 불가 액션인 경우 이미 획득했는지 확인
-    if (!actionConfig.is_repeatable) {
-      const { data: existingTransaction } = await supabase
-        .from("point_transactions")
-        .select("id")
-        .eq("user_id", currentUser.id)
-        .eq("action_type", actionType)
-        .maybeSingle();
-
-      if (existingTransaction) {
-        return { success: false, points_earned: 0, new_total: 0, error: "Already claimed." };
-      }
-    }
-
-    // 4. 사용자 포인트 정보 조회/생성 (upsert로 중복 INSERT 방지)
-    let userPoints = await getUserPoints(currentUser);
-    if (!userPoints) {
-      // 새 사용자 포인트 레코드 생성 (동시 요청 시 중복 방지)
-      const { data: newPoints, error: createError } = await supabase
-        .from("user_points")
-        .upsert({
-          user_id: currentUser.id,
-          total_points: 0,
-          lifetime_points: 0,
-          current_level: 1,
-          current_streak: 0,
-          longest_streak: 0,
-        }, { onConflict: "user_id" })
-        .select()
-        .single();
-
-      if (createError || !newPoints) {
-        return { success: false, points_earned: 0, new_total: 0, error: "Failed to initialize points." };
-      }
-      userPoints = newPoints as UserPoints;
-    }
-
-    // 5. 포인트 계산 (배율 없이 순수 포인트)
-    const basePoints = actionConfig.base_points;
-    const finalPoints = basePoints;
-
-    // 6. 새 잔액 계산
-    const newTotal = userPoints!.total_points + finalPoints;
-
-    // 7. 거래 내역 생성 (배율 필드 제거)
-    const { error: transactionError } = await supabase
-      .from("point_transactions")
-      .insert({
-        user_id: currentUser.id,
-        action_type: actionType,
-        points: basePoints,
-        final_points: finalPoints,
-        description: options?.description || actionConfig.description,
-        reference_id: options?.referenceId,
-        reference_type: options?.referenceType,
-        balance_after: newTotal,
-        metadata: options?.metadata,
-      });
-
-    if (transactionError) {
-      console.error("Failed to create transaction:", transactionError);
+    if (rpcError) {
+      console.error("Failed to earn points (RPC):", rpcError);
       return { success: false, points_earned: 0, new_total: 0, error: "Failed to earn points." };
     }
 
-    // 8. 레벨 업 확인
-    const { data: levels } = await supabase
-      .from("point_levels")
-      .select("*")
-      .order("required_points", { ascending: true });
-
-    const newLifetimePoints = userPoints!.lifetime_points + finalPoints;
-    let newLevel = userPoints!.current_level;
-    let levelUp = false;
-
-    if (levels) {
-      for (const level of levels) {
-        if (newLifetimePoints >= level.required_points) {
-          if (level.level > newLevel) {
-            newLevel = level.level;
-            levelUp = true;
-          }
-        }
-      }
+    if (!rpcResult?.success) {
+      return {
+        success: false,
+        points_earned: 0,
+        new_total: rpcResult?.new_total ?? 0,
+        error: rpcResult?.error || "Failed to earn points.",
+      };
     }
 
-    // 9. 사용자 포인트 업데이트
-    await supabase
-      .from("user_points")
-      .update({
-        total_points: newTotal,
-        lifetime_points: newLifetimePoints,
-        current_level: newLevel,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("user_id", currentUser.id);
+    const finalPoints = rpcResult.points_earned as number;
+    const newTotal = rpcResult.new_total as number;
+    const oldLevel = rpcResult.old_level as number;
 
-    // 10. 업적 확인
+    // 레벨업 확인 (RPC 실행 후 트리거가 레벨을 업데이트했을 수 있음)
+    const { data: updatedUserPoints } = await supabase
+      .from("user_points")
+      .select("current_level")
+      .eq("user_id", currentUser.id)
+      .single();
+
+    const newLevel = updatedUserPoints?.current_level ?? oldLevel;
+    const levelUp = newLevel > oldLevel;
+
+    // 업적 확인 (후처리)
     const achievements: Achievement[] = [];
 
-    // 첫 번째 특별 보상 확인
     if (actionType === "note_create") {
       const { count: noteCount } = await supabase
         .from("point_transactions")
-        .select("*", { count: "exact", head: true })
+        .select("id", { count: "exact", head: true })
         .eq("user_id", currentUser.id)
         .eq("action_type", "note_create");
 
       if (noteCount === 1) {
-        // 첫 번째 노트 보너스
         await earnPoints("first_note", { user: currentUser, description: "First note bonus" });
         achievements.push({
           type: "first_time",
@@ -267,7 +180,7 @@ export async function earnPoints(
     if (actionType === "book_add") {
       const { count: bookCount } = await supabase
         .from("point_transactions")
-        .select("*", { count: "exact", head: true })
+        .select("id", { count: "exact", head: true })
         .eq("user_id", currentUser.id)
         .eq("action_type", "book_add");
 
@@ -283,15 +196,19 @@ export async function earnPoints(
       }
     }
 
-    // 레벨업 업적
     if (levelUp) {
-      const levelInfo = levels?.find((l) => l.level === newLevel);
+      const { data: levels } = await supabase
+        .from("point_levels")
+        .select("level, title, badge_icon")
+        .eq("level", newLevel)
+        .single();
+
       achievements.push({
         type: "level_up",
         title: `Level ${newLevel} reached!`,
-        description: levelInfo?.title || "You reached a new level",
+        description: levels?.title || "You reached a new level",
         points_bonus: 0,
-        icon: levelInfo?.badge_icon || "Star",
+        icon: levels?.badge_icon || "Star",
       });
     }
 
@@ -703,7 +620,7 @@ export async function getLevelDistribution(): Promise<{
     levels.map(async (level) => {
       const { count } = await supabase
         .from("user_points")
-        .select("*", { count: "exact", head: true })
+        .select("id", { count: "exact", head: true })
         .eq("current_level", level.level);
 
       return {
@@ -742,13 +659,13 @@ export async function getUserRank(user?: User | null): Promise<{
   // 자신보다 높은 포인트를 가진 사용자 수
   const { count: higherCount } = await supabase
     .from("user_points")
-    .select("*", { count: "exact", head: true })
+    .select("id", { count: "exact", head: true })
     .gt("lifetime_points", userPoints.lifetime_points);
 
   // 전체 사용자 수
   const { count: totalCount } = await supabase
     .from("user_points")
-    .select("*", { count: "exact", head: true });
+    .select("id", { count: "exact", head: true });
 
   const rank = (higherCount || 0) + 1;
   const totalUsers = totalCount || 1;

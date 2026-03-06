@@ -471,32 +471,23 @@ export async function deleteGroup(groupId: string) {
     throw new Error("로그인이 필요합니다.");
   }
 
-  // 리더인지 확인
-  const { data: group } = await supabase
-    .from("groups")
-    .select("leader_id")
-    .eq("id", groupId)
-    .single();
-
-  if (!group) {
-    throw new Error("모임을 찾을 수 없습니다.");
-  }
-
-  if (group.leader_id !== user.id) {
-    throw new Error("리더만 모임을 삭제할 수 있습니다.");
-  }
-
-  // 관련 데이터 삭제 (CASCADE 되지 않는 경우)
-  await supabase.from("group_notes").delete().eq("group_id", groupId);
-  await supabase.from("group_books").delete().eq("group_id", groupId);
-  await supabase.from("group_shared_books").delete().eq("group_id", groupId);
-  await supabase.from("group_members").delete().eq("group_id", groupId);
-
-  // 모임 삭제
-  const { error } = await supabase.from("groups").delete().eq("id", groupId);
+  // 원자적 그룹 삭제 (RPC: 리더 검증 + CASCADE 삭제를 단일 트랜잭션에서 처리)
+  const { data: result, error } = await supabase.rpc("delete_group_atomic", {
+    p_group_id: groupId,
+    p_user_id: user.id,
+  });
 
   if (error) {
     throw new Error(`모임 삭제 실패: ${error.message}`);
+  }
+
+  if (!result?.success) {
+    const errorMsg = result?.error === "Not authorized"
+      ? "리더만 모임을 삭제할 수 있습니다."
+      : result?.error === "Group not found"
+        ? "모임을 찾을 수 없습니다."
+        : `모임 삭제 실패: ${result?.error}`;
+    throw new Error(errorMsg);
   }
 
   revalidatePath("/groups");

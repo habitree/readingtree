@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ReadTree 결제 시스템 가이드</title>
+<style>
+  :root { --primary: #2563eb; --bg: #f8fafc; --card: #fff; --border: #e2e8f0; --text: #1e293b; --muted: #64748b; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; max-width: 960px; margin: 0 auto; padding: 2rem 1rem; }
+  h1 { font-size: 2rem; margin-bottom: 0.5rem; }
+  h2 { font-size: 1.5rem; margin: 2rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid var(--primary); }
+  h3 { font-size: 1.1rem; margin: 1.5rem 0 0.5rem; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; margin: 1rem 0; }
+  .flow-diagram { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin: 1rem 0; }
+  .flow-step { background: var(--primary); color: white; padding: 0.5rem 1rem; border-radius: 8px; font-size: 0.85rem; }
+  .flow-arrow { color: var(--muted); font-weight: bold; }
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+  th, td { padding: 0.75rem; border: 1px solid var(--border); text-align: left; font-size: 0.9rem; }
+  th { background: #f1f5f9; font-weight: 600; }
+  .badge { display: inline-block; padding: 0.2rem 0.6rem; border-radius: 6px; font-size: 0.75rem; font-weight: 600; }
+  .badge-blue { background: #dbeafe; color: #1d4ed8; }
+  .badge-green { background: #dcfce7; color: #15803d; }
+  .badge-red { background: #fef2f2; color: #dc2626; }
+  .security-list { list-style: none; padding: 0; }
+  .security-list li { padding: 0.5rem 0; padding-left: 1.5rem; position: relative; }
+  .security-list li::before { content: "🔒"; position: absolute; left: 0; }
+  pre { background: #1e293b; color: #e2e8f0; padding: 1rem; border-radius: 8px; overflow-x: auto; font-size: 0.85rem; margin: 0.5rem 0; }
+  code { font-family: 'Fira Code', monospace; }
+</style>
+</head>
+<body>
+
+<h1>ReadTree 결제 시스템 가이드</h1>
+<p style="color: var(--muted);">토스페이먼츠 연동 종합 문서 | v1.0</p>
+
+<h2>1. 토스페이먼츠 비용 구조</h2>
+<div class="card">
+  <table>
+    <tr><th>항목</th><th>비용</th><th>비고</th></tr>
+    <tr><td>가입비</td><td>무료</td><td></td></tr>
+    <tr><td>연관리비</td><td>무료</td><td></td></tr>
+    <tr><td>신용/체크카드</td><td>3.4%</td><td>일반 수수료</td></tr>
+    <tr><td>간편결제</td><td>3.4%</td><td>카카오페이, 네이버페이, 토스페이</td></tr>
+    <tr><td>계좌이체</td><td>2.0%</td><td>최저 건당 200원</td></tr>
+    <tr><td>가상계좌</td><td>건당 400원</td><td>입금 대기 → 웹훅 확인</td></tr>
+    <tr><td>휴대폰 결제</td><td>3.5~8%</td><td>디지털 콘텐츠 7~8%</td></tr>
+  </table>
+</div>
+
+<h2>2. 결제 플로우</h2>
+<div class="card">
+  <div class="flow-diagram">
+    <span class="flow-step">1. 충전하기 클릭</span>
+    <span class="flow-arrow">&rarr;</span>
+    <span class="flow-step">2. 서버: 주문 생성 (pending)</span>
+    <span class="flow-arrow">&rarr;</span>
+    <span class="flow-step">3. 토스 SDK: 결제창 오픈</span>
+    <span class="flow-arrow">&rarr;</span>
+    <span class="flow-step">4. 사용자: 결제 완료</span>
+    <span class="flow-arrow">&rarr;</span>
+    <span class="flow-step">5. /payment/success 리다이렉트</span>
+    <span class="flow-arrow">&rarr;</span>
+    <span class="flow-step">6. POST /api/payment/confirm</span>
+    <span class="flow-arrow">&rarr;</span>
+    <span class="flow-step">7. 토스 승인 API 호출</span>
+    <span class="flow-arrow">&rarr;</span>
+    <span class="flow-step">8. 포인트 충전 + 성공 화면</span>
+  </div>
+</div>
+
+<h2>3. 아키텍처</h2>
+<div class="card">
+  <h3>레이어 구조</h3>
+  <pre><code>
+  [프론트엔드]                    [백엔드]                      [외부]
+  ┌──────────────┐     ┌───────────────────────┐     ┌──────────────┐
+  │ PricingCard  │────▶│ actions/payment.ts     │────▶│ Supabase DB  │
+  │ useTossPayment│    │ (createPaymentOrder)   │     │ payment_orders│
+  └──────┬───────┘     └───────────────────────┘     └──────────────┘
+         │
+         ▼ 토스 SDK
+  ┌──────────────┐     ┌───────────────────────┐     ┌──────────────┐
+  │ success page │────▶│ api/payment/confirm    │────▶│ 토스 승인 API │
+  │              │     │ (금액검증→승인→충전)     │     │              │
+  └──────────────┘     └───────────────────────┘     └──────────────┘
+                       ┌───────────────────────┐
+                       │ api/payment/webhook    │◀─── 토스 웹훅
+                       │ (가상계좌 입금/취소)     │     (DEPOSIT_CALLBACK)
+                       └───────────────────────┘
+  </code></pre>
+</div>
+
+<h2>4. DB 스키마</h2>
+<div class="card">
+  <h3>payment_orders</h3>
+  <table>
+    <tr><th>컬럼</th><th>타입</th><th>설명</th></tr>
+    <tr><td>id</td><td>uuid PK</td><td>자동 생성</td></tr>
+    <tr><td>user_id</td><td>uuid FK</td><td>auth.users 참조</td></tr>
+    <tr><td>order_id</td><td>text UNIQUE</td><td>RT_YYYYMMDDHHmmss_xxxx</td></tr>
+    <tr><td>package_id</td><td>text</td><td>light / standard / premium</td></tr>
+    <tr><td>amount</td><td>integer</td><td>결제 금액 (원)</td></tr>
+    <tr><td>points</td><td>integer</td><td>기본 포인트</td></tr>
+    <tr><td>bonus_points</td><td>integer</td><td>보너스 포인트</td></tr>
+    <tr><td>first_purchase_bonus</td><td>integer</td><td>첫 충전 보너스</td></tr>
+    <tr><td>status</td><td>text</td><td>pending → confirmed / failed / cancelled / expired</td></tr>
+    <tr><td>payment_key</td><td>text</td><td>토스 paymentKey</td></tr>
+    <tr><td>payment_method</td><td>text</td><td>카드 / 간편결제 / 계좌이체 등</td></tr>
+    <tr><td>confirmed_at</td><td>timestamptz</td><td>승인 시각</td></tr>
+  </table>
+
+  <h3 style="margin-top: 1.5rem;">payment_history (감사 로그)</h3>
+  <table>
+    <tr><th>컬럼</th><th>타입</th><th>설명</th></tr>
+    <tr><td>id</td><td>uuid PK</td><td>자동 생성</td></tr>
+    <tr><td>order_id</td><td>text</td><td>주문 번호</td></tr>
+    <tr><td>user_id</td><td>uuid FK</td><td>사용자</td></tr>
+    <tr><td>event_type</td><td>text</td><td>order_created, payment_confirmed, points_charged 등</td></tr>
+    <tr><td>payload</td><td>jsonb</td><td>이벤트 상세 데이터</td></tr>
+  </table>
+</div>
+
+<h2>5. 보안 핵심 사항</h2>
+<div class="card">
+  <ul class="security-list">
+    <li><strong>금액 위변조 검증</strong>: DB의 주문 금액과 클라이언트 전달 금액을 비교, 불일치 시 즉시 거부</li>
+    <li><strong>인증 필수</strong>: 모든 결제 API는 Supabase auth.getUser()로 사용자 확인</li>
+    <li><strong>Rate Limiting</strong>: 결제 승인 API는 분당 10회 제한</li>
+    <li><strong>시크릿 키 보호</strong>: TOSS_SECRET_KEY는 서버에서만 사용 (NEXT_PUBLIC 접두사 없음)</li>
+    <li><strong>RLS 적용</strong>: 본인 주문만 조회/수정 가능, 관리자만 전체 조회</li>
+    <li><strong>감사 로그</strong>: 모든 결제 이벤트를 payment_history에 기록</li>
+    <li><strong>중복 결제 방지</strong>: 이미 confirmed된 주문은 재처리 거부 (409)</li>
+    <li><strong>주문 만료</strong>: 10분 초과 pending 주문은 자동 expired 처리</li>
+  </ul>
+</div>
+
+<h2>6. 포인트 패키지</h2>
+<div class="card">
+  <table>
+    <tr><th>패키지</th><th>가격</th><th>기본 P</th><th>보너스 P</th><th>첫 충전 보너스</th><th>첫 충전 합계</th></tr>
+    <tr><td><span class="badge badge-blue">라이트</span></td><td>₩1,900</td><td>500</td><td>0</td><td>500</td><td>1,000P</td></tr>
+    <tr><td><span class="badge badge-green">스탠다드</span></td><td>₩3,900</td><td>1,200</td><td>200</td><td>1,200</td><td>2,600P</td></tr>
+    <tr><td><span class="badge badge-red">프리미엄</span></td><td>₩6,900</td><td>3,000</td><td>800</td><td>3,000</td><td>6,800P</td></tr>
+  </table>
+</div>
+
+</body>
+</html>

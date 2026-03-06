@@ -371,41 +371,33 @@ export async function getSampleBookshelves(): Promise<BookshelfWithStats[]> {
     return [];
   }
 
-  // 각 서재의 통계 계산
-  const bookshelvesWithStats: BookshelfWithStats[] = await Promise.all(
-    bookshelves.map(async (bookshelf) => {
-      const { data: userBooks } = await supabase
-        .from("user_books")
-        .select("status")
-        .eq("bookshelf_id", bookshelf.id);
+  // 단일 RPC 쿼리로 모든 서재 통계 계산 (N+1 제거)
+  const { data: statsData } = await supabase.rpc("get_bookshelves_with_stats", {
+    p_user_id: sampleUserId,
+  });
 
-      const statusCounts = {
-        reading: 0,
-        completed: 0,
-        paused: 0,
-        not_started: 0,
-        rereading: 0,
-      };
+  // RPC 결과를 서재 목록과 매핑
+  const statsMap = new Map<string, Record<string, number>>();
+  if (statsData) {
+    for (const row of statsData) {
+      statsMap.set(row.id, {
+        book_count: Number(row.book_count) || 0,
+        reading_count: Number(row.reading_count) || 0,
+        completed_count: Number(row.completed_count) || 0,
+        paused_count: Number(row.paused_count) || 0,
+        not_started_count: Number(row.not_started_count) || 0,
+        rereading_count: Number(row.rereading_count) || 0,
+      });
+    }
+  }
 
-      if (userBooks) {
-        userBooks.forEach((ub) => {
-          if (ub.status in statusCounts) {
-            statusCounts[ub.status as keyof typeof statusCounts]++;
-          }
-        });
-      }
-
-      return {
-        ...bookshelf,
-        book_count: userBooks?.length || 0,
-        reading_count: statusCounts.reading,
-        completed_count: statusCounts.completed,
-        paused_count: statusCounts.paused,
-        not_started_count: statusCounts.not_started,
-        rereading_count: statusCounts.rereading,
-      };
-    })
-  );
+  const bookshelvesWithStats: BookshelfWithStats[] = bookshelves.map((bookshelf) => {
+    const stats = statsMap.get(bookshelf.id) || {
+      book_count: 0, reading_count: 0, completed_count: 0,
+      paused_count: 0, not_started_count: 0, rereading_count: 0,
+    };
+    return { ...bookshelf, ...stats };
+  });
 
   // 메인 서재를 맨 앞으로 정렬
   return bookshelvesWithStats.sort((a, b) => {

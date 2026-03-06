@@ -133,11 +133,14 @@ export async function createNote(data: CreateNoteInput, user?: User | null) {
       .maybeSingle();
 
     if (!existingUB) {
-      await supabase.from("user_books").insert({
-        user_id: currentUser.id,
-        book_id: READTREE_BOOK_ID,
-        status: "reading",
-      });
+      await supabase.from("user_books").upsert(
+        {
+          user_id: currentUser.id,
+          book_id: READTREE_BOOK_ID,
+          status: "reading",
+        },
+        { onConflict: "user_id,book_id" }
+      );
     }
   }
 
@@ -715,55 +718,57 @@ export async function getNoteDetail(noteId: string, user?: User | null) {
     currentUser = fetchedUser;
   }
 
-  const { data, error } = await supabase
-    .from("notes")
-    .select(
+  // 노트 조회 + user_books.id 조회를 병렬 실행 (순차 → 병렬로 최적화)
+  const [noteResult, userBooksResult] = await Promise.all([
+    supabase
+      .from("notes")
+      .select(
+        `
+        *,
+        books (
+          id,
+          title,
+          author,
+          cover_image_url
+        ),
+        transcriptions (
+          extracted_text,
+          raw_extracted_text,
+          status
+        )
       `
-      *,
-      books (
-        id,
-        title,
-        author,
-        cover_image_url
-      ),
-      transcriptions (
-        extracted_text,
-        raw_extracted_text,
-        status
       )
-    `
-    )
-    .eq("id", noteId)
-    .eq("user_id", currentUser.id)
-    .maybeSingle(); // .single() 대신 .maybeSingle() 사용
+      .eq("id", noteId)
+      .eq("user_id", currentUser.id)
+      .maybeSingle(),
+    supabase
+      .from("user_books")
+      .select("id, book_id")
+      .eq("user_id", currentUser.id),
+  ]);
 
-  if (error && error.code !== "PGRST116") {
-    // PGRST116은 "결과가 없음" 에러이므로 무시
-    throw new Error(sanitizeErrorMessage(error));
+  if (noteResult.error && noteResult.error.code !== "PGRST116") {
+    throw new Error(sanitizeErrorMessage(noteResult.error));
   }
 
-  if (!data) {
+  if (!noteResult.data) {
     throw new Error("기록을 찾을 수 없거나 권한이 없습니다.");
   }
 
-  // user_books.id 조회 (책 상세 페이지 링크용)
-  let userBookId = null;
-  if (data.book_id) {
-    const { data: userBook } = await supabase
-      .from("user_books")
-      .select("id")
-      .eq("book_id", data.book_id)
-      .eq("user_id", currentUser.id)
-      .maybeSingle();
-
-    if (userBook) {
-      userBookId = userBook.id;
+  // user_books에서 book_id로 매칭하여 user_book_id 조회
+  const userBookIdMap = new Map<string, string>();
+  if (userBooksResult.data) {
+    for (const ub of userBooksResult.data) {
+      userBookIdMap.set(ub.book_id, ub.id);
     }
   }
 
   // Supabase 조인 결과 정규화: transcriptions → transcription (단수)
-  const { transcriptions, books, ...restData } = data as any;
+  const { transcriptions, books, ...restData } = noteResult.data as any;
   const book = Array.isArray(books) ? books[0] : books;
+  const userBookId = noteResult.data.book_id
+    ? userBookIdMap.get(noteResult.data.book_id) ?? null
+    : null;
 
   return {
     ...restData,
@@ -1275,13 +1280,13 @@ export async function getFreeNoteStats(user?: User | null): Promise<{
   const [totalResult, todayResult] = await Promise.all([
     supabase
       .from("notes")
-      .select("*", { count: "exact", head: true })
+      .select("id", { count: "exact", head: true })
       .eq("user_id", currentUser.id)
       .eq("book_id", READTREE_BOOK_ID)
       .neq("type", "progress"),
     supabase
       .from("notes")
-      .select("*", { count: "exact", head: true })
+      .select("id", { count: "exact", head: true })
       .eq("user_id", currentUser.id)
       .eq("book_id", READTREE_BOOK_ID)
       .neq("type", "progress")

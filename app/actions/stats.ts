@@ -271,19 +271,19 @@ export async function getReadingStats(user?: User | null) {
       // 샘플 사용자의 이번 주 기록 수
       adminSupabase
         .from("notes")
-        .select("*", { count: "exact", head: true })
+        .select("id", { count: "exact", head: true })
         .eq("user_id", sampleUserId)
         .gte("created_at", new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString()),
       // 샘플 사용자의 올해 기록 수
       adminSupabase
         .from("notes")
-        .select("*", { count: "exact", head: true })
+        .select("id", { count: "exact", head: true })
         .eq("user_id", sampleUserId)
         .gte("created_at", startOfYear.toISOString()),
       // 샘플 사용자의 올해 완독 책 수
       adminSupabase
         .from("user_books")
-        .select("*", { count: "exact", head: true })
+        .select("id", { count: "exact", head: true })
         .eq("user_id", sampleUserId)
         .eq("status", "completed")
         .gte("completed_at", startOfYear.toISOString()),
@@ -427,7 +427,7 @@ export async function getReadingStats(user?: User | null) {
     // 올해 작성한 기록 수
     supabase
       .from("notes")
-      .select("*", { count: "exact", head: true })
+      .select("id", { count: "exact", head: true })
       .eq("user_id", currentUser.id)
       .gte("created_at", startOfYear.toISOString()),
     // 가장 많이 기록한 책 (상위 5개만 필요하므로 500건이면 충분)
@@ -597,7 +597,7 @@ export async function getGoalProgress(user?: User | null) {
     const startOfYear = new Date(currentYear, 0, 1);
     const { count: completedCount } = await adminSupabase
       .from("user_books")
-      .select("*", { count: "exact", head: true })
+      .select("id", { count: "exact", head: true })
       .eq("user_id", sampleUserId)
       .eq("status", "completed")
       .gte("completed_at", startOfYear.toISOString());
@@ -952,7 +952,7 @@ export async function getMonthlyStats(user?: User | null) {
 
     const query = queryClient
       .from("notes")
-      .select("*", { count: "exact", head: true })
+      .select("id", { count: "exact", head: true })
       .eq("user_id", targetUserId)
       .gte("created_at", date.toISOString())
       .lt("created_at", nextMonth.toISOString());

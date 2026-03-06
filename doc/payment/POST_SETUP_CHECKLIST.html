@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>토스페이먼츠 결제 연동 - 설정 체크리스트</title>
+<style>
+  :root {
+    --primary: #2563eb;
+    --success: #16a34a;
+    --warning: #d97706;
+    --danger: #dc2626;
+    --bg: #f8fafc;
+    --card: #fff;
+    --border: #e2e8f0;
+    --text: #1e293b;
+    --muted: #64748b;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem;
+  }
+  h1 { font-size: 1.8rem; margin-bottom: 0.3rem; }
+  .subtitle { color: var(--muted); margin-bottom: 2rem; font-size: 0.95rem; }
+  h2 {
+    font-size: 1.3rem;
+    margin: 2.5rem 0 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  h2 .step-num {
+    background: var(--primary);
+    color: white;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    flex-shrink: 0;
+  }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin: 0.75rem 0;
+  }
+  .card-warn {
+    border-left: 4px solid var(--warning);
+    background: #fffbeb;
+  }
+  .card-danger {
+    border-left: 4px solid var(--danger);
+    background: #fef2f2;
+  }
+  .card-success {
+    border-left: 4px solid var(--success);
+    background: #f0fdf4;
+  }
+  .card-info {
+    border-left: 4px solid var(--primary);
+    background: #eff6ff;
+  }
+  pre {
+    background: #1e293b;
+    color: #e2e8f0;
+    padding: 1rem;
+    border-radius: 8px;
+    overflow-x: auto;
+    font-size: 0.85rem;
+    margin: 0.5rem 0;
+    font-family: 'Fira Code', 'Consolas', monospace;
+  }
+  code {
+    font-family: 'Fira Code', 'Consolas', monospace;
+    background: #f1f5f9;
+    padding: 0.15rem 0.4rem;
+    border-radius: 4px;
+    font-size: 0.85rem;
+  }
+  pre code { background: none; padding: 0; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0.75rem 0;
+    font-size: 0.9rem;
+  }
+  th, td {
+    padding: 0.6rem 0.75rem;
+    border: 1px solid var(--border);
+    text-align: left;
+  }
+  th { background: #f1f5f9; font-weight: 600; }
+  ol, ul { padding-left: 1.5rem; margin: 0.5rem 0; }
+  li { margin: 0.4rem 0; }
+  .badge {
+    display: inline-block;
+    padding: 0.15rem 0.5rem;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+  .badge-required { background: #fef2f2; color: #dc2626; }
+  .badge-optional { background: #f0fdf4; color: #16a34a; }
+  .badge-test { background: #dbeafe; color: #1d4ed8; }
+  .divider { border-top: 2px solid var(--border); margin: 2.5rem 0; }
+  .summary-box {
+    background: linear-gradient(135deg, #eff6ff 0%, #f0fdf4 100%);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin: 1.5rem 0;
+  }
+  .flow-visual {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+    align-items: center;
+    margin: 1rem 0;
+  }
+  .flow-box {
+    background: var(--primary);
+    color: white;
+    padding: 0.4rem 0.8rem;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    white-space: nowrap;
+  }
+  .flow-arrow { color: var(--muted); font-weight: bold; font-size: 1.2rem; }
+  .checklist { list-style: none; padding-left: 0; }
+  .checklist li {
+    padding: 0.5rem 0 0.5rem 2rem;
+    position: relative;
+    border-bottom: 1px solid #f1f5f9;
+  }
+  .checklist li::before {
+    content: "☐";
+    position: absolute;
+    left: 0;
+    font-size: 1.1rem;
+  }
+</style>
+</head>
+<body>
+
+<h1>토스페이먼츠 결제 연동 체크리스트</h1>
+<p class="subtitle">DB 마이그레이션 이후 진행해야 하는 모든 설정 및 확인 사항</p>
+
+<!-- ===== 전체 흐름 요약 ===== -->
+<div class="summary-box">
+  <strong>전체 진행 순서</strong>
+  <div class="flow-visual">
+    <span class="flow-box">1. DB 마이그레이션</span>
+    <span class="flow-arrow">&rarr;</span>
+    <span class="flow-box">2. 환경변수 설정</span>
+    <span class="flow-arrow">&rarr;</span>
+    <span class="flow-box">3. point_action_configs 데이터</span>
+    <span class="flow-arrow">&rarr;</span>
+    <span class="flow-box">4. 로컬 테스트</span>
+    <span class="flow-arrow">&rarr;</span>
+    <span class="flow-box">5. Vercel 배포</span>
+    <span class="flow-arrow">&rarr;</span>
+    <span class="flow-box">6. 웹훅 등록</span>
+    <span class="flow-arrow">&rarr;</span>
+    <span class="flow-box">7. 운영 전환</span>
+  </div>
+</div>
+
+<!-- ===== Step 1: DB 마이그레이션 ===== -->
+<h2><span class="step-num">1</span> DB 마이그레이션 (Supabase SQL Editor)</h2>
+
+<div class="card card-danger">
+  <strong>중요: 2단계로 나눠서 실행해야 합니다!</strong>
+  <p><code>ALTER TYPE ADD VALUE</code>는 PostgreSQL에서 트랜잭션 블록 안에서 실행할 수 없습니다.</p>
+</div>
+
+<h3>1단계: ENUM 확장 (먼저 단독 실행)</h3>
+<pre><code>-- 이 부분만 복사해서 먼저 실행!
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_enum
+    WHERE enumlabel = 'point_purchase'
+    AND enumtypid = (SELECT oid FROM pg_type WHERE typname = 'point_action_type')
+  ) THEN
+    ALTER TYPE point_action_type ADD VALUE 'point_purchase';
+  END IF;
+END $$;</code></pre>
+
+<div class="card card-info">
+  <strong>실행 후 확인 쿼리:</strong>
+  <pre><code>SELECT enumlabel FROM pg_enum
+WHERE enumtypid = (SELECT oid FROM pg_type WHERE typname = 'point_action_type')
+ORDER BY enumsortorder;</code></pre>
+  <p>결과에 <code>point_purchase</code>가 포함되어 있으면 성공!</p>
+</div>
+
+<h3>2단계: 테이블 + RLS 생성 (ENUM 성공 후 실행)</h3>
+<p>마이그레이션 파일의 <strong>"2단계" 이후 전체</strong>를 복사해서 실행:</p>
+<pre><code>-- doc/database/migration-202603051200__payment__create_tables.sql
+-- "2단계: 테이블 생성" 주석 아래부터 끝까지 실행</code></pre>
+
+<div class="card card-info">
+  <strong>테이블 생성 확인 쿼리:</strong>
+  <pre><code>SELECT table_name FROM information_schema.tables
+WHERE table_schema = 'public'
+AND table_name IN ('payment_orders', 'payment_history');</code></pre>
+</div>
+
+<!-- ===== Step 2: 환경변수 ===== -->
+<h2><span class="step-num">2</span> 환경변수 설정 <span class="badge badge-required">필수</span></h2>
+
+<div class="card">
+  <h3>토스페이먼츠 키 발급</h3>
+  <ol>
+    <li><a href="https://developers.tosspayments.com/" target="_blank">토스페이먼츠 개발자센터</a> 가입</li>
+    <li>상점 등록 (테스트 모드는 사업자 없이도 가능)</li>
+    <li><strong>개발 정보 &gt; API 키</strong>에서 테스트 키 확인</li>
+  </ol>
+</div>
+
+<div class="card">
+  <h3>로컬 개발 환경 (<code>.env.local</code>)</h3>
+  <pre><code># 토스페이먼츠 (테스트 키)
+NEXT_PUBLIC_TOSS_CLIENT_KEY=test_ck_xxxxxxxxxxxx
+TOSS_SECRET_KEY=test_sk_xxxxxxxxxxxx</code></pre>
+
+  <table>
+    <tr><th>변수명</th><th>용도</th><th>위치</th></tr>
+    <tr>
+      <td><code>NEXT_PUBLIC_TOSS_CLIENT_KEY</code></td>
+      <td>결제창 SDK 초기화 (브라우저)</td>
+      <td>클라이언트 + 서버</td>
+    </tr>
+    <tr>
+      <td><code>TOSS_SECRET_KEY</code></td>
+      <td>결제 승인 API 인증 (서버 전용)</td>
+      <td><strong>서버 전용</strong> (절대 클라이언트 노출 금지)</td>
+    </tr>
+  </table>
+</div>
+
+<!-- ===== Step 3: point_action_configs ===== -->
+<h2><span class="step-num">3</span> point_action_configs 데이터 추가 <span class="badge badge-required">필수</span></h2>
+
+<div class="card card-warn">
+  <strong>이 단계를 빠뜨리면 결제 후 포인트 충전 시 <code>point_purchase</code> 액션이 동작하지 않을 수 있습니다.</strong>
+</div>
+
+<pre><code>-- point_action_configs에 point_purchase 설정 추가
+INSERT INTO point_action_configs (action_type, base_points, description, category, is_repeatable, daily_limit, is_active)
+VALUES ('point_purchase', 0, '포인트 충전', 'system', true, null, true)
+ON CONFLICT (action_type) DO NOTHING;</code></pre>
+
+<div class="card card-info">
+  <strong>참고:</strong> <code>point_purchase</code>의 <code>base_points</code>는 0입니다. 실제 충전 포인트는 패키지별 금액에 따라 코드에서 계산되며, <code>point_transactions</code>에 직접 기록됩니다. <code>earnPoints()</code> 함수를 거치지 않고 confirm API에서 직접 처리합니다.
+</div>
+
+<!-- ===== Step 4: 로컬 테스트 ===== -->
+<h2><span class="step-num">4</span> 로컬 테스트 <span class="badge badge-test">테스트</span></h2>
+
+<div class="card">
+  <h3>테스트 카드 정보</h3>
+  <table>
+    <tr><th>항목</th><th>값</th></tr>
+    <tr><td>카드 번호</td><td><code>4330-0000-0000-0014</code></td></tr>
+    <tr><td>유효 기간</td><td><code>12/25</code></td></tr>
+    <tr><td>CVC</td><td><code>123</code></td></tr>
+    <tr><td>비밀번호 앞 2자리</td><td><code>00</code></td></tr>
+  </table>
+</div>
+
+<div class="card">
+  <h3>테스트 시나리오 체크리스트</h3>
+  <ul class="checklist">
+    <li><strong>정상 결제</strong>: /pricing에서 패키지 선택 → 결제 완료 → 포인트 충전 확인</li>
+    <li><strong>미로그인 리다이렉트</strong>: 로그아웃 후 충전 버튼 → /login 이동</li>
+    <li><strong>결제 취소</strong>: 결제창에서 X 닫기 → 에러 없이 원래 페이지 유지</li>
+    <li><strong>첫 충전 보너스</strong>: 첫 결제 시 2배 포인트 확인</li>
+    <li><strong>재충전</strong>: 두 번째 결제에서는 보너스만 (첫 충전 보너스 없음)</li>
+    <li><strong>포인트 잔액</strong>: 프로필/대시보드에서 충전 포인트 반영 확인</li>
+  </ul>
+</div>
+
+<div class="card">
+  <h3>DB 데이터 검증 쿼리</h3>
+  <pre><code>-- 주문 확인
+SELECT order_id, package_id, amount, points, bonus_points,
+       first_purchase_bonus, status, payment_method, confirmed_at
+FROM payment_orders
+WHERE user_id = '사용자UUID'
+ORDER BY created_at DESC;
+
+-- 포인트 트랜잭션 확인
+SELECT action_type, points, final_points, description, balance_after
+FROM point_transactions
+WHERE user_id = '사용자UUID' AND action_type = 'point_purchase'
+ORDER BY created_at DESC;
+
+-- 감사 로그 확인
+SELECT event_type, payload, created_at
+FROM payment_history
+WHERE user_id = '사용자UUID'
+ORDER BY created_at DESC;
+
+-- 현재 포인트 잔액
+SELECT total_points, lifetime_points
+FROM user_points
+WHERE user_id = '사용자UUID';</code></pre>
+</div>
+
+<!-- ===== Step 5: Vercel 배포 ===== -->
+<h2><span class="step-num">5</span> Vercel 배포 설정</h2>
+
+<div class="card">
+  <h3>Vercel 환경변수 추가</h3>
+  <p><strong>Vercel Dashboard → Settings → Environment Variables</strong></p>
+  <table>
+    <tr><th>변수명</th><th>Production</th><th>Preview / Development</th></tr>
+    <tr>
+      <td><code>NEXT_PUBLIC_TOSS_CLIENT_KEY</code></td>
+      <td><code>live_ck_...</code> (운영키)</td>
+      <td><code>test_ck_...</code> (테스트키)</td>
+    </tr>
+    <tr>
+      <td><code>TOSS_SECRET_KEY</code></td>
+      <td><code>live_sk_...</code> (운영키)</td>
+      <td><code>test_sk_...</code> (테스트키)</td>
+    </tr>
+  </table>
+  <p style="color: var(--muted); font-size: 0.85rem; margin-top: 0.5rem;">
+    * 처음에는 Production에도 테스트키를 넣어 검증한 후 운영키로 전환하는 것을 권장합니다.
+  </p>
+</div>
+
+<!-- ===== Step 6: 웹훅 ===== -->
+<h2><span class="step-num">6</span> 웹훅 URL 등록 <span class="badge badge-optional">가상계좌 사용 시 필수</span></h2>
+
+<div class="card">
+  <h3>등록 위치</h3>
+  <p>토스페이먼츠 개발자센터 → <strong>내 상점 → 웹훅 설정</strong></p>
+
+  <table>
+    <tr><th>항목</th><th>값</th></tr>
+    <tr><td>URL</td><td><code>https://your-domain.com/api/payment/webhook</code></td></tr>
+    <tr><td>이벤트</td><td><code>DEPOSIT_CALLBACK</code>, <code>PAYMENT_STATUS_CHANGED</code></td></tr>
+  </table>
+
+  <div class="card card-info" style="margin-top: 1rem;">
+    <strong>웹훅이 필요한 경우:</strong>
+    <ul>
+      <li><strong>가상계좌</strong>: 사용자가 입금하면 토스가 웹훅으로 알려줌 → 포인트 자동 충전</li>
+      <li><strong>결제 취소</strong>: 토스 대시보드에서 결제 취소 시 → 포인트 자동 회수</li>
+    </ul>
+    <p style="font-size: 0.85rem; color: var(--muted); margin-top: 0.5rem;">
+      카드/간편결제만 사용한다면 웹훅 없이도 동작합니다 (confirm API에서 즉시 처리).
+    </p>
+  </div>
+</div>
+
+<!-- ===== Step 7: 운영 전환 ===== -->
+<h2><span class="step-num">7</span> 운영 전환 체크리스트</h2>
+
+<div class="card">
+  <ul class="checklist">
+    <li>토스페이먼츠에서 <strong>운영 키</strong> 발급 완료</li>
+    <li>Vercel Production 환경변수를 <strong>운영 키</strong>로 교체</li>
+    <li>웹훅 URL을 <strong>운영 도메인</strong>으로 등록</li>
+    <li>실제 카드로 <strong>최소 금액(₩1,900)</strong> 테스트 결제</li>
+    <li>포인트 정상 충전 확인</li>
+    <li>토스 대시보드에서 <strong>결제 취소</strong> → 포인트 회수 확인</li>
+    <li><code>payment_orders</code>, <code>payment_history</code>, <code>point_transactions</code> 데이터 정합성 확인</li>
+    <li>운영 테스트 결제건 <strong>환불 처리</strong></li>
+  </ul>
+</div>
+
+<div class="divider"></div>
+
+<!-- ===== 아키텍처 요약 ===== -->
+<h2>참고: 변경된 파일 목록</h2>
+
+<div class="card">
+  <table>
+    <tr><th>구분</th><th>파일</th><th>역할</th></tr>
+    <tr><td><span class="badge badge-required">신규</span></td><td><code>types/payment.ts</code></td><td>결제 타입 정의</td></tr>
+    <tr><td><span class="badge badge-required">신규</span></td><td><code>app/actions/payment.ts</code></td><td>주문 생성, 내역 조회</td></tr>
+    <tr><td><span class="badge badge-required">신규</span></td><td><code>app/api/payment/confirm/route.ts</code></td><td>결제 승인 + 포인트 충전</td></tr>
+    <tr><td><span class="badge badge-required">신규</span></td><td><code>app/api/payment/webhook/route.ts</code></td><td>웹훅 (가상계좌/취소)</td></tr>
+    <tr><td><span class="badge badge-required">신규</span></td><td><code>hooks/use-toss-payment.ts</code></td><td>토스 결제 훅</td></tr>
+    <tr><td><span class="badge badge-required">신규</span></td><td><code>app/(main)/payment/success/page.tsx</code></td><td>결제 성공 페이지</td></tr>
+    <tr><td><span class="badge badge-required">신규</span></td><td><code>app/(main)/payment/fail/page.tsx</code></td><td>결제 실패 페이지</td></tr>
+    <tr><td><span class="badge badge-test">수정</span></td><td><code>components/subscription/pricing-package-card.tsx</code></td><td>"준비 중" → "충전하기" 버튼</td></tr>
+    <tr><td><span class="badge badge-test">수정</span></td><td><code>types/points.ts</code></td><td><code>point_purchase</code> 추가</td></tr>
+    <tr><td><span class="badge badge-test">수정</span></td><td><code>next.config.js</code></td><td>CSP에 tosspayments 도메인</td></tr>
+    <tr><td><span class="badge badge-test">수정</span></td><td><code>.env.example</code></td><td>토스 환경변수 추가</td></tr>
+  </table>
+</div>
+
+<!-- ===== 결제 플로우 ===== -->
+<h2>참고: 결제 흐름 상세</h2>
+
+<div class="card">
+  <pre><code>사용자 → "충전하기" 클릭
+       ↓
+[PricingPackageCard] → useTossPayment() 훅 호출
+       ↓
+[createPaymentOrder()] → Supabase에 pending 주문 생성
+       ↓                   (첫 충전 여부 판단, 보너스 계산)
+[loadTossPayments()] → 토스 SDK 초기화
+       ↓
+[payment.requestPayment()] → 토스 결제창 오픈
+       ↓                      (카드/간편결제/계좌이체/가상계좌/휴대폰)
+사용자 결제 완료 → 리다이렉트
+       ↓
+[/payment/success] → ?paymentKey=&orderId=&amount=
+       ↓
+[POST /api/payment/confirm]
+  ├─ 1. Rate Limit 체크 (분당 10회)
+  ├─ 2. 인증 확인 (supabase.auth.getUser)
+  ├─ 3. DB 주문 조회 + 상태 확인
+  ├─ 4. 금액 위변조 검증 (DB amount vs 전달 amount)
+  ├─ 5. 토스 결제 승인 API 호출
+  ├─ 6. payment_orders → confirmed 업데이트
+  ├─ 7. user_points 포인트 충전
+  ├─ 8. point_transactions 기록
+  └─ 9. payment_history 감사 로그
+       ↓
+성공 화면: 충전 포인트 + 보너스 + 새 잔액 표시 + confetti!</code></pre>
+</div>
+
+<!-- ===== 트러블슈팅 빠른 참조 ===== -->
+<h2>참고: 자주 묻는 문제</h2>
+
+<div class="card">
+  <table>
+    <tr><th>증상</th><th>원인</th><th>해결</th></tr>
+    <tr>
+      <td>결제창이 안 열림</td>
+      <td><code>NEXT_PUBLIC_TOSS_CLIENT_KEY</code> 미설정</td>
+      <td><code>.env.local</code>에 키 추가 후 서버 재시작</td>
+    </tr>
+    <tr>
+      <td>결제 승인 실패 (500)</td>
+      <td><code>TOSS_SECRET_KEY</code> 미설정</td>
+      <td><code>.env.local</code>에 시크릿 키 추가</td>
+    </tr>
+    <tr>
+      <td>"금액이 일치하지 않습니다"</td>
+      <td>URL의 amount와 DB 주문 금액 불일치</td>
+      <td>정상 보안 기능. URL을 조작하지 않았는지 확인</td>
+    </tr>
+    <tr>
+      <td>결제 성공인데 포인트 0</td>
+      <td><code>payment_orders</code> 테이블이 없음</td>
+      <td>DB 마이그레이션 2단계 재실행</td>
+    </tr>
+    <tr>
+      <td>CSP 오류 (콘솔)</td>
+      <td>tosspayments 도메인 미허용</td>
+      <td><code>next.config.js</code> CSP에 <code>*.tosspayments.com</code> 추가 확인</td>
+    </tr>
+    <tr>
+      <td>토스 SDK 로드 실패</td>
+      <td>패키지 미설치</td>
+      <td><code>npm install @tosspayments/tosspayments-sdk</code></td>
+    </tr>
+  </table>
+</div>
+
+<div class="divider"></div>
+<p style="text-align: center; color: var(--muted); font-size: 0.85rem;">
+  ReadTree Payment Integration v1.0 | 2026-03-05
+</p>
+
+</body>
+</html>
