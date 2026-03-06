@@ -32,6 +32,10 @@ export type PointActionType =
   | "all_missions_complete"
   // 소셜
   | "note_share"
+  // 커뮤니티 (기능 요청)
+  | "feature_request_create"
+  | "feature_request_vote"
+  | "feature_request_adopted"
   // 특별 보상
   | "first_book"
   | "first_note"
@@ -56,6 +60,7 @@ export type PointCategory =
   | "streak"
   | "mission"
   | "social"
+  | "community"
   | "special"
   | "system";
 
@@ -245,6 +250,11 @@ export const POINT_ACTION_DEFAULTS: Record<PointActionType, { base_points: numbe
 
   // 소셜
   note_share: { base_points: 8, description: "노트 공유", category: "social" },
+
+  // 커뮤니티 (기능 요청)
+  feature_request_create: { base_points: 10, description: "기능 요청 작성", category: "community" },
+  feature_request_vote: { base_points: 2, description: "기능 요청 투표", category: "community" },
+  feature_request_adopted: { base_points: 50, description: "기능 요청 채택", category: "community" },
 
   // 특별 보상 (첫 경험 강화)
   first_book: { base_points: 35, description: "첫 번째 책 등록", category: "special" },
