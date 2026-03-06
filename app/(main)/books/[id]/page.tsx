@@ -221,9 +221,18 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
 
             {/* 책 정보 */}
             <div className="flex-1 flex flex-col text-left min-w-0">
-              {/* 상태 배지 + 정보수정 */}
+              {/* 상태 배지/선택 + 정보수정 */}
               <div className="mb-1 sm:mb-2 flex items-center justify-between">
-                <BookStatusBadge status={userBook.status as ReadingStatus} />
+                {isGuest ? (
+                  <BookStatusBadge status={userBook.status as ReadingStatus} />
+                ) : (
+                  <BookStatusSelector
+                    currentStatus={userBook.status as ReadingStatus}
+                    userBookId={userBook.id}
+                    currentBookshelfId={(userBook as any).bookshelf_id || null}
+                    compact
+                  />
+                )}
                 {!isGuest && (
                   <BookInfoEditor
                     userBookId={userBook.id}
@@ -334,20 +343,13 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
                 startedAt={userBook.started_at}
                 completedDates={completedDates}
               />
-              {/* 버튼 그룹 */}
-              <div className="flex items-center gap-2">
-                <Button asChild size="sm" className="flex-1 shadow-sm bg-primary hover:bg-primary/90 h-9">
-                  <Link href={`/notes/new?bookId=${userBook.id}`}>
-                    <PenTool className="mr-2 h-4 w-4" />
-                    <WriteNoteLabel />
-                  </Link>
-                </Button>
-                <BookStatusSelector
-                  currentStatus={userBook.status as ReadingStatus}
-                  userBookId={userBook.id}
-                  currentBookshelfId={(userBook as any).bookshelf_id || null}
-                />
-              </div>
+              {/* 기록 작성 버튼 */}
+              <Button asChild size="sm" className="w-full shadow-sm bg-primary hover:bg-primary/90 h-9">
+                <Link href={`/notes/new?bookId=${userBook.id}`}>
+                  <PenTool className="mr-2 h-4 w-4" />
+                  <WriteNoteLabel />
+                </Link>
+              </Button>
             </div>
           </div>
 
@@ -367,19 +369,14 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
                 startedAt={userBook.started_at}
                 completedDates={completedDates}
               />
-              {/* 버튼 가로 배치 */}
-              <div className="flex items-center gap-2 pt-1 border-t border-border/30">
-                <Button asChild size="default" className="flex-1 shadow-sm bg-primary hover:bg-primary/90 h-10">
+              {/* 기록 작성 버튼 */}
+              <div className="pt-1 border-t border-border/30">
+                <Button asChild size="default" className="w-full shadow-sm bg-primary hover:bg-primary/90 h-10">
                   <Link href={`/notes/new?bookId=${userBook.id}`}>
                     <PenTool className="mr-2 h-4 w-4" />
                     <WriteNoteLabel />
                   </Link>
                 </Button>
-                <BookStatusSelector
-                  currentStatus={userBook.status as ReadingStatus}
-                  userBookId={userBook.id}
-                  currentBookshelfId={(userBook as any).bookshelf_id || null}
-                />
               </div>
             </div>
           </div>

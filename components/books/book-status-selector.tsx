@@ -33,6 +33,8 @@ interface BookStatusSelectorProps {
   currentStatus: ReadingStatus;
   userBookId: string;
   currentBookshelfId?: string | null;
+  /** 배지 스타일 컴팩트 모드 (히어로 섹션용) */
+  compact?: boolean;
 }
 
 const statusIcons: Record<ReadingStatus, { icon: React.ElementType; dotColor: string }> = {
@@ -59,6 +61,7 @@ export function BookStatusSelector({
   currentStatus,
   userBookId,
   currentBookshelfId,
+  compact = false,
 }: BookStatusSelectorProps) {
   const { t } = useTranslation();
   const router = useRouter();
@@ -135,20 +138,38 @@ export function BookStatusSelector({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="sm" disabled={isUpdating} className="gap-2">
-          {isUpdating ? (
-            <>
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              <span className="text-sm">{t("books.changingStatus")}</span>
-            </>
-          ) : (
-            <>
-              <span className={`w-2 h-2 rounded-full shrink-0 ${current.dotColor}`} />
-              <span className="text-sm">{currentLabel}</span>
-              <ChevronDown className="h-3.5 w-3.5 opacity-50" />
-            </>
-          )}
-        </Button>
+        {compact ? (
+          <button
+            disabled={isUpdating}
+            className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border text-xs font-medium transition-colors hover:bg-muted/50 disabled:opacity-50 cursor-pointer"
+            style={{ borderColor: 'currentColor', opacity: 0.8 }}
+          >
+            {isUpdating ? (
+              <Loader2 className="h-3 w-3 animate-spin" />
+            ) : (
+              <>
+                <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${current.dotColor}`} />
+                <span>{currentLabel}</span>
+                <ChevronDown className="h-3 w-3 opacity-50" />
+              </>
+            )}
+          </button>
+        ) : (
+          <Button variant="outline" size="sm" disabled={isUpdating} className="gap-2">
+            {isUpdating ? (
+              <>
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                <span className="text-sm">{t("books.changingStatus")}</span>
+              </>
+            ) : (
+              <>
+                <span className={`w-2 h-2 rounded-full shrink-0 ${current.dotColor}`} />
+                <span className="text-sm">{currentLabel}</span>
+                <ChevronDown className="h-3.5 w-3.5 opacity-50" />
+              </>
+            )}
+          </Button>
+        )}
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-52" align="end">
         {/* 독서 상태 */}
