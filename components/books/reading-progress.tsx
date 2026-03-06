@@ -6,12 +6,11 @@ import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { BookOpen, Check, Loader2, Settings2, Flame, Target, Trophy, Sparkles, TrendingUp, GripHorizontal, PenLine, X, Send, Calendar } from "lucide-react";
+import { BookOpen, Check, Loader2, Settings2, Flame, Target, Trophy, Sparkles, TrendingUp, GripHorizontal, X, Send, Calendar } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { updateBookProgress } from "@/app/actions/books";
 import { toast } from "sonner";
 import { TotalPagesEditor } from "./total-pages-editor";
-import { ProgressRecordSheet } from "./progress-record-sheet";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/lib/i18n";
 
@@ -57,7 +56,6 @@ export function ReadingProgress({
   const [isDragging, setIsDragging] = useState(false);
   const [dragValue, setDragValue] = useState(initialPage || 0);
   const [isPending, startTransition] = useTransition();
-  const [isRecordSheetOpen, setIsRecordSheetOpen] = useState(false);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // 인라인 메모 관련 state
@@ -567,41 +565,17 @@ export function ReadingProgress({
             />
           )}
           <div className="flex-1" />
-          <div className="flex items-center gap-1.5">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setIsEditing(true)}
-              className="h-8 text-xs"
-            >
-              {t("books.editProgress")}
-            </Button>
-            <Button
-              size="sm"
-              variant="default"
-              onClick={() => setIsRecordSheetOpen(true)}
-              disabled={currentPage < 1}
-              className="h-8 text-xs bg-forest-600 hover:bg-forest-700 text-white disabled:opacity-50"
-              title={currentPage < 1 ? t("books.firstReadPagesHint") : undefined}
-            >
-              <PenLine className="h-3.5 w-3.5 mr-1" />
-              {t("books.recordLabel")}
-            </Button>
-          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setIsEditing(true)}
+            className="h-8 text-xs"
+          >
+            {t("books.editProgress")}
+          </Button>
         </div>
       )}
 
-      {/* 진행 기록 시트 */}
-      <ProgressRecordSheet
-        open={isRecordSheetOpen}
-        onOpenChange={setIsRecordSheetOpen}
-        userBookId={userBookId}
-        bookTitle={bookTitle}
-        bookAuthor={bookAuthor ?? null}
-        currentPage={currentPage}
-        totalPages={totalPages ?? null}
-        onSuccess={onRecordCreated}
-      />
     </div>
   );
 }

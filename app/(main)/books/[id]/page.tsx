@@ -221,9 +221,19 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
 
             {/* 책 정보 */}
             <div className="flex-1 flex flex-col text-left min-w-0">
-              {/* 상태 배지 */}
-              <div className="mb-1 sm:mb-2">
+              {/* 상태 배지 + 정보수정 */}
+              <div className="mb-1 sm:mb-2 flex items-center justify-between">
                 <BookStatusBadge status={userBook.status as ReadingStatus} />
+                {!isGuest && (
+                  <BookInfoEditor
+                    userBookId={userBook.id}
+                    currentReadingReason={userBook.reading_reason}
+                    currentStartedAt={userBook.started_at}
+                    currentCompletedDates={completedDates.length > 0 ? completedDates : null}
+                    currentBookshelfId={(userBook as any).bookshelf_id || null}
+                    iconOnly
+                  />
+                )}
               </div>
 
               {/* 제목 */}
@@ -301,15 +311,6 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
                 </p>
               )}
             </div>
-            {!isGuest && (
-              <BookInfoEditor
-                userBookId={userBook.id}
-                currentReadingReason={userBook.reading_reason}
-                currentStartedAt={userBook.started_at}
-                currentCompletedDates={completedDates.length > 0 ? completedDates : null}
-                currentBookshelfId={(userBook as any).bookshelf_id || null}
-              />
-            )}
           </div>
         </div>
       </div>
@@ -379,37 +380,9 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
                   userBookId={userBook.id}
                   currentBookshelfId={(userBook as any).bookshelf_id || null}
                 />
-                <BookInfoEditor
-                  userBookId={userBook.id}
-                  currentReadingReason={userBook.reading_reason}
-                  currentStartedAt={userBook.started_at}
-                  currentCompletedDates={completedDates.length > 0 ? completedDates : null}
-                  currentBookshelfId={(userBook as any).bookshelf_id || null}
-                />
               </div>
             </div>
           </div>
-
-          {/* PC: 읽는 이유 (액션바 아래, 독서기록 위) - 이유가 없는 경우에만 입력 유도 */}
-          {!userBook.reading_reason && (
-            <div className="hidden lg:block">
-              <div className="rounded-lg bg-muted/15 border border-dashed border-border/40 p-4">
-                <div className="flex items-center gap-3">
-                  <Quote className="w-4 h-4 text-primary/40 shrink-0" />
-                  <p className="text-sm text-muted-foreground flex-1">
-                    <ReadingReasonPrompt bookTitle={book.title} />
-                  </p>
-                  <BookInfoEditor
-                    userBookId={userBook.id}
-                    currentReadingReason={userBook.reading_reason}
-                    currentStartedAt={userBook.started_at}
-                    currentCompletedDates={completedDates.length > 0 ? completedDates : null}
-                    currentBookshelfId={(userBook as any).bookshelf_id || null}
-                  />
-                </div>
-              </div>
-            </div>
-          )}
         </>
       )}
 

@@ -30,6 +30,8 @@ interface BookInfoEditorProps {
   currentStartedAt?: string | null;
   currentCompletedDates?: string[] | null;
   currentBookshelfId?: string | null;
+  /** 아이콘만 표시 (히어로 섹션용) */
+  iconOnly?: boolean;
 }
 
 /**
@@ -42,6 +44,7 @@ export function BookInfoEditor({
   currentStartedAt,
   currentCompletedDates,
   currentBookshelfId,
+  iconOnly = false,
 }: BookInfoEditorProps) {
   const { t } = useTranslation();
   const router = useRouter();
@@ -142,10 +145,17 @@ export function BookInfoEditor({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm">
-          <Pencil className="mr-2 h-4 w-4" />
-          {t("books.editInfo")}
-        </Button>
+        {iconOnly ? (
+          <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground">
+            <Pencil className="h-3.5 w-3.5" />
+            <span className="sr-only">{t("books.editInfo")}</span>
+          </Button>
+        ) : (
+          <Button variant="outline" size="sm">
+            <Pencil className="mr-2 h-4 w-4" />
+            {t("books.editInfo")}
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="sm:max-w-[500px]">
         <form onSubmit={handleSubmit}>
