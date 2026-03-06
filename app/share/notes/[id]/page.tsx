@@ -75,16 +75,16 @@ export async function generateMetadata({
 
   let description: string;
   if (rawDesc) {
-    const truncated = rawDesc.length > 75 ? rawDesc.substring(0, 72) + "..." : rawDesc;
+    const truncated = rawDesc.length > 80 ? rawDesc.substring(0, 77) + "..." : rawDesc;
     description = `"${truncated}"`;
   } else {
-    description = `${cleanTitle}에 대한 독서 기록을 확인해보세요.`;
+    description = `${cleanTitle}에서 마음에 남은 문장을 확인해보세요.`;
   }
 
-  // OG 제목: 사용자명으로 소셜 프루프 + 간결한 책 제목
+  // OG 제목: 사용자명 + 책 제목으로 호기심 유발
   const ogTitle = userName
-    ? `${userName}님이 ${cleanTitle}에서 발견한 문장`
-    : `${cleanTitle} - 독서 기록`;
+    ? `${userName}님이 ${cleanTitle}에서 밑줄 친 문장`
+    : `${cleanTitle} - 마음에 남은 문장`;
   const pageTitle = `${cleanTitle} - 독서 기록 | ReadTree`;
 
   // OG 이미지: 해당 링크 페이지 화면과 동일한 레이아웃의 동적 이미지 사용

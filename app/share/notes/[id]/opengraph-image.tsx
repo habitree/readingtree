@@ -142,11 +142,9 @@ export default async function OgImage({
     const book = (Array.isArray(rawBooks) ? rawBooks[0] : rawBooks) as
       | { id: string; title: string; author: string | null; cover_image_url: string | null }
       | undefined;
-    const bookTitle =
-      (book?.title || "제목 없음").length > 40
-        ? (book?.title || "제목 없음").slice(0, 37) + "..."
-        : book?.title || "제목 없음";
-    const bookAuthor = book?.author || "저자 미상";
+    const rawTitle = (book?.title || "제목 없음").replace(/\n+/g, " ").trim();
+    const bookTitle = rawTitle.length > 40 ? rawTitle.slice(0, 37) + "..." : rawTitle;
+    const bookAuthor = (book?.author || "저자 미상").replace(/\n+/g, " ").trim();
     const { quote, memo } = parseNoteContentFields(note.content);
 
     const rawTranscription = (note as any).transcriptions;
@@ -157,9 +155,21 @@ export default async function OgImage({
         : null;
 
     const bodyText = transcriptionText || quote || memo || "기록 내용을 확인해보세요.";
-    const bodyTruncated = bodyText.length > 150 ? bodyText.slice(0, 147) + "..." : bodyText;
+    // Satori는 \n이 포함된 텍스트를 다중 자식으로 인식 → 공백으로 치환
+    const bodyClean = bodyText.replace(/\n+/g, " ").trim();
+    const bodyTruncated = bodyClean.length > 150 ? bodyClean.slice(0, 147) + "..." : bodyClean;
 
     const isQuoteType = note.type === "quote" || (quote && !memo);
+
+    // 노트 유형 라벨
+    const noteTypeLabel =
+      note.type === "quote"
+        ? "인용구"
+        : note.type === "transcription"
+          ? "필사"
+          : note.type === "photo"
+            ? "사진 기록"
+            : "메모";
 
     // 외부 이미지를 사전 fetch → base64 data URI 변환
     // Satori 스트림 렌더링 중 외부 fetch 실패 방지 (500 에러 근본 원인)
@@ -187,31 +197,17 @@ export default async function OgImage({
             display: "flex",
             flexDirection: "column",
             fontFamily: FONT_FAMILY,
-            backgroundColor: "#f8faf9",
+            backgroundColor: "#fafcfb",
             backgroundImage:
-              "radial-gradient(circle at 0% 0%, rgba(22, 163, 74, 0.06) 0%, transparent 50%), radial-gradient(circle at 100% 100%, rgba(22, 163, 74, 0.04) 0%, transparent 50%)",
+              "radial-gradient(circle at 10% 20%, rgba(22, 163, 74, 0.08) 0%, transparent 40%), radial-gradient(circle at 90% 80%, rgba(22, 163, 74, 0.06) 0%, transparent 40%)",
           }}
         >
           {/* 상단 그린 악센트 바 */}
           <div
             style={{
               width: "100%",
-              height: 4,
-              background: "linear-gradient(90deg, #16a34a, #22c55e, #16a34a)",
-            }}
-          />
-
-          {/* 미묘한 도트 패턴 */}
-          <div
-            style={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              backgroundImage: "radial-gradient(#16a34a 0.8px, transparent 0.8px)",
-              backgroundSize: "24px 24px",
-              opacity: 0.04,
+              height: 6,
+              background: "linear-gradient(90deg, #15803d, #22c55e, #4ade80, #22c55e, #15803d)",
             }}
           />
 
@@ -222,7 +218,7 @@ export default async function OgImage({
               flex: 1,
               alignItems: "center",
               justifyContent: "center",
-              padding: "30px 60px 20px",
+              padding: "28px 56px 16px",
             }}
           >
             {/* 카드 */}
@@ -231,10 +227,10 @@ export default async function OgImage({
                 display: "flex",
                 flexDirection: "row",
                 width: "100%",
-                height: 480,
+                height: 490,
                 backgroundColor: "white",
-                borderRadius: 20,
-                boxShadow: "0 20px 60px -15px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.05)",
+                borderRadius: 24,
+                boxShadow: "0 25px 60px -15px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.06)",
                 overflow: "hidden",
               }}
             >
@@ -245,33 +241,33 @@ export default async function OgImage({
                   flexDirection: "column",
                   alignItems: "center",
                   justifyContent: "center",
-                  padding: "36px 32px",
-                  backgroundColor: "#f8faf9",
+                  padding: "32px 28px",
+                  background: "linear-gradient(180deg, #f0fdf4 0%, #f8faf9 100%)",
                   width: 320,
-                  gap: 20,
+                  gap: 16,
                 }}
               >
-                {/* 책 표지 (base64 data URI로 안전하게 렌더링) */}
+                {/* 책 표지 */}
                 {coverDataUri ? (
                   <img
                     src={coverDataUri}
                     alt=""
-                    width={160}
-                    height={240}
+                    width={150}
+                    height={220}
                     style={{
                       objectFit: "cover",
-                      borderRadius: 8,
+                      borderRadius: 10,
                       boxShadow:
-                        "0 12px 28px -8px rgba(0, 0, 0, 0.25), 0 4px 8px -2px rgba(0, 0, 0, 0.1)",
+                        "0 16px 32px -8px rgba(0, 0, 0, 0.3), 0 4px 12px -4px rgba(0, 0, 0, 0.12)",
                     }}
                   />
                 ) : (
                   <div
                     style={{
-                      width: 160,
-                      height: 240,
+                      width: 150,
+                      height: 220,
                       backgroundColor: "#e2e8f0",
-                      borderRadius: 8,
+                      borderRadius: 10,
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
@@ -282,17 +278,17 @@ export default async function OgImage({
                       boxShadow: "0 8px 20px -6px rgba(0, 0, 0, 0.15)",
                     }}
                   >
-                    표지 없음
+                    No Cover
                   </div>
                 )}
 
                 {/* 책 제목 */}
                 <div
                   style={{
-                    fontSize: 20,
+                    fontSize: 19,
                     fontWeight: 800,
                     color: "#0f172a",
-                    lineHeight: 1.3,
+                    lineHeight: 1.35,
                     textAlign: "center",
                     fontFamily: FONT_FAMILY,
                     maxWidth: 260,
@@ -304,7 +300,7 @@ export default async function OgImage({
                 {/* 저자 */}
                 <div
                   style={{
-                    fontSize: 15,
+                    fontSize: 14,
                     fontWeight: 600,
                     color: "#64748b",
                     fontFamily: FONT_FAMILY,
@@ -313,17 +309,20 @@ export default async function OgImage({
                   {bookAuthor}
                 </div>
 
-                {/* 페이지 */}
+                {/* 페이지 뱃지 */}
                 {note.page_number && (
                   <div
                     style={{
-                      fontSize: 13,
-                      color: "#94a3b8",
-                      fontWeight: 600,
+                      fontSize: 12,
+                      color: "#16a34a",
+                      fontWeight: 700,
                       fontFamily: FONT_FAMILY,
+                      padding: "3px 10px",
+                      backgroundColor: "#dcfce7",
+                      borderRadius: 12,
                     }}
                   >
-                    p.{note.page_number}
+                    {`p.${note.page_number}`}
                   </div>
                 )}
               </div>
@@ -334,10 +333,36 @@ export default async function OgImage({
                   flex: 1,
                   display: "flex",
                   flexDirection: "column",
-                  padding: "40px 44px",
+                  padding: "36px 40px",
                   justifyContent: "space-between",
                 }}
               >
+                {/* 상단: 노트 유형 뱃지 */}
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    marginBottom: 16,
+                    gap: 8,
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: 13,
+                      fontWeight: 700,
+                      color: "#16a34a",
+                      fontFamily: FONT_FAMILY,
+                      padding: "4px 14px",
+                      backgroundColor: "#f0fdf4",
+                      borderRadius: 20,
+                      border: "1px solid #bbf7d0",
+                      letterSpacing: "0.02em",
+                    }}
+                  >
+                    {noteTypeLabel}
+                  </div>
+                </div>
+
                 {/* 텍스트 영역 */}
                 <div
                   style={{
@@ -350,13 +375,13 @@ export default async function OgImage({
                   {isQuoteType && (
                     <div
                       style={{
-                        fontSize: 64,
+                        fontSize: 72,
                         fontWeight: 800,
                         color: "#22c55e",
-                        lineHeight: 0.6,
-                        marginBottom: 8,
+                        lineHeight: 0.5,
+                        marginBottom: 12,
                         fontFamily: "Georgia, serif",
-                        opacity: 0.6,
+                        opacity: 0.5,
                       }}
                     >
                       {"\u201C"}
@@ -375,16 +400,16 @@ export default async function OgImage({
                       style={{
                         width: 4,
                         borderRadius: 2,
-                        backgroundColor: isQuoteType ? "#22c55e" : "#e2e8f0",
+                        backgroundColor: isQuoteType ? "#22c55e" : "#cbd5e1",
                         marginRight: 20,
                         flexShrink: 0,
                       }}
                     />
                     <div
                       style={{
-                        fontSize: 24,
-                        lineHeight: 1.7,
-                        color: "#334155",
+                        fontSize: 22,
+                        lineHeight: 1.75,
+                        color: "#1e293b",
                         fontFamily: FONT_FAMILY,
                         fontWeight: 600,
                       }}
@@ -400,7 +425,7 @@ export default async function OgImage({
                     width: "100%",
                     height: 1,
                     backgroundColor: "#e5e7eb",
-                    marginBottom: 20,
+                    marginBottom: 16,
                   }}
                 />
 
@@ -421,13 +446,12 @@ export default async function OgImage({
                       gap: 12,
                     }}
                   >
-                    {/* 아바타 (base64 data URI로 안전하게 렌더링) */}
                     {avatarDataUri ? (
                       <img
                         src={avatarDataUri}
                         alt=""
-                        width={40}
-                        height={40}
+                        width={36}
+                        height={36}
                         style={{
                           borderRadius: "50%",
                           objectFit: "cover",
@@ -437,14 +461,14 @@ export default async function OgImage({
                     ) : (
                       <div
                         style={{
-                          width: 40,
-                          height: 40,
+                          width: 36,
+                          height: 36,
                           borderRadius: "50%",
                           backgroundColor: "#dcfce7",
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
-                          fontSize: 18,
+                          fontSize: 16,
                           fontWeight: 800,
                           color: "#16a34a",
                           fontFamily: FONT_FAMILY,
@@ -456,13 +480,13 @@ export default async function OgImage({
                     )}
                     <div
                       style={{
-                        fontSize: 16,
+                        fontSize: 15,
                         fontWeight: 600,
                         color: "#475569",
                         fontFamily: FONT_FAMILY,
                       }}
                     >
-                      {displayName}님의 독서기록
+                      {`${displayName}님의 독서 기록`}
                     </div>
                   </div>
 
@@ -478,16 +502,16 @@ export default async function OgImage({
                       style={{
                         width: 28,
                         height: 28,
-                        borderRadius: 6,
-                        backgroundColor: "#16a34a",
+                        borderRadius: 7,
+                        background: "linear-gradient(135deg, #16a34a, #22c55e)",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
                       }}
                     >
                       <svg
-                        width="16"
-                        height="16"
+                        width="15"
+                        height="15"
                         viewBox="0 0 24 24"
                         fill="none"
                         stroke="white"
@@ -520,15 +544,16 @@ export default async function OgImage({
             style={{
               display: "flex",
               justifyContent: "center",
-              paddingBottom: 16,
+              paddingBottom: 14,
             }}
           >
             <span
               style={{
-                fontSize: 14,
+                fontSize: 13,
                 color: "#94a3b8",
-                fontWeight: 500,
+                fontWeight: 600,
                 fontFamily: FONT_FAMILY,
+                letterSpacing: "0.05em",
               }}
             >
               readingtree.app

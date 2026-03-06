@@ -164,31 +164,17 @@ export default async function OgImage({
             display: "flex",
             flexDirection: "column",
             fontFamily: FONT_FAMILY,
-            backgroundColor: "#f8faf9",
+            backgroundColor: "#fafcfb",
             backgroundImage:
-              "radial-gradient(circle at 0% 0%, rgba(22, 163, 74, 0.06) 0%, transparent 50%), radial-gradient(circle at 100% 100%, rgba(22, 163, 74, 0.04) 0%, transparent 50%)",
+              "radial-gradient(circle at 10% 20%, rgba(22, 163, 74, 0.08) 0%, transparent 40%), radial-gradient(circle at 90% 80%, rgba(22, 163, 74, 0.06) 0%, transparent 40%)",
           }}
         >
           {/* 상단 그린 악센트 바 */}
           <div
             style={{
               width: "100%",
-              height: 4,
-              background: "linear-gradient(90deg, #16a34a, #22c55e, #16a34a)",
-            }}
-          />
-
-          {/* 도트 패턴 */}
-          <div
-            style={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              backgroundImage: "radial-gradient(#16a34a 0.8px, transparent 0.8px)",
-              backgroundSize: "24px 24px",
-              opacity: 0.04,
+              height: 6,
+              background: "linear-gradient(90deg, #15803d, #22c55e, #4ade80, #22c55e, #15803d)",
             }}
           />
 
@@ -199,7 +185,7 @@ export default async function OgImage({
               flex: 1,
               alignItems: "center",
               justifyContent: "center",
-              padding: "30px 60px 20px",
+              padding: "28px 56px 16px",
             }}
           >
             <div
@@ -207,11 +193,11 @@ export default async function OgImage({
                 display: "flex",
                 flexDirection: "row",
                 width: "100%",
-                height: 480,
+                height: 490,
                 backgroundColor: "white",
-                borderRadius: 20,
+                borderRadius: 24,
                 boxShadow:
-                  "0 20px 60px -15px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.05)",
+                  "0 25px 60px -15px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.06)",
                 overflow: "hidden",
               }}
             >
@@ -221,27 +207,27 @@ export default async function OgImage({
                   display: "flex",
                   flexDirection: "column",
                   justifyContent: "center",
-                  padding: "40px 36px",
-                  backgroundColor: "#f8faf9",
+                  padding: "36px 32px",
+                  background: "linear-gradient(180deg, #f0fdf4 0%, #f8faf9 100%)",
                   width: 380,
-                  gap: 16,
+                  gap: 14,
                 }}
               >
                 {/* 서재 아이콘 */}
                 <div
                   style={{
-                    width: 56,
-                    height: 56,
+                    width: 52,
+                    height: 52,
                     borderRadius: 14,
-                    backgroundColor: "#16a34a",
+                    background: "linear-gradient(135deg, #16a34a, #22c55e)",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
                   }}
                 >
                   <svg
-                    width="28"
-                    height="28"
+                    width="26"
+                    height="26"
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="white"
@@ -253,10 +239,28 @@ export default async function OgImage({
                   </svg>
                 </div>
 
+                {/* "서재" 라벨 */}
+                <div
+                  style={{
+                    fontSize: 12,
+                    fontWeight: 700,
+                    color: "#16a34a",
+                    fontFamily: FONT_FAMILY,
+                    padding: "3px 12px",
+                    backgroundColor: "#f0fdf4",
+                    borderRadius: 20,
+                    border: "1px solid #bbf7d0",
+                    letterSpacing: "0.05em",
+                    alignSelf: "flex-start",
+                  }}
+                >
+                  BOOKSHELF
+                </div>
+
                 {/* 서재 이름 */}
                 <div
                   style={{
-                    fontSize: 28,
+                    fontSize: 26,
                     fontWeight: 800,
                     color: "#0f172a",
                     lineHeight: 1.3,
@@ -269,13 +273,13 @@ export default async function OgImage({
                 {/* 소유자 */}
                 <div
                   style={{
-                    fontSize: 16,
+                    fontSize: 15,
                     fontWeight: 600,
                     color: "#64748b",
                     fontFamily: FONT_FAMILY,
                   }}
                 >
-                  {ownerName}님의 서재
+                  {`${ownerName}님의 서재`}
                 </div>
 
                 {/* 책 수 */}
@@ -289,7 +293,7 @@ export default async function OgImage({
                 >
                   <div
                     style={{
-                      padding: "4px 12px",
+                      padding: "5px 14px",
                       backgroundColor: "#dcfce7",
                       borderRadius: 20,
                       fontSize: 14,
@@ -316,15 +320,15 @@ export default async function OgImage({
                       width: 24,
                       height: 24,
                       borderRadius: 6,
-                      backgroundColor: "#16a34a",
+                      background: "linear-gradient(135deg, #16a34a, #22c55e)",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
                     }}
                   >
                     <svg
-                      width="14"
-                      height="14"
+                      width="13"
+                      height="13"
                       viewBox="0 0 24 24"
                       fill="none"
                       stroke="white"
@@ -356,8 +360,8 @@ export default async function OgImage({
                   flexWrap: "wrap",
                   alignContent: "center",
                   justifyContent: "center",
-                  padding: "24px 32px",
-                  gap: 16,
+                  padding: "20px 28px",
+                  gap: 14,
                 }}
               >
                 {prefetchedBooks.map((book, i) => (
@@ -367,28 +371,28 @@ export default async function OgImage({
                       display: "flex",
                       flexDirection: "column",
                       alignItems: "center",
-                      width: 120,
+                      width: 115,
                     }}
                   >
                     {book.coverDataUri ? (
                       <img
                         src={book.coverDataUri}
                         alt=""
-                        width={100}
-                        height={140}
+                        width={96}
+                        height={136}
                         style={{
                           objectFit: "cover",
-                          borderRadius: 6,
-                          boxShadow: "0 4px 12px -4px rgba(0,0,0,0.2)",
+                          borderRadius: 8,
+                          boxShadow: "0 6px 16px -4px rgba(0,0,0,0.22)",
                         }}
                       />
                     ) : (
                       <div
                         style={{
-                          width: 100,
-                          height: 140,
-                          backgroundColor: "#e2e8f0",
-                          borderRadius: 6,
+                          width: 96,
+                          height: 136,
+                          backgroundColor: "#f1f5f9",
+                          borderRadius: 8,
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
@@ -398,6 +402,7 @@ export default async function OgImage({
                           fontFamily: FONT_FAMILY,
                           padding: "8px",
                           textAlign: "center",
+                          border: "1px solid #e2e8f0",
                         }}
                       >
                         {book.title.length > 12
@@ -428,15 +433,16 @@ export default async function OgImage({
             style={{
               display: "flex",
               justifyContent: "center",
-              paddingBottom: 16,
+              paddingBottom: 14,
             }}
           >
             <span
               style={{
-                fontSize: 14,
+                fontSize: 13,
                 color: "#94a3b8",
-                fontWeight: 500,
+                fontWeight: 600,
                 fontFamily: FONT_FAMILY,
+                letterSpacing: "0.05em",
               }}
             >
               readingtree.app
