@@ -39,28 +39,31 @@ export default async function NoteDetailPage({ params }: NoteDetailPageProps) {
   const isGuest = !currentUser;
 
   let note;
-  try {
-    if (isGuest) {
-      // 게스트: 샘플 노트 조회 시도, 없으면 공유 페이지로 리다이렉트
+  if (isGuest) {
+    // 게스트: 샘플(관리자) 노트 조회
+    try {
       const sampleNote = await getSampleNoteDetail(noteId);
       if (!sampleNote) {
-        redirect(`/share/notes/${noteId}`);
+        notFound();
       }
       note = sampleNote;
-    } else {
-      // 로그인 사용자: 자신의 노트 조회
+    } catch {
+      notFound();
+    }
+  } else {
+    // 로그인 사용자: 자신의 노트 조회
+    try {
       note = await getNoteDetail(noteId);
+    } catch (error: unknown) {
+      const err = error as Error | undefined;
+      if (err?.message === "기록을 찾을 수 없거나 권한이 없습니다." || err?.message?.includes("참조 무결성")) {
+        console.warn(`[NoteDetailPage] Record not found or access denied: ${noteId}`);
+      } else {
+        const safeError = sanitizeErrorForLogging(error);
+        console.error(`[NoteDetailPage] Unexpected error for ${noteId}:`, safeError);
+      }
+      notFound();
     }
-  } catch (error: any) {
-    // 404 또는 권한 없음 에러인 경우 조용히 처리
-    if (error?.message === "기록을 찾을 수 없거나 권한이 없습니다." || error?.message?.includes("참조 무결성")) {
-      console.warn(`[NoteDetailPage] Record not found or access denied: ${noteId}`);
-    } else {
-      // 그 외 실제 런타임 에러는 상세 로깅
-      const safeError = sanitizeErrorForLogging(error);
-      console.error(`[NoteDetailPage] Unexpected error for ${noteId}:`, safeError);
-    }
-    notFound();
   }
 
   const noteWithBook = note as NoteWithBook & { user_book_id?: string | null };
