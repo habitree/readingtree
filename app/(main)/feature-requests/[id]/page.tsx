@@ -11,12 +11,14 @@ import {
   FeatureRequestComments,
 } from "@/components/feature-requests";
 import { AdminResponseSection } from "@/components/feature-requests/admin-response-section";
+import { AdminActionPanel } from "@/components/feature-requests/admin-action-panel";
 import {
   getFeatureRequestById,
   getComments,
   deleteFeatureRequest,
 } from "@/app/actions/feature-requests";
 import { getCachedCurrentUser } from "@/lib/cached";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { ArrowLeft, Pin, Pencil, Trash2, MessageCircle } from "lucide-react";
 import { formatDistanceToNow, format } from "date-fns";
 import { ko } from "date-fns/locale";
@@ -59,6 +61,18 @@ export default async function FeatureRequestDetailPage({ params }: PageProps) {
   const userName = request.users?.name || "익명";
   const userInitial = userName.charAt(0).toUpperCase();
   const isOwner = currentUser?.id === request.user_id;
+
+  // 관리자 여부 확인
+  let isAdmin = false;
+  if (currentUser) {
+    const supabase = await createServerSupabaseClient();
+    const { data: profile } = await supabase
+      .from("users")
+      .select("is_admin")
+      .eq("id", currentUser.id)
+      .single();
+    isAdmin = profile?.is_admin === true;
+  }
 
   async function handleDelete() {
     "use server";
@@ -179,6 +193,16 @@ export default async function FeatureRequestDetailPage({ params }: PageProps) {
           )}
         </CardContent>
       </Card>
+
+      {/* 관리자 패널 */}
+      {isAdmin && (
+        <AdminActionPanel
+          featureRequestId={request.id}
+          currentStatus={request.status}
+          currentAdminResponse={request.admin_response}
+          isPinned={request.is_pinned}
+        />
+      )}
 
       {/* 댓글 섹션 */}
       <FeatureRequestComments
