@@ -49,8 +49,8 @@ export async function searchNotes(params: SearchParams, user?: User | null): Pro
   // review_issues.md Issue 6 참고: 한글 검색 지원을 위해 ILIKE 패턴 매칭 사용
   const sanitizedQuery = sanitizeSearchQuery(params.query || "");
   
-  // bookId 변환과 books 검색을 병렬로 시작
-  const [userBookResult, matchingBooksResult] = await Promise.all([
+  // bookId 변환과 books/user_books 검색을 병렬로 시작
+  const [userBookResult, matchingBooksFromTitle, matchingBooksFromReason] = await Promise.all([
     // bookId가 user_books.id인 경우, books.id를 조회
     params.bookId
       ? supabase
@@ -60,21 +60,22 @@ export async function searchNotes(params: SearchParams, user?: User | null): Pro
           .eq("user_id", currentUser.id)
           .maybeSingle()
       : Promise.resolve({ data: null, error: null }),
-    // 검색어가 있으면 사용자가 소유한 책(user_books) 중에서 title, author, reading_reason으로 검색
+    // 검색어가 있으면 books 테이블에서 title, author로 직접 검색
+    sanitizedQuery
+      ? supabase
+          .from("books")
+          .select("id")
+          .or(`title.ilike.%${sanitizedQuery}%,author.ilike.%${sanitizedQuery}%`)
+          .limit(500)
+      : Promise.resolve({ data: [], error: null }),
+    // 검색어가 있으면 user_books에서 reading_reason으로 검색
     sanitizedQuery
       ? supabase
           .from("user_books")
-          .select(`
-            book_id,
-            reading_reason,
-            books!inner (
-              id,
-              title,
-              author
-            )
-          `)
+          .select("book_id")
           .eq("user_id", currentUser.id)
-          .or(`books.title.ilike.%${sanitizedQuery}%,books.author.ilike.%${sanitizedQuery}%,reading_reason.ilike.%${sanitizedQuery}%`)
+          .ilike("reading_reason", `%${sanitizedQuery}%`)
+          .limit(500)
       : Promise.resolve({ data: [], error: null }),
   ]);
 
@@ -84,13 +85,19 @@ export async function searchNotes(params: SearchParams, user?: User | null): Pro
     actualBookId = userBookResult.data.book_id;
   }
 
-  // matchingBookIds 추출 (사용자가 소유한 책만)
-  let matchingBookIds: string[] = [];
-  if (matchingBooksResult.data) {
-    matchingBookIds = matchingBooksResult.data
-      .map((item: any) => item.book_id || item.books?.id)
-      .filter((id: string | undefined): id is string => !!id);
+  // matchingBookIds 추출 (books 검색 + reading_reason 검색 결과 합산)
+  const bookIdSet = new Set<string>();
+  if (matchingBooksFromTitle.data) {
+    for (const item of matchingBooksFromTitle.data) {
+      if (item.id) bookIdSet.add(item.id);
+    }
   }
+  if (matchingBooksFromReason.data) {
+    for (const item of matchingBooksFromReason.data) {
+      if (item.book_id) bookIdSet.add(item.book_id);
+    }
+  }
+  const matchingBookIds = [...bookIdSet];
 
   // notes 쿼리 구성
   let supabaseQuery = supabase

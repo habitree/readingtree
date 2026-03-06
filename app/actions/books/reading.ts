@@ -7,6 +7,7 @@ import type { ReadingStatus } from "@/types/book";
 import type { User } from "@supabase/supabase-js";
 import { OPEN_LIBRARY_COVER_BATCH_LIMIT, OPEN_LIBRARY_COVER_TIMEOUT_MS } from "./_shared";
 import { READTREE_BOOK_ID } from "@/lib/constants/readtree";
+import { sanitizeSearchQuery } from "@/lib/utils/validation";
 
 export interface RelatedBookPreview {
   userBookId: string;
@@ -322,7 +323,15 @@ export async function getUserBooksWithNotes(
   // 검색어가 있으면 먼저 매칭 책 ID 조회 (성능 최적화: 상위 500개 제한)
   let matchingBookIds: string[] | null = null;
   if (query && query.trim()) {
-    const sanitizedQuery = query.trim();
+    const sanitizedQuery = sanitizeSearchQuery(query);
+    if (!sanitizedQuery) {
+      return {
+        books: [],
+        stats: {
+          total: 0, reading: 0, completed: 0, paused: 0, not_started: 0, rereading: 0,
+        },
+      };
+    }
     const { data: matchingBooks } = await supabase
       .from("books")
       .select("id")

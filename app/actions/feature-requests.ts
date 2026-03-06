@@ -2,6 +2,8 @@
 
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { earnPoints } from "@/app/actions/points";
+import { sanitizeSearchQuery } from "@/lib/utils/validation";
 import type {
   FeatureRequest,
   FeatureRequestWithUser,
@@ -60,7 +62,10 @@ export async function getFeatureRequests(
 
   // 검색
   if (search) {
-    query = query.or(`title.ilike.%${search}%,description.ilike.%${search}%`);
+    const sanitizedSearch = sanitizeSearchQuery(search);
+    if (sanitizedSearch) {
+      query = query.or(`title.ilike.%${sanitizedSearch}%,description.ilike.%${sanitizedSearch}%`);
+    }
   }
 
   // 고정된 항목 먼저, 그 다음 정렬 기준 적용
@@ -251,6 +256,13 @@ export async function createFeatureRequest(
     console.error("Failed to create feature request:", error);
     return { success: false, error: "Failed to create feature request." };
   }
+
+  // 포인트 적립 (기능 요청 작성 10P, 일 3회 제한)
+  await earnPoints("feature_request_create", {
+    referenceId: request.id,
+    referenceType: "feature_request",
+    description: "기능 요청 작성",
+  });
 
   revalidatePath("/feature-requests");
   revalidatePath("/");
@@ -472,6 +484,13 @@ export async function toggleVote(
       console.error("Failed to vote:", insertError);
       return { success: false, voted: false, error: "Failed to vote." };
     }
+
+    // 포인트 적립 (투표 2P, 일 10회 제한)
+    await earnPoints("feature_request_vote", {
+      referenceId: featureRequestId,
+      referenceType: "feature_request_vote",
+      description: "기능 요청 투표",
+    });
 
     revalidatePath("/feature-requests");
     revalidatePath(`/feature-requests/${featureRequestId}`);
@@ -710,6 +729,17 @@ export async function updateFeatureRequestStatus(
     return { success: false, error: "Admin access required." };
   }
 
+  // 채택 보상을 위해 요청자 정보 조회
+  const { data: request } = await supabase
+    .from("feature_requests")
+    .select("user_id, status")
+    .eq("id", id)
+    .single();
+
+  if (!request) {
+    return { success: false, error: "Feature request not found." };
+  }
+
   const updateData: Record<string, unknown> = { status };
   if (adminResponse !== undefined) {
     updateData.admin_response = adminResponse;
@@ -723,6 +753,16 @@ export async function updateFeatureRequestStatus(
   if (error) {
     console.error("Failed to change status:", error);
     return { success: false, error: "Failed to change status." };
+  }
+
+  // 상태가 completed로 변경되면 요청자에게 채택 포인트 지급 (50P)
+  if (status === "completed" && request.status !== "completed") {
+    await earnPoints("feature_request_adopted", {
+      referenceId: id,
+      referenceType: "feature_request",
+      description: "기능 요청 채택 보상",
+      user: { id: request.user_id } as import("@supabase/supabase-js").User,
+    });
   }
 
   revalidatePath("/feature-requests");

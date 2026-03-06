@@ -7,6 +7,7 @@ import type { BookWithNotes, BookStats } from "@/app/actions/books";
 import type { BookshelfWithStats } from "@/types/bookshelf";
 import type { NoteWithBook } from "@/types/note";
 import type { UserPersona } from "@/types/persona";
+import { sanitizeSearchQuery } from "@/lib/utils/validation";
 
 /**
  * 관리자(샘플 사용자) ID를 동적으로 조회
@@ -153,7 +154,10 @@ export async function getSampleBooksWithNotes(
 
   // 검색어 필터 적용
   if (query && query.trim()) {
-    const sanitizedQuery = query.trim();
+    const sanitizedQuery = sanitizeSearchQuery(query);
+    if (!sanitizedQuery) {
+      return { books: [], stats };
+    }
     // books 테이블에서 제목, 저자, ISBN으로 검색
     const { data: matchingBooks } = await supabase
       .from("books")
@@ -168,10 +172,7 @@ export async function getSampleBooksWithNotes(
       booksQuery = booksQuery.in("book_id", matchingBookIds);
     } else {
       // 매칭되는 책이 없으면 빈 결과 반환
-      return {
-        books: [],
-        stats,
-      };
+      return { books: [], stats };
     }
   }
 
@@ -528,7 +529,10 @@ export async function getSampleBookshelfBooks(
 
   // 검색어 필터 적용
   if (query && query.trim()) {
-    const sanitizedQuery = query.trim();
+    const sanitizedQuery = sanitizeSearchQuery(query);
+    if (!sanitizedQuery) {
+      return { books: [], stats };
+    }
     const { data: matchingBooks } = await supabase
       .from("books")
       .select("id")
