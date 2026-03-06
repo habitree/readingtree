@@ -26,6 +26,14 @@ export function Footer() {
             <a href="#" className="hover:text-foreground transition-colors">
               {t("footer.contact")}
             </a>
+            <a
+              href="https://open.kakao.com/o/gGXr3Zji"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-foreground transition-colors"
+            >
+              readtree 커뮤니티
+            </a>
           </div>
         </div>
       </div>
