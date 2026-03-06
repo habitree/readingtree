@@ -4,6 +4,7 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import type { NoteWithBook } from "@/types/note";
 import type { User } from "@supabase/supabase-js";
+import { getSampleUserId as getSampleUserIdFromSample } from "./sample";
 
 export type TimelineSortBy = "latest" | "oldest" | "book";
 
@@ -38,28 +39,14 @@ function getKSTComponents(date: Date): { year: number; month: number; day: numbe
 
 /**
  * 샘플 사용자(관리자) ID를 동적으로 조회
+ * sample.ts의 getSampleUserId를 래핑하여 일관된 관리자 선택 보장
  */
 async function getSampleUserId(): Promise<string | null> {
-  // 환경 변수가 설정되어 있으면 우선 사용
-  const envSampleUserId = process.env.NEXT_PUBLIC_SAMPLE_USER_ID;
-  if (envSampleUserId) {
-    return envSampleUserId;
-  }
-
-  // 환경 변수가 없으면 is_admin = TRUE인 사용자 조회
-  const supabase = createAdminSupabaseClient();
-  const { data, error } = await supabase
-    .from("users")
-    .select("id")
-    .eq("is_admin", true)
-    .limit(1)
-    .maybeSingle();
-
-  if (error || !data) {
+  try {
+    return await getSampleUserIdFromSample();
+  } catch {
     return null;
   }
-
-  return data.id;
 }
 
 /**

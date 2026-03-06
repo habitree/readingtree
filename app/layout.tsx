@@ -32,11 +32,10 @@ export const metadata: Metadata = {
   icons: {
     icon: [
       { url: "/icon.png", type: "image/png" },
-      { url: "/icon.svg", type: "image/svg+xml" },
       { url: "/favicon.ico", sizes: "any" },
     ],
     apple: [
-      { url: "/apple-icon.png", sizes: "180x180", type: "image/png" },
+      { url: "/icon.png", type: "image/png" },
     ],
   },
   // Open Graph 설정 (Facebook, LinkedIn, 카카오톡 등)
