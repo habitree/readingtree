@@ -479,8 +479,8 @@ export async function getDailyMissions(user?: User | null): Promise<MissionWithD
   }[] = [
     {
       type: "first_read",
-      title: "First reading log today",
-      description: "Open a book and write your first log of the day",
+      title: "mission.firstRead.title",
+      description: "mission.firstRead.description",
       reward: 10,
       icon: "BookOpen",
       action_url: "/books",
@@ -488,8 +488,8 @@ export async function getDailyMissions(user?: User | null): Promise<MissionWithD
     },
     {
       type: "note",
-      title: "Write 1 note",
-      description: "Record a memorable passage or thought",
+      title: "mission.note.title",
+      description: "mission.note.description",
       reward: 15,
       icon: "PenLine",
       action_url: "/notes/new",
@@ -498,12 +498,12 @@ export async function getDailyMissions(user?: User | null): Promise<MissionWithD
     },
   ];
 
-  // 스트릭 미션 (3일 이상일 때만 표시)
+  // 연속 기록 미션 (3일 이상일 때만 표시)
   if (currentStreak >= 3) {
     missionDefinitions.push({
       type: "streak",
-      title: `Maintain ${currentStreak}-day streak`,
-      description: "Keep your streak going by logging today",
+      title: "mission.streak.title",
+      description: "mission.streak.description",
       reward: 20,
       icon: "Flame",
       action_url: "/notes/new",
@@ -525,6 +525,7 @@ export async function getDailyMissions(user?: User | null): Promise<MissionWithD
       reward: def.reward,
       icon: def.icon,
       progress: def.getProgress?.(),
+      params: def.type === "streak" ? { count: currentStreak } : undefined,
       action_url: def.action_url,
       completed_at: existingMission?.completed_at,
     };

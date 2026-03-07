@@ -2434,6 +2434,22 @@ export const en: Dictionary = {
     pointRefund: "Points refunded",
     pointPurchase: "Points purchased",
     adminAdjust: "Admin adjustment",
+    chargePoints: "Charge Points",
+    chargePointsDesc: "Get more AI chat, OCR, and other premium features",
+    mission: {
+      firstRead: {
+        title: "First reading log today",
+        description: "Open a book and write your first log of the day",
+      },
+      note: {
+        title: "Write 1 note",
+        description: "Record a memorable passage or thought",
+      },
+      streak: {
+        title: "Maintain {count}-day streak",
+        description: "Keep logging today to maintain your streak",
+      },
+    },
   },
 
   accessibility: {

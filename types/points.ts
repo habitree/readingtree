@@ -213,6 +213,7 @@ export interface MissionWithDetails {
     current: number;
     target: number;
   };
+  params?: Record<string, string | number>;
   action_url?: string;
   completed_at?: string;
 }
@@ -406,15 +407,15 @@ export type PointSpendType = "ai_chat" | "ocr_process" | "ai_report";
 /**
  * 포인트 소비 비용 설정
  *
- * 비용 산정 기준: 실제 API 비용 대비 활동 유인 균형
- * - AI 채팅: ~0.5원/회 → 100P (일반 사용자 2.3일분)
- * - OCR: ~2.7원/회 → 80P (사용 빈도 높은 기능)
- * - AI 리포트: ~1.5원/회 → 150P (고가치 기능)
+ * 비용 산정 기준: 일일 활동 수입(~80P) 대비 합리적 소비 균형
+ * - AI 채팅: 40P (활성 사용자 1일 수입으로 ~2회 추가 가능)
+ * - OCR: 25P (핵심 독서 도구, 필사 보상 15P 대비 순비용 10P)
+ * - AI 리포트: 100P (고가치 기능, 월 1회 무료 + 추가 사용)
  */
 export const POINT_SPEND_COSTS: Record<PointSpendType, number> = {
-  ai_chat: 100,
-  ocr_process: 80,
-  ai_report: 150,
+  ai_chat: 40,
+  ocr_process: 25,
+  ai_report: 100,
 };
 
 /**

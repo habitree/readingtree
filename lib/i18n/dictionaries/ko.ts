@@ -2357,7 +2357,7 @@ export const ko = {
     consecutiveDays: "일 연속",
     detailStats: "상세 통계",
     lifetimePointsLabel: "누적 포인트",
-    currentStreak: "현재 스트릭",
+    currentStreak: "현재 연속 기록",
     longestStreak: "최장 기록",
     currentLevel: "현재 레벨",
     daysStreak: "일 연속",
@@ -2367,7 +2367,7 @@ export const ko = {
     milestone30: "{days}일 후 30일 마일스톤! (+200P)",
     milestone100: "{days}일 후 100일 마일스톤! (+500P)",
     lifetimePointsShort: "누적 {count}P",
-    continuousStreak: "연속 스트릭",
+    continuousStreak: "연속 기록",
     daysUnit: "{count}일",
     longestRecord: "최장 기록",
     recentActivity: "최근 활동",
@@ -2434,6 +2434,22 @@ export const ko = {
     pointRefund: "포인트 환불",
     pointPurchase: "포인트 충전",
     adminAdjust: "관리자 조정",
+    chargePoints: "포인트 충전하기",
+    chargePointsDesc: "AI 채팅, OCR 필사 등 더 많은 기능을 이용하세요",
+    mission: {
+      firstRead: {
+        title: "오늘의 첫 독서 기록",
+        description: "책을 열고 오늘의 첫 기록을 남겨보세요",
+      },
+      note: {
+        title: "메모 1개 작성하기",
+        description: "기억하고 싶은 문장이나 생각을 기록해보세요",
+      },
+      streak: {
+        title: "{count}일 연속 기록 유지하기",
+        description: "오늘도 기록해서 연속일을 이어가세요",
+      },
+    },
   },
 
   accessibility: {

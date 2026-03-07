@@ -8,7 +8,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Coins, ArrowRight } from "lucide-react";
+import { Coins, ArrowRight, CreditCard } from "lucide-react";
 import { useTranslation } from "@/lib/i18n";
 import Link from "next/link";
 
@@ -57,12 +57,20 @@ export function InsufficientPointsPrompt({
             </div>
           </div>
 
-          <Button asChild className="w-full" onClick={() => onOpenChange(false)}>
-            <Link href="/points">
-              {t("points.earnMorePoints" as any)}
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Link>
-          </Button>
+          <div className="flex gap-2">
+            <Button asChild variant="outline" className="flex-1" onClick={() => onOpenChange(false)}>
+              <Link href="/points">
+                {t("points.earnMorePoints" as any)}
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
+            </Button>
+            <Button asChild className="flex-1" onClick={() => onOpenChange(false)}>
+              <Link href="/pricing">
+                {t("points.chargePoints" as any)}
+                <CreditCard className="ml-2 h-4 w-4" />
+              </Link>
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>

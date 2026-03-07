@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import Link from "next/link";
 import {
   Coins,
   Flame,
@@ -15,10 +16,9 @@ import {
   PenLine,
   ChevronDown,
   ChevronRight,
-  Award,
+  CreditCard,
   History,
   CheckCircle2,
-  Circle,
   ArrowUp,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
@@ -280,6 +280,28 @@ export function PointsPageContent({
         </Card>
       </div>
 
+      {/* 포인트 충전 CTA */}
+      <Link href="/pricing" className="block">
+        <Card className="p-5 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20 border-amber-200 dark:border-amber-800 hover:shadow-md transition-shadow cursor-pointer">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-md">
+                <CreditCard className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <p className="font-semibold text-amber-800 dark:text-amber-300">
+                  {t("points.chargePoints")}
+                </p>
+                <p className="text-xs text-amber-600/80 dark:text-amber-400/70">
+                  {t("points.chargePointsDesc")}
+                </p>
+              </div>
+            </div>
+            <ChevronRight className="h-5 w-5 text-amber-500" />
+          </div>
+        </Card>
+      </Link>
+
       {/* 포인트 내역 */}
       <Card className="overflow-hidden">
         <div className="px-5 py-4 border-b flex items-center justify-between">
@@ -371,6 +393,7 @@ function StatCard({
 }
 
 function MissionItem({ mission }: { mission: MissionWithDetails }) {
+  const { t } = useTranslation();
   const isComplete = mission.status === "completed";
   const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
     BookOpen,
@@ -378,6 +401,10 @@ function MissionItem({ mission }: { mission: MissionWithDetails }) {
     Flame,
   };
   const Icon = iconMap[mission.icon] || Target;
+
+  const missionTitle = mission.title.startsWith("mission.")
+    ? t(`points.${mission.title}` as TranslationKey, mission.params)
+    : mission.title;
 
   return (
     <div className={cn(
@@ -401,7 +428,7 @@ function MissionItem({ mission }: { mission: MissionWithDetails }) {
           "text-sm font-medium",
           isComplete && "line-through text-muted-foreground"
         )}>
-          {mission.title}
+          {missionTitle}
         </div>
         {mission.progress && !isComplete && (
           <div className="flex items-center gap-2 mt-1">

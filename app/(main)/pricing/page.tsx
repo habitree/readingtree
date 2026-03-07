@@ -4,9 +4,10 @@ import { POINT_PACKAGES } from "@/lib/subscription/pricing-data";
 import { PricingPackageCard } from "@/components/subscription/pricing-package-card";
 import { PricingComparisonTable } from "@/components/subscription/pricing-comparison-table";
 import { PricingFaq } from "@/components/subscription/pricing-faq";
+import { PricingPointsBanner } from "@/components/subscription/pricing-points-banner";
 
 export const metadata: Metadata = {
-  title: "포인트 안내",
+  title: "포인트 충전 | ReadTree",
   description: "ReadTree 포인트로 더 많은 AI 독서 경험을 이용하세요.",
 };
 
@@ -20,6 +21,9 @@ export default function PricingPage() {
           포인트로 AI 채팅, OCR 필사, 독서 리포트를 무제한으로
         </p>
       </div>
+
+      {/* 내 포인트 현황 배너 (로그인 사용자만) */}
+      <PricingPointsBanner />
 
       {/* 첫 충전 2배 보너스 배너 */}
       <div className="rounded-xl bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 border border-amber-200 dark:border-amber-800 p-5 text-center space-y-1">
