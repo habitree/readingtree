@@ -1,7 +1,9 @@
 "use client";
 
+import { useMemo } from "react";
 import { motion } from "framer-motion";
 import { SearchResultCard } from "./search-result-card";
+import { SearchProgressGroup, groupProgressNotes } from "./search-progress-group";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
 import { SearchX, Lightbulb } from "lucide-react";
@@ -29,6 +31,15 @@ export function SearchResults({
   onClearFilters,
 }: SearchResultsProps) {
   const { t } = useTranslation();
+
+  // 진행기록과 일반 기록 분리 + 진행기록 날짜별 그룹화
+  const { otherNotes, progressGroups } = useMemo(() => {
+    const progressNotes = results.filter((r) => r.type === "progress");
+    const otherNotes = results.filter((r) => r.type !== "progress");
+    const progressGroups = groupProgressNotes(progressNotes);
+    return { otherNotes, progressGroups };
+  }, [results]);
+
   if (isLoading) {
     return (
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -88,18 +99,45 @@ export function SearchResults({
     );
   }
 
+  const hasProgress = progressGroups.length > 0;
+  const hasOther = otherNotes.length > 0;
+
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-      {results.map((note, index) => (
-        <motion.div
-          key={note.id}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: index * 0.05, duration: 0.3 }}
-        >
-          <SearchResultCard note={note} searchQuery={searchQuery} />
-        </motion.div>
-      ))}
+    <div className="space-y-6">
+      {/* 진행기록 그룹 (날짜별 묶음) */}
+      {hasProgress && (
+        <div className="space-y-4">
+          {progressGroups.map((group, index) => (
+            <motion.div
+              key={group.dateKey}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.08, duration: 0.3 }}
+            >
+              <SearchProgressGroup
+                dateKey={group.dateKey}
+                bookGroups={group.bookGroups}
+              />
+            </motion.div>
+          ))}
+        </div>
+      )}
+
+      {/* 일반 기록 카드 그리드 */}
+      {hasOther && (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {otherNotes.map((note, index) => (
+            <motion.div
+              key={note.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: (hasProgress ? progressGroups.length * 0.08 : 0) + index * 0.05, duration: 0.3 }}
+            >
+              <SearchResultCard note={note} searchQuery={searchQuery} />
+            </motion.div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

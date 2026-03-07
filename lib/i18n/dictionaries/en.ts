@@ -1022,6 +1022,8 @@ export const en: Dictionary = {
     totalResults: "Found {total} results.",
     error: "An error occurred while searching: {message}",
     foundResults: "Found {total} results.",
+    progressCount: "{count} progress records",
+    progressLabel: "Progress",
   },
 
   groups: {

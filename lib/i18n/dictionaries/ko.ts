@@ -1022,6 +1022,8 @@ export const ko = {
     totalResults: "총 {total}개의 결과를 찾았어요.",
     error: "검색 중 오류가 발생했습니다: {message}",
     foundResults: "총 {total}개의 결과를 찾았어요.",
+    progressCount: "{count}건의 진행 기록",
+    progressLabel: "진행 기록",
   },
 
   groups: {
