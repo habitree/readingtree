@@ -5,9 +5,10 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { GroupCard } from "./group-card";
 import { getGroups, getPublicGroups } from "@/app/actions/groups";
-import { Loader2, Search } from "lucide-react";
+import { Loader2, Search, Users, Globe } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "@/lib/i18n";
+import { grids } from "@/lib/design-tokens";
 
 /**
  * 모임 목록 컨텐츠 컴포넌트
@@ -75,10 +76,13 @@ export function GroupsContent() {
         <TabsContent value="my" className="space-y-4">
           {myGroups.length === 0 ? (
             <div className="text-center py-12">
-              <p className="text-muted-foreground">{t("groups.noJoinedGroups")}</p>
+              <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
+                <Users className="h-8 w-8 text-muted-foreground" />
+              </div>
+              <h4 className="font-semibold mb-2">{t("groups.noJoinedGroups")}</h4>
             </div>
           ) : (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <div className={grids.threeCol}>
               {myGroups.map((group) => (
                 <GroupCard key={group.id} group={group} />
               ))}
@@ -104,12 +108,15 @@ export function GroupsContent() {
             </div>
           ) : publicGroups.length === 0 ? (
             <div className="text-center py-12">
+              <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
+                <Globe className="h-8 w-8 text-muted-foreground" />
+              </div>
               <p className="text-muted-foreground">
                 {searchQuery ? t("groups.noSearchResultsMsg") : t("groups.noPublicGroups")}
               </p>
             </div>
           ) : (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <div className={grids.threeCol}>
               {publicGroups.map((group) => (
                 <GroupCard key={group.id} group={group} />
               ))}

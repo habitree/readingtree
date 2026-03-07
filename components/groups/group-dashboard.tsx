@@ -55,6 +55,7 @@ import { formatSmartDate } from "@/lib/utils/date";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useTranslation } from "@/lib/i18n";
 import { useUpgradeModal, isUpgradeLimitError } from "@/hooks/use-upgrade-modal";
+import { typography, spacing } from "@/lib/design-tokens";
 
 interface GroupDashboardProps {
   groupData: {
@@ -164,12 +165,12 @@ export function GroupDashboard({ groupData, currentUserId }: GroupDashboardProps
   const leader = group.users;
 
   return (
-    <div className="space-y-6">
+    <div className={spacing.pageSectionWide}>
       {/* 모임 헤더 */}
-      <div className="flex items-start justify-between">
-        <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <h1 className="text-3xl font-bold tracking-tight">{group.name}</h1>
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+        <div className="space-y-2 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <h1 className={typography.pageTitle}>{group.name}</h1>
             <Badge variant={group.is_public ? "default" : "secondary"}>
               {group.is_public ? (
                 <>
@@ -185,28 +186,25 @@ export function GroupDashboard({ groupData, currentUserId }: GroupDashboardProps
             </Badge>
           </div>
           {group.description && (
-            <p className="text-muted-foreground">{group.description}</p>
+            <p className="text-sm text-muted-foreground">{group.description}</p>
           )}
-          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+          <div className="flex items-center gap-3 sm:gap-4 text-xs sm:text-sm text-muted-foreground flex-wrap">
             <div className="flex items-center gap-1">
               <Users className="h-4 w-4" />
               <span>{t("groups.memberCount").replace("{count}", String(members.length))}</span>
             </div>
             {leader && (
-              <div className="flex items-center gap-2">
-                <span>{t("groups.leader")}:</span>
-                <div className="flex items-center gap-1">
-                  <Avatar className="h-5 w-5">
-                    <AvatarImage src={leader?.avatar_url || undefined} />
-                    <AvatarFallback>
-                      {leader?.name?.[0] || "?"}
-                    </AvatarFallback>
-                  </Avatar>
-                  <span>{leader?.name || t("groups.unknownUser")}</span>
-                </div>
+              <div className="flex items-center gap-1.5">
+                <Avatar className="h-5 w-5">
+                  <AvatarImage src={leader?.avatar_url || undefined} />
+                  <AvatarFallback className="text-[10px]">
+                    {leader?.name?.[0] || "?"}
+                  </AvatarFallback>
+                </Avatar>
+                <span>{leader?.name || t("groups.unknownUser")}</span>
               </div>
             )}
-            <span>{t("groups.createdAt")} {formatSmartDate(group.created_at)}</span>
+            <span>{formatSmartDate(group.created_at)}</span>
           </div>
         </div>
 
@@ -287,8 +285,8 @@ export function GroupDashboard({ groupData, currentUserId }: GroupDashboardProps
 
       {/* 대시보드 탭 */}
       {myMembership && myMembership.status === "approved" && (
-        <Tabs defaultValue="overview" className="space-y-4">
-          <TabsList className="flex-wrap h-auto gap-1">
+        <Tabs defaultValue="overview" className={spacing.pageSection}>
+          <TabsList className="flex-wrap h-auto gap-1 w-full sm:w-auto">
             <TabsTrigger value="overview">{t("groups.overviewTab")}</TabsTrigger>
             <TabsTrigger value="members" className="relative">
               {t("groups.membersTab")}
@@ -306,9 +304,9 @@ export function GroupDashboard({ groupData, currentUserId }: GroupDashboardProps
             <TabsTrigger value="notes">{t("groups.notesTab")}</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="overview" className="space-y-4">
+          <TabsContent value="overview" className={spacing.pageSection}>
             {/* 컴팩트 통계 요약 */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
               <Card className="hover:bg-muted/50 transition-colors cursor-pointer" onClick={() => {
                 const tab = document.querySelector('[value="members"]') as HTMLElement;
                 tab?.click();
@@ -475,15 +473,15 @@ export function GroupDashboard({ groupData, currentUserId }: GroupDashboardProps
             />
           </TabsContent>
 
-          <TabsContent value="books" className="space-y-6">
+          <TabsContent value="books" className={spacing.pageSection}>
             <GroupBooksManager groupId={group.id} isLeader={isLeader} />
           </TabsContent>
 
-          <TabsContent value="shared-library">
+          <TabsContent value="shared-library" className={spacing.pageSection}>
             <SharedBooksManager groupId={group.id} />
           </TabsContent>
 
-          <TabsContent value="notes">
+          <TabsContent value="notes" className={spacing.pageSection}>
             <SharedNotesList notes={sharedNotes} groupId={group.id} />
           </TabsContent>
         </Tabs>

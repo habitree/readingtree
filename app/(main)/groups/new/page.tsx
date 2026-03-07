@@ -12,6 +12,7 @@ import { createGroup } from "@/app/actions/groups";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { useTranslation } from "@/lib/i18n";
+import { typography, spacing } from "@/lib/design-tokens";
 
 /**
  * 모임 생성 페이지
@@ -51,10 +52,10 @@ export default function NewGroupPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className={spacing.pageSectionWide}>
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">{t("groups.newGroupPageTitle")}</h1>
-        <p className="text-muted-foreground">
+        <h1 className={typography.pageTitle}>{t("groups.newGroupPageTitle")}</h1>
+        <p className="text-sm text-muted-foreground">
           {t("groups.newGroupPageDesc")}
         </p>
       </div>

@@ -11,6 +11,7 @@ import {
   CheckCircle2,
   ChevronRight,
   Plus,
+  Trash2,
 } from "lucide-react";
 import { getImageUrl, isValidImageUrl } from "@/lib/utils/image";
 import { BookStatusBadge } from "@/components/books/book-status-badge";
@@ -33,6 +34,7 @@ interface GroupBookCardEnhancedProps {
   };
   noteCount: number;
   onAddToLibrary?: (bookId: string) => void;
+  onDelete?: () => void;
 }
 
 export function GroupBookCardEnhanced({
@@ -40,6 +42,7 @@ export function GroupBookCardEnhanced({
   groupBook,
   noteCount,
   onAddToLibrary,
+  onDelete,
 }: GroupBookCardEnhancedProps) {
   const { t } = useTranslation();
   const book = groupBook.books;
@@ -145,6 +148,23 @@ export function GroupBookCardEnhanced({
               <ChevronRight className="ml-auto h-3 w-3" />
             </Button>
           </Link>
+
+          {/* 삭제 버튼 (리더만) */}
+          {onDelete && (
+            <Button
+              size="sm"
+              variant="ghost"
+              className="w-full text-xs h-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onDelete();
+              }}
+            >
+              <Trash2 className="mr-1 h-3 w-3" />
+              {t("groups.deleteDesignatedBook")}
+            </Button>
+          )}
         </div>
       </CardContent>
     </Card>

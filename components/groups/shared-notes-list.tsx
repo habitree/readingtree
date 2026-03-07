@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import type { NoteWithBook } from "@/types/note";
 import { useTranslation } from "@/lib/i18n";
+import { spacing } from "@/lib/design-tokens";
 
 interface SharedNotesListProps {
   notes: Array<{
@@ -61,23 +62,21 @@ export function SharedNotesList({ notes, groupId }: SharedNotesListProps) {
   if (notes.length === 0) {
     return (
       <Card className="border-dashed">
-        <CardContent className="pt-8 pb-8">
+        <CardContent className="py-12">
           <div className="flex flex-col items-center text-center">
-            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center mb-4">
-              <Sparkles className="h-8 w-8 text-primary/60" />
+            <div className="w-16 h-16 rounded-full bg-emerald-50 dark:bg-emerald-950/30 flex items-center justify-center mb-4">
+              <PenLine className="h-8 w-8 text-emerald-600 dark:text-emerald-400" />
             </div>
             <h4 className="font-semibold mb-2">{t("groups.noSharedNotesEmpty")}</h4>
             <p className="text-sm text-muted-foreground mb-6 max-w-sm">
               {t("groups.noSharedNotesEmptyDesc")}
             </p>
-            <div className="flex flex-col sm:flex-row gap-2">
-              <Button variant="outline" asChild>
-                <Link href={groupId ? `/groups/${groupId}?tab=books` : "#"}>
-                  <BookOpen className="mr-2 h-4 w-4" />
-                  {t("groups.viewDesignatedBooks")}
-                </Link>
-              </Button>
-            </div>
+            <Button variant="outline" asChild>
+              <Link href={groupId ? `/groups/${groupId}?tab=books` : "#"}>
+                <BookOpen className="mr-2 h-4 w-4" />
+                {t("groups.viewDesignatedBooks")}
+              </Link>
+            </Button>
           </div>
         </CardContent>
       </Card>
@@ -86,7 +85,7 @@ export function SharedNotesList({ notes, groupId }: SharedNotesListProps) {
 
   // 책별로 기록 그룹핑 (최신 순 유지하면서 책 정보 표시)
   return (
-    <div className="space-y-4">
+    <div className={spacing.pageSection}>
       {/* 상단 안내 */}
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">

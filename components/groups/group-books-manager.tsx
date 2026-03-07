@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Loader2 } from "lucide-react";
 import { useTranslation } from "@/lib/i18n";
+import { typography, spacing, grids } from "@/lib/design-tokens";
 
 interface GroupBooksManagerProps {
   groupId: string;
@@ -140,16 +141,16 @@ export function GroupBooksManager({ groupId, isLeader }: GroupBooksManagerProps)
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
+    <div className={spacing.pageSection}>
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h3 className="text-lg font-semibold">{t("groups.designatedBook")}</h3>
+          <h3 className={typography.sectionTitle}>{t("groups.designatedBook")}</h3>
           <p className="text-sm text-muted-foreground">
             {t("groups.searchAndAddBook")}
           </p>
         </div>
         {isLeader && (
-          <Button onClick={() => setIsAdding(true)}>
+          <Button onClick={() => setIsAdding(true)} className="shrink-0">
             <Plus className="mr-2 h-4 w-4" />
             {t("groups.addBook")}
           </Button>
@@ -182,43 +183,40 @@ export function GroupBooksManager({ groupId, isLeader }: GroupBooksManagerProps)
       )}
 
       {groupBooks.length === 0 ? (
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-center py-12">
-              <BookOpen className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-              <p className="text-muted-foreground">
-                {t("groups.noDesignatedBooks")}
-                {isLeader && " " + t("groups.addBookHint")}
+        <Card className="border-dashed">
+          <CardContent className="py-12">
+            <div className="flex flex-col items-center text-center">
+              <div className="w-16 h-16 rounded-full bg-orange-50 dark:bg-orange-950/30 flex items-center justify-center mb-4">
+                <BookOpen className="h-8 w-8 text-orange-600 dark:text-orange-400" />
+              </div>
+              <h4 className="font-semibold mb-2">{t("groups.noDesignatedBooks")}</h4>
+              <p className="text-sm text-muted-foreground max-w-sm">
+                {isLeader ? t("groups.addBookHint") : t("groups.searchAndAddBook")}
               </p>
+              {isLeader && (
+                <Button onClick={() => setIsAdding(true)} className="mt-6">
+                  <Plus className="mr-2 h-4 w-4" />
+                  {t("groups.addBook")}
+                </Button>
+              )}
             </div>
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className={grids.threeCol}>
           {groupBooks.map((groupBook) => {
             const book = groupBook.books;
             if (!book) return null;
 
             return (
-              <div key={groupBook.id} className="relative">
-                <GroupBookCardEnhanced
-                  groupId={groupId}
-                  groupBook={groupBook}
-                  noteCount={noteCounts[book.id] || 0}
-                  onAddToLibrary={!groupBook.isInMyLibrary ? handleAddToMyLibrary : undefined}
-                />
-                {isLeader && (
-                  <Button
-                    size="sm"
-                    variant="destructive"
-                    className="w-full mt-2"
-                    onClick={() => setDeletingBookId(book.id)}
-                  >
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    {t("groups.deleteDesignatedBook")}
-                  </Button>
-                )}
-              </div>
+              <GroupBookCardEnhanced
+                key={groupBook.id}
+                groupId={groupId}
+                groupBook={groupBook}
+                noteCount={noteCounts[book.id] || 0}
+                onAddToLibrary={!groupBook.isInMyLibrary ? handleAddToMyLibrary : undefined}
+                onDelete={isLeader ? () => setDeletingBookId(book.id) : undefined}
+              />
             );
           })}
         </div>

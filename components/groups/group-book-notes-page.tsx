@@ -24,6 +24,7 @@ import { getImageUrl, isValidImageUrl } from "@/lib/utils/image";
 import { getGroupBookNoteCounts } from "@/app/actions/groups";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { useTranslation } from "@/lib/i18n";
+import { typography, spacing } from "@/lib/design-tokens";
 
 interface GroupBookNotesPageProps {
   groupId: string;
@@ -77,7 +78,7 @@ export function GroupBookNotesPage({
   };
 
   return (
-    <div className="space-y-6">
+    <div className={spacing.pageSectionWide}>
       {/* 브레드크럼 네비게이션 */}
       <nav className="flex items-center gap-2 text-sm text-muted-foreground overflow-x-auto pb-2">
         <Link href="/groups" className="hover:text-foreground whitespace-nowrap">
@@ -102,7 +103,7 @@ export function GroupBookNotesPage({
           </Button>
         </Link>
         <div className="min-w-0">
-          <h1 className="text-xl md:text-2xl font-bold truncate">{t("groups.sharedNotes")}</h1>
+          <h1 className={`${typography.pageTitle} truncate`}>{t("groups.sharedNotes")}</h1>
           <p className="text-sm text-muted-foreground">
             {t("groups.membersNotes")}
           </p>
@@ -187,7 +188,7 @@ export function GroupBookNotesPage({
       {/* 공유 기록 피드 */}
       <section>
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold">{t("groups.membersNotes")}</h3>
+          <h3 className={typography.sectionTitle}>{t("groups.membersNotes")}</h3>
           {noteCount !== null && (
             <span className="text-sm text-muted-foreground">
               {t("groups.totalNotes").replace("{count}", String(noteCount))}

@@ -53,6 +53,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import type { MemberRole } from "@/types/group";
 import { useTranslation } from "@/lib/i18n";
+import { spacing } from "@/lib/design-tokens";
 
 interface MemberListProps {
   members: Array<{
@@ -288,7 +289,7 @@ export function MemberList({
 
   return (
     <>
-      <div className="space-y-4">
+      <div className={spacing.pageSection}>
         {/* 대기 중인 멤버 (리더/부리더만 표시) */}
         {canManageMembers && pendingMembers.length > 0 && (
           <Card className="border-orange-200 dark:border-orange-900/50 bg-orange-50/50 dark:bg-orange-950/20">

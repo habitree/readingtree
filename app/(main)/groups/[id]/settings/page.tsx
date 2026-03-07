@@ -35,6 +35,7 @@ import { toast } from "sonner";
 import { ArrowLeft, Loader2, Trash2, AlertTriangle, Copy, Check, Link as LinkIcon } from "lucide-react";
 import { useTranslation } from "@/lib/i18n";
 import { InviteLinkDialog } from "@/components/groups/invite-link-dialog";
+import { typography, spacing } from "@/lib/design-tokens";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -168,7 +169,7 @@ export default function GroupSettingsPage({ params }: PageProps) {
   }
 
   return (
-    <div className="space-y-6">
+    <div className={spacing.pageSectionWide}>
       {/* 뒤로가기 */}
       <Button variant="ghost" size="sm" asChild>
         <Link href={`/groups/${groupId}`} className="flex items-center gap-1">
@@ -179,8 +180,8 @@ export default function GroupSettingsPage({ params }: PageProps) {
 
       {/* 헤더 */}
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">{t("groups.settingsPageTitle")}</h1>
-        <p className="text-muted-foreground">{t("groups.settingsPageDesc")}</p>
+        <h1 className={typography.pageTitle}>{t("groups.settingsPageTitle")}</h1>
+        <p className="text-sm text-muted-foreground">{t("groups.settingsPageDesc")}</p>
       </div>
 
       {/* 기본 정보 설정 */}
