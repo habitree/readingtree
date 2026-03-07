@@ -60,7 +60,7 @@ export function Sidebar() {
     { icon: Users, label: t("nav.groups"), href: "/groups" },
     { icon: Sparkles, label: t("persona.pageTitle"), href: "/stats" },
     { icon: Bot, label: t("nav.aiChat"), href: "/chat" },
-    { icon: Coins, label: "포인트", href: "/pricing" },
+    { icon: Coins, label: t("nav.points"), href: "/points" },
     { icon: Lightbulb, label: t("nav.featureRequests"), href: "/feature-requests" },
     { icon: Trees, label: t("nav.admin"), href: "/admin", adminOnly: true },
   ];

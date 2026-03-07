@@ -58,7 +58,7 @@ export function InsufficientPointsPrompt({
           </div>
 
           <Button asChild className="w-full" onClick={() => onOpenChange(false)}>
-            <Link href="/profile?tab=points">
+            <Link href="/points">
               {t("points.earnMorePoints" as any)}
               <ArrowRight className="ml-2 h-4 w-4" />
             </Link>
