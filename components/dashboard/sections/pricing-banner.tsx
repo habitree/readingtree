@@ -3,15 +3,15 @@ import { Coins, ArrowRight, Gift } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 
 const FREE_LIMITS = [
-  { label: "AI 채팅", limit: "3회/일" },
-  { label: "OCR 필사", limit: "3회/일" },
+  { label: "AI 채팅", limit: "5회/일" },
+  { label: "OCR 필사", limit: "5회/일" },
   { label: "AI 리포트", limit: "1회/월" },
 ];
 
 const POINT_COSTS = [
-  { label: "AI 채팅", cost: "100P" },
-  { label: "OCR 필사", cost: "80P" },
-  { label: "AI 리포트", cost: "150P" },
+  { label: "AI 채팅", cost: "40P" },
+  { label: "OCR 필사", cost: "25P" },
+  { label: "AI 리포트", cost: "100P" },
 ];
 
 /**

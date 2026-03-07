@@ -22,9 +22,9 @@ import { useUpgradeModal } from "@/hooks/use-upgrade-modal";
 
 /** 포인트로 가능한 사용 횟수 예시 */
 const POINT_VALUE_EXAMPLES = [
-  { label: "AI 채팅", uses: "5회", points: "500P", icon: "chat" },
-  { label: "OCR 필사", uses: "6회", points: "480P", icon: "ocr" },
-  { label: "AI 리포트", uses: "3회", points: "450P", icon: "report" },
+  { label: "AI 채팅", uses: "12회", points: "480P", icon: "chat" },
+  { label: "OCR 필사", uses: "20회", points: "500P", icon: "ocr" },
+  { label: "AI 리포트", uses: "5회", points: "500P", icon: "report" },
 ];
 
 /**
