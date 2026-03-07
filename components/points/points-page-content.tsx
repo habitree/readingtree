@@ -39,14 +39,12 @@ import { LEVEL_STYLES, LEVEL_DEFAULTS, POINT_ACTION_DEFAULTS } from "@/types/poi
 interface PointsPageContentProps {
   dashboardData: PointsDashboardData;
   missions: MissionWithDetails[];
-  rank: { rank: number; totalUsers: number; percentile: number } | null;
   transactions: PointTransaction[];
 }
 
 export function PointsPageContent({
   dashboardData,
   missions,
-  rank,
   transactions,
 }: PointsPageContentProps) {
   const { t, locale } = useTranslation();
@@ -108,11 +106,6 @@ export function PointsPageContent({
                   <span className={cn("text-sm font-medium", levelStyle.textColor)}>
                     Lv.{userPoints.current_level} {levelInfo?.title}
                   </span>
-                  {rank && (
-                    <Badge variant="secondary" className="text-xs">
-                      {t("points.rankBadge", { rank: rank.rank, total: rank.totalUsers })}
-                    </Badge>
-                  )}
                 </div>
                 <div className="text-4xl font-extrabold tabular-nums tracking-tight text-forest-600 dark:text-forest-400">
                   {userPoints.total_points.toLocaleString()}

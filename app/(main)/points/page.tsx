@@ -1,7 +1,7 @@
 import { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getCachedCurrentUser } from "@/lib/cached";
-import { getPointsDashboardData, getDailyMissions, getUserRank, getPointTransactions } from "@/app/actions/points";
+import { getPointsDashboardData, getDailyMissions, getPointTransactions } from "@/app/actions/points";
 import { PointsPageContent } from "@/components/points/points-page-content";
 
 export const metadata: Metadata = {
@@ -13,10 +13,9 @@ export default async function PointsPage() {
   const user = await getCachedCurrentUser();
   if (!user) redirect("/login");
 
-  const [dashboardData, missions, rank, transactions] = await Promise.all([
+  const [dashboardData, missions, transactions] = await Promise.all([
     getPointsDashboardData(user),
     getDailyMissions(user),
-    getUserRank(user),
     getPointTransactions({ limit: 20 }, user),
   ]);
 
@@ -24,7 +23,6 @@ export default async function PointsPage() {
     <PointsPageContent
       dashboardData={dashboardData}
       missions={missions}
-      rank={rank}
       transactions={transactions}
     />
   );
