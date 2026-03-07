@@ -3,8 +3,8 @@ import { Coins, ArrowRight, Gift } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 
 const FREE_LIMITS = [
-  { label: "AI 채팅", limit: "5회/일" },
-  { label: "OCR 필사", limit: "5회/일" },
+  { label: "AI 채팅", limit: "10회/월" },
+  { label: "OCR 필사", limit: "5회/월" },
   { label: "AI 리포트", limit: "1회/월" },
 ];
 

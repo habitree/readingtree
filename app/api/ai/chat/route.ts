@@ -65,8 +65,8 @@ export async function POST(request: NextRequest) {
     const access = await checkFeatureAccess("ai_chat", user);
     if (!access.allowed) {
       const msg = access.canUseWithPoints
-        ? `오늘의 AI 채팅 한도(${access.limit}회)에 도달했습니다. ${access.pointCost}P로 추가 사용할 수 있습니다.`
-        : `오늘의 AI 채팅 한도(${access.limit}회)에 도달했습니다.`;
+        ? `이번 달 AI 채팅 한도(${access.limit}회)에 도달했습니다. ${access.pointCost}P로 추가 사용할 수 있습니다.`
+        : `이번 달 AI 채팅 한도(${access.limit}회)에 도달했습니다.`;
       return NextResponse.json(
         { error: msg },
         { status: 403 }

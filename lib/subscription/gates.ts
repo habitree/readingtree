@@ -28,13 +28,15 @@ export interface FeatureGate {
 
 export const FEATURE_GATES: Record<FeatureKey, FeatureGate> = {
   ai_chat: {
-    limit: 5,
+    limit: 10,
     pointCost: 40,
+    countPeriod: "monthly",
     countMethod: "point_transactions",
   },
   ocr: {
     limit: 5,
     pointCost: 25,
+    countPeriod: "monthly",
     countMethod: "point_transactions",
   },
   ai_report: {
