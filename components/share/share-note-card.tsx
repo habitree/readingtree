@@ -700,8 +700,8 @@ export function ShareNoteCard({ note, className, isPublicView = false, hideActio
                     </div>
                 )}
 
-                {/* AI 텍스트 인식 - 카드 하단 전체 너비로 표시 */}
-                {hasAiAnalysis && (
+                {/* AI 텍스트 인식 - 카드 하단 전체 너비로 표시 (캡처 시 숨김) */}
+                {hasAiAnalysis && !hideActions && (
                     <div className="border-t border-slate-100 dark:border-slate-800">
                         <CollapsibleAiSection
                             text={aiAnalysisText!}
