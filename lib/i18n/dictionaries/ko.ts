@@ -1560,6 +1560,7 @@ export const ko = {
     useCaseCasualDesc: "부담 없이 한 줄만 기록하고 나중에 책과 연결",
     useCaseCreatorTitle: "콘텐츠 크리에이터",
     useCaseCreatorDesc: "독서 인사이트를 SNS에 바로 공유할 수 있는 카드 생성",
+    referralHint: "이 링크로 가입한 친구가 첫 기록을 남기면 100P가 적립돼요",
     bookshelfCtaHeadline: "나만의 서재를 만들어보세요",
     bookshelfCtaDesc: "읽은 책을 한곳에 정리하고,\n기록과 함께 독서 여정을 관리할 수 있습니다.",
     twitterShare: "X (Twitter)",

@@ -26,6 +26,7 @@ import { addStampToBlob } from "@/lib/utils/stamp";
 import { getUserBooks } from "@/app/actions/books";
 import { loadKakaoSdk, isKakaoShareAvailable } from "@/lib/kakao/sdk";
 import { parseNoteContentFields } from "@/lib/utils/note";
+import { useAuth } from "@/contexts/auth-context";
 
 /**
  * 캔버스 하단 여백을 트리밍하여 빈 화면을 제거하는 유틸 함수
@@ -95,6 +96,7 @@ export function SimpleShareDialog({ note }: SimpleShareDialogProps) {
   const [user, setUser] = useState<{ id: string; name: string; avatar_url: string | null } | null>(null);
   const [relatedBooks, setRelatedBooks] = useState<RelatedBookInfo[]>([]);
   const [includeBranding, setIncludeBranding] = useState(true);
+  const { user: currentUser } = useAuth();
   const cardRef = useRef<HTMLDivElement>(null);
   const captureRef = useRef<HTMLDivElement>(null); // 캡처 전용 Hidden 요소 Ref
   const isCapturingRef = useRef(false); // race condition 방지용
@@ -143,11 +145,12 @@ export function SimpleShareDialog({ note }: SimpleShareDialogProps) {
     (note.type === "transcription" || note.type === "photo") &&
     !!note.image_url;
 
-  // 공유 링크 생성
+  // 공유 링크 생성 (ref 파라미터 포함)
   const getShareUrl = () => {
     const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
     if (note.is_public) {
-      return `${baseUrl}/share/notes/${note.id}`;
+      const url = `${baseUrl}/share/notes/${note.id}`;
+      return currentUser ? `${url}?ref=${currentUser.id}` : url;
     }
     return null;
   };
@@ -465,7 +468,8 @@ export function SimpleShareDialog({ note }: SimpleShareDialogProps) {
       }
 
       const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
-      const shareUrl = `${baseUrl}/share/notes/${note.id}`;
+      const shareUrlBase = `${baseUrl}/share/notes/${note.id}`;
+      const shareUrl = currentUser ? `${shareUrlBase}?ref=${currentUser.id}` : shareUrlBase;
 
       // description 결정: 필사 OCR > 인용구 > 메모 > 기본 문구
       let description = t("share.defaultDescription");
@@ -706,7 +710,10 @@ export function SimpleShareDialog({ note }: SimpleShareDialogProps) {
             )}
           </div>
 
-          <div className="p-6 bg-slate-50 dark:bg-slate-900/50 border-t border-slate-100 dark:border-slate-800 text-center">
+          <div className="p-6 bg-slate-50 dark:bg-slate-900/50 border-t border-slate-100 dark:border-slate-800 text-center space-y-1.5">
+            <p className="text-xs text-slate-400 dark:text-slate-500">
+              {t("share.referralHint")}
+            </p>
             <p className="text-[11px] font-black text-slate-300 uppercase tracking-[0.3em]">
               ReadTree System v4.0
             </p>

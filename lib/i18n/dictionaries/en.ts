@@ -1560,6 +1560,7 @@ export const en: Dictionary = {
     useCaseCasualDesc: "Save a single quote and link it to a book later",
     useCaseCreatorTitle: "Content Creators",
     useCaseCreatorDesc: "Turn reading insights into shareable cards for social media",
+    referralHint: "When a friend signs up through this link and writes their first note, you'll earn 100P",
     bookshelfCtaHeadline: "Create your own bookshelf",
     bookshelfCtaDesc: "Organize your books in one place\nand manage your reading journey with notes.",
     twitterShare: "X (Twitter)",

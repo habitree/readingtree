@@ -6,6 +6,7 @@ import { parseNoteContentFields } from "@/lib/utils/note";
 import { isValidUUID } from "@/lib/utils/validation";
 import { ShareNoteCard } from "@/components/share/share-note-card";
 import { ShareCtaSection } from "@/components/share/share-cta-section";
+import { ReferralTracker } from "@/components/share/referral-tracker";
 import type { NoteWithBook } from "@/types/note";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -192,6 +193,9 @@ export default async function ShareNotePage({
             rawTranscriptionText={transcriptions?.raw_extracted_text}
           />
         </div>
+
+        {/* 레퍼럴 트래커 (ref 파라미터 → 쿠키 저장) */}
+        <ReferralTracker />
 
         {/* 하단 푸터 / CTA */}
         <ShareCtaSection variant="note" />

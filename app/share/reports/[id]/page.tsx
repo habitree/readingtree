@@ -5,6 +5,7 @@ import { isValidUUID } from "@/lib/utils/validation";
 import { getPublicReport, getPublicReportNotes } from "@/app/actions/ai/report";
 import { getReportReactionCounts } from "@/app/actions/ai/report-reactions";
 import { ShareCtaSection } from "@/components/share/share-cta-section";
+import { ReferralTracker } from "@/components/share/referral-tracker";
 import { SharedReportView } from "./shared-report-view";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -111,6 +112,9 @@ export default async function ShareReportPage({
 
         {/* 리포트 렌더링 */}
         <SharedReportView report={report} publicNotes={publicNotes} reactionCounts={reactionCounts} />
+
+        {/* 레퍼럴 트래커 */}
+        <ReferralTracker />
 
         {/* CTA */}
         <ShareCtaSection variant="note" />

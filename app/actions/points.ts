@@ -174,6 +174,14 @@ export async function earnPoints(
           points_bonus: 50,
           icon: "Pencil",
         });
+
+        // 레퍼럴 보상 트리거 (첫 노트 작성 시 추천인에게 포인트 지급)
+        try {
+          const { grantReferralRewardOnFirstNote } = await import("@/app/actions/referral");
+          await grantReferralRewardOnFirstNote(currentUser.id);
+        } catch {
+          // 레퍼럴 보상 실패해도 노트 작성에는 영향 없음
+        }
       }
     }
 

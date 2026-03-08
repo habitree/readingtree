@@ -45,6 +45,9 @@ export type PointActionType =
   | "ocr_spend"
   | "ai_report_spend"
   | "point_refund"
+  // 추천
+  | "referral_success"
+  | "referral_bonus"
   // 충전
   | "point_purchase"
   // 웰컴
@@ -261,6 +264,10 @@ export const POINT_ACTION_DEFAULTS: Record<PointActionType, { base_points: numbe
   first_book: { base_points: 35, description: "첫 번째 책 등록", category: "special" },
   first_note: { base_points: 50, description: "첫 번째 노트 작성", category: "special" },
   profile_complete: { base_points: 50, description: "프로필 완성 보너스", category: "special" },
+
+  // 추천
+  referral_success: { base_points: 100, description: "친구 추천 보상", category: "social" },
+  referral_bonus: { base_points: 50, description: "추천 가입 보너스", category: "special" },
 
   // AI / OCR 소비
   ai_chat_spend: { base_points: 0, description: "AI 채팅 포인트 소비", category: "system" },

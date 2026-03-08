@@ -28,6 +28,7 @@ import {
   toggleReportPublic,
 } from "@/app/actions/ai/report";
 import { loadKakaoSdk, isKakaoShareAvailable } from "@/lib/kakao/sdk";
+import { useAuth } from "@/contexts/auth-context";
 import { buildBlogHtml, buildBlogPlainText } from "@/lib/utils/blog-html-builder";
 import { copyHtmlToClipboard } from "@/lib/utils/clipboard";
 import type { BookInfoForReport, NoteSummary } from "@/types/ai/report";
@@ -57,6 +58,7 @@ export function ReportShareDialog({
   onSaved,
 }: ReportShareDialogProps) {
   const { t } = useTranslation();
+  const { user: currentUser } = useAuth();
   const [open, setOpen] = useState(false);
   const [isAutoSaving, setIsAutoSaving] = useState(false);
   const [shareId, setShareId] = useState<string | null>(initialShareId ?? null);
@@ -137,7 +139,8 @@ export function ReportShareDialog({
       return;
     }
     const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
-    const url = `${baseUrl}/share/reports/${shareId}`;
+    const urlBase = `${baseUrl}/share/reports/${shareId}`;
+    const url = currentUser ? `${urlBase}?ref=${currentUser.id}` : urlBase;
     try {
       await navigator.clipboard.writeText(url);
       setLinkCopied(true);
@@ -187,7 +190,8 @@ export function ReportShareDialog({
         return;
       }
       const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
-      const shareUrl = `${baseUrl}/share/reports/${shareId}`;
+      const shareUrlBase = `${baseUrl}/share/reports/${shareId}`;
+      const shareUrl = currentUser ? `${shareUrlBase}?ref=${currentUser.id}` : shareUrlBase;
       const ogImageUrl = `${baseUrl}/share/reports/${shareId}/opengraph-image`;
 
       kakao.Share.sendDefault({

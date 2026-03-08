@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { getAppUrl } from "@/lib/utils/url";
 import { copySocialAvatarToStorage } from "@/lib/supabase/copy-social-avatar";
 import { grantWelcomeBonus } from "@/app/actions/points";
+import { processReferralOnSignup } from "@/app/actions/referral";
 import { recordLoginLog } from "@/app/actions/admin/tracking";
 
 /**
@@ -218,6 +219,14 @@ export async function GET(request: NextRequest) {
 
     // 온보딩 완료 시 웰컴 보너스 지급 (첫 가입 시 200P, 이미 지급된 경우 무시)
     await grantWelcomeBonus(user);
+
+    // 레퍼럴 처리 (쿠키에서 추천인 정보 읽기)
+    const referrerCookie = request.cookies.get("rt_ref")?.value;
+    const sourceCookie = request.cookies.get("rt_ref_source")?.value;
+    if (referrerCookie) {
+      const [sourceType, sourceId] = (sourceCookie || "").split(":");
+      await processReferralOnSignup(user, referrerCookie, sourceType, sourceId);
+    }
 
     // 온보딩 완료 시 메인으로 리다이렉트 (캐시 무효화 후)
     // getAppUrl()을 사용하여 올바른 프로덕션 URL로 리다이렉트
