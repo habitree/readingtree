@@ -96,7 +96,7 @@ export function SimpleShareDialog({ note }: SimpleShareDialogProps) {
   const [user, setUser] = useState<{ id: string; name: string; avatar_url: string | null } | null>(null);
   const [relatedBooks, setRelatedBooks] = useState<RelatedBookInfo[]>([]);
   const [includeBranding, setIncludeBranding] = useState(true);
-  const { user: currentUser } = useAuth();
+  const { user: currentUser, profile } = useAuth();
   const cardRef = useRef<HTMLDivElement>(null);
   const captureRef = useRef<HTMLDivElement>(null); // 캡처 전용 Hidden 요소 Ref
   const isCapturingRef = useRef(false); // race condition 방지용
@@ -107,11 +107,16 @@ export function SimpleShareDialog({ note }: SimpleShareDialogProps) {
     isMountedRef.current = true;
 
     if (open && note.user_id) {
-      getUserById(note.user_id).then((userData) => {
-        if (userData && isMountedRef.current) {
-          setUser(userData);
-        }
-      });
+      // 현재 로그인 사용자와 기록 작성자가 같으면 profile 즉시 사용 (비동기 지연 방지)
+      if (currentUser?.id === note.user_id && profile) {
+        setUser({ id: profile.id, name: profile.name, avatar_url: profile.avatar_url });
+      } else {
+        getUserById(note.user_id).then((userData) => {
+          if (userData && isMountedRef.current) {
+            setUser(userData);
+          }
+        });
+      }
     }
 
     // 연결된 책 정보 로드
@@ -138,7 +143,7 @@ export function SimpleShareDialog({ note }: SimpleShareDialogProps) {
     return () => {
       isMountedRef.current = false;
     };
-  }, [open, note.user_id, note.related_user_book_ids]);
+  }, [open, note.user_id, note.related_user_book_ids, currentUser?.id, profile]);
 
   // 이미지가 있는지 확인 (필사/사진 타입)
   const hasImage =
@@ -660,10 +665,10 @@ export function SimpleShareDialog({ note }: SimpleShareDialogProps) {
               />
             </div>
 
-            <div className="mb-6 group bg-slate-50 dark:bg-slate-900/50 p-4 sm:p-6 rounded-[2rem] border border-slate-100 dark:border-slate-800 overflow-x-auto">
-              {/* 프리뷰 카드 - PC/모바일 동일한 가로 레이아웃 (fixedHorizontal) */}
-              <div ref={cardRef} className="rounded-3xl overflow-hidden shadow-2xl ring-1 ring-slate-200 dark:ring-slate-800 bg-white min-w-[600px]">
-                <ShareNoteCard note={note} hideActions={true} showTimestamp={false} user={user} fixedHorizontal={true} relatedBooks={relatedBooks} includeBranding={includeBranding} rawTranscriptionText={note.transcription?.raw_extracted_text} />
+            <div className="mb-6 group bg-slate-50 dark:bg-slate-900/50 p-4 sm:p-6 rounded-[2rem] border border-slate-100 dark:border-slate-800">
+              {/* 프리뷰 카드 - 모바일 반응형 (캡처 이미지만 가로 고정) */}
+              <div ref={cardRef} className="rounded-3xl overflow-hidden shadow-2xl ring-1 ring-slate-200 dark:ring-slate-800 bg-white">
+                <ShareNoteCard note={note} hideActions={false} showTimestamp={false} user={user} relatedBooks={relatedBooks} includeBranding={includeBranding} rawTranscriptionText={note.transcription?.raw_extracted_text} />
               </div>
             </div>
 
