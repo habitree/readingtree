@@ -60,6 +60,93 @@ export async function getAdminStats() {
     };
 }
 
+// ============================================================
+// 회원 목록 조회
+// ============================================================
+
+export interface MemberEntry {
+    id: string;
+    name: string;
+    email: string | null;
+    avatar_url: string | null;
+    created_at: string;
+    terms_agreed: boolean;
+    is_admin: boolean;
+    reading_goal: number | null;
+    bookCount: number;
+    noteCount: number;
+    lastLoginAt: string | null;
+    loginProvider: string | null;
+}
+
+export async function getAllMembers(): Promise<MemberEntry[]> {
+    await requireAdmin();
+    const supabase = createAdminSupabaseClient();
+
+    // 전체 사용자 조회 (데모 사용자 제외)
+    const { data: users } = await supabase
+        .from("users")
+        .select("id, name, email, avatar_url, created_at, terms_agreed, is_admin, reading_goal")
+        .not("email", "like", "%@readingtree.demo")
+        .order("created_at", { ascending: false });
+
+    if (!users || users.length === 0) return [];
+
+    const userIds = users.map((u) => u.id);
+
+    // 사용자별 도서 수, 노트 수 집계
+    const [booksRes, notesRes, loginRes] = await Promise.all([
+        supabase
+            .from("reading_records")
+            .select("user_id")
+            .in("user_id", userIds),
+        supabase
+            .from("notes")
+            .select("user_id")
+            .in("user_id", userIds),
+        supabase
+            .from("login_logs")
+            .select("user_id, created_at, provider")
+            .in("user_id", userIds)
+            .eq("success", true)
+            .order("created_at", { ascending: false }),
+    ]);
+
+    // 집계
+    const bookCountMap = new Map<string, number>();
+    for (const r of (booksRes.data ?? [])) {
+        bookCountMap.set(r.user_id, (bookCountMap.get(r.user_id) ?? 0) + 1);
+    }
+
+    const noteCountMap = new Map<string, number>();
+    for (const r of (notesRes.data ?? [])) {
+        noteCountMap.set(r.user_id, (noteCountMap.get(r.user_id) ?? 0) + 1);
+    }
+
+    // 마지막 로그인 + provider
+    const lastLoginMap = new Map<string, { at: string; provider: string }>();
+    for (const log of (loginRes.data ?? [])) {
+        if (log.user_id && !lastLoginMap.has(log.user_id)) {
+            lastLoginMap.set(log.user_id, { at: log.created_at, provider: log.provider });
+        }
+    }
+
+    return users.map((u) => ({
+        id: u.id,
+        name: u.name,
+        email: u.email,
+        avatar_url: u.avatar_url,
+        created_at: u.created_at,
+        terms_agreed: u.terms_agreed ?? false,
+        is_admin: u.is_admin ?? false,
+        reading_goal: u.reading_goal,
+        bookCount: bookCountMap.get(u.id) ?? 0,
+        noteCount: noteCountMap.get(u.id) ?? 0,
+        lastLoginAt: lastLoginMap.get(u.id)?.at ?? null,
+        loginProvider: lastLoginMap.get(u.id)?.provider ?? null,
+    }));
+}
+
 /**
  * 월별 사용자 성장 데이터 조회 (최근 6개월)
  */

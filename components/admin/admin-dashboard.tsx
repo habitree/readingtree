@@ -67,6 +67,13 @@ export function AdminDashboard({ stats, growth, activity, ocrMonthlyUsage, ocrTo
                         {t("admin.dashboard.aiUsage")}
                     </Link>
                     <Link
+                        href="/admin/users"
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm"
+                    >
+                        <Users className="h-4 w-4" />
+                        회원 관리
+                    </Link>
+                    <Link
                         href="/admin/tracking"
                         className="inline-flex items-center gap-2 px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors font-medium text-sm"
                     >
