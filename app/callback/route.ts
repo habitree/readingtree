@@ -1,4 +1,5 @@
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { revalidatePath } from "next/cache";
@@ -103,7 +104,7 @@ export async function GET(request: NextRequest) {
         hasUser: !!user,
       });
       // 로그인 실패 기록
-      recordLoginLog({
+      await recordLoginLog({
         ipAddress,
         userAgent,
         provider: "unknown",
@@ -117,9 +118,9 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // OAuth 로그인 성공 기록
+    // OAuth 로그인 성공 기록 (await로 로그 완료 보장)
     const oauthProvider = user.app_metadata?.provider as string;
-    recordLoginLog({
+    await recordLoginLog({
       userId: user.id,
       email: user.email,
       ipAddress,
@@ -128,6 +129,9 @@ export async function GET(request: NextRequest) {
       success: true,
     });
 
+    // 프로필 조회/생성에는 admin 클라이언트 사용 (RLS 우회, 세션 미확립 문제 방지)
+    const adminClient = createAdminSupabaseClient();
+
     // 사용자 프로필 확인 (TASK-00의 handle_new_user 트리거가 자동 생성)
     // 트리거가 즉시 실행되지 않을 수 있으므로 재시도 로직 추가
     let profile = null;
@@ -135,7 +139,7 @@ export async function GET(request: NextRequest) {
     const maxRetries = 3;
 
     while (retryCount < maxRetries && !profile) {
-      const { data, error: profileError } = await supabase
+      const { data, error: profileError } = await adminClient
         .from("users")
         .select("reading_goal, terms_agreed, privacy_agreed")
         .eq("id", user.id)
@@ -153,7 +157,7 @@ export async function GET(request: NextRequest) {
       retryCount++;
     }
 
-    // 프로필이 여전히 없으면 수동 생성 시도
+    // 프로필이 여전히 없으면 수동 생성 시도 (admin 클라이언트로 RLS 우회)
     if (!profile) {
       // 소셜 프로필 이미지를 Supabase Storage에 복사 (URL 만료 방지)
       const rawAvatarUrl = user.user_metadata?.avatar_url || null;
@@ -161,7 +165,7 @@ export async function GET(request: NextRequest) {
       if (rawAvatarUrl) {
         avatarUrl = await copySocialAvatarToStorage(supabase, user.id, rawAvatarUrl);
       }
-      const { error: insertError } = await supabase.from("users").insert({
+      const { error: insertError } = await adminClient.from("users").insert({
         id: user.id,
         email: user.email,
         name: user.user_metadata?.name || user.email?.split("@")[0] || "사용자",
@@ -177,30 +181,35 @@ export async function GET(request: NextRequest) {
           code: insertError.code,
           details: insertError.details,
         });
-        // 프로필 생성 실패해도 계속 진행 (RLS 정책에 따라 접근 제한될 수 있음)
-        // 하지만 프로필이 없으면 온보딩으로 리다이렉트됨
+        // 프로필 생성이 실패한 경우 에러 페이지로 리다이렉트
+        await recordLoginLog({
+          userId: user.id,
+          email: user.email,
+          ipAddress,
+          userAgent,
+          provider: (oauthProvider === "kakao" || oauthProvider === "google") ? oauthProvider : "unknown",
+          success: false,
+          errorMessage: `프로필 생성 실패: ${insertError.message}`,
+        });
+        const baseUrl = getAppUrl();
+        return NextResponse.redirect(
+          new URL("/login?error=계정 생성에 실패했습니다. 다시 시도해주세요.", baseUrl)
+        );
       } else {
         // 프로필 생성 성공, 다시 조회
-        const { data: newProfile } = await supabase
+        const { data: newProfile } = await adminClient
           .from("users")
           .select("reading_goal, terms_agreed, privacy_agreed")
           .eq("id", user.id)
           .single();
         profile = newProfile;
-        
-        // 프로필 생성 후 관련 페이지 캐시 무효화
-        revalidatePath("/");
-        revalidatePath("/profile");
-        revalidatePath("/dashboard");
       }
     }
 
-    // 프로필이 생성되었거나 업데이트된 경우 캐시 무효화
-    if (profile) {
-      revalidatePath("/");
-      revalidatePath("/profile");
-      revalidatePath("/dashboard");
-    }
+    // 캐시 무효화
+    revalidatePath("/");
+    revalidatePath("/profile");
+    revalidatePath("/dashboard");
 
     // 약관 동의 여부 확인 (최우선)
     // 약관 동의가 완료되지 않았으면 약관 동의 페이지로 리다이렉트
