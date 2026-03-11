@@ -77,9 +77,19 @@ export function AuthProvider({ children, initialUser, initialProfile }: AuthProv
   useEffect(() => {
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event: AuthChangeEvent, session: Session | null) => {
+    } = supabase.auth.onAuthStateChange(async (event: AuthChangeEvent, session: Session | null) => {
       if (session?.user) {
+        const prevUserId = user?.id;
         setUser(session.user);
+        // 새 로그인 또는 사용자 변경 시 프로필 갱신
+        if (event === "SIGNED_IN" || session.user.id !== prevUserId) {
+          try {
+            const newProfile = await getCurrentUserProfile();
+            setProfile(newProfile || null);
+          } catch {
+            // 프로필 조회 실패 시 기존 상태 유지
+          }
+        }
       } else {
         setUser(null);
         setProfile(null); // 로그아웃 시 프로필 초기화

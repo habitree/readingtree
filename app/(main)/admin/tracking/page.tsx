@@ -5,6 +5,9 @@ import {
   getAccessLogs,
   getPageViewRanking,
   getIPActivitySummary,
+  getDailyTrends,
+  getRecentSignups,
+  getMenuUsageAnalysis,
 } from "@/app/actions/admin";
 import { TrackingDashboard } from "@/components/admin/tracking-dashboard";
 import { Metadata } from "next";
@@ -14,7 +17,7 @@ import { ArrowLeft } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "접속 추적 | 관리자 | ReadingTree",
-  description: "IP별 접속/로그인 기록 조회",
+  description: "사용자 접속 추적, 회원가입 분석, 메뉴 사용 현황",
 };
 
 export default async function TrackingPage() {
@@ -23,13 +26,16 @@ export default async function TrackingPage() {
     redirect("/");
   }
 
-  const [summary, loginLogs, accessLogs, pageRanking, ipActivity] =
+  const [summary, loginLogs, accessLogs, pageRanking, ipActivity, dailyTrends, recentSignups, menuUsage] =
     await Promise.all([
       getTrackingSummary(),
       getLoginLogs(100),
       getAccessLogs(200),
       getPageViewRanking(),
       getIPActivitySummary(),
+      getDailyTrends(14),
+      getRecentSignups(30),
+      getMenuUsageAnalysis(),
     ]);
 
   return (
@@ -49,6 +55,9 @@ export default async function TrackingPage() {
         accessLogs={accessLogs}
         pageRanking={pageRanking}
         ipActivity={ipActivity}
+        dailyTrends={dailyTrends}
+        recentSignups={recentSignups}
+        menuUsage={menuUsage}
       />
     </div>
   );

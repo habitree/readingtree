@@ -9,6 +9,7 @@ import { agreeToTerms, setReadingGoal } from "@/app/actions/onboarding";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/lib/i18n";
+import { useAuth } from "@/contexts/auth-context";
 
 interface OnboardingData {
   termsAgreed: boolean;
@@ -31,6 +32,7 @@ interface OnboardingWizardProps {
 export function OnboardingWizard({ initialStep = 0 }: OnboardingWizardProps) {
   const { t } = useTranslation();
   const router = useRouter();
+  const { refreshProfile } = useAuth();
 
   const STEPS = [
     { id: "consent", title: t("onboarding.consentStep") },
@@ -48,11 +50,13 @@ export function OnboardingWizard({ initialStep = 0 }: OnboardingWizardProps) {
       try {
         await agreeToTerms(consentData.termsAgreed, consentData.privacyAgreed);
         setData((prev) => ({ ...prev, ...consentData }));
-        // 약관 동의 후 바로 대시보드로 이동 (단순화된 플로우)
+        // 약관 동의 후 프로필 갱신 → 대시보드로 이동
+        await refreshProfile();
         if (typeof window !== "undefined") {
           localStorage.setItem("onboarding_tutorial_completed", "true");
         }
         toast.success(t("onboarding.welcomeMessage"));
+        router.refresh();
         router.push("/");
       } catch (error) {
         toast.error(
@@ -62,7 +66,7 @@ export function OnboardingWizard({ initialStep = 0 }: OnboardingWizardProps) {
         setIsLoading(false);
       }
     },
-    [router, t]
+    [router, t, refreshProfile]
   );
 
   // 목표 설정 처리 (프로필 페이지에서 접근 시 사용)
@@ -71,6 +75,7 @@ export function OnboardingWizard({ initialStep = 0 }: OnboardingWizardProps) {
       setIsLoading(true);
       try {
         await setReadingGoal(goalData.goal);
+        await refreshProfile();
         setData((prev) => ({ ...prev, ...goalData }));
         setCurrentStep(2);
       } catch (error) {
@@ -81,7 +86,7 @@ export function OnboardingWizard({ initialStep = 0 }: OnboardingWizardProps) {
         setIsLoading(false);
       }
     },
-    [t]
+    [t, refreshProfile]
   );
 
   // 온보딩 완료 처리
