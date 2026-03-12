@@ -3,6 +3,9 @@ const nextConfig = {
   // Next.js 16에서는 Turbopack이 기본적으로 활성화되어 있음
   // experimental.turbo는 더 이상 지원되지 않음
   images: {
+    // Vercel 무료 플랜 Image Optimization 한도(5K/월) 초과 방지
+    // 이미지를 원본 URL에서 직접 로드 (최적화 API 미사용)
+    unoptimized: true,
     // WebP 사용 (AVIF는 인코딩 시간이 길어 Vercel 502 타임아웃 유발)
     formats: ['image/webp'],
     // 이미지 캐싱 최적화 (31일)

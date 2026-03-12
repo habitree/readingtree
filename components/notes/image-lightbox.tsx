@@ -76,6 +76,7 @@ export function ImageLightbox({ src, alt, children }: ImageLightboxProps) {
                   className="object-contain"
                   sizes="95vw"
                   priority
+                  unoptimized
                   onError={handleImgError}
                 />
               )}

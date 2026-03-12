@@ -361,7 +361,6 @@ export const BookTable = memo(function BookTable({ books }: BookTableProps) {
                               fill
                               className="object-cover hover:scale-105 transition-transform duration-500"
                               sizes="(max-width: 640px) 80px, (max-width: 1024px) 96px, 128px"
-                              unoptimized={false}
                             />
                           ) : (
                             <div className="absolute inset-0 flex items-center justify-center bg-muted/50">
