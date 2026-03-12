@@ -1,4 +1,4 @@
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import { Metadata, Viewport } from "next";
 import { getNoteDetail } from "@/app/actions/notes";
 import { getCachedCurrentUser } from "@/lib/cached";
@@ -7,10 +7,8 @@ import { NoteDetailNavBar } from "@/components/notes/note-detail-nav-bar";
 import { isValidUUID } from "@/lib/utils/validation";
 import { sanitizeErrorForLogging } from "@/lib/utils/validation";
 import { ShareNoteCard } from "@/components/share/share-note-card";
-import { Card, CardContent } from "@/components/ui/card";
 import type { NoteWithBook } from "@/types/note";
 import { getUserById } from "@/app/actions/profile";
-import { RelatedBooksDisplay } from "@/components/notes/related-books-manager";
 import { getUserBooks } from "@/app/actions/books";
 import type { RelatedBookInfo } from "@/components/share/share-note-card";
 
@@ -126,18 +124,6 @@ export default async function NoteDetailPage({ params }: NoteDetailPageProps) {
         />
       </div>
 
-      {/* 3. 연결된 책 표시 - 개선된 디자인 */}
-      {noteWithBook.related_user_book_ids && noteWithBook.related_user_book_ids.length > 0 && (
-        <Card className="border border-slate-100/50 dark:border-slate-800/50 bg-gradient-to-br from-slate-50 to-slate-100/30 dark:from-slate-900/50 dark:to-slate-800/30 overflow-hidden">
-          <CardContent className="p-4 sm:p-5 lg:p-6">
-            <RelatedBooksDisplay
-              relatedBookIds={noteWithBook.related_user_book_ids}
-              mainBookId={noteWithBook.user_book_id || ""}
-              initialBooks={isGuest ? relatedBooksRaw : undefined}
-            />
-          </CardContent>
-        </Card>
-      )}
 
     </div>
   );
