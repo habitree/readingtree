@@ -1,7 +1,7 @@
 {
-  "name": "ReadTree",
-  "short_name": "ReadTree",
-  "description": "독서 기록 및 공유 플랫폼",
+  "name": "Habitree",
+  "short_name": "Habitree",
+  "description": "읽는 습관이 자라는 곳",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",

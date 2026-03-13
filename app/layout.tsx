@@ -10,7 +10,7 @@ import { getCachedCurrentUser, getCachedCurrentUserProfile } from "@/lib/cached"
 
 const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
 const notoSerifKr = Noto_Serif_KR({
   subsets: ["latin"],
   weight: ["400", "700"],
@@ -21,13 +21,13 @@ const notoSerifKr = Noto_Serif_KR({
 export const metadata: Metadata = {
   metadataBase: new URL("https://readingtree-tan.vercel.app"),
   title: {
-    default: "ReadTree",
-    template: "%s | ReadTree",
+    default: "Habitree - 읽는 습관이 자라는 곳",
+    template: "%s | Habitree",
   },
-  description: "독서 기록 및 공유 플랫폼 - 책 관리, 독서 노트, AI 독서 도우미",
-  keywords: ["독서", "책", "독서노트", "책 관리", "독서 기록", "AI 독서", "ReadTree"],
-  authors: [{ name: "ReadTree" }],
-  creator: "ReadTree",
+  description: "읽는 습관이 자라는 곳 - 독서 기록, AI 도우미, 독서 모임",
+  keywords: ["독서", "책", "독서노트", "책 관리", "독서 기록", "AI 독서", "Habitree"],
+  authors: [{ name: "Habitree" }],
+  creator: "Habitree",
   manifest: "/manifest.json",
   icons: {
     icon: [
@@ -38,33 +38,30 @@ export const metadata: Metadata = {
       { url: "/icon.png", type: "image/png" },
     ],
   },
-  // Open Graph 설정 (Facebook, LinkedIn, 카카오톡 등)
   openGraph: {
     type: "website",
     locale: "ko_KR",
     url: "https://readingtree-tan.vercel.app",
-    siteName: "ReadTree",
-    title: "ReadTree - 독서 기록 및 공유 플랫폼",
-    description: "책 관리, 독서 노트, AI 독서 도우미와 함께하는 나만의 독서 여정",
+    siteName: "Habitree",
+    title: "Habitree - 읽는 습관이 자라는 곳",
+    description: "독서 기록, AI 도우미, 독서 모임과 함께하는 나만의 독서 여정",
     images: [
       {
         url: "/opengraph-image",
         width: 1200,
         height: 630,
-        alt: "ReadTree - 독서 기록 및 공유 플랫폼",
+        alt: "Habitree - 읽는 습관이 자라는 곳",
         type: "image/png",
       },
     ],
   },
-  // Twitter 카드 설정
   twitter: {
     card: "summary_large_image",
-    title: "ReadTree - 독서 기록 및 공유 플랫폼",
-    description: "책 관리, 독서 노트, AI 독서 도우미와 함께하는 나만의 독서 여정",
-    creator: "@readtree",
+    title: "Habitree - 읽는 습관이 자라는 곳",
+    description: "독서 기록, AI 도우미, 독서 모임과 함께하는 나만의 독서 여정",
+    creator: "@habitree",
     images: ["/opengraph-image"],
   },
-  // 로봇 설정
   robots: {
     index: true,
     follow: true,
@@ -79,7 +76,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "ReadTree",
+    title: "Habitree",
   },
   formatDetection: {
     telephone: false,

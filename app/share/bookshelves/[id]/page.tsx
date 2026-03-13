@@ -31,7 +31,7 @@ export async function generateMetadata({
   const shareUrl = `${baseUrl}/share/bookshelves/${bookshelf.id}`;
   const ogImageUrl = `${baseUrl}/share/bookshelves/${bookshelf.id}/opengraph-image`;
 
-  const ownerName = owner?.name || "ReadTree 사용자";
+  const ownerName = owner?.name || "Habitree 사용자";
   const description = bookshelf.description
     || `${ownerName}님의 서재 - ${books.length}권의 책`;
 
@@ -51,7 +51,7 @@ export async function generateMetadata({
           alt: `${bookshelf.name} - ${ownerName}님의 서재`,
         },
       ],
-      siteName: "ReadTree",
+      siteName: "Habitree",
       locale: "ko_KR",
     },
     twitter: {
@@ -85,7 +85,7 @@ export default async function ShareBookshelfPage({
   }
 
   const { bookshelf, books, owner } = result;
-  const ownerName = owner?.name || "ReadTree";
+  const ownerName = owner?.name || "Habitree";
 
   return (
     <ShareBookshelfView

@@ -76,17 +76,19 @@ export async function generateMetadata({
 
   let description: string;
   if (rawDesc) {
-    const truncated = rawDesc.length > 80 ? rawDesc.substring(0, 77) + "..." : rawDesc;
+    const truncated = rawDesc.length > 70 ? rawDesc.substring(0, 67) + "..." : rawDesc;
     description = `"${truncated}"`;
   } else {
     description = `${cleanTitle}에서 마음에 남은 문장을 확인해보세요.`;
   }
 
   // OG 제목: 사용자명 + 책 제목으로 호기심 유발
-  const ogTitle = userName
+  // OG 제목: 25자 제한 (카카오톡/FB 1줄)
+  const rawOgTitle = userName
     ? `${userName}님이 ${cleanTitle}에서 밑줄 친 문장`
     : `${cleanTitle} - 마음에 남은 문장`;
-  const pageTitle = `${cleanTitle} - 독서 기록 | ReadTree`;
+  const ogTitle = rawOgTitle.length > 25 ? rawOgTitle.slice(0, 22) + "..." : rawOgTitle;
+  const pageTitle = `${cleanTitle} - 독서 기록 | Habitree`;
 
   // OG 이미지: 해당 링크 페이지 화면과 동일한 레이아웃의 동적 이미지 사용
   const ogImageUrl = `${baseUrl}/share/notes/${note.id}/opengraph-image`;
@@ -107,7 +109,7 @@ export async function generateMetadata({
           alt: `${cleanTitle} - ${book?.author || ""}`.trim() || "독서 기록",
         },
       ],
-      siteName: "ReadTree",
+      siteName: "Habitree",
       locale: "ko_KR",
     },
     twitter: {

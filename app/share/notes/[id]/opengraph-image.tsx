@@ -1,109 +1,56 @@
 import { ImageResponse } from "next/og";
-import { createClient } from "@supabase/supabase-js";
 import { parseNoteContentFields } from "@/lib/utils/note";
 import { isValidImageUrl } from "@/lib/utils/image";
 import { isValidUUID } from "@/lib/utils/validation";
+import {
+  OG_BRAND,
+  OG_COLORS,
+  OG_SIZE,
+  OG_TEXT_LIMITS,
+  FONT_FAMILY,
+} from "@/lib/og/constants";
+import {
+  loadKoreanFont,
+  loadBrandIcon,
+  prefetchImageAsDataUri,
+  truncateText,
+  cleanText,
+  buildFontOptions,
+  createOgAnonSupabaseClient,
+  createOgServiceSupabaseClient,
+} from "@/lib/og/utils";
+import {
+  OgAccentBar,
+  OgDomainFooter,
+  OgBrandMark,
+  OgFallbackContent,
+} from "@/lib/og/components";
 
-export const alt = "ReadTree 독서 기록 공유";
-export const size = { width: 1200, height: 630 };
+export const alt = `${OG_BRAND.name} 독서 기록 공유`;
+export const size = OG_SIZE;
 export const contentType = "image/png";
-
-/** 공개 데이터 조회용 익명 Supabase 클라이언트 */
-function createAnonSupabaseClient() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
-}
-
-/** RLS 우회 Supabase 클라이언트 (user 정보 조회용) */
-function createServiceSupabaseClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!key) return null;
-  return createClient(url, key, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  });
-}
-
-/** 한글 폰트 로드 (로컬 파일 우선, 실패 시 외부 fetch) */
-async function loadKoreanFont(): Promise<ArrayBuffer | null> {
-  try {
-    const res = await fetch(
-      new URL("../../../../public/fonts/NotoSansKR-SemiBold.otf", import.meta.url)
-    );
-    if (res.ok) return res.arrayBuffer();
-  } catch {}
-  try {
-    const res = await fetch(
-      "https://github.com/google/fonts/raw/main/ofl/notosanskr/NotoSansKR-SemiBold.otf"
-    );
-    if (!res.ok) throw new Error("Failed to fetch font");
-    return res.arrayBuffer();
-  } catch (e) {
-    console.error("[OG Image] Font fetch failed:", e);
-    return null;
-  }
-}
-
-/**
- * 외부 이미지를 사전 fetch하여 base64 data URI로 변환
- * Satori 스트림 렌더링 중 외부 fetch 실패로 인한 500 에러 방지
- */
-async function prefetchImageAsDataUri(url: string): Promise<string | null> {
-  try {
-    const res = await fetch(url, {
-      signal: AbortSignal.timeout(5000),
-      headers: { "User-Agent": "Mozilla/5.0 (compatible; ReadTree/1.0)" },
-    });
-    if (!res.ok) return null;
-    const buffer = await res.arrayBuffer();
-    // 10MB 초과 시 건너뛰기
-    if (buffer.byteLength > 10 * 1024 * 1024) return null;
-    const contentType = res.headers.get("content-type") || "image/jpeg";
-    const base64 = Buffer.from(buffer).toString("base64");
-    return `data:${contentType};base64,${base64}`;
-  } catch {
-    return null;
-  }
-}
-
-const FONT_FAMILY = '"NotoSansKR", sans-serif';
 
 export default async function OgImage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
-  let fontOptions: Record<string, any> = {};
-
-  try {
-    const fontData = await loadKoreanFont();
-    fontOptions = fontData
-      ? {
-          fonts: [
-            {
-              name: "NotoSansKR",
-              data: fontData,
-              style: "normal" as const,
-              weight: 600 as const,
-            },
-          ],
-        }
-      : {};
-  } catch {
-    // 폰트 로드 실패 시 기본 폰트 사용
-  }
+  const [fontData, brandIconSrc] = await Promise.all([
+    loadKoreanFont(
+      new URL("../../../../public/fonts/NotoSansKR-SemiBold.otf", import.meta.url)
+    ),
+    loadBrandIcon(new URL("../../../icon.png", import.meta.url)),
+  ]);
+  const fontOptions = buildFontOptions(fontData);
 
   try {
     const { id: noteId } = await params;
 
     if (!noteId || typeof noteId !== "string" || !isValidUUID(noteId)) {
-      return fallbackImageResponse(fontOptions);
+      return fallbackImageResponse(fontOptions, brandIconSrc);
     }
 
-    // 노트 조회 (anon client - is_public=true 노트는 RLS 허용)
-    const supabase = createAnonSupabaseClient();
+    const supabase = createOgAnonSupabaseClient();
     const { data: note, error: noteError } = await supabase
       .from("notes")
       .select(
@@ -114,15 +61,15 @@ export default async function OgImage({
       .single();
 
     if (!note || noteError) {
-      return fallbackImageResponse(fontOptions);
+      return fallbackImageResponse(fontOptions, brandIconSrc);
     }
 
-    // 사용자 정보 조회 (service role client - users RLS 우회)
+    // 사용자 정보 조회
     let userName: string | null = null;
     let userAvatarUrl: string | null = null;
 
     try {
-      const serviceClient = createServiceSupabaseClient();
+      const serviceClient = createOgServiceSupabaseClient();
       if (serviceClient && note.user_id) {
         const { data: user } = await serviceClient
           .from("users")
@@ -135,33 +82,32 @@ export default async function OgImage({
         }
       }
     } catch {
-      // user 조회 실패 시 무시 (익명으로 표시)
+      // user 조회 실패 시 무시
     }
 
-    const rawBooks = (note as any).books;
+    const rawBooks = (note as Record<string, unknown>).books;
     const book = (Array.isArray(rawBooks) ? rawBooks[0] : rawBooks) as
       | { id: string; title: string; author: string | null; cover_image_url: string | null }
       | undefined;
-    const rawTitle = (book?.title || "제목 없음").replace(/\n+/g, " ").trim();
-    const bookTitle = rawTitle.length > 40 ? rawTitle.slice(0, 37) + "..." : rawTitle;
-    const bookAuthor = (book?.author || "저자 미상").replace(/\n+/g, " ").trim();
+    const bookTitle = truncateText(
+      cleanText(book?.title || "제목 없음"),
+      OG_TEXT_LIMITS.bookTitle
+    );
+    const bookAuthor = cleanText(book?.author || "저자 미상");
     const { quote, memo } = parseNoteContentFields(note.content);
 
-    const rawTranscription = (note as any).transcriptions;
+    const rawTranscription = (note as Record<string, unknown>).transcriptions;
     const transcription = Array.isArray(rawTranscription) ? rawTranscription[0] : rawTranscription;
     const transcriptionText =
-      note.type === "transcription" && transcription?.extracted_text
-        ? transcription.extracted_text
+      note.type === "transcription" && (transcription as Record<string, unknown>)?.extracted_text
+        ? (transcription as Record<string, string>).extracted_text
         : null;
 
     const bodyText = transcriptionText || quote || memo || "기록 내용을 확인해보세요.";
-    // Satori는 \n이 포함된 텍스트를 다중 자식으로 인식 → 공백으로 치환
-    const bodyClean = bodyText.replace(/\n+/g, " ").trim();
-    const bodyTruncated = bodyClean.length > 150 ? bodyClean.slice(0, 147) + "..." : bodyClean;
+    const bodyTruncated = truncateText(cleanText(bodyText), OG_TEXT_LIMITS.bodyText);
 
     const isQuoteType = note.type === "quote" || (quote && !memo);
 
-    // 노트 유형 라벨
     const noteTypeLabel =
       note.type === "quote"
         ? "인용구"
@@ -171,8 +117,6 @@ export default async function OgImage({
             ? "사진 기록"
             : "메모";
 
-    // 외부 이미지를 사전 fetch → base64 data URI 변환
-    // Satori 스트림 렌더링 중 외부 fetch 실패 방지 (500 에러 근본 원인)
     const rawCoverUrl =
       book?.cover_image_url && isValidImageUrl(book.cover_image_url)
         ? book.cover_image_url
@@ -197,19 +141,12 @@ export default async function OgImage({
             display: "flex",
             flexDirection: "column",
             fontFamily: FONT_FAMILY,
-            backgroundColor: "#fafcfb",
+            backgroundColor: OG_COLORS.background,
             backgroundImage:
-              "radial-gradient(circle at 10% 20%, rgba(22, 163, 74, 0.08) 0%, transparent 40%), radial-gradient(circle at 90% 80%, rgba(22, 163, 74, 0.06) 0%, transparent 40%)",
+              "radial-gradient(circle at 10% 20%, rgba(29, 107, 77, 0.06) 0%, transparent 40%), radial-gradient(circle at 90% 80%, rgba(29, 107, 77, 0.04) 0%, transparent 40%)",
           }}
         >
-          {/* 상단 그린 악센트 바 */}
-          <div
-            style={{
-              width: "100%",
-              height: 6,
-              background: "linear-gradient(90deg, #15803d, #22c55e, #4ade80, #22c55e, #15803d)",
-            }}
-          />
+          <OgAccentBar />
 
           {/* 메인 콘텐츠 영역 */}
           <div
@@ -228,7 +165,7 @@ export default async function OgImage({
                 flexDirection: "row",
                 width: "100%",
                 height: 490,
-                backgroundColor: "white",
+                backgroundColor: OG_COLORS.cardBackground,
                 borderRadius: 24,
                 boxShadow: "0 25px 60px -15px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.06)",
                 overflow: "hidden",
@@ -247,7 +184,6 @@ export default async function OgImage({
                   gap: 16,
                 }}
               >
-                {/* 책 표지 */}
                 {coverDataUri ? (
                   <img
                     src={coverDataUri}
@@ -282,7 +218,6 @@ export default async function OgImage({
                   </div>
                 )}
 
-                {/* 책 제목 */}
                 <div
                   style={{
                     fontSize: 19,
@@ -297,7 +232,6 @@ export default async function OgImage({
                   {bookTitle}
                 </div>
 
-                {/* 저자 */}
                 <div
                   style={{
                     fontSize: 14,
@@ -309,12 +243,11 @@ export default async function OgImage({
                   {bookAuthor}
                 </div>
 
-                {/* 페이지 뱃지 */}
                 {note.page_number && (
                   <div
                     style={{
                       fontSize: 12,
-                      color: "#16a34a",
+                      color: OG_COLORS.forest,
                       fontWeight: 700,
                       fontFamily: FONT_FAMILY,
                       padding: "3px 10px",
@@ -337,7 +270,7 @@ export default async function OgImage({
                   justifyContent: "space-between",
                 }}
               >
-                {/* 상단: 노트 유형 뱃지 */}
+                {/* 노트 유형 뱃지 */}
                 <div
                   style={{
                     display: "flex",
@@ -350,12 +283,12 @@ export default async function OgImage({
                     style={{
                       fontSize: 13,
                       fontWeight: 700,
-                      color: "#16a34a",
+                      color: OG_COLORS.forest,
                       fontFamily: FONT_FAMILY,
                       padding: "4px 14px",
                       backgroundColor: "#f0fdf4",
                       borderRadius: 20,
-                      border: "1px solid #bbf7d0",
+                      border: `1px solid ${OG_COLORS.border}`,
                       letterSpacing: "0.02em",
                     }}
                   >
@@ -371,13 +304,12 @@ export default async function OgImage({
                     flex: 1,
                   }}
                 >
-                  {/* 인용구 장식 따옴표 (quote 타입일 때) */}
                   {isQuoteType && (
                     <div
                       style={{
                         fontSize: 72,
                         fontWeight: 800,
-                        color: "#22c55e",
+                        color: OG_COLORS.forestLight,
                         lineHeight: 0.5,
                         marginBottom: 12,
                         fontFamily: "Georgia, serif",
@@ -388,19 +320,17 @@ export default async function OgImage({
                     </div>
                   )}
 
-                  {/* 본문 텍스트 */}
                   <div
                     style={{
                       display: "flex",
                       flexDirection: "row",
                     }}
                   >
-                    {/* 좌측 악센트 보더 */}
                     <div
                       style={{
                         width: 4,
                         borderRadius: 2,
-                        backgroundColor: isQuoteType ? "#22c55e" : "#cbd5e1",
+                        backgroundColor: isQuoteType ? OG_COLORS.forestLight : "#cbd5e1",
                         marginRight: 20,
                         flexShrink: 0,
                       }}
@@ -438,7 +368,6 @@ export default async function OgImage({
                     justifyContent: "space-between",
                   }}
                 >
-                  {/* 유저 정보 */}
                   <div
                     style={{
                       display: "flex",
@@ -470,9 +399,9 @@ export default async function OgImage({
                           justifyContent: "center",
                           fontSize: 16,
                           fontWeight: 800,
-                          color: "#16a34a",
+                          color: OG_COLORS.forest,
                           fontFamily: FONT_FAMILY,
-                          border: "2px solid #bbf7d0",
+                          border: `2px solid ${OG_COLORS.border}`,
                         }}
                       >
                         {avatarInitial}
@@ -490,50 +419,7 @@ export default async function OgImage({
                     </div>
                   </div>
 
-                  {/* ReadTree 브랜딩 */}
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 8,
-                    }}
-                  >
-                    <div
-                      style={{
-                        width: 28,
-                        height: 28,
-                        borderRadius: 7,
-                        background: "linear-gradient(135deg, #16a34a, #22c55e)",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
-                    >
-                      <svg
-                        width="15"
-                        height="15"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="white"
-                        strokeWidth="2.5"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <path d="M12 22v-7M9 22h6M12 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zM12 5V2" />
-                      </svg>
-                    </div>
-                    <span
-                      style={{
-                        fontSize: 15,
-                        fontWeight: 800,
-                        color: "#374151",
-                        letterSpacing: "-0.02em",
-                        fontFamily: FONT_FAMILY,
-                      }}
-                    >
-                      ReadTree
-                    </span>
-                  </div>
+                  <OgBrandMark iconSrc={brandIconSrc} size="md" />
                 </div>
               </div>
             </div>
@@ -550,13 +436,13 @@ export default async function OgImage({
             <span
               style={{
                 fontSize: 13,
-                color: "#94a3b8",
+                color: OG_COLORS.textMuted,
                 fontWeight: 600,
                 fontFamily: FONT_FAMILY,
                 letterSpacing: "0.05em",
               }}
             >
-              readingtree.app
+              {OG_BRAND.domain}
             </span>
           </div>
         </div>
@@ -565,69 +451,19 @@ export default async function OgImage({
     );
   } catch (e) {
     console.error("[OG Image] Unexpected error:", e);
-    return fallbackImageResponse(fontOptions);
+    return fallbackImageResponse(fontOptions, brandIconSrc);
   }
 }
 
-/** 기록을 찾을 수 없거나 비공개일 때 기본 OG 이미지 */
-function fallbackImageResponse(fontOptions: Record<string, any> = {}) {
+function fallbackImageResponse(
+  fontOptions: Record<string, unknown> = {},
+  iconSrc?: string | null
+) {
   return new ImageResponse(
-    (
-      <div
-        style={{
-          width: "100%",
-          height: "100%",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          backgroundColor: "#f8faf9",
-          fontFamily: FONT_FAMILY,
-        }}
-      >
-        <div
-          style={{
-            padding: 48,
-            backgroundColor: "white",
-            borderRadius: 24,
-            boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.1)",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-          }}
-        >
-          <div
-            style={{
-              width: 80,
-              height: 80,
-              borderRadius: 20,
-              backgroundColor: "#16a34a",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              marginBottom: 24,
-            }}
-          >
-            <svg
-              width="40"
-              height="40"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="white"
-              strokeWidth="2"
-            >
-              <path d="M12 22v-7M9 22h6M12 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zM12 5V2" />
-            </svg>
-          </div>
-          <div style={{ fontSize: 28, fontWeight: 700, color: "#0f172a", fontFamily: FONT_FAMILY }}>
-            ReadTree
-          </div>
-          <div style={{ fontSize: 16, color: "#64748b", marginTop: 8, fontFamily: FONT_FAMILY }}>
-            이 기록을 찾을 수 없거나 비공개입니다.
-          </div>
-        </div>
-      </div>
-    ),
+    <OgFallbackContent
+      message="이 기록을 찾을 수 없거나 비공개입니다."
+      iconSrc={iconSrc}
+    />,
     { ...size, ...fontOptions }
   );
 }

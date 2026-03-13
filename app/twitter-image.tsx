@@ -1,34 +1,19 @@
 import { ImageResponse } from "next/og";
+import { OG_BRAND, OG_COLORS, OG_SIZE, FONT_FAMILY } from "@/lib/og/constants";
+import { loadKoreanFont, loadBrandIcon, buildFontOptions } from "@/lib/og/utils";
+import { OgAccentBar, OgDomainFooter } from "@/lib/og/components";
 
-export const alt = "ReadTree - 독서 기록 및 공유 플랫폼";
-export const size = {
-  width: 1200,
-  height: 630,
-};
+export const alt = `${OG_BRAND.name} - ${OG_BRAND.tagline}`;
+export const size = OG_SIZE;
 export const contentType = "image/png";
 
 export default async function Image() {
-  const [fontResult, iconResult] = await Promise.allSettled([
-    fetch(
+  const [fontData, iconSrc] = await Promise.all([
+    loadKoreanFont(
       new URL("../public/fonts/NotoSansKR-SemiBold.otf", import.meta.url)
-    ).then((res) => {
-      if (!res.ok) throw new Error("Failed to fetch font");
-      return res.arrayBuffer();
-    }),
-    fetch(new URL("./icon.png", import.meta.url)).then((res) => {
-      if (!res.ok) throw new Error("Failed to fetch icon");
-      return res.arrayBuffer();
-    }),
+    ),
+    loadBrandIcon(new URL("./icon.png", import.meta.url)),
   ]);
-
-  const notoSansKrSemiBold =
-    fontResult.status === "fulfilled" ? fontResult.value : null;
-  const iconData =
-    iconResult.status === "fulfilled" ? iconResult.value : null;
-
-  const iconSrc = iconData
-    ? `data:image/png;base64,${Buffer.from(iconData).toString("base64")}`
-    : null;
 
   return new ImageResponse(
     (
@@ -38,18 +23,12 @@ export default async function Image() {
           width: "100%",
           display: "flex",
           flexDirection: "column",
-          backgroundColor: "#FDFBF7",
-          fontFamily: '"NotoSansKR", sans-serif',
+          backgroundColor: OG_COLORS.background,
+          fontFamily: FONT_FAMILY,
         }}
       >
         {/* 상단 포레스트 악센트 바 */}
-        <div
-          style={{
-            width: "100%",
-            height: 5,
-            background: "linear-gradient(90deg, #1d6b4d, #36a678, #5ec496, #36a678, #1d6b4d)",
-          }}
-        />
+        <OgAccentBar />
 
         {/* 미묘한 텍스처 패턴 */}
         <div
@@ -59,7 +38,7 @@ export default async function Image() {
             left: 0,
             right: 0,
             bottom: 0,
-            backgroundImage: "radial-gradient(#1d6b4d 0.6px, transparent 0.6px)",
+            backgroundImage: `radial-gradient(${OG_COLORS.forest} 0.6px, transparent 0.6px)`,
             backgroundSize: "32px 32px",
             opacity: 0.025,
           }}
@@ -73,8 +52,7 @@ export default async function Image() {
             left: 0,
             right: 0,
             bottom: 0,
-            backgroundImage:
-              "radial-gradient(ellipse at 20% 50%, rgba(29, 107, 77, 0.04) 0%, transparent 60%), radial-gradient(ellipse at 80% 50%, rgba(94, 196, 150, 0.03) 0%, transparent 60%)",
+            backgroundImage: `radial-gradient(ellipse at 20% 50%, rgba(29, 107, 77, 0.04) 0%, transparent 60%), radial-gradient(ellipse at 80% 50%, rgba(94, 196, 150, 0.03) 0%, transparent 60%)`,
           }}
         />
 
@@ -90,15 +68,15 @@ export default async function Image() {
             padding: "0 80px",
           }}
         >
-          {/* HABITREE 로고 이미지 */}
+          {/* 로고 이미지 */}
           {iconSrc ? (
             <img
               src={iconSrc}
               alt=""
-              width={150}
-              height={150}
+              width={120}
+              height={120}
               style={{
-                borderRadius: 32,
+                borderRadius: 28,
                 boxShadow:
                   "0 16px 32px -8px rgba(29, 107, 77, 0.2), 0 0 0 1px rgba(29, 107, 77, 0.08)",
               }}
@@ -109,16 +87,16 @@ export default async function Image() {
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                width: 150,
-                height: 150,
-                borderRadius: 32,
-                backgroundColor: "#24855e",
+                width: 120,
+                height: 120,
+                borderRadius: 28,
+                backgroundColor: OG_COLORS.forest,
                 boxShadow: "0 16px 32px -8px rgba(29, 107, 77, 0.3)",
               }}
             >
               <svg
-                width="80"
-                height="80"
+                width="64"
+                height="64"
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="white"
@@ -137,16 +115,16 @@ export default async function Image() {
           {/* 브랜드명 */}
           <div
             style={{
-              fontSize: 80,
+              fontSize: 72,
               fontWeight: 800,
-              color: "#1F2933",
+              color: OG_COLORS.textPrimary,
               letterSpacing: "-0.03em",
               lineHeight: 1,
-              fontFamily: '"NotoSansKR", sans-serif',
+              fontFamily: FONT_FAMILY,
               marginTop: 4,
             }}
           >
-            ReadTree
+            {OG_BRAND.name}
           </div>
 
           {/* 태그라인 */}
@@ -154,12 +132,12 @@ export default async function Image() {
             style={{
               fontSize: 28,
               fontWeight: 600,
-              color: "#24855e",
-              fontFamily: '"NotoSansKR", sans-serif',
+              color: OG_COLORS.forest,
+              fontFamily: FONT_FAMILY,
               textAlign: "center",
             }}
           >
-            독서 기록 및 공유 플랫폼
+            {OG_BRAND.tagline}
           </div>
 
           {/* 구분선 + 키워드 */}
@@ -175,26 +153,26 @@ export default async function Image() {
               style={{
                 width: 56,
                 height: 2,
-                backgroundColor: "#c3eed4",
+                backgroundColor: OG_COLORS.border,
                 borderRadius: 1,
               }}
             />
             <div
               style={{
-                fontSize: 21,
+                fontSize: 18,
                 fontWeight: 600,
-                color: "#7B8794",
-                fontFamily: '"NotoSansKR", sans-serif',
+                color: OG_COLORS.textSecondary,
+                fontFamily: FONT_FAMILY,
                 letterSpacing: "0.01em",
               }}
             >
-              책 관리 · 독서 노트 · AI 도우미
+              {OG_BRAND.keywords}
             </div>
             <div
               style={{
                 width: 56,
                 height: 2,
-                backgroundColor: "#c3eed4",
+                backgroundColor: OG_COLORS.border,
                 borderRadius: 1,
               }}
             />
@@ -202,38 +180,12 @@ export default async function Image() {
         </div>
 
         {/* 하단 도메인 */}
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "center",
-            paddingBottom: 32,
-          }}
-        >
-          <div
-            style={{
-              fontSize: 18,
-              color: "#9AA5B1",
-              fontWeight: 500,
-              fontFamily: '"NotoSansKR", sans-serif',
-            }}
-          >
-            readingtree.app
-          </div>
-        </div>
+        <OgDomainFooter />
       </div>
     ),
     {
       ...size,
-      fonts: notoSansKrSemiBold
-        ? [
-            {
-              name: "NotoSansKR",
-              data: notoSansKrSemiBold,
-              style: "normal",
-              weight: 600,
-            },
-          ]
-        : undefined,
+      ...buildFontOptions(fontData),
     }
   );
 }

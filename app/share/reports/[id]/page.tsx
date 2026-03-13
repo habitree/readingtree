@@ -50,7 +50,7 @@ export async function generateMetadata({
           alt: `${report.bookTitle} AI 독서 리포트`,
         },
       ],
-      siteName: "ReadTree",
+      siteName: "Habitree",
       locale: "ko_KR",
     },
     twitter: {
