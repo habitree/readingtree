@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Habitree 외부 공유 프리뷰 — OG & 카드 복사 시뮬레이션</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800;900&family=Noto+Serif+KR:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --forest-600: #2E6136;
+    --forest-500: #16a34a;
+    --forest-400: #22c55e;
+    --forest-300: #4ade80;
+    --forest-200: #86efac;
+    --forest-100: #bbf7d0;
+    --forest-50: #f0fdf4;
+    --forest-bg: #dcfce7;
+    --slate-950: #020617;
+    --slate-900: #0f172a;
+    --slate-800: #1e293b;
+    --slate-700: #334155;
+    --slate-600: #475569;
+    --slate-500: #64748b;
+    --slate-400: #94a3b8;
+    --slate-300: #cbd5e1;
+    --slate-200: #e2e8f0;
+    --slate-100: #f1f5f9;
+    --slate-50: #f8fafc;
+    --earth-500: #b48c50;
+    --earth-400: #d4a574;
+    --earth-stone: #44403c;
+    --earth-warm: #78716c;
+    --earth-bg: #faf8f5;
+    --earth-card: #faf5ee;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Noto Sans KR', -apple-system, sans-serif;
+    background: var(--slate-100);
+    color: var(--slate-900);
+    line-height: 1.5;
+    letter-spacing: -0.01em;
+  }
+
+  /* ===== 페이지 헤더 ===== */
+  .page-header {
+    background: white;
+    border-bottom: 1px solid var(--slate-200);
+    padding: 32px 24px;
+    text-align: center;
+  }
+  .page-header .brand {
+    display: inline-flex; align-items: center; gap: 10px;
+    margin-bottom: 12px;
+  }
+  .page-header .brand .icon-box {
+    width: 40px; height: 40px; border-radius: 10px;
+    background: var(--forest-600);
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 4px 12px rgba(46,97,54,0.25);
+  }
+  .page-header .brand .icon-box img { width: 22px; height: 22px; }
+  .page-header .brand-name {
+    font-size: 20px; font-weight: 900; font-style: italic;
+    color: var(--slate-900); letter-spacing: -0.03em;
+  }
+  .page-header .brand-sub {
+    font-size: 10px; font-weight: 800; color: var(--slate-400);
+    text-transform: uppercase; letter-spacing: 0.12em;
+    display: block; margin-top: -2px;
+  }
+  .page-header .desc {
+    font-size: 13px; color: var(--slate-500); margin-top: 4px;
+  }
+
+  /* ===== 레이아웃 ===== */
+  .container { max-width: 1100px; margin: 0 auto; padding: 0 20px; }
+  .section { padding: 48px 0; }
+  .section + .section { border-top: 1px solid var(--slate-200); }
+  .section-label {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 11px; font-weight: 800; color: var(--forest-600);
+    text-transform: uppercase; letter-spacing: 0.08em;
+    margin-bottom: 8px;
+  }
+  .section-label .dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--forest-500);
+  }
+  .section-title {
+    font-size: 22px; font-weight: 900; letter-spacing: -0.02em;
+    margin-bottom: 6px;
+  }
+  .section-desc {
+    font-size: 13px; color: var(--slate-500); line-height: 1.7;
+    margin-bottom: 28px;
+  }
+  .section-desc code {
+    background: var(--forest-50); color: var(--forest-600);
+    padding: 1px 6px; border-radius: 4px; font-size: 11px;
+    font-family: 'SF Mono', 'Consolas', monospace;
+    border: 1px solid var(--forest-100);
+  }
+
+  /* ===== 비교 레이아웃 ===== */
+  .compare-row {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 24px;
+    margin-bottom: 32px;
+  }
+  @media (max-width: 800px) { .compare-row { grid-template-columns: 1fr; } }
+  .compare-col-label {
+    font-size: 11px; font-weight: 800; color: var(--slate-500);
+    text-transform: uppercase; letter-spacing: 0.06em;
+    margin-bottom: 10px; display: flex; align-items: center; gap: 6px;
+  }
+  .compare-col-label .indicator {
+    width: 8px; height: 8px; border-radius: 2px;
+  }
+  .compare-col-label .indicator.og { background: var(--forest-500); }
+  .compare-col-label .indicator.card { background: #6366f1; }
+  .compare-col-label .indicator.kakao { background: #fee500; }
+  .compare-col-label .indicator.twitter { background: #1d9bf0; }
+
+  /* ===== OG 이미지 프레임 ===== */
+  .og-frame {
+    background: white; border-radius: 16px;
+    box-shadow: 0 1px 8px rgba(0,0,0,0.04);
+    overflow: hidden; border: 1px solid var(--slate-200);
+  }
+  .og-frame .bar {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 8px 14px; background: var(--slate-50);
+    border-bottom: 1px solid var(--slate-200);
+  }
+  .og-frame .bar .size {
+    font-size: 10px; font-weight: 700; color: white;
+    background: var(--forest-500); padding: 2px 8px; border-radius: 8px;
+  }
+  .og-frame .bar .src {
+    font-size: 10px; color: var(--slate-400);
+    font-family: 'SF Mono', 'Consolas', monospace;
+  }
+  .og-canvas {
+    width: 100%; aspect-ratio: 1200/630;
+    position: relative; overflow: hidden;
+    font-family: 'Noto Sans KR', sans-serif;
+  }
+
+  /* ===== 카드 복사 프레임 ===== */
+  .card-frame {
+    background: var(--slate-100); border-radius: 16px;
+    padding: 20px; border: 1px solid var(--slate-200);
+  }
+  .card-inner {
+    background: white; border-radius: 20px; overflow: hidden;
+    box-shadow: 0 25px 50px -12px rgba(0,0,0,0.15);
+    border: 1px solid var(--slate-200);
+  }
+
+  /* ===== 카카오톡 미리보기 ===== */
+  .kakao-bg {
+    background: #b2c7d9; border-radius: 16px; padding: 20px;
+  }
+  .kakao-card {
+    background: white; border-radius: 12px; overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08); max-width: 300px;
+  }
+  .kakao-card .thumb { width: 100%; aspect-ratio: 1200/630; overflow: hidden; }
+  .kakao-card .body { padding: 10px 14px; }
+  .kakao-card .t {
+    font-size: 14px; font-weight: 700; color: #1e1e1e;
+    line-height: 1.35; margin-bottom: 3px;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .kakao-card .d {
+    font-size: 12px; color: #888; line-height: 1.5; margin-bottom: 4px;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .kakao-card .u { font-size: 11px; color: #aaa; }
+  .kakao-card .btn-row {
+    display: block; text-align: center; padding: 10px;
+    border-top: 1px solid #f0f0f0; font-size: 13px;
+    font-weight: 600; color: #333; text-decoration: none;
+  }
+
+  /* ===== Twitter ===== */
+  .tw-card {
+    border: 1px solid var(--slate-200); border-radius: 16px;
+    overflow: hidden; background: white;
+  }
+  .tw-card .thumb { width: 100%; aspect-ratio: 1200/630; overflow: hidden; }
+  .tw-card .body { padding: 10px 14px; border-top: 1px solid var(--slate-200); }
+  .tw-card .u { font-size: 12px; color: #8899a6; }
+  .tw-card .t { font-size: 14px; font-weight: 600; color: #0f1419; line-height: 1.3; margin: 2px 0; }
+  .tw-card .d { font-size: 13px; color: #536471; }
+
+  /* ===== 메타 요약 ===== */
+  .meta-summary {
+    display: grid; grid-template-columns: 140px 1fr;
+    border: 1px solid var(--slate-200); border-radius: 12px;
+    overflow: hidden; font-size: 12px; margin-top: 20px;
+  }
+  .meta-summary .k, .meta-summary .v {
+    padding: 7px 12px; border-bottom: 1px solid var(--slate-200);
+  }
+  .meta-summary .k {
+    background: var(--slate-50); font-weight: 700; color: var(--slate-600);
+  }
+  .meta-summary .v { color: var(--slate-800); word-break: break-all; }
+  .meta-summary .k:nth-last-child(2), .meta-summary .v:last-child { border-bottom: none; }
+
+  /* ===== Trees 아이콘 (lucide Trees) SVG ===== */
+  .trees-icon { display: inline-block; vertical-align: middle; }
+
+  /* 참고 박스 */
+  .note-box {
+    background: var(--forest-50); border: 1px solid var(--forest-100);
+    border-radius: 12px; padding: 14px 18px; font-size: 12px;
+    line-height: 1.7; color: var(--forest-600); margin-top: 20px;
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ 헤더 ============ -->
+<div class="page-header">
+  <div class="brand">
+    <div class="icon-box">
+      <img src="../../img/readtree-trees-icon-48.png" alt="Habitree" />
+    </div>
+    <div>
+      <span class="brand-name">Habitree</span>
+      <span class="brand-sub">읽는 습관이 자라는 곳</span>
+    </div>
+  </div>
+  <div class="desc">외부 공유 시 OG 이미지 · 카드 복사 · 카카오톡/Twitter 렌더링 시뮬레이션</div>
+</div>
+
+<div class="container">
+
+
+<!-- ================================================================ -->
+<!-- SECTION 1: 노트 공유 (인용구) -->
+<!-- ================================================================ -->
+<div class="section">
+  <div class="section-label"><div class="dot"></div>SHARE · NOTE</div>
+  <div class="section-title">노트 공유 — 인용구 기록</div>
+  <div class="section-desc">
+    URL: <code>/share/notes/{noteId}?ref={userId}</code> ·
+    카카오 SDK: <code>kakao.Share.sendDefault(feed)</code><br>
+    좌: OG 이미지 (Satori 서버 생성) &nbsp;/&nbsp; 우: 카드 복사 (html2canvas 클라이언트 캡처)
+  </div>
+
+  <!-- OG vs 카드 복사 비교 -->
+  <div class="compare-row">
+    <!-- 좌: OG 이미지 -->
+    <div>
+      <div class="compare-col-label">
+        <div class="indicator og"></div>OG Image — 링크 공유 시 표시
+      </div>
+      <div class="og-frame">
+        <div class="bar">
+          <span class="size">1200×630</span>
+          <span class="src">share/notes/[id]/opengraph-image.tsx</span>
+        </div>
+        <div class="og-canvas" style="background:#F5F2ED;background-image:radial-gradient(circle at 10% 20%,rgba(22,163,74,0.08) 0%,transparent 40%),radial-gradient(circle at 90% 80%,rgba(22,163,74,0.06) 0%,transparent 40%)">
+          <!-- 상단 그린 바 -->
+          <div style="position:absolute;top:0;left:0;right:0;height:1%;background:linear-gradient(90deg,#15803d,#22c55e,#4ade80,#22c55e,#15803d);z-index:2"></div>
+
+          <div style="display:flex;flex-direction:column;height:100%;padding-top:1%">
+            <div style="display:flex;flex:1;align-items:center;justify-content:center;padding:2.5% 4.5% 1.5%">
+              <div style="display:flex;width:100%;height:100%;background:white;border-radius:3.2%;box-shadow:0 20px 50px -12px rgba(0,0,0,0.14),0 0 0 1px rgba(0,0,0,0.05);overflow:hidden">
+
+                <!-- 좌측: 책 정보 -->
+                <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4%;background:linear-gradient(180deg,#f0fdf4 0%,#f8faf9 100%);width:27%;gap:2%;flex-shrink:0">
+                  <div style="width:52%;aspect-ratio:2/3;background:linear-gradient(160deg,#1e3d5f 0%,#0d1f3a 100%);border-radius:6%;box-shadow:0 12px 28px -6px rgba(0,0,0,0.32);display:flex;align-items:center;justify-content:center;padding:8%;flex-direction:column">
+                    <div style="font-size:min(1.4vw,14px);font-weight:800;color:#93c5fd;text-align:center;line-height:1.3">역행자</div>
+                    <div style="width:18px;height:1.5px;background:#60a5fa;margin:5px 0;border-radius:1px"></div>
+                    <div style="font-size:min(0.7vw,7px);color:#7da0c4;font-weight:600">자청</div>
+                  </div>
+                  <div style="font-size:min(1.5vw,16px);font-weight:800;color:#0f172a;text-align:center;line-height:1.3">역행자</div>
+                  <div style="font-size:min(1vw,12px);font-weight:600;color:#64748b">자청</div>
+                  <div style="font-size:min(0.9vw,10px);color:#16a34a;font-weight:700;padding:2px 8px;background:#dcfce7;border-radius:10px">p.87</div>
+                </div>
+
+                <!-- 우측: 텍스트 -->
+                <div style="flex:1;display:flex;flex-direction:column;padding:4.5% 5%;justify-content:space-between">
+                  <!-- 뱃지 -->
+                  <div style="margin-bottom:2%">
+                    <span style="font-size:min(1vw,11px);font-weight:700;color:#16a34a;padding:3px 12px;background:#f0fdf4;border-radius:14px;border:1px solid #bbf7d0;letter-spacing:0.02em">인용구</span>
+                  </div>
+                  <!-- 따옴표 -->
+                  <div style="font-size:min(5vw,56px);font-weight:800;color:#22c55e;line-height:0.5;margin-bottom:1.5%;font-family:Georgia,serif;opacity:0.45">&ldquo;</div>
+                  <!-- 본문 -->
+                  <div style="display:flex;flex:1">
+                    <div style="width:3px;border-radius:2px;background:#22c55e;margin-right:3.5%;flex-shrink:0"></div>
+                    <div style="font-size:min(1.7vw,18px);line-height:1.75;color:#1e293b;font-weight:600">결국 인생을 바꾸는 것은 거창한 계획이 아니라, 매일 반복하는 작은 습관이다. 당신이 매일 읽는 한 페이지가 1년 뒤의 당신을 만든다.</div>
+                  </div>
+                  <!-- 구분선 -->
+                  <div style="width:100%;height:1px;background:#e5e7eb;margin:2.5% 0"></div>
+                  <!-- 유저 + 브랜딩 -->
+                  <div style="display:flex;align-items:center;justify-content:space-between">
+                    <div style="display:flex;align-items:center;gap:8px">
+                      <div style="width:26px;height:26px;border-radius:50%;background:#dcfce7;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#16a34a;border:2px solid #bbf7d0">박</div>
+                      <span style="font-size:min(1.1vw,12px);font-weight:600;color:#475569">박독서님의 독서 기록</span>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:5px">
+                      <div style="width:22px;height:22px;border-radius:5px;background:var(--forest-600);display:flex;align-items:center;justify-content:center">
+                        <img src="../../img/readtree-trees-icon-24.png" alt="" style="width:14px;height:14px;filter:brightness(10)" />
+                      </div>
+                      <span style="font-size:min(1.1vw,12px);font-weight:800;color:#374151;letter-spacing:-0.02em">Habitree</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div style="text-align:center;padding:1% 0 1.8%">
+              <span style="font-size:min(1vw,11px);color:#94a3b8;font-weight:600;letter-spacing:0.05em">habitree.app</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 우: 카드 복사 이미지 -->
+    <div>
+      <div class="compare-col-label">
+        <div class="indicator card"></div>카드 복사 — ShareNoteCard (960px 캡처)
+      </div>
+      <div class="card-frame">
+        <div class="card-inner">
+          <div style="display:flex;min-height:280px">
+            <!-- 좌측 패널 -->
+            <div style="background:var(--slate-50);padding:24px;display:flex;flex-direction:column;width:45%;border-right:1px solid var(--slate-200)">
+              <!-- 책 정보 -->
+              <div style="display:flex;gap:12px;margin-bottom:20px">
+                <div style="width:48px;height:72px;flex-shrink:0;border-radius:3px;overflow:hidden;box-shadow:0 4px 8px rgba(0,0,0,0.12);border:1px solid var(--slate-200);background:linear-gradient(160deg,#1e3d5f,#0d1f3a);display:flex;align-items:center;justify-content:center">
+                  <span style="font-size:8px;font-weight:700;color:#93c5fd">역행자</span>
+                </div>
+                <div style="padding-top:2px">
+                  <div style="font-size:14px;font-weight:900;color:var(--slate-900);line-height:1.3;letter-spacing:-0.02em">역행자</div>
+                  <div style="font-size:11px;font-weight:700;color:var(--forest-600);margin-top:4px">자청</div>
+                  <div style="margin-top:4px;display:flex;align-items:center;gap:4px">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+                    <span style="font-size:9px;font-weight:800;color:var(--slate-400);text-transform:uppercase;letter-spacing:0.1em">87P Record</span>
+                  </div>
+                </div>
+              </div>
+              <!-- 인용구 -->
+              <div style="flex:1;display:flex;flex-direction:column;justify-content:center">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="#dcfce7" stroke="#22c55e" stroke-width="1.5" style="margin-bottom:10px"><path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V21z"/><path d="M15 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2h.75c0 2.25.25 4-2.75 4v3c0 1 0 1 1 1z"/></svg>
+                <div style="font-size:16px;font-weight:600;line-height:1.65;color:var(--slate-800);letter-spacing:-0.01em">
+                  "결국 인생을 바꾸는 것은 거창한 계획이 아니라, 매일 반복하는 작은 습관이다. 당신이 매일 읽는 한 페이지가 1년 뒤의 당신을 만든다."
+                </div>
+                <div style="margin-top:16px;height:5px;width:40px;background:var(--forest-500);border-radius:3px;opacity:0.8"></div>
+              </div>
+            </div>
+            <!-- 우측 패널 -->
+            <div style="flex:1;padding:24px;display:flex;flex-direction:column;background:white;position:relative">
+              <div style="position:absolute;top:0;right:0;width:120px;height:120px;background:var(--slate-50);border-bottom-left-radius:60px;z-index:0"></div>
+              <div style="position:relative;z-index:1;flex:1;display:flex;flex-direction:column">
+                <!-- 타입 + 날짜 -->
+                <div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:12px;border-bottom:1px solid var(--slate-100);margin-bottom:20px">
+                  <span style="font-size:9px;font-weight:900;color:var(--slate-500);text-transform:uppercase;letter-spacing:0.12em;padding:3px 10px;border:1px solid var(--slate-200);border-radius:6px;background:white">QUOTE</span>
+                  <div style="display:flex;align-items:center;gap:5px">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                    <span style="font-size:10px;font-weight:700;color:var(--slate-400)">2026.03.09</span>
+                  </div>
+                </div>
+                <!-- My Reflection -->
+                <div style="flex:1">
+                  <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
+                    <div style="height:1px;width:16px;background:var(--forest-500)"></div>
+                    <span style="font-size:11px;font-weight:900;color:var(--forest-500);text-transform:uppercase;letter-spacing:0.12em">My Reflection</span>
+                  </div>
+                  <p style="font-size:13px;line-height:1.9;color:var(--slate-600);font-weight:500">
+                    습관의 힘을 새삼 깨닫게 되는 문장이다. 거창한 목표보다 매일의 작은 실천이 결국 나를 만든다는 걸 잊지 말아야겠다. 오늘부터 하루 30분 독서를 다시 시작해보자.
+                  </p>
+                </div>
+                <!-- 푸터: 로고 + 유저 -->
+                <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-top:16px;padding-top:12px">
+                  <!-- Habitree 브랜딩 -->
+                  <div style="display:flex;align-items:center;gap:8px">
+                    <div style="width:28px;height:28px;border-radius:8px;background:var(--forest-600);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(46,97,54,0.2)">
+                      <img src="../../img/readtree-trees-icon-24.png" alt="" style="width:16px;height:16px;filter:brightness(10)" />
+                    </div>
+                    <div>
+                      <div style="font-size:12px;font-weight:900;font-style:italic;color:var(--slate-900);letter-spacing:-0.02em;line-height:1.2">Habitree</div>
+                      <div style="font-size:8px;font-weight:800;color:var(--slate-400);text-transform:uppercase;letter-spacing:0.06em;line-height:1">읽는 습관이 자라는 곳</div>
+                    </div>
+                    <span style="font-size:8px;font-weight:600;color:var(--slate-300);letter-spacing:0.04em;margin-left:8px">habitree.app</span>
+                  </div>
+                  <!-- 유저 -->
+                  <div style="display:flex;align-items:center;gap:6px;background:var(--slate-50);padding:3px 10px 3px 3px;border-radius:20px;border:1px solid var(--slate-100)">
+                    <div style="width:24px;height:24px;border-radius:50%;background:var(--forest-50);border:2px solid white;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:var(--forest-600);box-shadow:0 1px 3px rgba(0,0,0,0.08)">박</div>
+                    <div>
+                      <div style="font-size:8px;color:var(--slate-400);font-weight:500;line-height:1">Record by</div>
+                      <div style="font-size:10px;font-weight:700;color:var(--slate-700);line-height:1.2">박독서</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 플랫폼 미리보기 -->
+  <div class="compare-row">
+    <div>
+      <div class="compare-col-label"><div class="indicator kakao"></div>카카오톡 — SDK sendDefault (feed)</div>
+      <div class="kakao-bg">
+        <div class="kakao-card">
+          <div class="thumb" style="background:#F5F2ED;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden">
+            <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#15803d,#22c55e,#4ade80,#22c55e,#15803d)"></div>
+            <div style="display:flex;gap:10px;align-items:center;padding:12px 14px">
+              <div style="width:46px;height:66px;background:linear-gradient(160deg,#1e3d5f,#0d1f3a);border-radius:4px;flex-shrink:0;display:flex;align-items:center;justify-content:center">
+                <span style="font-size:7px;font-weight:700;color:#93c5fd">역행자</span>
+              </div>
+              <div>
+                <div style="font-size:8px;font-weight:700;color:#16a34a;padding:1px 5px;background:#f0fdf4;border-radius:6px;display:inline-block;border:1px solid #dcfce7;margin-bottom:3px">인용구</div>
+                <div style="font-size:9px;color:#1e293b;line-height:1.5;font-weight:600">결국 인생을 바꾸는 것은 거창한 계획이 아니라, 매일 반복하는 작은 습관이다...</div>
+              </div>
+            </div>
+          </div>
+          <div class="body">
+            <div class="t">역행자 - 마음에 남은 문장</div>
+            <div class="d">결국 인생을 바꾸는 것은 거창한 계획이 아니라, 매일 반복하는 작은 습관이다. 당신이 매일 읽는...</div>
+            <div class="u">habitree.app</div>
+          </div>
+          <a class="btn-row" href="#">이 기록 보기</a>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="compare-col-label"><div class="indicator twitter"></div>Twitter / X — summary_large_image</div>
+      <div class="tw-card">
+        <div class="thumb" style="background:#F5F2ED;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden">
+          <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#15803d,#22c55e,#4ade80)"></div>
+          <div style="display:flex;gap:10px;align-items:center;padding:16px">
+            <div style="width:46px;height:66px;background:linear-gradient(160deg,#1e3d5f,#0d1f3a);border-radius:4px;flex-shrink:0"></div>
+            <div>
+              <div style="font-size:8px;font-weight:700;color:#16a34a;margin-bottom:3px">인용구</div>
+              <div style="font-size:10px;color:#1e293b;line-height:1.5;font-weight:600">결국 인생을 바꾸는 것은 거창한 계획이 아니라, 매일 반복하는 작은 습관이다...</div>
+              <div style="font-size:8px;color:#94a3b8;margin-top:4px">박독서님의 독서 기록 · Habitree</div>
+            </div>
+          </div>
+        </div>
+        <div class="body">
+          <div class="u">habitree.app</div>
+          <div class="t">박독서님이 역행자에서 밑줄 친 문장</div>
+          <div class="d">"결국 인생을 바꾸는 것은 거창한 계획이 아니라, 매일 반복하는 작은 습관이다..."</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="meta-summary">
+    <div class="k">og:title</div><div class="v"><strong>박독서님이 역행자에서 밑줄 친 문장</strong></div>
+    <div class="k">og:description</div><div class="v">"결국 인생을 바꾸는 것은 거창한 계획이 아니라, 매일 반복하는 작은 습관이다..."</div>
+    <div class="k">카카오 title</div><div class="v">역행자 - 마음에 남은 문장 (i18n: readingNoteTitle)</div>
+    <div class="k">카카오 buttons</div><div class="v">"이 기록 보기" → /share/notes/{id}?ref={userId}</div>
+    <div class="k">레퍼럴</div><div class="v"><code>?ref={userId}</code> → 쿠키 rt_ref (30일)</div>
+  </div>
+</div>
+
+
+<!-- ================================================================ -->
+<!-- SECTION 2: 서재 공유 -->
+<!-- ================================================================ -->
+<div class="section">
+  <div class="section-label"><div class="dot"></div>SHARE · BOOKSHELF</div>
+  <div class="section-title">서재 공유</div>
+  <div class="section-desc">
+    URL: <code>/share/bookshelves/{id}</code> · OG 자동 파싱 (SDK 미사용)<br>
+    좌: 서재 아이콘/이름/소유자/책 수 &nbsp;/&nbsp; 우: 표지 그리드 (최대 6권)
+  </div>
+
+  <div class="compare-row">
+    <div>
+      <div class="compare-col-label"><div class="indicator og"></div>OG Image</div>
+      <div class="og-frame">
+        <div class="bar">
+          <span class="size">1200×630</span>
+          <span class="src">share/bookshelves/[id]/opengraph-image.tsx</span>
+        </div>
+        <div class="og-canvas" style="background:#F5F2ED;background-image:radial-gradient(circle at 10% 20%,rgba(22,163,74,0.08) 0%,transparent 40%)">
+          <div style="position:absolute;top:0;left:0;right:0;height:1%;background:linear-gradient(90deg,#15803d,#22c55e,#4ade80,#22c55e,#15803d);z-index:2"></div>
+          <div style="display:flex;flex-direction:column;height:100%;padding-top:1%">
+            <div style="display:flex;flex:1;align-items:center;justify-content:center;padding:2.5% 4.5% 1.5%">
+              <div style="display:flex;width:100%;height:100%;background:white;border-radius:3.2%;box-shadow:0 20px 50px -12px rgba(0,0,0,0.14);overflow:hidden">
+                <!-- 좌 -->
+                <div style="display:flex;flex-direction:column;justify-content:center;padding:5% 4%;background:linear-gradient(180deg,#f0fdf4,#f8faf9);width:33%;gap:2%;flex-shrink:0">
+                  <div style="width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,#16a34a,#22c55e);display:flex;align-items:center;justify-content:center">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>
+                  </div>
+                  <span style="font-size:min(0.9vw,10px);font-weight:700;color:#16a34a;padding:2px 8px;background:#f0fdf4;border-radius:12px;border:1px solid #bbf7d0;align-self:flex-start;letter-spacing:0.05em">BOOKSHELF</span>
+                  <div style="font-size:min(2vw,22px);font-weight:800;color:#0f172a;line-height:1.3">올해 꼭 읽을 책</div>
+                  <div style="font-size:min(1.2vw,13px);font-weight:600;color:#64748b">김서재님의 서재</div>
+                  <span style="padding:3px 10px;background:#dcfce7;border-radius:14px;font-size:min(1.1vw,12px);font-weight:700;color:#16a34a;align-self:flex-start">6권</span>
+                  <div style="display:flex;align-items:center;gap:5px;margin-top:auto">
+                    <div style="width:18px;height:18px;border-radius:4px;background:var(--forest-600);display:flex;align-items:center;justify-content:center">
+                      <img src="../../img/readtree-trees-icon-24.png" alt="" style="width:12px;height:12px;filter:brightness(10)" />
+                    </div>
+                    <span style="font-size:min(1vw,12px);font-weight:800;color:#374151">Habitree</span>
+                  </div>
+                </div>
+                <!-- 우: 표지 그리드 -->
+                <div style="flex:1;display:flex;flex-wrap:wrap;align-content:center;justify-content:center;padding:2.5% 3%;gap:10px">
+                  <div style="width:80px;height:114px;background:linear-gradient(160deg,#1e3d5f,#0d1f3a);border-radius:5px;box-shadow:0 4px 12px rgba(0,0,0,0.18);display:flex;align-items:center;justify-content:center"><span style="font-size:9px;font-weight:700;color:#93c5fd">역행자</span></div>
+                  <div style="width:80px;height:114px;background:linear-gradient(160deg,#3b2f18,#1f1a0e);border-radius:5px;box-shadow:0 4px 12px rgba(0,0,0,0.18);display:flex;align-items:center;justify-content:center"><span style="font-size:9px;font-weight:700;color:#e8d5b0">아몬드</span></div>
+                  <div style="width:80px;height:114px;background:linear-gradient(160deg,#1a4731,#0d2818);border-radius:5px;box-shadow:0 4px 12px rgba(0,0,0,0.18);display:flex;align-items:center;justify-content:center"><span style="font-size:9px;font-weight:700;color:#86efac">사피엔스</span></div>
+                  <div style="width:80px;height:114px;background:linear-gradient(160deg,#4a1942,#2e0f29);border-radius:5px;box-shadow:0 4px 12px rgba(0,0,0,0.18);display:flex;align-items:center;justify-content:center"><span style="font-size:9px;font-weight:700;color:#e9b0e0">데미안</span></div>
+                  <div style="width:80px;height:114px;background:linear-gradient(160deg,#6b3a12,#3d2008);border-radius:5px;box-shadow:0 4px 12px rgba(0,0,0,0.18);display:flex;align-items:center;justify-content:center"><span style="font-size:8px;font-weight:700;color:#fcd9b6;text-align:center">총, 균, 쇠</span></div>
+                  <div style="width:80px;height:114px;background:linear-gradient(160deg,#2d2d2d,#1a1a1a);border-radius:5px;box-shadow:0 4px 12px rgba(0,0,0,0.18);display:flex;align-items:center;justify-content:center"><span style="font-size:8px;font-weight:700;color:#d4d4d4;text-align:center;line-height:1.3">불편한<br>편의점</span></div>
+                </div>
+              </div>
+            </div>
+            <div style="text-align:center;padding:1% 0 1.8%">
+              <span style="font-size:min(1vw,11px);color:#94a3b8;font-weight:600;letter-spacing:0.05em">habitree.app</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="compare-col-label"><div class="indicator kakao"></div>카카오톡 미리보기</div>
+      <div class="kakao-bg">
+        <div class="kakao-card">
+          <div class="thumb" style="background:#F5F2ED;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden">
+            <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#15803d,#22c55e,#4ade80)"></div>
+            <div style="display:flex;gap:5px;padding:12px">
+              <div style="width:32px;height:46px;background:linear-gradient(160deg,#1e3d5f,#0d1f3a);border-radius:2px"></div>
+              <div style="width:32px;height:46px;background:linear-gradient(160deg,#3b2f18,#1f1a0e);border-radius:2px"></div>
+              <div style="width:32px;height:46px;background:linear-gradient(160deg,#1a4731,#0d2818);border-radius:2px"></div>
+              <div style="width:32px;height:46px;background:linear-gradient(160deg,#4a1942,#2e0f29);border-radius:2px"></div>
+              <div style="width:32px;height:46px;background:linear-gradient(160deg,#6b3a12,#3d2008);border-radius:2px"></div>
+            </div>
+          </div>
+          <div class="body">
+            <div class="t">올해 꼭 읽을 책 - 김서재님의 서재</div>
+            <div class="d">김서재님의 서재 - 6권의 책</div>
+            <div class="u">habitree.app</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="meta-summary">
+    <div class="k">og:title</div><div class="v">올해 꼭 읽을 책 - 김서재님의 서재</div>
+    <div class="k">og:description</div><div class="v">김서재님의 서재 - 6권의 책</div>
+    <div class="k">og:type</div><div class="v">website</div>
+    <div class="k">카카오 방식</div><div class="v">OG 자동 파싱 (SDK 미사용)</div>
+  </div>
+</div>
+
+
+<!-- ================================================================ -->
+<!-- SECTION 3: AI 리포트 공유 -->
+<!-- ================================================================ -->
+<div class="section">
+  <div class="section-label"><div class="dot"></div>SHARE · AI REPORT</div>
+  <div class="section-title">AI 독서 리포트 공유</div>
+  <div class="section-desc">
+    URL: <code>/share/reports/{shareId}</code> · 어스톤(갈색/골드) 테마<br>
+    카드 이미지 API: <code>/api/share/reports/{id}/card?ratio=square|portrait</code>
+  </div>
+
+  <div class="compare-row">
+    <div>
+      <div class="compare-col-label"><div class="indicator og"></div>OG Image</div>
+      <div class="og-frame">
+        <div class="bar">
+          <span class="size">1200×630</span>
+          <span class="src">share/reports/[id]/opengraph-image.tsx</span>
+        </div>
+        <div class="og-canvas" style="background:#faf8f5;background-image:radial-gradient(circle at 0% 0%,rgba(180,140,80,0.08) 0%,transparent 50%),radial-gradient(circle at 100% 100%,rgba(22,163,74,0.06) 0%,transparent 50%)">
+          <div style="position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,#b48c50,#d4a574,#16a34a);z-index:2"></div>
+          <div style="display:flex;flex-direction:column;height:100%;padding-top:1%">
+            <div style="display:flex;flex:1;align-items:center;justify-content:center;padding:2% 5% 1.5%">
+              <div style="display:flex;width:100%;height:100%;background:white;border-radius:2.5%;box-shadow:0 16px 48px -12px rgba(0,0,0,0.11);overflow:hidden">
+                <!-- 좌: 책 -->
+                <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4%;background:#faf5ee;width:28%;gap:12px;flex-shrink:0">
+                  <div style="width:50%;aspect-ratio:2/3;background:linear-gradient(160deg,#1e3d5f,#0d1f3a);border-radius:5%;box-shadow:0 10px 24px -6px rgba(0,0,0,0.25);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10%">
+                    <div style="font-size:min(1.3vw,13px);font-weight:800;color:#93c5fd;text-align:center;line-height:1.3">원씽</div>
+                    <div style="width:16px;height:1.5px;background:#60a5fa;margin:4px 0"></div>
+                    <div style="font-size:min(0.65vw,7px);color:#7da0c4;font-weight:600">게리 켈러</div>
+                  </div>
+                  <div style="font-size:min(1.5vw,16px);font-weight:800;color:#0f172a;text-align:center;line-height:1.2">원씽</div>
+                  <div style="font-size:min(1vw,12px);font-weight:600;color:#64748b">게리 켈러, 제이 파파산</div>
+                </div>
+                <!-- 우: AI 리포트 -->
+                <div style="flex:1;display:flex;flex-direction:column;padding:4.5% 5%;justify-content:space-between">
+                  <div style="display:flex;flex-direction:column;gap:2.5%">
+                    <div style="display:flex;align-items:center;gap:7px">
+                      <div style="width:26px;height:26px;border-radius:6px;background:linear-gradient(135deg,#b48c50,#d4a574);display:flex;align-items:center;justify-content:center">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M12 3l1.5 4.5H18l-3.5 2.5L16 14.5 12 12l-4 2.5 1.5-4.5L6 7.5h4.5z"/></svg>
+                      </div>
+                      <span style="font-size:min(1.7vw,18px);font-weight:800;color:#44403c">AI 독서 리포트</span>
+                    </div>
+                    <div style="font-size:min(1vw,12px);color:#78716c;font-weight:600">기록 8개 기반 AI 분석</div>
+                    <div style="display:flex">
+                      <div style="width:3px;border-radius:2px;background:#d4a574;margin-right:3.5%;flex-shrink:0"></div>
+                      <div style="font-size:min(1.5vw,16px);line-height:1.7;color:#44403c;font-weight:600">
+                        가장 중요한 한 가지에 집중하는 것이 핵심이다. 멀티태스킹은 환상이며, 진정한 성과는 우선순위를 명확히 하고 단 하나의 질문에 답할 때 나온다.
+                      </div>
+                    </div>
+                  </div>
+                  <div>
+                    <div style="width:100%;height:1px;background:#e5e7eb;margin-bottom:2.5%"></div>
+                    <div style="display:flex;align-items:center;justify-content:flex-end;gap:5px">
+                      <div style="width:22px;height:22px;border-radius:5px;background:#16a34a;display:flex;align-items:center;justify-content:center">
+                        <img src="../../img/readtree-trees-icon-24.png" alt="" style="width:14px;height:14px;filter:brightness(10)" />
+                      </div>
+                      <span style="font-size:min(1.1vw,13px);font-weight:800;color:#374151">Habitree</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div style="text-align:center;padding:0.5% 0 1.5%">
+              <span style="font-size:min(1vw,12px);color:#94a3b8;font-weight:500">habitree.app</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="compare-col-label"><div class="indicator kakao"></div>카카오톡 미리보기</div>
+      <div class="kakao-bg">
+        <div class="kakao-card">
+          <div class="thumb" style="background:#faf8f5;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden">
+            <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#b48c50,#d4a574,#16a34a)"></div>
+            <div style="display:flex;align-items:center;gap:8px;padding:12px">
+              <div style="width:40px;height:58px;background:linear-gradient(160deg,#1e3d5f,#0d1f3a);border-radius:3px;flex-shrink:0;display:flex;align-items:center;justify-content:center">
+                <span style="font-size:7px;font-weight:700;color:#93c5fd">원씽</span>
+              </div>
+              <div>
+                <div style="display:flex;align-items:center;gap:3px;margin-bottom:2px">
+                  <div style="width:12px;height:12px;border-radius:3px;background:linear-gradient(135deg,#b48c50,#d4a574);display:flex;align-items:center;justify-content:center"><span style="font-size:6px;color:white">★</span></div>
+                  <span style="font-size:8px;font-weight:800;color:#44403c">AI 독서 리포트</span>
+                </div>
+                <div style="font-size:8px;color:#78716c">기록 8개 기반 AI 분석</div>
+              </div>
+            </div>
+          </div>
+          <div class="body">
+            <div class="t">AI 독서 리포트 - 원씽</div>
+            <div class="d">게리 켈러, 제이 파파산 | AI 분석 기반 독서 리포트 (기록 8개)</div>
+            <div class="u">habitree.app</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="meta-summary">
+    <div class="k">og:title</div><div class="v">AI 독서 리포트 - 원씽</div>
+    <div class="k">og:description</div><div class="v">게리 켈러, 제이 파파산 | AI 분석 기반 독서 리포트 (기록 8개)</div>
+    <div class="k">인사이트 추출</div><div class="v">report_markdown에서 ## 핵심/인사이트 섹션 100자 추출</div>
+    <div class="k">카카오 방식</div><div class="v">OG 자동 파싱 (SDK 미사용)</div>
+  </div>
+</div>
+
+
+<!-- ================================================================ -->
+<!-- SECTION 4: 홈페이지 기본 OG -->
+<!-- ================================================================ -->
+<div class="section">
+  <div class="section-label"><div class="dot"></div>HOME · DEFAULT</div>
+  <div class="section-title">홈페이지 기본 OG</div>
+  <div class="section-desc">
+    URL: <code>https://readingtree-tan.vercel.app</code> · 라이트 크림 배경(#F5F2ED) + 중앙 로고
+  </div>
+
+  <div class="og-frame" style="max-width:700px">
+    <div class="bar">
+      <span class="size">1200×630</span>
+      <span class="src">app/opengraph-image.tsx</span>
+    </div>
+    <div class="og-canvas" style="background:#F5F2ED;position:relative">
+      <!-- 악센트 바 -->
+      <div style="position:absolute;top:0;left:0;right:0;height:1%;background:linear-gradient(90deg,#1d6b4d,#36a678,#5ec496,#36a678,#1d6b4d);z-index:2"></div>
+      <!-- 텍스처 -->
+      <div style="position:absolute;inset:0;background:radial-gradient(#1d6b4d 0.6px,transparent 0.6px);background-size:32px 32px;opacity:0.025"></div>
+      <!-- 그라데이션 -->
+      <div style="position:absolute;inset:0;background:radial-gradient(ellipse at 20% 50%,rgba(29,107,77,0.04) 0%,transparent 60%),radial-gradient(ellipse at 80% 50%,rgba(94,196,150,0.03) 0%,transparent 60%)"></div>
+      <!-- 메인 콘텐츠 -->
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;position:relative;z-index:1;gap:3%;padding:0 10%">
+        <!-- 로고 -->
+        <div style="width:80px;height:80px;border-radius:20px;background:#1d6b4d;display:flex;align-items:center;justify-content:center;box-shadow:0 12px 28px -6px rgba(29,107,77,0.25),0 0 0 1px rgba(29,107,77,0.08)">
+          <img src="../../img/readtree-trees-icon-48.png" alt="" style="width:44px;height:44px;filter:brightness(10)" />
+        </div>
+        <!-- 브랜드명 -->
+        <span style="font-size:min(5.5vw,56px);font-weight:800;color:#1F2933;letter-spacing:-0.03em;line-height:1">Habitree</span>
+        <!-- 태그라인 -->
+        <span style="font-size:min(2.2vw,22px);font-weight:600;color:#1d6b4d;text-align:center">읽는 습관이 자라는 곳</span>
+        <!-- 구분선 + 키워드 -->
+        <div style="display:flex;align-items:center;gap:14px;margin-top:1%">
+          <div style="width:40px;height:2px;background:#c3eed4;border-radius:1px"></div>
+          <span style="font-size:min(1.4vw,14px);font-weight:600;color:#7B8794;letter-spacing:0.01em">독서 기록 · AI 도우미 · 독서 모임</span>
+          <div style="width:40px;height:2px;background:#c3eed4;border-radius:1px"></div>
+        </div>
+      </div>
+      <!-- 하단 도메인 -->
+      <div style="position:absolute;bottom:4%;left:0;right:0;text-align:center">
+        <span style="font-size:min(1.3vw,14px);color:#9AA5B1;font-weight:500">habitree.app</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="meta-summary" style="max-width:700px">
+    <div class="k">og:title</div><div class="v">Habitree - 읽는 습관이 자라는 곳</div>
+    <div class="k">og:description</div><div class="v">독서 기록, AI 도우미, 독서 모임과 함께하는 나만의 독서 여정</div>
+    <div class="k">og:type</div><div class="v">website · og:locale: ko_KR · twitter: summary_large_image</div>
+  </div>
+</div>
+
+
+<!-- ================================================================ -->
+<!-- SECTION 5: 전체 구조 요약 -->
+<!-- ================================================================ -->
+<div class="section">
+  <div class="section-label"><div class="dot"></div>SUMMARY</div>
+  <div class="section-title">전체 공유 URL 및 구현 요약</div>
+
+  <div style="overflow-x:auto">
+    <table style="width:100%;border-collapse:collapse;font-size:12px;border:1px solid var(--slate-200);border-radius:12px;overflow:hidden;background:white">
+      <thead>
+        <tr style="background:var(--slate-50)">
+          <th style="padding:10px 12px;text-align:left;font-weight:700;color:var(--slate-600);border-bottom:2px solid var(--slate-200)">유형</th>
+          <th style="padding:10px 12px;text-align:left;font-weight:700;color:var(--slate-600);border-bottom:2px solid var(--slate-200)">공유 URL</th>
+          <th style="padding:10px 12px;text-align:left;font-weight:700;color:var(--slate-600);border-bottom:2px solid var(--slate-200)">OG 이미지</th>
+          <th style="padding:10px 12px;text-align:left;font-weight:700;color:var(--slate-600);border-bottom:2px solid var(--slate-200)">테마</th>
+          <th style="padding:10px 12px;text-align:left;font-weight:700;color:var(--slate-600);border-bottom:2px solid var(--slate-200)">카카오</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td style="padding:8px 12px;border-bottom:1px solid var(--slate-100)">홈</td><td style="padding:8px 12px;border-bottom:1px solid var(--slate-100);font-family:monospace;font-size:10px">/</td><td style="padding:8px 12px;border-bottom:1px solid var(--slate-100);font-family:monospace;font-size:10px">/opengraph-image</td><td style="padding:8px 12px;border-bottom:1px solid var(--slate-100)">크림 + 포레스트</td><td style="padding:8px 12px;border-bottom:1px solid var(--slate-100)">OG 자동</td></tr>
+        <tr><td style="padding:8px 12px;border-bottom:1px solid var(--slate-100)"><strong>노트</strong></td><td style="padding:8px 12px;border-bottom:1px solid var(--slate-100);font-family:monospace;font-size:10px">/share/notes/{id}?ref={uid}</td><td style="padding:8px 12px;border-bottom:1px solid var(--slate-100);font-family:monospace;font-size:10px">/share/notes/{id}/opengraph-image</td><td style="padding:8px 12px;border-bottom:1px solid var(--slate-100)">라이트 + 녹색</td><td style="padding:8px 12px;border-bottom:1px solid var(--slate-100)"><strong>SDK feed</strong></td></tr>
+        <tr><td style="padding:8px 12px;border-bottom:1px solid var(--slate-100)">서재</td><td style="padding:8px 12px;border-bottom:1px solid var(--slate-100);font-family:monospace;font-size:10px">/share/bookshelves/{id}</td><td style="padding:8px 12px;border-bottom:1px solid var(--slate-100);font-family:monospace;font-size:10px">/share/bookshelves/{id}/opengraph-image</td><td style="padding:8px 12px;border-bottom:1px solid var(--slate-100)">라이트 + 녹색</td><td style="padding:8px 12px;border-bottom:1px solid var(--slate-100)">OG 자동</td></tr>
+        <tr><td style="padding:8px 12px;border-bottom:1px solid var(--slate-100)">AI 리포트</td><td style="padding:8px 12px;border-bottom:1px solid var(--slate-100);font-family:monospace;font-size:10px">/share/reports/{shareId}</td><td style="padding:8px 12px;border-bottom:1px solid var(--slate-100);font-family:monospace;font-size:10px">/share/reports/{shareId}/opengraph-image</td><td style="padding:8px 12px;border-bottom:1px solid var(--slate-100)">라이트 + 어스톤</td><td style="padding:8px 12px;border-bottom:1px solid var(--slate-100)">OG 자동</td></tr>
+        <tr><td style="padding:8px 12px">카드 API</td><td style="padding:8px 12px;font-family:monospace;font-size:10px">/api/share/reports/{id}/card?ratio=square</td><td style="padding:8px 12px;font-size:11px">API 직접 반환 (1080px PNG)</td><td style="padding:8px 12px">어스톤</td><td style="padding:8px 12px">—</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="note-box" style="margin-top:20px">
+    <strong>기술 구현 (v2 — Habitree 브랜딩)</strong><br>
+    • OG 이미지: <code>next/og</code> ImageResponse (Satori) 서버사이드 동적 생성<br>
+    • 공통 모듈: <code>lib/og/constants.ts</code> (브랜드 상수) + <code>lib/og/utils.ts</code> (유틸) + <code>lib/og/components.tsx</code> (공통 JSX)<br>
+    • 배경: 라이트 크림 테마 (#F5F2ED), 포레스트 그린 악센트 (#1d6b4d)<br>
+    • 텍스트 잘림 방지: 본문 100자, 책제목 30자, 서재명 20자, 인사이트 100자, OG title 25자<br>
+    • 외부 이미지: <code>prefetchImageAsDataUri()</code>로 base64 변환 → Satori 안정성 확보<br>
+    • 폰트: NotoSansKR-SemiBold (로컬 → GitHub CDN 폴백)<br>
+    • 카카오 SDK: v2.7.4 lazy load, 노트만 sendDefault (나머지 OG 자동 파싱)<br>
+    • 브랜딩: icon.png 로고 이미지 + "Habitree" + "읽는 습관이 자라는 곳" + habitree.app
+  </div>
+</div>
+
+</div><!-- /container -->
+
+</body>
+</html>
