@@ -38,7 +38,7 @@ export async function selectQuote(
   // 콘텐츠 점수 산정
   const scored = data.map((note) => {
     const content = note.content ?? "";
-    const book = note.book as Record<string, unknown>;
+    const book = note.book as unknown as Record<string, unknown>;
 
     // 길이 점수: 20~100자가 최적
     const lenScore =
@@ -59,7 +59,7 @@ export async function selectQuote(
 
   scored.sort((a, b) => b.score - a.score);
   const selected = scored[0].note;
-  const book = selected.book as Record<string, unknown>;
+  const book = selected.book as unknown as Record<string, unknown>;
 
   return {
     id: selected.id,

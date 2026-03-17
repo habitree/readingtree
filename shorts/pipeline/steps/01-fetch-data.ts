@@ -46,7 +46,7 @@ export async function fetchData(ctx: PipelineContext): Promise<Record<string, un
       }
       case "reading-tip": {
         const tip = selectTip();
-        return tip;
+        return tip as unknown as Record<string, unknown>;
       }
     }
   }
