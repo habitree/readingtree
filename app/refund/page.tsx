@@ -176,16 +176,16 @@ export default function RefundPage() {
             </p>
             <div className="bg-muted p-4 rounded-lg text-sm space-y-2">
               <p>
-                <span className="font-semibold">이메일:</span>{" "}
+                앱 내 <span className="font-semibold">고객문의</span> 또는{" "}
                 <a
-                  href="mailto:cdhrich@naver.com"
+                  href="https://open.kakao.com/o/gGXr3Zji"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="text-primary hover:underline"
                 >
-                  cdhrich@naver.com
+                  카카오톡 오픈채팅
                 </a>
-              </p>
-              <p>
-                <span className="font-semibold">연락처:</span> 010-9988-4810
+                으로 문의해주세요.
               </p>
             </div>
             <p className="text-sm text-muted-foreground">

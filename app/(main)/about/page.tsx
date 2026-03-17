@@ -197,7 +197,7 @@ export default function AboutPage() {
                         <Trees className="w-10 h-10" /> Habitree
                     </div>
                     <p className="text-charcoal-500 text-lg">
-                        미디어 문의 및 보도 자료 요청: <a href="mailto:cdhrich@naver.com" className="text-forest-600 hover:underline font-bold">cdhrich@naver.com</a>
+                        문의: <a href="https://open.kakao.com/o/gGXr3Zji" target="_blank" rel="noopener noreferrer" className="text-forest-600 hover:underline font-bold">카카오톡 오픈채팅</a>
                     </p>
                     <div className="pt-8">
                         <Link

@@ -127,7 +127,15 @@ export default function PrivacyPage() {
             <div className="bg-muted p-4 rounded-lg">
               <p className="font-semibold mb-2">개인정보 보호책임자</p>
               <p className="text-sm text-muted-foreground">
-                이메일: cdhrich@naver.com
+                <a
+                  href="https://open.kakao.com/o/gGXr3Zji"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary hover:underline"
+                >
+                  카카오톡 오픈채팅
+                </a>
+                으로 문의해주세요.
               </p>
             </div>
           </CardContent>
