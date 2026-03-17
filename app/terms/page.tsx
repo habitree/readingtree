@@ -150,25 +150,17 @@ export default function TermsPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <p>
-              회사는 포인트 충전 등 유료 서비스를 제공하며, 결제 및 환불에 관한 상세 사항은 별도의{" "}
-              <a href="/refund" className="text-primary hover:underline font-medium">
-                환불정책
-              </a>
-              에 따릅니다.
+              회사는 포인트 충전 등 유료 서비스를 제공하며, 결제 및 환불은 결제 서비스 제공자(Polar)의 정책에 따릅니다.
             </p>
             <p>
-              포인트는 결제 즉시 지급되는 디지털 콘텐츠이며, 환불 조건은 환불정책에서 정한 바에 따릅니다. 이벤트, 미션 등으로 무상 지급된 포인트는 환불 대상이 아닙니다.
+              포인트는 결제 즉시 지급되는 디지털 콘텐츠이며, 이벤트·미션 등으로 무상 지급된 포인트는 환불 대상이 아닙니다.
             </p>
             <p>
               포인트는 종류에 따라 유효기간이 적용됩니다. 유료 충전 포인트는
               충전일로부터 1년, 보너스 포인트는 지급일로부터 6개월, 무료 적립
               포인트는 적립일로부터 3개월이며, 유효기간 경과 시 자동
               소멸됩니다. 포인트 사용 시 무료 적립 → 보너스 → 유료 충전
-              순으로 차감됩니다. 상세 사항은{" "}
-              <a href="/refund" className="text-primary hover:underline font-medium">
-                환불정책
-              </a>
-              을 참고하시기 바랍니다.
+              순으로 차감됩니다.
             </p>
           </CardContent>
         </Card>

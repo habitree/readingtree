@@ -24,9 +24,6 @@ export function Footer() {
               <a href="/privacy" className="hover:text-foreground transition-colors">
                 {t("footer.privacyPolicy")}
               </a>
-              <a href="/refund" className="hover:text-foreground transition-colors">
-                환불정책
-              </a>
               <a
                 href="https://open.kakao.com/o/gGXr3Zji"
                 target="_blank"
