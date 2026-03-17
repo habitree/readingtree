@@ -1,0 +1,9 @@
+node_modules/
+output/
+dist/
+.env
+.env.local
+*.mp4
+*.wav
+*.mp3
+!assets/audio/bgm/*.mp3

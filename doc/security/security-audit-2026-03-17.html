@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Habitree 보안 감사 보고서 — 2026-03-17</title>
+  <style>
+    :root {
+      --critical: #dc2626;
+      --high: #ea580c;
+      --medium: #ca8a04;
+      --low: #2563eb;
+      --safe: #16a34a;
+      --bg: #0f172a;
+      --card: #1e293b;
+      --border: #334155;
+      --text: #e2e8f0;
+      --text-dim: #94a3b8;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+      padding: 2rem;
+    }
+    .container { max-width: 1200px; margin: 0 auto; }
+
+    /* Header */
+    .header {
+      text-align: center;
+      padding: 3rem 2rem;
+      background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      margin-bottom: 2rem;
+    }
+    .header h1 { font-size: 2rem; margin-bottom: 0.5rem; }
+    .header .subtitle { color: var(--text-dim); font-size: 1.1rem; }
+    .header .date { color: var(--text-dim); margin-top: 1rem; font-size: 0.9rem; }
+
+    /* Stats Bar */
+    .stats-bar {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    .stat-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      text-align: center;
+    }
+    .stat-card .number { font-size: 2.5rem; font-weight: 800; }
+    .stat-card .label { color: var(--text-dim); font-size: 0.85rem; margin-top: 0.25rem; }
+    .stat-critical .number { color: var(--critical); }
+    .stat-high .number { color: var(--high); }
+    .stat-medium .number { color: var(--medium); }
+    .stat-low .number { color: var(--low); }
+    .stat-safe .number { color: var(--safe); }
+
+    /* Section */
+    .section {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      margin-bottom: 1.5rem;
+      overflow: hidden;
+    }
+    .section-header {
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      cursor: pointer;
+      user-select: none;
+    }
+    .section-header:hover { background: rgba(255,255,255,0.03); }
+    .section-header h2 { font-size: 1.15rem; flex: 1; }
+    .section-body { padding: 1.5rem; }
+    .section-body.collapsed { display: none; }
+
+    /* Severity badges */
+    .badge {
+      display: inline-block;
+      padding: 0.15rem 0.65rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .badge-critical { background: rgba(220,38,38,0.2); color: var(--critical); border: 1px solid rgba(220,38,38,0.4); }
+    .badge-high { background: rgba(234,88,12,0.2); color: var(--high); border: 1px solid rgba(234,88,12,0.4); }
+    .badge-medium { background: rgba(202,138,4,0.2); color: var(--medium); border: 1px solid rgba(202,138,4,0.4); }
+    .badge-low { background: rgba(37,99,235,0.2); color: var(--low); border: 1px solid rgba(37,99,235,0.4); }
+    .badge-safe { background: rgba(22,163,74,0.2); color: var(--safe); border: 1px solid rgba(22,163,74,0.4); }
+
+    /* Finding card */
+    .finding {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      margin-bottom: 1.25rem;
+      overflow: hidden;
+    }
+    .finding:last-child { margin-bottom: 0; }
+    .finding-header {
+      padding: 1rem 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      border-bottom: 1px solid var(--border);
+      background: rgba(255,255,255,0.02);
+    }
+    .finding-header h3 { font-size: 1rem; flex: 1; }
+    .finding-body { padding: 1.25rem; }
+    .finding-body p { margin-bottom: 0.75rem; color: var(--text-dim); }
+    .finding-body p:last-child { margin-bottom: 0; }
+    .finding-body strong { color: var(--text); }
+
+    .finding-critical { border-left: 4px solid var(--critical); }
+    .finding-high { border-left: 4px solid var(--high); }
+    .finding-medium { border-left: 4px solid var(--medium); }
+    .finding-low { border-left: 4px solid var(--low); }
+    .finding-safe { border-left: 4px solid var(--safe); }
+
+    /* Code block */
+    pre {
+      background: #0c1222;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem;
+      overflow-x: auto;
+      font-size: 0.82rem;
+      line-height: 1.6;
+      margin: 0.75rem 0;
+    }
+    code { font-family: 'JetBrains Mono', 'Fira Code', monospace; color: #a5f3fc; }
+    .code-file { color: var(--text-dim); font-size: 0.8rem; margin-bottom: 0.25rem; }
+
+    /* Table */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+    th, td {
+      padding: 0.75rem 1rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    th {
+      background: rgba(255,255,255,0.04);
+      font-weight: 600;
+      color: var(--text);
+    }
+    td { color: var(--text-dim); }
+    tr:hover td { background: rgba(255,255,255,0.02); }
+
+    /* Fix suggestion */
+    .fix-box {
+      background: rgba(22,163,74,0.08);
+      border: 1px solid rgba(22,163,74,0.3);
+      border-radius: 8px;
+      padding: 1rem;
+      margin-top: 0.75rem;
+    }
+    .fix-box .fix-label {
+      color: var(--safe);
+      font-weight: 700;
+      font-size: 0.85rem;
+      margin-bottom: 0.5rem;
+    }
+
+    /* Summary table */
+    .summary-table { margin-top: 1rem; }
+    .summary-table tr td:first-child { font-weight: 600; color: var(--text); width: 40px; text-align: center; }
+
+    /* Accordion arrow */
+    .arrow { transition: transform 0.2s; font-size: 0.8rem; color: var(--text-dim); }
+    .arrow.open { transform: rotate(90deg); }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      body { padding: 1rem; }
+      .stats-bar { grid-template-columns: repeat(3, 1fr); }
+      .header h1 { font-size: 1.5rem; }
+    }
+
+    /* Print */
+    @media print {
+      body { background: white; color: #1e293b; }
+      .section, .stat-card, .finding { border-color: #e2e8f0; }
+      .section-body.collapsed { display: block !important; }
+    }
+
+    .toc { padding: 1rem 1.5rem; }
+    .toc a { color: var(--text-dim); text-decoration: none; display: block; padding: 0.3rem 0; }
+    .toc a:hover { color: var(--text); }
+    .toc .toc-critical { color: var(--critical); }
+    .toc .toc-high { color: var(--high); }
+
+    .roadmap-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 1rem;
+      padding: 1rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin-bottom: 0.75rem;
+    }
+    .roadmap-priority {
+      min-width: 90px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <!-- Header -->
+    <div class="header">
+      <h1>Habitree 종합 보안 감사 보고서</h1>
+      <div class="subtitle">Next.js 16 + Supabase + Vercel — 바이브코딩 보안 검증</div>
+      <div class="date">감사 일자: 2026-03-17 | 감사 범위: 전체 코드베이스 (220+ 컴포넌트, 47+ 라우트, 20+ API)</div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-bar">
+      <div class="stat-card stat-critical">
+        <div class="number">5</div>
+        <div class="label">CRITICAL</div>
+      </div>
+      <div class="stat-card stat-high">
+        <div class="number">5</div>
+        <div class="label">HIGH</div>
+      </div>
+      <div class="stat-card stat-medium">
+        <div class="number">7</div>
+        <div class="label">MEDIUM</div>
+      </div>
+      <div class="stat-card stat-low">
+        <div class="number">5</div>
+        <div class="label">LOW</div>
+      </div>
+      <div class="stat-card stat-safe">
+        <div class="number">14</div>
+        <div class="label">SECURE</div>
+      </div>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- SECTION 1: CRITICAL -->
+    <!-- ============================================ -->
+    <div class="section" id="sec-critical">
+      <div class="section-header" onclick="toggle('critical')">
+        <span class="arrow open" id="arrow-critical">&#9654;</span>
+        <h2><span class="badge badge-critical">CRITICAL</span> &nbsp;즉시 조치 필요 (5건)</h2>
+      </div>
+      <div class="section-body" id="body-critical">
+
+        <!-- C1: .env.local 커밋 -->
+        <div class="finding finding-critical">
+          <div class="finding-header">
+            <span class="badge badge-critical">C1</span>
+            <h3>.env.local 파일이 Git에 커밋됨 — 전체 API 키 노출</h3>
+          </div>
+          <div class="finding-body">
+            <p><strong>위치:</strong> <code>.env.local</code> (버전 관리에 포함됨)</p>
+            <p><strong>문제:</strong> 실제 프로덕션 API 키가 소스코드에 하드코딩되어 있습니다. Git 히스토리에 영구적으로 기록됩니다.</p>
+            <p><strong>노출된 키:</strong></p>
+            <pre><code>ALADIN_TTB_KEY=ttb***1017002
+GEMINI_API_KEY=AIzaSy***
+GOOGLE_BOOKS_API_KEY=AIzaSy***
+GOOGLE_SERVICE_ACCOUNT_KEY={...private_key 포함}
+NAVER_CLIENT_ID / NAVER_CLIENT_SECRET
+NOTION_API_TOKEN=ntn_***
+OPENAI_API_KEY=sk-proj-***
+SUPABASE_SERVICE_ROLE_KEY=***
+github_pat_token=ghp_***</code></pre>
+            <p><strong>영향:</strong> 리포지토리 접근 권한이 있는 누구나 모든 외부 API를 사용자 계정으로 호출 가능. Supabase 서비스 롤 키로 RLS 우회하여 전체 DB 접근 가능.</p>
+            <div class="fix-box">
+              <div class="fix-label">권장 조치</div>
+              <p>1. 모든 노출된 API 키를 <strong>즉시 재생성</strong> (rotate)</p>
+              <p>2. <code>git filter-branch</code> 또는 <strong>BFG Repo Cleaner</strong>로 히스토리에서 제거</p>
+              <p>3. <code>.gitignore</code>에 <code>.env.local</code> 확인 (현재 있으나 이미 커밋된 상태)</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- C2: 포인트 TOCTOU -->
+        <div class="finding finding-critical">
+          <div class="finding-header">
+            <span class="badge badge-critical">C2</span>
+            <h3>포인트 차감 Race Condition (TOCTOU 취약점)</h3>
+          </div>
+          <div class="finding-body">
+            <p><strong>위치:</strong> <code>app/actions/points.ts:759-835</code> — <code>spendPoints()</code></p>
+            <p><strong>CWE:</strong> CWE-367 (Time-of-Check-Time-of-Use)</p>
+            <p><strong>문제:</strong> 잔액 확인과 차감이 비원자적(non-atomic)으로 수행됩니다. 동시 요청 시 이중 차감 또는 음수 잔액이 발생합니다.</p>
+            <pre><code>// 1단계: 잔액 확인 (라인 780)
+const userPoints = await getUserPoints(currentUser);
+if (userPoints.total_points &lt; cost) return fail;
+
+// ❌ 여기서 다른 요청이 개입 가능 (Race Window)
+
+// 2단계: 트랜잭션 삽입 (라인 799)
+await supabase.from("point_transactions").insert({...});
+
+// 3단계: 잔액 업데이트 (라인 819) — 이미 stale 값
+await supabase.from("user_points")
+  .update({ total_points: newTotal })  // ← TOCTOU</code></pre>
+            <p><strong>공격 시나리오:</strong> 사용자가 40P 보유, AI Chat 비용 40P → 동시 2개 요청 → 둘 다 잔액 확인 통과 → 80P 차감 → 잔액 -40P</p>
+            <div class="fix-box">
+              <div class="fix-label">권장 조치: DB 레벨 원자적 RPC 함수 생성</div>
+              <pre><code>CREATE OR REPLACE FUNCTION spend_points_atomic(
+  p_user_id UUID, p_action TEXT, p_cost INT
+) RETURNS JSONB AS $$
+DECLARE v_row RECORD;
+BEGIN
+  SELECT * INTO v_row FROM user_points
+  WHERE user_id = p_user_id FOR UPDATE;  -- 행 잠금
+
+  IF v_row.total_points &lt; p_cost THEN
+    RETURN '{"success":false}'::jsonb;
+  END IF;
+
+  UPDATE user_points SET total_points = total_points - p_cost
+  WHERE user_id = p_user_id;
+  -- ... 트랜잭션 기록 삽입 ...
+  RETURN jsonb_build_object('success', true);
+END; $$ LANGUAGE plpgsql SECURITY DEFINER;</code></pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- C3: 포인트 미차감 -->
+        <div class="finding finding-critical">
+          <div class="finding-header">
+            <span class="badge badge-critical">C3</span>
+            <h3>유료 기능(AI Chat, OCR) 포인트 차감 누락</h3>
+          </div>
+          <div class="finding-body">
+            <p><strong>위치:</strong> <code>app/api/ai/chat/route.ts:64-74</code>, <code>app/api/ocr/route.ts:49-56</code></p>
+            <p><strong>문제:</strong> <code>checkFeatureAccess()</code>가 <code>canUseWithPoints: true</code>를 반환해도 실제 <code>spendPoints()</code>가 호출되지 않습니다.</p>
+            <pre><code>// app/api/ai/chat/route.ts
+const access = await checkFeatureAccess("ai_chat", user);
+if (!access.allowed) {
+  // canUseWithPoints 메시지만 표시하고 403 반환
+  return NextResponse.json({ error: msg }, { status: 403 });
+}
+// ← allowed=true인 경우: 포인트 차감 없이 AI 기능 실행
+// ❌ spendPoints() 호출이 이 파일 어디에도 없음</code></pre>
+            <p><strong>영향:</strong> 무료 한도 내에서는 정상이지만, 포인트 기반 과금 로직이 사실상 무효화됩니다. 수익 손실.</p>
+            <div class="fix-box">
+              <div class="fix-label">권장 조치</div>
+              <pre><code>if (!access.allowed &amp;&amp; access.canUseWithPoints) {
+  const result = await spendPoints("ai_chat", { user });
+  if (!result.success) {
+    return NextResponse.json({ error: "포인트 부족" }, { status: 402 });
+  }
+  // 포인트 차감 성공 → 계속 진행
+} else if (!access.allowed) {
+  return NextResponse.json({ error: "한도 초과" }, { status: 403 });
+}</code></pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- C4: /api/notes 미인증 -->
+        <div class="finding finding-critical">
+          <div class="finding-header">
+            <span class="badge badge-critical">C4</span>
+            <h3>/api/notes API 엔드포인트 인증 누락</h3>
+          </div>
+          <div class="finding-body">
+            <p><strong>위치:</strong> <code>app/api/notes/route.ts:9-56</code></p>
+            <p><strong>문제:</strong> GET 핸들러에 인증 확인이 전혀 없습니다. 비인증 사용자가 노트 데이터를 열람할 수 있습니다.</p>
+            <pre><code>export async function GET(request: NextRequest) {
+  const bookId = searchParams.get("bookId");
+  // ❌ 인증 확인 없음
+  // ❌ user_id 필터 없음
+  const notes = await getNotes(bookId, type);
+  return NextResponse.json({ notes: limitedNotes });
+}</code></pre>
+            <p><strong>영향:</strong> <code>GET /api/notes?bookId=xxx</code>로 누구나 노트 데이터에 접근 가능</p>
+            <div class="fix-box">
+              <div class="fix-label">권장 조치: 인증 미들웨어 추가</div>
+              <pre><code>const { data: { user }, error } = await supabase.auth.getUser();
+if (error || !user) {
+  return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+}</code></pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- C5: 의존성 취약점 -->
+        <div class="finding finding-critical">
+          <div class="finding-header">
+            <span class="badge badge-critical">C5</span>
+            <h3>npm 의존성 보안 취약점 (8건)</h3>
+          </div>
+          <div class="finding-body">
+            <p><strong>위치:</strong> <code>package.json</code></p>
+            <table>
+              <thead><tr><th>패키지</th><th>취약점</th><th>심각도</th></tr></thead>
+              <tbody>
+                <tr><td><code>swiper</code></td><td>Prototype pollution (GHSA-hmx5)</td><td><span class="badge badge-critical">Critical</span></td></tr>
+                <tr><td><code>fast-xml-parser</code></td><td>Entity injection, DoS, Stack overflow (3건)</td><td><span class="badge badge-critical">Critical</span></td></tr>
+                <tr><td><code>next</code> 16.x</td><td>Image Optimizer DoS, HTTP deserialization, PPR memory (3건)</td><td><span class="badge badge-high">High</span></td></tr>
+                <tr><td><code>minimatch</code></td><td>ReDoS (3건, indirect)</td><td><span class="badge badge-high">High</span></td></tr>
+              </tbody>
+            </table>
+            <div class="fix-box">
+              <div class="fix-label">권장 조치</div>
+              <p><code>npm audit fix</code> 실행 후 패치 불가능한 항목은 대체 라이브러리 검토</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- SECTION 2: HIGH -->
+    <!-- ============================================ -->
+    <div class="section" id="sec-high">
+      <div class="section-header" onclick="toggle('high')">
+        <span class="arrow open" id="arrow-high">&#9654;</span>
+        <h2><span class="badge badge-high">HIGH</span> &nbsp;조속한 조치 필요 (5건)</h2>
+      </div>
+      <div class="section-body" id="body-high">
+
+        <div class="finding finding-high">
+          <div class="finding-header">
+            <span class="badge badge-high">H1</span>
+            <h3>메모리 기반 Rate Limiting — 분산 환경 무효화</h3>
+          </div>
+          <div class="finding-body">
+            <p><strong>위치:</strong> <code>lib/middleware/rate-limit.ts</code></p>
+            <p><strong>문제:</strong> Vercel 서버리스 환경에서 각 인스턴스가 독립적인 메모리 저장소를 사용합니다. 공격자가 여러 인스턴스에 분산 요청하면 Rate Limit를 우회합니다.</p>
+            <pre><code>// 메모리 기반 저장소 (프로덕션에서는 Redis 등 사용 권장)
+const store: RateLimitStore = {};</code></pre>
+            <div class="fix-box">
+              <div class="fix-label">권장 조치: Upstash Redis로 전환</div>
+              <p><code>@upstash/ratelimit</code> + <code>@upstash/redis</code> 사용하여 분산 환경에서도 동작하는 Rate Limiting 구현</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="finding finding-high">
+          <div class="finding-header">
+            <span class="badge badge-high">H2</span>
+            <h3>결제 확인 API Race Condition</h3>
+          </div>
+          <div class="finding-body">
+            <p><strong>위치:</strong> <code>app/api/payment/confirm/route.ts:69-101</code></p>
+            <p><strong>문제:</strong> 주문 상태 확인(read)과 확인 처리(update) 사이에 동시성 제어가 없습니다. 동일 주문에 대해 두 번 결제가 처리될 수 있습니다.</p>
+            <div class="fix-box">
+              <div class="fix-label">권장 조치</div>
+              <p>DB 레벨 <code>SELECT ... FOR UPDATE</code> 또는 RPC로 원자적 처리. 이미 <code>charge_points_atomic</code> RPC가 있으므로 활용 권장.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="finding finding-high">
+          <div class="finding-header">
+            <span class="badge badge-high">H3</span>
+            <h3>프로젝트 규칙 위반: 15+ 파일에서 직접 getUser() 호출</h3>
+          </div>
+          <div class="finding-body">
+            <p><strong>위치:</strong> 아래 파일들에서 <code>getCurrentUser()</code> 대신 직접 <code>supabase.auth.getUser()</code> 호출</p>
+            <table>
+              <thead><tr><th>파일</th><th>위반 내용</th></tr></thead>
+              <tbody>
+                <tr><td><code>app/(main)/groups/invite/[token]/page.tsx</code></td><td>페이지에서 직접 getUser()</td></tr>
+                <tr><td><code>app/(main)/notes/new/page.tsx</code></td><td>2곳에서 직접 getUser()</td></tr>
+                <tr><td><code>app/actions/ai/ocr-settings.ts</code></td><td>서버 액션에서 직접 getUser()</td></tr>
+                <tr><td><code>app/actions/ai/ocr.ts</code></td><td>다수 직접 호출</td></tr>
+                <tr><td><code>app/actions/ai/report-settings.ts</code></td><td>다수 직접 호출</td></tr>
+                <tr><td><code>app/actions/book-relations.ts</code></td><td>전체 함수에서 직접 호출</td></tr>
+                <tr><td><code>app/actions/books/core.ts</code></td><td>직접 호출</td></tr>
+                <tr><td><code>app/actions/books/progress.ts</code></td><td>직접 호출</td></tr>
+                <tr><td><code>app/actions/books/reading.ts</code></td><td>직접 호출</td></tr>
+                <tr><td><code>app/actions/bookshelves.ts</code></td><td>직접 호출</td></tr>
+              </tbody>
+            </table>
+            <p><strong>영향:</strong> 세션 관리 단일 진입점(single point of truth) 우회. 세션 갱신 불일치, 향후 보안 패치 누락 가능.</p>
+            <div class="fix-box">
+              <div class="fix-label">권장 조치</div>
+              <p>모든 파일에서 <code>getCurrentUser()</code>로 일괄 교체. 프로젝트 규칙: "금지된 경로: 페이지에서 createServerSupabaseClient() + getUser() 직접 호출"</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="finding finding-high">
+          <div class="finding-header">
+            <span class="badge badge-high">H4</span>
+            <h3>일일 미션 이중 보상 Race Condition</h3>
+          </div>
+          <div class="finding-body">
+            <p><strong>위치:</strong> <code>app/actions/points.ts:442-606</code> — <code>getDailyMissions()</code></p>
+            <p><strong>문제:</strong> 미션 완료 확인과 보상 지급이 비원자적입니다. 동시 요청 시 같은 미션에 대해 포인트가 2번 지급될 수 있습니다.</p>
+            <pre><code>if (!existingMission) {
+  await supabase.from("daily_missions").insert({...});
+  if (mission.status === "completed") {
+    await earnPoints("mission_complete", {...}); // ❌ 이중 실행 가능
+  }
+}</code></pre>
+            <div class="fix-box">
+              <div class="fix-label">권장 조치</div>
+              <p>DB UPSERT + 원자적 RPC로 미션 완료와 포인트 지급을 단일 트랜잭션으로 처리</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="finding finding-high">
+          <div class="finding-header">
+            <span class="badge badge-high">H5</span>
+            <h3>프로덕션 환경 민감 정보 콘솔 로깅</h3>
+          </div>
+          <div class="finding-body">
+            <p><strong>위치:</strong></p>
+            <ul style="color: var(--text-dim); margin-left: 1.5rem; margin-bottom: 0.75rem;">
+              <li><code>app/actions/auth.ts:31-39, 75-83</code> — OAuth URL 및 환경 변수 로깅</li>
+              <li><code>app/api/ocr/route.ts</code> — 13개 console.log 문</li>
+              <li><code>app/(auth)/error.tsx:14-16</code> — 모든 환경에서 에러 로깅</li>
+            </ul>
+            <p><strong>영향:</strong> Vercel 로그에 URL 구조, 인증 상태, 오류 세부사항이 기록됨. 로그 접근 권한이 있으면 공격 벡터로 활용 가능.</p>
+            <div class="fix-box">
+              <div class="fix-label">권장 조치</div>
+              <p>프로덕션에서 민감 정보 로깅 제거. 필요시 구조화된 로깅 서비스(Sentry, Datadog) 사용.</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- SECTION 3: MEDIUM -->
+    <!-- ============================================ -->
+    <div class="section" id="sec-medium">
+      <div class="section-header" onclick="toggle('medium')">
+        <span class="arrow open" id="arrow-medium">&#9654;</span>
+        <h2><span class="badge badge-medium">MEDIUM</span> &nbsp;개선 권장 (7건)</h2>
+      </div>
+      <div class="section-body" id="body-medium">
+
+        <div class="finding finding-medium">
+          <div class="finding-header"><span class="badge badge-medium">M1</span><h3>AI 프롬프트 인젝션 취약점</h3></div>
+          <div class="finding-body">
+            <p><strong>위치:</strong> <code>app/api/ai/chat/route.ts:75-80</code></p>
+            <p>사용자 메시지가 검증 없이 AI 프롬프트에 직접 전달됩니다. 프롬프트 인젝션 공격으로 시스템 프롬프트를 우회하거나 의도하지 않은 응답을 유도할 수 있습니다.</p>
+            <p><strong>현재 완화:</strong> Rate limit 20회/분. 그러나 입력 필터링이나 출력 검증은 없음.</p>
+          </div>
+        </div>
+
+        <div class="finding finding-medium">
+          <div class="finding-header"><span class="badge badge-medium">M2</span><h3>관리자 통계 페이지 사용자 이메일 노출</h3></div>
+          <div class="finding-body">
+            <p><strong>위치:</strong> <code>app/actions/admin/stats.ts:88-91, 189-193</code></p>
+            <p><code>select("id, name, email, avatar_url, ...")</code>로 전체 사용자 이메일을 관리자 페이지에 전송합니다. 관리자 권한이 탈취되면 전체 사용자 이메일 목록이 유출됩니다.</p>
+            <p><strong>권장:</strong> 이메일은 마스킹 처리(예: <code>c***@gmail.com</code>) 또는 별도 상세보기에서만 노출</p>
+          </div>
+        </div>
+
+        <div class="finding finding-medium">
+          <div class="finding-header"><span class="badge badge-medium">M3</span><h3>profile.ts에서 select("*") 사용</h3></div>
+          <div class="finding-body">
+            <p><strong>위치:</strong> <code>app/actions/profile.ts:28</code></p>
+            <p>향후 추가되는 민감한 필드(예: 결제정보, 내부 플래그)가 자동으로 클라이언트에 노출됩니다.</p>
+            <p><strong>권장:</strong> 필요한 필드만 명시적으로 선택</p>
+          </div>
+        </div>
+
+        <div class="finding finding-medium">
+          <div class="finding-header"><span class="badge badge-medium">M4</span><h3>이메일 인증 토큰 URL 노출</h3></div>
+          <div class="finding-body">
+            <p><strong>위치:</strong> <code>app/callback/route.ts:24</code></p>
+            <p>이메일 인증 토큰이 URL 쿼리 파라미터로 전달됩니다. Referrer 헤더를 통해 제3자에게 유출될 수 있습니다.</p>
+            <p><strong>현재 완화:</strong> 일회용 토큰, TTL 제한. 하지만 Referrer-Policy 강화 권장.</p>
+          </div>
+        </div>
+
+        <div class="finding finding-medium">
+          <div class="finding-header"><span class="badge badge-medium">M5</span><h3>CSP에 unsafe-inline 포함</h3></div>
+          <div class="finding-body">
+            <p><strong>위치:</strong> <code>next.config.js:177</code></p>
+            <p>프로덕션 CSP에 <code>script-src 'self' 'unsafe-inline'</code>이 포함되어 있어 인라인 스크립트 실행이 허용됩니다.</p>
+            <p><strong>권장:</strong> nonce 기반 CSP로 전환하여 <code>unsafe-inline</code> 제거</p>
+          </div>
+        </div>
+
+        <div class="finding finding-medium">
+          <div class="finding-header"><span class="badge badge-medium">M6</span><h3>샘플 데이터에서 관리자 ID 노출</h3></div>
+          <div class="finding-body">
+            <p><strong>위치:</strong> <code>app/actions/sample.ts:24-28</code></p>
+            <p>비로그인 사용자용 샘플 데이터를 위해 <code>is_admin = true</code>인 사용자를 조회합니다. 관리자 UUID가 클라이언트에 노출되면 IDOR 공격의 타겟이 될 수 있습니다.</p>
+            <p><strong>권장:</strong> 전용 데모 계정 사용 (관리자 계정 분리)</p>
+          </div>
+        </div>
+
+        <div class="finding finding-medium">
+          <div class="finding-header"><span class="badge badge-medium">M7</span><h3>그룹 멤버 승인 TOCTOU</h3></div>
+          <div class="finding-body">
+            <p><strong>위치:</strong> <code>app/actions/groups/members.ts:84-137</code></p>
+            <p>모더레이터 권한 확인과 멤버 승인 사이에 역할이 변경될 수 있습니다. RLS가 일부 보호하지만, 애플리케이션 레벨 검증이 불완전합니다.</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- SECTION 4: LOW -->
+    <!-- ============================================ -->
+    <div class="section" id="sec-low">
+      <div class="section-header" onclick="toggle('low')">
+        <span class="arrow open" id="arrow-low">&#9654;</span>
+        <h2><span class="badge badge-low">LOW</span> &nbsp;개선 가능 (5건)</h2>
+      </div>
+      <div class="section-body" id="body-low">
+
+        <div class="finding finding-low">
+          <div class="finding-header"><span class="badge badge-low">L1</span><h3>any 타입 사용 (프로젝트 규칙 위반)</h3></div>
+          <div class="finding-body">
+            <p><code>app/actions/notes.ts:436</code>, <code>app/actions/sample.ts</code>, <code>app/api/webhook/polar/route.ts:42</code> 등에서 <code>any</code> 타입 사용. 타입 안전성 저하로 런타임 오류 가능.</p>
+          </div>
+        </div>
+
+        <div class="finding finding-low">
+          <div class="finding-header"><span class="badge badge-low">L2</span><h3>완독 소감 서버측 검증 부재</h3></div>
+          <div class="finding-body">
+            <p><code>components/books/completion-reflection-dialog.tsx:110-137</code> — 콘텐츠 길이 제한이 클라이언트에서만 이루어짐. 서버측 검증 추가 권장.</p>
+          </div>
+        </div>
+
+        <div class="finding finding-low">
+          <div class="finding-header"><span class="badge badge-low">L3</span><h3>검색어 와일드카드 이스케이프 순서</h3></div>
+          <div class="finding-body">
+            <p><code>lib/utils/validation.ts:67-78</code> — 이스케이프와 문자 제거 순서가 이론적으로 우회 가능하나, PostgREST가 추가 방어.</p>
+          </div>
+        </div>
+
+        <div class="finding finding-low">
+          <div class="finding-header"><span class="badge badge-low">L4</span><h3>이미지 URL 파싱 검증 부족</h3></div>
+          <div class="finding-body">
+            <p><code>app/actions/notes.ts:522-543</code> — 노트 이미지 삭제 시 URL 형식 검증 없이 파싱. 조작된 URL로 의도하지 않은 Storage 파일 삭제 가능.</p>
+          </div>
+        </div>
+
+        <div class="finding finding-low">
+          <div class="finding-header"><span class="badge badge-low">L5</span><h3>PostgREST 필터 문자열 조합</h3></div>
+          <div class="finding-body">
+            <p><code>app/actions/notes.ts:837</code> — <code>.or(`is_public.eq.true,user_id.eq.${userId}`)</code> 형태로 사용. UUID 검증 후 사용되지만, SDK 필터 API 사용이 더 안전.</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- SECTION 5: SECURE (양호) -->
+    <!-- ============================================ -->
+    <div class="section" id="sec-safe">
+      <div class="section-header" onclick="toggle('safe')">
+        <span class="arrow open" id="arrow-safe">&#9654;</span>
+        <h2><span class="badge badge-safe">SECURE</span> &nbsp;양호한 구현 (14건)</h2>
+      </div>
+      <div class="section-body" id="body-safe">
+        <table>
+          <thead><tr><th>항목</th><th>위치</th><th>설명</th></tr></thead>
+          <tbody>
+            <tr><td>웹훅 서명 검증 (Toss)</td><td><code>app/api/payment/webhook/route.ts</code></td><td>HMAC-SHA256 + timingSafeEqual</td></tr>
+            <tr><td>웹훅 서명 검증 (Polar)</td><td><code>app/api/webhook/polar/route.ts</code></td><td>SDK 공식 validateEvent()</td></tr>
+            <tr><td>파일 업로드 보안</td><td><code>lib/security/file-validation.ts</code></td><td>매직 바이트 검증, 경로 탐색 방지, 파일명 정규화</td></tr>
+            <tr><td>원자적 포인트 적립</td><td><code>migration__points__atomic_earn</code></td><td>FOR UPDATE 잠금, 일일 한도 원자 검사</td></tr>
+            <tr><td>원자적 결제 충전</td><td><code>migration__payment__atomic_charge</code></td><td>멱등성 보장 (points_charged_at)</td></tr>
+            <tr><td>보안 헤더</td><td><code>next.config.js:64-97</code></td><td>HSTS, X-Frame-Options DENY, CSP, Referrer-Policy 등</td></tr>
+            <tr><td>OAuth 보안</td><td><code>app/actions/auth.ts</code></td><td>Supabase SSR 자동 CSRF/State 처리</td></tr>
+            <tr><td>쿠키 보안</td><td><code>lib/supabase/server.ts</code></td><td>httpOnly, secure, sameSite 자동 설정</td></tr>
+            <tr><td>RLS 정책</td><td>95개 마이그레이션</td><td>41개 파일에 RLS 정책, auth.uid() = user_id 패턴</td></tr>
+            <tr><td>SQL 인젝션 방지</td><td>전체 서버 액션</td><td>Supabase PostgREST 파라미터화 쿼리</td></tr>
+            <tr><td>검색어 살균</td><td><code>lib/utils/validation.ts</code></td><td>sanitizeSearchQuery() — SQL 특수문자 이스케이프</td></tr>
+            <tr><td>에러 메시지 정제</td><td><code>lib/utils/validation.ts</code></td><td>sanitizeErrorMessage() — DB 오류 일반화</td></tr>
+            <tr><td>서비스 롤 키 격리</td><td><code>lib/supabase/server.ts</code></td><td>서버 전용, 클라이언트 미노출</td></tr>
+            <tr><td>계정 삭제 확인</td><td><code>app/actions/auth.ts:403-432</code></td><td>"계정삭제" 문자열 확인 필수</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- SECTION 6: 조치 로드맵 -->
+    <!-- ============================================ -->
+    <div class="section" id="sec-roadmap">
+      <div class="section-header" onclick="toggle('roadmap')">
+        <span class="arrow open" id="arrow-roadmap">&#9654;</span>
+        <h2>조치 로드맵 (Remediation Roadmap)</h2>
+      </div>
+      <div class="section-body" id="body-roadmap">
+
+        <h3 style="margin-bottom: 1rem; color: var(--critical);">즉시 (24시간 이내)</h3>
+        <div class="roadmap-item">
+          <div class="roadmap-priority"><span class="badge badge-critical">C1</span></div>
+          <div><strong>.env.local API 키 전체 재생성</strong> — Git 히스토리에서 제거, 모든 외부 서비스 키 rotate</div>
+        </div>
+        <div class="roadmap-item">
+          <div class="roadmap-priority"><span class="badge badge-critical">C4</span></div>
+          <div><strong>/api/notes 인증 추가</strong> — 5분 수정. getUser() 확인 코드 추가</div>
+        </div>
+        <div class="roadmap-item">
+          <div class="roadmap-priority"><span class="badge badge-critical">C5</span></div>
+          <div><strong>npm audit fix</strong> — 의존성 취약점 패치</div>
+        </div>
+
+        <h3 style="margin: 1.5rem 0 1rem; color: var(--high);">1주 이내</h3>
+        <div class="roadmap-item">
+          <div class="roadmap-priority"><span class="badge badge-critical">C2</span></div>
+          <div><strong>spend_points_atomic RPC 생성</strong> — 포인트 차감 원자적 처리. earn_points_atomic과 동일 패턴</div>
+        </div>
+        <div class="roadmap-item">
+          <div class="roadmap-priority"><span class="badge badge-critical">C3</span></div>
+          <div><strong>AI Chat/OCR 라우트에 spendPoints() 연동</strong> — 포인트 과금 로직 실제 적용</div>
+        </div>
+        <div class="roadmap-item">
+          <div class="roadmap-priority"><span class="badge badge-high">H1</span></div>
+          <div><strong>Upstash Redis Rate Limiting</strong> — 메모리 기반 → 분산 Rate Limiting 전환</div>
+        </div>
+        <div class="roadmap-item">
+          <div class="roadmap-priority"><span class="badge badge-high">H2</span></div>
+          <div><strong>결제 확인 원자적 처리</strong> — charge_points_atomic RPC 활용</div>
+        </div>
+
+        <h3 style="margin: 1.5rem 0 1rem; color: var(--medium);">2주 이내</h3>
+        <div class="roadmap-item">
+          <div class="roadmap-priority"><span class="badge badge-high">H3</span></div>
+          <div><strong>getCurrentUser() 일괄 교체</strong> — 15개 파일 리팩토링</div>
+        </div>
+        <div class="roadmap-item">
+          <div class="roadmap-priority"><span class="badge badge-high">H4</span></div>
+          <div><strong>일일 미션 원자적 RPC</strong> — upsert_daily_mission_atomic 생성</div>
+        </div>
+        <div class="roadmap-item">
+          <div class="roadmap-priority"><span class="badge badge-high">H5</span></div>
+          <div><strong>프로덕션 콘솔 로그 정리</strong> — 민감 정보 로깅 제거</div>
+        </div>
+        <div class="roadmap-item">
+          <div class="roadmap-priority"><span class="badge badge-medium">M1-M7</span></div>
+          <div><strong>중간 심각도 이슈 일괄 처리</strong> — 프롬프트 인젝션 필터, select("*") 제거, CSP 강화 등</div>
+        </div>
+
+        <h3 style="margin: 1.5rem 0 1rem; color: var(--low);">1개월 이내</h3>
+        <div class="roadmap-item">
+          <div class="roadmap-priority"><span class="badge badge-low">L1-L5</span></div>
+          <div><strong>낮은 심각도 이슈 처리</strong> — any 타입 제거, 서버측 검증 추가, URL 검증 강화</div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- SECTION 7: 전체 요약 테이블 -->
+    <!-- ============================================ -->
+    <div class="section" id="sec-summary">
+      <div class="section-header" onclick="toggle('summary')">
+        <span class="arrow open" id="arrow-summary">&#9654;</span>
+        <h2>전체 발견사항 요약 테이블</h2>
+      </div>
+      <div class="section-body" id="body-summary">
+        <table class="summary-table">
+          <thead>
+            <tr><th>#</th><th>이슈</th><th>심각도</th><th>카테고리</th><th>파일</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>C1</td><td>.env.local Git 커밋 (API 키 노출)</td><td><span class="badge badge-critical">Critical</span></td><td>시크릿 관리</td><td>.env.local</td></tr>
+            <tr><td>C2</td><td>포인트 차감 TOCTOU Race Condition</td><td><span class="badge badge-critical">Critical</span></td><td>비즈니스 로직</td><td>app/actions/points.ts</td></tr>
+            <tr><td>C3</td><td>유료 기능 포인트 차감 누락</td><td><span class="badge badge-critical">Critical</span></td><td>비즈니스 로직</td><td>app/api/ai/chat, ocr</td></tr>
+            <tr><td>C4</td><td>/api/notes 인증 누락</td><td><span class="badge badge-critical">Critical</span></td><td>인증</td><td>app/api/notes/route.ts</td></tr>
+            <tr><td>C5</td><td>npm 의존성 취약점 8건</td><td><span class="badge badge-critical">Critical</span></td><td>의존성</td><td>package.json</td></tr>
+            <tr><td>H1</td><td>메모리 기반 Rate Limiting</td><td><span class="badge badge-high">High</span></td><td>인프라</td><td>lib/middleware/rate-limit.ts</td></tr>
+            <tr><td>H2</td><td>결제 확인 Race Condition</td><td><span class="badge badge-high">High</span></td><td>결제</td><td>app/api/payment/confirm</td></tr>
+            <tr><td>H3</td><td>getCurrentUser() 우회 (15+ 파일)</td><td><span class="badge badge-high">High</span></td><td>인증</td><td>다수 파일</td></tr>
+            <tr><td>H4</td><td>일일 미션 이중 보상</td><td><span class="badge badge-high">High</span></td><td>비즈니스 로직</td><td>app/actions/points.ts</td></tr>
+            <tr><td>H5</td><td>프로덕션 민감 정보 로깅</td><td><span class="badge badge-high">High</span></td><td>정보 노출</td><td>auth.ts, ocr/route.ts</td></tr>
+            <tr><td>M1</td><td>AI 프롬프트 인젝션</td><td><span class="badge badge-medium">Medium</span></td><td>AI 보안</td><td>app/api/ai/chat</td></tr>
+            <tr><td>M2</td><td>관리자 이메일 노출</td><td><span class="badge badge-medium">Medium</span></td><td>데이터 노출</td><td>app/actions/admin/stats.ts</td></tr>
+            <tr><td>M3</td><td>select("*") 사용</td><td><span class="badge badge-medium">Medium</span></td><td>데이터 노출</td><td>app/actions/profile.ts</td></tr>
+            <tr><td>M4</td><td>이메일 토큰 URL 노출</td><td><span class="badge badge-medium">Medium</span></td><td>인증</td><td>app/callback/route.ts</td></tr>
+            <tr><td>M5</td><td>CSP unsafe-inline</td><td><span class="badge badge-medium">Medium</span></td><td>헤더</td><td>next.config.js</td></tr>
+            <tr><td>M6</td><td>샘플 데이터 관리자 ID 노출</td><td><span class="badge badge-medium">Medium</span></td><td>정보 노출</td><td>app/actions/sample.ts</td></tr>
+            <tr><td>M7</td><td>그룹 승인 TOCTOU</td><td><span class="badge badge-medium">Medium</span></td><td>비즈니스 로직</td><td>app/actions/groups/members.ts</td></tr>
+            <tr><td>L1</td><td>any 타입 사용</td><td><span class="badge badge-low">Low</span></td><td>타입 안전</td><td>다수 파일</td></tr>
+            <tr><td>L2</td><td>완독 소감 서버 검증 부재</td><td><span class="badge badge-low">Low</span></td><td>검증</td><td>completion-reflection-dialog.tsx</td></tr>
+            <tr><td>L3</td><td>검색어 이스케이프 순서</td><td><span class="badge badge-low">Low</span></td><td>검증</td><td>lib/utils/validation.ts</td></tr>
+            <tr><td>L4</td><td>이미지 URL 파싱 검증</td><td><span class="badge badge-low">Low</span></td><td>검증</td><td>app/actions/notes.ts</td></tr>
+            <tr><td>L5</td><td>PostgREST 필터 문자열 조합</td><td><span class="badge badge-low">Low</span></td><td>검증</td><td>app/actions/notes.ts</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div style="text-align: center; padding: 2rem; color: var(--text-dim); font-size: 0.85rem;">
+      <p>Habitree Security Audit Report — 2026-03-17</p>
+      <p>감사 방법론: 정적 코드 분석 + 수동 코드 리뷰 (5개 병렬 에이전트)</p>
+      <p>분석 범위: 인증/세션, DB/RLS, API/입력검증, 클라이언트/인프라, 비즈니스로직</p>
+      <p>분석 파일: 220+ 컴포넌트, 47+ 라우트, 20+ API, 95 마이그레이션</p>
+    </div>
+
+  </div>
+
+  <script>
+    function toggle(id) {
+      const body = document.getElementById('body-' + id);
+      const arrow = document.getElementById('arrow-' + id);
+      body.classList.toggle('collapsed');
+      arrow.classList.toggle('open');
+    }
+  </script>
+</body>
+</html>

@@ -77,35 +77,37 @@ export async function needsPersonaAnalysis(): Promise<boolean> {
 async function analyzeReadingData(userId: string): Promise<PersonaAnalysisResult> {
   const supabase = await createServerSupabaseClient();
 
-  // 1. 사용자의 모든 책 조회
-  const { data: userBooks } = await supabase
-    .from("user_books")
-    .select(`
-      id,
-      status,
-      started_at,
-      completed_at,
-      books (
+  // 1~3. 사용자 데이터 병렬 조회 (책, 기록, 그룹)
+  const [
+    { data: userBooks },
+    { data: notes },
+    { data: groupMemberships },
+  ] = await Promise.all([
+    supabase
+      .from("user_books")
+      .select(`
         id,
-        title,
-        category,
-        total_pages
-      )
-    `)
-    .eq("user_id", userId);
-
-  // 2. 사용자의 모든 기록 조회 (content 포함: 인용구 카운팅용)
-  const { data: notes } = await supabase
-    .from("notes")
-    .select("id, type, content, created_at")
-    .eq("user_id", userId);
-
-  // 3. 그룹 참여 정보 조회
-  const { data: groupMemberships } = await supabase
-    .from("group_members")
-    .select("group_id, role, status")
-    .eq("user_id", userId)
-    .eq("status", "approved");
+        status,
+        started_at,
+        completed_at,
+        books (
+          id,
+          title,
+          category,
+          total_pages
+        )
+      `)
+      .eq("user_id", userId),
+    supabase
+      .from("notes")
+      .select("id, type, content, created_at")
+      .eq("user_id", userId),
+    supabase
+      .from("group_members")
+      .select("group_id, role, status")
+      .eq("user_id", userId)
+      .eq("status", "approved"),
+  ]);
 
   // 4. 통계 계산
   const totalBooks = userBooks?.length || 0;

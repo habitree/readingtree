@@ -7,6 +7,7 @@ import {
   TableCell,
 } from "@/components/ui/table";
 import { FEATURE_INFO_ROWS } from "@/lib/subscription/pricing-data";
+import { IS_BETA_MODE } from "@/lib/subscription/beta";
 
 export function PricingComparisonTable() {
   return (
@@ -18,10 +19,10 @@ export function PricingComparisonTable() {
               기능
             </TableHead>
             <TableHead className="text-center min-w-[100px]">
-              무료 한도
+              {IS_BETA_MODE ? "베타 기간" : "무료 한도"}
             </TableHead>
             <TableHead className="text-center min-w-[100px]">
-              포인트 비용
+              {IS_BETA_MODE ? "베타 기간" : "포인트 비용"}
             </TableHead>
           </TableRow>
         </TableHeader>

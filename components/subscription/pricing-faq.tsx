@@ -5,6 +5,26 @@ import { ChevronDown } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils/cn";
+import { IS_BETA_MODE } from "@/lib/subscription/beta";
+
+const BETA_FAQ_ITEMS = [
+  {
+    q: "베타 기간에는 정말 무료인가요?",
+    a: "네, 베타 테스트 기간 동안 AI 채팅, OCR 필사, AI 독서 리포트 등 모든 AI 기능을 무료로 무제한 이용하실 수 있습니다.",
+  },
+  {
+    q: "베타 기간은 언제까지인가요?",
+    a: "정식 출시 전까지 베타 테스트가 진행됩니다. 베타 종료 시 사전에 충분한 안내를 드릴 예정입니다.",
+  },
+  {
+    q: "베타 이후에는 어떻게 되나요?",
+    a: "정식 출시 후에는 기본 무료 한도가 제공되며, 추가 사용 시 포인트로 이용할 수 있습니다. 베타 기간 동안의 독서 기록과 데이터는 모두 유지됩니다.",
+  },
+  {
+    q: "포인트는 어떻게 얻나요?",
+    a: "가입 시 200P가 즉시 지급되며, 프로필 완성(50P)과 첫 노트 작성(50P) 미션을 완료하면 총 300P를 받을 수 있습니다. 이후에도 독서 기록 작성, 일일 미션, 연속 출석 등 다양한 활동으로 포인트를 적립할 수 있습니다.",
+  },
+];
 
 const FAQ_ITEMS = [
   {
@@ -27,13 +47,23 @@ const FAQ_ITEMS = [
     q: "포인트 비용은 얼마인가요?",
     a: "기능별 포인트 비용: AI 채팅 40P/회, OCR 필사 25P/회, AI 리포트 100P/회입니다.",
   },
+  {
+    q: "포인트 유효기간이 있나요?",
+    a: "유료 충전 포인트는 충전일로부터 1년, 보너스 포인트는 6개월, 무료 적립 포인트(활동 보상 등)는 3개월입니다. 포인트 사용 시 무료 → 보너스 → 유료 순으로 차감되어 유료 포인트가 가장 오래 보존됩니다. 만료 30일/7일 전 알림을 보내드립니다.",
+  },
+  {
+    q: "충전한 포인트 환불이 가능한가요?",
+    a: "결제일로부터 7일 이내, 포인트를 사용하지 않은 경우 전액 환불이 가능합니다. 일부 사용한 경우 잔여 포인트 비율에 따라 부분 환불됩니다. 자세한 내용은 환불정책 페이지를 참고해 주세요.",
+  },
 ];
+
+const activeFaqItems = IS_BETA_MODE ? BETA_FAQ_ITEMS : FAQ_ITEMS;
 
 export function PricingFaq() {
   return (
     <Card>
       <CardContent className="p-0">
-        {FAQ_ITEMS.map((item, idx) => (
+        {activeFaqItems.map((item, idx) => (
           <div key={idx}>
             {idx > 0 && <Separator />}
             <FaqToggle q={item.q} a={item.a} />

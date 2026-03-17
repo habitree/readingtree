@@ -24,7 +24,7 @@ import {
   Gift,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import confetti from "canvas-confetti";
+
 import { useTranslation } from "@/lib/i18n";
 
 interface CompletionReflectionDialogProps {
@@ -119,12 +119,14 @@ export function CompletionReflectionDialog({
       await onSubmit(reflections);
 
       // 성찰 완료 축하 효과
-      confetti({
-        particleCount: 80,
-        spread: 70,
-        origin: { y: 0.6 },
-        colors: ["#22c55e", "#10b981", "#059669", "#fbbf24"],
-      });
+      import("canvas-confetti").then((m) =>
+        m.default({
+          particleCount: 80,
+          spread: 70,
+          origin: { y: 0.6 },
+          colors: ["#22c55e", "#10b981", "#059669", "#fbbf24"],
+        })
+      );
 
       onOpenChange(false);
     } catch (error) {

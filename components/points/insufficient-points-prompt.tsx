@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Coins, ArrowRight, CreditCard } from "lucide-react";
 import { useTranslation } from "@/lib/i18n";
 import Link from "next/link";
+import { IS_BETA_MODE } from "@/lib/subscription/beta";
 
 interface InsufficientPointsPromptProps {
   open: boolean;
@@ -26,6 +27,9 @@ export function InsufficientPointsPrompt({
   currentBalance,
 }: InsufficientPointsPromptProps) {
   const { t } = useTranslation();
+
+  // 베타 모드에서는 포인트 부족 다이얼로그 표시하지 않음
+  if (IS_BETA_MODE) return null;
   const shortfall = requiredPoints - currentBalance;
 
   return (

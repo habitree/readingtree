@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/sheet";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { useUpgradeModal } from "@/hooks/use-upgrade-modal";
+import { IS_BETA_MODE } from "@/lib/subscription/beta";
 
 /** 포인트로 가능한 사용 횟수 예시 */
 const POINT_VALUE_EXAMPLES = [
@@ -36,6 +37,9 @@ export function UpgradeModal() {
   const router = useRouter();
   const isMobile = useMediaQuery("(max-width: 768px)");
   const { open, message, closeUpgradeModal } = useUpgradeModal();
+
+  // 베타 모드에서는 한도 9999이므로 트리거되지 않지만 안전장치
+  if (IS_BETA_MODE) return null;
 
   const handleViewPricing = () => {
     closeUpgradeModal();

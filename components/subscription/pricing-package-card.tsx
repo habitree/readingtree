@@ -13,8 +13,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { PointPackageInfo } from "@/lib/subscription/pricing-data";
-import { formatPrice } from "@/lib/subscription/pricing-data";
-import { useTossPayment } from "@/hooks/use-toss-payment";
+import { formatPrice, formatPriceUsd } from "@/lib/subscription/pricing-data";
+import { usePolarPayment } from "@/hooks/use-polar-payment";
 import { useAuth } from "@/contexts/auth-context";
 
 interface PricingPackageCardProps {
@@ -24,7 +24,7 @@ interface PricingPackageCardProps {
 export function PricingPackageCard({ pkg }: PricingPackageCardProps) {
   const totalPoints = pkg.points + pkg.bonusPoints;
   const firstPurchaseTotal = totalPoints + pkg.firstPurchaseBonusPoints;
-  const { requestPayment, isLoading, error } = useTossPayment();
+  const { requestPayment, isLoading, error } = usePolarPayment();
   const { user } = useAuth();
   const router = useRouter();
 
@@ -56,7 +56,10 @@ export function PricingPackageCard({ pkg }: PricingPackageCardProps) {
         <CardTitle className="text-lg">{pkg.displayName}</CardTitle>
         <div className="mt-2">
           <span className="text-3xl font-bold">
-            {formatPrice(pkg.price)}
+            {formatPriceUsd(pkg.priceUsd)}
+          </span>
+          <span className="text-sm text-muted-foreground ml-1">
+            ({formatPrice(pkg.price)})
           </span>
         </div>
         <CardDescription>

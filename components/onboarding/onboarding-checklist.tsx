@@ -20,7 +20,7 @@ import {
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import confetti from "canvas-confetti";
+
 import Link from "next/link";
 import { useTranslation } from "@/lib/i18n";
 
@@ -123,12 +123,14 @@ export function OnboardingChecklist({
   // 전체 완료 시 특별 축하
   useEffect(() => {
     if (allCompleted && completedCount > 0) {
-      confetti({
-        particleCount: 100,
-        spread: 100,
-        origin: { y: 0.6 },
-        colors: ["#22c55e", "#10b981", "#059669", "#fbbf24", "#f59e0b"],
-      });
+      import("canvas-confetti").then((m) =>
+        m.default({
+          particleCount: 100,
+          spread: 100,
+          origin: { y: 0.6 },
+          colors: ["#22c55e", "#10b981", "#059669", "#fbbf24", "#f59e0b"],
+        })
+      );
     }
   }, [allCompleted, completedCount]);
 

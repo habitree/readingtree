@@ -16,7 +16,7 @@ export async function updateSession(request: NextRequest) {
   }
 
   // 순수 공개 페이지는 세션 갱신/인증 확인 불필요 → 조기 반환
-  const publicOnlyPaths = ["/about", "/terms", "/privacy", "/signup", "/verify-email"];
+  const publicOnlyPaths = ["/about", "/terms", "/privacy", "/signup", "/verify-email", "/pricing", "/sample"];
   const isPublicOnly = publicOnlyPaths.some((path) =>
     request.nextUrl.pathname === path || request.nextUrl.pathname.startsWith(path + "/")
   );

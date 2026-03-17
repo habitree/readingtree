@@ -1,0 +1,2116 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Habitree Shorts Strategy v3.0</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Noto+Sans+KR:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+<style>
+/* ===== Design Tokens ===== */
+:root {
+  --forest-50: #f2fcf5; --forest-100: #e1f8e8; --forest-200: #c3eed4;
+  --forest-300: #94deb8; --forest-400: #5ec496; --forest-500: #36a678;
+  --forest-600: #24855e; --forest-700: #1d6b4d; --forest-800: #1a553f;
+  --forest-900: #164635; --forest-950: #0b271e;
+  --paper-50: #FDFBF7; --paper-100: #F8F4EE; --paper-200: #F0E9DD;
+  --paper-300: #E2D7C5; --paper-500: #BFA586;
+  --charcoal-200: #CBD2D9; --charcoal-400: #7B8794; --charcoal-600: #52606D;
+  --charcoal-700: #3E4C59; --charcoal-800: #323F4B; --charcoal-900: #1F2933;
+  --charcoal-950: #12171d;
+  --radius: 12px; --radius-lg: 16px;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+  --shadow-lg: 0 8px 30px rgba(0,0,0,0.1);
+}
+
+/* ===== Reset ===== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; font-size: 16px; -webkit-font-smoothing: antialiased; }
+body { font-family: 'Noto Sans KR', 'Inter', -apple-system, sans-serif; background: var(--paper-50); color: var(--charcoal-900); line-height: 1.7; }
+a { color: var(--forest-600); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* ===== Header ===== */
+.header {
+  background: linear-gradient(135deg, var(--forest-950) 0%, var(--charcoal-950) 50%, var(--forest-900) 100%);
+  color: white; padding: 48px 24px; text-align: center; position: relative; overflow: hidden;
+}
+.header::before {
+  content: ''; position: absolute; inset: 0;
+  background: radial-gradient(ellipse at 30% 50%, rgba(54,166,120,0.15) 0%, transparent 60%),
+              radial-gradient(ellipse at 70% 30%, rgba(191,165,134,0.08) 0%, transparent 50%);
+}
+.header * { position: relative; }
+.header h1 { font-size: clamp(1.6rem, 4vw, 2.4rem); font-weight: 900; letter-spacing: -0.03em; margin-bottom: 8px; }
+.header .subtitle { font-size: 1rem; opacity: 0.75; margin-bottom: 16px; }
+.header .badges { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+.header .badge {
+  display: inline-block; padding: 4px 14px; border-radius: 20px; font-size: 0.78rem; font-weight: 600;
+  background: rgba(54,166,120,0.2); border: 1px solid rgba(54,166,120,0.4); color: var(--forest-300);
+}
+.header .badge.gold { background: rgba(191,165,134,0.15); border-color: rgba(191,165,134,0.4); color: var(--paper-300); }
+
+/* ===== Tab Navigation ===== */
+.tab-nav {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(253,251,247,0.92); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--paper-200);
+  overflow-x: auto; -webkit-overflow-scrolling: touch;
+}
+.tab-nav::-webkit-scrollbar { height: 0; }
+.tab-nav-inner {
+  display: flex; max-width: 1100px; margin: 0 auto; padding: 0 12px; min-width: max-content;
+}
+.tab-btn {
+  padding: 14px 18px; font-size: 0.82rem; font-weight: 600; color: var(--charcoal-400);
+  border: none; background: none; cursor: pointer; white-space: nowrap;
+  border-bottom: 2px solid transparent; transition: all 0.2s;
+}
+.tab-btn:hover { color: var(--forest-600); }
+.tab-btn.active { color: var(--forest-700); border-bottom-color: var(--forest-500); }
+
+/* ===== Content ===== */
+.container { max-width: 1060px; margin: 0 auto; padding: 32px 20px; }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; animation: fadeIn 0.3s ease; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ===== Cards ===== */
+.card {
+  background: white; border-radius: var(--radius); padding: 28px;
+  margin-bottom: 24px; box-shadow: var(--shadow-sm); border: 1px solid var(--paper-200);
+}
+.card h2 { color: var(--forest-700); font-size: 1.35rem; margin-bottom: 16px; padding-bottom: 10px; border-bottom: 2px solid var(--forest-100); }
+.card h3 { color: var(--forest-800); font-size: 1.1rem; margin: 20px 0 10px; }
+.card h4 { color: var(--charcoal-700); font-size: 0.95rem; margin: 14px 0 6px; font-weight: 700; }
+.card p { margin-bottom: 10px; font-size: 0.92rem; color: var(--charcoal-700); }
+.card ul, .card ol { padding-left: 20px; margin-bottom: 12px; }
+.card li { font-size: 0.9rem; margin-bottom: 6px; color: var(--charcoal-700); }
+
+/* ===== Tables ===== */
+table { width: 100%; border-collapse: collapse; margin: 14px 0; font-size: 0.88rem; }
+th { background: var(--forest-50); color: var(--forest-800); padding: 10px 12px; text-align: left; border-bottom: 2px solid var(--forest-200); font-weight: 700; }
+td { padding: 10px 12px; border-bottom: 1px solid var(--paper-200); }
+tr:hover td { background: var(--forest-50); }
+
+/* ===== Metrics ===== */
+.metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin: 16px 0; }
+.metric-card {
+  text-align: center; padding: 20px 16px; border-radius: var(--radius);
+  background: linear-gradient(135deg, var(--forest-50) 0%, white 100%);
+  border: 1px solid var(--forest-100);
+}
+.metric-card .num { font-size: 1.8rem; font-weight: 900; color: var(--forest-600); display: block; }
+.metric-card .label { font-size: 0.75rem; color: var(--charcoal-600); margin-top: 4px; font-weight: 500; }
+
+/* ===== Timeline ===== */
+.timeline { position: relative; padding-left: 28px; margin: 16px 0; }
+.timeline::before { content: ''; position: absolute; left: 8px; top: 0; bottom: 0; width: 2px; background: var(--forest-200); }
+.timeline-item { position: relative; margin-bottom: 20px; }
+.timeline-item::before {
+  content: ''; position: absolute; left: -24px; top: 6px; width: 12px; height: 12px;
+  border-radius: 50%; background: var(--forest-500); border: 2px solid white; box-shadow: var(--shadow-sm);
+}
+.timeline-item.future::before { background: var(--paper-500); }
+.timeline-item .phase { font-size: 0.72rem; font-weight: 700; color: var(--forest-600); text-transform: uppercase; letter-spacing: 1px; }
+.timeline-item .title { font-weight: 700; color: var(--charcoal-900); margin: 2px 0 4px; }
+.timeline-item .desc { font-size: 0.85rem; color: var(--charcoal-600); }
+
+/* ===== Tags ===== */
+.tag {
+  display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: 0.72rem; font-weight: 600;
+  background: var(--forest-50); color: var(--forest-700); border: 1px solid var(--forest-200); margin: 2px;
+}
+.tag.gold { background: rgba(191,165,134,0.1); color: #8C7152; border-color: rgba(191,165,134,0.3); }
+.tag.red { background: #fef2f2; color: #dc2626; border-color: #fecaca; }
+.tag.blue { background: #eff6ff; color: #2563eb; border-color: #bfdbfe; }
+
+/* ===== Funnel ===== */
+.funnel { display: flex; flex-direction: column; gap: 4px; margin: 16px 0; }
+.funnel-stage {
+  padding: 14px 20px; border-radius: 8px; color: white; font-weight: 600; font-size: 0.88rem;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.funnel-stage .detail { font-weight: 400; font-size: 0.8rem; opacity: 0.85; }
+
+/* ===== Series Card ===== */
+.series-card {
+  background: white; border-radius: var(--radius-lg); padding: 24px; margin-bottom: 20px;
+  border: 1px solid var(--paper-200); box-shadow: var(--shadow-sm);
+  transition: box-shadow 0.2s, transform 0.2s;
+}
+.series-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
+.series-header { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+.series-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; }
+.series-meta { flex: 1; }
+.series-meta h3 { margin: 0; font-size: 1.05rem; }
+.series-meta .duration { font-size: 0.78rem; color: var(--charcoal-400); }
+
+/* ===== Progress Bar ===== */
+.progress-track { height: 6px; background: var(--paper-200); border-radius: 3px; margin: 8px 0; overflow: hidden; }
+.progress-fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg, var(--forest-500), var(--forest-400)); }
+
+/* ===== Grid ===== */
+.grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+.grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+
+/* ===== Persona ===== */
+.persona-card {
+  background: white; border-radius: var(--radius-lg); overflow: hidden;
+  border: 1px solid var(--paper-200); box-shadow: var(--shadow-sm);
+}
+.persona-header { padding: 20px; display: flex; gap: 14px; align-items: center; }
+.persona-avatar {
+  width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  font-size: 1.6rem; flex-shrink: 0;
+}
+.persona-info h3 { font-size: 1rem; margin-bottom: 2px; }
+.persona-info .role { font-size: 0.82rem; color: var(--charcoal-400); }
+.persona-body { padding: 0 20px 20px; }
+.persona-body h4 { font-size: 0.88rem; color: var(--forest-700); margin: 12px 0 6px; }
+
+/* ===== Source List ===== */
+.source-list { list-style: none; padding: 0; }
+.source-list li { padding: 8px 12px; border-bottom: 1px solid var(--paper-200); font-size: 0.85rem; }
+.source-list li:last-child { border-bottom: none; }
+.source-list .src-title { font-weight: 600; color: var(--charcoal-900); }
+.source-list .src-url { font-size: 0.78rem; color: var(--forest-600); word-break: break-all; }
+
+/* ===== Responsive ===== */
+@media (max-width: 768px) {
+  .header { padding: 36px 16px; }
+  .header h1 { font-size: 1.5rem; }
+  .card { padding: 20px 16px; }
+  .grid-2, .grid-3 { grid-template-columns: 1fr; }
+  .metrics-grid { grid-template-columns: repeat(2, 1fr); }
+  .tab-btn { padding: 12px 14px; font-size: 0.78rem; }
+  table { font-size: 0.8rem; }
+  th, td { padding: 8px; }
+}
+@media (max-width: 480px) {
+  .metrics-grid { grid-template-columns: 1fr 1fr; }
+  .container { padding: 20px 12px; }
+}
+
+/* ===== Print ===== */
+@media print {
+  .tab-nav { display: none; }
+  .tab-panel { display: block !important; page-break-inside: avoid; }
+  .header { padding: 24px; }
+}
+</style>
+</head>
+<body x-data="{ activeTab: 0 }">
+
+<!-- ===== HEADER ===== -->
+<header class="header">
+  <h1>Habitree Shorts Strategy v3.0</h1>
+  <p class="subtitle">숏폼 콘텐츠 고도화 종합 전략 기획서</p>
+  <div class="badges">
+    <span class="badge">v2.0 &rarr; v3.0</span>
+    <span class="badge">8 + 6 시리즈</span>
+    <span class="badge gold">2026 Q1 ~ Q3</span>
+    <span class="badge">Remotion + AI Pipeline</span>
+  </div>
+</header>
+
+<!-- ===== TAB NAV ===== -->
+<nav class="tab-nav">
+  <div class="tab-nav-inner">
+    <template x-for="(tab, i) in ['전략 개요','트렌드 분석','심리학 & 마케팅','페르소나 전략','신규 시리즈','기술 고도화','리서치 로그','데이터 아키텍처','음성 & 자동화']" :key="i">
+      <button class="tab-btn" :class="{ active: activeTab === i }" @click="activeTab = i" x-text="tab"></button>
+    </template>
+  </div>
+</nav>
+
+<!-- ===== CONTENT ===== -->
+<div class="container">
+
+<!-- ========================================== -->
+<!-- TAB 1: 전략 개요 -->
+<!-- ========================================== -->
+<div class="tab-panel" :class="{ active: activeTab === 0 }">
+
+  <div class="card">
+    <h2>현재 시스템 진단 (v2.0)</h2>
+    <div class="metrics-grid">
+      <div class="metric-card"><span class="num">8</span><span class="label">운영 시리즈</span></div>
+      <div class="metric-card"><span class="num">6</span><span class="label">파이프라인 스텝</span></div>
+      <div class="metric-card"><span class="num">v4.0</span><span class="label">Remotion 버전</span></div>
+      <div class="metric-card"><span class="num">3</span><span class="label">배포 스크립트</span></div>
+    </div>
+    <h3>현재 시리즈 구성</h3>
+    <table>
+      <thead><tr><th>시리즈</th><th>유형</th><th>주기</th><th>상태</th></tr></thead>
+      <tbody>
+        <tr><td>daily-quote</td><td>명언 카드</td><td>일간</td><td><span class="tag">운영중</span></td></tr>
+        <tr><td>book-review</td><td>도서 리뷰</td><td>주간</td><td><span class="tag">운영중</span></td></tr>
+        <tr><td>reading-tip</td><td>독서 팁</td><td>주 2회</td><td><span class="tag">운영중</span></td></tr>
+        <tr><td>book-vs-book</td><td>도서 비교</td><td>주간</td><td><span class="tag">운영중</span></td></tr>
+        <tr><td>app-preview</td><td>앱 미리보기</td><td>격주</td><td><span class="tag">운영중</span></td></tr>
+        <tr><td>service-intro</td><td>서비스 소개</td><td>월간</td><td><span class="tag">운영중</span></td></tr>
+        <tr><td>service-showcase</td><td>기능 쇼케이스</td><td>격주</td><td><span class="tag">운영중</span></td></tr>
+        <tr><td>feature-demo</td><td>기능 데모</td><td>수시</td><td><span class="tag">운영중</span></td></tr>
+      </tbody>
+    </table>
+    <h3>파이프라인 아키텍처 (6단계)</h3>
+    <p>현재 파이프라인은 <code>fetch-data</code> &rarr; <code>generate-script</code> &rarr; <code>generate-tts</code> &rarr; <code>render-video</code> &rarr; <code>post-process</code> &rarr; <code>upload</code>의 6단계로 구성되어 있으며, OpenAI 기반 스크립트 생성과 Edge TTS를 활용합니다.</p>
+    <h3>진단 결과</h3>
+    <ul>
+      <li><strong>강점</strong>: 자동화 파이프라인 완성, 일관된 브랜드 비주얼, Supabase 연동 데이터 기반 콘텐츠</li>
+      <li><strong>약점</strong>: 단일 플랫폼(YouTube) 배포, 페르소나별 톤 미분화, A/B 테스트 부재, 자막 시스템 미흡</li>
+      <li><strong>기회</strong>: 멀티 플랫폼 확장, UGC 템플릿 제공, 커뮤니티 콘텐츠 활용, BookTok 트렌드 활용</li>
+      <li><strong>위협</strong>: 알고리즘 변화 속도, 숏폼 시장 경쟁 심화, AI 콘텐츠 포화</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2>고도화 목표 및 KPI</h2>
+    <div class="metrics-grid">
+      <div class="metric-card"><span class="num">14</span><span class="label">목표 시리즈 수</span></div>
+      <div class="metric-card"><span class="num">3</span><span class="label">배포 플랫폼</span></div>
+      <div class="metric-card"><span class="num">70%</span><span class="label">목표 완주율</span></div>
+      <div class="metric-card"><span class="num">2%</span><span class="label">목표 전환율</span></div>
+    </div>
+    <table>
+      <thead><tr><th>KPI</th><th>현재</th><th>목표 (6개월)</th><th>측정 방법</th></tr></thead>
+      <tbody>
+        <tr><td>월간 콘텐츠 발행량</td><td>20개</td><td>40개</td><td>자동 집계</td></tr>
+        <tr><td>평균 완주율</td><td>45%</td><td>70%</td><td>YouTube Analytics</td></tr>
+        <tr><td>앱 유입 전환율</td><td>0.5%</td><td>2%</td><td>UTM 트래킹</td></tr>
+        <tr><td>배포 플랫폼</td><td>1 (YouTube)</td><td>3 (YT + TT + IG)</td><td>배포 로그</td></tr>
+        <tr><td>UGC 생성량</td><td>0</td><td>월 10건</td><td>공유 카드 트래킹</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>타임라인 로드맵</h2>
+    <div class="timeline">
+      <div class="timeline-item">
+        <div class="phase">Phase 1 — 2026 Q1</div>
+        <div class="title">기반 고도화 & 신규 시리즈 론칭</div>
+        <div class="desc">자막 시스템 구축, user-story/pain-point 시리즈 추가, A/B 테스트 파이프라인 설계, 페르소나별 톤 분기 적용</div>
+      </div>
+      <div class="timeline-item">
+        <div class="phase">Phase 2 — 2026 Q2</div>
+        <div class="title">멀티 플랫폼 & 커뮤니티</div>
+        <div class="desc">TikTok/Reels 동시 배포 파이프라인, booktok-style/community-highlight 시리즈 추가, UGC 템플릿 시스템, 분석 대시보드 MVP</div>
+      </div>
+      <div class="timeline-item future">
+        <div class="phase">Phase 3 — 2026 Q3</div>
+        <div class="title">크리에이터 생태계 & 최적화</div>
+        <div class="desc">reading-challenge/creator-collab 시리즈 추가, 트렌딩 사운드 연동, 루프형 편집 자동화, 성과 기반 자동 최적화</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>핵심 변화 요약</h2>
+    <div class="grid-2">
+      <div>
+        <h3>Before (v2.0)</h3>
+        <ul>
+          <li>8개 시리즈, 단일 톤</li>
+          <li>YouTube만 배포</li>
+          <li>수동 자막 (없음)</li>
+          <li>일률적 스크립트</li>
+          <li>성과 측정 미흡</li>
+        </ul>
+      </div>
+      <div>
+        <h3>After (v3.0)</h3>
+        <ul>
+          <li>14개 시리즈, 페르소나별 톤 분기</li>
+          <li>YouTube + TikTok + Reels 동시 배포</li>
+          <li>자동 워드별 하이라이트 자막</li>
+          <li>AI 감정 곡선 적용 스크립트</li>
+          <li>A/B 테스트 + 분석 대시보드</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========================================== -->
+<!-- TAB 2: 트렌드 분석 -->
+<!-- ========================================== -->
+<div class="tab-panel" :class="{ active: activeTab === 1 }">
+
+  <div class="card">
+    <h2>2025-2026 유튜브 쇼츠 알고리즘 변화</h2>
+    <h3>핵심 변화 사항</h3>
+    <table>
+      <thead><tr><th>변화</th><th>시기</th><th>영향</th></tr></thead>
+      <tbody>
+        <tr><td>Shorts 추천 엔진 롱폼과 완전 분리</td><td>2025 후반</td><td>독립적 최적화 가능</td></tr>
+        <tr><td>만족도 기반 추천(satisfaction-weighted) 전환</td><td>2025~2026</td><td>완주율/반복 재생이 핵심</td></tr>
+        <tr><td>조회수 카운트 방식 변경 (재생 즉시 집계)</td><td>2025.03.31</td><td>TikTok/Reels와 동일 방식</td></tr>
+        <tr><td>Shorts 최대 길이 3분 확장</td><td>2024 후반</td><td>스토리텔링 콘텐츠 확대</td></tr>
+        <tr><td>검색 내 Shorts 전용 필터 추가</td><td>2026.01</td><td>검색 기반 발견 가능성 증가</td></tr>
+        <tr><td>일일 평균 2,000억 조회 도달</td><td>2025</td><td>수익 파리티(일부 지역)</td></tr>
+      </tbody>
+    </table>
+
+    <h3>핵심 랭킹 팩터 (우선순위순)</h3>
+    <ol>
+      <li><strong>시청 유지율(Retention)</strong> — 30초 Shorts 85% 유지 &gt; 60초 50% 유지</li>
+      <li><strong>스와이프 행동(Swipe-through Rate)</strong> — 첫 3초 내 이탈 여부가 결정적</li>
+      <li><strong>루프율(Loop Rate)</strong> — 반복 재생은 가장 강력한 양성 신호</li>
+      <li><strong>공유(Shares)</strong> — 평균 이상 공유 수 &rarr; 기하급수적 도달 확장</li>
+      <li><strong>댓글/좋아요/구독</strong> — 상호작용 참여도</li>
+    </ol>
+    <p><strong>참고:</strong> 업로드 시간은 직접적인 랭킹 팩터가 아님. 시청자 반응이 결정적.</p>
+  </div>
+
+  <div class="card">
+    <h2>숏폼 콘텐츠 포맷 트렌드</h2>
+    <h3>2025-2026 핵심 트렌드</h3>
+    <div class="grid-2">
+      <div>
+        <h4>콘텐츠 구조</h4>
+        <ul>
+          <li><strong>3초 후킹 법칙</strong> — 첫 3초가 시청/이탈을 결정</li>
+          <li><strong>루프형 편집</strong> — 끝과 시작이 자연스럽게 연결</li>
+          <li><strong>미드폼화</strong> — 60초 &rarr; 3분까지 확장 추세</li>
+          <li><strong>자막 필수</strong> — 85%가 무음 시청, 워드별 하이라이트</li>
+          <li><strong>세로 9:16 고수</strong> — 가로는 참여율 급감</li>
+        </ul>
+      </div>
+      <div>
+        <h4>편집 스타일</h4>
+        <ul>
+          <li><strong>빠른 컷 전환</strong> — 2-3초 단위 씬 전환</li>
+          <li><strong>텍스트 오버레이</strong> — 핵심 메시지 화면 내 표시</li>
+          <li><strong>트렌딩 사운드</strong> — 인기 BGM 활용으로 노출 증가</li>
+          <li><strong>POV/나레이션</strong> — 1인칭 시점 스토리텔링</li>
+          <li><strong>Before/After</strong> — 변화 시각화 포맷 인기</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>독서/교육 콘텐츠 (BookTok/북튜브) 트렌드</h2>
+    <h3>BookTok 현황</h3>
+    <p>BookTok은 TikTok에서 시작된 독서 커뮤니티로, 2024년 기준 #BookTok 해시태그 조회수 2,300억 이상을 기록했습니다. 2025~2026년에는 YouTube Shorts와 Instagram Reels로도 확산되어 '북튜브 숏폼'이 하나의 장르로 자리잡았습니다.</p>
+    <h3>인기 콘텐츠 유형</h3>
+    <ul>
+      <li><strong>감정 리뷰</strong> — 책을 읽고 운 장면, 감동받은 순간을 담은 리액션형 콘텐츠</li>
+      <li><strong>서재 공개(Shelfie)</strong> — 나만의 책장을 보여주는 ASMR/미학적 콘텐츠</li>
+      <li><strong>독서 브이로그</strong> — "오늘 하루 독서 루틴" 형식의 일상 콘텐츠</li>
+      <li><strong>추천 리스트</strong> — "이 주제라면 이 5권" 큐레이션형</li>
+      <li><strong>독서 챌린지</strong> — 월간/연간 독서 목표 달성 과정 공유</li>
+    </ul>
+    <h3>Habitree 적용 포인트</h3>
+    <ul>
+      <li>앱 내 독서 기록 데이터를 활용한 자동 콘텐츠 생성</li>
+      <li>사용자 서재(가상 책장) 시각화 쇼츠</li>
+      <li>독서모임 활동 하이라이트 자동 편집</li>
+      <li>월간 독서 통계 인포그래픽 쇼츠</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2>경쟁사 벤치마크</h2>
+    <table>
+      <thead><tr><th>서비스</th><th>숏폼 전략</th><th>강점</th><th>약점</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>밀리의 서재</strong></td>
+          <td>독서 추천, 오디오북 홍보, 셀럽 콜라보</td>
+          <td>대규모 마케팅 예산, 유명인 활용</td>
+          <td>커뮤니티 기능 약함</td>
+        </tr>
+        <tr>
+          <td><strong>리디</strong></td>
+          <td>장르별 추천, 웹소설/웹툰 연계</td>
+          <td>IP 다양성, 크로스 프로모션</td>
+          <td>독서 기록/커뮤니티 부재</td>
+        </tr>
+        <tr>
+          <td><strong>Goodreads</strong></td>
+          <td>리뷰 하이라이트, 독서 챌린지 공유</td>
+          <td>글로벌 사용자 기반, 데이터 풍부</td>
+          <td>숏폼 자체 제작 없음</td>
+        </tr>
+        <tr>
+          <td><strong>Fable</strong></td>
+          <td>독서모임 중심, 소셜 리딩</td>
+          <td>모임 기능 특화</td>
+          <td>마케팅 규모 소형</td>
+        </tr>
+      </tbody>
+    </table>
+    <p><strong>Habitree 차별점:</strong> 자동화된 AI 파이프라인으로 데이터 기반 콘텐츠를 대량 생산할 수 있는 유일한 독서 앱. 독서 기록 + 커뮤니티 + 콘텐츠 생산의 삼위일체.</p>
+  </div>
+
+  <div class="card">
+    <h2>플랫폼별 전략</h2>
+    <table>
+      <thead><tr><th>항목</th><th>YouTube Shorts</th><th>TikTok</th><th>Instagram Reels</th></tr></thead>
+      <tbody>
+        <tr><td><strong>MAU</strong></td><td>20억</td><td>15.9억</td><td>Meta 생태계 통합</td></tr>
+        <tr><td><strong>최적 길이</strong></td><td>30~60초</td><td>15~60초</td><td>60~90초</td></tr>
+        <tr><td><strong>최대 길이</strong></td><td>3분</td><td>10분</td><td>3분</td></tr>
+        <tr><td><strong>평균 참여율</strong></td><td>0.30%</td><td>2.80%</td><td>0.65%</td></tr>
+        <tr><td><strong>알고리즘 특성</strong></td><td>완주율 + 검색 연동</td><td>FYP 바이럴 중심</td><td>기존 팔로워 기반</td></tr>
+        <tr><td><strong>강점</strong></td><td>롱폼 연결, SEO 발견</td><td>신규 도달, 바이럴</td><td>팬 유지, 쇼핑 연동</td></tr>
+        <tr><td><strong>연속 시청</strong></td><td>~11개</td><td>~15.4개</td><td>~11개</td></tr>
+        <tr><td><strong>Habitree 역할</strong></td><td>메인 채널, 전환 중심</td><td>신규 유저 획득</td><td>커뮤니티 유지</td></tr>
+      </tbody>
+    </table>
+    <p><strong>크로스 포스팅 원칙:</strong> 워터마크 없는 원본 저장 &rarr; 플랫폼별 최적 길이 편집 &rarr; 플랫폼별 해시태그/캡션 최적화. TikTok-first 테스트 &rarr; 성과 좋은 콘텐츠를 타 플랫폼에 재배포.</p>
+  </div>
+</div>
+
+<!-- ========================================== -->
+<!-- TAB 3: 심리학 & 마케팅 전략 -->
+<!-- ========================================== -->
+<div class="tab-panel" :class="{ active: activeTab === 2 }">
+
+  <div class="card">
+    <h2>도파민 루프와 숏폼 시청 심리</h2>
+    <p>숏폼 콘텐츠는 뇌의 <strong>도파민 보상 회로</strong>를 자극합니다. 짧은 영상을 시청하면 소량의 도파민이 분비되고, 다음 영상에 대한 기대감(불확실성의 보상)이 스와이프 행동을 유발합니다.</p>
+    <h3>도파민 루프 구조</h3>
+    <div style="display:flex;flex-direction:column;gap:8px;margin:16px 0;">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div style="width:40px;height:40px;border-radius:50%;background:var(--forest-500);color:white;display:flex;align-items:center;justify-content:center;font-weight:800;flex-shrink:0;">1</div>
+        <div><strong>기대(Anticipation)</strong> — 새 영상에 대한 기대감이 도파민 분비를 시작</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div style="width:40px;height:40px;border-radius:50%;background:var(--forest-500);color:white;display:flex;align-items:center;justify-content:center;font-weight:800;flex-shrink:0;">2</div>
+        <div><strong>시청(Consumption)</strong> — 짧은 콘텐츠로 즉각적 만족감 제공</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div style="width:40px;height:40px;border-radius:50%;background:var(--forest-500);color:white;display:flex;align-items:center;justify-content:center;font-weight:800;flex-shrink:0;">3</div>
+        <div><strong>변동 보상(Variable Reward)</strong> — 다음 콘텐츠의 불확실성이 중독성 유발</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div style="width:40px;height:40px;border-radius:50%;background:var(--forest-400);color:white;display:flex;align-items:center;justify-content:center;font-weight:800;flex-shrink:0;">4</div>
+        <div><strong>스와이프(Action)</strong> — 다음 영상으로의 자동적 행동</div>
+      </div>
+    </div>
+    <p><strong>Habitree 적용:</strong> 각 쇼츠 끝에 "다음 편에서..." 식의 호기심 유발 요소를 배치하여 시리즈 연속 시청을 유도. 변동 보상 원리를 활용해 매번 다른 포맷/정보를 제공.</p>
+  </div>
+
+  <div class="card">
+    <h2>행동 경제학 전략</h2>
+    <div class="grid-2">
+      <div>
+        <h3>넛지(Nudge) 전략</h3>
+        <ul>
+          <li><strong>디폴트 효과</strong> — CTA를 "앱 다운로드"가 아닌 "무료로 기록 시작하기"로 프레이밍</li>
+          <li><strong>앵커링</strong> — "하루 5분이면 충분합니다" 같은 낮은 진입 장벽 제시</li>
+          <li><strong>프레이밍</strong> — "200권 읽은 사람들의 비밀" (손실 회피 자극)</li>
+        </ul>
+      </div>
+      <div>
+        <h3>사회적 증거(Social Proof)</h3>
+        <ul>
+          <li><strong>숫자 활용</strong> — "3만 명이 사용하는 독서 앱"</li>
+          <li><strong>사용자 후기</strong> — 실제 사용자의 Before/After 스토리</li>
+          <li><strong>커뮤니티 활동</strong> — "이번 달 1,200개 독서모임 진행"</li>
+        </ul>
+      </div>
+    </div>
+    <h3>FOMO(Fear Of Missing Out) 전략</h3>
+    <ul>
+      <li><strong>독서 챌린지</strong> — "3월 독서 챌린지에 2,000명이 참여 중!" &rarr; 참여 유도</li>
+      <li><strong>독서모임</strong> — "이번 주 인기 독서모임 TOP 5" &rarr; 제한된 참여감</li>
+      <li><strong>통계 공유</strong> — "이번 달 한국인 평균 독서량을 넘은 사람은 23%뿐" &rarr; 도전 의식</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2>스토리텔링 심리학</h2>
+    <h3>내러티브 전이(Narrative Transportation)</h3>
+    <p>시청자가 스토리에 몰입하면 비판적 사고가 감소하고 메시지 수용도가 높아집니다. 숏폼에서는 <strong>45초 이내에 완결된 스토리 아크</strong>를 만들어야 합니다.</p>
+    <h3>감정 곡선 (Emotional Arc) — 숏폼 최적화</h3>
+    <div style="background:var(--forest-50);border-radius:var(--radius);padding:20px;margin:12px 0;">
+      <div style="display:flex;align-items:end;gap:4px;height:120px;margin-bottom:12px;">
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;">
+          <div style="font-size:0.65rem;color:var(--charcoal-600);">Hook</div>
+          <div style="width:100%;background:var(--forest-500);border-radius:4px 4px 0 0;height:70px;"></div>
+          <div style="font-size:0.65rem;font-weight:600;">0-3초</div>
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;">
+          <div style="font-size:0.65rem;color:var(--charcoal-600);">Setup</div>
+          <div style="width:100%;background:var(--forest-400);border-radius:4px 4px 0 0;height:50px;"></div>
+          <div style="font-size:0.65rem;font-weight:600;">3-8초</div>
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;">
+          <div style="font-size:0.65rem;color:var(--charcoal-600);">Tension</div>
+          <div style="width:100%;background:var(--forest-300);border-radius:4px 4px 0 0;height:40px;"></div>
+          <div style="font-size:0.65rem;font-weight:600;">8-15초</div>
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;">
+          <div style="font-size:0.65rem;color:var(--charcoal-600);">Climax</div>
+          <div style="width:100%;background:var(--forest-600);border-radius:4px 4px 0 0;height:100px;"></div>
+          <div style="font-size:0.65rem;font-weight:600;">15-25초</div>
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;">
+          <div style="font-size:0.65rem;color:var(--charcoal-600);">Payoff</div>
+          <div style="width:100%;background:var(--forest-500);border-radius:4px 4px 0 0;height:85px;"></div>
+          <div style="font-size:0.65rem;font-weight:600;">25-35초</div>
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;">
+          <div style="font-size:0.65rem;color:var(--charcoal-600);">CTA</div>
+          <div style="width:100%;background:var(--paper-500);border-radius:4px 4px 0 0;height:60px;"></div>
+          <div style="font-size:0.65rem;font-weight:600;">35-45초</div>
+        </div>
+      </div>
+      <p style="font-size:0.82rem;color:var(--charcoal-600);text-align:center;margin:0;">높이 = 감정 강도 | Hook에서 주의를 잡고, Climax에서 정점, CTA로 마무리</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Hook Model 적용</h2>
+    <p>Nir Eyal의 Hook Model을 숏폼 콘텐츠에 적용하여 습관적 시청 &rarr; 앱 전환을 유도합니다.</p>
+    <table>
+      <thead><tr><th>단계</th><th>일반 설명</th><th>Habitree 쇼츠 적용</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>트리거(Trigger)</strong></td>
+          <td>외부/내부 자극으로 행동 시작</td>
+          <td>알고리즘 추천 노출 (외부) + "독서 기록 정리하고 싶다" (내부)</td>
+        </tr>
+        <tr>
+          <td><strong>행동(Action)</strong></td>
+          <td>보상을 기대하며 행동</td>
+          <td>쇼츠 시청 (최소한의 노력, 즉각적 콘텐츠 소비)</td>
+        </tr>
+        <tr>
+          <td><strong>변동 보상(Variable Reward)</strong></td>
+          <td>예측 불가한 보상 제공</td>
+          <td>매번 다른 책/팁/스토리 제공, "오늘은 무슨 콘텐츠일까?" 기대감</td>
+        </tr>
+        <tr>
+          <td><strong>투자(Investment)</strong></td>
+          <td>미래 보상을 위한 투자</td>
+          <td>앱 다운로드, 독서 기록 시작, 독서모임 참여 (CTA)</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>색상 심리학과 브랜드 컬러 활용</h2>
+    <div class="grid-3">
+      <div style="text-align:center;padding:16px;">
+        <div style="width:64px;height:64px;border-radius:16px;background:#36a678;margin:0 auto 8px;"></div>
+        <div style="font-weight:700;margin-bottom:4px;">Forest #36a678</div>
+        <div style="font-size:0.82rem;color:var(--charcoal-600);">성장, 자연, 신뢰, 치유<br>주요 CTA, 긍정적 메시지에 사용</div>
+      </div>
+      <div style="text-align:center;padding:16px;">
+        <div style="width:64px;height:64px;border-radius:16px;background:#BFA586;margin:0 auto 8px;"></div>
+        <div style="font-weight:700;margin-bottom:4px;">Paper #BFA586</div>
+        <div style="font-size:0.82rem;color:var(--charcoal-600);">따뜻함, 지혜, 클래식<br>배경, 부드러운 전환에 사용</div>
+      </div>
+      <div style="text-align:center;padding:16px;">
+        <div style="width:64px;height:64px;border-radius:16px;background:#1F2933;margin:0 auto 8px;"></div>
+        <div style="font-weight:700;margin-bottom:4px;">Charcoal #1F2933</div>
+        <div style="font-size:0.82rem;color:var(--charcoal-600);">전문성, 깊이, 집중<br>텍스트, 강조 배경에 사용</div>
+      </div>
+    </div>
+    <h3>시리즈별 컬러 전략</h3>
+    <ul>
+      <li><strong>정보형 (tip, feature-demo)</strong> — Forest 중심, 밝고 신뢰감 있는 톤</li>
+      <li><strong>감정형 (booktok-style, user-story)</strong> — Paper 중심, 따뜻하고 감성적 톤</li>
+      <li><strong>긴장형 (pain-point, book-vs-book)</strong> — Charcoal 중심 &rarr; Forest 전환 (문제 &rarr; 해결)</li>
+      <li><strong>커뮤니티형 (community-highlight, creator-collab)</strong> — Forest + Paper 믹스, 소속감 표현</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2>콘텐츠 마케팅 퍼널</h2>
+    <div class="funnel">
+      <div class="funnel-stage" style="background:var(--forest-300);">
+        <span>TOFU (Top of Funnel) — 인지</span>
+        <span class="detail">daily-quote, pain-point, booktok-style</span>
+      </div>
+      <div class="funnel-stage" style="background:var(--forest-500);margin:0 24px;">
+        <span>MOFU (Middle of Funnel) — 고려</span>
+        <span class="detail">book-review, reading-tip, community-highlight</span>
+      </div>
+      <div class="funnel-stage" style="background:var(--forest-700);margin:0 48px;">
+        <span>BOFU (Bottom of Funnel) — 전환</span>
+        <span class="detail">app-preview, feature-demo, user-story</span>
+      </div>
+      <div class="funnel-stage" style="background:var(--charcoal-900);margin:0 72px;">
+        <span>Retention — 유지</span>
+        <span class="detail">reading-challenge, creator-collab, service-showcase</span>
+      </div>
+    </div>
+    <p style="margin-top:12px;"><strong>퍼널 전략:</strong> TOFU 콘텐츠로 대중 노출 극대화 &rarr; MOFU에서 가치 증명 &rarr; BOFU에서 구체적 기능/후기로 전환 유도 &rarr; Retention으로 이탈 방지. 전체 콘텐츠 비율은 TOFU 40%, MOFU 30%, BOFU 20%, Retention 10%.</p>
+  </div>
+</div>
+
+<!-- ========================================== -->
+<!-- TAB 4: 페르소나별 콘텐츠 전략 -->
+<!-- ========================================== -->
+<div class="tab-panel" :class="{ active: activeTab === 3 }">
+
+  <div class="grid-3" style="margin-bottom:24px;">
+    <div class="persona-card">
+      <div class="persona-header" style="background:linear-gradient(135deg,var(--forest-50),white);">
+        <div class="persona-avatar" style="background:var(--forest-100);">&#128105;&#8205;&#128188;</div>
+        <div class="persona-info">
+          <h3>김서연 (33세)</h3>
+          <p class="role">IT 기업 마케터 | 기록 정리 니즈</p>
+        </div>
+      </div>
+      <div class="persona-body">
+        <h4>페인 포인트</h4>
+        <ul>
+          <li>읽은 책 기록이 여기저기 흩어져 있음</li>
+          <li>독서 습관을 만들고 싶지만 지속이 어려움</li>
+          <li>읽은 내용을 체계적으로 정리하고 싶음</li>
+        </ul>
+        <h4>타겟 콘텐츠</h4>
+        <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;">
+          <span class="tag">user-story</span>
+          <span class="tag">app-preview</span>
+          <span class="tag">reading-challenge</span>
+          <span class="tag gold">Before/After 서재</span>
+          <span class="tag gold">월간 통계</span>
+        </div>
+        <h4>메시지 톤</h4>
+        <p>"깔끔한 기록, 성장하는 나" — 효율성과 자기계발 강조</p>
+      </div>
+    </div>
+
+    <div class="persona-card">
+      <div class="persona-header" style="background:linear-gradient(135deg,var(--paper-100),white);">
+        <div class="persona-avatar" style="background:var(--paper-200);">&#128104;&#8205;&#128187;</div>
+        <div class="persona-info">
+          <h3>이준호 (36세)</h3>
+          <p class="role">스타트업 PM | 독서모임 운영자</p>
+        </div>
+      </div>
+      <div class="persona-body">
+        <h4>페인 포인트</h4>
+        <ul>
+          <li>독서모임 운영 도구가 분산되어 있음</li>
+          <li>멤버 참여도 관리가 어려움</li>
+          <li>모임 콘텐츠를 아카이빙하고 싶음</li>
+        </ul>
+        <h4>타겟 콘텐츠</h4>
+        <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;">
+          <span class="tag">community-highlight</span>
+          <span class="tag">feature-demo</span>
+          <span class="tag">pain-point</span>
+          <span class="tag gold">모임 운영 브이로그</span>
+          <span class="tag gold">기능 데모</span>
+        </div>
+        <h4>메시지 톤</h4>
+        <p>"함께 읽으면 더 깊어지는 독서" — 커뮤니티와 리더십 강조</p>
+      </div>
+    </div>
+
+    <div class="persona-card">
+      <div class="persona-header" style="background:linear-gradient(135deg,#fef3c7,white);">
+        <div class="persona-avatar" style="background:#fef9c3;">&#128105;&#8205;&#127912;</div>
+        <div class="persona-info">
+          <h3>박민지 (30세)</h3>
+          <p class="role">콘텐츠 크리에이터 | BookTok 운영</p>
+        </div>
+      </div>
+      <div class="persona-body">
+        <h4>페인 포인트</h4>
+        <ul>
+          <li>독서 콘텐츠 소재 아이디어 고갈</li>
+          <li>팬들과 독서 활동을 함께하고 싶음</li>
+          <li>자신만의 브랜딩된 독서 콘텐츠 필요</li>
+        </ul>
+        <h4>타겟 콘텐츠</h4>
+        <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;">
+          <span class="tag">creator-collab</span>
+          <span class="tag">booktok-style</span>
+          <span class="tag">book-review</span>
+          <span class="tag gold">서재 공개</span>
+          <span class="tag gold">팬 독서모임</span>
+        </div>
+        <h4>메시지 톤</h4>
+        <p>"나만의 독서 브랜드를 만들어보세요" — 창작과 커뮤니티 빌딩 강조</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>퍼널별 콘텐츠 매핑</h2>
+    <table>
+      <thead><tr><th>퍼널</th><th>김서연 (기록형)</th><th>이준호 (커뮤니티형)</th><th>박민지 (크리에이터형)</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>TOFU</strong><br><span style="font-size:0.75rem;color:var(--charcoal-400);">인지</span></td>
+          <td>"독서 기록, 아직도 메모장에?" (pain-point)</td>
+          <td>"독서모임 운영, 이렇게 쉬워요?" (pain-point)</td>
+          <td>BookTok 감성 리뷰 (booktok-style)</td>
+        </tr>
+        <tr>
+          <td><strong>MOFU</strong><br><span style="font-size:0.75rem;color:var(--charcoal-400);">고려</span></td>
+          <td>월간 독서 통계 시각화 (reading-tip)</td>
+          <td>독서모임 하이라이트 (community-highlight)</td>
+          <td>서재 공개 + 추천 (book-review)</td>
+        </tr>
+        <tr>
+          <td><strong>BOFU</strong><br><span style="font-size:0.75rem;color:var(--charcoal-400);">전환</span></td>
+          <td>Before/After 서재 변화 (user-story)</td>
+          <td>모임 생성 3단계 데모 (feature-demo)</td>
+          <td>크리에이터 콜라보 (creator-collab)</td>
+        </tr>
+        <tr>
+          <td><strong>Retention</strong><br><span style="font-size:0.75rem;color:var(--charcoal-400);">유지</span></td>
+          <td>독서 챌린지 참여 (reading-challenge)</td>
+          <td>모임 성과 리포트 (service-showcase)</td>
+          <td>팬 독서모임 운영 (community-highlight)</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>페르소나별 톤 & 보이스 가이드</h2>
+    <table>
+      <thead><tr><th>요소</th><th>김서연 (기록형)</th><th>이준호 (커뮤니티형)</th><th>박민지 (크리에이터형)</th></tr></thead>
+      <tbody>
+        <tr><td><strong>어조</strong></td><td>친근하지만 전문적</td><td>따뜻하고 리더십 있는</td><td>트렌디하고 감성적</td></tr>
+        <tr><td><strong>핵심 키워드</strong></td><td>정리, 성장, 루틴, 효율</td><td>함께, 나눔, 깊이, 연결</td><td>감성, 큐레이션, 브랜딩</td></tr>
+        <tr><td><strong>CTA 스타일</strong></td><td>"지금 바로 기록 시작하기"</td><td>"독서모임 만들어보기"</td><td>"나만의 서재 꾸미기"</td></tr>
+        <tr><td><strong>비주얼 톤</strong></td><td>깔끔한 UI 중심</td><td>그룹 활동 장면</td><td>미학적 북스타그램풍</td></tr>
+        <tr><td><strong>BGM</strong></td><td>Lo-fi, 집중 음악</td><td>밝고 활기찬 어쿠스틱</td><td>감성 피아노, 인디</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ========================================== -->
+<!-- TAB 5: 신규 시리즈 & 컴포지션 설계 -->
+<!-- ========================================== -->
+<div class="tab-panel" :class="{ active: activeTab === 4 }">
+
+  <div class="series-card">
+    <div class="series-header">
+      <div class="series-icon" style="background:linear-gradient(135deg,var(--forest-100),var(--forest-200));">&#128100;</div>
+      <div class="series-meta">
+        <h3>1. user-story (사용자 변화 스토리)</h3>
+        <span class="duration">45초 | Before/After 포맷</span>
+      </div>
+      <span class="tag blue">BOFU</span>
+    </div>
+    <h4>타임라인 구성</h4>
+    <table>
+      <thead><tr><th>구간</th><th>시간</th><th>내용</th><th>비주얼</th></tr></thead>
+      <tbody>
+        <tr><td>Hook</td><td>0-3초</td><td>"3개월 전의 저는..." (충격적 Before)</td><td>어둡고 복잡한 화면</td></tr>
+        <tr><td>Before</td><td>3-12초</td><td>흩어진 메모, 정리 안 된 독서 기록</td><td>흐릿한 스크린샷, 어두운 톤</td></tr>
+        <tr><td>전환점</td><td>12-18초</td><td>"그런데 Habitree를 만나고..." (트랜지션)</td><td>밝아지는 화면 전환</td></tr>
+        <tr><td>After</td><td>18-35초</td><td>깔끔한 서재, 통계, 독서모임 활동</td><td>밝은 Forest 톤, UI 스크린샷</td></tr>
+        <tr><td>CTA</td><td>35-45초</td><td>"당신의 독서도 변할 수 있어요" + 앱 링크</td><td>로고 + QR 코드</td></tr>
+      </tbody>
+    </table>
+    <h4>후킹 전략 (첫 3초)</h4>
+    <p><strong>패턴 인터럽트</strong> — 예상과 다른 부정적 이미지로 시작하여 호기심 유발. "저 3개월 동안 책 0권 읽었어요" 같은 자기 고백형.</p>
+    <h4>비주얼/오디오</h4>
+    <p><strong>비주얼:</strong> 스플릿 스크린 Before/After, 어두운 Charcoal &rarr; 밝은 Forest로 전환. <strong>오디오:</strong> 나레이션 + 감성 피아노 BGM, After 구간에서 밝은 음악으로 전환.</p>
+    <h4>CTA 구조</h4>
+    <p>소프트 CTA — "프로필 링크에서 무료로 시작해보세요" (강제 느낌 최소화)</p>
+  </div>
+
+  <div class="series-card">
+    <div class="series-header">
+      <div class="series-icon" style="background:linear-gradient(135deg,#fef3c7,#fde68a);">&#128150;</div>
+      <div class="series-meta">
+        <h3>2. booktok-style (BookTok 감성 리뷰)</h3>
+        <span class="duration">30초 | 감정 리액션 포맷</span>
+      </div>
+      <span class="tag">TOFU</span>
+    </div>
+    <h4>타임라인 구성</h4>
+    <table>
+      <thead><tr><th>구간</th><th>시간</th><th>내용</th><th>비주얼</th></tr></thead>
+      <tbody>
+        <tr><td>Hook</td><td>0-3초</td><td>"이 책 읽고 울었습니다" / "마지막 페이지에서 멈췄어요"</td><td>책 클로즈업 + 감정 텍스트</td></tr>
+        <tr><td>감정 피크</td><td>3-12초</td><td>책의 핵심 장면/인용구 소개</td><td>타이포그래피 애니메이션</td></tr>
+        <tr><td>리뷰</td><td>12-22초</td><td>짧고 임팩트 있는 한 줄 리뷰</td><td>별점 + 감정 태그</td></tr>
+        <tr><td>CTA</td><td>22-30초</td><td>"이 책 기록하고 있나요?" + 앱 소개</td><td>앱 UI 스냅샷</td></tr>
+      </tbody>
+    </table>
+    <h4>후킹 전략 (첫 3초)</h4>
+    <p><strong>감정 충격</strong> — 강한 감정 표현으로 시작. BookTok 특유의 "이 책 때문에..." 패턴 활용.</p>
+    <h4>비주얼/오디오</h4>
+    <p><strong>비주얼:</strong> 따뜻한 Paper 톤, 책 커버 미학적 배치, 감정에 따른 컬러 그라데이션. <strong>오디오:</strong> 트렌딩 감성 사운드, 고요한 ASMR 페이지 넘기는 소리.</p>
+  </div>
+
+  <div class="series-card">
+    <div class="series-header">
+      <div class="series-icon" style="background:linear-gradient(135deg,var(--forest-200),var(--forest-300));">&#128202;</div>
+      <div class="series-meta">
+        <h3>3. reading-challenge (독서 챌린지)</h3>
+        <span class="duration">25초 | 데이터 시각화 포맷</span>
+      </div>
+      <span class="tag red">Retention</span>
+    </div>
+    <h4>타임라인 구성</h4>
+    <table>
+      <thead><tr><th>구간</th><th>시간</th><th>내용</th><th>비주얼</th></tr></thead>
+      <tbody>
+        <tr><td>Hook</td><td>0-3초</td><td>"이번 달 당신의 독서량은?" (질문형)</td><td>카운트다운 애니메이션</td></tr>
+        <tr><td>데이터</td><td>3-15초</td><td>독서 통계 인포그래픽 (권수, 페이지, 장르)</td><td>차트 애니메이션, 숫자 카운터</td></tr>
+        <tr><td>비교</td><td>15-20초</td><td>"한국인 평균 대비 당신은..." (사회적 비교)</td><td>프로그레스 바 비교</td></tr>
+        <tr><td>CTA</td><td>20-25초</td><td>"챌린지 참여하고 나무 키우기" + 앱 링크</td><td>나무 성장 애니메이션</td></tr>
+      </tbody>
+    </table>
+    <h4>후킹 전략 (첫 3초)</h4>
+    <p><strong>질문 후킹</strong> — 개인화된 질문으로 시작하여 자기 참조 효과(self-reference effect) 활용. "당신은?" 패턴.</p>
+  </div>
+
+  <div class="series-card">
+    <div class="series-header">
+      <div class="series-icon" style="background:linear-gradient(135deg,#fecaca,#fca5a5);">&#128557;</div>
+      <div class="series-meta">
+        <h3>4. pain-point (공감형 콘텐츠)</h3>
+        <span class="duration">20초 | 문제-해결 포맷</span>
+      </div>
+      <span class="tag">TOFU</span>
+    </div>
+    <h4>타임라인 구성</h4>
+    <table>
+      <thead><tr><th>구간</th><th>시간</th><th>내용</th><th>비주얼</th></tr></thead>
+      <tbody>
+        <tr><td>Hook</td><td>0-3초</td><td>"독서 기록 메모장에 하는 사람?" (공감 질문)</td><td>밈/리액션 스타일</td></tr>
+        <tr><td>공감</td><td>3-10초</td><td>흔한 문제 상황 나열 (공감 유도)</td><td>텍스트 오버레이 + 이모지</td></tr>
+        <tr><td>해결</td><td>10-17초</td><td>"이 앱 하나면..." 해결책 제시</td><td>앱 화면 전환</td></tr>
+        <tr><td>CTA</td><td>17-20초</td><td>간단한 앱 링크</td><td>로고 + 한 줄 카피</td></tr>
+      </tbody>
+    </table>
+    <h4>후킹 전략 (첫 3초)</h4>
+    <p><strong>공감 트리거</strong> — "~하는 사람?" 패턴으로 즉각적 공감 유도. 밈 문화 활용으로 친근감.</p>
+  </div>
+
+  <div class="series-card">
+    <div class="series-header">
+      <div class="series-icon" style="background:linear-gradient(135deg,var(--forest-100),var(--paper-200));">&#128101;</div>
+      <div class="series-meta">
+        <h3>5. community-highlight (독서모임 하이라이트)</h3>
+        <span class="duration">35초 | 커뮤니티 소개 포맷</span>
+      </div>
+      <span class="tag gold">MOFU</span>
+    </div>
+    <h4>타임라인 구성</h4>
+    <table>
+      <thead><tr><th>구간</th><th>시간</th><th>내용</th><th>비주얼</th></tr></thead>
+      <tbody>
+        <tr><td>Hook</td><td>0-3초</td><td>"이번 주 가장 활발한 독서모임은?" (호기심)</td><td>모임 프로필 카드</td></tr>
+        <tr><td>소개</td><td>3-12초</td><td>모임 정보 (주제, 멤버 수, 읽는 책)</td><td>모임 카드 UI, 멤버 아바타</td></tr>
+        <tr><td>활동</td><td>12-25초</td><td>토론 내용 하이라이트, 인기 메모 공유</td><td>채팅/노트 UI 스크린샷</td></tr>
+        <tr><td>CTA</td><td>25-35초</td><td>"이 모임에 참여하거나 나만의 모임 만들기"</td><td>참여 버튼 UI</td></tr>
+      </tbody>
+    </table>
+    <h4>후킹 전략 (첫 3초)</h4>
+    <p><strong>랭킹/순위</strong> — "가장 ~한 모임"으로 호기심 유발. 숫자와 순위는 자연스러운 클릭 트리거.</p>
+  </div>
+
+  <div class="series-card">
+    <div class="series-header">
+      <div class="series-icon" style="background:linear-gradient(135deg,#e0e7ff,#c7d2fe);">&#127908;</div>
+      <div class="series-meta">
+        <h3>6. creator-collab (크리에이터 콜라보)</h3>
+        <span class="duration">40초 | 인터뷰/콜라보 포맷</span>
+      </div>
+      <span class="tag red">Retention</span>
+    </div>
+    <h4>타임라인 구성</h4>
+    <table>
+      <thead><tr><th>구간</th><th>시간</th><th>내용</th><th>비주얼</th></tr></thead>
+      <tbody>
+        <tr><td>Hook</td><td>0-3초</td><td>"@크리에이터 님의 올해 최고의 책은?" (네임드 후킹)</td><td>크리에이터 프로필 + 책 커버</td></tr>
+        <tr><td>추천</td><td>3-15초</td><td>크리에이터의 책 추천 (인용)</td><td>책 커버 + 인용구 타이포</td></tr>
+        <tr><td>서재 공개</td><td>15-28초</td><td>크리에이터의 Habitree 서재 공개</td><td>앱 내 서재 UI 스크롤</td></tr>
+        <tr><td>참여 유도</td><td>28-35초</td><td>"@크리에이터 님과 함께 읽어보세요"</td><td>독서모임 참여 UI</td></tr>
+        <tr><td>CTA</td><td>35-40초</td><td>앱 링크 + 독서모임 링크</td><td>듀얼 CTA</td></tr>
+      </tbody>
+    </table>
+    <h4>후킹 전략 (첫 3초)</h4>
+    <p><strong>네임드 드롭</strong> — 유명 크리에이터 언급으로 팬 시청자 유입. 크리에이터의 영향력을 레버리지.</p>
+  </div>
+
+  <div class="card">
+    <h2>시리즈 전체 매핑</h2>
+    <table>
+      <thead><tr><th>시리즈</th><th>길이</th><th>퍼널</th><th>주기</th><th>플랫폼 우선순위</th></tr></thead>
+      <tbody>
+        <tr><td>user-story</td><td>45초</td><td>BOFU</td><td>주 1회</td><td>YouTube &gt; Reels</td></tr>
+        <tr><td>booktok-style</td><td>30초</td><td>TOFU</td><td>주 3회</td><td>TikTok &gt; YouTube</td></tr>
+        <tr><td>reading-challenge</td><td>25초</td><td>Retention</td><td>월 2회</td><td>YouTube &gt; TikTok</td></tr>
+        <tr><td>pain-point</td><td>20초</td><td>TOFU</td><td>주 2회</td><td>TikTok &gt; Reels</td></tr>
+        <tr><td>community-highlight</td><td>35초</td><td>MOFU</td><td>주 1회</td><td>YouTube &gt; Reels</td></tr>
+        <tr><td>creator-collab</td><td>40초</td><td>Retention</td><td>월 2회</td><td>YouTube &gt; TikTok &gt; Reels</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ========================================== -->
+<!-- TAB 6: 기술 고도화 방안 -->
+<!-- ========================================== -->
+<div class="tab-panel" :class="{ active: activeTab === 5 }">
+
+  <div class="card">
+    <h2>멀티 플랫폼 배포 시스템</h2>
+    <h3>아키텍처</h3>
+    <div style="background:var(--charcoal-900);border-radius:var(--radius);padding:20px;color:#e1f8e8;font-family:'JetBrains Mono',monospace;font-size:0.82rem;margin:12px 0;overflow-x:auto;">
+      <pre style="margin:0;">
+Pipeline Orchestrator
+  |
+  +-- 01. fetch-data        (Supabase 데이터 조회)
+  +-- 02. generate-script   (OpenAI + 페르소나 톤 분기)
+  +-- 03. generate-tts      (Edge TTS)
+  +-- 04. render-video      (Remotion v4)
+  +-- 05. post-process      (FFmpeg 후처리)
+  |     +-- 5a. YouTube 최적화 (30-60초, 자막 임베드)
+  |     +-- 5b. TikTok 최적화 (15-60초, 트렌딩 사운드)
+  |     +-- 5c. Reels 최적화 (60-90초, 쇼핑 태그)
+  +-- 06. upload
+  |     +-- 6a. YouTube API
+  |     +-- 6b. TikTok Content Posting API
+  |     +-- 6c. Instagram Graph API
+  +-- 07. analytics          (NEW: 성과 수집)</pre>
+    </div>
+    <h3>플랫폼별 최적화 규칙</h3>
+    <table>
+      <thead><tr><th>항목</th><th>YouTube Shorts</th><th>TikTok</th><th>Reels</th></tr></thead>
+      <tbody>
+        <tr><td>해상도</td><td>1080x1920</td><td>1080x1920</td><td>1080x1920</td></tr>
+        <tr><td>최적 길이</td><td>30-60초</td><td>15-60초</td><td>60-90초</td></tr>
+        <tr><td>자막</td><td>번인 자막</td><td>번인 자막</td><td>번인 자막 + 자동 CC</td></tr>
+        <tr><td>CTA</td><td>종료 화면</td><td>프로필 링크</td><td>스와이프 업 링크</td></tr>
+        <tr><td>해시태그</td><td>#Shorts #독서</td><td>#BookTok #독서그램</td><td>#Reels #독서기록</td></tr>
+        <tr><td>워터마크</td><td>Habitree 로고 (우하단)</td><td>없음 (TikTok 정책)</td><td>Habitree 로고 (작게)</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>AI 스크립트 고도화</h2>
+    <h3>페르소나별 톤 분기 시스템</h3>
+    <div style="background:var(--charcoal-900);border-radius:var(--radius);padding:20px;color:#e1f8e8;font-family:'JetBrains Mono',monospace;font-size:0.82rem;margin:12px 0;overflow-x:auto;">
+      <pre style="margin:0;">
+// generate-script.ts 개선안
+interface ScriptConfig {
+  series: SeriesType;
+  persona: 'record' | 'community' | 'creator';
+  emotionalArc: EmotionalArc;
+  platform: 'youtube' | 'tiktok' | 'reels';
+}
+
+// 감정 곡선 타입
+type EmotionalArc = {
+  hook: 'shock' | 'question' | 'empathy' | 'namedrop';
+  tension: 'low' | 'medium' | 'high';
+  climaxPosition: number; // 0-1 비율
+  ctaStyle: 'soft' | 'direct' | 'dual';
+};</pre>
+    </div>
+    <h3>감정 곡선 적용</h3>
+    <ul>
+      <li>시리즈별 사전 정의된 EmotionalArc 템플릿 제공</li>
+      <li>OpenAI 프롬프트에 감정 곡선 지시어 포함</li>
+      <li>스크립트 단계별 감정 강도 태깅 (0-10)</li>
+      <li>TTS 음성에도 감정 강도 반영 (속도, 톤 조절)</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2>자동 자막 시스템</h2>
+    <h3>워드별 하이라이트 애니메이션</h3>
+    <p>85%의 숏폼 시청자가 무음으로 시청하므로, 워드 단위 하이라이트 자막은 필수입니다.</p>
+    <h4>구현 방식</h4>
+    <ul>
+      <li><strong>타임스탬프 추출</strong> — TTS 생성 시 워드별 타임스탬프 함께 생성</li>
+      <li><strong>Remotion 컴포넌트</strong> — 현재 발화 단어를 하이라이트하는 <code>&lt;WordHighlight&gt;</code> 컴포넌트</li>
+      <li><strong>스타일 옵션</strong> — 배경 하이라이트, 색상 변경, 크기 변화, 바운스 애니메이션</li>
+      <li><strong>위치</strong> — 화면 하단 1/3, 안전 영역 내 배치</li>
+    </ul>
+    <h4>자막 스타일 가이드</h4>
+    <table>
+      <thead><tr><th>스타일</th><th>사용 시리즈</th><th>효과</th></tr></thead>
+      <tbody>
+        <tr><td>노란 배경 하이라이트</td><td>pain-point, booktok-style</td><td>MrBeast 스타일, 높은 가독성</td></tr>
+        <tr><td>Forest 컬러 전환</td><td>feature-demo, app-preview</td><td>브랜드 일관성</td></tr>
+        <tr><td>타이핑 효과</td><td>daily-quote, reading-tip</td><td>타이포그래피 강조</td></tr>
+        <tr><td>웨이브 애니메이션</td><td>user-story, community-highlight</td><td>감성적 분위기</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>A/B 테스트 파이프라인</h2>
+    <h3>테스트 변수</h3>
+    <div class="grid-3">
+      <div>
+        <h4>후킹 변형</h4>
+        <ul>
+          <li>질문형 vs 선언형</li>
+          <li>텍스트 vs 나레이션 시작</li>
+          <li>정적 vs 모션 오프닝</li>
+        </ul>
+      </div>
+      <div>
+        <h4>길이 변형</h4>
+        <ul>
+          <li>15초 vs 30초 vs 45초</li>
+          <li>루프형 vs 비루프형</li>
+          <li>CTA 포함 vs 미포함</li>
+        </ul>
+      </div>
+      <div>
+        <h4>CTA 변형</h4>
+        <ul>
+          <li>소프트 vs 다이렉트</li>
+          <li>텍스트 vs 음성 CTA</li>
+          <li>단일 vs 듀얼 CTA</li>
+        </ul>
+      </div>
+    </div>
+    <h3>테스트 프로세스</h3>
+    <ol>
+      <li>동일 콘텐츠로 2-3개 변형 생성 (파이프라인 자동화)</li>
+      <li>동시 업로드 후 48시간 성과 측정</li>
+      <li>완주율, 공유율, 전환율 비교 분석</li>
+      <li>우승 변형을 기본 템플릿으로 업데이트</li>
+      <li>월간 A/B 테스트 리포트 자동 생성</li>
+    </ol>
+  </div>
+
+  <div class="card">
+    <h2>분석 대시보드</h2>
+    <h3>트래킹 지표</h3>
+    <table>
+      <thead><tr><th>카테고리</th><th>지표</th><th>수집 주기</th><th>데이터 소스</th></tr></thead>
+      <tbody>
+        <tr><td>콘텐츠 성과</td><td>조회수, 완주율, 루프율</td><td>일간</td><td>YouTube/TikTok/IG API</td></tr>
+        <tr><td>참여도</td><td>좋아요, 댓글, 공유, 저장</td><td>일간</td><td>각 플랫폼 API</td></tr>
+        <tr><td>전환</td><td>앱 유입, 회원가입, 독서 기록 시작</td><td>일간</td><td>UTM + Supabase</td></tr>
+        <tr><td>시리즈 효율</td><td>시리즈별 평균 성과, 비용 대비 효율</td><td>주간</td><td>집계 분석</td></tr>
+        <tr><td>A/B 테스트</td><td>변형별 성과 비교, 통계적 유의성</td><td>캠페인별</td><td>집계 분석</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>UGC 템플릿 시스템</h2>
+    <p>사용자가 자신의 독서 데이터로 쇼츠를 자동 생성할 수 있는 "공유 카드" 시스템입니다.</p>
+    <h3>제공 템플릿</h3>
+    <ul>
+      <li><strong>월간 독서 리포트</strong> — 읽은 책, 페이지 수, 좋아한 장르를 인포그래픽으로</li>
+      <li><strong>서재 공개</strong> — 나의 가상 책장을 3D 회전 뷰로</li>
+      <li><strong>독서 타임라인</strong> — 올해 읽은 책을 시간순 스크롤 영상으로</li>
+      <li><strong>명언 카드</strong> — 내가 하이라이트한 문장을 예쁜 카드 영상으로</li>
+    </ul>
+    <h3>기술 구현</h3>
+    <p>Remotion Player를 웹 앱에 임베드하여 실시간 프리뷰 &rarr; 서버리스 렌더링(Remotion Lambda) &rarr; 다운로드/공유 링크 제공. Habitree 워터마크가 자연스럽게 포함되어 바이럴 효과.</p>
+  </div>
+
+  <div class="card">
+    <h2>루프형 편집 & 트렌딩 사운드</h2>
+    <div class="grid-2">
+      <div>
+        <h3>루프형 편집</h3>
+        <p>영상의 마지막 프레임이 첫 프레임과 자연스럽게 연결되는 구조입니다.</p>
+        <ul>
+          <li>끝에서 시작으로 이어지는 카메라 무빙</li>
+          <li>마지막 텍스트가 Hook 질문의 답이 되는 구조</li>
+          <li>루프 감지 시 알고리즘이 "높은 재시청"으로 판단</li>
+          <li>Remotion에서 <code>loop</code> 속성 + 트랜지션 컴포넌트로 구현</li>
+        </ul>
+      </div>
+      <div>
+        <h3>트렌딩 사운드 연동</h3>
+        <p>인기 BGM을 활용하면 알고리즘 노출이 크게 증가합니다.</p>
+        <ul>
+          <li>TikTok Creative Center에서 트렌딩 사운드 주간 수집</li>
+          <li>라이선스 프리 BGM 라이브러리 구축 (Epidemic Sound 등)</li>
+          <li>시리즈별 기본 BGM + 트렌딩 사운드 믹스 옵션</li>
+          <li>플랫폼별 사운드 최적화 (TikTok은 트렌딩 필수)</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========================================== -->
+<!-- TAB 7: 리서치 로그 -->
+<!-- ========================================== -->
+<div class="tab-panel" :class="{ active: activeTab === 6 }">
+
+  <div class="card">
+    <h2>유튜브 쇼츠 알고리즘 조사 결과</h2>
+    <p>조사 시기: 2026년 3월</p>
+    <h3>핵심 발견</h3>
+    <ul>
+      <li>2025년 후반 Shorts 추천 엔진이 롱폼과 완전히 분리됨</li>
+      <li>2025년 3월 31일부터 모든 재생이 즉시 조회수로 집계 (TikTok/Reels 방식)</li>
+      <li>만족도 설문과 시청 후 행동이 raw 시청 시간보다 중요한 랭킹 신호로 전환</li>
+      <li>Shorts 최대 길이 3분 확장 (2024 후반)</li>
+      <li>2026년 1월 YouTube 검색에 "Shorts" 전용 필터 추가</li>
+      <li>일일 평균 2,000억 조회 달성, 일부 지역 수익 파리티</li>
+      <li>좋아요/싫어요 UI 통합 실험 중 (일부 사용자)</li>
+    </ul>
+    <h3>출처</h3>
+    <ul class="source-list">
+      <li><span class="src-title">YouTube Algorithm Updates 2026: Every Change Creators Need to Know</span><br><a class="src-url" href="https://outlierkit.com/resources/youtube-algorithm-updates/" target="_blank">outlierkit.com</a></li>
+      <li><span class="src-title">YouTube Shorts Algorithm Explained + Tips to Grow in 2026</span><br><a class="src-url" href="https://metricool.com/youtube-shorts-algorithm/" target="_blank">metricool.com</a></li>
+      <li><span class="src-title">How Does the YouTube Shorts Algorithm Work in 2026?</span><br><a class="src-url" href="https://vidiq.com/blog/post/youtube-shorts-algorithm/" target="_blank">vidiq.com</a></li>
+      <li><span class="src-title">YouTube Shorts Algorithm 2026: How It Works & How to Win</span><br><a class="src-url" href="https://www.socialchamp.com/blog/youtube-shorts-algorithm/" target="_blank">socialchamp.com</a></li>
+      <li><span class="src-title">YouTube's 2026 Search Revamp: Shorts Filter and Prioritize Overhaul</span><br><a class="src-url" href="https://www.webpronews.com/youtubes-2026-search-revamp-shorts-filter-and-prioritize-overhaul/" target="_blank">webpronews.com</a></li>
+      <li><span class="src-title">YouTube Shorts Algorithm Update: January 2026</span><br><a class="src-url" href="https://miraflow.ai/blog/youtube-shorts-algorithm-update-january-2026" target="_blank">miraflow.ai</a></li>
+      <li><span class="src-title">How the YouTube Shorts Algorithm Works in 2025</span><br><a class="src-url" href="https://versacreative.com/blog/how-the-youtube-shorts-algorithm-works-in-2025/" target="_blank">versacreative.com</a></li>
+      <li><span class="src-title">How the YouTube algorithm works in 2025</span><br><a class="src-url" href="https://blog.hootsuite.com/youtube-algorithm/" target="_blank">hootsuite.com</a></li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2>마케팅 트렌드 조사 결과</h2>
+    <p>조사 시기: 2026년 3월</p>
+    <h3>핵심 발견</h3>
+    <ul>
+      <li>BookTok 해시태그 2024년 기준 2,000억 뷰 이상, 2025년 영상 수 전년 대비 2배 증가</li>
+      <li>미국 인쇄 도서 시장 BookTok 영향으로 9% 이상 성장</li>
+      <li>감정 리뷰, 서재 공개(Shelfie), 독서 브이로그, 숏북(Shortbook)이 인기 포맷</li>
+      <li>로맨스, 판타지, 로맨타지(Romantasy) 장르가 BookTok 최고 성과</li>
+      <li>80/20 법칙: 80% 가치 콘텐츠, 20% 프로모션이 최적 비율</li>
+      <li>숏폼의 "미드폼화" (3분까지 확장) 추세 가속화</li>
+      <li>TikTok 평균 참여율 2.80%, Reels 0.65%, Shorts 0.30%</li>
+      <li>TikTok 이용자 연속 시청 15.4개 (Reels/Shorts ~11개)</li>
+      <li>출판사들이 BookTok 크리에이터 직접 섭외 — 일부 인플루언서 캠페인이 유료 광고보다 높은 ROI</li>
+      <li>2025년 말까지 소설 도서 발견의 50%가 BookTok/Bookstagram 통해 이루어질 전망</li>
+    </ul>
+    <h3>출처</h3>
+    <ul class="source-list">
+      <li><span class="src-title">BookTok: 독서, 출판, 대중 문화를 재편하는 바이럴 트렌드</span><br><a class="src-url" href="https://wisdomagora.com/booktok-%EB%8F%85%EC%84%9C-%EC%B6%9C%ED%8C%90-%EA%B7%B8%EB%A6%AC%EA%B3%A0-%EB%8C%80%EC%A4%91-%EB%AC%B8%ED%99%94%EB%A5%BC-%EC%9E%AC%ED%8E%B8%ED%95%98%EB%8A%94-%EB%B0%94/" target="_blank">wisdomagora.com</a></li>
+      <li><span class="src-title">Book Tok Trend 2025: How TikTok Is Reshaping Literary Discovery</span><br><a class="src-url" href="https://www.accio.com/business/book_tok_trend" target="_blank">accio.com</a></li>
+      <li><span class="src-title">From BookTok to Bestseller Lists</span><br><a class="src-url" href="https://pagesandprose.com/booktok-influence-on-publishing-2025/" target="_blank">pagesandprose.com</a></li>
+      <li><span class="src-title">Social Media Book Marketing Guide 2025</span><br><a class="src-url" href="https://book-shelfie.com/social-media-book-marketing-guide-2025-complete-strategy-for-booktok-and-bookstagram-success/" target="_blank">book-shelfie.com</a></li>
+      <li><span class="src-title">2025년 숏폼 콘텐츠 트렌드 8가지</span><br><a class="src-url" href="https://blog.catenoid.net/shortform-contents-trends-2025" target="_blank">blog.catenoid.net</a></li>
+      <li><span class="src-title">MZ세대를 사로잡는 숏폼 콘텐츠의 비밀 — 출판N</span><br><a class="src-url" href="https://nzine.kpipa.or.kr/sub/hotcool.php?ptype=view&idx=592" target="_blank">kpipa.or.kr</a></li>
+      <li><span class="src-title">브랜드 숏폼 콘텐츠 4가지 최신 트렌드 2025</span><br><a class="src-url" href="https://brunch.co.kr/@thecontentsjin/66" target="_blank">brunch.co.kr</a></li>
+      <li><span class="src-title">숏폼 콘텐츠 전성시대: 플랫폼별 소비 행태와 비즈니스 전략</span><br><a class="src-url" href="https://seo.goover.ai/report/202505/go-public-report-ko-ea7dc81b-703a-4430-8c00-a59e3fcd64dc-0-0.html" target="_blank">goover.ai</a></li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2>심리학 조사 결과</h2>
+    <p>조사 시기: 2026년 3월</p>
+    <h3>핵심 발견</h3>
+    <ul>
+      <li>숏폼 콘텐츠는 도파민 보상 회로의 "변동 간헐 강화(intermittent reinforcement)" 메커니즘을 활용</li>
+      <li>3가지 도파민 방출 요인: 새로움(Novelty), 예측 불가능성(Unpredictability), 즉각적 보상(Instant Gratification)</li>
+      <li>Nir Eyal의 Hook Model — 가변 보상 3유형: 부족의 보상(사회적), 사냥의 보상(정보), 자아의 보상(성취)</li>
+      <li>첫 2~3초의 "패턴 인터럽트"가 시청 유지의 핵심 — 호기심 루프(curiosity loop) 형성</li>
+      <li>내러티브 전이(Narrative Transportation): 스토리 몰입 시 옥시토신 분비로 공감/유대감 형성</li>
+      <li>손실 회피(Loss Aversion): 사람은 이득의 기쁨보다 손실의 고통을 2배 강하게 느낌</li>
+      <li>행동경제학 기반 캠페인이 전통 캠페인 대비 31% 더 높은 소비자 반응률 기록</li>
+      <li>사회적 증거(Social Proof): 소비자 98%가 구매 전 리뷰 확인, "인기" 태그만으로 예약 23% 증가</li>
+      <li>빠른 컷 전환이 뇌의 지향 반응(orienting response)을 활용하여 주의력 리셋</li>
+      <li>2025년 메타분석: 숏폼 빈번 소비가 주의력 저하, 실행기능 감소와 상관관계 확인</li>
+    </ul>
+    <h3>출처</h3>
+    <ul class="source-list">
+      <li><span class="src-title">The Science Behind Short-Form Content That Hooks Audiences</span><br><a class="src-url" href="https://transformingbrand.com/transforming-brand-the-science-behind-short-form-content-that-hooks-audiences/" target="_blank">transformingbrand.com</a></li>
+      <li><span class="src-title">The Psychology Behind Short-Form Video — IN2communications</span><br><a class="src-url" href="https://in2communications.com/psychology-behind-short-form-video-and-best-practices/" target="_blank">in2communications.com</a></li>
+      <li><span class="src-title">The Psychology of Short-Form Video: Hooks, Curiosity, and Creativity</span><br><a class="src-url" href="https://www.storyboxhq.ca/post/the-psychology-of-short-form-video-why-hooks-curiosity-and-creativity-drive-conversions" target="_blank">storyboxhq.ca</a></li>
+      <li><span class="src-title">From Dopamine to FOMO: The Science Behind Short-Form Videos</span><br><a class="src-url" href="https://isolutionsfactory.com/ingenious-insights/from-dopamine-to-fomo-the-science-behind-our-love-for-short-form-videos-2/" target="_blank">isolutionsfactory.com</a></li>
+      <li><span class="src-title">Short-form Video Use and Sustained Attention: A Narrative Review (2019-2025)</span><br><a class="src-url" href="https://www.researchgate.net/publication/397712802" target="_blank">researchgate.net</a></li>
+      <li><span class="src-title">The Hooked Model by Nir Eyal — Growth Method</span><br><a class="src-url" href="https://growthmethod.com/hooked-model/" target="_blank">growthmethod.com</a></li>
+      <li><span class="src-title">How to Manufacture Desire — Nir Eyal</span><br><a class="src-url" href="https://www.nirandfar.com/how-to-manufacture-desire/" target="_blank">nirandfar.com</a></li>
+      <li><span class="src-title">Behavioral Economics and Marketing Strategy — Renascence</span><br><a class="src-url" href="https://www.renascence.io/journal/behavioral-economics-and-marketing-strategy-insights-that-drive-results" target="_blank">renascence.io</a></li>
+      <li><span class="src-title">Short-Form Video Addiction Factors — Frontiers in Psychology</span><br><a class="src-url" href="https://www.frontiersin.org/journals/psychology/articles/10.3389/fpsyg.2025.1663670/full" target="_blank">frontiersin.org</a></li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2>경쟁사/벤치마크 조사 결과</h2>
+    <p>조사 시기: 2026년 3월</p>
+    <h3>핵심 발견</h3>
+    <ul>
+      <li>국내 독서 앱(밀리, 리디)은 셀럽/IP 기반 마케팅에 집중, 자동화 파이프라인은 부재</li>
+      <li>Goodreads는 숏폼 자체 제작 없이 사용자 UGC에 의존</li>
+      <li>BookTok 인플루언서 마케팅이 도서 매출에 직접적 영향 (NYT 보도)</li>
+      <li>Fable, Literal 등 소셜 리딩 앱은 커뮤니티 중심이나 마케팅 규모 소형</li>
+      <li>AI 기반 자동 숏폼 생성은 Habitree가 독서 앱 중 유일</li>
+    </ul>
+    <h3>출처</h3>
+    <ul class="source-list">
+      <li><span class="src-title">숏폼 종류 플랫폼별 특징과 제작 전략 총정리</span><br><a class="src-url" href="https://benefitview.co.kr/%EC%88%8F%ED%8F%BC-%EC%A2%85%EB%A5%98-%ED%94%8C%EB%9E%AB%ED%8F%BC%EB%B3%84-%ED%8A%B9%EC%A7%95%EA%B3%BC-%EC%A0%9C%EC%9E%91-%EC%A0%84%EB%9E%B5-%EC%B4%9D%EC%A0%95%EB%A6%AC/" target="_blank">benefitview.co.kr</a></li>
+      <li><span class="src-title">2025년 숏폼 콘텐츠 트렌드 8가지 — 아이보스 칼럼</span><br><a class="src-url" href="https://www.i-boss.co.kr/ab-74668-4842" target="_blank">i-boss.co.kr</a></li>
+      <li><span class="src-title">TikTok vs Instagram Reels vs YouTube Shorts: Who's Winning in 2025?</span><br><a class="src-url" href="https://www.baltictimes.com/tiktok_vs_instagram_reels_vs_youtube_shorts__who_s_winning_in_2025_/" target="_blank">baltictimes.com</a></li>
+      <li><span class="src-title">숏폼 시대, 디지털 미디어 작동 방식의 변화</span><br><a class="src-url" href="https://www.kca.kr/Media_Issue_Trend/vol60/KCA60_23_trend.html" target="_blank">kca.kr</a></li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2>숏폼 도구 트렌드 조사 결과</h2>
+    <p>조사 시기: 2026년 3월</p>
+    <h3>핵심 발견</h3>
+    <ul>
+      <li><strong>Remotion Skills 출시 (2026.01)</strong>: 자연어로 영상 생성/수정/렌더링, Claude Code 연동 가능</li>
+      <li>Remotion v4: WebCodecs API 지원, Lambda 서버리스 렌더링, Three.js 3D 통합</li>
+      <li><strong>@remotion/captions</strong>: Whisper.cpp 기반 자동 전사, TikTok 스타일 자막 자동 분할</li>
+      <li>@remotion/whisper-web: 브라우저 내 로컬 전사 (API 키 불필요)</li>
+      <li>Claude + Remotion 파이프라인: LLM이 콘텐츠 생성, Remotion이 렌더링 담당 — 수동 편집 제거</li>
+      <li>AI 기반 영상 생성 도구 급증 — Synthesia, HeyGen, Pictory, Opus Clip 등</li>
+      <li>광고주 90%가 영상 광고에 생성형 AI 사용 계획 (IAB 2025 리포트)</li>
+      <li>개인화 영상이 프로그래매틱 CTR 1.5~3배 향상, 전환율 20~70% 개선</li>
+      <li>프로그래매틱 영상 광고 지출 1,100억 달러 돌파 전망 (2025)</li>
+      <li>AI 영상 생성기 시장 빠르게 성장 (Grand View Research 2033 전망)</li>
+    </ul>
+    <h3>출처</h3>
+    <ul class="source-list">
+      <li><span class="src-title">Remotion — Building with AI (공식 문서)</span><br><a class="src-url" href="https://www.remotion.dev/docs/ai/" target="_blank">remotion.dev/docs/ai</a></li>
+      <li><span class="src-title">Remotion + Claude Skill 교육 영상 가이드 2026</span><br><a class="src-url" href="https://www.x-pilot.ai/blog/remotion-claude-skill-education-video-complete-guide-2026" target="_blank">x-pilot.ai</a></li>
+      <li><span class="src-title">@remotion/captions 공식 문서</span><br><a class="src-url" href="https://www.remotion.dev/docs/captions/" target="_blank">remotion.dev/docs/captions</a></li>
+      <li><span class="src-title">Claude + Remotion AI 영상 제작 — DEV Community</span><br><a class="src-url" href="https://dev.to/mayu2008/new-clauderemotion-to-create-amazing-videos-using-ai-37bp" target="_blank">dev.to</a></li>
+      <li><span class="src-title">AI Video Programmatic Advertising Guide — TrueFan</span><br><a class="src-url" href="https://www.truefan.ai/blogs/ai-video-programmatic-advertising-guide" target="_blank">truefan.ai</a></li>
+      <li><span class="src-title">Personalized Video Marketing ROI 2026 — Pirsonal</span><br><a class="src-url" href="https://pirsonal.com/2025/10/20/personalized-video-marketing-roi-why-generic-videos-fail-in-2026-and-how-to-fix-them/" target="_blank">pirsonal.com</a></li>
+      <li><span class="src-title">Video Automation at Scale 2025 — DesignHuddle</span><br><a class="src-url" href="https://blog.designhuddle.com/video-automation-guide-how-to-automate-video-creation-at-scale-in-2025" target="_blank">designhuddle.com</a></li>
+      <li><span class="src-title">AI Video Generator Market Report 2033 — Grand View Research</span><br><a class="src-url" href="https://www.grandviewresearch.com/industry-analysis/ai-video-generator-market-report" target="_blank">grandviewresearch.com</a></li>
+    </ul>
+  </div>
+
+</div>
+
+<!-- ========================================== -->
+<!-- TAB 8: 데이터 아키텍처 -->
+<!-- ========================================== -->
+<div class="tab-panel" :class="{ active: activeTab === 7 }">
+
+<div class="card">
+  <h2>쇼츠 데이터 아키텍처 개요</h2>
+  <p>쇼츠 전용 Supabase 프로젝트로 모든 시리즈의 콘텐츠(문구, 에셋, 파이프라인)를 체계적으로 관리합니다.</p>
+
+  <div class="metrics-grid">
+    <div class="metric-card"><span class="num">11</span><span class="label">테이블</span></div>
+    <div class="metric-card"><span class="num">5</span><span class="label">레이어</span></div>
+    <div class="metric-card"><span class="num">14</span><span class="label">시리즈</span></div>
+    <div class="metric-card"><span class="num">8</span><span class="label">상태 전이</span></div>
+  </div>
+
+  <h3>핵심 설계 결정</h3>
+  <ul>
+    <li><strong>통합 contents + JSONB</strong>: 시리즈별 테이블 분리 대신, <code>props JSONB</code>로 유연하게 저장. <code>series.props_schema</code>에 JSON Schema를 두어 유효성 보장.</li>
+    <li><strong>text_fragments 분리</strong>: hook/CTA/감정태그 등 여러 시리즈에서 재사용할 수 있는 문구를 별도 관리하여 성과 기반 재활용.</li>
+    <li><strong>서비스 분리</strong>: 메인 DB(notes/books)와 쇼츠 DB를 분리하여 독립적 스케일링 및 비용 관리.</li>
+  </ul>
+</div>
+
+<!-- ERD 다이어그램 -->
+<div class="card">
+  <h2>ERD — 테이블 관계도</h2>
+  <div style="overflow-x:auto;">
+    <svg viewBox="0 0 1000 720" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:1000px;margin:0 auto;display:block;font-family:'Noto Sans KR',sans-serif;">
+      <!-- Layer labels -->
+      <rect x="10" y="10" width="980" height="30" rx="4" fill="#f2fcf5" stroke="#c3eed4"/>
+      <text x="500" y="30" text-anchor="middle" font-size="13" font-weight="700" fill="#1d6b4d">Layer A: 시리즈/콘텐츠 관리</text>
+
+      <!-- series -->
+      <rect x="30" y="55" width="180" height="100" rx="8" fill="white" stroke="#36a678" stroke-width="2"/>
+      <rect x="30" y="55" width="180" height="28" rx="8" fill="#36a678"/>
+      <text x="120" y="74" text-anchor="middle" font-size="12" font-weight="700" fill="white">series</text>
+      <text x="40" y="100" font-size="10" fill="#3E4C59">id TEXT (PK)</text>
+      <text x="40" y="115" font-size="10" fill="#3E4C59">name, fps, width, height</text>
+      <text x="40" y="130" font-size="10" fill="#3E4C59">props_schema JSONB</text>
+      <text x="40" y="145" font-size="10" fill="#3E4C59">remotion_id, priority</text>
+
+      <!-- contents -->
+      <rect x="280" y="55" width="200" height="115" rx="8" fill="white" stroke="#36a678" stroke-width="2"/>
+      <rect x="280" y="55" width="200" height="28" rx="8" fill="#36a678"/>
+      <text x="380" y="74" text-anchor="middle" font-size="12" font-weight="700" fill="white">contents</text>
+      <text x="290" y="100" font-size="10" fill="#3E4C59">id UUID (PK)</text>
+      <text x="290" y="115" font-size="10" fill="#3E4C59">series_id TEXT (FK→series)</text>
+      <text x="290" y="130" font-size="10" fill="#3E4C59">props JSONB, status</text>
+      <text x="290" y="145" font-size="10" fill="#3E4C59">source, quality_score</text>
+      <text x="290" y="160" font-size="10" fill="#3E4C59">tags[], version</text>
+
+      <!-- text_fragments -->
+      <rect x="550" y="55" width="180" height="95" rx="8" fill="white" stroke="#36a678" stroke-width="2"/>
+      <rect x="550" y="55" width="180" height="28" rx="8" fill="#36a678"/>
+      <text x="640" y="74" text-anchor="middle" font-size="12" font-weight="700" fill="white">text_fragments</text>
+      <text x="560" y="100" font-size="10" fill="#3E4C59">id UUID (PK)</text>
+      <text x="560" y="115" font-size="10" fill="#3E4C59">category, text</text>
+      <text x="560" y="130" font-size="10" fill="#3E4C59">series_ids[], usage_count</text>
+      <text x="560" y="145" font-size="10" fill="#3E4C59">performance_score</text>
+
+      <!-- FK line: series → contents -->
+      <line x1="210" y1="105" x2="280" y2="105" stroke="#36a678" stroke-width="1.5" stroke-dasharray="4"/>
+      <polygon points="277,102 283,105 277,108" fill="#36a678"/>
+
+      <!-- Layer B label -->
+      <rect x="10" y="190" width="480" height="26" rx="4" fill="#eff6ff" stroke="#bfdbfe"/>
+      <text x="250" y="208" text-anchor="middle" font-size="12" font-weight="700" fill="#2563eb">Layer B: 에셋 관리</text>
+
+      <!-- assets -->
+      <rect x="30" y="225" width="180" height="95" rx="8" fill="white" stroke="#2563eb" stroke-width="2"/>
+      <rect x="30" y="225" width="180" height="28" rx="8" fill="#2563eb"/>
+      <text x="120" y="244" text-anchor="middle" font-size="12" font-weight="700" fill="white">assets</text>
+      <text x="40" y="270" font-size="10" fill="#3E4C59">id UUID (PK)</text>
+      <text x="40" y="285" font-size="10" fill="#3E4C59">type, filename</text>
+      <text x="40" y="300" font-size="10" fill="#3E4C59">storage_path, mime_type</text>
+      <text x="40" y="315" font-size="10" fill="#3E4C59">file_size_bytes, duration_ms</text>
+
+      <!-- content_assets -->
+      <rect x="280" y="225" width="200" height="80" rx="8" fill="white" stroke="#2563eb" stroke-width="2"/>
+      <rect x="280" y="225" width="200" height="28" rx="8" fill="#2563eb"/>
+      <text x="380" y="244" text-anchor="middle" font-size="12" font-weight="700" fill="white">content_assets</text>
+      <text x="290" y="270" font-size="10" fill="#3E4C59">content_id (FK→contents)</text>
+      <text x="290" y="285" font-size="10" fill="#3E4C59">asset_id (FK→assets)</text>
+      <text x="290" y="300" font-size="10" fill="#3E4C59">role, sort_order</text>
+
+      <!-- FK lines for content_assets -->
+      <line x1="210" y1="270" x2="280" y2="270" stroke="#2563eb" stroke-width="1.5" stroke-dasharray="4"/>
+      <line x1="380" y1="170" x2="380" y2="225" stroke="#2563eb" stroke-width="1.5" stroke-dasharray="4"/>
+      <polygon points="377,222 383,222 380,228" fill="#2563eb"/>
+
+      <!-- Layer C label -->
+      <rect x="530" y="190" width="460" height="26" rx="4" fill="#fef2f2" stroke="#fecaca"/>
+      <text x="760" y="208" text-anchor="middle" font-size="12" font-weight="700" fill="#dc2626">Layer C: 제작 파이프라인</text>
+
+      <!-- pipeline_runs -->
+      <rect x="550" y="225" width="200" height="110" rx="8" fill="white" stroke="#dc2626" stroke-width="2"/>
+      <rect x="550" y="225" width="200" height="28" rx="8" fill="#dc2626"/>
+      <text x="650" y="244" text-anchor="middle" font-size="12" font-weight="700" fill="white">pipeline_runs</text>
+      <text x="560" y="270" font-size="10" fill="#3E4C59">id UUID (PK)</text>
+      <text x="560" y="285" font-size="10" fill="#3E4C59">content_id (FK→contents)</text>
+      <text x="560" y="300" font-size="10" fill="#3E4C59">series_id (FK→series)</text>
+      <text x="560" y="315" font-size="10" fill="#3E4C59">status, cost_usd</text>
+      <text x="560" y="330" font-size="10" fill="#3E4C59">step_progress JSONB</text>
+
+      <!-- FK: pipeline_runs → contents -->
+      <line x1="480" y1="130" x2="530" y2="130" stroke="#ccc" stroke-width="1"/>
+      <line x1="530" y1="130" x2="530" y2="285" stroke="#ccc" stroke-width="1"/>
+      <line x1="530" y1="285" x2="550" y2="285" stroke="#dc2626" stroke-width="1.5" stroke-dasharray="4"/>
+
+      <!-- Layer D label -->
+      <rect x="10" y="360" width="480" height="26" rx="4" fill="#faf5ff" stroke="#ddd6fe"/>
+      <text x="250" y="378" text-anchor="middle" font-size="12" font-weight="700" fill="#7c3aed">Layer D: 배포/분석</text>
+
+      <!-- publications -->
+      <rect x="30" y="395" width="200" height="110" rx="8" fill="white" stroke="#7c3aed" stroke-width="2"/>
+      <rect x="30" y="395" width="200" height="28" rx="8" fill="#7c3aed"/>
+      <text x="130" y="414" text-anchor="middle" font-size="12" font-weight="700" fill="white">publications</text>
+      <text x="40" y="440" font-size="10" fill="#3E4C59">id UUID (PK)</text>
+      <text x="40" y="455" font-size="10" fill="#3E4C59">content_id (FK→contents)</text>
+      <text x="40" y="470" font-size="10" fill="#3E4C59">pipeline_run_id (FK)</text>
+      <text x="40" y="485" font-size="10" fill="#3E4C59">platform, status</text>
+      <text x="40" y="500" font-size="10" fill="#3E4C59">platform_url, scheduled_at</text>
+
+      <!-- analytics_snapshots -->
+      <rect x="280" y="395" width="200" height="110" rx="8" fill="white" stroke="#7c3aed" stroke-width="2"/>
+      <rect x="280" y="395" width="200" height="28" rx="8" fill="#7c3aed"/>
+      <text x="380" y="414" text-anchor="middle" font-size="12" font-weight="700" fill="white">analytics_snapshots</text>
+      <text x="290" y="440" font-size="10" fill="#3E4C59">id UUID (PK)</text>
+      <text x="290" y="455" font-size="10" fill="#3E4C59">publication_id (FK)</text>
+      <text x="290" y="470" font-size="10" fill="#3E4C59">snapshot_date, views</text>
+      <text x="290" y="485" font-size="10" fill="#3E4C59">likes, comments, shares</text>
+      <text x="290" y="500" font-size="10" fill="#3E4C59">completion_rate, ctr</text>
+
+      <!-- FK: publications → analytics -->
+      <line x1="230" y1="455" x2="280" y2="455" stroke="#7c3aed" stroke-width="1.5" stroke-dasharray="4"/>
+      <polygon points="277,452 283,455 277,458" fill="#7c3aed"/>
+
+      <!-- Layer E label -->
+      <rect x="10" y="530" width="980" height="26" rx="4" fill="rgba(191,165,134,0.1)" stroke="rgba(191,165,134,0.3)"/>
+      <text x="500" y="548" text-anchor="middle" font-size="12" font-weight="700" fill="#8C7152">Layer E: 템플릿/스케줄</text>
+
+      <!-- content_templates -->
+      <rect x="30" y="570" width="200" height="110" rx="8" fill="white" stroke="#8C7152" stroke-width="2"/>
+      <rect x="30" y="570" width="200" height="28" rx="8" fill="#8C7152"/>
+      <text x="130" y="589" text-anchor="middle" font-size="12" font-weight="700" fill="white">content_templates</text>
+      <text x="40" y="615" font-size="10" fill="#3E4C59">id UUID (PK)</text>
+      <text x="40" y="630" font-size="10" fill="#3E4C59">series_id (FK→series)</text>
+      <text x="40" y="645" font-size="10" fill="#3E4C59">template_props JSONB</text>
+      <text x="40" y="660" font-size="10" fill="#3E4C59">ai_prompt, ai_model</text>
+      <text x="40" y="675" font-size="10" fill="#3E4C59">variables JSONB</text>
+
+      <!-- schedules -->
+      <rect x="300" y="570" width="200" height="110" rx="8" fill="white" stroke="#8C7152" stroke-width="2"/>
+      <rect x="300" y="570" width="200" height="28" rx="8" fill="#8C7152"/>
+      <text x="400" y="589" text-anchor="middle" font-size="12" font-weight="700" fill="white">schedules</text>
+      <text x="310" y="615" font-size="10" fill="#3E4C59">id UUID (PK)</text>
+      <text x="310" y="630" font-size="10" fill="#3E4C59">series_id (FK→series)</text>
+      <text x="310" y="645" font-size="10" fill="#3E4C59">cron_expression</text>
+      <text x="310" y="660" font-size="10" fill="#3E4C59">content_strategy</text>
+      <text x="310" y="675" font-size="10" fill="#3E4C59">template_id (FK)</text>
+
+      <!-- sync_log -->
+      <rect x="570" y="570" width="200" height="95" rx="8" fill="white" stroke="#8C7152" stroke-width="2"/>
+      <rect x="570" y="570" width="200" height="28" rx="8" fill="#8C7152"/>
+      <text x="670" y="589" text-anchor="middle" font-size="12" font-weight="700" fill="white">sync_log</text>
+      <text x="580" y="615" font-size="10" fill="#3E4C59">id UUID (PK)</text>
+      <text x="580" y="630" font-size="10" fill="#3E4C59">source_table, source_id</text>
+      <text x="580" y="645" font-size="10" fill="#3E4C59">target_id (FK→contents)</text>
+      <text x="580" y="660" font-size="10" fill="#3E4C59">sync_type, status</text>
+    </svg>
+  </div>
+</div>
+
+<!-- 레이어별 상세 설명 -->
+<div class="card">
+  <h2>레이어별 테이블 상세</h2>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin:16px 0;">
+    <!-- Layer A -->
+    <div style="border-radius:12px;border:2px solid #36a678;overflow:hidden;">
+      <div style="background:#36a678;color:white;padding:12px 16px;font-weight:700;font-size:0.9rem;">Layer A: 시리즈/콘텐츠 관리</div>
+      <div style="padding:16px;font-size:0.85rem;color:#3E4C59;">
+        <p><strong>series</strong> — 14개 시리즈의 해상도, fps, duration, props_schema 등 메타데이터</p>
+        <p><strong>contents</strong> — 핵심 테이블. 모든 시리즈의 콘텐츠를 JSONB props로 통합 저장. 8단계 라이프사이클 관리.</p>
+        <p><strong>text_fragments</strong> — hook, CTA, 감정태그 등 재사용 가능한 문구. 성과 기반 자동 재활용.</p>
+      </div>
+    </div>
+
+    <!-- Layer B -->
+    <div style="border-radius:12px;border:2px solid #2563eb;overflow:hidden;">
+      <div style="background:#2563eb;color:white;padding:12px 16px;font-weight:700;font-size:0.9rem;">Layer B: 에셋 관리</div>
+      <div style="padding:16px;font-size:0.85rem;color:#3E4C59;">
+        <p><strong>assets</strong> — 스크린샷, 오디오(TTS/BGM), 커버이미지, 영상 등 미디어 에셋 통합 관리.</p>
+        <p><strong>content_assets</strong> — 콘텐츠와 에셋을 M:N으로 연결. role(primary, thumbnail, tts 등)로 용도 구분.</p>
+      </div>
+    </div>
+
+    <!-- Layer C -->
+    <div style="border-radius:12px;border:2px solid #dc2626;overflow:hidden;">
+      <div style="background:#dc2626;color:white;padding:12px 16px;font-weight:700;font-size:0.9rem;">Layer C: 제작 파이프라인</div>
+      <div style="padding:16px;font-size:0.85rem;color:#3E4C59;">
+        <p><strong>pipeline_runs</strong> — 파이프라인 실행 이력. 단계별 진행 상태, OpenAI/TTS 비용 추적, 에러 로그 저장.</p>
+        <p>상태: pending → fetching → scripting → tts → rendering → post_processing → uploading → completed</p>
+      </div>
+    </div>
+
+    <!-- Layer D -->
+    <div style="border-radius:12px;border:2px solid #7c3aed;overflow:hidden;">
+      <div style="background:#7c3aed;color:white;padding:12px 16px;font-weight:700;font-size:0.9rem;">Layer D: 배포/분석</div>
+      <div style="padding:16px;font-size:0.85rem;color:#3E4C59;">
+        <p><strong>publications</strong> — YouTube/TikTok/Reels 플랫폼별 배포 기록. 예약 발행 지원.</p>
+        <p><strong>analytics_snapshots</strong> — 일별 성과 스냅샷. 조회수, 완주율, CTR 등 핵심 지표 추적.</p>
+      </div>
+    </div>
+
+    <!-- Layer E -->
+    <div style="border-radius:12px;border:2px solid #8C7152;overflow:hidden;">
+      <div style="background:#8C7152;color:white;padding:12px 16px;font-weight:700;font-size:0.9rem;">Layer E: 템플릿/스케줄</div>
+      <div style="padding:16px;font-size:0.85rem;color:#3E4C59;">
+        <p><strong>content_templates</strong> — 시리즈별 콘텐츠 생성 템플릿. AI 프롬프트 포함하여 자동 생성 지원.</p>
+        <p><strong>schedules</strong> — cron 기반 자동 발행 스케줄. content_strategy로 콘텐츠 선택 전략 지정.</p>
+        <p><strong>sync_log</strong> — 메인 DB(notes/books) → 쇼츠 DB 동기화 추적 로그.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 데이터 흐름도 -->
+<div class="card">
+  <h2>데이터 흐름도</h2>
+  <div style="overflow-x:auto;">
+    <svg viewBox="0 0 900 280" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:900px;margin:0 auto;display:block;font-family:'Noto Sans KR',sans-serif;">
+      <!-- Main DB -->
+      <rect x="10" y="100" width="130" height="80" rx="12" fill="#f2fcf5" stroke="#36a678" stroke-width="2"/>
+      <text x="75" y="130" text-anchor="middle" font-size="11" font-weight="700" fill="#1d6b4d">메인 Supabase</text>
+      <text x="75" y="148" text-anchor="middle" font-size="10" fill="#52606D">notes / books</text>
+      <text x="75" y="163" text-anchor="middle" font-size="10" fill="#52606D">사용자 데이터</text>
+
+      <!-- Arrow 1 -->
+      <line x1="140" y1="140" x2="190" y2="140" stroke="#36a678" stroke-width="2"/>
+      <polygon points="187,136 195,140 187,144" fill="#36a678"/>
+      <text x="165" y="132" text-anchor="middle" font-size="9" fill="#52606D">sync</text>
+
+      <!-- Shorts DB -->
+      <rect x="195" y="60" width="150" height="160" rx="12" fill="white" stroke="#2563eb" stroke-width="2"/>
+      <rect x="195" y="60" width="150" height="30" rx="12" fill="#2563eb"/>
+      <text x="270" y="80" text-anchor="middle" font-size="11" font-weight="700" fill="white">쇼츠 Supabase</text>
+      <text x="270" y="108" text-anchor="middle" font-size="10" fill="#52606D">series</text>
+      <text x="270" y="123" text-anchor="middle" font-size="10" font-weight="600" fill="#2563eb">contents (JSONB)</text>
+      <text x="270" y="138" text-anchor="middle" font-size="10" fill="#52606D">text_fragments</text>
+      <text x="270" y="153" text-anchor="middle" font-size="10" fill="#52606D">assets</text>
+      <text x="270" y="168" text-anchor="middle" font-size="10" fill="#52606D">content_templates</text>
+      <text x="270" y="183" text-anchor="middle" font-size="10" fill="#52606D">schedules</text>
+      <text x="270" y="198" text-anchor="middle" font-size="10" fill="#52606D">sync_log</text>
+
+      <!-- Arrow 2 -->
+      <line x1="345" y1="140" x2="395" y2="140" stroke="#dc2626" stroke-width="2"/>
+      <polygon points="392,136 400,140 392,144" fill="#dc2626"/>
+      <text x="370" y="132" text-anchor="middle" font-size="9" fill="#52606D">fetch</text>
+
+      <!-- Pipeline -->
+      <rect x="400" y="80" width="140" height="120" rx="12" fill="#fef2f2" stroke="#dc2626" stroke-width="2"/>
+      <text x="470" y="105" text-anchor="middle" font-size="11" font-weight="700" fill="#dc2626">파이프라인</text>
+      <text x="470" y="125" text-anchor="middle" font-size="9" fill="#52606D">01. fetch-data</text>
+      <text x="470" y="140" text-anchor="middle" font-size="9" fill="#52606D">02. generate-script</text>
+      <text x="470" y="155" text-anchor="middle" font-size="9" fill="#52606D">03. generate-tts</text>
+      <text x="470" y="170" text-anchor="middle" font-size="9" fill="#52606D">04. render-video</text>
+      <text x="470" y="185" text-anchor="middle" font-size="9" fill="#52606D">05. post-process</text>
+
+      <!-- Arrow 3 -->
+      <line x1="540" y1="140" x2="590" y2="140" stroke="#7c3aed" stroke-width="2"/>
+      <polygon points="587,136 595,140 587,144" fill="#7c3aed"/>
+      <text x="565" y="132" text-anchor="middle" font-size="9" fill="#52606D">upload</text>
+
+      <!-- Platforms -->
+      <rect x="595" y="70" width="130" height="50" rx="10" fill="#faf5ff" stroke="#7c3aed" stroke-width="2"/>
+      <text x="660" y="92" text-anchor="middle" font-size="11" font-weight="700" fill="#7c3aed">YouTube Shorts</text>
+      <text x="660" y="110" text-anchor="middle" font-size="10" fill="#52606D">publications</text>
+
+      <rect x="595" y="130" width="130" height="50" rx="10" fill="#faf5ff" stroke="#7c3aed" stroke-width="2"/>
+      <text x="660" y="152" text-anchor="middle" font-size="11" font-weight="700" fill="#7c3aed">TikTok</text>
+      <text x="660" y="170" text-anchor="middle" font-size="10" fill="#52606D">publications</text>
+
+      <rect x="595" y="190" width="130" height="50" rx="10" fill="#faf5ff" stroke="#7c3aed" stroke-width="2"/>
+      <text x="660" y="212" text-anchor="middle" font-size="11" font-weight="700" fill="#7c3aed">Instagram Reels</text>
+      <text x="660" y="230" text-anchor="middle" font-size="10" fill="#52606D">publications</text>
+
+      <!-- Arrow 4: analytics -->
+      <line x1="725" y1="155" x2="775" y2="155" stroke="#8C7152" stroke-width="2"/>
+      <polygon points="772,151 780,155 772,159" fill="#8C7152"/>
+      <text x="750" y="147" text-anchor="middle" font-size="9" fill="#52606D">metrics</text>
+
+      <!-- Analytics -->
+      <rect x="780" y="110" width="110" height="90" rx="12" fill="rgba(191,165,134,0.1)" stroke="#8C7152" stroke-width="2"/>
+      <text x="835" y="140" text-anchor="middle" font-size="11" font-weight="700" fill="#8C7152">분석</text>
+      <text x="835" y="158" text-anchor="middle" font-size="9" fill="#52606D">analytics_</text>
+      <text x="835" y="172" text-anchor="middle" font-size="9" fill="#52606D">snapshots</text>
+      <text x="835" y="190" text-anchor="middle" font-size="9" fill="#52606D">일별 수집</text>
+
+      <!-- Feedback loop -->
+      <path d="M835,200 L835,260 L270,260 L270,220" fill="none" stroke="#36a678" stroke-width="1.5" stroke-dasharray="6"/>
+      <polygon points="267,223 273,223 270,217" fill="#36a678"/>
+      <text x="550" y="254" text-anchor="middle" font-size="9" fill="#36a678" font-weight="600">성과 피드백 → quality_score / performance_score 반영</text>
+    </svg>
+  </div>
+</div>
+
+<!-- 콘텐츠 라이프사이클 -->
+<div class="card">
+  <h2>콘텐츠 라이프사이클 — 상태 전이</h2>
+  <div style="overflow-x:auto;">
+    <svg viewBox="0 0 900 120" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:900px;margin:0 auto;display:block;font-family:'Noto Sans KR',sans-serif;">
+      <!-- States -->
+      <rect x="5" y="35" width="80" height="36" rx="18" fill="#e5e7eb" stroke="#9ca3af" stroke-width="1.5"/>
+      <text x="45" y="58" text-anchor="middle" font-size="10" font-weight="600" fill="#374151">draft</text>
+
+      <line x1="85" y1="53" x2="110" y2="53" stroke="#9ca3af" stroke-width="1.5"/>
+      <polygon points="107,50 113,53 107,56" fill="#9ca3af"/>
+
+      <rect x="113" y="35" width="80" height="36" rx="18" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5"/>
+      <text x="153" y="58" text-anchor="middle" font-size="10" font-weight="600" fill="#92400e">review</text>
+
+      <line x1="193" y1="53" x2="218" y2="53" stroke="#f59e0b" stroke-width="1.5"/>
+      <polygon points="215,50 221,53 215,56" fill="#f59e0b"/>
+
+      <rect x="221" y="35" width="85" height="36" rx="18" fill="#d1fae5" stroke="#10b981" stroke-width="1.5"/>
+      <text x="263" y="58" text-anchor="middle" font-size="10" font-weight="600" fill="#065f46">approved</text>
+
+      <line x1="306" y1="53" x2="331" y2="53" stroke="#10b981" stroke-width="1.5"/>
+      <polygon points="328,50 334,53 328,56" fill="#10b981"/>
+
+      <rect x="334" y="35" width="85" height="36" rx="18" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+      <text x="376" y="58" text-anchor="middle" font-size="10" font-weight="600" fill="#1e40af">rendering</text>
+
+      <line x1="419" y1="53" x2="444" y2="53" stroke="#3b82f6" stroke-width="1.5"/>
+      <polygon points="441,50 447,53 441,56" fill="#3b82f6"/>
+
+      <rect x="447" y="35" width="85" height="36" rx="18" fill="#e0e7ff" stroke="#6366f1" stroke-width="1.5"/>
+      <text x="489" y="58" text-anchor="middle" font-size="10" font-weight="600" fill="#3730a3">rendered</text>
+
+      <line x1="532" y1="53" x2="557" y2="53" stroke="#6366f1" stroke-width="1.5"/>
+      <polygon points="554,50 560,53 554,56" fill="#6366f1"/>
+
+      <rect x="560" y="35" width="90" height="36" rx="18" fill="#ede9fe" stroke="#8b5cf6" stroke-width="1.5"/>
+      <text x="605" y="58" text-anchor="middle" font-size="10" font-weight="600" fill="#5b21b6">scheduled</text>
+
+      <line x1="650" y1="53" x2="675" y2="53" stroke="#8b5cf6" stroke-width="1.5"/>
+      <polygon points="672,50 678,53 672,56" fill="#8b5cf6"/>
+
+      <rect x="678" y="35" width="90" height="36" rx="18" fill="#dcfce7" stroke="#22c55e" stroke-width="2"/>
+      <text x="723" y="58" text-anchor="middle" font-size="10" font-weight="700" fill="#166534">published</text>
+
+      <line x1="768" y1="53" x2="793" y2="53" stroke="#6b7280" stroke-width="1.5"/>
+      <polygon points="790,50 796,53 790,56" fill="#6b7280"/>
+
+      <rect x="796" y="35" width="80" height="36" rx="18" fill="#f3f4f6" stroke="#6b7280" stroke-width="1.5"/>
+      <text x="836" y="58" text-anchor="middle" font-size="10" font-weight="600" fill="#374151">archived</text>
+
+      <!-- Labels -->
+      <text x="45" y="25" text-anchor="middle" font-size="8" fill="#9ca3af">생성</text>
+      <text x="153" y="25" text-anchor="middle" font-size="8" fill="#9ca3af">검토</text>
+      <text x="263" y="25" text-anchor="middle" font-size="8" fill="#9ca3af">승인</text>
+      <text x="376" y="25" text-anchor="middle" font-size="8" fill="#9ca3af">렌더링</text>
+      <text x="489" y="25" text-anchor="middle" font-size="8" fill="#9ca3af">완료</text>
+      <text x="605" y="25" text-anchor="middle" font-size="8" fill="#9ca3af">예약</text>
+      <text x="723" y="25" text-anchor="middle" font-size="8" fill="#9ca3af">발행</text>
+      <text x="836" y="25" text-anchor="middle" font-size="8" fill="#9ca3af">보관</text>
+
+      <!-- Reject path -->
+      <path d="M153,71 L153,100 L45,100 L45,71" fill="none" stroke="#ef4444" stroke-width="1" stroke-dasharray="4"/>
+      <text x="99" y="96" text-anchor="middle" font-size="8" fill="#ef4444">반려 → draft</text>
+    </svg>
+  </div>
+</div>
+
+<!-- 환경변수/연동 가이드 -->
+<div class="card">
+  <h2>환경변수 및 연동 가이드</h2>
+
+  <h3>1. 환경변수 설정</h3>
+  <pre style="background:#1F2933;color:#e0e6ed;padding:16px;border-radius:8px;font-size:0.82rem;overflow-x:auto;line-height:1.6;">
+# .env (shorts/ 프로젝트 루트)
+
+# 메인 Supabase — notes/books 조회용
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=eyJ...
+
+# 쇼츠 전용 Supabase — 콘텐츠/파이프라인/분석
+SHORTS_SUPABASE_URL=https://your-shorts-project.supabase.co
+SHORTS_SUPABASE_SERVICE_ROLE_KEY=eyJ...
+
+# OpenAI — 스크립트 생성
+OPENAI_API_KEY=sk-...</pre>
+
+  <h3>2. 마이그레이션 적용</h3>
+  <pre style="background:#1F2933;color:#e0e6ed;padding:16px;border-radius:8px;font-size:0.82rem;overflow-x:auto;line-height:1.6;">
+# 스키마 생성
+supabase db push < doc/database/migration-202603080000__shorts__initial-schema.sql
+
+# 시드 데이터
+supabase db push < doc/database/migration-202603080001__shorts__seed-data.sql
+
+# 또는 시드 스크립트 실행
+npx tsx scripts/seed-contents.ts</pre>
+
+  <h3>3. 파이프라인 연동</h3>
+  <table>
+    <tr><th>클라이언트</th><th>용도</th><th>함수</th></tr>
+    <tr><td><code>createServiceClient()</code></td><td>메인 DB (notes/books 조회)</td><td>기존 daily-quote, book-review, reading-tip</td></tr>
+    <tr><td><code>createShortsClient()</code></td><td>쇼츠 DB (콘텐츠/에셋/분석)</td><td>나머지 11개 시리즈 + 파이프라인 기록</td></tr>
+  </table>
+
+  <h3>4. 지원 시리즈 — fetchData 연동 & 오디오 현황</h3>
+  <table>
+    <tr><th>시리즈</th><th>데이터 소스</th><th>연동</th><th>AudioLayer</th><th>스크립트 프롬프트</th></tr>
+    <tr><td>daily-quote</td><td>메인 DB (notes)</td><td><span class="tag">기존 유지</span></td><td><span class="tag red">미구현</span></td><td><span class="tag">정의됨</span></td></tr>
+    <tr><td>book-review</td><td>메인 DB (books)</td><td><span class="tag">기존 유지</span></td><td><span class="tag red">미구현</span></td><td><span class="tag">정의됨</span></td></tr>
+    <tr><td>reading-tip</td><td>하드코딩 (tip-selector)</td><td><span class="tag">기존 유지</span></td><td><span class="tag red">미구현</span></td><td><span class="tag red">없음</span></td></tr>
+    <tr><td>service-intro</td><td>쇼츠 DB</td><td><span class="tag blue">신규</span></td><td><span class="tag red">미구현</span></td><td><span class="tag red">없음</span></td></tr>
+    <tr style="background:#f0fdf4;"><td>feature-demo</td><td>쇼츠 DB</td><td><span class="tag blue">신규</span></td><td><span class="tag" style="background:#d1fae5;color:#065f46;border-color:#10b981;">구현 완료</span></td><td><span class="tag red">없음</span></td></tr>
+    <tr style="background:#f0fdf4;"><td>service-showcase</td><td>쇼츠 DB</td><td><span class="tag blue">신규</span></td><td><span class="tag" style="background:#d1fae5;color:#065f46;border-color:#10b981;">구현 완료</span></td><td><span class="tag red">없음</span></td></tr>
+    <tr><td>user-story</td><td>쇼츠 DB</td><td><span class="tag blue">신규</span></td><td><span class="tag red">미구현</span></td><td><span class="tag red">없음</span></td></tr>
+    <tr><td>booktok-style</td><td>쇼츠 DB</td><td><span class="tag blue">신규</span></td><td><span class="tag red">미구현</span></td><td><span class="tag red">없음</span></td></tr>
+    <tr><td>reading-challenge</td><td>쇼츠 DB</td><td><span class="tag blue">신규</span></td><td><span class="tag red">미구현</span></td><td><span class="tag red">없음</span></td></tr>
+    <tr><td>pain-point</td><td>쇼츠 DB</td><td><span class="tag blue">신규</span></td><td><span class="tag red">미구현</span></td><td><span class="tag red">없음</span></td></tr>
+    <tr><td>community-highlight</td><td>쇼츠 DB</td><td><span class="tag blue">신규</span></td><td><span class="tag red">미구현</span></td><td><span class="tag red">없음</span></td></tr>
+    <tr><td>creator-collab</td><td>쇼츠 DB</td><td><span class="tag blue">신규</span></td><td><span class="tag red">미구현</span></td><td><span class="tag red">없음</span></td></tr>
+    <tr><td>book-vs-book</td><td>쇼츠 DB</td><td><span class="tag blue">신규</span></td><td><span class="tag red">미구현</span></td><td><span class="tag red">없음</span></td></tr>
+    <tr><td>app-preview</td><td>쇼츠 DB</td><td><span class="tag blue">신규</span></td><td><span class="tag red">미구현</span></td><td><span class="tag red">없음</span></td></tr>
+  </table>
+</div>
+
+</div>
+
+<!-- ========================================== -->
+<!-- TAB 9: 음성 & 자동화 검토 -->
+<!-- ========================================== -->
+<div class="tab-panel" :class="{ active: activeTab === 8 }">
+
+<!-- 음성/오디오 현황 진단 -->
+<div class="card">
+  <h2>음성/오디오 현황 진단</h2>
+  <p>전체 파이프라인은 Edge TTS (무료) + OpenAI 스크립트 생성 구조를 갖추고 있지만, 실제 컴포지션 레벨에서는 대부분 오디오가 <strong>렌더링되지 않는 상태</strong>입니다.</p>
+
+  <div class="metrics-grid">
+    <div class="metric-card"><span class="num" style="color:#10b981;">10/10</span><span class="label">AudioLayer 구현 완료</span></div>
+    <div class="metric-card"><span class="num" style="color:#10b981;">14/14</span><span class="label">스크립트 프롬프트 정의</span></div>
+    <div class="metric-card"><span class="num" style="color:#10b981;">14/14</span><span class="label">fetchData 지원</span></div>
+    <div class="metric-card"><span class="num">$0</span><span class="label">TTS 비용 (Edge TTS 무료)</span></div>
+  </div>
+
+  <h3>시리즈별 오디오 지원 상세</h3>
+  <table>
+    <tr>
+      <th>시리즈</th>
+      <th>Props 상속</th>
+      <th>AudioLayer 렌더링</th>
+      <th>스크립트 프롬프트</th>
+      <th>상태</th>
+    </tr>
+    <tr style="background:#f0fdf4;"><td>daily-quote</td><td><span class="tag">audioUrl, bgmUrl</span></td><td><span class="tag" style="background:#d1fae5;color:#065f46;border-color:#10b981;">구현 완료</span></td><td><span class="tag" style="background:#d1fae5;color:#065f46;border-color:#10b981;">정의됨</span></td><td><span class="tag" style="background:#d1fae5;color:#065f46;border-color:#10b981;">유음 지원</span></td></tr>
+    <tr style="background:#f0fdf4;"><td>book-review</td><td><span class="tag">audioUrl, bgmUrl</span></td><td><span class="tag" style="background:#d1fae5;color:#065f46;border-color:#10b981;">구현 완료</span></td><td><span class="tag" style="background:#d1fae5;color:#065f46;border-color:#10b981;">정의됨</span></td><td><span class="tag" style="background:#d1fae5;color:#065f46;border-color:#10b981;">유음 지원</span></td></tr>
+    <tr style="background:#f0fdf4;"><td>reading-tip</td><td><span class="tag">audioUrl, bgmUrl</span></td><td><span class="tag" style="background:#d1fae5;color:#065f46;border-color:#10b981;">구현 완료</span></td><td><span class="tag" style="background:#d1fae5;color:#065f46;border-color:#10b981;">정의됨</span></td><td><span class="tag" style="background:#d1fae5;color:#065f46;border-color:#10b981;">유음 지원</span></td></tr>
+    <tr style="background:#f0fdf4;"><td>feature-demo</td><td><span class="tag">audioUrl, bgmUrl</span></td><td><span class="tag" style="background:#d1fae5;color:#065f46;border-color:#10b981;">구현 완료</span></td><td><span class="tag" style="background:#d1fae5;color:#065f46;border-color:#10b981;">정의됨</span></td><td><span class="tag" style="background:#d1fae5;color:#065f46;border-color:#10b981;">유음 지원</span></td></tr>
+    <tr style="background:#f0fdf4;"><td>service-showcase</td><td><span class="tag">audioUrl, bgmUrl</span></td><td><span class="tag" style="background:#d1fae5;color:#065f46;border-color:#10b981;">구현 완료</span></td><td><span class="tag" style="background:#d1fae5;color:#065f46;border-color:#10b981;">정의됨</span></td><td><span class="tag" style="background:#d1fae5;color:#065f46;border-color:#10b981;">유음 지원</span></td></tr>
+    <tr style="background:#f0fdf4;"><td>service-intro</td><td><span class="tag">audioUrl, bgmUrl</span></td><td><span class="tag" style="background:#d1fae5;color:#065f46;border-color:#10b981;">구현 완료</span></td><td><span class="tag" style="background:#d1fae5;color:#065f46;border-color:#10b981;">정의됨</span></td><td><span class="tag" style="background:#d1fae5;color:#065f46;border-color:#10b981;">유음 지원</span></td></tr>
+    <tr style="background:#f0fdf4;"><td>user-story</td><td><span class="tag">audioUrl, bgmUrl</span></td><td><span class="tag" style="background:#d1fae5;color:#065f46;border-color:#10b981;">구현 완료</span></td><td><span class="tag" style="background:#d1fae5;color:#065f46;border-color:#10b981;">정의됨</span></td><td><span class="tag" style="background:#d1fae5;color:#065f46;border-color:#10b981;">유음 지원</span></td></tr>
+    <tr style="background:#f0fdf4;"><td>booktok-style</td><td><span class="tag">audioUrl, bgmUrl</span></td><td><span class="tag" style="background:#d1fae5;color:#065f46;border-color:#10b981;">구현 완료</span></td><td><span class="tag" style="background:#d1fae5;color:#065f46;border-color:#10b981;">정의됨</span></td><td><span class="tag" style="background:#d1fae5;color:#065f46;border-color:#10b981;">유음 지원</span></td></tr>
+    <tr style="background:#f0fdf4;"><td>reading-challenge</td><td><span class="tag">audioUrl, bgmUrl</span></td><td><span class="tag" style="background:#d1fae5;color:#065f46;border-color:#10b981;">구현 완료</span></td><td><span class="tag" style="background:#d1fae5;color:#065f46;border-color:#10b981;">정의됨</span></td><td><span class="tag" style="background:#d1fae5;color:#065f46;border-color:#10b981;">유음 지원</span></td></tr>
+    <tr style="background:#f0fdf4;"><td>pain-point</td><td><span class="tag">audioUrl, bgmUrl</span></td><td><span class="tag" style="background:#d1fae5;color:#065f46;border-color:#10b981;">구현 완료</span></td><td><span class="tag" style="background:#d1fae5;color:#065f46;border-color:#10b981;">정의됨</span></td><td><span class="tag" style="background:#d1fae5;color:#065f46;border-color:#10b981;">유음 지원</span></td></tr>
+    <tr style="background:#f0fdf4;"><td>community-highlight</td><td><span class="tag">audioUrl, bgmUrl</span></td><td><span class="tag" style="background:#d1fae5;color:#065f46;border-color:#10b981;">구현 완료</span></td><td><span class="tag" style="background:#d1fae5;color:#065f46;border-color:#10b981;">정의됨</span></td><td><span class="tag" style="background:#d1fae5;color:#065f46;border-color:#10b981;">유음 지원</span></td></tr>
+    <tr style="background:#f0fdf4;"><td>creator-collab</td><td><span class="tag">audioUrl, bgmUrl</span></td><td><span class="tag" style="background:#d1fae5;color:#065f46;border-color:#10b981;">구현 완료</span></td><td><span class="tag" style="background:#d1fae5;color:#065f46;border-color:#10b981;">정의됨</span></td><td><span class="tag" style="background:#d1fae5;color:#065f46;border-color:#10b981;">유음 지원</span></td></tr>
+    <tr style="background:#f0fdf4;"><td>book-vs-book</td><td><span class="tag">audioUrl, bgmUrl</span></td><td><span class="tag" style="background:#d1fae5;color:#065f46;border-color:#10b981;">구현 완료</span></td><td><span class="tag" style="background:#d1fae5;color:#065f46;border-color:#10b981;">정의됨</span></td><td><span class="tag" style="background:#d1fae5;color:#065f46;border-color:#10b981;">유음 지원</span></td></tr>
+    <tr style="background:#f0fdf4;"><td>app-preview</td><td><span class="tag">audioUrl, bgmUrl</span></td><td><span class="tag" style="background:#d1fae5;color:#065f46;border-color:#10b981;">구현 완료</span></td><td><span class="tag" style="background:#d1fae5;color:#065f46;border-color:#10b981;">정의됨</span></td><td><span class="tag" style="background:#d1fae5;color:#065f46;border-color:#10b981;">유음 지원</span></td></tr>
+  </table>
+</div>
+
+<!-- 오디오 아키텍처 -->
+<div class="card">
+  <h2>오디오 아키텍처 분석</h2>
+
+  <h3>현재 구조</h3>
+  <div style="overflow-x:auto;">
+    <svg viewBox="0 0 800 200" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:800px;margin:0 auto;display:block;font-family:'Noto Sans KR',sans-serif;">
+      <!-- Pipeline Step 2 -->
+      <rect x="10" y="60" width="140" height="70" rx="10" fill="#fef3c7" stroke="#f59e0b" stroke-width="2"/>
+      <text x="80" y="85" text-anchor="middle" font-size="10" font-weight="700" fill="#92400e">02-generate-script</text>
+      <text x="80" y="100" text-anchor="middle" font-size="9" fill="#78350f">OpenAI gpt-4o-mini</text>
+      <text x="80" y="115" text-anchor="middle" font-size="8" fill="#92400e">2개 프롬프트만 정의</text>
+      <text x="80" y="127" text-anchor="middle" font-size="8" fill="#dc2626">(daily-quote, book-review)</text>
+
+      <line x1="150" y1="95" x2="180" y2="95" stroke="#f59e0b" stroke-width="2"/>
+      <polygon points="177,91 184,95 177,99" fill="#f59e0b"/>
+
+      <!-- Pipeline Step 3 -->
+      <rect x="185" y="60" width="130" height="70" rx="10" fill="#dbeafe" stroke="#3b82f6" stroke-width="2"/>
+      <text x="250" y="85" text-anchor="middle" font-size="10" font-weight="700" fill="#1e40af">03-generate-tts</text>
+      <text x="250" y="100" text-anchor="middle" font-size="9" fill="#1e3a8a">Edge TTS (무료)</text>
+      <text x="250" y="115" text-anchor="middle" font-size="8" fill="#1e40af">ko-KR-SunHiNeural</text>
+      <text x="250" y="127" text-anchor="middle" font-size="8" fill="#1e40af">narration.mp3 출력</text>
+
+      <line x1="315" y1="95" x2="345" y2="95" stroke="#3b82f6" stroke-width="2"/>
+      <polygon points="342,91 349,95 342,99" fill="#3b82f6"/>
+
+      <!-- Render -->
+      <rect x="350" y="60" width="130" height="70" rx="10" fill="#e0e7ff" stroke="#6366f1" stroke-width="2"/>
+      <text x="415" y="85" text-anchor="middle" font-size="10" font-weight="700" fill="#3730a3">04-render-video</text>
+      <text x="415" y="100" text-anchor="middle" font-size="9" fill="#312e81">Remotion render</text>
+      <text x="415" y="115" text-anchor="middle" font-size="8" fill="#3730a3">props.audioUrl = ttsPath</text>
+      <text x="415" y="127" text-anchor="middle" font-size="8" fill="#3730a3">props에 오디오 경로 전달</text>
+
+      <line x1="480" y1="95" x2="510" y2="95" stroke="#6366f1" stroke-width="2"/>
+      <polygon points="507,91 514,95 507,99" fill="#6366f1"/>
+
+      <!-- Composition -->
+      <rect x="515" y="45" width="160" height="100" rx="10" fill="white" stroke="#dc2626" stroke-width="2"/>
+      <text x="595" y="67" text-anchor="middle" font-size="10" font-weight="700" fill="#dc2626">Composition 내부</text>
+      <text x="595" y="85" text-anchor="middle" font-size="9" fill="#3E4C59">AudioLayer 컴포넌트</text>
+      <text x="595" y="100" text-anchor="middle" font-size="8" fill="#3E4C59">bgmSrc → BGM (vol 15%)</text>
+      <text x="595" y="115" text-anchor="middle" font-size="8" fill="#3E4C59">ttsSrc → TTS 나레이션</text>
+      <text x="595" y="130" text-anchor="middle" font-size="8" fill="#dc2626">⚠ 2개만 구현됨</text>
+
+      <!-- Legend -->
+      <rect x="520" y="160" width="150" height="30" rx="6" fill="#fef2f2" stroke="#fecaca"/>
+      <text x="595" y="180" text-anchor="middle" font-size="9" fill="#dc2626">8개 시리즈: AudioLayer 없음 → 무음 출력</text>
+    </svg>
+  </div>
+
+  <h3>핵심 병목</h3>
+  <ol>
+    <li><strong>AudioLayer 미적용 (8개 시리즈)</strong>: BaseShortProps로 audioUrl/bgmUrl을 받지만 실제 &lt;AudioLayer&gt; 컴포넌트를 렌더링하지 않아 TTS를 생성해도 영상에 포함되지 않음</li>
+    <li><strong>스크립트 프롬프트 부재 (12개 시리즈)</strong>: <code>openai.ts</code>의 generateScript()에 daily-quote, book-review 2개 프롬프트만 정의. 나머지 시리즈는 스크립트 생성 시 에러 발생</li>
+    <li><strong>BGM 에셋 부재</strong>: bgmUrl을 받을 수 있지만, 프로젝트에 BGM 파일이 전혀 없음. 로열티 프리 BGM 확보 필요</li>
+  </ol>
+
+  <h3>음성 완전 지원을 위한 작업 목록</h3>
+  <table>
+    <tr><th>#</th><th>작업</th><th>대상</th><th>난이도</th><th>예상 시간</th></tr>
+    <tr><td>1</td><td>8개 컴포지션에 AudioLayer 추가</td><td>compositions/**/index.tsx</td><td><span class="tag">Low</span></td><td>각 5분</td></tr>
+    <tr><td>2</td><td>12개 시리즈 스크립트 프롬프트 추가</td><td>pipeline/utils/openai.ts</td><td><span class="tag blue">Medium</span></td><td>2시간</td></tr>
+    <tr><td>3</td><td>로열티 프리 BGM 확보 및 등록</td><td>assets/audio/bgm/</td><td><span class="tag blue">Medium</span></td><td>1시간</td></tr>
+    <tr><td>4</td><td>TTS 음성 다양화 (시리즈별 톤)</td><td>config/audio.ts + 파이프라인</td><td><span class="tag">Low</span></td><td>30분</td></tr>
+    <tr><td>5</td><td>오디오 볼륨/타이밍 QA</td><td>각 시리즈 렌더링 테스트</td><td><span class="tag blue">Medium</span></td><td>2시간</td></tr>
+  </table>
+</div>
+
+<!-- 자동 생성/배포 가능성 검토 -->
+<div class="card">
+  <h2>자동 주기적 생성 & 배포 — 가능성 검토</h2>
+
+  <h3>현재 자동화 수준</h3>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin:16px 0;">
+    <div style="padding:16px;border-radius:10px;border:2px solid #10b981;background:#f0fdf4;">
+      <div style="font-weight:700;color:#065f46;margin-bottom:8px;">✅ 구현 완료</div>
+      <ul style="font-size:0.85rem;color:#3E4C59;padding-left:16px;">
+        <li>파이프라인 6단계 오케스트레이션</li>
+        <li>Edge TTS 무료 음성 합성</li>
+        <li>OpenAI 스크립트 자동 생성</li>
+        <li>Remotion 자동 렌더링</li>
+        <li>Supabase Storage 업로드</li>
+        <li>비용 추적 시스템</li>
+        <li>generate-daily/weekly 스크립트</li>
+        <li>schedules 테이블 (DB 설계)</li>
+      </ul>
+    </div>
+    <div style="padding:16px;border-radius:10px;border:2px solid #f59e0b;background:#fef3c7;">
+      <div style="font-weight:700;color:#92400e;margin-bottom:8px;">🔶 부분 구현</div>
+      <ul style="font-size:0.85rem;color:#3E4C59;padding-left:16px;">
+        <li>fetchData: 3/14 시리즈만 지원</li>
+        <li>generateScript: 2/14 프롬프트만 정의</li>
+        <li>AudioLayer: 2/10 컴포지션만 적용</li>
+        <li>post-process: TODO 상태 (썸네일/메타)</li>
+      </ul>
+    </div>
+    <div style="padding:16px;border-radius:10px;border:2px solid #dc2626;background:#fef2f2;">
+      <div style="font-weight:700;color:#dc2626;margin-bottom:8px;">❌ 미구현</div>
+      <ul style="font-size:0.85rem;color:#3E4C59;padding-left:16px;">
+        <li>cron 스케줄러 실행기</li>
+        <li>YouTube Data API 연동</li>
+        <li>TikTok/Reels API 연동</li>
+        <li>pipeline_runs DB 기록</li>
+        <li>에러 알림 (Slack/Discord)</li>
+        <li>콘텐츠 자동 승인 로직</li>
+        <li>성과 피드백 반영 루프</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- 결론: 자동화 로드맵 -->
+<div class="card">
+  <h2>자동화 로드맵 — 3단계</h2>
+
+  <h3>Phase 1: 파이프라인 완성 (완전 자동 생성 가능) — <span style="color:#10b981;font-weight:800;">진행 중</span></h3>
+  <p style="color:#52606D;font-size:0.88rem;">모든 시리즈가 음성 포함 영상을 자동 생성할 수 있는 상태로 만드는 단계</p>
+  <table>
+    <tr><th>#</th><th>작업</th><th>파일</th><th>상태</th></tr>
+    <tr style="background:#f0fdf4;"><td>P1-1</td><td>10개 컴포지션에 AudioLayer 적용</td><td>src/compositions/*/index.tsx (8개 추가)</td><td><span class="tag" style="background:#d1fae5;color:#065f46;border-color:#10b981;">✅ 완료</span></td></tr>
+    <tr style="background:#f0fdf4;"><td>P1-2</td><td>14개 시리즈 스크립트 프롬프트 확장</td><td>pipeline/utils/openai.ts (12개 추가)</td><td><span class="tag" style="background:#d1fae5;color:#065f46;border-color:#10b981;">✅ 완료</span></td></tr>
+    <tr style="background:#f0fdf4;"><td>P1-3</td><td>fetchData 14개 시리즈 전체 지원</td><td>pipeline/steps/01-fetch-data.ts</td><td><span class="tag" style="background:#d1fae5;color:#065f46;border-color:#10b981;">✅ 완료</span></td></tr>
+    <tr><td>P1-4</td><td>post-process 썸네일 + 메타데이터 구현</td><td>pipeline/steps/05-post-process.ts</td><td><span class="tag gold">대기</span></td></tr>
+    <tr><td>P1-5</td><td>pipeline_runs 기록 연동</td><td>pipeline/orchestrator.ts</td><td><span class="tag gold">대기 (→ Phase 2)</span></td></tr>
+    <tr><td>P1-6</td><td>BGM 에셋 확보 (로열티 프리)</td><td>assets/audio/bgm/</td><td><span class="tag gold">대기</span></td></tr>
+  </table>
+  <p style="margin-top:12px;"><strong>현재 상태:</strong> P1-1~3 완료 → 모든 시리즈에서 TTS 음성 포함 영상 자동 생성 가능. BGM/썸네일은 추후 고도화.</p>
+
+  <h3>Phase 2: 스케줄링 & 자동 배포 — <span style="color:#f59e0b;font-weight:800;">기획 완료</span></h3>
+  <p style="color:#52606D;font-size:0.88rem;">cron 기반 자동 실행 + 플랫폼 API 연동으로 완전 자동 배포 <br><strong>상세 기획서:</strong> <code>doc/planning/phase2-auto-deploy-plan.md</code></p>
+  <table>
+    <tr><th>#</th><th>작업</th><th>방법</th><th>비용</th></tr>
+    <tr><td>P2-1</td><td>스케줄러 실행기 구현</td><td>
+      <strong>옵션 A</strong>: GitHub Actions cron<br>
+      <strong>옵션 B</strong>: Vercel Cron Jobs<br>
+      <strong>옵션 C</strong>: Supabase Edge Functions + pg_cron
+    </td><td>A: 무료 (2000분/월)<br>B: Hobby 무료<br>C: Pro $25/월</td></tr>
+    <tr><td>P2-2</td><td>YouTube Data API v3 연동</td><td>videos.insert + OAuth2<br>일일 할당량: 10,000 유닛</td><td>무료 (할당량 내)</td></tr>
+    <tr><td>P2-3</td><td>TikTok Content Posting API</td><td>video.upload + video.publish<br>Developer Portal 앱 등록 필요</td><td>무료</td></tr>
+    <tr><td>P2-4</td><td>Instagram Reels Publishing API</td><td>Graph API media + publish<br>Facebook Business 계정 필요</td><td>무료</td></tr>
+    <tr><td>P2-5</td><td>에러 알림 Webhook</td><td>Slack/Discord Webhook<br>파이프라인 실패 시 즉시 알림</td><td>무료</td></tr>
+    <tr><td>P2-6</td><td>schedules 테이블 → 실행기 연동</td><td>DB에서 스케줄 읽기 → cron 동적 실행</td><td>—</td></tr>
+  </table>
+
+  <h4>추천 스케줄 구성 (예시)</h4>
+  <table>
+    <tr><th>시리즈</th><th>빈도</th><th>cron</th><th>요일/시간</th></tr>
+    <tr><td>daily-quote</td><td>매일</td><td><code>0 9 * * *</code></td><td>매일 09:00 KST</td></tr>
+    <tr><td>booktok-style</td><td>주 3회</td><td><code>0 12 * * 1,3,5</code></td><td>월/수/금 12:00</td></tr>
+    <tr><td>pain-point</td><td>주 2회</td><td><code>0 18 * * 2,4</code></td><td>화/목 18:00</td></tr>
+    <tr><td>book-review</td><td>주 1회</td><td><code>0 10 * * 6</code></td><td>토 10:00</td></tr>
+    <tr><td>reading-tip</td><td>주 1회</td><td><code>0 10 * * 0</code></td><td>일 10:00</td></tr>
+    <tr><td>user-story</td><td>격주</td><td><code>0 12 1,15 * *</code></td><td>1일, 15일</td></tr>
+    <tr><td>reading-challenge</td><td>월 1회</td><td><code>0 9 1 * *</code></td><td>매월 1일</td></tr>
+    <tr><td>service-intro</td><td>월 1회</td><td><code>0 9 15 * *</code></td><td>매월 15일</td></tr>
+    <tr><td>community-highlight</td><td>격주</td><td><code>0 14 * * 3</code></td><td>격주 수요일</td></tr>
+    <tr><td>creator-collab</td><td>월 1회</td><td><code>0 12 20 * *</code></td><td>매월 20일</td></tr>
+  </table>
+
+  <h3>Phase 3: 성과 피드백 루프 & 최적화</h3>
+  <p style="color:#52606D;font-size:0.88rem;">분석 데이터를 기반으로 콘텐츠 선택/생성을 자동 최적화</p>
+  <table>
+    <tr><th>#</th><th>작업</th><th>설명</th></tr>
+    <tr><td>P3-1</td><td>YouTube Analytics API 연동</td><td>일별 조회수, 완주율, CTR 자동 수집 → analytics_snapshots</td></tr>
+    <tr><td>P3-2</td><td>콘텐츠 성과 점수 자동 계산</td><td>contents.quality_score, text_fragments.performance_score 자동 업데이트</td></tr>
+    <tr><td>P3-3</td><td>성과 기반 콘텐츠 전략</td><td>schedules.content_strategy = 'performance_based' 구현</td></tr>
+    <tr><td>P3-4</td><td>A/B 테스트 프레임워크</td><td>같은 시리즈의 다른 hook/CTA 조합으로 변형 생성 → 성과 비교</td></tr>
+    <tr><td>P3-5</td><td>AI 자동 승인</td><td>품질 점수가 임계값 이상이면 review → approved 자동 전이</td></tr>
+  </table>
+</div>
+
+<!-- 비용 시뮬레이션 -->
+<div class="card">
+  <h2>월간 비용 시뮬레이션</h2>
+  <p>위 스케줄 기준 월간 약 50~60편 생성 시:</p>
+
+  <table>
+    <tr><th>항목</th><th>단가</th><th>월 사용량</th><th>월 비용</th></tr>
+    <tr><td>Edge TTS (음성 합성)</td><td>무료</td><td>~60편</td><td><strong>$0</strong></td></tr>
+    <tr><td>OpenAI gpt-4o-mini (스크립트)</td><td>~$0.001/편</td><td>~60편</td><td><strong>~$0.06</strong></td></tr>
+    <tr><td>Supabase (쇼츠 DB)</td><td>Free tier</td><td>—</td><td><strong>$0</strong></td></tr>
+    <tr><td>Supabase Storage</td><td>1GB 무료</td><td>~60편 × 15MB</td><td><strong>$0</strong> (1GB 미만)</td></tr>
+    <tr><td>GitHub Actions (스케줄러)</td><td>2000분 무료</td><td>~60 × 5분</td><td><strong>$0</strong> (300분)</td></tr>
+    <tr><td>YouTube Data API</td><td>무료 (할당량)</td><td>~60편</td><td><strong>$0</strong></td></tr>
+    <tr style="background:#f0fdf4;font-weight:700;"><td colspan="3">합계</td><td>~$0.06/월</td></tr>
+  </table>
+  <p style="margin-top:12px;font-size:0.85rem;color:#52606D;">※ 렌더링은 로컬/CI에서 실행되므로 GPU 서버 비용 없음 (Remotion은 CPU 렌더링)</p>
+  <p style="font-size:0.85rem;color:#52606D;">※ 대용량 스케일 시 Remotion Lambda ($0.005/렌더) 또는 Render.com GPU 인스턴스 고려</p>
+</div>
+
+<!-- 전체 자동화 파이프라인 흐름 -->
+<div class="card">
+  <h2>전체 자동화 파이프라인 — 목표 아키텍처</h2>
+  <div style="overflow-x:auto;">
+    <svg viewBox="0 0 960 400" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:960px;margin:0 auto;display:block;font-family:'Noto Sans KR',sans-serif;">
+      <!-- Scheduler -->
+      <rect x="10" y="30" width="140" height="80" rx="12" fill="#ede9fe" stroke="#8b5cf6" stroke-width="2"/>
+      <text x="80" y="55" text-anchor="middle" font-size="11" font-weight="700" fill="#5b21b6">스케줄러</text>
+      <text x="80" y="72" text-anchor="middle" font-size="9" fill="#6d28d9">GitHub Actions</text>
+      <text x="80" y="86" text-anchor="middle" font-size="9" fill="#6d28d9">cron 트리거</text>
+      <text x="80" y="100" text-anchor="middle" font-size="8" fill="#7c3aed">schedules 테이블 참조</text>
+
+      <line x1="150" y1="70" x2="175" y2="70" stroke="#8b5cf6" stroke-width="2"/>
+      <polygon points="172,66 179,70 172,74" fill="#8b5cf6"/>
+
+      <!-- Content Selection -->
+      <rect x="180" y="30" width="130" height="80" rx="12" fill="#f0fdf4" stroke="#10b981" stroke-width="2"/>
+      <text x="245" y="55" text-anchor="middle" font-size="10" font-weight="700" fill="#065f46">콘텐츠 선택</text>
+      <text x="245" y="72" text-anchor="middle" font-size="9" fill="#047857">쇼츠 DB 조회</text>
+      <text x="245" y="86" text-anchor="middle" font-size="9" fill="#047857">status = approved</text>
+      <text x="245" y="100" text-anchor="middle" font-size="8" fill="#10b981">or AI 자동 생성</text>
+
+      <line x1="310" y1="70" x2="335" y2="70" stroke="#10b981" stroke-width="2"/>
+      <polygon points="332,66 339,70 332,74" fill="#10b981"/>
+
+      <!-- Script Gen -->
+      <rect x="340" y="30" width="110" height="80" rx="12" fill="#fef3c7" stroke="#f59e0b" stroke-width="2"/>
+      <text x="395" y="55" text-anchor="middle" font-size="10" font-weight="700" fill="#92400e">스크립트 생성</text>
+      <text x="395" y="72" text-anchor="middle" font-size="9" fill="#b45309">OpenAI API</text>
+      <text x="395" y="86" text-anchor="middle" font-size="9" fill="#b45309">시리즈별 프롬프트</text>
+      <text x="395" y="100" text-anchor="middle" font-size="8" fill="#f59e0b">~$0.001/편</text>
+
+      <line x1="450" y1="70" x2="475" y2="70" stroke="#f59e0b" stroke-width="2"/>
+      <polygon points="472,66 479,70 472,74" fill="#f59e0b"/>
+
+      <!-- TTS -->
+      <rect x="480" y="30" width="100" height="80" rx="12" fill="#dbeafe" stroke="#3b82f6" stroke-width="2"/>
+      <text x="530" y="55" text-anchor="middle" font-size="10" font-weight="700" fill="#1e40af">TTS 생성</text>
+      <text x="530" y="72" text-anchor="middle" font-size="9" fill="#2563eb">Edge TTS</text>
+      <text x="530" y="86" text-anchor="middle" font-size="9" fill="#2563eb">한국어 음성</text>
+      <text x="530" y="100" text-anchor="middle" font-size="8" fill="#3b82f6">무료</text>
+
+      <line x1="580" y1="70" x2="605" y2="70" stroke="#3b82f6" stroke-width="2"/>
+      <polygon points="602,66 609,70 602,74" fill="#3b82f6"/>
+
+      <!-- Render -->
+      <rect x="610" y="30" width="110" height="80" rx="12" fill="#e0e7ff" stroke="#6366f1" stroke-width="2"/>
+      <text x="665" y="55" text-anchor="middle" font-size="10" font-weight="700" fill="#3730a3">영상 렌더링</text>
+      <text x="665" y="72" text-anchor="middle" font-size="9" fill="#4338ca">Remotion</text>
+      <text x="665" y="86" text-anchor="middle" font-size="9" fill="#4338ca">TTS + BGM 포함</text>
+      <text x="665" y="100" text-anchor="middle" font-size="8" fill="#6366f1">CPU 렌더링</text>
+
+      <line x1="720" y1="70" x2="745" y2="70" stroke="#6366f1" stroke-width="2"/>
+      <polygon points="742,66 749,70 742,74" fill="#6366f1"/>
+
+      <!-- Post Process -->
+      <rect x="750" y="30" width="110" height="80" rx="12" fill="#fce7f3" stroke="#ec4899" stroke-width="2"/>
+      <text x="805" y="55" text-anchor="middle" font-size="10" font-weight="700" fill="#9d174d">후처리</text>
+      <text x="805" y="72" text-anchor="middle" font-size="9" fill="#be185d">썸네일 생성</text>
+      <text x="805" y="86" text-anchor="middle" font-size="9" fill="#be185d">메타데이터 생성</text>
+      <text x="805" y="100" text-anchor="middle" font-size="8" fill="#ec4899">ffmpeg</text>
+
+      <!-- Arrow down from Post Process -->
+      <line x1="805" y1="110" x2="805" y2="140" stroke="#ec4899" stroke-width="2"/>
+      <polygon points="801,137 809,137 805,144" fill="#ec4899"/>
+
+      <!-- Upload & Publish Row -->
+      <rect x="610" y="150" width="250" height="70" rx="12" fill="white" stroke="#7c3aed" stroke-width="2"/>
+      <text x="735" y="172" text-anchor="middle" font-size="11" font-weight="700" fill="#7c3aed">플랫폼 배포</text>
+      <text x="665" y="192" text-anchor="middle" font-size="9" fill="#6d28d9">YouTube API</text>
+      <text x="735" y="192" text-anchor="middle" font-size="9" fill="#6d28d9">TikTok API</text>
+      <text x="805" y="192" text-anchor="middle" font-size="9" fill="#6d28d9">Reels API</text>
+      <text x="735" y="210" text-anchor="middle" font-size="8" fill="#7c3aed">publications 테이블에 기록</text>
+
+      <!-- Arrow down to analytics -->
+      <line x1="735" y1="220" x2="735" y2="250" stroke="#7c3aed" stroke-width="2"/>
+      <polygon points="731,247 739,247 735,254" fill="#7c3aed"/>
+
+      <!-- Analytics -->
+      <rect x="610" y="260" width="250" height="60" rx="12" fill="rgba(191,165,134,0.1)" stroke="#8C7152" stroke-width="2"/>
+      <text x="735" y="285" text-anchor="middle" font-size="11" font-weight="700" fill="#8C7152">성과 수집 & 피드백</text>
+      <text x="735" y="303" text-anchor="middle" font-size="9" fill="#78716c">analytics_snapshots → quality_score → 다음 콘텐츠 선택에 반영</text>
+
+      <!-- Feedback loop -->
+      <path d="M610,290 L180,290 L180,110" fill="none" stroke="#10b981" stroke-width="1.5" stroke-dasharray="6"/>
+      <polygon points="176,113 184,113 180,107" fill="#10b981"/>
+      <text x="395" y="285" text-anchor="middle" font-size="9" fill="#10b981" font-weight="600">성과 피드백 루프</text>
+
+      <!-- DB recording arrow -->
+      <rect x="10" y="150" width="140" height="60" rx="12" fill="#f2fcf5" stroke="#36a678" stroke-width="2"/>
+      <text x="80" y="175" text-anchor="middle" font-size="10" font-weight="700" fill="#1d6b4d">쇼츠 DB 기록</text>
+      <text x="80" y="192" text-anchor="middle" font-size="9" fill="#047857">pipeline_runs 저장</text>
+      <text x="80" y="205" text-anchor="middle" font-size="8" fill="#047857">비용/에러 추적</text>
+
+      <!-- Lines from pipeline to DB -->
+      <path d="M395,110 L395,180 L150,180" fill="none" stroke="#36a678" stroke-width="1" stroke-dasharray="4"/>
+      <polygon points="153,177 147,180 153,183" fill="#36a678"/>
+
+      <!-- Error notification -->
+      <rect x="10" y="250" width="140" height="60" rx="12" fill="#fef2f2" stroke="#dc2626" stroke-width="2"/>
+      <text x="80" y="275" text-anchor="middle" font-size="10" font-weight="700" fill="#dc2626">에러 알림</text>
+      <text x="80" y="292" text-anchor="middle" font-size="9" fill="#b91c1c">Slack / Discord</text>
+      <text x="80" y="305" text-anchor="middle" font-size="8" fill="#dc2626">실패 시 즉시 알림</text>
+
+      <path d="M80,210 L80,250" fill="none" stroke="#dc2626" stroke-width="1.5" stroke-dasharray="4"/>
+      <polygon points="76,247 84,247 80,254" fill="#dc2626"/>
+
+      <!-- Verdict -->
+      <rect x="250" y="340" width="460" height="45" rx="10" fill="#dcfce7" stroke="#22c55e" stroke-width="2"/>
+      <text x="480" y="362" text-anchor="middle" font-size="12" font-weight="800" fill="#166534">결론: Phase 1~2 완료 시 완전 자동 주기적 생성 & 배포 가능</text>
+      <text x="480" y="378" text-anchor="middle" font-size="10" fill="#047857">예상 월 비용 ~$0.06 | 월 ~60편 | 3개 플랫폼 동시 배포</text>
+    </svg>
+  </div>
+</div>
+
+<!-- 결론 요약 -->
+<div class="card">
+  <h2>결론 요약</h2>
+
+  <table>
+    <tr><th>질문</th><th>답변</th><th>상세</th></tr>
+    <tr>
+      <td><strong>영상에 음성 지원</strong></td>
+      <td><span class="tag" style="background:#d1fae5;color:#065f46;border-color:#10b981;">10/10 완료</span></td>
+      <td>Phase 1 완료: 전체 10개 컴포지션에 AudioLayer 적용. TTS audioUrl 전달 시 음성 포함 렌더링.</td>
+    </tr>
+    <tr>
+      <td><strong>AI 스크립트 생성</strong></td>
+      <td><span class="tag" style="background:#d1fae5;color:#065f46;border-color:#10b981;">14/14 완료</span></td>
+      <td>Phase 1 완료: 전체 14개 시리즈 프롬프트 정의. 시리즈별 톤/구성/분량 맞춤 설정.</td>
+    </tr>
+    <tr>
+      <td><strong>자동 주기적 생성</strong></td>
+      <td><span class="tag" style="background:#d1fae5;color:#065f46;border-color:#10b981;">즉시 가능</span></td>
+      <td>Phase 1 핵심 완료: AudioLayer + 프롬프트 + fetchData 전체 지원. <code>tsx pipeline/cli.ts --series &lt;any&gt;</code> 실행 가능.</td>
+    </tr>
+    <tr>
+      <td><strong>자동 배포</strong></td>
+      <td><span class="tag blue">Phase 2 기획 완료</span></td>
+      <td>YouTube/TikTok/Reels API 연동 + GitHub Actions cron. 상세: <code>doc/planning/phase2-auto-deploy-plan.md</code></td>
+    </tr>
+    <tr>
+      <td><strong>예상 비용</strong></td>
+      <td><strong>~$0.06/월</strong></td>
+      <td>Edge TTS 무료, OpenAI $0.001/편, Supabase/GitHub Actions/YouTube API 모두 무료 티어.</td>
+    </tr>
+  </table>
+</div>
+
+</div>
+
+</div><!-- /.container -->
+
+<!-- ===== Footer ===== -->
+<footer style="text-align:center;padding:32px 20px;color:var(--charcoal-400);font-size:0.78rem;border-top:1px solid var(--paper-200);">
+  <p><strong>Habitree Reading Hub</strong> &mdash; Shorts Strategy v3.0</p>
+  <p>Generated: 2026-03-08 | Confidential</p>
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,1548 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Habitree - 나의 독서 숲 (프로토타입 v2)</title>
+<style>
+  /* ===== Reset & Base ===== */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --sand: #F5EDD6;
+    --forest-green: #2D5016;
+    --sage: #B2C4A8;
+    --lime: #A8D84E;
+    --warm-brown: #8B6F4E;
+    --dark-soil: #3D2B1F;
+    --golden: #F5C842;
+    --sky-blue: #87CEEB;
+    --coral: #FF7F7F;
+    --bg-gradient-summer: linear-gradient(180deg, #87CEEB 0%, #B5E3D8 30%, #D4E8C2 60%, #C8D5A0 100%);
+    --bg-gradient-spring: linear-gradient(180deg, #B8D4E3 0%, #C5DEC8 40%, #E0E8C8 100%);
+    --bg-gradient-autumn: linear-gradient(180deg, #D4A574 0%, #E8C49A 30%, #D4B896 60%, #C8A882 100%);
+    --bg-gradient-night: linear-gradient(180deg, #0a1628 0%, #1a2a4a 40%, #2a3a5a 100%);
+    /* Heatmap type colors */
+    --type-transcription: #a78bfa;
+    --type-photo: #38bdf8;
+    --type-memo: #34d399;
+    --type-progress: #fbbf24;
+  }
+
+  body {
+    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #f5f5f5;
+    color: var(--dark-soil);
+    overflow-x: hidden;
+  }
+
+  /* ===== Header ===== */
+  .app-header {
+    background: white;
+    border-bottom: 1px solid #e5e5e5;
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .app-header h1 { font-size: 18px; font-weight: 700; color: var(--forest-green); }
+  .header-stats { display: flex; gap: 16px; font-size: 13px; color: #666; }
+  .header-stats strong { color: var(--forest-green); font-weight: 700; }
+
+  /* ===== Tab Navigation ===== */
+  .tab-nav {
+    display: flex;
+    background: white;
+    border-bottom: 1px solid #e5e5e5;
+    padding: 0 16px;
+    gap: 4px;
+  }
+  .tab-btn {
+    padding: 10px 16px;
+    border: none;
+    background: none;
+    font-size: 14px;
+    font-weight: 500;
+    color: #999;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+  }
+  .tab-btn.active { color: var(--forest-green); border-bottom-color: var(--forest-green); font-weight: 700; }
+  .tab-btn:hover { color: var(--forest-green); }
+
+  /* ===== Forest Container ===== */
+  .forest-container {
+    position: relative;
+    width: 100%;
+    height: 520px;
+    background: var(--bg-gradient-summer);
+    overflow: hidden;
+    cursor: grab;
+    transition: background 1s ease;
+  }
+  .forest-container.spring { background: var(--bg-gradient-spring); }
+  .forest-container.autumn { background: var(--bg-gradient-autumn); }
+  .forest-container.night { background: var(--bg-gradient-night); }
+
+  /* Ground */
+  .ground {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    height: 120px;
+    background: linear-gradient(180deg, #7CB342 0%, #558B2F 30%, #4E7A28 100%);
+    border-radius: 50% 50% 0 0 / 30px 30px 0 0;
+  }
+  .ground::before {
+    content: '';
+    position: absolute;
+    top: -20px;
+    width: 100%;
+    height: 40px;
+    background: linear-gradient(180deg, transparent, #7CB34280);
+    border-radius: 50%;
+  }
+
+  /* Sun */
+  .sun {
+    position: absolute;
+    top: 40px;
+    right: 60px;
+    width: 60px;
+    height: 60px;
+    background: radial-gradient(circle, #FFE082, #FFD54F, #FFC107);
+    border-radius: 50%;
+    box-shadow: 0 0 40px #FFE08280, 0 0 80px #FFD54F40;
+    animation: pulse-sun 4s ease-in-out infinite;
+  }
+  @keyframes pulse-sun {
+    0%, 100% { box-shadow: 0 0 40px #FFE08280, 0 0 80px #FFD54F40; }
+    50% { box-shadow: 0 0 60px #FFE082A0, 0 0 100px #FFD54F60; }
+  }
+
+  /* Clouds */
+  .cloud {
+    position: absolute;
+    background: white;
+    border-radius: 50px;
+    opacity: 0.7;
+    animation: float-cloud linear infinite;
+  }
+  .cloud::before, .cloud::after {
+    content: '';
+    position: absolute;
+    background: white;
+    border-radius: 50%;
+  }
+  .cloud-1 { top: 50px; left: -100px; width: 80px; height: 30px; animation-duration: 35s; }
+  .cloud-1::before { width: 40px; height: 40px; top: -20px; left: 15px; }
+  .cloud-1::after { width: 30px; height: 30px; top: -10px; left: 40px; }
+  .cloud-2 { top: 90px; left: -150px; width: 100px; height: 35px; animation-duration: 45s; animation-delay: 10s; }
+  .cloud-2::before { width: 50px; height: 50px; top: -25px; left: 20px; }
+  .cloud-2::after { width: 35px; height: 35px; top: -15px; left: 55px; }
+  @keyframes float-cloud {
+    from { transform: translateX(0); }
+    to { transform: translateX(calc(100vw + 200px)); }
+  }
+
+  /* ===== Trees ===== */
+  .tree-wrapper {
+    position: absolute;
+    cursor: pointer;
+    transition: transform 0.3s ease;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+  }
+  .tree-wrapper:hover {
+    transform: scale(1.08) translateY(-4px);
+    z-index: 10;
+  }
+  .tree-wrapper .tree-label {
+    position: absolute;
+    bottom: -16px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 9px;
+    color: rgba(0,0,0,0.5);
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  .tree-wrapper:hover .tree-label { opacity: 1; }
+
+  /* Particle effects */
+  .particle {
+    position: absolute;
+    pointer-events: none;
+    animation: float-particle 6s ease-in-out infinite;
+  }
+  .butterfly { font-size: 14px; }
+  .leaf-particle { font-size: 10px; }
+  @keyframes float-particle {
+    0%, 100% { transform: translate(0, 0) rotate(0deg); opacity: 0.8; }
+    25% { transform: translate(15px, -20px) rotate(90deg); opacity: 1; }
+    50% { transform: translate(-10px, -35px) rotate(180deg); opacity: 0.6; }
+    75% { transform: translate(20px, -15px) rotate(270deg); opacity: 0.9; }
+  }
+
+  /* ===== Stats Bar ===== */
+  .stats-bar {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    padding: 16px;
+    background: white;
+  }
+  .stat-card {
+    text-align: center;
+    padding: 16px 8px;
+    border-radius: 12px;
+    background: #f8faf6;
+    border: 1px solid #e8f0e0;
+  }
+  .stat-number { font-size: 24px; font-weight: 800; color: var(--forest-green); line-height: 1; }
+  .stat-label { font-size: 11px; color: #888; margin-top: 4px; }
+
+  /* ===== Heatmap ===== */
+  .heatmap-section {
+    padding: 20px 16px;
+    background: white;
+    margin-top: 8px;
+  }
+  .heatmap-title {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .heatmap-title .streak { font-size: 13px; color: var(--coral); font-weight: 600; }
+  .heatmap-grid {
+    display: grid;
+    grid-template-columns: repeat(52, 1fr);
+    gap: 2px;
+    overflow-x: auto;
+  }
+  .heatmap-week { display: flex; flex-direction: column; gap: 2px; }
+  .heatmap-cell {
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    background: #ebedf0;
+    transition: all 0.2s;
+  }
+  .heatmap-cell:hover {
+    outline: 1px solid var(--forest-green);
+    transform: scale(1.5);
+  }
+
+  .heatmap-legend {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    justify-content: flex-end;
+    margin-top: 8px;
+    font-size: 11px;
+    color: #999;
+    flex-wrap: wrap;
+  }
+  .heatmap-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+  }
+  .heatmap-legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+  }
+
+  /* ===== Share Card Preview ===== */
+  .share-section {
+    padding: 20px 16px;
+    background: white;
+    margin-top: 8px;
+  }
+  .share-section h3 { font-size: 16px; font-weight: 700; margin-bottom: 16px; }
+  .share-cards {
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    padding-bottom: 8px;
+    scroll-snap-type: x mandatory;
+  }
+  .share-card {
+    flex: 0 0 260px;
+    scroll-snap-align: start;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    cursor: pointer;
+    transition: transform 0.2s;
+  }
+  .share-card:hover { transform: translateY(-4px); }
+
+  .forest-card {
+    height: 340px;
+    background: linear-gradient(180deg, #87CEEB 0%, #B5E3D8 30%, #7CB342 70%, #558B2F 100%);
+    padding: 24px 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    color: white;
+    position: relative;
+  }
+  .forest-card .mini-trees {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 36px;
+    text-align: center;
+    line-height: 1.4;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  }
+  .forest-card .card-info {
+    background: rgba(0,0,0,0.25);
+    backdrop-filter: blur(10px);
+    border-radius: 12px;
+    padding: 16px;
+    z-index: 1;
+  }
+  .forest-card .user-name { font-size: 18px; font-weight: 700; }
+  .forest-card .card-stats { font-size: 13px; opacity: 0.9; margin-top: 4px; }
+  .forest-card .brand {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
+    opacity: 0.7;
+    margin-top: 8px;
+  }
+
+  .completion-card {
+    height: 340px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 24px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    text-align: center;
+  }
+  .completion-card .congrats { font-size: 14px; opacity: 0.9; margin-bottom: 8px; }
+  .completion-card .tree-icon { font-size: 64px; margin: 12px 0; }
+  .completion-card .book-title { font-size: 20px; font-weight: 700; }
+  .completion-card .book-author { font-size: 13px; opacity: 0.8; margin-top: 4px; }
+  .completion-card .stars { font-size: 18px; margin: 12px 0; }
+  .completion-card .milestone { font-size: 12px; opacity: 0.7; }
+
+  .wrapped-card {
+    height: 340px;
+    background: linear-gradient(135deg, #1DB954 0%, #191414 100%);
+    padding: 24px 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    color: white;
+  }
+  .wrapped-card .year-label {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    opacity: 0.7;
+    margin-bottom: 8px;
+  }
+  .wrapped-card .big-number {
+    font-size: 56px;
+    font-weight: 900;
+    line-height: 1;
+    background: linear-gradient(135deg, #A8D84E, #F5C842);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .wrapped-card .big-label { font-size: 20px; font-weight: 700; margin-top: 4px; }
+  .wrapped-card .sub-stats { margin-top: 20px; font-size: 13px; opacity: 0.8; line-height: 1.6; }
+
+  /* ===== Book Info Popover ===== */
+  .popover-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.4);
+    z-index: 200;
+    justify-content: center;
+    align-items: flex-end;
+  }
+  .popover-overlay.visible { display: flex; }
+  .popover-content {
+    background: white;
+    border-radius: 20px 20px 0 0;
+    width: 100%;
+    max-width: 500px;
+    padding: 24px;
+    animation: slide-up 0.3s ease;
+  }
+  @keyframes slide-up {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+  }
+  .popover-handle {
+    width: 40px;
+    height: 4px;
+    background: #ddd;
+    border-radius: 2px;
+    margin: 0 auto 20px;
+  }
+  .popover-header {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+  .popover-cover {
+    width: 80px;
+    height: 120px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 20px;
+    flex-shrink: 0;
+    position: relative;
+    overflow: hidden;
+  }
+  .popover-cover .cover-title {
+    font-size: 11px;
+    font-weight: 600;
+    text-align: center;
+    padding: 4px;
+    line-height: 1.3;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+  }
+  .popover-meta { flex: 1; }
+  .popover-meta .title-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+  }
+  .popover-meta h4 { font-size: 17px; font-weight: 700; }
+  .status-badge {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 10px;
+    white-space: nowrap;
+  }
+  .status-badge.reading { background: #dbeafe; color: #1d4ed8; }
+  .status-badge.completed { background: #dcfce7; color: #15803d; }
+  .status-badge.paused { background: #fef3c7; color: #92400e; }
+  .status-badge.not_started { background: #f3f4f6; color: #6b7280; }
+  .status-badge.rereading { background: #ede9fe; color: #6d28d9; }
+  .popover-meta .author { font-size: 13px; color: #888; margin-bottom: 10px; }
+  .popover-meta .meta-row {
+    display: flex;
+    gap: 12px;
+    font-size: 12px;
+    color: #666;
+    margin-bottom: 8px;
+  }
+  .progress-bar-bg {
+    height: 8px;
+    background: #eee;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 4px;
+  }
+  .progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--sage), var(--lime));
+    border-radius: 4px;
+    transition: width 0.5s ease;
+  }
+  .progress-text { font-size: 12px; color: #888; }
+  .popover-dates {
+    display: flex;
+    gap: 16px;
+    font-size: 12px;
+    color: #999;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid #eee;
+  }
+  .popover-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 16px;
+  }
+  .popover-actions button {
+    flex: 1;
+    padding: 12px;
+    border: none;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-primary { background: var(--forest-green); color: white; }
+  .btn-primary:hover { background: #1e3a0e; }
+  .btn-secondary { background: #f0f0f0; color: var(--dark-soil); }
+  .btn-secondary:hover { background: #e0e0e0; }
+
+  /* ===== Season Toggle ===== */
+  .season-toggle {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    display: flex;
+    gap: 4px;
+    background: rgba(255,255,255,0.3);
+    backdrop-filter: blur(10px);
+    border-radius: 20px;
+    padding: 4px;
+    z-index: 50;
+  }
+  .season-btn {
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: none;
+    border-radius: 50%;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .season-btn.active {
+    background: white;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+
+  .share-btn-float {
+    position: absolute;
+    bottom: 16px;
+    right: 16px;
+    background: white;
+    border: none;
+    border-radius: 50%;
+    width: 44px;
+    height: 44px;
+    font-size: 20px;
+    cursor: pointer;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+    z-index: 50;
+    transition: transform 0.2s;
+  }
+  .share-btn-float:hover { transform: scale(1.1); }
+
+  .tree-count-badge {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: rgba(255,255,255,0.3);
+    backdrop-filter: blur(10px);
+    border-radius: 20px;
+    padding: 6px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--forest-green);
+    z-index: 50;
+  }
+
+  /* Night mode */
+  .night .sun {
+    background: radial-gradient(circle, #E8E8E8, #CCCCCC);
+    width: 40px;
+    height: 40px;
+    box-shadow: 0 0 20px rgba(255,255,255,0.3), 0 0 40px rgba(255,255,255,0.1);
+  }
+  .night .ground { background: linear-gradient(180deg, #1a3a1a 0%, #0d2b0d 100%); }
+  .night .tree-count-badge { color: white; }
+  .night .cloud { opacity: 0.15; }
+
+  .star {
+    position: absolute;
+    width: 2px;
+    height: 2px;
+    background: white;
+    border-radius: 50%;
+    animation: twinkle 2s ease-in-out infinite;
+    display: none;
+  }
+  .night .star { display: block; }
+  @keyframes twinkle {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 1; }
+  }
+
+  .firefly {
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    background: #FFE082;
+    border-radius: 50%;
+    box-shadow: 0 0 6px #FFE082, 0 0 12px #FFD54F;
+    display: none;
+    animation: firefly-float 8s ease-in-out infinite;
+  }
+  .night .firefly { display: block; }
+  @keyframes firefly-float {
+    0%, 100% { transform: translate(0, 0); opacity: 0; }
+    10% { opacity: 1; }
+    30% { transform: translate(30px, -40px); opacity: 0.8; }
+    50% { transform: translate(-20px, -60px); opacity: 0.3; }
+    70% { transform: translate(40px, -30px); opacity: 1; }
+    90% { opacity: 0; }
+  }
+
+  /* Autumn tree color overrides */
+  .autumn .tree-crown { filter: hue-rotate(30deg) saturate(1.3); }
+
+  /* ===== Badge Section ===== */
+  .badge-section {
+    padding: 20px 16px;
+    background: white;
+    margin-top: 8px;
+  }
+  .badge-section h3 { font-size: 16px; font-weight: 700; margin-bottom: 16px; }
+  .badge-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+  }
+  .badge-item {
+    text-align: center;
+    padding: 12px 4px;
+    border-radius: 12px;
+    background: #f8faf6;
+    border: 1px solid #e8f0e0;
+    transition: transform 0.2s;
+  }
+  .badge-item:hover { transform: translateY(-2px); }
+  .badge-item.locked { opacity: 0.4; filter: grayscale(1); }
+  .badge-icon { font-size: 28px; }
+  .badge-name { font-size: 11px; color: #666; margin-top: 4px; }
+
+  /* ===== Level Progress ===== */
+  .level-section {
+    padding: 16px;
+    background: white;
+    margin-top: 8px;
+  }
+  .level-bar { display: flex; align-items: center; gap: 12px; }
+  .level-icon { font-size: 32px; }
+  .level-info { flex: 1; }
+  .level-name { font-size: 14px; font-weight: 700; color: var(--forest-green); }
+  .level-progress-text { font-size: 12px; color: #888; margin-top: 2px; }
+  .level-progress-bg {
+    height: 6px;
+    background: #eee;
+    border-radius: 3px;
+    margin-top: 8px;
+    overflow: hidden;
+  }
+  .level-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--lime), var(--golden));
+    border-radius: 3px;
+    transition: width 0.5s ease;
+  }
+  .level-next { font-size: 12px; color: #aaa; text-align: right; }
+  .level-next-icon { font-size: 24px; display: block; }
+
+  /* Ground decorations */
+  .ground-deco {
+    position: absolute;
+    pointer-events: none;
+    font-size: 14px;
+    z-index: 2;
+  }
+
+  /* ===== Responsive ===== */
+  @media (max-width: 480px) {
+    .stats-bar { grid-template-columns: repeat(2, 1fr); }
+    .stat-number { font-size: 20px; }
+    .forest-container { height: 480px; }
+  }
+  @media (min-width: 768px) {
+    .forest-container { height: 600px; }
+    .stats-bar { max-width: 700px; margin: 0 auto; }
+    .heatmap-section, .share-section, .badge-section, .level-section {
+      max-width: 700px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+  }
+</style>
+</head>
+<body>
+
+<!-- Header, tabs, forest view will be populated by JS -->
+<header class="app-header">
+  <h1>나의 독서 숲</h1>
+  <div class="header-stats" id="headerStats"></div>
+</header>
+
+<nav class="tab-nav">
+  <button class="tab-btn active" onclick="switchTab(this)">숲 보기</button>
+  <button class="tab-btn" onclick="switchTab(this)">시간순</button>
+  <button class="tab-btn" onclick="switchTab(this)">장르별</button>
+</nav>
+
+<section class="forest-container" id="forestView">
+  <div class="season-toggle">
+    <button class="season-btn active" onclick="changeSeason('summer', this)" title="여름">&#9728;&#65039;</button>
+    <button class="season-btn" onclick="changeSeason('spring', this)" title="봄">&#127800;</button>
+    <button class="season-btn" onclick="changeSeason('autumn', this)" title="가을">&#127810;</button>
+    <button class="season-btn" onclick="changeSeason('night', this)" title="밤">&#127769;</button>
+  </div>
+  <div class="tree-count-badge" id="treeCountBadge"></div>
+  <div class="sun"></div>
+  <div class="cloud cloud-1"></div>
+  <div class="cloud cloud-2"></div>
+
+  <!-- Stars (night mode) -->
+  <div class="star" style="top:30px;left:15%;animation-delay:0.5s"></div>
+  <div class="star" style="top:60px;left:25%;animation-delay:1.2s"></div>
+  <div class="star" style="top:20px;left:40%;animation-delay:0.8s"></div>
+  <div class="star" style="top:80px;left:55%;animation-delay:1.5s"></div>
+  <div class="star" style="top:45px;left:70%;animation-delay:0.3s"></div>
+  <div class="star" style="top:25px;left:85%;animation-delay:1.8s"></div>
+  <div class="star" style="top:70px;left:10%;animation-delay:2.0s"></div>
+  <div class="star" style="top:50px;left:92%;animation-delay:0.7s"></div>
+
+  <!-- Fireflies (night mode) -->
+  <div class="firefly" style="top:200px;left:20%;animation-delay:0s"></div>
+  <div class="firefly" style="top:300px;left:50%;animation-delay:2s"></div>
+  <div class="firefly" style="top:250px;left:75%;animation-delay:4s"></div>
+
+  <!-- Particles -->
+  <div class="particle butterfly" style="top:150px;left:30%;animation-delay:0s">&#129419;</div>
+  <div class="particle butterfly" style="top:200px;left:65%;animation-delay:2s">&#129419;</div>
+  <div class="particle leaf-particle" style="top:120px;left:50%;animation-delay:1s">&#127811;</div>
+
+  <!-- Trees rendered by JS -->
+  <div id="treeLayer"></div>
+
+  <!-- Ground decorations rendered by JS -->
+  <div id="groundDecoLayer"></div>
+
+  <!-- Ground -->
+  <div class="ground"></div>
+
+  <button class="share-btn-float" onclick="alert('공유 기능 (프로토타입)')">&#128228;</button>
+</section>
+
+<!-- Level Progress -->
+<section class="level-section" id="levelSection"></section>
+
+<!-- Stats Bar -->
+<section class="stats-bar" id="statsBar"></section>
+
+<!-- Heatmap -->
+<section class="heatmap-section">
+  <div class="heatmap-title">
+    <span>2026년 독서 활동</span>
+    <span class="streak" id="heatmapStreak"></span>
+  </div>
+  <div class="heatmap-grid" id="heatmapGrid"></div>
+  <div class="heatmap-legend" id="heatmapLegend"></div>
+</section>
+
+<!-- Badge Section -->
+<section class="badge-section">
+  <h3>독서 뱃지</h3>
+  <div class="badge-grid">
+    <div class="badge-item"><div class="badge-icon">&#128099;</div><div class="badge-name">첫 걸음</div></div>
+    <div class="badge-item"><div class="badge-icon">&#129517;</div><div class="badge-name">탐험가</div></div>
+    <div class="badge-item"><div class="badge-icon">&#128027;</div><div class="badge-name">책벌레</div></div>
+    <div class="badge-item"><div class="badge-icon">&#128218;</div><div class="badge-name">서재지기</div></div>
+    <div class="badge-item"><div class="badge-icon">&#128293;</div><div class="badge-name">7일 연속</div></div>
+    <div class="badge-item"><div class="badge-icon">&#128142;</div><div class="badge-name">30일 연속</div></div>
+    <div class="badge-item"><div class="badge-icon">&#128214;</div><div class="badge-name">다독가</div></div>
+    <div class="badge-item locked"><div class="badge-icon">&#127963;</div><div class="badge-name">도서관장</div></div>
+    <div class="badge-item locked"><div class="badge-icon">&#128081;</div><div class="badge-name">100일 연속</div></div>
+    <div class="badge-item locked"><div class="badge-icon">&#129497;</div><div class="badge-name">지식의 현자</div></div>
+    <div class="badge-item locked"><div class="badge-icon">&#127749;</div><div class="badge-name">새벽 독서가</div></div>
+    <div class="badge-item locked"><div class="badge-icon">&#127754;</div><div class="badge-name">몰입의 달인</div></div>
+  </div>
+</section>
+
+<!-- Share Cards -->
+<section class="share-section">
+  <h3>공유 카드</h3>
+  <div class="share-cards" id="shareCards"></div>
+</section>
+
+<!-- Popover -->
+<div class="popover-overlay" id="popoverOverlay" onclick="hidePopover(event)">
+  <div class="popover-content" id="popoverContent" onclick="event.stopPropagation()">
+    <div class="popover-handle"></div>
+    <div class="popover-header" id="popoverHeader"></div>
+    <div class="popover-dates" id="popoverDates"></div>
+    <div class="popover-actions" id="popoverActions"></div>
+  </div>
+</div>
+
+<div style="height:60px"></div>
+
+<script>
+// ========== SAMPLE DATA (matches real app types) ==========
+const sampleBooks = [
+  {
+    id: 'b1', title: '불편한 편의점', author: '김호연', category: '소설',
+    total_pages: 252, status: 'completed', current_page: 252,
+    started_at: '2025-11-10', completed_at: '2025-11-28',
+    noteCount: 5, rating: 5
+  },
+  {
+    id: 'b2', title: '아토믹 해빗', author: '제임스 클리어', category: '자기계발',
+    total_pages: 320, status: 'completed', current_page: 320,
+    started_at: '2025-12-01', completed_at: '2025-12-20',
+    noteCount: 4, rating: 5
+  },
+  {
+    id: 'b3', title: '사피엔스', author: '유발 하라리', category: '인문',
+    total_pages: 636, status: 'completed', current_page: 636,
+    started_at: '2026-01-05', completed_at: '2026-01-28',
+    noteCount: 3, rating: 4
+  },
+  {
+    id: 'b4', title: '1Q84', author: '무라카미 하루키', category: '소설',
+    total_pages: 954, status: 'completed', current_page: 954,
+    started_at: '2026-01-30', completed_at: '2026-02-18',
+    noteCount: 5, rating: 5
+  },
+  {
+    id: 'b5', title: '달러구트 꿈 백화점', author: '이미예', category: '소설',
+    total_pages: 296, status: 'completed', current_page: 296,
+    started_at: '2025-10-05', completed_at: '2025-10-18',
+    noteCount: 2, rating: 4
+  },
+  {
+    id: 'b6', title: '코스모스', author: '칼 세이건', category: '과학',
+    total_pages: 486, status: 'completed', current_page: 486,
+    started_at: '2025-09-01', completed_at: '2025-09-25',
+    noteCount: 4, rating: 5
+  },
+  {
+    id: 'b7', title: '트렌드 코리아 2027', author: '김난도 외', category: '경제',
+    total_pages: 368, status: 'completed', current_page: 368,
+    started_at: '2026-02-20', completed_at: '2026-03-05',
+    noteCount: 3, rating: 4
+  },
+  {
+    id: 'b8', title: '넛지', author: '리처드 탈러', category: '인문',
+    total_pages: 420, status: 'reading', current_page: 280,
+    started_at: '2026-02-25', completed_at: null,
+    noteCount: 2, rating: null
+  },
+  {
+    id: 'b9', title: '나미야 잡화점의 기적', author: '히가시노 게이고', category: '소설',
+    total_pages: 424, status: 'reading', current_page: 120,
+    started_at: '2026-03-01', completed_at: null,
+    noteCount: 1, rating: null
+  },
+  {
+    id: 'b10', title: '총균쇠', author: '재레드 다이아몬드', category: '과학',
+    total_pages: 752, status: 'reading', current_page: 85,
+    started_at: '2026-03-03', completed_at: null,
+    noteCount: 0, rating: null
+  },
+  {
+    id: 'b11', title: '나는 나로 살기로 했다', author: '김수현', category: '에세이',
+    total_pages: 264, status: 'reading', current_page: 200,
+    started_at: '2026-02-10', completed_at: null,
+    noteCount: 3, rating: null
+  },
+  {
+    id: 'b12', title: '미드나잇 라이브러리', author: '매트 헤이그', category: '소설',
+    total_pages: 304, status: 'not_started', current_page: 0,
+    started_at: '2026-03-06', completed_at: null,
+    noteCount: 0, rating: null
+  },
+  {
+    id: 'b13', title: '역사의 쓸모', author: '최태성', category: '인문',
+    total_pages: 280, status: 'not_started', current_page: 0,
+    started_at: '2026-03-07', completed_at: null,
+    noteCount: 0, rating: null
+  },
+  {
+    id: 'b14', title: '싱크 어게인', author: '애덤 그랜트', category: '자기계발',
+    total_pages: 360, status: 'paused', current_page: 142,
+    started_at: '2025-12-10', completed_at: null,
+    noteCount: 1, rating: null
+  },
+  {
+    id: 'b15', title: '보노보노처럼 살다니', author: '이가라시 미키오', category: '에세이',
+    total_pages: 176, status: 'paused', current_page: 88,
+    started_at: '2025-11-20', completed_at: null,
+    noteCount: 1, rating: null
+  },
+  {
+    id: 'b16', title: '어린 왕자', author: '생텍쥐페리', category: '소설',
+    total_pages: 136, status: 'rereading', current_page: 90,
+    started_at: '2026-03-02', completed_at: null,
+    noteCount: 4, rating: 5
+  },
+  {
+    id: 'b17', title: '클림트, 황금빛 유혹', author: '이소영', category: '예술',
+    total_pages: 224, status: 'completed', current_page: 224,
+    started_at: '2025-08-15', completed_at: '2025-09-02',
+    noteCount: 2, rating: 3
+  },
+  {
+    id: 'b18', title: '부의 추월차선', author: '엠제이 드마코', category: '자기계발',
+    total_pages: 408, status: 'completed', current_page: 408,
+    started_at: '2025-10-20', completed_at: '2025-11-08',
+    noteCount: 3, rating: 4
+  },
+];
+
+// ========== LEVEL SYSTEM (from types/points.ts) ==========
+const LEVEL_DEFAULTS = [
+  { level: 1, required_points: 0, title: '씨앗', emoji: '&#x1F330;' },
+  { level: 2, required_points: 50, title: '새싹', emoji: '&#x1F331;' },
+  { level: 3, required_points: 150, title: '떡잎', emoji: '&#x1F33F;' },
+  { level: 4, required_points: 350, title: '어린나무', emoji: '&#x1FAB4;' },
+  { level: 5, required_points: 650, title: '나무', emoji: '&#x1F332;' },
+  { level: 6, required_points: 1100, title: '큰나무', emoji: '&#x1F333;' },
+  { level: 7, required_points: 1800, title: '꽃나무', emoji: '&#x1F338;' },
+  { level: 8, required_points: 2800, title: '열매나무', emoji: '&#x1F34E;' },
+  { level: 9, required_points: 4200, title: '세계수', emoji: '&#x1F334;' },
+  { level: 10, required_points: 6500, title: '황금숲', emoji: '&#x1F3DE;' },
+];
+
+// ========== CATEGORY -> TREE TYPE MAPPING ==========
+const CATEGORY_TREE = {
+  '소설':    { name: '벚꽃나무', crownType: 'ellipse',    crownColor: '#FFB7C5', crownHighlight: '#FFC0CB', crownTop: '#FFCAD4' },
+  '자기계발': { name: '소나무',   crownType: 'pine',       crownColor: '#2E7D32', crownHighlight: '#388E3C', crownTop: '#43A047' },
+  '과학':    { name: '은행나무', crownType: 'fan',        crownColor: '#C0CA33', crownHighlight: '#CDDC39', crownTop: '#D4E157' },
+  '인문':    { name: '느티나무', crownType: 'wide',       crownColor: '#4CAF50', crownHighlight: '#66BB6A', crownTop: '#81C784' },
+  '에세이':  { name: '단풍나무', crownType: 'maple',      crownColor: '#E57373', crownHighlight: '#EF9A9A', crownTop: '#FFCDD2' },
+  '경제':    { name: '대나무',   crownType: 'bamboo',     crownColor: '#66BB6A', crownHighlight: '#81C784', crownTop: '#A5D6A7' },
+  '예술':    { name: '등나무',   crownType: 'wisteria',   crownColor: '#AB47BC', crownHighlight: '#CE93D8', crownTop: '#E1BEE7' },
+};
+
+// ========== STATUS -> GROWTH STAGE ==========
+function getGrowthStage(book) {
+  const progress = book.total_pages > 0 ? (book.current_page / book.total_pages) * 100 : 0;
+  if (book.status === 'not_started') return { stage: 'seed', w: 14, h: 14 };
+  if (book.status === 'paused') return { stage: 'wilted', w: 40, h: 70 };
+  if (book.status === 'rereading') return { stage: 'reborn', w: 65, h: 125 };
+  if (book.status === 'completed') return { stage: 'full', w: 65, h: 120 };
+  // reading
+  if (progress <= 15) return { stage: 'sprout', w: 20, h: 32 };
+  if (progress <= 50) return { stage: 'young', w: 35, h: 60 };
+  return { stage: 'growing', w: 50, h: 90 };
+}
+
+// ========== FRUIT SYSTEM ==========
+function getFruitColor(rating) {
+  if (rating === 5) return '#F5C842';
+  if (rating === 4) return '#FF9800';
+  if (rating === 3) return '#4CAF50';
+  if (rating === null || rating === undefined) return '#9E9E9E';
+  return null; // 2 or less: no fruit
+}
+
+function generateFruitPositions(count, crownCx, crownCy, crownRx, crownRy) {
+  const fruits = [];
+  const attempts = count * 20;
+  let placed = 0;
+  for (let i = 0; i < attempts && placed < count; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const r = 0.3 + Math.random() * 0.6;
+    const fx = crownCx + Math.cos(angle) * crownRx * r;
+    const fy = crownCy + Math.sin(angle) * crownRy * r;
+    const tooClose = fruits.some(f => Math.hypot(f.x - fx, f.y - fy) < 8);
+    if (!tooClose) {
+      fruits.push({ x: fx, y: fy });
+      placed++;
+    }
+  }
+  return fruits;
+}
+
+// ========== SVG TREE GENERATOR ==========
+function generateTreeSVG(book) {
+  const cat = CATEGORY_TREE[book.category] || CATEGORY_TREE['소설'];
+  const growth = getGrowthStage(book);
+  const { stage, w, h } = growth;
+
+  // Seed
+  if (stage === 'seed') {
+    return `<svg width="${w}" height="${h}" viewBox="0 0 14 14">
+      <ellipse cx="7" cy="9" rx="5" ry="4" fill="#A1887F"/>
+      <path d="M7 9 Q5 5 7 3 Q9 5 7 9" fill="#C5E1A5" opacity="0.6"/>
+    </svg>`;
+  }
+
+  // Sprout
+  if (stage === 'sprout') {
+    return `<svg width="${w}" height="${h}" viewBox="0 0 20 32">
+      <rect x="9" y="20" width="2" height="12" fill="#8B6914" rx="0.5"/>
+      <path d="M10 20 Q4 12 10 6 Q16 12 10 20" fill="${cat.crownColor}" opacity="0.8"/>
+    </svg>`;
+  }
+
+  const isPaused = stage === 'wilted';
+  const isReborn = stage === 'reborn';
+  const desaturate = isPaused ? ' opacity="0.55"' : '';
+  const crownColor = isPaused ? '#9E9E9E' : cat.crownColor;
+  const crownHi = isPaused ? '#BDBDBD' : cat.crownHighlight;
+  const crownTop = isPaused ? '#CDCDCD' : cat.crownTop;
+  const trunkColor = isPaused ? '#8D6E63' : '#8B6914';
+
+  // Young tree
+  if (stage === 'young') {
+    return `<svg width="${w}" height="${h}" viewBox="0 0 35 60">
+      <rect x="15" y="38" width="5" height="22" fill="${trunkColor}" rx="1.5"/>
+      <ellipse cx="17" cy="25" rx="14" ry="18" fill="${crownColor}" opacity="0.75"${desaturate}/>
+      <ellipse cx="12" cy="20" rx="8" ry="10" fill="${crownHi}" opacity="0.65"${desaturate}/>
+    </svg>`;
+  }
+
+  // Growing tree
+  if (stage === 'growing') {
+    const fruitCount = Math.min(book.noteCount, 5);
+    const fruitColor = getFruitColor(book.rating);
+    const fruits = fruitColor ? generateFruitPositions(fruitCount, 25, 32, 20, 24) : [];
+    const fruitSvg = fruits.map(f => `<circle cx="${f.x.toFixed(1)}" cy="${f.y.toFixed(1)}" r="3" fill="${fruitColor}" stroke="${fruitColor === '#F5C842' ? '#E8B828' : fruitColor}" stroke-width="0.5"/>`).join('');
+
+    return `<svg width="${w}" height="${h}" viewBox="0 0 50 90">
+      <rect x="22" y="52" width="6" height="38" fill="${trunkColor}" rx="2"/>
+      <path d="M25 65 Q12 55 8 60" stroke="${trunkColor}" fill="none" stroke-width="2.5" stroke-linecap="round"/>
+      <ellipse class="tree-crown" cx="25" cy="32" rx="22" ry="26" fill="${crownColor}" opacity="0.8"${desaturate}/>
+      <ellipse class="tree-crown" cx="18" cy="25" rx="12" ry="14" fill="${crownHi}" opacity="0.7"${desaturate}/>
+      <ellipse class="tree-crown" cx="32" cy="28" rx="11" ry="13" fill="${crownTop}" opacity="0.65"${desaturate}/>
+      ${fruitSvg}
+    </svg>`;
+  }
+
+  // Full / Reborn tree
+  const fullW = isReborn ? 65 : 65;
+  const fullH = isReborn ? 125 : 120;
+  const fruitCount = Math.min(book.noteCount, 5);
+  const fruitColor = getFruitColor(book.rating);
+
+  // Generate crown based on category type
+  let crownSvg = '';
+  const cx = 32, cy = 35;
+
+  switch (cat.crownType) {
+    case 'pine': // triangular layered
+      crownSvg = `
+        <polygon class="tree-crown" points="32,8 8,45 56,45" fill="${crownColor}" opacity="0.9"${desaturate}/>
+        <polygon class="tree-crown" points="32,25 11,58 53,58" fill="${crownHi}" opacity="0.85"${desaturate}/>
+        <polygon class="tree-crown" points="32,42 13,72 51,72" fill="${crownTop}" opacity="0.8"${desaturate}/>`;
+      break;
+    case 'fan': // ginkgo fan shape
+      crownSvg = `
+        <path class="tree-crown" d="M32 10 Q5 30 10 50 Q15 60 32 55 Q49 60 54 50 Q59 30 32 10Z" fill="${crownColor}" opacity="0.85"${desaturate}/>
+        <path class="tree-crown" d="M32 15 Q12 32 18 48 Q22 53 32 50 Q42 53 46 48 Q52 32 32 15Z" fill="${crownHi}" opacity="0.7"${desaturate}/>`;
+      break;
+    case 'wide': // zelkova wide semicircle
+      crownSvg = `
+        <ellipse class="tree-crown" cx="32" cy="35" rx="30" ry="28" fill="${crownColor}" opacity="0.85"${desaturate}/>
+        <ellipse class="tree-crown" cx="22" cy="28" rx="16" ry="18" fill="${crownHi}" opacity="0.75"${desaturate}/>
+        <ellipse class="tree-crown" cx="42" cy="30" rx="15" ry="17" fill="${crownTop}" opacity="0.7"${desaturate}/>`;
+      break;
+    case 'maple': // maple ellipse
+      crownSvg = `
+        <ellipse class="tree-crown" cx="32" cy="33" rx="28" ry="26" fill="${crownColor}" opacity="0.85"${desaturate}/>
+        <ellipse class="tree-crown" cx="24" cy="26" rx="14" ry="16" fill="${crownHi}" opacity="0.75"${desaturate}/>
+        <ellipse class="tree-crown" cx="40" cy="28" rx="13" ry="15" fill="${crownTop}" opacity="0.7"${desaturate}/>`;
+      break;
+    case 'bamboo': // bamboo segments + narrow leaves
+      crownSvg = `
+        <rect x="28" y="10" width="8" height="60" fill="${crownColor}" rx="4"${desaturate ? ` opacity="0.55"` : ''}/>
+        <rect x="29" y="20" width="6" height="2" fill="#2E7D32" opacity="0.5"/>
+        <rect x="29" y="35" width="6" height="2" fill="#2E7D32" opacity="0.5"/>
+        <rect x="29" y="50" width="6" height="2" fill="#2E7D32" opacity="0.5"/>
+        <path class="tree-crown" d="M36 15 Q52 10 48 20 Q44 28 36 25Z" fill="${crownHi}" opacity="0.8"${desaturate}/>
+        <path class="tree-crown" d="M28 30 Q12 24 16 34 Q20 42 28 38Z" fill="${crownTop}" opacity="0.75"${desaturate}/>
+        <path class="tree-crown" d="M36 42 Q50 38 47 48 Q44 56 36 50Z" fill="${crownHi}" opacity="0.7"${desaturate}/>`;
+      break;
+    case 'wisteria': // wisteria curves + draping
+      crownSvg = `
+        <ellipse class="tree-crown" cx="32" cy="30" rx="26" ry="22" fill="${crownColor}" opacity="0.8"${desaturate}/>
+        <ellipse class="tree-crown" cx="24" cy="24" rx="13" ry="14" fill="${crownHi}" opacity="0.7"${desaturate}/>
+        <ellipse class="tree-crown" cx="40" cy="26" rx="12" ry="13" fill="${crownTop}" opacity="0.65"${desaturate}/>
+        <path class="tree-crown" d="M14 40 Q12 55 16 58 Q18 55 16 42Z" fill="${crownColor}" opacity="0.6"${desaturate}/>
+        <path class="tree-crown" d="M24 42 Q22 60 26 63 Q28 58 26 44Z" fill="${crownHi}" opacity="0.55"${desaturate}/>
+        <path class="tree-crown" d="M40 40 Q38 56 42 59 Q44 54 42 42Z" fill="${crownColor}" opacity="0.5"${desaturate}/>
+        <path class="tree-crown" d="M50 38 Q48 52 52 55 Q54 50 52 40Z" fill="${crownHi}" opacity="0.45"${desaturate}/>`;
+      break;
+    default: // ellipse (cherry blossom / default)
+      crownSvg = `
+        <ellipse class="tree-crown" cx="32" cy="33" rx="28" ry="30" fill="${crownColor}" opacity="0.9"${desaturate}/>
+        <ellipse class="tree-crown" cx="23" cy="24" rx="16" ry="18" fill="${crownHi}" opacity="0.8"${desaturate}/>
+        <ellipse class="tree-crown" cx="41" cy="27" rx="14" ry="16" fill="${crownTop}" opacity="0.75"${desaturate}/>`;
+  }
+
+  // Fruits
+  const fruitCrownRx = cat.crownType === 'bamboo' ? 12 : 24;
+  const fruitCrownRy = cat.crownType === 'bamboo' ? 20 : 22;
+  const fruits = fruitColor ? generateFruitPositions(fruitCount, cx, cy, fruitCrownRx, fruitCrownRy) : [];
+  const fruitSvg = fruits.map(f =>
+    `<circle cx="${f.x.toFixed(1)}" cy="${f.y.toFixed(1)}" r="3.5" fill="${fruitColor}" stroke="${fruitColor === '#F5C842' ? '#E8B828' : fruitColor}" stroke-width="0.8"/>`
+  ).join('');
+
+  // Reborn new leaf overlay
+  const rebornOverlay = isReborn ? `
+    <ellipse cx="32" cy="30" rx="30" ry="32" fill="#A5D6A7" opacity="0.25"/>
+    <circle cx="15" cy="20" r="4" fill="#C8E6C9" opacity="0.5"/>
+    <circle cx="50" cy="25" r="3.5" fill="#C8E6C9" opacity="0.5"/>
+    <circle cx="35" cy="12" r="3" fill="#E8F5E9" opacity="0.4"/>` : '';
+
+  // Trunk + branches
+  const trunkSvg = cat.crownType === 'bamboo' ? '' : `
+    <rect x="28" y="65" width="8" height="${fullH - 65}" fill="${trunkColor}" rx="2"/>
+    <path d="M32 75 Q18 65 14 70" stroke="${trunkColor}" fill="none" stroke-width="2.5" stroke-linecap="round"/>
+    <path d="M32 60 Q46 52 50 57" stroke="${trunkColor}" fill="none" stroke-width="2.5" stroke-linecap="round"/>`;
+
+  return `<svg width="${fullW}" height="${fullH}" viewBox="0 0 ${fullW} ${fullH}">
+    ${trunkSvg}
+    ${crownSvg}
+    ${fruitSvg}
+    ${rebornOverlay}
+  </svg>`;
+}
+
+// ========== DYNAMIC POSITIONING ==========
+function calculateTreePositions(books, containerWidth) {
+  // Sort: newest first (by completed_at or started_at)
+  const sorted = [...books].sort((a, b) => {
+    const dateA = new Date(a.completed_at || a.started_at);
+    const dateB = new Date(b.completed_at || b.started_at);
+    return dateB - dateA;
+  });
+
+  const positions = [];
+  const count = sorted.length;
+
+  sorted.forEach((book, i) => {
+    const growth = getGrowthStage(book);
+    // Distribute X: newest=left(5%), oldest=right(95%)
+    const xPercent = 5 + (i / Math.max(count - 1, 1)) * 85;
+    // Perspective: newest=front (bottom higher, scale bigger)
+    const depthFactor = i / Math.max(count - 1, 1); // 0=front, 1=back
+    const scale = 1.0 - depthFactor * 0.3; // 1.0 to 0.7
+    const baseBottom = 85 + depthFactor * 35; // 85px to 120px from bottom
+
+    positions.push({
+      book,
+      xPercent,
+      bottom: baseBottom,
+      scale,
+      growth,
+      zIndex: count - i,
+    });
+  });
+
+  // Collision avoidance: O(n^2) distance check
+  for (let i = 0; i < positions.length; i++) {
+    for (let j = i + 1; j < positions.length; j++) {
+      const a = positions[i], b = positions[j];
+      const dx = Math.abs(a.xPercent - b.xPercent) * containerWidth / 100;
+      const dy = Math.abs(a.bottom - b.bottom);
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < 50) {
+        // Jitter Y
+        positions[j].bottom += (15 + Math.random() * 15) * (j % 2 === 0 ? 1 : -1);
+      }
+    }
+  }
+
+  return positions;
+}
+
+// ========== GROUND DECORATIONS ==========
+function addGroundDecorations(books, container) {
+  if (books.length >= 12) return; // enough trees, no decorations needed
+  const decos = ['&#x1F33F;', '&#x1F344;', '&#x1FAA8;', '&#x1F33E;', '&#x2618;&#xFE0F;'];
+  const decoCount = Math.max(0, 10 - books.length);
+  let html = '';
+  for (let i = 0; i < decoCount; i++) {
+    const left = 5 + Math.random() * 85;
+    const bottom = 75 + Math.random() * 30;
+    const d = decos[Math.floor(Math.random() * decos.length)];
+    html += `<div class="ground-deco" style="left:${left}%;bottom:${bottom}px">${d}</div>`;
+  }
+  container.innerHTML = html;
+}
+
+// ========== RENDER FOREST ==========
+function renderForest() {
+  const container = document.getElementById('treeLayer');
+  const forestView = document.getElementById('forestView');
+  const containerWidth = forestView.offsetWidth || 400;
+  const positions = calculateTreePositions(sampleBooks, containerWidth);
+
+  let html = '';
+  positions.forEach(pos => {
+    const { book, xPercent, bottom, scale, growth, zIndex } = pos;
+    const svg = generateTreeSVG(book);
+    html += `<div class="tree-wrapper" style="left:${xPercent}%;bottom:${bottom}px;transform:scale(${scale.toFixed(2)});z-index:${zIndex}" onclick="showPopover('${book.id}')">
+      ${svg}
+      <div class="tree-label">${book.title}</div>
+    </div>`;
+  });
+  container.innerHTML = html;
+
+  // Ground decorations
+  addGroundDecorations(sampleBooks, document.getElementById('groundDecoLayer'));
+}
+
+// ========== COMPUTE STATS ==========
+function computeStats() {
+  const completed = sampleBooks.filter(b => b.status === 'completed');
+  const completedCount = completed.length;
+  const totalPages = sampleBooks.reduce((sum, b) => sum + (b.current_page || 0), 0);
+  const totalNotes = sampleBooks.reduce((sum, b) => sum + b.noteCount, 0);
+  const streak = 14; // sample streak
+
+  // Estimate points: each completed book ~60pts + notes ~10pts each + daily ~8pts * streak
+  const estimatedPoints = completedCount * 60 + totalNotes * 10 + streak * 8 + 200; // + welcome bonus
+  let currentLevel = LEVEL_DEFAULTS[0];
+  let nextLevel = LEVEL_DEFAULTS[1];
+  for (let i = LEVEL_DEFAULTS.length - 1; i >= 0; i--) {
+    if (estimatedPoints >= LEVEL_DEFAULTS[i].required_points) {
+      currentLevel = LEVEL_DEFAULTS[i];
+      nextLevel = LEVEL_DEFAULTS[i + 1] || null;
+      break;
+    }
+  }
+  const progressToNext = nextLevel
+    ? ((estimatedPoints - currentLevel.required_points) / (nextLevel.required_points - currentLevel.required_points) * 100).toFixed(0)
+    : 100;
+  const pointsToNext = nextLevel ? nextLevel.required_points - estimatedPoints : 0;
+
+  return { completedCount, totalPages, totalNotes, streak, estimatedPoints, currentLevel, nextLevel, progressToNext, pointsToNext };
+}
+
+// ========== RENDER UI SECTIONS ==========
+function renderStats() {
+  const s = computeStats();
+
+  // Header
+  document.getElementById('headerStats').innerHTML =
+    `<span><strong>${s.completedCount}</strong>권 완독</span><span><strong>${s.streak}</strong>일 연속</span>`;
+
+  // Tree count badge
+  document.getElementById('treeCountBadge').textContent = `${sampleBooks.length}그루`;
+
+  // Stats bar
+  document.getElementById('statsBar').innerHTML = `
+    <div class="stat-card"><div class="stat-number">${s.completedCount}</div><div class="stat-label">완독한 책</div></div>
+    <div class="stat-card"><div class="stat-number">${s.streak}</div><div class="stat-label">연속 독서일</div></div>
+    <div class="stat-card"><div class="stat-number">${s.totalPages.toLocaleString()}</div><div class="stat-label">총 페이지</div></div>
+    <div class="stat-card"><div class="stat-number">${s.totalNotes}</div><div class="stat-label">독서 기록</div></div>`;
+
+  // Level bar
+  const l = s.currentLevel;
+  const n = s.nextLevel;
+  document.getElementById('levelSection').innerHTML = `
+    <div class="level-bar">
+      <span class="level-icon">${l.emoji}</span>
+      <div class="level-info">
+        <div class="level-name">Lv.${l.level} ${l.title}</div>
+        <div class="level-progress-text">${s.estimatedPoints.toLocaleString()} / ${n ? n.required_points.toLocaleString() : '-'} 포인트${n ? ` (다음: ${n.title} ${n.emoji})` : ''}</div>
+        <div class="level-progress-bg">
+          <div class="level-progress-fill" style="width:${s.progressToNext}%"></div>
+        </div>
+      </div>
+      ${n ? `<div class="level-next"><span class="level-next-icon">${n.emoji}</span>${s.pointsToNext}P</div>` : ''}
+    </div>`;
+
+  // Share cards
+  const topGenre = getMostFrequentGenre();
+  document.getElementById('shareCards').innerHTML = `
+    <div class="share-card">
+      <div class="forest-card">
+        <div class="mini-trees" style="font-size:28px;line-height:1.6">
+          ${generateMiniTreeEmojis()}
+        </div>
+        <div class="card-info">
+          <div class="user-name">김독서의 숲</div>
+          <div class="card-stats">${s.completedCount}권 완독 &middot; ${sampleBooks.length}그루 &middot; ${s.streak}일째</div>
+          <div class="brand"><span>habitree.app</span><span>Habitree</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="share-card">
+      <div class="completion-card">
+        <div class="congrats">새로운 나무가 자랐어요!</div>
+        <div class="tree-icon">${getCategoryEmoji(sampleBooks.find(b => b.status === 'completed')?.category)}</div>
+        <div class="book-title">${sampleBooks.find(b => b.status === 'completed')?.title || ''}</div>
+        <div class="book-author">${sampleBooks.find(b => b.status === 'completed')?.author || ''}</div>
+        <div class="stars">${'&#11088;'.repeat(sampleBooks.find(b => b.status === 'completed')?.rating || 0)}</div>
+        <div class="milestone">올해 ${s.completedCount}번째 나무 &middot; Lv.${l.level} ${l.title}</div>
+      </div>
+    </div>
+    <div class="share-card">
+      <div class="wrapped-card">
+        <div class="year-label">Habitree Wrapped 2026</div>
+        <div class="big-number">${s.completedCount}</div>
+        <div class="big-label">권의 책을 읽었습니다</div>
+        <div class="sub-stats">
+          ${s.totalPages.toLocaleString()}페이지 &middot; ${sampleBooks.length}그루<br>
+          가장 많이 읽은 장르: ${topGenre}<br>
+          독서 DNA: 탐험가 유형
+        </div>
+      </div>
+    </div>`;
+}
+
+function getCategoryEmoji(category) {
+  const map = { '소설': '&#127800;', '자기계발': '&#127794;', '과학': '&#127795;', '인문': '&#127795;', '에세이': '&#127809;', '경제': '&#127795;', '예술': '&#127802;' };
+  return map[category] || '&#127795;';
+}
+
+function generateMiniTreeEmojis() {
+  const emojis = sampleBooks.slice(0, 12).map(b => {
+    const g = getGrowthStage(b);
+    if (g.stage === 'seed') return '&#x1F330;';
+    if (g.stage === 'sprout') return '&#x1F331;';
+    if (g.stage === 'young') return '&#x1FAB4;';
+    if (g.stage === 'wilted') return '&#x1F343;';
+    if (g.stage === 'growing') return '&#x1F332;';
+    if (g.stage === 'reborn') return '&#x1F33F;';
+    return '&#x1F333;';
+  });
+  // 4 per row
+  let rows = [];
+  for (let i = 0; i < emojis.length; i += 4) {
+    rows.push(emojis.slice(i, i + 4).join(''));
+  }
+  return rows.join('<br>');
+}
+
+function getMostFrequentGenre() {
+  const counts = {};
+  sampleBooks.forEach(b => { counts[b.category] = (counts[b.category] || 0) + 1; });
+  return Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0];
+}
+
+// ========== HEATMAP (4-color type system) ==========
+function generateHeatmap() {
+  const grid = document.getElementById('heatmapGrid');
+  const today = new Date(2026, 2, 8);
+  const startOfYear = new Date(2026, 0, 1);
+  const dayOfWeek = startOfYear.getDay();
+
+  const typeColors = {
+    transcription: '#a78bfa',
+    photo: '#38bdf8',
+    memo: '#34d399',
+    progress: '#fbbf24',
+  };
+  const typeNames = ['transcription', 'photo', 'memo', 'progress'];
+
+  // Generate 30-day sample data
+  const activityMap = {};
+  for (let d = 0; d < 67; d++) { // Jan 1 to Mar 8
+    const date = new Date(startOfYear);
+    date.setDate(date.getDate() + d);
+    if (date > today) break;
+    const key = date.toISOString().slice(0, 10);
+    const daysAgo = Math.floor((today - date) / (1000 * 60 * 60 * 24));
+
+    // More activity for recent days
+    const activityChance = 0.3 + Math.max(0, 1 - daysAgo / 40) * 0.4;
+    if (Math.random() < activityChance || daysAgo < 14) {
+      const counts = {};
+      typeNames.forEach(t => {
+        counts[t] = Math.floor(Math.random() * (daysAgo < 14 ? 4 : 3));
+      });
+      // Ensure at least one type for streak days
+      if (daysAgo < 14) {
+        const primary = typeNames[Math.floor(Math.random() * typeNames.length)];
+        counts[primary] = Math.max(counts[primary], 1 + Math.floor(Math.random() * 3));
+      }
+      const total = Object.values(counts).reduce((s, v) => s + v, 0);
+      if (total > 0) {
+        const dominant = Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0];
+        activityMap[key] = { counts, total, dominant };
+      }
+    }
+  }
+
+  for (let week = 0; week < 52; week++) {
+    const weekDiv = document.createElement('div');
+    weekDiv.className = 'heatmap-week';
+
+    for (let day = 0; day < 7; day++) {
+      const cellDate = new Date(startOfYear);
+      cellDate.setDate(cellDate.getDate() + week * 7 + day - dayOfWeek);
+
+      const cell = document.createElement('div');
+      cell.className = 'heatmap-cell';
+
+      if (cellDate >= startOfYear && cellDate <= today) {
+        const key = cellDate.toISOString().slice(0, 10);
+        const activity = activityMap[key];
+        if (activity) {
+          const color = typeColors[activity.dominant];
+          const intensity = Math.min(activity.total / 8, 1);
+          const alpha = 0.3 + intensity * 0.7;
+          cell.style.background = color;
+          cell.style.opacity = alpha.toFixed(2);
+        }
+
+        const dateStr = `${cellDate.getMonth() + 1}/${cellDate.getDate()}`;
+        cell.title = activity
+          ? `${dateStr}: 필사 ${activity.counts.transcription}, 사진 ${activity.counts.photo}, 메모 ${activity.counts.memo}, 진행 ${activity.counts.progress}`
+          : dateStr;
+      }
+
+      weekDiv.appendChild(cell);
+    }
+    grid.appendChild(weekDiv);
+  }
+
+  // Streak display
+  const stats = computeStats();
+  document.getElementById('heatmapStreak').textContent = `${stats.streak}일 연속`;
+
+  // Legend (4 colors)
+  document.getElementById('heatmapLegend').innerHTML = `
+    <div class="heatmap-legend-item"><div class="heatmap-legend-dot" style="background:${typeColors.transcription}"></div><span>필사</span></div>
+    <div class="heatmap-legend-item"><div class="heatmap-legend-dot" style="background:${typeColors.photo}"></div><span>사진</span></div>
+    <div class="heatmap-legend-item"><div class="heatmap-legend-dot" style="background:${typeColors.memo}"></div><span>메모</span></div>
+    <div class="heatmap-legend-item"><div class="heatmap-legend-dot" style="background:${typeColors.progress}"></div><span>진행</span></div>
+    <div class="heatmap-legend-item"><div class="heatmap-legend-dot" style="background:#ebedf0"></div><span>없음</span></div>`;
+}
+
+// ========== POPOVER ==========
+function showPopover(bookId) {
+  const book = sampleBooks.find(b => b.id === bookId);
+  if (!book) return;
+
+  const progress = book.total_pages > 0 ? Math.round((book.current_page / book.total_pages) * 100) : 0;
+  const cat = CATEGORY_TREE[book.category] || CATEGORY_TREE['소설'];
+
+  // Status badge
+  const statusMap = {
+    reading: { label: '읽는 중', cls: 'reading' },
+    completed: { label: '완독', cls: 'completed' },
+    paused: { label: '중단', cls: 'paused' },
+    not_started: { label: '시작 전', cls: 'not_started' },
+    rereading: { label: '재독', cls: 'rereading' },
+  };
+  const st = statusMap[book.status];
+
+  // Cover gradient based on category
+  const coverGradients = {
+    '소설': 'linear-gradient(135deg, #FFB7C5, #FF69B4)',
+    '자기계발': 'linear-gradient(135deg, #2E7D32, #4CAF50)',
+    '과학': 'linear-gradient(135deg, #C0CA33, #8BC34A)',
+    '인문': 'linear-gradient(135deg, #4CAF50, #81C784)',
+    '에세이': 'linear-gradient(135deg, #E57373, #FF8A80)',
+    '경제': 'linear-gradient(135deg, #66BB6A, #388E3C)',
+    '예술': 'linear-gradient(135deg, #AB47BC, #CE93D8)',
+  };
+  const coverBg = coverGradients[book.category] || coverGradients['소설'];
+
+  // Rating stars
+  const ratingHtml = book.rating
+    ? `${'&#11088;'.repeat(book.rating)}${'&#9734;'.repeat(5 - book.rating)}`
+    : '';
+
+  // Header
+  document.getElementById('popoverHeader').innerHTML = `
+    <div class="popover-cover" style="background:${coverBg}">
+      <div class="cover-title">${book.title}</div>
+    </div>
+    <div class="popover-meta">
+      <div class="title-row">
+        <h4>${book.title}</h4>
+        <span class="status-badge ${st.cls}">${st.label}</span>
+      </div>
+      <div class="author">${book.author}</div>
+      <div class="meta-row">
+        <span>&#128221; ${book.noteCount}개 기록</span>
+        ${ratingHtml ? `<span>${ratingHtml}</span>` : ''}
+      </div>
+      <div class="progress-bar-bg">
+        <div class="progress-bar-fill" style="width:${progress}%"></div>
+      </div>
+      <div class="progress-text">${book.current_page} / ${book.total_pages}페이지 (${progress}%)</div>
+    </div>`;
+
+  // Dates
+  document.getElementById('popoverDates').innerHTML = `
+    <span>시작: ${book.started_at}</span>
+    <span>완독: ${book.completed_at || '-'}</span>`;
+
+  // Actions (status-specific)
+  let actionHtml = '';
+  switch (book.status) {
+    case 'reading':
+      actionHtml = `<button class="btn-secondary">&#128221; 기록 보기</button><button class="btn-primary">&#128214; 계속 읽기</button>`;
+      break;
+    case 'completed':
+      actionHtml = `<button class="btn-secondary">&#128221; 기록 보기</button><button class="btn-primary">&#128228; 공유하기</button>`;
+      break;
+    case 'paused':
+      actionHtml = `<button class="btn-secondary">&#128221; 기록 보기</button><button class="btn-primary">&#128260; 다시 시작</button>`;
+      break;
+    case 'not_started':
+      actionHtml = `<button class="btn-primary" style="flex:1">&#128214; 읽기 시작</button>`;
+      break;
+    case 'rereading':
+      actionHtml = `<button class="btn-secondary">&#128221; 기록 보기</button><button class="btn-primary">&#128214; 계속 읽기</button>`;
+      break;
+  }
+  document.getElementById('popoverActions').innerHTML = actionHtml;
+
+  document.getElementById('popoverOverlay').classList.add('visible');
+}
+
+function hidePopover(e) {
+  if (e.target === document.getElementById('popoverOverlay')) {
+    document.getElementById('popoverOverlay').classList.remove('visible');
+  }
+}
+
+// ========== TAB / SEASON ==========
+function switchTab(btn) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+function changeSeason(season, btn) {
+  const forest = document.getElementById('forestView');
+  forest.className = 'forest-container';
+  if (season !== 'summer') forest.classList.add(season);
+  document.querySelectorAll('.season-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+// ========== INIT ==========
+function init() {
+  renderForest();
+  renderStats();
+  generateHeatmap();
+}
+
+init();
+
+// Re-render on resize for position recalculation
+let resizeTimer;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(renderForest, 200);
+});
+</script>
+</body>
+</html>

@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState, useCallback, Suspense } from "react";
+import { useEffect, useState, useCallback, useRef, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import confetti from "canvas-confetti";
+
 import { CheckCircle2, XCircle, Loader2, Coins, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,8 +14,61 @@ function PaymentSuccessContent() {
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
   const [result, setResult] = useState<ConfirmPaymentResult | null>(null);
   const [errorMessage, setErrorMessage] = useState("");
+  const retryRef = useRef(0);
 
   const confirmPayment = useCallback(async () => {
+    const provider = searchParams.get("provider");
+
+    // Polar 결제: 웹훅에서 처리되므로 DB 주문 상태만 폴링
+    if (provider === "polar") {
+      const polarOrderId = searchParams.get("order_id");
+      if (!polarOrderId) {
+        setStatus("error");
+        setErrorMessage("결제 정보가 올바르지 않습니다.");
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/checkout/polar/status?order_id=${encodeURIComponent(polarOrderId)}`);
+        const data = await response.json();
+
+        if (data.status === "confirmed") {
+          setResult({
+            success: true,
+            pointsCharged: data.totalPoints,
+            newBalance: data.newBalance,
+            basePoints: data.basePoints,
+            bonusPoints: data.bonusPoints,
+            firstPurchaseBonus: data.firstPurchaseBonus,
+          });
+          setStatus("success");
+          import("canvas-confetti").then((m) =>
+            m.default({ particleCount: 100, spread: 70, origin: { y: 0.6 } })
+          );
+        } else if (data.status === "pending") {
+          // 웹훅 아직 미도착 → 3초 후 재시도 (최대 20회 = 약 60초)
+          retryRef.current += 1;
+          if (retryRef.current < 20) {
+            setTimeout(() => confirmPayment(), 3000);
+          } else {
+            // 60초 초과 대기 — 결제는 완료되었으나 포인트 반영 지연 안내
+            setStatus("error");
+            setErrorMessage(
+              "결제는 완료되었으나 포인트 반영이 지연되고 있습니다. 잠시 후 프로필에서 확인해주세요."
+            );
+          }
+        } else {
+          setStatus("error");
+          setErrorMessage(data.error || "결제 확인에 실패했습니다.");
+        }
+      } catch {
+        setStatus("error");
+        setErrorMessage("결제 확인 중 오류가 발생했습니다.");
+      }
+      return;
+    }
+
+    // 토스 결제 (기존 플로우)
     const paymentKey = searchParams.get("paymentKey");
     const orderId = searchParams.get("orderId");
     const amount = searchParams.get("amount");
@@ -49,11 +102,13 @@ function PaymentSuccessContent() {
       setStatus("success");
 
       // 축하 이펙트
-      confetti({
-        particleCount: 100,
-        spread: 70,
-        origin: { y: 0.6 },
-      });
+      import("canvas-confetti").then((m) =>
+        m.default({
+          particleCount: 100,
+          spread: 70,
+          origin: { y: 0.6 },
+        })
+      );
     } catch {
       setStatus("error");
       setErrorMessage("결제 확인 중 오류가 발생했습니다.");

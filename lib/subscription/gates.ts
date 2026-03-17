@@ -2,6 +2,8 @@
  * 기능별 게이트 설정 (포인트 소비 모델)
  */
 
+import { IS_BETA_MODE } from "./beta";
+
 export type FeatureKey =
   | "ai_chat"
   | "ocr"
@@ -77,3 +79,17 @@ export const FEATURE_GATES: Record<FeatureKey, FeatureGate> = {
     countMethod: "boolean",
   },
 };
+
+/** 베타 모드: AI 기능 한도 9999, 포인트 비용 0으로 오버라이드 */
+const BETA_AI_KEYS: FeatureKey[] = ["ai_chat", "ocr", "ai_report"];
+
+export const EFFECTIVE_FEATURE_GATES: Record<FeatureKey, FeatureGate> = IS_BETA_MODE
+  ? Object.fromEntries(
+      Object.entries(FEATURE_GATES).map(([key, gate]) => [
+        key,
+        BETA_AI_KEYS.includes(key as FeatureKey)
+          ? { ...gate, limit: 9999, pointCost: 0 }
+          : gate,
+      ])
+    ) as Record<FeatureKey, FeatureGate>
+  : FEATURE_GATES;

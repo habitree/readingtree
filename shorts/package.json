@@ -1,0 +1,38 @@
+{
+  "name": "readtree-shorts",
+  "version": "2.0.0",
+  "description": "ReadTree brand shorts automation system",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "preview": "npx remotion studio src/index.ts",
+    "render": "npx remotion render src/index.ts",
+    "render:daily": "npx remotion render src/index.ts DailyQuote out/daily-quote.mp4",
+    "render:review": "npx remotion render src/index.ts BookReview out/book-review.mp4",
+    "render:tip": "npx remotion render src/index.ts ReadingTip out/reading-tip.mp4",
+    "render:vs": "npx remotion render src/index.ts BookVsBook out/book-vs-book.mp4",
+    "render:app": "npx remotion render src/index.ts AppPreview out/app-preview.mp4",
+    "pipeline:daily": "tsx pipeline/cli.ts --series daily-quote",
+    "pipeline:weekly": "tsx pipeline/cli.ts --series book-review",
+    "generate:daily": "tsx scripts/generate-daily.ts",
+    "generate:weekly": "tsx scripts/generate-weekly.ts",
+    "generate:tts": "tsx scripts/generate-tts.ts"
+  },
+  "dependencies": {
+    "@remotion/cli": "^4.0.434",
+    "@remotion/player": "^4.0.434",
+    "@supabase/supabase-js": "^2.49.0",
+    "edge-tts": "^1.0.1",
+    "openai": "^4.85.0",
+    "puppeteer-core": "^24.38.0",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "remotion": "^4.0.434"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "tsx": "^4.19.0",
+    "typescript": "^5.9.3"
+  }
+}

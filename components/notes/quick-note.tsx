@@ -31,7 +31,7 @@ import { useTranslation } from "@/lib/i18n";
 import { useUpgradeModal, isUpgradeLimitError } from "@/hooks/use-upgrade-modal";
 import { getUserBooks } from "@/app/actions/books";
 import { createNote } from "@/app/actions/notes";
-import confetti from "canvas-confetti";
+
 
 interface ReadingBook {
   id: string;
@@ -152,12 +152,14 @@ export function QuickNote({
 
       // 축하 효과
       setShowSuccess(true);
-      confetti({
-        particleCount: 50,
-        spread: 60,
-        origin: { y: 0.7, x: 0.5 },
-        colors: ["#10b981", "#34d399", "#6ee7b7"],
-      });
+      import("canvas-confetti").then((m) =>
+        m.default({
+          particleCount: 50,
+          spread: 60,
+          origin: { y: 0.7, x: 0.5 },
+          colors: ["#10b981", "#34d399", "#6ee7b7"],
+        })
+      );
 
       // 랜덤 칭찬 메시지
       const randomPraise = PRAISE_MESSAGES[Math.floor(Math.random() * PRAISE_MESSAGES.length)];

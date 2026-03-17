@@ -2,7 +2,7 @@
 
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import type { User } from "@supabase/supabase-js";
-import { FEATURE_GATES, type FeatureKey } from "@/lib/subscription/gates";
+import { EFFECTIVE_FEATURE_GATES, type FeatureKey } from "@/lib/subscription/gates";
 
 /**
  * KST 기준 오늘 날짜 반환 (YYYY-MM-DD)
@@ -66,7 +66,7 @@ async function getTableCount(
       const monthEnd = getKSTMonthEnd();
       const { count } = await supabase
         .from("notes")
-        .select("*", { count: "exact", head: true })
+        .select("id", { count: "exact", head: true })
         .eq("user_id", userId)
         .gte("created_at", `${monthStart}T00:00:00+09:00`)
         .lte("created_at", `${monthEnd}T23:59:59+09:00`);
@@ -75,7 +75,7 @@ async function getTableCount(
     case "bookshelf_create": {
       const { count } = await supabase
         .from("bookshelves")
-        .select("*", { count: "exact", head: true })
+        .select("id", { count: "exact", head: true })
         .eq("user_id", userId)
         .eq("is_main", false);
       return count || 0;
@@ -83,7 +83,7 @@ async function getTableCount(
     case "groups_create": {
       const { count } = await supabase
         .from("groups")
-        .select("*", { count: "exact", head: true })
+        .select("id", { count: "exact", head: true })
         .eq("leader_id", userId);
       return count || 0;
     }
@@ -99,7 +99,7 @@ async function getMembershipCount(userId: string): Promise<number> {
   const supabase = await createServerSupabaseClient();
   const { count } = await supabase
     .from("group_members")
-    .select("*", { count: "exact", head: true })
+    .select("id", { count: "exact", head: true })
     .eq("user_id", userId)
     .eq("status", "approved");
   return count || 0;
@@ -130,7 +130,7 @@ export async function checkFeatureAccess(
     currentUser = fetchedUser;
   }
 
-  const gate = FEATURE_GATES[feature];
+  const gate = EFFECTIVE_FEATURE_GATES[feature];
   const limit = gate.limit;
 
   // 무제한이면 즉시 허용
@@ -162,7 +162,7 @@ export async function checkFeatureAccess(
           const monthEnd = getKSTMonthEnd();
           const { count } = await supabase
             .from("point_transactions")
-            .select("*", { count: "exact", head: true })
+            .select("id", { count: "exact", head: true })
             .eq("user_id", currentUser.id)
             .eq("action_type", actionType)
             .gte("created_at", `${monthStart}T00:00:00+09:00`)
@@ -172,7 +172,7 @@ export async function checkFeatureAccess(
           const today = getKSTToday();
           const { count } = await supabase
             .from("point_transactions")
-            .select("*", { count: "exact", head: true })
+            .select("id", { count: "exact", head: true })
             .eq("user_id", currentUser.id)
             .eq("action_type", actionType)
             .gte("created_at", `${today}T00:00:00+09:00`)
