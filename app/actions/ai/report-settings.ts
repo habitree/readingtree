@@ -7,6 +7,7 @@
  */
 
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/app/actions/auth";
 import { isAdmin } from "../auth";
 import type {
   AIReportSettings,
@@ -41,9 +42,10 @@ function transformRow(row: Record<string, unknown>): AIReportSettings {
 export async function getReportSettings(): Promise<AIReportSettings | null> {
   await requireAdmin();
 
-  const supabase = await createServerSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) return null;
+
+  const supabase = await createServerSupabaseClient();
 
   const { data, error } = await supabase
     .from("ai_report_settings")
@@ -68,9 +70,10 @@ export async function updateReportSettings(
 ): Promise<AIReportSettings> {
   await requireAdmin();
 
-  const supabase = await createServerSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) throw new Error("인증이 필요합니다.");
+
+  const supabase = await createServerSupabaseClient();
 
   // 기존 설정 확인
   const { data: existing } = await supabase

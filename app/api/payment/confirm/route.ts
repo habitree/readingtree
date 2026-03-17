@@ -80,6 +80,22 @@ export async function POST(request: Request) {
     );
   }
 
+  // 4.5. Optimistic Lock: pending → processing 상태 전환 (Race Condition 방지)
+  const { data: lockResult, error: lockError } = await supabase
+    .from("payment_orders")
+    .update({ status: "processing" })
+    .eq("id", order.id)
+    .eq("status", "pending")
+    .select("id")
+    .single();
+
+  if (lockError || !lockResult) {
+    return NextResponse.json(
+      { error: "이미 처리 중인 주문입니다." },
+      { status: 409 }
+    );
+  }
+
   // 5. 금액 위변조 검증
   if (order.amount !== amount) {
     await supabase

@@ -1,6 +1,7 @@
 "use server";
 
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/app/actions/auth";
 import { revalidatePath } from "next/cache";
 import { searchBooks, transformNaverBookItem } from "@/lib/api/naver";
 import { fetchBookPageCount } from "@/lib/api/book-page-count";
@@ -26,15 +27,10 @@ export async function updateBookStatus(
   // 현재 사용자 확인
   let currentUser = user;
   if (!currentUser) {
-    const {
-      data: { user: fetchedUser },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !fetchedUser) {
+    currentUser = await getCurrentUser();
+    if (!currentUser) {
       throw new Error("로그인이 필요합니다.");
     }
-    currentUser = fetchedUser;
   }
 
   // 사용자의 책인지 확인
@@ -128,15 +124,10 @@ export async function updateBookProgress(
   // 현재 사용자 확인
   let currentUser = user;
   if (!currentUser) {
-    const {
-      data: { user: fetchedUser },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !fetchedUser) {
+    currentUser = await getCurrentUser();
+    if (!currentUser) {
       throw new Error("로그인이 필요합니다.");
     }
-    currentUser = fetchedUser;
   }
 
   // UUID 검증
@@ -293,17 +284,13 @@ export async function updateBookTotalPages(
   bookId: string,
   totalPages: number
 ): Promise<{ success: boolean; error?: string }> {
-  const supabase = await createServerSupabaseClient();
-
   // 현재 사용자 확인
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-
-  if (authError || !user) {
+  const user = await getCurrentUser();
+  if (!user) {
     return { success: false, error: "로그인이 필요합니다." };
   }
+
+  const supabase = await createServerSupabaseClient();
 
   // UUID 검증
   if (!isValidUUID(bookId)) {
@@ -418,17 +405,13 @@ export async function getBookCoverByIsbn(
 export async function batchUpdatePageCounts(
   limit: number = 20
 ): Promise<{ updated: number; failed: number; results: Array<{ isbn: string; success: boolean; pageCount?: number; source?: string; error?: string }> }> {
-  const supabase = await createServerSupabaseClient();
-
   // 현재 사용자 확인 (관리자 기능으로 제한 가능)
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-
-  if (authError || !user) {
+  const user = await getCurrentUser();
+  if (!user) {
     throw new Error("로그인이 필요합니다.");
   }
+
+  const supabase = await createServerSupabaseClient();
 
   // 페이지 수가 없는 책 조회
   const { data: books, error: selectError } = await supabase

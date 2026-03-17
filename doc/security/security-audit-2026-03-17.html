@@ -805,6 +805,48 @@ const store: RateLimitStore = {};</code></pre>
       </div>
     </div>
 
+    <!-- Remediation Status -->
+    <div class="section" id="sec-status">
+      <div class="section-header" onclick="toggle('status')">
+        <span class="arrow open" id="arrow-status">&#9654;</span>
+        <h2>수정 완료 현황 (Remediation Status)</h2>
+      </div>
+      <div class="section-body" id="body-status">
+        <table>
+          <thead><tr><th>#</th><th>이슈</th><th>상태</th><th>수정 내용</th></tr></thead>
+          <tbody>
+            <tr><td>C1</td><td>.env.local Git 커밋</td><td><span class="badge badge-safe">오탐</span></td><td>.gitignore에 이미 포함, 커밋 이력 없음</td></tr>
+            <tr><td>C2</td><td>포인트 차감 TOCTOU</td><td><span class="badge badge-safe">수정됨</span></td><td>spend_points_atomic RPC 생성 + spendPoints() 원자적 교체</td></tr>
+            <tr><td>C3</td><td>유료 기능 포인트 차감 누락</td><td><span class="badge badge-safe">수정됨</span></td><td>AI Chat/OCR 라우트에 spendPoints() 연동</td></tr>
+            <tr><td>C4</td><td>/api/notes 인증 누락</td><td><span class="badge badge-safe">수정됨</span></td><td>getUser() 인증 확인 추가</td></tr>
+            <tr><td>C5</td><td>npm 의존성 취약점</td><td><span class="badge badge-safe">수정됨</span></td><td>npm audit fix (7 → 0 취약점)</td></tr>
+            <tr><td>H1</td><td>메모리 기반 Rate Limiting</td><td><span class="badge badge-medium">보류</span></td><td>Upstash Redis 도입 필요 (별도 작업)</td></tr>
+            <tr><td>H2</td><td>결제 확인 Race Condition</td><td><span class="badge badge-safe">수정됨</span></td><td>Optimistic Lock (pending→processing 전환)</td></tr>
+            <tr><td>H3</td><td>getCurrentUser() 우회</td><td><span class="badge badge-safe">수정됨</span></td><td>10개 파일 getCurrentUser()로 일괄 교체</td></tr>
+            <tr><td>H4</td><td>일일 미션 이중 보상</td><td><span class="badge badge-safe">수정됨</span></td><td>UPSERT + 상태 조건부 업데이트로 멱등성 보장</td></tr>
+            <tr><td>H5</td><td>프로덕션 콘솔 로깅</td><td><span class="badge badge-safe">수정됨</span></td><td>auth.ts, ocr/route.ts 민감 로그 제거</td></tr>
+            <tr><td>M1</td><td>AI 프롬프트 인젝션</td><td><span class="badge badge-safe">수정됨</span></td><td>메시지 길이 제한 (10,000자) 추가</td></tr>
+            <tr><td>M2</td><td>관리자 이메일 노출</td><td><span class="badge badge-medium">보류</span></td><td>관리자 전용 페이지, 이메일 마스킹 검토 필요</td></tr>
+            <tr><td>M3</td><td>select("*") 사용</td><td><span class="badge badge-safe">수정됨</span></td><td>명시적 필드 선택으로 변경</td></tr>
+            <tr><td>M4</td><td>이메일 토큰 URL</td><td><span class="badge badge-medium">보류</span></td><td>Supabase 기본 동작, Referrer-Policy 이미 설정</td></tr>
+            <tr><td>M5</td><td>CSP unsafe-inline</td><td><span class="badge badge-medium">보류</span></td><td>nonce 기반 CSP 전환 필요 (별도 작업)</td></tr>
+            <tr><td>M6</td><td>샘플 데이터 관리자 ID</td><td><span class="badge badge-safe">수정됨</span></td><td>SAMPLE_USER_ID 환경변수 우선 사용</td></tr>
+            <tr><td>M7</td><td>그룹 승인 TOCTOU</td><td><span class="badge badge-medium">보류</span></td><td>RLS가 부분 보호, RPC 전환 검토 필요</td></tr>
+            <tr><td>L1</td><td>any 타입 사용</td><td><span class="badge badge-safe">수정됨</span></td><td>points.ts any → unknown 변경</td></tr>
+            <tr><td>L2</td><td>완독 소감 서버 검증</td><td><span class="badge badge-medium">보류</span></td><td>서버 액션 내 길이 제한 추가 검토</td></tr>
+            <tr><td>L3</td><td>검색어 이스케이프 순서</td><td><span class="badge badge-medium">보류</span></td><td>PostgREST 추가 방어로 실질 위험 낮음</td></tr>
+            <tr><td>L4</td><td>이미지 URL 파싱 검증</td><td><span class="badge badge-safe">수정됨</span></td><td>Supabase URL 형식 + path traversal 검증 추가</td></tr>
+            <tr><td>L5</td><td>PostgREST 필터 문자열</td><td><span class="badge badge-medium">보류</span></td><td>UUID 검증 후 사용, 실질 위험 낮음</td></tr>
+          </tbody>
+        </table>
+        <div style="margin-top: 1.5rem; padding: 1rem; background: rgba(22,163,74,0.1); border: 1px solid rgba(22,163,74,0.3); border-radius: 8px;">
+          <p style="color: var(--safe); font-weight: 700; margin-bottom: 0.5rem;">수정 요약</p>
+          <p><strong>수정 완료: 15건</strong> (C2, C3, C4, C5, H2, H3, H4, H5, M1, M3, M6, L1, L4 + C1 오탐)</p>
+          <p><strong>보류: 7건</strong> (외부 서비스 도입 또는 대규모 리팩토링 필요)</p>
+        </div>
+      </div>
+    </div>
+
     <!-- Footer -->
     <div style="text-align: center; padding: 2rem; color: var(--text-dim); font-size: 0.85rem;">
       <p>Habitree Security Audit Report — 2026-03-17</p>

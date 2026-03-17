@@ -1,6 +1,7 @@
 "use server";
 
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/app/actions/auth";
 import type { Database } from "@/types/database";
 
 /**
@@ -8,13 +9,12 @@ import type { Database } from "@/types/database";
  * @returns 사용자별 OCR 사용 통계 목록
  */
 export async function getOcrUsageStats() {
-  const supabase = await createServerSupabaseClient();
-
-  // 관리자 권한 확인
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) {
     throw new Error("로그인이 필요합니다.");
   }
+
+  const supabase = await createServerSupabaseClient();
 
   // 관리자 권한 확인
   const { data: userProfile } = await supabase
@@ -47,13 +47,12 @@ export async function getOcrUsageStats() {
  * @returns OCR 처리 로그 목록
  */
 export async function getOcrLogs(limit: number = 100) {
-  const supabase = await createServerSupabaseClient();
-
-  // 관리자 권한 확인
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) {
     throw new Error("로그인이 필요합니다.");
   }
+
+  const supabase = await createServerSupabaseClient();
 
   // 관리자 권한 확인
   const { data: userProfile } = await supabase

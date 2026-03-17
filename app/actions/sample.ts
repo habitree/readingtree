@@ -10,12 +10,12 @@ import type { UserPersona } from "@/types/persona";
 import { sanitizeSearchQuery } from "@/lib/utils/validation";
 
 /**
- * 관리자(샘플 사용자) ID를 동적으로 조회
- * is_admin = TRUE인 첫 번째 사용자를 샘플 사용자로 사용
+ * 샘플 사용자 ID를 동적으로 조회
+ * 환경변수 우선 → is_admin 조회 (관리자 ID는 클라이언트에 직접 노출되지 않음)
  */
 export async function getSampleUserId(): Promise<string> {
-  // 환경 변수가 설정되어 있으면 우선 사용
-  const envSampleUserId = process.env.NEXT_PUBLIC_SAMPLE_USER_ID;
+  // 환경 변수가 설정되어 있으면 우선 사용 (전용 데모 계정 권장)
+  const envSampleUserId = process.env.SAMPLE_USER_ID || process.env.NEXT_PUBLIC_SAMPLE_USER_ID;
   if (envSampleUserId) {
     return envSampleUserId;
   }

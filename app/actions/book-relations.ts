@@ -1,6 +1,7 @@
 "use server";
 
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/app/actions/auth";
 import { revalidatePath } from "next/cache";
 import { isValidUUID } from "@/lib/utils/validation";
 import type { User } from "@supabase/supabase-js";
@@ -37,15 +38,10 @@ export async function getRelatedBooks(
   // 현재 사용자 확인
   let currentUser = user;
   if (!currentUser) {
-    const {
-      data: { user: fetchedUser },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !fetchedUser) {
+    currentUser = await getCurrentUser();
+    if (!currentUser) {
       throw new Error("로그인이 필요합니다.");
     }
-    currentUser = fetchedUser;
   }
 
   // 연결된 책 조회 (source_user_book_id가 현재 책인 관계)
@@ -117,15 +113,10 @@ export async function addBookRelation(
   // 현재 사용자 확인
   let currentUser = user;
   if (!currentUser) {
-    const {
-      data: { user: fetchedUser },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !fetchedUser) {
+    currentUser = await getCurrentUser();
+    if (!currentUser) {
       throw new Error("로그인이 필요합니다.");
     }
-    currentUser = fetchedUser;
   }
 
   // 두 책 모두 사용자의 것인지 확인
@@ -200,15 +191,10 @@ export async function removeBookRelation(
   // 현재 사용자 확인
   let currentUser = user;
   if (!currentUser) {
-    const {
-      data: { user: fetchedUser },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !fetchedUser) {
+    currentUser = await getCurrentUser();
+    if (!currentUser) {
       throw new Error("로그인이 필요합니다.");
     }
-    currentUser = fetchedUser;
   }
 
   // 양방향 연결 삭제 (A→B, B→A)
@@ -250,15 +236,10 @@ export async function getRelatedBookIds(
   // 현재 사용자 확인
   let currentUser = user;
   if (!currentUser) {
-    const {
-      data: { user: fetchedUser },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !fetchedUser) {
+    currentUser = await getCurrentUser();
+    if (!currentUser) {
       return [];
     }
-    currentUser = fetchedUser;
   }
 
   // 연결된 책 ID 조회

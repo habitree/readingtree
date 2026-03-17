@@ -3,6 +3,7 @@ import { NoteFormNew } from "@/components/notes/note-form-new";
 import { NoteCreationFlow } from "@/components/notes/note-creation-flow";
 import { redirect } from "next/navigation";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/app/actions/auth";
 import { isValidUUID } from "@/lib/utils/validation";
 import { PageHeader } from "@/components/layout/page-header";
 
@@ -34,9 +35,8 @@ export default async function NewNotePage({ searchParams }: NewNotePageProps) {
 
   // quickstart 모드: 책 없이 바로 폼 표시
   if (isQuickstart && !bookId) {
-    const supabase = await createServerSupabaseClient();
-    const { data: { user }, error } = await supabase.auth.getUser();
-    if (!user || error) {
+    const user = await getCurrentUser();
+    if (!user) {
       redirect("/login");
     }
 
@@ -56,28 +56,25 @@ export default async function NewNotePage({ searchParams }: NewNotePageProps) {
     return <NoteCreationFlow />;
   }
 
-  // Supabase 클라이언트 생성 (한 번만)
-  const supabase = await createServerSupabaseClient();
-
-  // 사용자 정보와 책 소유 확인을 병렬로 처리
-  const [userResult, userBookResult] = await Promise.all([
-    supabase.auth.getUser(),
-    supabase
-      .from("user_books")
-      .select("id, user_id")
-      .eq("id", bookId)
-      .maybeSingle(),
-  ]);
-
   // 사용자 확인
-  const user = userResult.data?.user;
-  if (!user || userResult.error) {
+  const user = await getCurrentUser();
+  if (!user) {
     redirect("/login");
   }
 
+  // Supabase 클라이언트 생성
+  const supabase = await createServerSupabaseClient();
+
   // 책 소유 확인
-  const userBook = userBookResult.data;
-  if (!userBook || userBookResult.error || userBook.user_id !== user.id) {
+  const { data: userBookResult, error: userBookError } = await supabase
+    .from("user_books")
+    .select("id, user_id")
+    .eq("id", bookId)
+    .maybeSingle();
+
+  // 책 소유 확인
+  const userBook = userBookResult;
+  if (!userBook || userBookError || userBook.user_id !== user.id) {
     redirect("/books");
   }
 

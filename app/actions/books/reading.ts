@@ -1,6 +1,7 @@
 "use server";
 
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/app/actions/auth";
 import { searchBooks, transformNaverBookItem } from "@/lib/api/naver";
 import { resolveOpenLibraryCoverUrl } from "@/lib/api/open-library-covers";
 import type { ReadingStatus } from "@/types/book";
@@ -85,18 +86,12 @@ export async function getUserBooks(
 
   // 현재 사용자 확인
   let currentUser = user;
-  let authError = null;
   if (!currentUser) {
-    const {
-      data: { user: fetchedUser },
-      error: fetchedError,
-    } = await supabase.auth.getUser();
-    currentUser = fetchedUser;
-    authError = fetchedError;
+    currentUser = await getCurrentUser();
   }
 
   // 게스트 사용자인 경우 샘플 데이터 반환
-  if (authError || !currentUser) {
+  if (!currentUser) {
     // 샘플 책 데이터 조회
     let query = supabase
       .from("books")
@@ -283,18 +278,12 @@ export async function getUserBooksWithNotes(
 
   // 현재 사용자 확인
   let currentUser = user;
-  let authError = null;
   if (!currentUser) {
-    const {
-      data: { user: fetchedUser },
-      error: fetchedError,
-    } = await supabase.auth.getUser();
-    currentUser = fetchedUser;
-    authError = fetchedError;
+    currentUser = await getCurrentUser();
   }
 
   // 게스트 사용자인 경우 빈 결과 반환 (통계는 0)
-  if (authError || !currentUser) {
+  if (!currentUser) {
     return {
       books: [],
       stats: {
@@ -699,11 +688,7 @@ export async function getBookDetail(userBookId: string, user?: User | null) {
   // 현재 사용자 확인
   let currentUser = user;
   if (!currentUser) {
-    const {
-      data: { user: fetchedUser },
-      error: authError,
-    } = await supabase.auth.getUser();
-    currentUser = fetchedUser;
+    currentUser = await getCurrentUser();
   }
 
   // 게스트 사용자가 샘플 책 상세 페이지에 접근 시도
@@ -864,15 +849,10 @@ export async function getContinueReadingBook(user?: User | null): Promise<{
   // 현재 사용자 확인
   let currentUser = user;
   if (!currentUser) {
-    const {
-      data: { user: fetchedUser },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !fetchedUser) {
+    currentUser = await getCurrentUser();
+    if (!currentUser) {
       return null;
     }
-    currentUser = fetchedUser;
   }
 
   // 읽는 중인 책 목록 조회 (최근 업데이트순)
@@ -975,15 +955,10 @@ export async function getContinueReadingBooks(user?: User | null, maxCount: numb
   // 현재 사용자 확인
   let currentUser = user;
   if (!currentUser) {
-    const {
-      data: { user: fetchedUser },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !fetchedUser) {
+    currentUser = await getCurrentUser();
+    if (!currentUser) {
       return [];
     }
-    currentUser = fetchedUser;
   }
 
   // 읽는 중인 책 목록 조회 (최근 업데이트순, 자유 기록 제외)

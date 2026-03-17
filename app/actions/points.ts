@@ -98,7 +98,7 @@ export async function earnPoints(
     referenceId?: string;
     referenceType?: string;
     description?: string;
-    metadata?: Record<string, any>;
+    metadata?: Record<string, unknown>;
     user?: User | null;
   }
 ): Promise<EarnPointsResult> {
@@ -544,42 +544,55 @@ export async function getDailyMissions(user?: User | null): Promise<MissionWithD
     const existingMission = existingMissions?.find((m) => m.mission_type === mission.type);
 
     if (!existingMission) {
-      // 미션 레코드 생성
-      await supabase.from("daily_missions").insert({
-        user_id: currentUser.id,
-        date: today,
-        mission_type: mission.type,
-        status: mission.status,
-        points_earned: mission.status === "completed" ? mission.reward : 0,
-        completed_at: mission.status === "completed" ? new Date().toISOString() : null,
-      });
+      // 미션 레코드 생성 (UPSERT로 Race Condition 방지)
+      const { data: inserted, error: insertError } = await supabase
+        .from("daily_missions")
+        .upsert(
+          {
+            user_id: currentUser.id,
+            date: today,
+            mission_type: mission.type,
+            status: mission.status,
+            points_earned: mission.status === "completed" ? mission.reward : 0,
+            completed_at: mission.status === "completed" ? new Date().toISOString() : null,
+          },
+          { onConflict: "user_id,date,mission_type", ignoreDuplicates: true }
+        )
+        .select("id")
+        .maybeSingle();
 
-      // 완료된 경우 포인트 적립
-      if (mission.status === "completed") {
+      // 완료된 경우 포인트 적립 (insert 성공 시에만 — 중복 방지)
+      if (!insertError && inserted && mission.status === "completed") {
         await earnPoints("mission_complete", {
           user: currentUser,
           description: `Daily mission complete: ${mission.title}`,
-          referenceId: mission.id,
+          referenceId: inserted.id,
           referenceType: "mission",
         });
       }
     } else if (existingMission.status === "pending" && mission.status === "completed") {
-      // 미션 완료 처리
-      await supabase
+      // 미션 완료 처리 (상태 조건부 업데이트로 Race Condition 방지)
+      const { data: updated, error: updateError } = await supabase
         .from("daily_missions")
         .update({
           status: "completed",
           points_earned: mission.reward,
           completed_at: new Date().toISOString(),
         })
-        .eq("id", existingMission.id);
+        .eq("id", existingMission.id)
+        .eq("status", "pending")
+        .select("id")
+        .maybeSingle();
 
-      await earnPoints("mission_complete", {
-        user: currentUser,
-        description: `Daily mission complete: ${mission.title}`,
-        referenceId: existingMission.id,
-        referenceType: "mission",
-      });
+      // 업데이트 성공 시에만 포인트 적립 (이미 completed면 updated는 null)
+      if (!updateError && updated) {
+        await earnPoints("mission_complete", {
+          user: currentUser,
+          description: `Daily mission complete: ${mission.title}`,
+          referenceId: existingMission.id,
+          referenceType: "mission",
+        });
+      }
     }
   }
 
@@ -755,13 +768,14 @@ export async function checkPointBalance(
 
 /**
  * 포인트 차감 (AI 채팅, OCR 등 유료 기능 사용 시)
+ * 원자적 RPC를 사용하여 Race Condition 방지
  */
 export async function spendPoints(
   spendType: PointSpendType,
   options?: {
     user?: User | null;
     description?: string;
-    metadata?: Record<string, any>;
+    metadata?: Record<string, unknown>;
   }
 ): Promise<SpendPointsResult> {
   const supabase = await createServerSupabaseClient();
@@ -776,61 +790,45 @@ export async function spendPoints(
     currentUser = fetchedUser;
   }
 
-  // 잔액 확인
-  const userPoints = await getUserPoints(currentUser);
-  if (!userPoints || userPoints.total_points < cost) {
-    return {
-      success: false,
-      points_spent: 0,
-      new_total: userPoints?.total_points ?? 0,
-      error: "포인트가 부족합니다.",
-    };
-  }
-
   const actionTypeMap: Record<PointSpendType, PointActionType> = {
     ai_chat: "ai_chat_spend",
     ocr_process: "ocr_spend",
     ai_report: "ai_report_spend",
   };
   const actionType = actionTypeMap[spendType];
-  const newTotal = userPoints.total_points - cost;
 
-  // 트랜잭션 기록 (음수 포인트)
-  const { data: transaction, error: txError } = await supabase
-    .from("point_transactions")
-    .insert({
-      user_id: currentUser.id,
-      action_type: actionType,
-      points: -cost,
-      final_points: -cost,
-      description: options?.description || `${spendType} 포인트 차감`,
-      balance_after: newTotal,
-      metadata: options?.metadata,
-    })
-    .select("id")
-    .single();
+  // 원자적 RPC로 잔액 확인 + 차감 + 트랜잭션 기록을 단일 트랜잭션에서 처리
+  const { data: rpcResult, error: rpcError } = await supabase.rpc(
+    "spend_points_atomic",
+    {
+      p_user_id: currentUser.id,
+      p_action_type: actionType,
+      p_cost: cost,
+      p_description: options?.description || `${spendType} 포인트 차감`,
+      p_metadata: options?.metadata || null,
+    }
+  );
 
-  if (txError) {
-    console.error("포인트 차감 실패:", txError);
-    return { success: false, points_spent: 0, new_total: userPoints.total_points, error: "포인트 차감에 실패했습니다." };
+  if (rpcError) {
+    console.error("포인트 차감 실패 (RPC):", rpcError);
+    return { success: false, points_spent: 0, new_total: 0, error: "포인트 차감에 실패했습니다." };
   }
 
-  // 포인트 업데이트
-  await supabase
-    .from("user_points")
-    .update({
-      total_points: newTotal,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("user_id", currentUser.id);
+  if (!rpcResult?.success) {
+    return {
+      success: false,
+      points_spent: 0,
+      new_total: rpcResult?.new_total ?? 0,
+      error: rpcResult?.error || "포인트 차감에 실패했습니다.",
+    };
+  }
 
   revalidatePath("/");
 
   return {
     success: true,
     points_spent: cost,
-    new_total: newTotal,
-    transaction_id: transaction?.id,
+    new_total: rpcResult.new_total,
   };
 }
 
@@ -867,41 +865,54 @@ export async function refundPoints(
 
   const refundAmount = Math.abs(originalTx.final_points);
 
-  // 현재 잔액 조회
-  const userPoints = await getUserPoints(currentUser);
-  if (!userPoints) {
-    return { success: false, points_spent: 0, new_total: 0, error: "포인트 정보를 찾을 수 없습니다." };
+  // spend_points_atomic RPC를 음수 비용으로 호출하여 원자적 환불 처리
+  // (환불은 드문 관리자 작업이므로 RPC 재사용)
+  const { data: rpcResult, error: rpcError } = await supabase.rpc(
+    "spend_points_atomic",
+    {
+      p_user_id: currentUser.id,
+      p_action_type: "point_refund",
+      p_cost: -refundAmount, // 음수 = 포인트 추가
+      p_description: `환불: ${reason}`,
+      p_metadata: { original_transaction_id: transactionId },
+    }
+  );
+
+  if (rpcError || !rpcResult?.success) {
+    // Fallback: RPC 실패 시 기존 방식으로 처리
+    const userPoints = await getUserPoints(currentUser);
+    if (!userPoints) {
+      return { success: false, points_spent: 0, new_total: 0, error: "포인트 정보를 찾을 수 없습니다." };
+    }
+
+    const newTotal = userPoints.total_points + refundAmount;
+
+    await supabase.from("point_transactions").insert({
+      user_id: currentUser.id,
+      action_type: "point_refund" as PointActionType,
+      points: refundAmount,
+      final_points: refundAmount,
+      description: `환불: ${reason}`,
+      reference_id: transactionId,
+      reference_type: "refund",
+      balance_after: newTotal,
+    });
+
+    await supabase
+      .from("user_points")
+      .update({ total_points: newTotal, updated_at: new Date().toISOString() })
+      .eq("user_id", currentUser.id);
+
+    revalidatePath("/");
+    return { success: true, points_spent: -refundAmount, new_total: newTotal };
   }
-
-  const newTotal = userPoints.total_points + refundAmount;
-
-  // 환불 트랜잭션 기록
-  await supabase.from("point_transactions").insert({
-    user_id: currentUser.id,
-    action_type: "point_refund" as PointActionType,
-    points: refundAmount,
-    final_points: refundAmount,
-    description: `환불: ${reason}`,
-    reference_id: transactionId,
-    reference_type: "refund",
-    balance_after: newTotal,
-  });
-
-  // 포인트 업데이트
-  await supabase
-    .from("user_points")
-    .update({
-      total_points: newTotal,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("user_id", currentUser.id);
 
   revalidatePath("/");
 
   return {
     success: true,
     points_spent: -refundAmount,
-    new_total: newTotal,
+    new_total: rpcResult.new_total,
   };
 }
 

@@ -1,6 +1,7 @@
 "use server";
 
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/app/actions/auth";
 import type { AIProvider } from "@/types/ai/settings";
 import type {
   OcrCorrectionSettings,
@@ -20,9 +21,7 @@ const CACHE_TTL_MS = 60 * 1000; // 1분
  * 관리자 권한 확인
  */
 async function checkAdminPermission(supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>) {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) {
     throw new Error("로그인이 필요합니다.");
   }

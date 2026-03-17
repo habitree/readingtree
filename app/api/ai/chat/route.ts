@@ -17,6 +17,7 @@ import { callAnthropic, parseAnthropicStream } from "@/lib/ai/providers/anthropi
 import { checkRateLimit } from "@/lib/middleware/rate-limit";
 import { processRecommendedBooks } from "@/lib/ai/utils/book-registration";
 import { checkFeatureAccess } from "@/app/actions/subscription";
+import { spendPoints } from "@/app/actions/points";
 import type { ChatContext, ChatMode } from "@/types/ai/chat";
 import type { AIProvider } from "@/types/ai/settings";
 import { MEMORY_EXTRACTION_PROMPT } from "@/lib/ai/prompts/memory-prompts";
@@ -47,6 +48,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // 메시지 길이 제한 (프롬프트 인젝션 완화)
+    if (typeof message !== "string" || message.length > 10000) {
+      return NextResponse.json(
+        { error: "메시지가 너무 깁니다. (최대 10,000자)" },
+        { status: 400 }
+      );
+    }
+
     // 사용자 인증 확인
     const supabase = await createServerSupabaseClient();
     const {
@@ -64,13 +73,25 @@ export async function POST(request: NextRequest) {
     // AI 채팅 사용 한도 체크
     const access = await checkFeatureAccess("ai_chat", user);
     if (!access.allowed) {
-      const msg = access.canUseWithPoints
-        ? `이번 달 AI 채팅 한도(${access.limit}회)에 도달했습니다. ${access.pointCost}P로 추가 사용할 수 있습니다.`
-        : `이번 달 AI 채팅 한도(${access.limit}회)에 도달했습니다.`;
-      return NextResponse.json(
-        { error: msg },
-        { status: 403 }
-      );
+      if (access.canUseWithPoints) {
+        // 포인트로 추가 사용 시도
+        const spendResult = await spendPoints("ai_chat", {
+          user,
+          description: "AI 채팅 추가 사용",
+        });
+        if (!spendResult.success) {
+          return NextResponse.json(
+            { error: `이번 달 AI 채팅 한도(${access.limit}회)에 도달했습니다. 포인트가 부족합니다. (필요: ${access.pointCost}P)` },
+            { status: 403 }
+          );
+        }
+        // 포인트 차감 성공 → 계속 진행
+      } else {
+        return NextResponse.json(
+          { error: `이번 달 AI 채팅 한도(${access.limit}회)에 도달했습니다.` },
+          { status: 403 }
+        );
+      }
     }
 
     // 세션 소유자 확인

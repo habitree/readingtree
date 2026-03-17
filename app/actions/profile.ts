@@ -22,10 +22,10 @@ export async function getProfile() {
     throw new Error("로그인이 필요합니다.");
   }
 
-  // 프로필 조회
+  // 프로필 조회 (필요한 필드만 명시적으로 선택)
   let { data, error } = await supabase
     .from("users")
-    .select("*")
+    .select("id, name, email, avatar_url, reading_goal, bio, is_admin, terms_agreed, privacy_agreed, created_at, updated_at")
     .eq("id", user.id)
     .single();
 

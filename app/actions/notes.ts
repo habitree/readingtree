@@ -520,6 +520,13 @@ export async function deleteNote(noteId: string, user?: User | null) {
       // Supabase Storage 경로 추출
       // URL 형식: https://[project].supabase.co/storage/v1/object/public/images/photos/[userId]/[fileName]
       const url = new URL(note.image_url);
+
+      // Supabase Storage URL 형식 검증
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      if (supabaseUrl && !note.image_url.startsWith(supabaseUrl)) {
+        throw new Error("유효하지 않은 Storage URL입니다.");
+      }
+
       const pathParts = url.pathname.split("/storage/v1/object/public/");
 
       if (pathParts.length === 2) {
@@ -529,6 +536,11 @@ export async function deleteNote(noteId: string, user?: User | null) {
         if (pathSegments.length >= 2) {
           const bucket = pathSegments[0]; // "images"
           const filePath = pathSegments.slice(1).join("/"); // "photos/[userId]/[fileName]"
+
+          // 경로에 path traversal 패턴이 없는지 검증
+          if (filePath.includes("..") || filePath.includes("//")) {
+            throw new Error("유효하지 않은 파일 경로입니다.");
+          }
 
           const { error: removeError } = await supabase.storage
             .from(bucket)

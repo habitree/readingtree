@@ -1,6 +1,7 @@
 "use server";
 
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/app/actions/auth";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { revalidatePath } from "next/cache";
 import type {
@@ -15,16 +16,12 @@ import { checkFeatureAccess } from "./subscription";
  * 사용자의 모든 서재 목록 조회
  */
 export async function getBookshelves(): Promise<Bookshelf[]> {
-  const supabase = await createServerSupabaseClient();
-
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-
-  if (authError || !user) {
+  const user = await getCurrentUser();
+  if (!user) {
     throw new Error("로그인이 필요합니다.");
   }
+
+  const supabase = await createServerSupabaseClient();
 
   const { data, error } = await supabase
     .from("bookshelves")
@@ -44,16 +41,12 @@ export async function getBookshelves(): Promise<Bookshelf[]> {
  * 사용자의 메인 서재 조회
  */
 export async function getMainBookshelf(): Promise<Bookshelf | null> {
-  const supabase = await createServerSupabaseClient();
-
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-
-  if (authError || !user) {
+  const user = await getCurrentUser();
+  if (!user) {
     throw new Error("로그인이 필요합니다.");
   }
+
+  const supabase = await createServerSupabaseClient();
 
   const { data, error } = await supabase
     .from("bookshelves")
@@ -75,16 +68,12 @@ export async function getMainBookshelf(): Promise<Bookshelf | null> {
 export async function getBookshelfWithStats(
   bookshelfId: string
 ): Promise<BookshelfWithStats | null> {
-  const supabase = await createServerSupabaseClient();
-
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-
-  if (authError || !user) {
+  const user = await getCurrentUser();
+  if (!user) {
     throw new Error("로그인이 필요합니다.");
   }
+
+  const supabase = await createServerSupabaseClient();
 
   // 서재 정보 조회
   const { data: bookshelf, error: bookshelfError } = await supabase
@@ -139,17 +128,13 @@ export async function getBookshelfWithStats(
 export async function createBookshelf(
   input: CreateBookshelfInput
 ): Promise<Bookshelf> {
-  const supabase = await createServerSupabaseClient();
-
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-
-  if (authError || !user) {
-    console.error("[createBookshelf] 인증 오류:", authError);
+  const user = await getCurrentUser();
+  if (!user) {
+    console.error("[createBookshelf] 인증 오류: 사용자 없음");
     throw new Error("로그인이 필요합니다.");
   }
+
+  const supabase = await createServerSupabaseClient();
 
   console.log("[createBookshelf] 사용자 확인:", { userId: user.id, email: user.email });
 
@@ -222,16 +207,12 @@ export async function updateBookshelf(
   bookshelfId: string,
   input: UpdateBookshelfInput
 ): Promise<Bookshelf> {
-  const supabase = await createServerSupabaseClient();
-
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-
-  if (authError || !user) {
+  const user = await getCurrentUser();
+  if (!user) {
     throw new Error("로그인이 필요합니다.");
   }
+
+  const supabase = await createServerSupabaseClient();
 
   // 서재 소유권 확인
   const { data: existing } = await supabase
@@ -275,16 +256,12 @@ export async function updateBookshelf(
  * 서재 삭제
  */
 export async function deleteBookshelf(bookshelfId: string): Promise<void> {
-  const supabase = await createServerSupabaseClient();
-
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-
-  if (authError || !user) {
+  const user = await getCurrentUser();
+  if (!user) {
     throw new Error("로그인이 필요합니다.");
   }
+
+  const supabase = await createServerSupabaseClient();
 
   // 서재 소유권 및 메인 서재 여부 확인
   const { data: existing } = await supabase
@@ -346,16 +323,12 @@ export async function moveBookToBookshelf(
   userBookId: string,
   targetBookshelfId: string
 ): Promise<void> {
-  const supabase = await createServerSupabaseClient();
-
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-
-  if (authError || !user) {
+  const user = await getCurrentUser();
+  if (!user) {
     throw new Error("로그인이 필요합니다.");
   }
+
+  const supabase = await createServerSupabaseClient();
 
   // 책 소유권 확인
   const { data: userBook } = await supabase
@@ -403,16 +376,12 @@ export async function moveBookToBookshelf(
 export async function updateBookshelfOrder(
   bookshelfOrders: { id: string; order: number }[]
 ): Promise<void> {
-  const supabase = await createServerSupabaseClient();
-
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-
-  if (authError || !user) {
+  const user = await getCurrentUser();
+  if (!user) {
     throw new Error("로그인이 필요합니다.");
   }
+
+  const supabase = await createServerSupabaseClient();
 
   // 모든 서재의 소유권 확인
   const { data: bookshelves, error: fetchError } = await supabase

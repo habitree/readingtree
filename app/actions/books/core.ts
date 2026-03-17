@@ -1,6 +1,7 @@
 "use server";
 
 import { createServerSupabaseClient, createAdminSupabaseClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/app/actions/auth";
 import { revalidatePath } from "next/cache";
 import { fetchBookPageCount } from "@/lib/api/book-page-count";
 import type { ReadingStatus } from "@/types/book";
@@ -67,15 +68,10 @@ export async function addBook(
     // 현재 사용자 확인
     let currentUser = user;
     if (!currentUser) {
-      const {
-        data: { user: fetchedUser },
-        error: authError,
-      } = await supabase.auth.getUser();
-
-      if (authError || !fetchedUser) {
+      currentUser = await getCurrentUser();
+      if (!currentUser) {
         return { success: false, error: "로그인이 필요합니다." };
       }
-      currentUser = fetchedUser;
     }
 
     // 사용자 프로필이 users 테이블에 존재하는지 확인
@@ -418,15 +414,10 @@ export async function updateBookInfo(
   // 현재 사용자 확인
   let currentUser = user;
   if (!currentUser) {
-    const {
-      data: { user: fetchedUser },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !fetchedUser) {
+    currentUser = await getCurrentUser();
+    if (!currentUser) {
       throw new Error("로그인이 필요합니다.");
     }
-    currentUser = fetchedUser;
   }
 
   // 사용자의 책인지 확인
@@ -496,15 +487,10 @@ export async function deleteBook(userBookId: string, user?: User | null) {
   // 현재 사용자 확인
   let currentUser = user;
   if (!currentUser) {
-    const {
-      data: { user: fetchedUser },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !fetchedUser) {
+    currentUser = await getCurrentUser();
+    if (!currentUser) {
       throw new Error("로그인이 필요합니다.");
     }
-    currentUser = fetchedUser;
   }
 
   // UUID 검증

@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { getGroupByInviteToken, joinByToken } from "@/app/actions/groups";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/app/actions/auth";
 import { InviteLandingClient } from "./invite-landing-client";
 
 export default async function InvitePage({
@@ -21,8 +21,7 @@ export default async function InvitePage({
   }
 
   // 로그인 여부 확인
-  const supabase = await createServerSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
 
   return (
     <InviteLandingClient

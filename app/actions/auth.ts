@@ -26,19 +26,6 @@ export async function signInWithKakao() {
   const appUrl = getAppUrl();
   const redirectTo = `${appUrl}/callback`;
 
-  // 디버깅용 로그 (프로덕션에서만)
-  if (process.env.VERCEL || process.env.VERCEL_ENV === "production") {
-    console.log("[signInWithKakao] OAuth redirectTo:", {
-      appUrl,
-      redirectTo,
-      VERCEL: process.env.VERCEL,
-      VERCEL_ENV: process.env.VERCEL_ENV,
-      VERCEL_URL: process.env.VERCEL_URL,
-      NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
-      NODE_ENV: process.env.NODE_ENV,
-    });
-  }
-
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "kakao",
     options: {
@@ -69,19 +56,6 @@ export async function signInWithGoogle() {
   // 프로덕션 URL 확실하게 가져오기
   const appUrl = getAppUrl();
   const redirectTo = `${appUrl}/callback`;
-
-  // 디버깅용 로그 (프로덕션에서만)
-  if (process.env.VERCEL || process.env.VERCEL_ENV === "production") {
-    console.log("[signInWithGoogle] OAuth redirectTo:", {
-      appUrl,
-      redirectTo,
-      VERCEL: process.env.VERCEL,
-      VERCEL_ENV: process.env.VERCEL_ENV,
-      VERCEL_URL: process.env.VERCEL_URL,
-      NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
-      NODE_ENV: process.env.NODE_ENV,
-    });
-  }
 
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",
