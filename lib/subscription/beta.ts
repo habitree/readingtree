@@ -3,7 +3,7 @@
  * 정식 출시 시 IS_BETA_MODE = false로 변경하면 모든 UI/로직 자동 복원
  */
 
-export const IS_BETA_MODE = true;
+export const IS_BETA_MODE = false;
 
 export const BETA_MESSAGE = {
   title: "베타 테스트 기간 무료",
