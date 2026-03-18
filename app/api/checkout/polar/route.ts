@@ -88,6 +88,7 @@ export async function POST(request: Request) {
   });
 
   if (insertError) {
+    console.error("[checkout/polar] DB insert error:", insertError.message);
     return NextResponse.json(
       { error: "주문 생성에 실패했습니다." },
       { status: 500 }
@@ -113,7 +114,8 @@ export async function POST(request: Request) {
   // 6. Polar 체크아웃 세션 생성
   try {
     const polar = createPolarClient();
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
+    console.log("[checkout/polar] appUrl:", appUrl, "productId:", pkg.polarProductId, "env:", process.env.POLAR_ENVIRONMENT);
 
     const checkout = await polar.checkouts.create({
       products: [pkg.polarProductId],
@@ -148,6 +150,7 @@ export async function POST(request: Request) {
       })
       .eq("order_id", orderId);
 
+    console.error("[checkout/polar] Polar API error:", err instanceof Error ? err.message : err);
     return NextResponse.json(
       { error: "결제 페이지 생성에 실패했습니다. 잠시 후 다시 시도해주세요." },
       { status: 500 }
