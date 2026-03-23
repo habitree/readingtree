@@ -12,14 +12,13 @@ import {
   FormControl,
   FormField,
   FormItem,
-  FormLabel,
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { Loader2, X, PenTool, Camera, Quote, MessageSquare, Sparkles, CheckCircle2, Info, ChevronDown, Settings2, Lightbulb } from "lucide-react";
+import { Loader2, X, PenTool, Camera, Quote, MessageSquare, Sparkles, CheckCircle2, ChevronDown, Settings2, Lightbulb } from "lucide-react";
 import Image from "next/image";
 import { getImageUrl, isValidImageUrl } from "@/lib/utils/image";
 import { TagInput } from "./tag-input";
@@ -151,7 +150,7 @@ export function NoteFormNew({ bookId }: NoteFormNewProps) {
 
   return (
     <Form {...form}>
-      <form onSubmit={handleFormSubmit} className="space-y-4">
+      <form onSubmit={handleFormSubmit} className="space-y-3">
         {/* 책 없이 기록 - 안내 배너 */}
         {!bookId && (
           <div className="flex items-start gap-3 p-3 rounded-lg bg-violet-50/50 dark:bg-violet-950/20 border border-violet-100/60 dark:border-violet-900/30">
@@ -165,14 +164,37 @@ export function NoteFormNew({ bookId }: NoteFormNewProps) {
           </div>
         )}
 
-        {/* 안내 메시지 */}
-        <div className="flex items-center gap-2 p-2.5 rounded-lg bg-primary/5 border border-primary/10 text-sm text-muted-foreground">
-          <Info className="w-4 h-4 text-primary shrink-0" />
-          <span>{t("notes.inputAtLeastOne")}</span>
+        {/* ── 제목 + 페이지 (바로 입력, 1줄 인라인) ── */}
+        <div className="flex gap-2">
+          <FormField
+            control={form.control}
+            name="title"
+            render={({ field }) => (
+              <FormItem className="flex-1 space-y-0">
+                <FormControl>
+                  <Input
+                    placeholder={t("notes.titlePlaceholder")}
+                    {...field}
+                    value={field.value || ""}
+                    className="text-sm h-9"
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <div className="w-28 shrink-0">
+            <Input
+              id="pageNumbers"
+              {...register("pageNumbers")}
+              placeholder={t("notes.pageMobilePlaceholder")}
+              className="text-sm h-9"
+            />
+          </div>
         </div>
 
-        {/* 인상깊은 구절 */}
-        <div className="space-y-2 p-3 rounded-lg bg-blue-50/50 dark:bg-blue-950/20 border border-blue-100/50 dark:border-blue-900/30">
+        {/* ── 인상깊은 구절 (넓은 입력 영역) ── */}
+        <div className="space-y-1.5 p-3 rounded-lg bg-blue-50/50 dark:bg-blue-950/20 border border-blue-100/50 dark:border-blue-900/30">
           <div className="flex items-center justify-between">
             <Label htmlFor="quoteContent" className="flex items-center gap-1.5 text-sm text-blue-700 dark:text-blue-300">
               <Quote className="w-3.5 h-3.5" />
@@ -194,16 +216,16 @@ export function NoteFormNew({ bookId }: NoteFormNewProps) {
             value={quoteContent}
             onValueChange={(value) => setValue("quoteContent", value)}
             placeholder={t("notes.quoteInputPlaceholder")}
-            rows={3}
-            className="resize-none bg-white/70 dark:bg-slate-900/50 border-blue-200/50 dark:border-blue-800/30 text-sm"
+            rows={5}
+            className="resize-y min-h-[120px] bg-white/70 dark:bg-slate-900/50 border-blue-200/50 dark:border-blue-800/30 text-sm leading-relaxed"
           />
           {errors.quoteContent && (
             <p className="text-xs text-destructive">{errors.quoteContent.message}</p>
           )}
         </div>
 
-        {/* 내 생각 */}
-        <div className="space-y-2 p-3 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-amber-100/50 dark:border-amber-900/30">
+        {/* ── 내 생각 (넓은 입력 영역) ── */}
+        <div className="space-y-1.5 p-3 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-amber-100/50 dark:border-amber-900/30">
           <div className="flex items-center justify-between">
             <Label htmlFor="memoContent" className="flex items-center gap-1.5 text-sm text-amber-700 dark:text-amber-300">
               <MessageSquare className="w-3.5 h-3.5" />
@@ -225,71 +247,63 @@ export function NoteFormNew({ bookId }: NoteFormNewProps) {
             value={memoContent}
             onValueChange={(value) => setValue("memoContent", value)}
             placeholder={t("notes.memoInputPlaceholder")}
-            rows={4}
-            className="resize-none bg-white/70 dark:bg-slate-900/50 border-amber-200/50 dark:border-amber-800/30 text-sm"
+            rows={6}
+            className="resize-y min-h-[150px] bg-white/70 dark:bg-slate-900/50 border-amber-200/50 dark:border-amber-800/30 text-sm leading-relaxed"
           />
           {errors.memoContent && (
             <p className="text-xs text-destructive">{errors.memoContent.message}</p>
           )}
         </div>
 
-        {/* 이미지 업로드 버튼 */}
-        <div className="space-y-2 p-3 rounded-lg bg-slate-50/80 dark:bg-slate-900/30 border border-slate-200/50 dark:border-slate-700/30">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Camera className="w-4 h-4 text-slate-500" />
-              <Label className="text-sm font-medium">{t("notes.imageLabel")}</Label>
-              {images.length > 0 && (
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+        {/* ── 이미지 업로드 (간결한 인라인 버튼) ── */}
+        <div className="flex items-center gap-2">
+          <label
+            htmlFor="transcription-input"
+            className="cursor-pointer"
+            style={{ touchAction: "manipulation" }}
+          >
+            <div
+              className={cn(
+                "flex items-center gap-1.5 rounded-lg border border-purple-200 dark:border-purple-800 bg-purple-50/50 dark:bg-purple-950/20 px-3 py-2 transition-all hover:border-purple-400 hover:bg-purple-100/50",
+                (uploading || isUploadingRef.current) && "opacity-50 cursor-not-allowed pointer-events-none"
               )}
+            >
+              <PenTool className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
+              <span className="font-medium text-xs text-purple-700 dark:text-purple-300">{t("notes.photoTranscription")}</span>
             </div>
-            <div className="flex items-center gap-2">
-              <Checkbox
-                id="apply-stamp"
-                checked={applyStamp}
-                onCheckedChange={(checked) => setApplyStamp(checked === true)}
-                disabled={uploading}
-                className="h-3.5 w-3.5"
-              />
-              <Label
-                htmlFor="apply-stamp"
-                className="text-xs cursor-pointer flex items-center gap-1"
-              >
-                <Sparkles className="w-3 h-3 text-amber-500" />
-                {t("notes.stamp")}
-              </Label>
+          </label>
+          <label
+            htmlFor="photo-input"
+            className="cursor-pointer"
+            style={{ touchAction: "manipulation" }}
+          >
+            <div
+              className={cn(
+                "flex items-center gap-1.5 rounded-lg border border-emerald-200 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-950/20 px-3 py-2 transition-all hover:border-emerald-400 hover:bg-emerald-100/50",
+                (uploading || isUploadingRef.current) && "opacity-50 cursor-not-allowed pointer-events-none"
+              )}
+            >
+              <Camera className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+              <span className="font-medium text-xs text-emerald-700 dark:text-emerald-300">{t("notes.photoLabel")}</span>
             </div>
-          </div>
+          </label>
 
-          <div className="grid grid-cols-2 gap-2">
-            <label
-              htmlFor="transcription-input"
-              className="cursor-pointer"
-              style={{ touchAction: "manipulation" }}
+          {/* 스탬프 옵션 */}
+          <div className="flex items-center gap-1.5 ml-auto">
+            <Checkbox
+              id="apply-stamp"
+              checked={applyStamp}
+              onCheckedChange={(checked) => setApplyStamp(checked === true)}
+              disabled={uploading}
+              className="h-3.5 w-3.5"
+            />
+            <Label
+              htmlFor="apply-stamp"
+              className="text-xs cursor-pointer flex items-center gap-1 text-muted-foreground"
             >
-              <div
-                className={`flex items-center justify-center gap-2 rounded-lg border-2 border-dashed border-purple-200 dark:border-purple-800 bg-purple-50/50 dark:bg-purple-950/20 p-2.5 sm:p-3 transition-all hover:border-purple-400 hover:bg-purple-100/50 ${
-                  uploading || isUploadingRef.current ? "opacity-50 cursor-not-allowed pointer-events-none" : ""
-                }`}
-              >
-                <PenTool className="h-4 w-4 text-purple-600 dark:text-purple-400" />
-                <span className="font-medium text-sm text-purple-700 dark:text-purple-300">{t("notes.photoTranscription")}</span>
-              </div>
-            </label>
-            <label
-              htmlFor="photo-input"
-              className="cursor-pointer"
-              style={{ touchAction: "manipulation" }}
-            >
-              <div
-                className={`flex items-center justify-center gap-2 rounded-lg border-2 border-dashed border-emerald-200 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-950/20 p-2.5 sm:p-3 transition-all hover:border-emerald-400 hover:bg-emerald-100/50 ${
-                  uploading || isUploadingRef.current ? "opacity-50 cursor-not-allowed pointer-events-none" : ""
-                }`}
-              >
-                <Camera className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                <span className="font-medium text-sm text-emerald-700 dark:text-emerald-300">{t("notes.photoLabel")}</span>
-              </div>
-            </label>
+              <Sparkles className="w-3 h-3 text-amber-500" />
+              {t("notes.stamp")}
+            </Label>
           </div>
 
           <input
@@ -311,46 +325,50 @@ export function NoteFormNew({ bookId }: NoteFormNewProps) {
           />
         </div>
 
-        {/* 업로드된 이미지 표시 */}
+        {/* 업로드된 이미지 (가로 스크롤 컴팩트 미리보기) */}
         {images.length > 0 && (
-          <div className="space-y-2">
-            <Label>{t("notes.uploadedImages", { count: images.length })}</Label>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-2">
+              <Label className="text-xs text-muted-foreground">{t("notes.uploadedImages", { count: images.length })}</Label>
+              {uploadType && (
+                <span className="text-[10px] text-muted-foreground/70">
+                  ({uploadType === "photo" ? t("notes.typeImageLabel") : t("notes.photoTranscription")})
+                </span>
+              )}
+            </div>
+            <div className="flex gap-2 overflow-x-auto pb-1">
               {images.map((url, index) => {
                 const imageUrl = getImageUrl(url);
                 return (
-                  <div key={`${url}-${index}`} className="relative group">
-                    <div className="relative aspect-[3/4] w-full overflow-hidden rounded-lg bg-muted">
+                  <div key={`${url}-${index}`} className="relative group shrink-0">
+                    <div className="relative w-16 h-20 overflow-hidden rounded-lg bg-muted">
                       {isValidImageUrl(url) ? (
                         <Image
                           src={imageUrl}
                           alt={t("notes.uploadedImageAlt", { index: index + 1 })}
                           fill
                           className="object-cover"
-                          sizes="(max-width: 768px) 50vw, 33vw"
+                          sizes="64px"
                           unoptimized={true}
                           onError={() => {
-                            console.error("[이미지 표시] 로드 실패:", { url: imageUrl.substring(0, 100), index });
                             toast.error(t("notes.imageLoadError", { index: index + 1 }));
                           }}
                         />
                       ) : (
-                        <div className="absolute inset-0 flex items-center justify-center bg-muted text-muted-foreground text-xs">
+                        <div className="absolute inset-0 flex items-center justify-center bg-muted text-muted-foreground text-[9px]">
                           {t("notes.imageLoadFailed")}
                         </div>
                       )}
                     </div>
-                    <Button
+                    <button
                       type="button"
-                      variant="destructive"
-                      size="icon"
-                      className="absolute top-1.5 right-1.5 h-5 w-5 p-0 opacity-60 sm:opacity-0 group-hover:opacity-100 transition-opacity shadow-md hover:shadow-lg z-10"
+                      className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-destructive text-white flex items-center justify-center opacity-70 hover:opacity-100 transition-opacity shadow-sm z-10"
                       onClick={() => removeImage(index)}
                     >
                       <X className="h-2.5 w-2.5" />
-                    </Button>
+                    </button>
                     {uploadProgress[index] !== undefined && uploadProgress[index] < 100 && (
-                      <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-xs p-1 text-center">
+                      <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[9px] py-0.5 text-center rounded-b-lg">
                         {uploadProgress[index]}%
                       </div>
                     )}
@@ -358,11 +376,6 @@ export function NoteFormNew({ bookId }: NoteFormNewProps) {
                 );
               })}
             </div>
-            {uploadType && (
-              <p className="text-xs text-muted-foreground">
-                {uploadType === "photo" ? t("notes.typeImageLabel") : t("notes.photoTranscription")}
-              </p>
-            )}
           </div>
         )}
 
@@ -380,19 +393,16 @@ export function NoteFormNew({ bookId }: NoteFormNewProps) {
           </div>
         )}
 
-        {/* 추가 옵션 섹션 (접힘 가능) */}
+        {/* ── 추가 옵션 (태그 + 공개설정) ── */}
         <div className="border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
           <button
             type="button"
             onClick={() => setShowOptionalFields(!showOptionalFields)}
-            className="w-full flex items-center justify-between px-3 py-2.5 bg-slate-50/50 dark:bg-slate-800/30 hover:bg-slate-100/50 dark:hover:bg-slate-800/50 transition-colors"
+            className="w-full flex items-center justify-between px-3 py-2 bg-slate-50/50 dark:bg-slate-800/30 hover:bg-slate-100/50 dark:hover:bg-slate-800/50 transition-colors"
           >
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Settings2 className="h-4 w-4" />
+              <Settings2 className="h-3.5 w-3.5" />
               <span>{t("notes.additionalOptions")}</span>
-              <span className="text-xs text-muted-foreground/70">
-                ({t("notes.additionalOptionsDesc")})
-              </span>
             </div>
             <motion.div
               animate={{ rotate: showOptionalFields ? 180 : 0 }}
@@ -406,46 +416,12 @@ export function NoteFormNew({ bookId }: NoteFormNewProps) {
             {showOptionalFields && (
               <motion.div
                 initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 280, opacity: 1 }}
+                animate={{ height: "auto", opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
                 transition={{ duration: 0.2 }}
                 className="border-t border-slate-200 dark:border-slate-700 overflow-hidden"
               >
-                <div className="p-3 space-y-4">
-                  {/* 제목 입력 */}
-                  <FormField
-                    control={form.control}
-                    name="title"
-                    render={({ field }) => (
-                      <FormItem className="space-y-1.5">
-                        <FormLabel className="text-sm">{t("notes.titleLabel")}</FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder={t("notes.titlePlaceholder")}
-                            {...field}
-                            value={field.value || ""}
-                            className="text-sm h-9"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  {/* 페이지 번호 */}
-                  <div className="space-y-1.5">
-                    <Label htmlFor="pageNumbers" className="text-sm">{t("notes.pageMobilePlaceholder")}</Label>
-                    <Input
-                      id="pageNumbers"
-                      {...register("pageNumbers")}
-                      placeholder={t("notes.pagePlaceholder")}
-                      className="max-w-xs text-sm h-9"
-                    />
-                    {errors.pageNumbers && (
-                      <p className="text-sm text-destructive">{errors.pageNumbers.message}</p>
-                    )}
-                  </div>
-
+                <div className="p-3 space-y-3">
                   {/* 태그 */}
                   <TagInput
                     value={watch("tags") || ""}
@@ -454,7 +430,7 @@ export function NoteFormNew({ bookId }: NoteFormNewProps) {
                   />
 
                   {/* 공개 설정 */}
-                  <div className="flex items-center gap-3 pt-1">
+                  <div className="flex items-center gap-3">
                     <Switch
                       id="isPublic"
                       checked={!isPublic}
@@ -471,7 +447,7 @@ export function NoteFormNew({ bookId }: NoteFormNewProps) {
         </div>
 
         {/* 제출 버튼 */}
-        <div className="flex flex-col gap-2 pt-4">
+        <div className="flex flex-col gap-2 pt-2">
           <Button
             type="submit"
             disabled={isSubmitting || uploading || !hasContent}
