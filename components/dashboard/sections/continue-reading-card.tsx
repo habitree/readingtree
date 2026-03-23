@@ -330,22 +330,66 @@ export function ContinueReadingCardSkeleton() {
 
 /**
  * 읽을 책이 없을 때 표시하는 빈 상태 카드
- * 단계별 가이드 + CTA로 첫 행동 유도
+ * 데모 이어읽기 미리보기 + 단계별 가이드 + CTA로 첫 행동 유도
  */
 export function NoReadingBookCard() {
   const { t } = useTranslation();
+
+  // 데모 이어읽기 카드 데이터
+  const demoBooks = [
+    { title: "어린 왕자", author: "생텍쥐페리", currentPage: 45, totalPages: 150, progress: 30 },
+    { title: "달러구트 꿈 백화점", author: "이미예", currentPage: 120, totalPages: 320, progress: 38 },
+  ];
+
   return (
     <Card className="p-5 sm:p-6 border-slate-200/60 dark:border-slate-800/60 bg-white dark:bg-slate-900">
-      <div className="text-center space-y-4">
-        {/* 일러스트 아이콘 */}
-        <div className="flex justify-center">
-          <div className="w-16 h-16 rounded-2xl bg-forest-50 dark:bg-forest-900/30 flex items-center justify-center">
-            <BookOpen className="h-8 w-8 text-forest-500" />
+      <div className="space-y-4">
+        {/* 데모 이어읽기 미리보기 */}
+        <div className="relative">
+          <div className="opacity-40 pointer-events-none select-none blur-[0.5px]">
+            <div className="grid grid-cols-2 gap-2">
+              {demoBooks.map((book) => (
+                <div
+                  key={book.title}
+                  className="rounded-lg border border-slate-200/60 dark:border-slate-800/60 bg-slate-50 dark:bg-slate-800/50 p-2.5"
+                >
+                  <div className="flex items-start gap-2">
+                    <div className="shrink-0 w-8 h-[48px] rounded bg-gradient-to-br from-forest-100 to-forest-200 dark:from-forest-800 dark:to-forest-900 flex items-center justify-center">
+                      <BookOpen className="h-3 w-3 text-forest-500" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[10px] text-forest-600 dark:text-forest-400 font-medium">{t("dashboard.continueLabel")}</p>
+                      <p className="text-xs font-semibold text-slate-900 dark:text-white truncate">{book.title}</p>
+                      <p className="text-[10px] text-slate-400 truncate">{book.author}</p>
+                    </div>
+                  </div>
+                  <div className="mt-2">
+                    <div className="flex items-center justify-between mb-0.5">
+                      <span className="text-[9px] text-slate-400">{book.currentPage}/{book.totalPages}p</span>
+                    </div>
+                    <div className="h-1 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                      <div className="h-full bg-forest-400 rounded-full" style={{ width: `${book.progress}%` }} />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          {/* 오버레이 힌트 */}
+          <div className="absolute inset-0 flex items-center justify-center">
+            <span className="text-xs font-medium text-slate-500 dark:text-slate-400 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-sm border border-slate-200/60 dark:border-slate-700/60">
+              {t("empty.demoContinueReadingHint")}
+            </span>
           </div>
         </div>
 
         {/* 메시지 */}
-        <div>
+        <div className="text-center">
+          <div className="flex justify-center mb-3">
+            <div className="w-12 h-12 rounded-2xl bg-forest-50 dark:bg-forest-900/30 flex items-center justify-center">
+              <BookOpen className="h-6 w-6 text-forest-500" />
+            </div>
+          </div>
           <p className="text-base font-semibold text-slate-900 dark:text-white">
             {t("dashboard.addFirstBookTitle")}
           </p>

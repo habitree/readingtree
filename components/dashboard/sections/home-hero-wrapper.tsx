@@ -20,6 +20,7 @@ function getKSTToday(): Date {
 }
 import { getContinueReadingBooks, getPopularBooks } from "@/app/actions/books";
 import { getFreeNoteStats } from "@/app/actions/notes";
+import { generateDemoWeeklyProgress } from "@/lib/demo-calendar-data";
 import {
   getSampleDashboardStats,
   getSampleContinueReadingBooks,
@@ -93,16 +94,20 @@ export async function HomeHeroWrapper() {
   const hasNoBooks = (!continueReadingBooks || continueReadingBooks.length === 0);
   const popularBooks = hasNoBooks ? await getPopularBooks(10).catch(() => []) : [];
 
+  // 첫 사용자(책 없음 + 주간 데이터 없음)에게 데모 주간 통계 제공
+  const effectiveWeeklyProgress = weeklyProgress ?? (hasNoBooks ? generateDemoWeeklyProgress() : null);
+  const isFirstUserDemo = hasNoBooks && !weeklyProgress;
+
   return (
     <>
       <HomeHeroSection
         userName={user.user_metadata?.name || user.email?.split("@")[0]}
         persona={personaData?.persona ?? null}
-        streak={streakAndTodayData.streak}
+        streak={isFirstUserDemo ? 3 : streakAndTodayData.streak}
         todayNotes={streakAndTodayData.todayNotes}
         weeklyNotes={readingStats?.thisWeek?.notes ?? 0}
         continueReadingBooks={continueReadingBooks || []}
-        weeklyProgress={weeklyProgress}
+        weeklyProgress={effectiveWeeklyProgress}
         dailyRecordsByType={dailyRecordsByType}
         currentBookProgress={currentBookProgress}
         userLevel={pointsData?.currentLevel?.level ?? 1}
@@ -110,6 +115,7 @@ export async function HomeHeroWrapper() {
         totalPoints={pointsData?.userPoints?.total_points ?? 0}
         hasFirstNote={firstNoteData.hasFirstNote}
         freeNoteStats={freeNoteStats}
+        isFirstUserDemo={isFirstUserDemo}
       />
       {hasNoBooks && popularBooks.length > 0 && (
         <PopularBooksWidget books={popularBooks} />

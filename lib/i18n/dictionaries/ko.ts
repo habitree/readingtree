@@ -1385,6 +1385,15 @@ export const ko = {
     startExploring: "탐험을 시작해보세요",
     tertiaryGuideTitle: "활발한 독서가의 캘린더는 이렇게 보여요",
     tertiaryGuideDesc: "책을 읽고 기록하면 여기에 독서 활동 캘린더가 나타나요",
+    demoCalendarTitle: "비밀 정원 — 나만의 독서 캘린더",
+    demoCalendarDesc: "책을 읽고 기록을 남기면, 그 날짜에 읽은 책 표지가 캘린더에 쌓여요. 하루하루 채워지는 나만의 독서 기록을 한눈에 볼 수 있어요.",
+    demoCalendarHow: "아래는 샘플 캘린더예요. 직접 책을 추가하고 기록하면 나만의 캘린더가 완성돼요!",
+    demoCalendarCta: "첫 책 추가하고 기록 시작하기",
+    demoContinueReadingHint: "책을 추가하면 읽고 있는 책의 진행 상황이 여기에 표시돼요",
+    demoWeeklyHint: "매일 기록하면 연속 기록이 쌓여요",
+    demoLabel: "샘플",
+    demoSummaryTitle: "이렇게 기록이 쌓여요",
+    demoSummaryDesc: "필사 · 메모 · 사진 · 인용 — 다양한 방식으로 기록하면 날짜별로 자동 정리돼요",
   },
 
   theme: {

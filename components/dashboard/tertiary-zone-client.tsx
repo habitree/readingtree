@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import Link from "next/link";
+import { CalendarDays, BookOpen, PenLine, Sparkles } from "lucide-react";
 import { useTranslation } from "@/lib/i18n";
 import dynamic from "next/dynamic";
 import { CollapsibleSection } from "./sections/collapsible-section";
@@ -28,6 +30,8 @@ interface TertiaryZoneClientProps {
   persona: UserPersona | null;
   readingStats: ReadingStats | null;
   isGuest?: boolean;
+  /** 로그인했지만 데이터가 없는 첫 사용자 (데모 캘린더 표시) */
+  isFirstUser?: boolean;
 }
 
 /**
@@ -40,6 +44,7 @@ function TertiaryContent({
   onMonthChange,
   persona,
   readingStats,
+  isFirstUser = false,
 }: {
   activities: Record<string, DailyBookActivity>;
   year: number;
@@ -47,25 +52,101 @@ function TertiaryContent({
   onMonthChange: (year: number, month: number) => void;
   persona: UserPersona | null;
   readingStats: ReadingStats | null;
+  isFirstUser?: boolean;
 }) {
+  const { t } = useTranslation();
   const hasPersonaData = persona && readingStats;
 
   return (
     <div className="space-y-4">
-      {/* 월간 요약 */}
-      <MonthlySummaryCard activities={activities} year={year} month={month} />
+      {isFirstUser ? (
+        <>
+          {/* ── 안내 카드: 비밀정원이 뭔지 설명 ── */}
+          <div className="rounded-xl border border-forest-200/60 dark:border-forest-800/40 bg-gradient-to-br from-forest-50/80 to-emerald-50/60 dark:from-forest-950/40 dark:to-emerald-950/20 p-4 space-y-3">
+            {/* 제목 + 샘플 뱃지 */}
+            <div className="flex items-center gap-2">
+              <CalendarDays className="h-5 w-5 text-forest-600 dark:text-forest-400 shrink-0" />
+              <p className="text-sm font-bold text-slate-900 dark:text-white">
+                {t("empty.demoCalendarTitle")}
+              </p>
+              <span className="text-[9px] font-medium text-forest-600 dark:text-forest-400 bg-forest-100 dark:bg-forest-900/40 px-1.5 py-0.5 rounded-full shrink-0">
+                {t("empty.demoLabel")}
+              </span>
+            </div>
 
-      {/* 월별 책 표지 캘린더 */}
-      <MonthlyBookCalendar
-        activities={activities}
-        year={year}
-        month={month}
-        onMonthChange={onMonthChange}
-      />
+            {/* 핵심 설명: 기록이 남는다는 것 */}
+            <p className="text-xs leading-relaxed text-slate-600 dark:text-slate-300">
+              {t("empty.demoCalendarDesc")}
+            </p>
 
-      {/* 페르소나 인사이트 */}
-      {hasPersonaData && (
-        <PersonaInsightCard persona={persona} stats={readingStats} />
+            {/* 기록 방식 안내 */}
+            <div className="flex flex-wrap gap-1.5">
+              {[
+                { icon: PenLine, label: t("notes.typeTranscription") },
+                { icon: BookOpen, label: t("notes.typeMemo") },
+                { icon: Sparkles, label: t("notes.typeQuote") },
+              ].map(({ icon: Icon, label }) => (
+                <span
+                  key={label}
+                  className="inline-flex items-center gap-1 text-[10px] font-medium text-forest-700 dark:text-forest-300 bg-white/70 dark:bg-white/10 px-2 py-0.5 rounded-full border border-forest-200/40 dark:border-forest-700/30"
+                >
+                  <Icon className="h-3 w-3" />
+                  {label}
+                </span>
+              ))}
+            </div>
+
+            {/* 샘플임을 안내 */}
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 italic">
+              {t("empty.demoCalendarHow")}
+            </p>
+          </div>
+
+          {/* ── 샘플 캘린더: 선명하게 100% 보여줌 ── */}
+          <MonthlyBookCalendar
+            activities={activities}
+            year={year}
+            month={month}
+            onMonthChange={onMonthChange}
+          />
+
+          {/* ── 기록 방식 요약 카드 ── */}
+          <div className="rounded-lg border border-slate-200/60 dark:border-slate-800/60 bg-white dark:bg-slate-900 p-3">
+            <p className="text-xs font-semibold text-slate-700 dark:text-slate-200 mb-1">
+              {t("empty.demoSummaryTitle")}
+            </p>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+              {t("empty.demoSummaryDesc")}
+            </p>
+          </div>
+
+          {/* ── CTA 버튼 ── */}
+          <Link
+            href="/books/search"
+            className="flex items-center justify-center gap-2 w-full rounded-xl bg-forest-600 hover:bg-forest-700 text-white py-3 text-sm font-semibold transition-colors shadow-sm"
+          >
+            <BookOpen className="h-4 w-4" />
+            {t("empty.demoCalendarCta")}
+          </Link>
+        </>
+      ) : (
+        <>
+          {/* 기존 사용자: 월간 요약 */}
+          <MonthlySummaryCard activities={activities} year={year} month={month} />
+
+          {/* 월별 책 표지 캘린더 */}
+          <MonthlyBookCalendar
+            activities={activities}
+            year={year}
+            month={month}
+            onMonthChange={onMonthChange}
+          />
+
+          {/* 페르소나 인사이트 */}
+          {hasPersonaData && (
+            <PersonaInsightCard persona={persona} stats={readingStats} />
+          )}
+        </>
       )}
     </div>
   );
@@ -82,6 +163,7 @@ export function TertiaryZoneClient({
   persona,
   readingStats,
   isGuest = false,
+  isFirstUser = false,
 }: TertiaryZoneClientProps) {
   const { t } = useTranslation();
   const [year, setYear] = useState(initialYear);
@@ -109,7 +191,16 @@ export function TertiaryZoneClient({
     setIsLoading(true);
     try {
       let newActivities: Record<string, DailyBookActivity>;
-      if (isGuest) {
+      if (isFirstUser) {
+        // 첫 사용자: 데모 데이터 직접 생성 (서버 호출 불필요)
+        newActivities = generateDemoMonthlyActivities(newYear, newMonth);
+        setCachedData(prev => ({ ...prev, [cacheKey]: newActivities }));
+        setActivities(newActivities);
+        setYear(newYear);
+        setMonth(newMonth);
+        setIsLoading(false);
+        return;
+      } else if (isGuest) {
         const sampleData = await getSampleMonthlyActivities(newYear, newMonth);
         // 샘플 데이터가 없으면 데모 데이터로 대체
         newActivities = Object.keys(sampleData || {}).length > 0
@@ -137,7 +228,7 @@ export function TertiaryZoneClient({
     } finally {
       setIsLoading(false);
     }
-  }, [cachedData, isGuest]);
+  }, [cachedData, isGuest, isFirstUser]);
 
   const hasActivityData = Object.keys(activities).length > 0 || isLoading;
   const hasPersonaData = persona && readingStats;
@@ -148,12 +239,12 @@ export function TertiaryZoneClient({
 
   return (
     <>
-      {/* 모바일: 기존 접이식 */}
+      {/* 모바일: 접이식 (첫 사용자는 기본 열림) */}
       <div className="lg:hidden">
         <CollapsibleSection
           title={t("dashboard.secretGarden")}
           storageKey="dashboard-tertiary"
-          defaultOpen={false}
+          defaultOpen={isFirstUser}
         >
           <TertiaryContent
             activities={activities}
@@ -162,6 +253,7 @@ export function TertiaryZoneClient({
             onMonthChange={handleMonthChange}
             persona={persona}
             readingStats={readingStats}
+            isFirstUser={isFirstUser}
           />
         </CollapsibleSection>
       </div>
@@ -182,6 +274,7 @@ export function TertiaryZoneClient({
             onMonthChange={handleMonthChange}
             persona={persona}
             readingStats={readingStats}
+            isFirstUser={isFirstUser}
           />
         </div>
       </div>

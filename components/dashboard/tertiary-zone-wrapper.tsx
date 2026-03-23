@@ -3,7 +3,6 @@ import { getMonthlyBookActivities } from "@/app/actions/stats";
 import { getSampleMonthlyActivities } from "@/app/actions/sample";
 import { generateDemoMonthlyActivities } from "@/lib/demo-calendar-data";
 import { TertiaryZoneClient } from "./tertiary-zone-client";
-import { TertiaryZoneEmptyGuide } from "./tertiary-zone-empty-guide";
 import type { ReadingStats } from "@/types/persona";
 
 /**
@@ -47,14 +46,24 @@ export async function TertiaryZoneWrapper() {
     getMonthlyBookActivities(user, currentYear, currentMonth).catch(() => ({})),
   ]);
 
-  // 데이터가 없으면 가이드 콘텐츠 표시
+  // 데이터가 없으면 데모 캘린더로 기능 미리보기 제공
   const hasActivityData = Object.keys(monthlyActivities || {}).length > 0;
   const persona = personaData?.persona;
   const readingStats = persona?.reading_stats as ReadingStats | null;
   const hasPersonaData = persona && readingStats;
 
   if (!hasActivityData && !hasPersonaData) {
-    return <TertiaryZoneEmptyGuide />;
+    const demoActivities = generateDemoMonthlyActivities(currentYear, currentMonth);
+    return (
+      <TertiaryZoneClient
+        monthlyActivities={demoActivities}
+        initialYear={currentYear}
+        initialMonth={currentMonth}
+        persona={null}
+        readingStats={null}
+        isFirstUser
+      />
+    );
   }
 
   return (

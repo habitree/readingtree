@@ -94,6 +94,8 @@ interface HomeHeroSectionProps {
   hasFirstNote?: boolean;
   /** 자유 기록 통계 */
   freeNoteStats?: { totalCount: number; todayCount: number };
+  /** 첫 사용자 데모 모드 (주간 통계가 데모 데이터) */
+  isFirstUserDemo?: boolean;
 }
 
 /**
@@ -118,6 +120,7 @@ export const HomeHeroSection = memo(function HomeHeroSection({
   isGuest = false,
   hasFirstNote = true,
   freeNoteStats = { totalCount: 0, todayCount: 0 },
+  isFirstUserDemo = false,
 }: HomeHeroSectionProps) {
   const [mounted, setMounted] = useState(false);
   const { greeting, getStreakMessage, getMotivationalMessage } = useStyle();
@@ -359,10 +362,21 @@ export const HomeHeroSection = memo(function HomeHeroSection({
       <CollapsibleSection
         title={t("dashboard.weeklyStatus")}
         storageKey="hero-weekly-stats"
-        defaultOpen={false}
+        defaultOpen={isFirstUserDemo}
       >
+        {/* 첫 사용자 데모 힌트 */}
+        {isFirstUserDemo && (
+          <div className="mb-2 flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200/60 dark:border-amber-800/40">
+            <Sparkles className="h-3.5 w-3.5 text-amber-500 shrink-0" />
+            <span className="text-xs text-amber-700 dark:text-amber-300">{t("empty.demoWeeklyHint")}</span>
+            <span className="text-[9px] font-medium text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/40 px-1.5 py-0.5 rounded-full ml-auto shrink-0">
+              {t("empty.demoLabel")}
+            </span>
+          </div>
+        )}
         {/* 통계 카드 2개: 연속 기록 + 오늘의 기록 */}
-        <div className="grid grid-cols-2 gap-2 sm:gap-3">
+        <div className={cn("grid grid-cols-2 gap-2 sm:gap-3", isFirstUserDemo && "opacity-60")}>
+
           {/* 연속 기록 */}
           <Card className="p-3 sm:p-4 border-slate-200/60 dark:border-slate-800/60 bg-white dark:bg-slate-900">
             <div className="flex items-center gap-1.5 mb-1.5">
@@ -431,7 +445,7 @@ export const HomeHeroSection = memo(function HomeHeroSection({
 
         {/* 주간 진행 (나뭇잎 버전) */}
         {userName && weeklyProgress && (
-          <Card className="px-4 py-3 sm:px-5 sm:py-4 border-slate-200/60 dark:border-slate-800/60 bg-white dark:bg-slate-900">
+          <Card className={cn("px-4 py-3 sm:px-5 sm:py-4 border-slate-200/60 dark:border-slate-800/60 bg-white dark:bg-slate-900", isFirstUserDemo && "opacity-60")}>
             <div className="flex items-center justify-between mb-3">
               <span className="text-sm font-bold text-slate-900 dark:text-white">{t("dashboard.weeklyAchievement")}</span>
               <span className="text-[10px] sm:text-xs font-medium text-forest-600 dark:text-forest-400 bg-forest-50 dark:bg-forest-900/30 px-2 py-0.5 rounded-md">

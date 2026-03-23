@@ -1385,6 +1385,15 @@ export const en: Dictionary = {
     startExploring: "Start exploring",
     tertiaryGuideTitle: "Active readers' calendars look like this",
     tertiaryGuideDesc: "Read books and take notes to see your reading activity calendar here",
+    demoCalendarTitle: "Secret Garden — Your Reading Calendar",
+    demoCalendarDesc: "When you read a book and leave a note, the book cover stacks on that day in the calendar. Watch your reading journey grow day by day.",
+    demoCalendarHow: "Below is a sample calendar. Add a book and start recording to build your own!",
+    demoCalendarCta: "Add your first book and start recording",
+    demoContinueReadingHint: "Add a book to see your reading progress here",
+    demoWeeklyHint: "Record daily to build your streak",
+    demoLabel: "Sample",
+    demoSummaryTitle: "This is how records stack up",
+    demoSummaryDesc: "Transcription, memo, photo, quote — record in various ways and they're auto-organized by date",
   },
 
   theme: {
