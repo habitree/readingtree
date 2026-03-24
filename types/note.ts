@@ -63,6 +63,7 @@ export interface CreateNoteInput {
   related_user_book_ids?: string[]; // 연결된 다른 책들의 user_books.id 배열
   source_type?: SourceType;
   source_label?: string;
+  reading_duration_seconds?: number;
 }
 
 export interface UpdateNoteInput {

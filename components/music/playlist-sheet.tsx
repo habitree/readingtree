@@ -8,177 +8,133 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { useMusicPlayer } from "@/hooks/use-music-player";
-import { MUSIC_CATEGORIES, MUSIC_PLAYLISTS, getPlaylistTracks } from "@/lib/music-data";
-import type { MusicCategory } from "@/types/music";
 import { cn } from "@/lib/utils";
 
-function formatTime(sec: number): string {
-  const m = Math.floor(sec / 60);
-  const s = Math.floor(sec % 60);
-  return `${m}:${s.toString().padStart(2, "0")}`;
-}
+const PRESETS = [
+  { label: "15분", seconds: 15 * 60 },
+  { label: "30분", seconds: 30 * 60 },
+  { label: "45분", seconds: 45 * 60 },
+  { label: "60분", seconds: 60 * 60 },
+  { label: "90분", seconds: 90 * 60 },
+] as const;
 
-export function PlaylistSheet() {
-  const {
-    isPlaylistOpen,
-    closePlaylist,
-    playlist,
-    currentTrack,
-    selectTrack,
-    loadPlaylist,
-  } = useMusicPlayer();
+export function TimerSheet() {
+  const { isTimerSheetOpen, closeTimerSheet, startTimer } = useMusicPlayer();
+  const [selected, setSelected] = useState<number | null>(30 * 60);
+  const [isCustom, setIsCustom] = useState(false);
+  const [customMinutes, setCustomMinutes] = useState("");
 
-  const [filter, setFilter] = useState<MusicCategory | "all">("all");
+  function handlePresetClick(seconds: number) {
+    setSelected(seconds);
+    setIsCustom(false);
+  }
 
-  const filteredPlaylists =
-    filter === "all"
-      ? MUSIC_PLAYLISTS
-      : MUSIC_PLAYLISTS.filter(
-          (p) => p.category === filter || p.category === "mixed"
-        );
+  function handleCustomClick() {
+    setIsCustom(true);
+    setSelected(null);
+    setCustomMinutes("");
+  }
 
-  function handlePlaylistSelect(playlistId: string) {
-    const tracks = getPlaylistTracks(playlistId);
-    if (tracks.length > 0) {
-      loadPlaylist(tracks);
-      selectTrack(0);
-      closePlaylist();
+  function handleStart() {
+    let seconds = selected;
+    if (isCustom) {
+      const mins = parseInt(customMinutes, 10);
+      if (!mins || mins < 1 || mins > 300) return;
+      seconds = mins * 60;
     }
+    if (!seconds) return;
+    startTimer(seconds);
   }
 
-  function handleTrackSelect(trackIndex: number) {
-    selectTrack(trackIndex);
-    closePlaylist();
-  }
+  const canStart = isCustom
+    ? !!customMinutes && parseInt(customMinutes, 10) >= 1
+    : !!selected;
 
   return (
-    <Sheet open={isPlaylistOpen} onOpenChange={(open) => !open && closePlaylist()}>
+    <Sheet
+      open={isTimerSheetOpen}
+      onOpenChange={(open) => !open && closeTimerSheet()}
+    >
       <SheetContent
         side="bottom"
-        className="h-[70vh] rounded-t-2xl px-4 pt-3 pb-6 flex flex-col"
+        className="rounded-t-2xl px-5 pt-3 pb-8 flex flex-col"
       >
         {/* 드래그 인디케이터 */}
-        <div className="flex justify-center mb-3">
+        <div className="flex justify-center mb-4">
           <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
         </div>
 
-        <SheetHeader className="mb-3">
-          <SheetTitle className="text-base">플레이리스트</SheetTitle>
+        <SheetHeader className="mb-5">
+          <SheetTitle className="text-base text-center">
+            독서 타이머 설정
+          </SheetTitle>
+          <p className="text-sm text-muted-foreground text-center mt-1">
+            독서 시간을 설정하면 클래식 음악과 함께 시작됩니다
+          </p>
         </SheetHeader>
 
-        {/* 카테고리 필터 */}
-        <div className="flex gap-1.5 mb-4 overflow-x-auto pb-1">
-          <button
-            onClick={() => setFilter("all")}
-            className={cn(
-              "shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors",
-              filter === "all"
-                ? "bg-primary text-primary-foreground"
-                : "bg-muted text-muted-foreground hover:bg-muted/80"
-            )}
-          >
-            전체
-          </button>
-          {MUSIC_CATEGORIES.map((cat) => (
+        {/* 프리셋 시간 버튼 */}
+        <div className="grid grid-cols-3 gap-2.5 mb-4">
+          {PRESETS.map(({ label, seconds }) => (
             <button
-              key={cat.id}
-              onClick={() => setFilter(cat.id)}
+              key={seconds}
+              onClick={() => handlePresetClick(seconds)}
               className={cn(
-                "shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors",
-                filter === cat.id
-                  ? "bg-primary text-primary-foreground"
+                "py-3.5 rounded-xl text-sm font-semibold transition-all",
+                selected === seconds && !isCustom
+                  ? "bg-primary text-primary-foreground shadow-sm"
                   : "bg-muted text-muted-foreground hover:bg-muted/80"
               )}
             >
-              {cat.emoji} {cat.name}
+              {label}
             </button>
           ))}
+          <button
+            onClick={handleCustomClick}
+            className={cn(
+              "py-3.5 rounded-xl text-sm font-semibold transition-all",
+              isCustom
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "bg-muted text-muted-foreground hover:bg-muted/80"
+            )}
+          >
+            직접 입력
+          </button>
         </div>
 
-        {/* 플레이리스트 + 현재 재생 목록 */}
-        <div className="flex-1 overflow-y-auto space-y-4">
-          {/* 플레이리스트 선택 */}
-          <div className="space-y-1.5">
-            <p className="text-xs font-medium text-muted-foreground px-1">
-              플레이리스트 선택
-            </p>
-            {filteredPlaylists.map((pl) => {
-              const tracks = getPlaylistTracks(pl.id);
-              const totalMin = Math.floor(
-                tracks.reduce((sum, t) => sum + t.durationSeconds, 0) / 60
-              );
-              return (
-                <button
-                  key={pl.id}
-                  onClick={() => handlePlaylistSelect(pl.id)}
-                  className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-muted/50 transition-colors text-left"
-                >
-                  <span className="text-2xl">{pl.emoji}</span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold truncate">{pl.name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {pl.description} · {tracks.length}곡 · {totalMin}분
-                    </p>
-                  </div>
-                </button>
-              );
-            })}
+        {/* 직접 입력 필드 */}
+        {isCustom && (
+          <div className="flex items-center gap-2 mb-4 justify-center">
+            <input
+              type="number"
+              inputMode="numeric"
+              min={1}
+              max={300}
+              placeholder="25"
+              value={customMinutes}
+              onChange={(e) => setCustomMinutes(e.target.value)}
+              className="w-20 h-11 text-center text-lg font-semibold rounded-xl border bg-background focus:ring-2 focus:ring-primary focus:border-primary outline-none"
+              autoFocus
+            />
+            <span className="text-sm text-muted-foreground font-medium">
+              분
+            </span>
           </div>
+        )}
 
-          {/* 현재 재생 목록 */}
-          {playlist.length > 0 && (
-            <div className="space-y-1">
-              <p className="text-xs font-medium text-muted-foreground px-1">
-                현재 재생 목록
-              </p>
-              {playlist.map((track, i) => {
-                const isActive = track.id === currentTrack?.id;
-                const catInfo = MUSIC_CATEGORIES.find(
-                  (c) => c.id === track.category
-                );
-                return (
-                  <button
-                    key={`${track.id}-${i}`}
-                    onClick={() => handleTrackSelect(i)}
-                    className={cn(
-                      "w-full flex items-center gap-3 p-2.5 rounded-xl transition-colors text-left",
-                      isActive
-                        ? "bg-primary/10 ring-1 ring-primary/20"
-                        : "hover:bg-muted/50"
-                    )}
-                  >
-                    <div
-                      className={cn(
-                        "w-7 h-7 rounded-md flex items-center justify-center text-xs font-semibold shrink-0",
-                        isActive
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-muted text-muted-foreground"
-                      )}
-                    >
-                      {isActive ? "▶" : i + 1}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p
-                        className={cn(
-                          "text-sm font-medium truncate",
-                          isActive && "text-primary"
-                        )}
-                      >
-                        {track.composer} — {track.title}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {catInfo?.emoji} {catInfo?.name} · {track.instrument}
-                      </p>
-                    </div>
-                    <span className="text-xs text-muted-foreground shrink-0">
-                      {formatTime(track.durationSeconds)}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
+        {/* 독서 시작 버튼 */}
+        <button
+          onClick={handleStart}
+          disabled={!canStart}
+          className={cn(
+            "w-full py-3.5 rounded-xl text-base font-semibold transition-all",
+            canStart
+              ? "bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm"
+              : "bg-muted text-muted-foreground cursor-not-allowed"
           )}
-        </div>
+        >
+          독서 시작
+        </button>
       </SheetContent>
     </Sheet>
   );
