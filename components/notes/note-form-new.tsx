@@ -401,7 +401,7 @@ export function NoteFormNew({ bookId }: NoteFormNewProps) {
             className="w-full flex items-center justify-between px-3 py-2 bg-slate-50/50 dark:bg-slate-800/30 hover:bg-slate-100/50 dark:hover:bg-slate-800/50 transition-colors"
           >
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Settings2 className="h-3.5 w-3.5" />
+              <Settings2 className="w-3.5 h-3.5" />
               <span>{t("notes.additionalOptions")}</span>
             </div>
             <motion.div

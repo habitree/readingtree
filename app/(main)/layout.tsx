@@ -8,6 +8,7 @@ import { MobileNoteSheetProvider } from "@/components/notes/mobile-note-sheet";
 import { NavigationProgress } from "@/components/ui/navigation-progress";
 import { UpgradeModal } from "@/components/subscription/upgrade-modal";
 import { PageTracker } from "@/components/tracking/page-tracker";
+import { MusicMiniPlayer } from "@/components/music/music-mini-player";
 
 /**
  * 메인 레이아웃
@@ -39,6 +40,7 @@ export default function MainLayout({
           </main>
         </div>
         <MobileNav />
+        <MusicMiniPlayer />
         <PageTracker />
         <MobileNoteSheetProvider />
         <UpgradeModal />

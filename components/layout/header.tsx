@@ -24,6 +24,7 @@ import { signOut } from "@/app/actions/auth";
 import { useEffect, useState } from "react";
 import { useTranslation } from "@/lib/i18n";
 import { LanguageToggle } from "@/components/ui/language-toggle";
+import { MusicToggleButton } from "@/components/music/music-mini-player";
 
 /**
  * 헤더 컴포넌트
@@ -67,6 +68,9 @@ export function Header() {
         {/* 우측 메뉴 */}
         <div className="flex items-center gap-1.5 sm:gap-2 ml-auto shrink-0">
           <TooltipProvider>
+            {/* 배경음악 토글 */}
+            <MusicToggleButton />
+
             {/* 언어 토글 */}
             <LanguageToggle />
 

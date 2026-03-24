@@ -226,11 +226,20 @@ export function BookSearch({ onBookAdded, onSelectBook, excludeBookIds, showAlre
         // 기존 동작: 내 서재에 추가
         const result = await addBook(book, "reading");
         if (!result.success) throw new Error(result.error);
-        toast.success(t("books.bookAddedSuccess"));
+        const addedBookId = result.userBookId;
+        toast.success(t("books.bookAddedWithAction"), {
+          description: t("books.bookAddedActionDesc"),
+          action: {
+            label: t("books.writeFirstNote"),
+            onClick: () => {
+              router.push(`/notes/new?bookId=${addedBookId}`);
+            },
+          },
+        });
         setQuery("");
         setResults([]);
         onBookAdded?.();
-        router.push(`/books/${result.userBookId}`);
+        router.push(`/books/${addedBookId}`);
         router.refresh();
       }
     } catch (error) {
@@ -312,7 +321,10 @@ export function BookSearch({ onBookAdded, onSelectBook, excludeBookIds, showAlre
                           {t("books.addingBook")}
                         </>
                       ) : (
-                        t("books.addButton")
+                        <>
+                          <BookOpen className="mr-1 h-3 w-3" />
+                          {t("books.addButton")}
+                        </>
                       )}
                     </Button>
                     {!onSelectBook && (

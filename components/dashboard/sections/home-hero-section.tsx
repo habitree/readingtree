@@ -251,6 +251,24 @@ export const HomeHeroSection = memo(function HomeHeroSection({
         </motion.div>
       )}
 
+      {/* ======== 스트릭 경고 배너 (at_risk && streak >= 3) ======== */}
+      {weeklyProgress?.streakStatus === "at_risk" && streak >= 3 && (
+        <motion.div
+          initial={{ opacity: 0, y: -4 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+        >
+          <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800 text-sm">
+            <span className="text-rose-700 dark:text-rose-300">
+              {t("dashboard.streakBreakWarning", { count: streak })}
+            </span>
+            <Link href="/notes/new" className="text-rose-600 dark:text-rose-400 font-medium text-xs hover:underline">
+              {t("dashboard.recordNow")}
+            </Link>
+          </div>
+        </motion.div>
+      )}
+
       {/* ======== PRIMARY ZONE: 히어로 카드 ======== */}
       <motion.div
         initial={{ opacity: 0 }}
@@ -315,6 +333,13 @@ export const HomeHeroSection = memo(function HomeHeroSection({
                     {totalPoints.toLocaleString()}P
                   </span>
                 </div>
+                {!hasFirstNote && totalPoints >= 200 && (
+                  <div className="mt-1 px-2 py-1 rounded-md bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800">
+                    <span className="text-xs text-amber-700 dark:text-amber-300 font-medium">
+                      🎁 {t("dashboard.welcomeBonusHint")}
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
           </div>

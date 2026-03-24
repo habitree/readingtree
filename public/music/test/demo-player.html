@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ReadingTree 음악 플레이어 데모</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --surface: #1e293b;
+      --surface2: #334155;
+      --border: #475569;
+      --text: #e2e8f0;
+      --text-muted: #94a3b8;
+      --accent: #38bdf8;
+      --purple: #a78bfa;
+      --green: #4ade80;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Header */
+    .header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0.75rem 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .header h1 { font-size: 1rem; font-weight: 700; }
+    .header .badge {
+      background: rgba(167,139,250,0.15);
+      color: var(--purple);
+      padding: 0.2rem 0.6rem;
+      border-radius: 100px;
+      font-size: 0.7rem;
+      font-weight: 600;
+    }
+
+    /* Reading Area */
+    .reading-area {
+      flex: 1;
+      padding: 1.5rem;
+      max-width: 640px;
+      margin: 0 auto;
+      width: 100%;
+      padding-bottom: 160px;
+    }
+    .book-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+    .book-meta {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-bottom: 1.5rem;
+    }
+    .book-content {
+      font-size: 0.95rem;
+      line-height: 2;
+      color: var(--text-muted);
+    }
+    .book-content p { text-indent: 1em; margin-bottom: 1rem; }
+    .book-content .quote {
+      border-left: 3px solid var(--purple);
+      padding-left: 1rem;
+      margin: 1.5rem 0;
+      font-style: italic;
+      color: var(--text);
+    }
+
+    /* Mini Player */
+    .mini-player {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: rgba(15,23,42,0.98);
+      backdrop-filter: blur(16px);
+      border-top: 1px solid var(--border);
+      z-index: 20;
+      transition: all 0.3s ease;
+    }
+
+    /* Progress bar (clickable) */
+    .progress-container {
+      height: 4px;
+      background: var(--surface2);
+      cursor: pointer;
+      position: relative;
+    }
+    .progress-container:hover { height: 6px; }
+    .progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, var(--purple), var(--accent));
+      border-radius: 0 2px 2px 0;
+      width: 0%;
+      transition: width 0.3s linear;
+    }
+
+    /* Player content */
+    .player-content {
+      padding: 0.75rem 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .player-thumb {
+      width: 44px;
+      height: 44px;
+      background: linear-gradient(135deg, rgba(167,139,250,0.3), rgba(56,189,248,0.3));
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.3rem;
+      flex-shrink: 0;
+    }
+    .player-info { flex: 1; min-width: 0; }
+    .player-title {
+      font-size: 0.85rem;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .player-artist {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      margin-top: 0.1rem;
+    }
+    .player-meta {
+      display: flex;
+      gap: 0.35rem;
+      margin-top: 0.25rem;
+      align-items: center;
+    }
+    .player-meta .tag {
+      font-size: 0.6rem;
+      padding: 0.1rem 0.4rem;
+      border-radius: 100px;
+      font-weight: 600;
+    }
+    .tag-pd { background: rgba(74,222,128,0.15); color: var(--green); }
+    .tag-cat { background: rgba(167,139,250,0.15); color: var(--purple); }
+
+    .player-controls {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .ctrl-btn {
+      width: 36px;
+      height: 36px;
+      border: none;
+      background: none;
+      color: var(--text);
+      font-size: 1.1rem;
+      cursor: pointer;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
+    }
+    .ctrl-btn:hover { background: var(--surface2); }
+    .ctrl-btn.play {
+      width: 40px;
+      height: 40px;
+      background: var(--purple);
+      font-size: 1.2rem;
+    }
+    .ctrl-btn.play:hover { background: #8b5cf6; }
+
+    .player-time {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      min-width: 80px;
+      text-align: center;
+    }
+
+    /* YouTube link */
+    .yt-link {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.35rem;
+      background: rgba(71,85,105,0.3);
+      border-top: 1px solid rgba(71,85,105,0.3);
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      text-decoration: none;
+      gap: 0.35rem;
+      transition: background 0.2s;
+    }
+    .yt-link:hover { background: rgba(71,85,105,0.5); color: var(--text); }
+
+    /* Playlist Sheet */
+    .playlist-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 30;
+      display: none;
+      align-items: flex-end;
+    }
+    .playlist-overlay.open { display: flex; }
+    .playlist-sheet {
+      background: var(--surface);
+      border-radius: 16px 16px 0 0;
+      width: 100%;
+      max-height: 60vh;
+      overflow-y: auto;
+      padding: 1rem;
+    }
+    .playlist-sheet .handle {
+      width: 36px;
+      height: 4px;
+      background: var(--surface2);
+      border-radius: 2px;
+      margin: 0 auto 1rem;
+    }
+    .playlist-sheet h3 { font-size: 1rem; font-weight: 700; margin-bottom: 1rem; }
+    .track-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background 0.2s;
+      margin-bottom: 0.25rem;
+    }
+    .track-item:hover { background: var(--surface2); }
+    .track-item.active { background: rgba(167,139,250,0.1); border: 1px solid rgba(167,139,250,0.3); }
+    .track-item .num {
+      width: 28px;
+      height: 28px;
+      background: var(--surface2);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+    .track-item.active .num { background: var(--purple); }
+    .track-item .t-info { flex: 1; }
+    .track-item .t-title { font-size: 0.85rem; font-weight: 600; }
+    .track-item .t-artist { font-size: 0.72rem; color: var(--text-muted); }
+    .track-item .t-duration { font-size: 0.72rem; color: var(--text-muted); }
+
+    /* Status bar */
+    .status-bar {
+      background: rgba(74,222,128,0.08);
+      border: 1px solid rgba(74,222,128,0.2);
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      margin-bottom: 1.5rem;
+      font-size: 0.82rem;
+      color: var(--green);
+    }
+    .status-bar strong { color: var(--text); }
+
+    @media (max-width: 480px) {
+      .player-time { display: none; }
+      .reading-area { padding: 1rem; padding-bottom: 140px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <span style="font-size:1.2rem;">🌿</span>
+    <h1>ReadingTree</h1>
+    <span class="badge">MUSIC DEMO v1.0</span>
+  </div>
+
+  <div class="reading-area">
+    <div class="status-bar">
+      <strong>독서 배경음악 1시간 컬렉션</strong> — 10곡 | 62분 | MP3 320kbps | Public Domain<br>
+      <span style="font-size:0.75rem;color:var(--text-muted);">바흐 · 그리그 · 보로딘 · 슈베르트 · 드보르작 · 수크 | FLAC 원본에서 최고 음질 변환</span>
+    </div>
+
+    <div class="book-title">데미안 — 헤르만 헤세</div>
+    <div class="book-meta">p. 42 / 186 | 독서 시간 23분</div>
+
+    <div class="book-content">
+      <div class="quote">
+        "새는 알에서 나오려고 투쟁한다. 알은 세계이다. 태어나려는 자는 하나의 세계를 깨뜨려야 한다. 새는 신에게로 날아간다. 신의 이름은 아브락사스이다."
+      </div>
+
+      <p>싱클레어는 이 말의 의미를 곰곰이 생각했다. 그것은 자기 자신의 내면에서 들려오는 소리 같았다. 데미안이 항상 말했듯이, 우리 안에는 모든 것을 알고 모든 것을 원하는 존재가 있었다.</p>
+
+      <p>그 존재는 우리의 진정한 본성이었다. 세상이 우리에게 부여한 역할이나 기대와는 무관한, 가장 순수한 형태의 자아였다. 싱클레어는 그것을 찾기 위해 긴 여정을 시작해야 한다는 것을 알았다.</p>
+
+      <p>학교의 회색빛 담장 너머로 봄바람이 불어왔다. 나무들은 새잎을 틔우고 있었고, 새들은 끊임없이 노래했다. 그러나 싱클레어의 마음속에는 여전히 어두운 그림자가 드리워져 있었다.</p>
+
+      <p>데미안을 만나기 전까지, 그는 세상을 두 가지 영역으로 나누어 생각했다. 밝은 세계와 어두운 세계. 선과 악. 하지만 데미안은 그에게 완전히 다른 시각을 열어주었다.</p>
+
+      <p>"선과 악은 분리된 것이 아니야." 데미안이 말했다. "그것들은 하나의 전체를 이루고 있어. 진정한 인간은 양쪽 모두를 포용할 수 있어야 해."</p>
+
+      <p>이 말은 싱클레어의 세계관을 근본적으로 흔들었다. 그는 지금까지 배운 모든 도덕적 가르침을 다시 생각해야 했다. 그리고 그 과정은 고통스러웠지만, 동시에 해방감을 주었다.</p>
+
+      <div class="quote">
+        "운명과 기질은 같은 개념의 두 이름이다."
+      </div>
+
+      <p>싱클레어는 창밖을 바라보며 생각에 잠겼다. 데미안의 말들이 그의 머릿속에서 메아리쳤다. 그는 자신만의 길을 찾아야 한다는 것을 깨달았다. 누구도 대신 걸어줄 수 없는, 오직 자신만의 길을.</p>
+    </div>
+  </div>
+
+  <!-- Mini Player -->
+  <div class="mini-player" id="miniPlayer">
+    <div class="progress-container" id="progressContainer">
+      <div class="progress-bar" id="progressBar"></div>
+    </div>
+    <div class="player-content">
+      <div class="player-thumb" id="playerThumb">🎼</div>
+      <div class="player-info">
+        <div class="player-title" id="playerTitle">곡을 선택하세요</div>
+        <div class="player-artist" id="playerArtist">ReadingTree Music</div>
+        <div class="player-meta">
+          <span class="tag tag-pd">PD</span>
+          <span class="tag tag-cat" id="playerCategory">집중 모드</span>
+        </div>
+      </div>
+      <div class="player-time" id="playerTime">0:00 / 0:00</div>
+      <div class="player-controls">
+        <button class="ctrl-btn" onclick="prevTrack()">⏮</button>
+        <button class="ctrl-btn play" id="playBtn" onclick="togglePlay()">▶</button>
+        <button class="ctrl-btn" onclick="nextTrack()">⏭</button>
+        <button class="ctrl-btn" onclick="openPlaylist()">☰</button>
+      </div>
+    </div>
+    <a class="yt-link" id="ytLink" href="#" target="_blank" style="display:none;">
+      ▶ YouTube에서 보기 ↗
+    </a>
+  </div>
+
+  <!-- Playlist Sheet -->
+  <div class="playlist-overlay" id="playlistOverlay" onclick="closePlaylist()">
+    <div class="playlist-sheet" onclick="event.stopPropagation()">
+      <div class="handle"></div>
+      <h3>플레이리스트</h3>
+      <div id="trackList"></div>
+    </div>
+  </div>
+
+  <!-- Audio Element -->
+  <audio id="audioPlayer" preload="metadata"></audio>
+
+  <script>
+    // Track data — 10곡, 62분, MP3 320kbps (FLAC 원본 변환)
+    const tracks = [
+      { id:'track-001', title:'골드베르크 변주곡 - Aria', composer:'바흐', performer:'Musopen · 320kbps', src:'bach-goldberg-aria.mp3', duration:292, category:'집중 모드', emoji:'🎼', youtubeId:null },
+      { id:'track-004', title:'페르 귄트 - 아침 기분', composer:'그리그', performer:'Musopen · 191kbps', src:'grieg-morning-mood.mp3', duration:229, category:'편안한 독서', emoji:'🌙', youtubeId:null },
+      { id:'track-007', title:'현악 사중주 2번 - 녹턴', composer:'보로딘', performer:'Musopen · 320kbps', src:'borodin-nocturne.mp3', duration:547, category:'편안한 독서', emoji:'🌙', youtubeId:null },
+      { id:'track-009', title:'피아노 소나타 D.664 - 1악장', composer:'슈베르트', performer:'Musopen · 320kbps', src:'schubert-allegro.mp3', duration:466, category:'집중 모드', emoji:'🎼', youtubeId:null },
+      { id:'track-006', title:'명상곡', composer:'수크', performer:'Musopen · 320kbps', src:'suk-meditation.mp3', duration:405, category:'깊은 사색', emoji:'🏔️', youtubeId:null },
+      { id:'track-002', title:'골드베르크 변주곡 - Var.25', composer:'바흐', performer:'Musopen · 320kbps', src:'bach-goldberg-var25.mp3', duration:410, category:'깊은 사색', emoji:'🏔️', youtubeId:null },
+      { id:'track-008', title:'아메리칸 사중주 - Lento', composer:'드보르작', performer:'Musopen · 320kbps', src:'dvorak-lento.mp3', duration:471, category:'편안한 독서', emoji:'🌙', youtubeId:null },
+      { id:'track-005', title:'페르 귄트 - 오세의 죽음', composer:'그리그', performer:'Musopen · 320kbps', src:'grieg-aases-death.mp3', duration:273, category:'깊은 사색', emoji:'🏔️', youtubeId:null },
+      { id:'track-010', title:'피아노 소나타 D.664 - 2악장', composer:'슈베르트', performer:'Musopen · 320kbps', src:'schubert-andante.mp3', duration:290, category:'깊은 사색', emoji:'🏔️', youtubeId:null },
+      { id:'track-003', title:'골드베르크 변주곡 - Aria da Capo', composer:'바흐', performer:'Musopen · 320kbps', src:'bach-goldberg-ariadacapo.mp3', duration:339, category:'집중 모드', emoji:'🎼', youtubeId:null }
+    ];
+
+    let currentTrackIndex = 0;
+    let isPlaying = false;
+    const audio = document.getElementById('audioPlayer');
+    const playBtn = document.getElementById('playBtn');
+    const progressBar = document.getElementById('progressBar');
+    const progressContainer = document.getElementById('progressContainer');
+    const playerTitle = document.getElementById('playerTitle');
+    const playerArtist = document.getElementById('playerArtist');
+    const playerThumb = document.getElementById('playerThumb');
+    const playerCategory = document.getElementById('playerCategory');
+    const playerTime = document.getElementById('playerTime');
+    const ytLink = document.getElementById('ytLink');
+
+    function formatTime(sec) {
+      const m = Math.floor(sec / 60);
+      const s = Math.floor(sec % 60);
+      return `${m}:${s.toString().padStart(2, '0')}`;
+    }
+
+    function loadTrack(index) {
+      currentTrackIndex = index;
+      const track = tracks[index];
+      audio.src = track.src;
+      playerTitle.textContent = `${track.composer} — ${track.title}`;
+      playerArtist.textContent = `${track.performer} · Public Domain`;
+      playerThumb.textContent = track.emoji;
+      playerCategory.textContent = track.category;
+      playerTime.textContent = `0:00 / ${formatTime(track.duration)}`;
+      progressBar.style.width = '0%';
+
+      // YouTube link
+      if (track.youtubeId) {
+        ytLink.href = `https://www.youtube.com/watch?v=${track.youtubeId}`;
+        ytLink.style.display = 'flex';
+      } else {
+        ytLink.style.display = 'none';
+      }
+
+      // Update playlist UI
+      document.querySelectorAll('.track-item').forEach((el, i) => {
+        el.classList.toggle('active', i === index);
+      });
+
+      // Media Session API
+      if ('mediaSession' in navigator) {
+        navigator.mediaSession.metadata = new MediaMetadata({
+          title: track.title,
+          artist: `${track.composer} · ${track.performer}`,
+          album: `ReadingTree - ${track.category}`
+        });
+        navigator.mediaSession.setActionHandler('play', () => togglePlay());
+        navigator.mediaSession.setActionHandler('pause', () => togglePlay());
+        navigator.mediaSession.setActionHandler('previoustrack', () => prevTrack());
+        navigator.mediaSession.setActionHandler('nexttrack', () => nextTrack());
+      }
+    }
+
+    function togglePlay() {
+      if (!audio.src || audio.src === window.location.href) {
+        loadTrack(0);
+      }
+      if (isPlaying) {
+        audio.pause();
+        playBtn.textContent = '▶';
+        isPlaying = false;
+      } else {
+        audio.play();
+        playBtn.textContent = '⏸';
+        isPlaying = true;
+      }
+    }
+
+    function prevTrack() {
+      const newIndex = (currentTrackIndex - 1 + tracks.length) % tracks.length;
+      loadTrack(newIndex);
+      if (isPlaying) audio.play();
+    }
+
+    function nextTrack() {
+      const newIndex = (currentTrackIndex + 1) % tracks.length;
+      loadTrack(newIndex);
+      if (isPlaying) audio.play();
+    }
+
+    // Progress update
+    audio.addEventListener('timeupdate', () => {
+      if (audio.duration) {
+        const pct = (audio.currentTime / audio.duration) * 100;
+        progressBar.style.width = pct + '%';
+        playerTime.textContent = `${formatTime(audio.currentTime)} / ${formatTime(audio.duration)}`;
+      }
+    });
+
+    // Auto next track
+    audio.addEventListener('ended', () => {
+      nextTrack();
+      audio.play();
+    });
+
+    // Click progress bar to seek
+    progressContainer.addEventListener('click', (e) => {
+      if (audio.duration) {
+        const rect = progressContainer.getBoundingClientRect();
+        const pct = (e.clientX - rect.left) / rect.width;
+        audio.currentTime = pct * audio.duration;
+      }
+    });
+
+    // Playlist sheet
+    function openPlaylist() {
+      document.getElementById('playlistOverlay').classList.add('open');
+    }
+    function closePlaylist() {
+      document.getElementById('playlistOverlay').classList.remove('open');
+    }
+    function selectTrack(index) {
+      loadTrack(index);
+      if (!isPlaying) togglePlay();
+      else audio.play();
+      closePlaylist();
+    }
+
+    // Build track list
+    function buildTrackList() {
+      const container = document.getElementById('trackList');
+      tracks.forEach((track, i) => {
+        const el = document.createElement('div');
+        el.className = 'track-item' + (i === 0 ? ' active' : '');
+        el.onclick = () => selectTrack(i);
+        el.innerHTML = `
+          <div class="num">${i + 1}</div>
+          <div class="t-info">
+            <div class="t-title">${track.composer} — ${track.title}</div>
+            <div class="t-artist">${track.performer} · ${track.category}</div>
+          </div>
+          <div class="t-duration">${formatTime(track.duration)}</div>
+        `;
+        container.appendChild(el);
+      });
+    }
+
+    // Initialize
+    buildTrackList();
+    loadTrack(0);
+  </script>
+
+</body>
+</html>

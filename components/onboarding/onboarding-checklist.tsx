@@ -12,6 +12,8 @@ import {
   PenLine,
   Target,
   User,
+  UserCheck,
+  ShieldCheck,
   Droplets,
   Gift,
   ChevronRight,
@@ -33,12 +35,27 @@ export interface OnboardingItem {
   title: string;
   description: string;
   reward: number;
-  icon: "book" | "note" | "water" | "goal" | "persona";
-  href: string;
+  icon: "book" | "note" | "water" | "goal" | "persona" | "signup" | "consent";
+  href?: string;
   completed: boolean;
 }
 
+/** Endowed Progress: 이미 완료된 항목 (회원가입, 약관동의) */
+const ONBOARDING_ENDOWED: Omit<OnboardingItem, "completed" | "title" | "description">[] = [
+  {
+    id: "signup_complete",
+    reward: 0,
+    icon: "signup",
+  },
+  {
+    id: "consent_complete",
+    reward: 0,
+    icon: "consent",
+  },
+];
+
 export const ONBOARDING_CHECKLIST: Omit<OnboardingItem, "completed" | "title" | "description">[] = [
+  ...ONBOARDING_ENDOWED,
   {
     id: "first_book",
     reward: 35,
@@ -81,7 +98,16 @@ const iconMap = {
   water: Droplets,
   goal: Target,
   persona: User,
+  signup: UserCheck,
+  consent: ShieldCheck,
 };
+
+/** Endowed Progress 항목 ID (항상 완료 처리) */
+const ENDOWED_IDS = new Set(["signup_complete", "consent_complete"]);
+
+function isEndowedItem(id: string): boolean {
+  return ENDOWED_IDS.has(id);
+}
 
 interface OnboardingChecklistProps {
   items: OnboardingItem[];
@@ -102,23 +128,28 @@ export function OnboardingChecklist({
   const [isExpanded, setIsExpanded] = useState(true);
   const [celebratedItems, setCelebratedItems] = useState<Set<string>>(new Set());
 
-  const completedCount = items.filter((item) => item.completed).length;
-  const totalCount = items.length;
+  // Endowed Progress: signup_complete, consent_complete는 항상 completed
+  const resolvedItems = items.map((item) =>
+    isEndowedItem(item.id) ? { ...item, completed: true } : item
+  );
+
+  const completedCount = resolvedItems.filter((item) => item.completed).length;
+  const totalCount = resolvedItems.length;
   const progress = (completedCount / totalCount) * 100;
   const allCompleted = completedCount === totalCount;
-  const totalReward = items.reduce((sum, item) => sum + item.reward, 0);
-  const earnedReward = items
+  const totalReward = resolvedItems.reduce((sum, item) => sum + item.reward, 0);
+  const earnedReward = resolvedItems
     .filter((item) => item.completed)
     .reduce((sum, item) => sum + item.reward, 0);
 
   // 완료된 아이템 축하 효과
   useEffect(() => {
-    items.forEach((item) => {
+    resolvedItems.forEach((item) => {
       if (item.completed && !celebratedItems.has(item.id)) {
         setCelebratedItems((prev) => new Set(prev).add(item.id));
       }
     });
-  }, [items, celebratedItems]);
+  }, [resolvedItems, celebratedItems]);
 
   // 전체 완료 시 특별 축하
   useEffect(() => {
@@ -217,7 +248,15 @@ export function OnboardingChecklist({
 
         {/* 진행률 바 */}
         <div className="px-4 py-2 bg-slate-50/50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800">
-          <Progress value={progress} className="h-1.5" />
+          <div className="flex items-center gap-2">
+            <Progress value={progress} className="h-1.5 flex-1" />
+            <span className="text-xs text-muted-foreground shrink-0">
+              {t("onboardingChecklist.progressText", {
+                completed: completedCount,
+                total: totalCount,
+              })}
+            </span>
+          </div>
         </div>
 
         {/* 체크리스트 */}
@@ -230,70 +269,66 @@ export function OnboardingChecklist({
               transition={{ duration: 0.2 }}
             >
               <div className="divide-y divide-slate-100 dark:divide-slate-800">
-                {items.map((item, index) => {
+                {resolvedItems.map((item, index) => {
                   const Icon = iconMap[item.icon];
-                  return (
-                    <motion.div
-                      key={item.id}
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: index * 0.05 }}
+                  const hasHref = !!item.href;
+
+                  const content = (
+                    <div
+                      className={cn(
+                        "flex items-center gap-3 px-4 py-3 transition-all",
+                        item.completed
+                          ? "bg-green-50/50 dark:bg-green-950/20"
+                          : "hover:bg-slate-50 dark:hover:bg-slate-800/50"
+                      )}
                     >
-                      <Link
-                        href={item.href}
+                      {/* 체크 상태 */}
+                      {item.completed ? (
+                        <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0" />
+                      ) : (
+                        <Circle className="h-5 w-5 text-slate-300 dark:text-slate-600 shrink-0" />
+                      )}
+
+                      {/* 아이콘 */}
+                      <div
                         className={cn(
-                          "flex items-center gap-3 px-4 py-3 transition-all",
+                          "w-8 h-8 rounded-lg flex items-center justify-center shrink-0",
                           item.completed
-                            ? "bg-green-50/50 dark:bg-green-950/20"
-                            : "hover:bg-slate-50 dark:hover:bg-slate-800/50"
+                            ? "bg-green-100 dark:bg-green-900/30"
+                            : "bg-blue-100 dark:bg-blue-900/30"
                         )}
                       >
-                        {/* 체크 상태 */}
-                        {item.completed ? (
-                          <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0" />
-                        ) : (
-                          <Circle className="h-5 w-5 text-slate-300 dark:text-slate-600 shrink-0" />
-                        )}
-
-                        {/* 아이콘 */}
-                        <div
+                        <Icon
                           className={cn(
-                            "w-8 h-8 rounded-lg flex items-center justify-center shrink-0",
+                            "h-4 w-4",
                             item.completed
-                              ? "bg-green-100 dark:bg-green-900/30"
-                              : "bg-blue-100 dark:bg-blue-900/30"
+                              ? "text-green-500"
+                              : "text-blue-500"
+                          )}
+                        />
+                      </div>
+
+                      {/* 내용 */}
+                      <div className="flex-1 min-w-0">
+                        <p
+                          className={cn(
+                            "text-sm font-medium",
+                            item.completed
+                              ? "text-green-700 dark:text-green-300 line-through"
+                              : "text-slate-900 dark:text-white"
                           )}
                         >
-                          <Icon
-                            className={cn(
-                              "h-4 w-4",
-                              item.completed
-                                ? "text-green-500"
-                                : "text-blue-500"
-                            )}
-                          />
-                        </div>
-
-                        {/* 내용 */}
-                        <div className="flex-1 min-w-0">
-                          <p
-                            className={cn(
-                              "text-sm font-medium",
-                              item.completed
-                                ? "text-green-700 dark:text-green-300 line-through"
-                                : "text-slate-900 dark:text-white"
-                            )}
-                          >
-                            {item.title}
+                          {item.title}
+                        </p>
+                        {!item.completed && (
+                          <p className="text-xs text-slate-500 dark:text-slate-400">
+                            {item.description}
                           </p>
-                          {!item.completed && (
-                            <p className="text-xs text-slate-500 dark:text-slate-400">
-                              {item.description}
-                            </p>
-                          )}
-                        </div>
+                        )}
+                      </div>
 
-                        {/* 보상 */}
+                      {/* 보상 (reward > 0일 때만 표시) */}
+                      {item.reward > 0 && (
                         <div className="shrink-0 flex items-center gap-2">
                           <div className="flex items-center gap-1">
                             <Gift className="h-3 w-3 text-amber-500" />
@@ -312,7 +347,22 @@ export function OnboardingChecklist({
                             <ChevronRight className="h-4 w-4 text-slate-400" />
                           )}
                         </div>
-                      </Link>
+                      )}
+                    </div>
+                  );
+
+                  return (
+                    <motion.div
+                      key={item.id}
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: index * 0.05 }}
+                    >
+                      {hasHref ? (
+                        <Link href={item.href!}>{content}</Link>
+                      ) : (
+                        content
+                      )}
                     </motion.div>
                   );
                 })}

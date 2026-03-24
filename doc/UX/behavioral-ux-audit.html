@@ -1,0 +1,1118 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ReadTree 행동과학 기반 UX 감사 보고서</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net">
+  <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Pretendard Variable', 'system-ui', 'sans-serif'] }
+        }
+      }
+    }
+  </script>
+  <style>
+    .tab-active { border-bottom: 3px solid; font-weight: 700; }
+    .card-hover { transition: transform 0.2s, box-shadow 0.2s; }
+    .card-hover:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0,0,0,0.1); }
+    .accordion-content { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; }
+    .accordion-content.open { max-height: 2000px; }
+    .fade-in { opacity: 0; transform: translateY(20px); transition: opacity 0.5s, transform 0.5s; }
+    .fade-in.visible { opacity: 1; transform: translateY(0); }
+    .phase-line { position: relative; }
+    .phase-line::before { content: ''; position: absolute; top: 50%; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, #10b981, #8b5cf6, #f43f5e); z-index: 0; }
+    .severity-high { background: #fef2f2; border-left: 4px solid #ef4444; }
+    .severity-mid { background: #fffbeb; border-left: 4px solid #f59e0b; }
+    .severity-low { background: #f0fdf4; border-left: 4px solid #22c55e; }
+    .dark .severity-high { background: #450a0a; }
+    .dark .severity-mid { background: #451a03; }
+    .dark .severity-low { background: #052e16; }
+    .principle-badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 10px; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; }
+  </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-200 font-sans">
+
+  <!-- Dark Mode Toggle -->
+  <button id="darkToggle" class="fixed top-4 right-4 z-50 p-2.5 rounded-full bg-white dark:bg-slate-800 shadow-lg border border-slate-200 dark:border-slate-700 hover:scale-110 transition-transform" aria-label="다크모드 토글">
+    <svg id="sunIcon" class="w-5 h-5 hidden dark:block text-yellow-400" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"/></svg>
+    <svg id="moonIcon" class="w-5 h-5 block dark:hidden text-slate-600" fill="currentColor" viewBox="0 0 20 20"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/></svg>
+  </button>
+
+  <!-- Hero Section -->
+  <header class="relative overflow-hidden bg-gradient-to-br from-emerald-600 via-blue-600 to-violet-700 dark:from-emerald-800 dark:via-blue-900 dark:to-violet-900 text-white">
+    <div class="absolute inset-0 opacity-10">
+      <div class="absolute top-10 left-10 w-72 h-72 bg-white rounded-full blur-3xl"></div>
+      <div class="absolute bottom-10 right-10 w-96 h-96 bg-white rounded-full blur-3xl"></div>
+    </div>
+    <div class="relative max-w-6xl mx-auto px-6 py-16 md:py-24">
+      <div class="text-sm font-medium text-emerald-200 mb-3">ReadTree UX Audit Report</div>
+      <h1 class="text-3xl md:text-5xl font-bold mb-4 leading-tight">행동과학 기반<br>UX 감사 보고서</h1>
+      <p class="text-lg md:text-xl text-blue-100 mb-2 max-w-2xl">"매일 쓸 것 같다던 그 기능, 왜 아무도 안 썼을까?"</p>
+      <p class="text-sm text-blue-200 mb-10">사용자의 말과 행동 불일치를 전제로 한 기능별 마찰 진단 및 개선안</p>
+
+      <!-- Stats Cards -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="bg-white/15 backdrop-blur-sm rounded-xl p-4 text-center border border-white/20">
+          <div class="text-3xl font-bold">24</div>
+          <div class="text-sm text-blue-200 mt-1">마찰 포인트</div>
+        </div>
+        <div class="bg-white/15 backdrop-blur-sm rounded-xl p-4 text-center border border-white/20">
+          <div class="text-3xl font-bold">32</div>
+          <div class="text-sm text-blue-200 mt-1">개선안</div>
+        </div>
+        <div class="bg-white/15 backdrop-blur-sm rounded-xl p-4 text-center border border-white/20">
+          <div class="text-3xl font-bold text-rose-300">2</div>
+          <div class="text-sm text-blue-200 mt-1">"안 쓸" 위험 기능</div>
+        </div>
+        <div class="bg-white/15 backdrop-blur-sm rounded-xl p-4 text-center border border-white/20">
+          <div class="text-3xl font-bold text-emerald-300">8</div>
+          <div class="text-sm text-blue-200 mt-1">즉시 적용 가능</div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Navigation -->
+  <nav class="sticky top-0 z-40 bg-white/95 dark:bg-slate-800/95 backdrop-blur-sm border-b border-slate-200 dark:border-slate-700 shadow-sm">
+    <div class="max-w-6xl mx-auto px-6">
+      <div class="flex gap-1 overflow-x-auto py-1 scrollbar-hide" id="mainNav">
+        <button class="nav-btn px-4 py-3 text-sm font-medium whitespace-nowrap rounded-t-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors" data-section="principles" onclick="showSection('principles')">
+          <span class="hidden sm:inline">5가지 원칙</span><span class="sm:hidden">원칙</span>
+        </button>
+        <button class="nav-btn px-4 py-3 text-sm font-medium whitespace-nowrap rounded-t-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors" data-section="diagnosis" onclick="showSection('diagnosis')">
+          <span class="hidden sm:inline">기능별 진단</span><span class="sm:hidden">진단</span>
+        </button>
+        <button class="nav-btn px-4 py-3 text-sm font-medium whitespace-nowrap rounded-t-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors" data-section="risk" onclick="showSection('risk')">
+          <span class="hidden sm:inline">위험도 분석</span><span class="sm:hidden">위험도</span>
+        </button>
+        <button class="nav-btn px-4 py-3 text-sm font-medium whitespace-nowrap rounded-t-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors" data-section="instrumentation" onclick="showSection('instrumentation')">
+          <span class="hidden sm:inline">계측 설계</span><span class="sm:hidden">계측</span>
+        </button>
+        <button class="nav-btn px-4 py-3 text-sm font-medium whitespace-nowrap rounded-t-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors" data-section="roadmap" onclick="showSection('roadmap')">
+          <span class="hidden sm:inline">실험 로드맵</span><span class="sm:hidden">로드맵</span>
+        </button>
+        <button class="nav-btn px-4 py-3 text-sm font-medium whitespace-nowrap rounded-t-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors" data-section="matrix" onclick="showSection('matrix')">
+          <span class="hidden sm:inline">우선순위</span><span class="sm:hidden">우선순위</span>
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <main class="max-w-6xl mx-auto px-6 py-10">
+
+    <!-- Section 1: 5가지 원칙 -->
+    <section id="principles" class="section-content mb-16">
+      <h2 class="text-2xl font-bold mb-2">분석 프레임워크</h2>
+      <p class="text-slate-500 dark:text-slate-400 mb-8">사용자의 말과 행동 불일치를 해석하는 5가지 행동과학 원칙</p>
+
+      <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+        <!-- Principle 1 -->
+        <div class="card-hover bg-white dark:bg-slate-800 rounded-2xl p-6 border-2 border-emerald-200 dark:border-emerald-800 shadow-sm">
+          <div class="w-12 h-12 bg-emerald-100 dark:bg-emerald-900 rounded-xl flex items-center justify-center mb-4">
+            <svg class="w-6 h-6 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+          </div>
+          <h3 class="font-bold text-lg mb-2 text-emerald-700 dark:text-emerald-400">최소 노력의 법칙</h3>
+          <p class="text-sm text-slate-600 dark:text-slate-400 mb-3">사용자는 가장 쉬운 경로를 선택한다. 단계가 하나만 추가되어도 이탈률이 급증한다.</p>
+          <div class="text-xs bg-emerald-50 dark:bg-emerald-950 p-3 rounded-lg text-emerald-700 dark:text-emerald-300">
+            <strong>ReadTree 적용:</strong> 기록 작성까지 몇 단계? 각 단계에서 판단을 요구하는가?
+          </div>
+        </div>
+
+        <!-- Principle 2 -->
+        <div class="card-hover bg-white dark:bg-slate-800 rounded-2xl p-6 border-2 border-amber-200 dark:border-amber-800 shadow-sm">
+          <div class="w-12 h-12 bg-amber-100 dark:bg-amber-900 rounded-xl flex items-center justify-center mb-4">
+            <svg class="w-6 h-6 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+          </div>
+          <h3 class="font-bold text-lg mb-2 text-amber-700 dark:text-amber-400">인지 부하 최소화</h3>
+          <p class="text-sm text-slate-600 dark:text-slate-400 mb-3">읽기, 판단, 기억, 비교의 비용을 피하려 한다. 정보가 많으면 아무것도 처리하지 않는다.</p>
+          <div class="text-xs bg-amber-50 dark:bg-amber-950 p-3 rounded-lg text-amber-700 dark:text-amber-300">
+            <strong>ReadTree 적용:</strong> 폼 필드 수, 선택지 개수, 화면 전환 횟수가 적절한가?
+          </div>
+        </div>
+
+        <!-- Principle 3 -->
+        <div class="card-hover bg-white dark:bg-slate-800 rounded-2xl p-6 border-2 border-blue-200 dark:border-blue-800 shadow-sm">
+          <div class="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-xl flex items-center justify-center mb-4">
+            <svg class="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+          </div>
+          <h3 class="font-bold text-lg mb-2 text-blue-700 dark:text-blue-400">기본값 효과</h3>
+          <p class="text-sm text-slate-600 dark:text-slate-400 mb-3">사람은 설정을 잘 바꾸지 않는다. 기본값이 곧 제품의 가장 강력한 추천이다.</p>
+          <div class="text-xs bg-blue-50 dark:bg-blue-950 p-3 rounded-lg text-blue-700 dark:text-blue-300">
+            <strong>ReadTree 적용:</strong> 온보딩 직후의 기본 상태가 실제 행동 패턴을 반영하는가?
+          </div>
+        </div>
+
+        <!-- Principle 4 -->
+        <div class="card-hover bg-white dark:bg-slate-800 rounded-2xl p-6 border-2 border-violet-200 dark:border-violet-800 shadow-sm">
+          <div class="w-12 h-12 bg-violet-100 dark:bg-violet-900 rounded-xl flex items-center justify-center mb-4">
+            <svg class="w-6 h-6 text-violet-600 dark:text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          </div>
+          <h3 class="font-bold text-lg mb-2 text-violet-700 dark:text-violet-400">현재 편향</h3>
+          <p class="text-sm text-slate-600 dark:text-slate-400 mb-3">먼 미래의 이득보다 지금의 귀찮음을 더 크게 느낀다. 보상이 늦으면 행동이 중단된다.</p>
+          <div class="text-xs bg-violet-50 dark:bg-violet-950 p-3 rounded-lg text-violet-700 dark:text-violet-300">
+            <strong>ReadTree 적용:</strong> 기록의 보상이 즉각적인가? 포인트/통계는 언제 체감되는가?
+          </div>
+        </div>
+
+        <!-- Principle 5 -->
+        <div class="card-hover bg-white dark:bg-slate-800 rounded-2xl p-6 border-2 border-rose-200 dark:border-rose-800 shadow-sm">
+          <div class="w-12 h-12 bg-rose-100 dark:bg-rose-900 rounded-xl flex items-center justify-center mb-4">
+            <svg class="w-6 h-6 text-rose-600 dark:text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+          </div>
+          <h3 class="font-bold text-lg mb-2 text-rose-700 dark:text-rose-400">손실회피</h3>
+          <p class="text-sm text-slate-600 dark:text-slate-400 mb-3">같은 사실도 표현에 따라 판단이 달라진다. 이득보다 손실 회피가 2배 강하다.</p>
+          <div class="text-xs bg-rose-50 dark:bg-rose-950 p-3 rounded-lg text-rose-700 dark:text-rose-300">
+            <strong>ReadTree 적용:</strong> "기록하면 포인트" vs "안 하면 스트릭 끊김" — 어느 쪽이 강한가?
+          </div>
+        </div>
+
+        <!-- Quote Card -->
+        <div class="card-hover bg-gradient-to-br from-slate-800 to-slate-900 dark:from-slate-700 dark:to-slate-800 rounded-2xl p-6 text-white shadow-sm flex flex-col justify-center">
+          <svg class="w-8 h-8 text-slate-500 mb-3" fill="currentColor" viewBox="0 0 24 24"><path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z"/></svg>
+          <p class="text-sm italic leading-relaxed text-slate-300">"사용자는 의지로 움직이는 존재가 아니라 <strong class="text-white">마찰과 기본값과 맥락</strong>에 반응하는 존재"</p>
+          <p class="text-xs text-slate-500 mt-3">— 김태길, 요즘IT</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 2: 기능별 진단 -->
+    <section id="diagnosis" class="section-content mb-16 hidden">
+      <h2 class="text-2xl font-bold mb-2">기능별 진단 및 개선안</h2>
+      <p class="text-slate-500 dark:text-slate-400 mb-8">8개 도메인 × 5가지 원칙 교차 분석</p>
+
+      <!-- Accordion Items -->
+      <div class="space-y-4">
+
+        <!-- 2.1 독서 기록 -->
+        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
+          <button class="accordion-toggle w-full px-6 py-5 flex items-center justify-between text-left hover:bg-slate-50 dark:hover:bg-slate-750 transition-colors" onclick="toggleAccordion(this)">
+            <div class="flex items-center gap-4">
+              <div class="w-10 h-10 bg-emerald-100 dark:bg-emerald-900 rounded-lg flex items-center justify-center text-lg">&#128221;</div>
+              <div>
+                <h3 class="font-bold text-lg">독서 기록 (Notes)</h3>
+                <p class="text-sm text-slate-500 dark:text-slate-400">핵심 루프 — 가장 중요한 분석 대상</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-3">
+              <span class="principle-badge bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300">최소 노력</span>
+              <span class="principle-badge bg-violet-100 dark:bg-violet-900 text-violet-700 dark:text-violet-300">현재 편향</span>
+              <svg class="w-5 h-5 text-slate-400 transition-transform accordion-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+            </div>
+          </button>
+          <div class="accordion-content">
+            <div class="px-6 pb-6 border-t border-slate-100 dark:border-slate-700 pt-5">
+              <div class="grid md:grid-cols-2 gap-6">
+                <div>
+                  <h4 class="font-semibold text-sm text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3">현재 마찰 포인트</h4>
+                  <div class="space-y-2">
+                    <div class="severity-high p-3 rounded-lg text-sm dark:text-slate-300">모드(인용/메모) 선택이 첫 단계 — <strong>인지 부하</strong></div>
+                    <div class="severity-high p-3 rounded-lg text-sm dark:text-slate-300">저장 후 보상이 텍스트 메시지뿐 — <strong>현재 편향</strong></div>
+                    <div class="severity-mid p-3 rounded-lg text-sm dark:text-slate-300">선택 필드가 보이면 "다 채워야 할 것 같은" 압박</div>
+                    <div class="severity-mid p-3 rounded-lg text-sm dark:text-slate-300">기록 직후 다음 행동 가이드 없음</div>
+                  </div>
+                  <h4 class="font-semibold text-sm text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3 mt-6">현재 사용자 여정</h4>
+                  <div class="flex flex-wrap items-center gap-2 text-xs">
+                    <span class="bg-slate-200 dark:bg-slate-700 px-3 py-1.5 rounded-full">모드 선택</span>
+                    <span class="text-slate-400">&rarr;</span>
+                    <span class="bg-slate-200 dark:bg-slate-700 px-3 py-1.5 rounded-full">책 선택</span>
+                    <span class="text-slate-400">&rarr;</span>
+                    <span class="bg-slate-200 dark:bg-slate-700 px-3 py-1.5 rounded-full">내용 입력</span>
+                    <span class="text-slate-400">&rarr;</span>
+                    <span class="bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 px-3 py-1.5 rounded-full font-medium">선택 필드 판단</span>
+                    <span class="text-slate-400">&rarr;</span>
+                    <span class="bg-slate-200 dark:bg-slate-700 px-3 py-1.5 rounded-full">저장</span>
+                    <span class="text-slate-400">&rarr;</span>
+                    <span class="bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 px-3 py-1.5 rounded-full font-medium">텍스트 피드백만</span>
+                  </div>
+                </div>
+                <div>
+                  <h4 class="font-semibold text-sm text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3">개선안</h4>
+                  <div class="space-y-3">
+                    <div class="bg-emerald-50 dark:bg-emerald-950 p-4 rounded-xl border border-emerald-200 dark:border-emerald-800">
+                      <div class="font-semibold text-emerald-700 dark:text-emerald-400 text-sm mb-1">"한 줄 메모" 울트라 라이트 모드</div>
+                      <p class="text-xs text-slate-600 dark:text-slate-400">텍스트 하나만 입력하면 저장. 타입 자동 "메모"</p>
+                    </div>
+                    <div class="bg-emerald-50 dark:bg-emerald-950 p-4 rounded-xl border border-emerald-200 dark:border-emerald-800">
+                      <div class="font-semibold text-emerald-700 dark:text-emerald-400 text-sm mb-1">기본 타입 "메모" 고정</div>
+                      <p class="text-xs text-slate-600 dark:text-slate-400">인용은 탭 전환으로 접근. 대부분의 사용자는 메모가 더 많음</p>
+                    </div>
+                    <div class="bg-emerald-50 dark:bg-emerald-950 p-4 rounded-xl border border-emerald-200 dark:border-emerald-800">
+                      <div class="font-semibold text-emerald-700 dark:text-emerald-400 text-sm mb-1">저장 직후 인라인 스트릭 표시</div>
+                      <p class="text-xs text-slate-600 dark:text-slate-400">"오늘 3번째 기록! 5일 연속" — 토스트/인라인 표시</p>
+                    </div>
+                    <div class="bg-emerald-50 dark:bg-emerald-950 p-4 rounded-xl border border-emerald-200 dark:border-emerald-800">
+                      <div class="font-semibold text-emerald-700 dark:text-emerald-400 text-sm mb-1">"나중에 정리하기" 패턴</div>
+                      <p class="text-xs text-slate-600 dark:text-slate-400">빠르게 저장 후 나중에 태그/페이지/분류 추가</p>
+                    </div>
+                  </div>
+                  <h4 class="font-semibold text-sm text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3 mt-6">개선 후 여정</h4>
+                  <div class="flex flex-wrap items-center gap-2 text-xs">
+                    <span class="bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300 px-3 py-1.5 rounded-full font-medium">내용 입력</span>
+                    <span class="text-slate-400">&rarr;</span>
+                    <span class="bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300 px-3 py-1.5 rounded-full font-medium">저장</span>
+                    <span class="text-slate-400">&rarr;</span>
+                    <span class="bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300 px-3 py-1.5 rounded-full font-medium">스트릭+포인트 피드백</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2.2 서재 관리 -->
+        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
+          <button class="accordion-toggle w-full px-6 py-5 flex items-center justify-between text-left hover:bg-slate-50 dark:hover:bg-slate-750 transition-colors" onclick="toggleAccordion(this)">
+            <div class="flex items-center gap-4">
+              <div class="w-10 h-10 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center text-lg">&#128218;</div>
+              <div>
+                <h3 class="font-bold text-lg">서재 관리 (Books)</h3>
+                <p class="text-sm text-slate-500 dark:text-slate-400">책 추가/검색, 서재 컬렉션, 진행률</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-3">
+              <span class="principle-badge bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300">기본값</span>
+              <span class="principle-badge bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300">최소 노력</span>
+              <svg class="w-5 h-5 text-slate-400 transition-transform accordion-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+            </div>
+          </button>
+          <div class="accordion-content">
+            <div class="px-6 pb-6 border-t border-slate-100 dark:border-slate-700 pt-5">
+              <div class="grid md:grid-cols-2 gap-6">
+                <div>
+                  <h4 class="font-semibold text-sm text-slate-500 uppercase tracking-wider mb-3">현재 마찰 포인트</h4>
+                  <div class="space-y-2">
+                    <div class="severity-high p-3 rounded-lg text-sm dark:text-slate-300">책 추가 시 별도 페이지(<code class="text-xs">/books/search</code>) 전환 필요</div>
+                    <div class="severity-mid p-3 rounded-lg text-sm dark:text-slate-300">상태/서가/페이지수 모두 수동 선택</div>
+                    <div class="severity-mid p-3 rounded-lg text-sm dark:text-slate-300">검색 결과에서 책 선택 후 추가 정보 입력 요구</div>
+                  </div>
+                </div>
+                <div>
+                  <h4 class="font-semibold text-sm text-slate-500 uppercase tracking-wider mb-3">개선안</h4>
+                  <div class="space-y-3">
+                    <div class="bg-blue-50 dark:bg-blue-950 p-4 rounded-xl border border-blue-200 dark:border-blue-800">
+                      <div class="font-semibold text-blue-700 dark:text-blue-400 text-sm">스마트 기본값</div>
+                      <p class="text-xs text-slate-600 dark:text-slate-400">상태=읽는 중, 서가=기본, 페이지수=API 자동</p>
+                    </div>
+                    <div class="bg-blue-50 dark:bg-blue-950 p-4 rounded-xl border border-blue-200 dark:border-blue-800">
+                      <div class="font-semibold text-blue-700 dark:text-blue-400 text-sm">대시보드 인라인 검색</div>
+                      <p class="text-xs text-slate-600 dark:text-slate-400">페이지 전환 없이 모달/시트로 책 추가</p>
+                    </div>
+                    <div class="bg-blue-50 dark:bg-blue-950 p-4 rounded-xl border border-blue-200 dark:border-blue-800">
+                      <div class="font-semibold text-blue-700 dark:text-blue-400 text-sm">"어제 어디까지?" 푸시형 입력</div>
+                      <p class="text-xs text-slate-600 dark:text-slate-400">진행률 업데이트를 대시보드에서 직접</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2.3 온보딩 -->
+        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
+          <button class="accordion-toggle w-full px-6 py-5 flex items-center justify-between text-left hover:bg-slate-50 dark:hover:bg-slate-750 transition-colors" onclick="toggleAccordion(this)">
+            <div class="flex items-center gap-4">
+              <div class="w-10 h-10 bg-violet-100 dark:bg-violet-900 rounded-lg flex items-center justify-center text-lg">&#128075;</div>
+              <div>
+                <h3 class="font-bold text-lg">온보딩 (Onboarding)</h3>
+                <p class="text-sm text-slate-500 dark:text-slate-400">첫 경험 설계, Endowed Progress</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-3">
+              <span class="principle-badge bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300">기본값</span>
+              <span class="principle-badge bg-rose-100 dark:bg-rose-900 text-rose-700 dark:text-rose-300">손실회피</span>
+              <svg class="w-5 h-5 text-slate-400 transition-transform accordion-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+            </div>
+          </button>
+          <div class="accordion-content">
+            <div class="px-6 pb-6 border-t border-slate-100 dark:border-slate-700 pt-5">
+              <div class="grid md:grid-cols-2 gap-6">
+                <div>
+                  <h4 class="font-semibold text-sm text-slate-500 uppercase tracking-wider mb-3">현재 마찰 포인트</h4>
+                  <div class="space-y-2">
+                    <div class="severity-high p-3 rounded-lg text-sm dark:text-slate-300">약관 동의 후 바로 빈 대시보드 도착</div>
+                    <div class="severity-high p-3 rounded-lg text-sm dark:text-slate-300">핵심 행동(첫 책 추가)까지 가이드 약함</div>
+                    <div class="severity-mid p-3 rounded-lg text-sm dark:text-slate-300">웰컴 보너스 200P가 시각적으로 눈에 안 띔</div>
+                    <div class="severity-mid p-3 rounded-lg text-sm dark:text-slate-300">체크리스트가 0/3에서 시작 (진전감 없음)</div>
+                  </div>
+                </div>
+                <div>
+                  <h4 class="font-semibold text-sm text-slate-500 uppercase tracking-wider mb-3">개선안</h4>
+                  <div class="space-y-3">
+                    <div class="bg-violet-50 dark:bg-violet-950 p-4 rounded-xl border border-violet-200 dark:border-violet-800">
+                      <div class="font-semibold text-violet-700 dark:text-violet-400 text-sm">Endowed Progress 강화</div>
+                      <p class="text-xs text-slate-600 dark:text-slate-400">5개 중 2개 완료 상태로 시작 (가입+약관 이미 완료)</p>
+                    </div>
+                    <div class="bg-violet-50 dark:bg-violet-950 p-4 rounded-xl border border-violet-200 dark:border-violet-800">
+                      <div class="font-semibold text-violet-700 dark:text-violet-400 text-sm">웰컴 보너스 시각적 폭발</div>
+                      <p class="text-xs text-slate-600 dark:text-slate-400">"200P 획득!" 애니메이션 + "AI 요약 2회 사용 가능"</p>
+                    </div>
+                    <div class="bg-violet-50 dark:bg-violet-950 p-4 rounded-xl border border-violet-200 dark:border-violet-800">
+                      <div class="font-semibold text-violet-700 dark:text-violet-400 text-sm">핵심 행동 즉시 유도</div>
+                      <p class="text-xs text-slate-600 dark:text-slate-400">"지금 읽고 있는 책이 있나요?" → 검색 → 1탭 추가</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2.4 게이미피케이션 -->
+        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
+          <button class="accordion-toggle w-full px-6 py-5 flex items-center justify-between text-left hover:bg-slate-50 dark:hover:bg-slate-750 transition-colors" onclick="toggleAccordion(this)">
+            <div class="flex items-center gap-4">
+              <div class="w-10 h-10 bg-rose-100 dark:bg-rose-900 rounded-lg flex items-center justify-center text-lg">&#127942;</div>
+              <div>
+                <h3 class="font-bold text-lg">게이미피케이션 (Points/Streak)</h3>
+                <p class="text-sm text-slate-500 dark:text-slate-400">포인트, 스트릭, 페르소나, 일일 미션</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-3">
+              <span class="principle-badge bg-violet-100 dark:bg-violet-900 text-violet-700 dark:text-violet-300">현재 편향</span>
+              <span class="principle-badge bg-rose-100 dark:bg-rose-900 text-rose-700 dark:text-rose-300">손실회피</span>
+              <svg class="w-5 h-5 text-slate-400 transition-transform accordion-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+            </div>
+          </button>
+          <div class="accordion-content">
+            <div class="px-6 pb-6 border-t border-slate-100 dark:border-slate-700 pt-5">
+              <div class="grid md:grid-cols-2 gap-6">
+                <div>
+                  <h4 class="font-semibold text-sm text-slate-500 uppercase tracking-wider mb-3">현재 마찰 포인트</h4>
+                  <div class="space-y-2">
+                    <div class="severity-high p-3 rounded-lg text-sm dark:text-slate-300">포인트 적립 15종이지만 소비처 3종만 — "쓸 데가 없는 포인트"</div>
+                    <div class="severity-high p-3 rounded-lg text-sm dark:text-slate-300">스트릭 끊겨도 "잃는 느낌"이 UI에 없음</div>
+                    <div class="severity-mid p-3 rounded-lg text-sm dark:text-slate-300">페르소나 진화 간격이 커서 변화 체감 불가</div>
+                  </div>
+                </div>
+                <div>
+                  <h4 class="font-semibold text-sm text-slate-500 uppercase tracking-wider mb-3">개선안</h4>
+                  <div class="space-y-3">
+                    <div class="bg-rose-50 dark:bg-rose-950 p-4 rounded-xl border border-rose-200 dark:border-rose-800">
+                      <div class="font-semibold text-rose-700 dark:text-rose-400 text-sm">스트릭 끊김 경고 프레이밍</div>
+                      <p class="text-xs text-slate-600 dark:text-slate-400">"7일 연속 기록이 오늘 끊깁니다" — 대시보드 상단 배너</p>
+                    </div>
+                    <div class="bg-rose-50 dark:bg-rose-950 p-4 rounded-xl border border-rose-200 dark:border-rose-800">
+                      <div class="font-semibold text-rose-700 dark:text-rose-400 text-sm">포인트 소비처 확장</div>
+                      <p class="text-xs text-slate-600 dark:text-slate-400">커스텀 테마, 리포트 디자인, 프로필 꾸미기 등</p>
+                    </div>
+                    <div class="bg-rose-50 dark:bg-rose-950 p-4 rounded-xl border border-rose-200 dark:border-rose-800">
+                      <div class="font-semibold text-rose-700 dark:text-rose-400 text-sm">페르소나 마이크로 진화</div>
+                      <p class="text-xs text-slate-600 dark:text-slate-400">레벨업 사이에도 경험치 바, 작은 외형 변화</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2.5 AI 기능 -->
+        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
+          <button class="accordion-toggle w-full px-6 py-5 flex items-center justify-between text-left hover:bg-slate-50 dark:hover:bg-slate-750 transition-colors" onclick="toggleAccordion(this)">
+            <div class="flex items-center gap-4">
+              <div class="w-10 h-10 bg-amber-100 dark:bg-amber-900 rounded-lg flex items-center justify-center text-lg">&#129302;</div>
+              <div>
+                <h3 class="font-bold text-lg">AI 기능 (Chat/OCR/Report)</h3>
+                <p class="text-sm text-slate-500 dark:text-slate-400">"말은 하지만 안 쓸" 대표 기능</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-3">
+              <span class="principle-badge bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 text-xs">위험 높음</span>
+              <svg class="w-5 h-5 text-slate-400 transition-transform accordion-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+            </div>
+          </button>
+          <div class="accordion-content">
+            <div class="px-6 pb-6 border-t border-slate-100 dark:border-slate-700 pt-5">
+              <div class="grid md:grid-cols-2 gap-6">
+                <div>
+                  <h4 class="font-semibold text-sm text-slate-500 uppercase tracking-wider mb-3">"안 쓸" 위험 요인</h4>
+                  <div class="space-y-2">
+                    <div class="severity-high p-3 rounded-lg text-sm dark:text-slate-300">별도 화면 이동 필요 — 진입 마찰</div>
+                    <div class="severity-high p-3 rounded-lg text-sm dark:text-slate-300">포인트 소비 — "아까워서" 안 씀</div>
+                    <div class="severity-mid p-3 rounded-lg text-sm dark:text-slate-300">"눌러봐야 뭐가 나올지 모름" — 가치 불확실</div>
+                  </div>
+                  <div class="mt-4 p-4 bg-slate-100 dark:bg-slate-700 rounded-xl">
+                    <div class="text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">예외: OCR은 안전</div>
+                    <p class="text-xs text-slate-600 dark:text-slate-400">사진→텍스트 변환은 즉각적 유틸리티가 명확. 위험 낮음.</p>
+                  </div>
+                </div>
+                <div>
+                  <h4 class="font-semibold text-sm text-slate-500 uppercase tracking-wider mb-3">개선안</h4>
+                  <div class="space-y-3">
+                    <div class="bg-amber-50 dark:bg-amber-950 p-4 rounded-xl border border-amber-200 dark:border-amber-800">
+                      <div class="font-semibold text-amber-700 dark:text-amber-400 text-sm">OCR 일일 3회 무료</div>
+                      <p class="text-xs text-slate-600 dark:text-slate-400">가장 즉각적 가치를 무료 티어에 포함</p>
+                    </div>
+                    <div class="bg-amber-50 dark:bg-amber-950 p-4 rounded-xl border border-amber-200 dark:border-amber-800">
+                      <div class="font-semibold text-amber-700 dark:text-amber-400 text-sm">AI 챗봇 → "독서 복습 퀴즈"</div>
+                      <p class="text-xs text-slate-600 dark:text-slate-400">수동적 기능을 능동적 습관으로 리프레이밍</p>
+                    </div>
+                    <div class="bg-amber-50 dark:bg-amber-950 p-4 rounded-xl border border-amber-200 dark:border-amber-800">
+                      <div class="font-semibold text-amber-700 dark:text-amber-400 text-sm">월간 리포트 자동 생성</div>
+                      <p class="text-xs text-slate-600 dark:text-slate-400">요청 없이 매월 1일 자동 생성 (기본값 효과)</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2.6 독서 모임 -->
+        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
+          <button class="accordion-toggle w-full px-6 py-5 flex items-center justify-between text-left hover:bg-slate-50 dark:hover:bg-slate-750 transition-colors" onclick="toggleAccordion(this)">
+            <div class="flex items-center gap-4">
+              <div class="w-10 h-10 bg-indigo-100 dark:bg-indigo-900 rounded-lg flex items-center justify-center text-lg">&#128101;</div>
+              <div>
+                <h3 class="font-bold text-lg">독서 모임 (Groups)</h3>
+                <p class="text-sm text-slate-500 dark:text-slate-400">"말은 하지만 안 쓸" 위험 높음</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-3">
+              <span class="principle-badge bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 text-xs">위험 높음</span>
+              <svg class="w-5 h-5 text-slate-400 transition-transform accordion-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+            </div>
+          </button>
+          <div class="accordion-content">
+            <div class="px-6 pb-6 border-t border-slate-100 dark:border-slate-700 pt-5">
+              <div class="grid md:grid-cols-2 gap-6">
+                <div>
+                  <h4 class="font-semibold text-sm text-slate-500 uppercase tracking-wider mb-3">구조적 문제</h4>
+                  <div class="space-y-2">
+                    <div class="severity-high p-3 rounded-lg text-sm dark:text-slate-300">생성→설정→초대→합류→공유까지 5단계+ 마찰</div>
+                    <div class="severity-high p-3 rounded-lg text-sm dark:text-slate-300">네트워크 효과 필요: 멤버 없으면 빈 방 경험</div>
+                    <div class="severity-mid p-3 rounded-lg text-sm dark:text-slate-300">"같이 읽으면 좋겠다"는 열망 vs 현실: 혼자가 편함</div>
+                  </div>
+                </div>
+                <div>
+                  <h4 class="font-semibold text-sm text-slate-500 uppercase tracking-wider mb-3">개선안: 마찰 제거 전략</h4>
+                  <div class="space-y-3">
+                    <div class="bg-indigo-50 dark:bg-indigo-950 p-4 rounded-xl border border-indigo-200 dark:border-indigo-800">
+                      <div class="font-semibold text-indigo-700 dark:text-indigo-400 text-sm">"공개 독서 기록" 기본 활성화</div>
+                      <p class="text-xs text-slate-600 dark:text-slate-400">모임 없이도 같은 책 읽는 사람의 기록 열람</p>
+                    </div>
+                    <div class="bg-indigo-50 dark:bg-indigo-950 p-4 rounded-xl border border-indigo-200 dark:border-indigo-800">
+                      <div class="font-semibold text-indigo-700 dark:text-indigo-400 text-sm">"이 책을 읽고 있는 N명"</div>
+                      <p class="text-xs text-slate-600 dark:text-slate-400">사회적 증거로 연결감 제공</p>
+                    </div>
+                    <div class="bg-indigo-50 dark:bg-indigo-950 p-4 rounded-xl border border-indigo-200 dark:border-indigo-800">
+                      <div class="font-semibold text-indigo-700 dark:text-indigo-400 text-sm">모임 → "같이 읽기" 리브랜딩</div>
+                      <p class="text-xs text-slate-600 dark:text-slate-400">무거운 "모임 생성"이 아닌, 가벼운 1탭 진입</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2.7 통계 -->
+        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
+          <button class="accordion-toggle w-full px-6 py-5 flex items-center justify-between text-left hover:bg-slate-50 dark:hover:bg-slate-750 transition-colors" onclick="toggleAccordion(this)">
+            <div class="flex items-center gap-4">
+              <div class="w-10 h-10 bg-cyan-100 dark:bg-cyan-900 rounded-lg flex items-center justify-center text-lg">&#128200;</div>
+              <div>
+                <h3 class="font-bold text-lg">통계/프로필 (Stats)</h3>
+                <p class="text-sm text-slate-500 dark:text-slate-400">지연 보상의 전형</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-3">
+              <span class="principle-badge bg-violet-100 dark:bg-violet-900 text-violet-700 dark:text-violet-300">현재 편향</span>
+              <svg class="w-5 h-5 text-slate-400 transition-transform accordion-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+            </div>
+          </button>
+          <div class="accordion-content">
+            <div class="px-6 pb-6 border-t border-slate-100 dark:border-slate-700 pt-5">
+              <div class="space-y-3">
+                <div class="bg-cyan-50 dark:bg-cyan-950 p-4 rounded-xl border border-cyan-200 dark:border-cyan-800">
+                  <div class="font-semibold text-cyan-700 dark:text-cyan-400 text-sm">마이크로 통계 상시 노출</div>
+                  <p class="text-xs text-slate-600 dark:text-slate-400">"이번 주 읽은 페이지: 47p", "오늘 기록: 2건" — 대시보드에서 바로</p>
+                </div>
+                <div class="bg-cyan-50 dark:bg-cyan-950 p-4 rounded-xl border border-cyan-200 dark:border-cyan-800">
+                  <div class="font-semibold text-cyan-700 dark:text-cyan-400 text-sm">비교 프레이밍 (손실회피)</div>
+                  <p class="text-xs text-slate-600 dark:text-slate-400">"지난주 대비 +20% 더 읽었어요" — 변화를 체감하게</p>
+                </div>
+                <div class="bg-cyan-50 dark:bg-cyan-950 p-4 rounded-xl border border-cyan-200 dark:border-cyan-800">
+                  <div class="font-semibold text-cyan-700 dark:text-cyan-400 text-sm">주간 리포트 자동 발송</div>
+                  <p class="text-xs text-slate-600 dark:text-slate-400">매주 월요일 "지난 주 독서 요약" 푸시/이메일</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2.8 구독 -->
+        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
+          <button class="accordion-toggle w-full px-6 py-5 flex items-center justify-between text-left hover:bg-slate-50 dark:hover:bg-slate-750 transition-colors" onclick="toggleAccordion(this)">
+            <div class="flex items-center gap-4">
+              <div class="w-10 h-10 bg-yellow-100 dark:bg-yellow-900 rounded-lg flex items-center justify-center text-lg">&#128176;</div>
+              <div>
+                <h3 class="font-bold text-lg">구독/결제 (Subscription)</h3>
+                <p class="text-sm text-slate-500 dark:text-slate-400">프레이밍과 Endowment Effect</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-3">
+              <span class="principle-badge bg-rose-100 dark:bg-rose-900 text-rose-700 dark:text-rose-300">손실회피</span>
+              <svg class="w-5 h-5 text-slate-400 transition-transform accordion-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+            </div>
+          </button>
+          <div class="accordion-content">
+            <div class="px-6 pb-6 border-t border-slate-100 dark:border-slate-700 pt-5">
+              <div class="space-y-3">
+                <div class="bg-yellow-50 dark:bg-yellow-950 p-4 rounded-xl border border-yellow-200 dark:border-yellow-800">
+                  <div class="font-semibold text-yellow-700 dark:text-yellow-400 text-sm">"3회 무료 체험" Endowment Effect</div>
+                  <p class="text-xs text-slate-600 dark:text-slate-400">프리미엄 기능을 먼저 써보게 하고, 체험 종료 후 구독 유도</p>
+                </div>
+                <div class="bg-yellow-50 dark:bg-yellow-950 p-4 rounded-xl border border-yellow-200 dark:border-yellow-800">
+                  <div class="font-semibold text-yellow-700 dark:text-yellow-400 text-sm">손실 프레이밍 전환</div>
+                  <p class="text-xs text-slate-600 dark:text-slate-400">"사세요" → "무료 플랜에서는 이 기능을 잃게 됩니다"</p>
+                </div>
+                <div class="bg-yellow-50 dark:bg-yellow-950 p-4 rounded-xl border border-yellow-200 dark:border-yellow-800">
+                  <div class="font-semibold text-yellow-700 dark:text-yellow-400 text-sm">카운트다운 + 사회적 증거</div>
+                  <p class="text-xs text-slate-600 dark:text-slate-400">"체험 종료까지 N일" + "이번 달 N명이 업그레이드"</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 3: 위험도 분석 -->
+    <section id="risk" class="section-content mb-16 hidden">
+      <h2 class="text-2xl font-bold mb-2">위험도 분석</h2>
+      <p class="text-slate-500 dark:text-slate-400 mb-8">"말은 하지만 안 쓸 기능" — 사용자 발화 vs 실제 행동 예측</p>
+
+      <div class="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm border border-slate-200 dark:border-slate-700 mb-8">
+        <canvas id="riskChart" height="300"></canvas>
+      </div>
+
+      <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div class="bg-white dark:bg-slate-800 rounded-xl p-5 border-l-4 border-red-500 shadow-sm">
+          <div class="flex items-center justify-between mb-2">
+            <h4 class="font-bold text-red-600 dark:text-red-400">AI 챗봇</h4>
+            <span class="text-xs bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 px-2 py-1 rounded-full font-semibold">위험 높음</span>
+          </div>
+          <p class="text-sm text-slate-600 dark:text-slate-400">"AI로 책 토론하면 좋겠다" → 1-2회 시도 후 방치</p>
+          <p class="text-xs text-slate-500 dark:text-slate-500 mt-2">포인트 소비 + 별도 진입 + 즉각 가치 불명확</p>
+        </div>
+        <div class="bg-white dark:bg-slate-800 rounded-xl p-5 border-l-4 border-red-500 shadow-sm">
+          <div class="flex items-center justify-between mb-2">
+            <h4 class="font-bold text-red-600 dark:text-red-400">독서 모임</h4>
+            <span class="text-xs bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 px-2 py-1 rounded-full font-semibold">위험 높음</span>
+          </div>
+          <p class="text-sm text-slate-600 dark:text-slate-400">"같이 읽으면 동기부여" → 그룹 생성만 하고 방치</p>
+          <p class="text-xs text-slate-500 dark:text-slate-500 mt-2">네트워크 효과 필요 + 진입 마찰 + 유지 비용</p>
+        </div>
+        <div class="bg-white dark:bg-slate-800 rounded-xl p-5 border-l-4 border-amber-500 shadow-sm">
+          <div class="flex items-center justify-between mb-2">
+            <h4 class="font-bold text-amber-600 dark:text-amber-400">AI 리포트</h4>
+            <span class="text-xs bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300 px-2 py-1 rounded-full font-semibold">중간</span>
+          </div>
+          <p class="text-sm text-slate-600 dark:text-slate-400">"분석 받아보고 싶다" → 한 번 생성 후 재사용 낮음</p>
+          <p class="text-xs text-slate-500 dark:text-slate-500 mt-2">데이터 축적 필요 + 반복 가치 불확실</p>
+        </div>
+        <div class="bg-white dark:bg-slate-800 rounded-xl p-5 border-l-4 border-amber-500 shadow-sm">
+          <div class="flex items-center justify-between mb-2">
+            <h4 class="font-bold text-amber-600 dark:text-amber-400">페르소나</h4>
+            <span class="text-xs bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300 px-2 py-1 rounded-full font-semibold">중간</span>
+          </div>
+          <p class="text-sm text-slate-600 dark:text-slate-400">"재미있을 것 같다" → 변화 없으면 무관심</p>
+          <p class="text-xs text-slate-500 dark:text-slate-500 mt-2">진화 간격이 크면 관심 저하</p>
+        </div>
+        <div class="bg-white dark:bg-slate-800 rounded-xl p-5 border-l-4 border-green-500 shadow-sm">
+          <div class="flex items-center justify-between mb-2">
+            <h4 class="font-bold text-green-600 dark:text-green-400">자유 노트</h4>
+            <span class="text-xs bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 px-2 py-1 rounded-full font-semibold">낮음</span>
+          </div>
+          <p class="text-sm text-slate-600 dark:text-slate-400">마찰 낮고 즉각적 가치 있음</p>
+        </div>
+        <div class="bg-white dark:bg-slate-800 rounded-xl p-5 border-l-4 border-green-500 shadow-sm">
+          <div class="flex items-center justify-between mb-2">
+            <h4 class="font-bold text-green-600 dark:text-green-400">OCR</h4>
+            <span class="text-xs bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 px-2 py-1 rounded-full font-semibold">낮음</span>
+          </div>
+          <p class="text-sm text-slate-600 dark:text-slate-400">즉각적 유틸리티가 명확</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 4: 계측 설계 -->
+    <section id="instrumentation" class="section-content mb-16 hidden">
+      <h2 class="text-2xl font-bold mb-2">계측(Instrumentation) 설계</h2>
+      <p class="text-slate-500 dark:text-slate-400 mb-8">"행동 데이터는 자연 발생하지 않는다. 정의해야 한다."</p>
+
+      <!-- 3-Metric Framework -->
+      <div class="grid md:grid-cols-3 gap-4 mb-8">
+        <div class="bg-blue-50 dark:bg-blue-950 rounded-2xl p-6 border border-blue-200 dark:border-blue-800 text-center">
+          <div class="text-3xl mb-2">&#127919;</div>
+          <h4 class="font-bold text-blue-700 dark:text-blue-400 mb-1">채택률 (Adoption)</h4>
+          <p class="text-xs text-slate-600 dark:text-slate-400">7일 내 기능 첫 사용 비율</p>
+          <p class="text-xs text-blue-600 dark:text-blue-400 mt-2 font-medium">→ 진입 장벽 측정</p>
+        </div>
+        <div class="bg-violet-50 dark:bg-violet-950 rounded-2xl p-6 border border-violet-200 dark:border-violet-800 text-center">
+          <div class="text-3xl mb-2">&#128260;</div>
+          <h4 class="font-bold text-violet-700 dark:text-violet-400 mb-1">습관화 (Retention)</h4>
+          <p class="text-xs text-slate-600 dark:text-slate-400">D7/D14/D30 반복 사용률</p>
+          <p class="text-xs text-violet-600 dark:text-violet-400 mt-2 font-medium">→ 지속 가치 측정</p>
+        </div>
+        <div class="bg-emerald-50 dark:bg-emerald-950 rounded-2xl p-6 border border-emerald-200 dark:border-emerald-800 text-center">
+          <div class="text-3xl mb-2">&#128640;</div>
+          <h4 class="font-bold text-emerald-700 dark:text-emerald-400 mb-1">임팩트 (Impact)</h4>
+          <p class="text-xs text-slate-600 dark:text-slate-400">핵심 지표 변화</p>
+          <p class="text-xs text-emerald-600 dark:text-emerald-400 mt-2 font-medium">→ 비즈니스 가치 측정</p>
+        </div>
+      </div>
+
+      <!-- Interpretation Matrix -->
+      <div class="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm border border-slate-200 dark:border-slate-700 mb-8">
+        <h4 class="font-bold mb-4">교차검증 해석 매트릭스</h4>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="border-b border-slate-200 dark:border-slate-700">
+                <th class="text-left py-3 px-4 font-semibold text-slate-500">패턴</th>
+                <th class="text-left py-3 px-4 font-semibold text-slate-500">해석</th>
+                <th class="text-left py-3 px-4 font-semibold text-slate-500">액션</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="border-b border-slate-100 dark:border-slate-700">
+                <td class="py-3 px-4"><span class="text-red-500">채택 낮음</span> + <span class="text-green-500">유지 높음</span></td>
+                <td class="py-3 px-4">UX가 진입을 어렵게 만듦</td>
+                <td class="py-3 px-4 font-medium">온보딩/발견성 개선</td>
+              </tr>
+              <tr class="border-b border-slate-100 dark:border-slate-700">
+                <td class="py-3 px-4"><span class="text-green-500">채택 높음</span> + <span class="text-red-500">유지 낮음</span></td>
+                <td class="py-3 px-4">가치 전달 실패</td>
+                <td class="py-3 px-4 font-medium">콘텐츠/품질 개선</td>
+              </tr>
+              <tr>
+                <td class="py-3 px-4"><span class="text-green-500">채택+유지 높음</span> + <span class="text-red-500">임팩트 낮음</span></td>
+                <td class="py-3 px-4">핵심 루프와 연결 부족</td>
+                <td class="py-3 px-4 font-medium">핵심 행동과 연결</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Event Table -->
+      <div class="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm border border-slate-200 dark:border-slate-700">
+        <h4 class="font-bold mb-4">핵심 이벤트 목록</h4>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="border-b-2 border-slate-200 dark:border-slate-700">
+                <th class="text-left py-3 px-4 font-semibold text-slate-500">도메인</th>
+                <th class="text-left py-3 px-4 font-semibold text-slate-500">이벤트</th>
+                <th class="text-left py-3 px-4 font-semibold text-slate-500">속성</th>
+                <th class="text-left py-3 px-4 font-semibold text-slate-500">측정 대상</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
+              <tr><td class="py-2.5 px-4 font-medium">기록</td><td class="py-2.5 px-4"><code class="text-xs bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded">note_created</code></td><td class="py-2.5 px-4 text-xs">type, duration_ms, field_count</td><td class="py-2.5 px-4 text-xs">완료율/마찰</td></tr>
+              <tr><td class="py-2.5 px-4 font-medium">기록</td><td class="py-2.5 px-4"><code class="text-xs bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded">note_abandoned</code></td><td class="py-2.5 px-4 text-xs">step, duration_ms</td><td class="py-2.5 px-4 text-xs">이탈 지점</td></tr>
+              <tr><td class="py-2.5 px-4 font-medium">서재</td><td class="py-2.5 px-4"><code class="text-xs bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded">book_added</code></td><td class="py-2.5 px-4 text-xs">source, time_to_add_ms</td><td class="py-2.5 px-4 text-xs">추가 마찰</td></tr>
+              <tr><td class="py-2.5 px-4 font-medium">스트릭</td><td class="py-2.5 px-4"><code class="text-xs bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded">streak_warning_acted</code></td><td class="py-2.5 px-4 text-xs">action</td><td class="py-2.5 px-4 text-xs">행동 전환</td></tr>
+              <tr><td class="py-2.5 px-4 font-medium">AI</td><td class="py-2.5 px-4"><code class="text-xs bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded">ai_feature_used</code></td><td class="py-2.5 px-4 text-xs">type, points_spent</td><td class="py-2.5 px-4 text-xs">사용 패턴</td></tr>
+              <tr><td class="py-2.5 px-4 font-medium">모임</td><td class="py-2.5 px-4"><code class="text-xs bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded">group_note_shared</code></td><td class="py-2.5 px-4 text-xs">group_size</td><td class="py-2.5 px-4 text-xs">활성도</td></tr>
+              <tr><td class="py-2.5 px-4 font-medium">구독</td><td class="py-2.5 px-4"><code class="text-xs bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded">subscription_converted</code></td><td class="py-2.5 px-4 text-xs">plan, trigger</td><td class="py-2.5 px-4 text-xs">전환 경로</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 5: 실험 로드맵 -->
+    <section id="roadmap" class="section-content mb-16 hidden">
+      <h2 class="text-2xl font-bold mb-2">실험 로드맵</h2>
+      <p class="text-slate-500 dark:text-slate-400 mb-8">"관찰 = 상관관계, 인터뷰 = 해석, 실험 = 인과"</p>
+
+      <div class="space-y-8">
+        <!-- Phase 1 -->
+        <div class="relative">
+          <div class="flex items-center gap-3 mb-4">
+            <div class="w-10 h-10 bg-emerald-500 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg">1</div>
+            <div>
+              <h3 class="font-bold text-lg">Phase 1: 즉시 적용 <span class="ml-2 px-2 py-0.5 bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300 text-xs font-semibold rounded-full">완료 2026-03-24</span></h3>
+              <p class="text-sm text-slate-500 dark:text-slate-400">코드 변경 최소, 기본값/프레이밍 조정 — 8개 항목 모두 적용</p>
+            </div>
+          </div>
+          <div class="ml-5 pl-8 border-l-2 border-emerald-200 dark:border-emerald-800 space-y-3">
+            <div class="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-slate-700 flex items-center justify-between">
+              <div>
+                <div class="font-medium text-sm">노트 폼 기본 타입 "메모" 설정</div>
+                <div class="text-xs text-slate-500 dark:text-slate-400 mt-0.5"><code>quick-note.tsx</code></div>
+              </div>
+              <span class="text-xs bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300 px-2 py-1 rounded-full">+15% 완료율</span>
+            </div>
+            <div class="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-slate-700 flex items-center justify-between">
+              <div>
+                <div class="font-medium text-sm">스트릭 끊김 경고 대시보드 상단 이동</div>
+                <div class="text-xs text-slate-500 dark:text-slate-400 mt-0.5"><code>weekly-progress-bar.tsx</code></div>
+              </div>
+              <span class="text-xs bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300 px-2 py-1 rounded-full">+20% 유지율</span>
+            </div>
+            <div class="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-slate-700 flex items-center justify-between">
+              <div>
+                <div class="font-medium text-sm">온보딩 체크리스트 Endowed Progress (2/5 완료)</div>
+                <div class="text-xs text-slate-500 dark:text-slate-400 mt-0.5"><code>onboarding-checklist.tsx</code></div>
+              </div>
+              <span class="text-xs bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300 px-2 py-1 rounded-full">+25% 완료율</span>
+            </div>
+            <div class="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-slate-700 flex items-center justify-between">
+              <div>
+                <div class="font-medium text-sm">책 추가 기본 상태 "읽는 중"</div>
+                <div class="text-xs text-slate-500 dark:text-slate-400 mt-0.5"><code>book-status-selector.tsx</code></div>
+              </div>
+              <span class="text-xs bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300 px-2 py-1 rounded-full">+10% 완료율</span>
+            </div>
+            <div class="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-slate-700 flex items-center justify-between">
+              <div>
+                <div class="font-medium text-sm">웰컴 보너스 시각적 강조</div>
+                <div class="text-xs text-slate-500 dark:text-slate-400 mt-0.5"><code>home-hero-section.tsx</code></div>
+              </div>
+              <span class="text-xs bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300 px-2 py-1 rounded-full">+15% 전환율</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Phase 2 -->
+        <div class="relative">
+          <div class="flex items-center gap-3 mb-4">
+            <div class="w-10 h-10 bg-violet-500 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg">2</div>
+            <div>
+              <h3 class="font-bold text-lg">Phase 2: 1-2주</h3>
+              <p class="text-sm text-slate-500 dark:text-slate-400">중간 규모 기능 추가/변경</p>
+            </div>
+          </div>
+          <div class="ml-5 pl-8 border-l-2 border-violet-200 dark:border-violet-800 space-y-3">
+            <div class="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-slate-700 flex items-center justify-between">
+              <div>
+                <div class="font-medium text-sm">"한 줄 메모" 울트라 라이트 모드</div>
+                <div class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">텍스트 입력 → 저장, 2단계만</div>
+              </div>
+              <span class="text-xs bg-violet-100 dark:bg-violet-900 text-violet-700 dark:text-violet-300 px-2 py-1 rounded-full">+30% 빈도</span>
+            </div>
+            <div class="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-slate-700 flex items-center justify-between">
+              <div>
+                <div class="font-medium text-sm">OCR 일일 3회 무료 티어</div>
+                <div class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">포인트 소비 없이 기본 제공</div>
+              </div>
+              <span class="text-xs bg-violet-100 dark:bg-violet-900 text-violet-700 dark:text-violet-300 px-2 py-1 rounded-full">+50% 사용률</span>
+            </div>
+            <div class="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-slate-700 flex items-center justify-between">
+              <div>
+                <div class="font-medium text-sm">일일 미션 손실회피 프레이밍</div>
+                <div class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">"미션 보상이 사라집니다" 프레이밍</div>
+              </div>
+              <span class="text-xs bg-violet-100 dark:bg-violet-900 text-violet-700 dark:text-violet-300 px-2 py-1 rounded-full">+20% 완료율</span>
+            </div>
+            <div class="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-slate-700 flex items-center justify-between">
+              <div>
+                <div class="font-medium text-sm">대시보드 마이크로 통계 상시 노출</div>
+                <div class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">"이번 주 47p 읽음" 등 즉각 수치</div>
+              </div>
+              <span class="text-xs bg-violet-100 dark:bg-violet-900 text-violet-700 dark:text-violet-300 px-2 py-1 rounded-full">+15% 재방문</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Phase 3 -->
+        <div class="relative">
+          <div class="flex items-center gap-3 mb-4">
+            <div class="w-10 h-10 bg-rose-500 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg">3</div>
+            <div>
+              <h3 class="font-bold text-lg">Phase 3: 1개월</h3>
+              <p class="text-sm text-slate-500 dark:text-slate-400">대규모 기능 변경 및 리프레이밍</p>
+            </div>
+          </div>
+          <div class="ml-5 pl-8 border-l-2 border-rose-200 dark:border-rose-800 space-y-3">
+            <div class="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-slate-700 flex items-center justify-between">
+              <div>
+                <div class="font-medium text-sm">월간 리포트 자동 생성</div>
+                <div class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">매월 1일 AI 기반 독서 분석 자동 제공</div>
+              </div>
+              <span class="text-xs bg-rose-100 dark:bg-rose-900 text-rose-700 dark:text-rose-300 px-2 py-1 rounded-full">+40% 인지도</span>
+            </div>
+            <div class="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-slate-700 flex items-center justify-between">
+              <div>
+                <div class="font-medium text-sm">"이 책을 읽고 있는 N명" 소셜 증거</div>
+                <div class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">책 상세 페이지에 사회적 연결감 제공</div>
+              </div>
+              <span class="text-xs bg-rose-100 dark:bg-rose-900 text-rose-700 dark:text-rose-300 px-2 py-1 rounded-full">+20% 공개율</span>
+            </div>
+            <div class="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-slate-700 flex items-center justify-between">
+              <div>
+                <div class="font-medium text-sm">AI 챗봇 → "독서 복습 퀴즈" 리프레이밍</div>
+                <div class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">수동적 기능을 능동적 학습 습관으로</div>
+              </div>
+              <span class="text-xs bg-rose-100 dark:bg-rose-900 text-rose-700 dark:text-rose-300 px-2 py-1 rounded-full">+25% 반복사용</span>
+            </div>
+            <div class="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-slate-700 flex items-center justify-between">
+              <div>
+                <div class="font-medium text-sm">프리미엄 3회 무료 체험 + 카운트다운</div>
+                <div class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Endowment Effect + 손실회피 조합</div>
+              </div>
+              <span class="text-xs bg-rose-100 dark:bg-rose-900 text-rose-700 dark:text-rose-300 px-2 py-1 rounded-full">+15% 전환율</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 6: 우선순위 매트릭스 -->
+    <section id="matrix" class="section-content mb-16 hidden">
+      <h2 class="text-2xl font-bold mb-2">우선순위 매트릭스</h2>
+      <p class="text-slate-500 dark:text-slate-400 mb-8">영향력 x 구현 난이도 — Quick Wins에 집중</p>
+
+      <div class="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm border border-slate-200 dark:border-slate-700 mb-8">
+        <canvas id="priorityChart" height="350"></canvas>
+      </div>
+
+      <!-- Quick Wins -->
+      <div class="bg-emerald-50 dark:bg-emerald-950 rounded-2xl p-6 border-2 border-emerald-300 dark:border-emerald-700">
+        <h3 class="font-bold text-lg text-emerald-700 dark:text-emerald-400 mb-4">Quick Wins — 즉시 실행 추천</h3>
+        <p class="text-sm text-slate-600 dark:text-slate-400 mb-4">높은 영향력 + 낮은 구현 난이도</p>
+        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div class="bg-white dark:bg-slate-800 rounded-xl p-4 border border-emerald-200 dark:border-emerald-800">
+            <div class="text-xs text-emerald-600 dark:text-emerald-400 font-semibold mb-1">#1 기본값</div>
+            <div class="font-medium text-sm">노트 기본 타입 "메모"</div>
+          </div>
+          <div class="bg-white dark:bg-slate-800 rounded-xl p-4 border border-emerald-200 dark:border-emerald-800">
+            <div class="text-xs text-emerald-600 dark:text-emerald-400 font-semibold mb-1">#2 손실회피</div>
+            <div class="font-medium text-sm">스트릭 끊김 경고 프레이밍</div>
+          </div>
+          <div class="bg-white dark:bg-slate-800 rounded-xl p-4 border border-emerald-200 dark:border-emerald-800">
+            <div class="text-xs text-emerald-600 dark:text-emerald-400 font-semibold mb-1">#3 진전감</div>
+            <div class="font-medium text-sm">온보딩 Endowed Progress</div>
+          </div>
+          <div class="bg-white dark:bg-slate-800 rounded-xl p-4 border border-emerald-200 dark:border-emerald-800">
+            <div class="text-xs text-emerald-600 dark:text-emerald-400 font-semibold mb-1">#4 기본값</div>
+            <div class="font-medium text-sm">책 추가 기본 "읽는 중"</div>
+          </div>
+          <div class="bg-white dark:bg-slate-800 rounded-xl p-4 border border-emerald-200 dark:border-emerald-800">
+            <div class="text-xs text-emerald-600 dark:text-emerald-400 font-semibold mb-1">#5 즉각 보상</div>
+            <div class="font-medium text-sm">웰컴 보너스 시각 강조</div>
+          </div>
+          <div class="bg-white dark:bg-slate-800 rounded-xl p-4 border border-emerald-200 dark:border-emerald-800">
+            <div class="text-xs text-emerald-600 dark:text-emerald-400 font-semibold mb-1">#6 즉각 피드백</div>
+            <div class="font-medium text-sm">저장 후 인라인 스트릭 표시</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer Quote -->
+      <div class="mt-12 text-center py-8 border-t border-slate-200 dark:border-slate-700">
+        <blockquote class="text-lg italic text-slate-500 dark:text-slate-400 max-w-2xl mx-auto">
+          "증언만 믿지도, CCTV만 맹신하지도 않기.<br>같은 사건의 다른 시점으로 보고 간극을 메우기."
+        </blockquote>
+        <p class="text-sm text-slate-400 dark:text-slate-500 mt-3">— 단서(발화) → 가설 → 계측 → 관찰 → 교차검증 → 해석 → 실험 → 인과 확인</p>
+        <p class="text-xs text-slate-300 dark:text-slate-600 mt-6">ReadTree UX Audit Report | 2026-03-24 | Based on "매일 쓸 것 같다던 그 기능, 왜 아무도 안 썼을까?" by 김태길</p>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    // Dark Mode
+    const darkToggle = document.getElementById('darkToggle');
+    if (localStorage.getItem('darkMode') === 'true' || (!localStorage.getItem('darkMode') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+      document.documentElement.classList.add('dark');
+    }
+    darkToggle.addEventListener('click', () => {
+      document.documentElement.classList.toggle('dark');
+      localStorage.setItem('darkMode', document.documentElement.classList.contains('dark'));
+    });
+
+    // Section Navigation
+    function showSection(id) {
+      document.querySelectorAll('.section-content').forEach(s => s.classList.add('hidden'));
+      document.getElementById(id).classList.remove('hidden');
+      document.querySelectorAll('.nav-btn').forEach(b => {
+        b.classList.remove('tab-active', 'text-blue-600', 'dark:text-blue-400', 'border-blue-600');
+        b.classList.add('text-slate-600', 'dark:text-slate-400');
+      });
+      const activeBtn = document.querySelector(`[data-section="${id}"]`);
+      activeBtn.classList.add('tab-active', 'text-blue-600', 'dark:text-blue-400', 'border-blue-600');
+      activeBtn.classList.remove('text-slate-600', 'dark:text-slate-400');
+      // Re-render charts if needed
+      if (id === 'risk') renderRiskChart();
+      if (id === 'matrix') renderPriorityChart();
+    }
+    // Init first section
+    showSection('principles');
+
+    // Accordion
+    function toggleAccordion(btn) {
+      const content = btn.nextElementSibling;
+      const arrow = btn.querySelector('.accordion-arrow');
+      content.classList.toggle('open');
+      arrow.style.transform = content.classList.contains('open') ? 'rotate(180deg)' : 'rotate(0deg)';
+    }
+
+    // Charts
+    let riskChartInstance = null;
+    let priorityChartInstance = null;
+
+    function renderRiskChart() {
+      if (riskChartInstance) riskChartInstance.destroy();
+      const ctx = document.getElementById('riskChart').getContext('2d');
+      const isDark = document.documentElement.classList.contains('dark');
+      const textColor = isDark ? '#94a3b8' : '#64748b';
+      const gridColor = isDark ? '#334155' : '#e2e8f0';
+
+      riskChartInstance = new Chart(ctx, {
+        type: 'bubble',
+        data: {
+          datasets: [{
+            label: '기능별 위험도',
+            data: [
+              { x: 85, y: 20, r: 18, label: 'AI 챗봇' },
+              { x: 80, y: 15, r: 20, label: '독서 모임' },
+              { x: 70, y: 40, r: 14, label: 'AI 리포트' },
+              { x: 65, y: 45, r: 10, label: '페르소나' },
+              { x: 50, y: 75, r: 8, label: '자유 노트' },
+              { x: 60, y: 80, r: 10, label: 'OCR' },
+              { x: 75, y: 70, r: 12, label: '서재 관리' },
+            ],
+            backgroundColor: [
+              'rgba(239,68,68,0.6)', 'rgba(239,68,68,0.6)',
+              'rgba(245,158,11,0.6)', 'rgba(245,158,11,0.6)',
+              'rgba(34,197,94,0.6)', 'rgba(34,197,94,0.6)', 'rgba(34,197,94,0.6)'
+            ],
+            borderColor: [
+              '#ef4444', '#ef4444', '#f59e0b', '#f59e0b', '#22c55e', '#22c55e', '#22c55e'
+            ],
+            borderWidth: 2
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: (ctx) => {
+                  const d = ctx.raw;
+                  return `${d.label} — 발화 ${d.x}%, 실사용 ${d.y}%`;
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              title: { display: true, text: '사용자 "쓰겠다" 발화 확률 (%)', color: textColor },
+              min: 30, max: 100,
+              grid: { color: gridColor },
+              ticks: { color: textColor }
+            },
+            y: {
+              title: { display: true, text: '실제 사용 확률 (%)', color: textColor },
+              min: 0, max: 100,
+              grid: { color: gridColor },
+              ticks: { color: textColor }
+            }
+          }
+        }
+      });
+    }
+
+    function renderPriorityChart() {
+      if (priorityChartInstance) priorityChartInstance.destroy();
+      const ctx = document.getElementById('priorityChart').getContext('2d');
+      const isDark = document.documentElement.classList.contains('dark');
+      const textColor = isDark ? '#94a3b8' : '#64748b';
+      const gridColor = isDark ? '#334155' : '#e2e8f0';
+
+      priorityChartInstance = new Chart(ctx, {
+        type: 'bubble',
+        data: {
+          datasets: [{
+            label: 'Quick Wins',
+            data: [
+              { x: 15, y: 80, r: 14, label: '노트 기본값' },
+              { x: 20, y: 85, r: 16, label: '스트릭 프레이밍' },
+              { x: 25, y: 75, r: 12, label: '온보딩 개선' },
+              { x: 10, y: 65, r: 10, label: '책 추가 기본값' },
+              { x: 20, y: 70, r: 11, label: '웰컴보너스 강조' },
+            ],
+            backgroundColor: 'rgba(16,185,129,0.6)',
+            borderColor: '#10b981',
+            borderWidth: 2
+          }, {
+            label: '중요하지만 난이도 높음',
+            data: [
+              { x: 55, y: 90, r: 18, label: '한줄 메모 모드' },
+              { x: 50, y: 75, r: 15, label: 'OCR 무료 티어' },
+              { x: 70, y: 85, r: 16, label: '월간 자동 리포트' },
+              { x: 65, y: 70, r: 14, label: '복습 퀴즈' },
+            ],
+            backgroundColor: 'rgba(139,92,246,0.6)',
+            borderColor: '#8b5cf6',
+            borderWidth: 2
+          }, {
+            label: '장기 과제',
+            data: [
+              { x: 80, y: 65, r: 17, label: '소셜 증거' },
+              { x: 75, y: 55, r: 13, label: '프리미엄 체험' },
+              { x: 85, y: 60, r: 15, label: '페르소나 진화' },
+            ],
+            backgroundColor: 'rgba(244,63,94,0.6)',
+            borderColor: '#f43f5e',
+            borderWidth: 2
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              labels: { color: textColor, padding: 16 }
+            },
+            tooltip: {
+              callbacks: {
+                label: (ctx) => {
+                  const d = ctx.raw;
+                  return `${d.label} — 난이도 ${d.x}, 영향력 ${d.y}`;
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              title: { display: true, text: '구현 난이도 →', color: textColor },
+              min: 0, max: 100,
+              grid: { color: gridColor },
+              ticks: { color: textColor }
+            },
+            y: {
+              title: { display: true, text: '영향력 →', color: textColor },
+              min: 40, max: 100,
+              grid: { color: gridColor },
+              ticks: { color: textColor }
+            }
+          }
+        }
+      });
+    }
+
+    // Scroll reveal
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+    }, { threshold: 0.1 });
+    document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+  </script>
+
+</body>
+</html>

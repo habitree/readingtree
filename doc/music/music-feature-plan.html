@@ -1,0 +1,1775 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ReadingTree 클래식 음악 배경음악 기능 기획서</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --surface: #1e293b;
+      --surface2: #334155;
+      --border: #475569;
+      --text: #e2e8f0;
+      --text-muted: #94a3b8;
+      --accent: #38bdf8;
+      --accent2: #818cf8;
+      --red: #f87171;
+      --red-bg: rgba(248,113,113,0.1);
+      --orange: #fb923c;
+      --orange-bg: rgba(251,146,60,0.1);
+      --yellow: #facc15;
+      --yellow-bg: rgba(250,204,21,0.1);
+      --green: #4ade80;
+      --green-bg: rgba(74,222,128,0.1);
+      --blue: #60a5fa;
+      --blue-bg: rgba(96,165,250,0.1);
+      --purple: #a78bfa;
+      --purple-bg: rgba(167,139,250,0.1);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+      padding: 0;
+    }
+
+    /* Hero */
+    .hero {
+      background: linear-gradient(135deg, #1e293b 0%, #0f172a 50%, #1e1b4b 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 3rem 2rem;
+      text-align: center;
+    }
+    .hero-badge {
+      display: inline-block;
+      background: rgba(167,139,250,0.15);
+      color: var(--purple);
+      padding: 0.35rem 1rem;
+      border-radius: 100px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      margin-bottom: 1rem;
+      border: 1px solid rgba(167,139,250,0.3);
+    }
+    .hero h1 {
+      font-size: 2rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--accent), var(--purple));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 0.5rem;
+    }
+    .hero p { color: var(--text-muted); font-size: 0.95rem; }
+    .hero-meta {
+      display: flex;
+      justify-content: center;
+      gap: 2rem;
+      margin-top: 1.5rem;
+      flex-wrap: wrap;
+    }
+    .hero-meta span { color: var(--text-muted); font-size: 0.85rem; }
+
+    /* Stats */
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      max-width: 900px;
+      margin: -1.5rem auto 2rem;
+      padding: 0 1.5rem;
+      position: relative;
+      z-index: 1;
+    }
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.25rem;
+      text-align: center;
+    }
+    .stat-card .number {
+      font-size: 2rem;
+      font-weight: 800;
+      display: block;
+    }
+    .stat-card .label {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 0.25rem;
+    }
+
+    /* Container */
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 0 1.5rem 3rem;
+    }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      gap: 0.25rem;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 2rem;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .tab-btn {
+      padding: 0.75rem 1.25rem;
+      border: none;
+      background: none;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      white-space: nowrap;
+      transition: all 0.2s;
+    }
+    .tab-btn:hover { color: var(--text); }
+    .tab-btn.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* Sections */
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .section h2 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .section h3 {
+      font-size: 0.95rem;
+      font-weight: 600;
+      margin: 1.25rem 0 0.75rem;
+      color: var(--accent);
+    }
+    .section p, .section li {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      line-height: 1.8;
+    }
+    .section ul { padding-left: 1.25rem; }
+    .section ul li { margin-bottom: 0.35rem; }
+
+    /* Tables */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+      margin-top: 0.75rem;
+    }
+    th, td {
+      padding: 0.6rem 0.75rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    th {
+      background: var(--surface2);
+      font-weight: 600;
+      color: var(--text);
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+    td { color: var(--text-muted); }
+
+    /* Badges */
+    .badge {
+      display: inline-block;
+      padding: 0.15rem 0.6rem;
+      border-radius: 100px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .badge-green { background: var(--green-bg); color: var(--green); border: 1px solid rgba(74,222,128,0.3); }
+    .badge-yellow { background: var(--yellow-bg); color: var(--yellow); border: 1px solid rgba(250,204,21,0.3); }
+    .badge-red { background: var(--red-bg); color: var(--red); border: 1px solid rgba(248,113,113,0.3); }
+    .badge-blue { background: var(--blue-bg); color: var(--blue); border: 1px solid rgba(96,165,250,0.3); }
+    .badge-purple { background: var(--purple-bg); color: var(--purple); border: 1px solid rgba(167,139,250,0.3); }
+
+    /* Risk Cards */
+    .risk-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+    .risk-card {
+      border-radius: 10px;
+      padding: 1.25rem;
+      border: 1px solid;
+    }
+    .risk-card.green { background: var(--green-bg); border-color: rgba(74,222,128,0.3); }
+    .risk-card.yellow { background: var(--yellow-bg); border-color: rgba(250,204,21,0.3); }
+    .risk-card.red { background: var(--red-bg); border-color: rgba(248,113,113,0.3); }
+    .risk-card h4 {
+      font-size: 0.9rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+    .risk-card p { font-size: 0.82rem; }
+    .risk-card.green h4 { color: var(--green); }
+    .risk-card.yellow h4 { color: var(--yellow); }
+    .risk-card.red h4 { color: var(--red); }
+
+    /* Diagram */
+    .diagram {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.5rem;
+      font-family: 'Fira Code', 'Cascadia Code', monospace;
+      font-size: 0.8rem;
+      line-height: 1.6;
+      overflow-x: auto;
+      white-space: pre;
+      color: var(--text-muted);
+      margin-top: 1rem;
+    }
+
+    /* Timeline */
+    .timeline { margin-top: 1.5rem; }
+    .timeline-item {
+      position: relative;
+      padding-left: 2rem;
+      padding-bottom: 2rem;
+      border-left: 2px solid var(--border);
+    }
+    .timeline-item:last-child { border-left: 2px solid transparent; padding-bottom: 0; }
+    .timeline-item::before {
+      content: '';
+      position: absolute;
+      left: -7px;
+      top: 4px;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--accent);
+      border: 2px solid var(--bg);
+    }
+    .timeline-item.phase2::before { background: var(--purple); }
+    .timeline-item.phase3::before { background: var(--green); }
+    .timeline-title {
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: var(--text);
+      margin-bottom: 0.35rem;
+    }
+    .timeline-meta {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-bottom: 0.5rem;
+    }
+    .timeline-content {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    /* Copyright Structure */
+    .copyright-flow {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+    .copyright-box {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.25rem;
+      text-align: center;
+    }
+    .copyright-box .icon { font-size: 2rem; margin-bottom: 0.5rem; }
+    .copyright-box h4 { font-size: 0.85rem; font-weight: 700; margin-bottom: 0.35rem; }
+    .copyright-box p { font-size: 0.78rem; color: var(--text-muted); }
+    .copyright-box .period {
+      display: inline-block;
+      margin-top: 0.5rem;
+      padding: 0.2rem 0.75rem;
+      border-radius: 100px;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+
+    /* Wireframe */
+    .wireframe {
+      background: var(--bg);
+      border: 2px dashed var(--border);
+      border-radius: 16px;
+      padding: 1rem;
+      max-width: 320px;
+      margin: 1rem auto;
+    }
+    .wireframe-header {
+      background: var(--surface2);
+      border-radius: 8px;
+      padding: 0.5rem;
+      text-align: center;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-bottom: 0.75rem;
+    }
+    .wireframe-content {
+      background: var(--surface);
+      border-radius: 8px;
+      padding: 2rem 1rem;
+      text-align: center;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-bottom: 0.75rem;
+      min-height: 180px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .wireframe-player {
+      background: linear-gradient(135deg, rgba(167,139,250,0.15), rgba(56,189,248,0.15));
+      border: 1px solid rgba(167,139,250,0.3);
+      border-radius: 12px;
+      padding: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .wireframe-player .thumb {
+      width: 48px;
+      height: 48px;
+      background: var(--surface2);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      flex-shrink: 0;
+    }
+    .wireframe-player .info {
+      flex: 1;
+      text-align: left;
+    }
+    .wireframe-player .info .title {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .wireframe-player .info .artist {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+    }
+    .wireframe-player .controls {
+      display: flex;
+      gap: 0.5rem;
+      font-size: 1rem;
+    }
+
+    /* Alert */
+    .alert {
+      border-radius: 10px;
+      padding: 1rem 1.25rem;
+      margin: 1rem 0;
+      font-size: 0.85rem;
+      border: 1px solid;
+    }
+    .alert-red { background: var(--red-bg); border-color: rgba(248,113,113,0.3); color: var(--red); }
+    .alert-green { background: var(--green-bg); border-color: rgba(74,222,128,0.3); color: var(--green); }
+    .alert-yellow { background: var(--yellow-bg); border-color: rgba(250,204,21,0.3); color: var(--yellow); }
+    .alert-blue { background: var(--blue-bg); border-color: rgba(96,165,250,0.3); color: var(--blue); }
+
+    /* Checklist */
+    .checklist { list-style: none; padding: 0; }
+    .checklist li {
+      padding: 0.5rem 0;
+      border-bottom: 1px solid rgba(71,85,105,0.3);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.85rem;
+    }
+    .checklist li:last-child { border-bottom: none; }
+    .check-icon { font-size: 1rem; }
+
+    /* Footer */
+    .footer {
+      text-align: center;
+      padding: 2rem;
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      border-top: 1px solid var(--border);
+    }
+
+    @media (max-width: 640px) {
+      .hero { padding: 2rem 1rem; }
+      .hero h1 { font-size: 1.5rem; }
+      .stats { grid-template-columns: repeat(2, 1fr); }
+      .copyright-flow { grid-template-columns: 1fr; }
+      .risk-grid { grid-template-columns: 1fr; }
+      .tabs { gap: 0; }
+      .tab-btn { padding: 0.6rem 0.75rem; font-size: 0.78rem; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Hero -->
+<div class="hero">
+  <div class="hero-badge">CONFIRMED STRATEGY v2.0</div>
+  <h1>ReadingTree 클래식 음악 배경음악 기획서</h1>
+  <p>자체 오디오 재생(앱) + YouTube 채널(홍보) — 동일 PD 음원 이중 활용 전략</p>
+  <div class="hero-meta">
+    <span>작성일: 2026-03-24</span>
+    <span>버전: v2.0</span>
+    <span>상태: 전략 확정</span>
+    <span>담당: Product & Legal</span>
+  </div>
+</div>
+
+<!-- Stats -->
+<div class="stats">
+  <div class="stat-card">
+    <span class="number" style="color:var(--green)">2</span>
+    <span class="label">채널 전략 (앱 + YouTube)</span>
+  </div>
+  <div class="stat-card">
+    <span class="number" style="color:var(--accent)">50+</span>
+    <span class="label">퍼블릭 도메인 작곡가</span>
+  </div>
+  <div class="stat-card">
+    <span class="number" style="color:var(--purple)">4</span>
+    <span class="label">플레이리스트 카테고리</span>
+  </div>
+  <div class="stat-card">
+    <span class="number" style="color:var(--yellow)">3</span>
+    <span class="label">구현 Phase</span>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="overview">전략 개요</button>
+    <button class="tab-btn" data-tab="legal">법적 분석</button>
+    <button class="tab-btn" data-tab="design">기능 설계</button>
+    <button class="tab-btn" data-tab="arch">기술 아키텍처</button>
+    <button class="tab-btn" data-tab="roadmap">구현 로드맵</button>
+    <button class="tab-btn" data-tab="license">음원 라이선스</button>
+    <button class="tab-btn" data-tab="youtube">YouTube 채널</button>
+    <button class="tab-btn" data-tab="mobile">모바일 전략</button>
+  </div>
+
+  <!-- Tab 0: 전략 개요 -->
+  <div class="tab-panel active" id="tab-overview">
+
+    <div class="section" style="border-color:rgba(74,222,128,0.3);background:linear-gradient(135deg,var(--surface),rgba(74,222,128,0.03));">
+      <h2 style="color:var(--green);">테스트 데이터 준비 완료</h2>
+      <p>Musopen PD 녹음 2곡을 다운로드하여 실제 재생 테스트가 가능합니다.</p>
+
+      <table>
+        <thead><tr><th>#</th><th>곡명</th><th>작곡가</th><th>길이</th><th>음질</th><th>라이선스</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>골드베르크 변주곡 - Aria</td><td>바흐</td><td>4:52</td><td><span class="badge badge-purple">320k</span></td><td><span class="badge badge-green">PD</span></td></tr>
+          <tr><td>2</td><td>골드베르크 변주곡 - Var.25</td><td>바흐</td><td>6:50</td><td><span class="badge badge-purple">320k</span></td><td><span class="badge badge-green">PD</span></td></tr>
+          <tr><td>3</td><td>골드베르크 변주곡 - Aria da Capo</td><td>바흐</td><td>5:39</td><td><span class="badge badge-purple">320k</span></td><td><span class="badge badge-green">PD</span></td></tr>
+          <tr><td>4</td><td>페르 귄트 - 아침 기분</td><td>그리그</td><td>3:49</td><td><span class="badge badge-yellow">191k</span></td><td><span class="badge badge-green">PD</span></td></tr>
+          <tr><td>5</td><td>페르 귄트 - 오세의 죽음</td><td>그리그</td><td>4:33</td><td><span class="badge badge-purple">320k</span></td><td><span class="badge badge-green">PD</span></td></tr>
+          <tr><td>6</td><td>명상곡</td><td>수크</td><td>6:45</td><td><span class="badge badge-purple">320k</span></td><td><span class="badge badge-green">PD</span></td></tr>
+          <tr><td>7</td><td>현악 사중주 2번 - 녹턴</td><td>보로딘</td><td>9:07</td><td><span class="badge badge-purple">320k</span></td><td><span class="badge badge-green">PD</span></td></tr>
+          <tr><td>8</td><td>아메리칸 사중주 - Lento</td><td>드보르작</td><td>7:51</td><td><span class="badge badge-purple">320k</span></td><td><span class="badge badge-green">PD</span></td></tr>
+          <tr><td>9</td><td>소나타 D.664 - 1악장</td><td>슈베르트</td><td>7:46</td><td><span class="badge badge-purple">320k</span></td><td><span class="badge badge-green">PD</span></td></tr>
+          <tr><td>10</td><td>소나타 D.664 - 2악장</td><td>슈베르트</td><td>4:50</td><td><span class="badge badge-purple">320k</span></td><td><span class="badge badge-green">PD</span></td></tr>
+        </tbody>
+      </table>
+      <div style="margin-top:0.5rem;font-size:0.78rem;color:var(--text-muted);">
+        총 <strong style="color:var(--text);">10곡 · 62분 2초 · ~142MB</strong> | FLAC 무손실 원본에서 MP3 320kbps/48kHz 최고 음질 변환
+      </div>
+
+      <div style="display:flex;gap:0.75rem;margin-top:1rem;flex-wrap:wrap;">
+        <a href="../../public/music/test/demo-player.html" target="_blank" style="display:inline-flex;align-items:center;gap:0.35rem;padding:0.5rem 1rem;background:var(--purple);color:white;border-radius:8px;text-decoration:none;font-size:0.82rem;font-weight:600;">▶ 데모 플레이어 열기</a>
+        <a href="../../public/music/test/metadata.json" target="_blank" style="display:inline-flex;align-items:center;gap:0.35rem;padding:0.5rem 1rem;background:var(--surface2);color:var(--text);border-radius:8px;text-decoration:none;font-size:0.82rem;font-weight:600;">📋 메타데이터 JSON</a>
+        <a href="licenses/musopen-pd-license.md" target="_blank" style="display:inline-flex;align-items:center;gap:0.35rem;padding:0.5rem 1rem;background:var(--surface2);color:var(--text);border-radius:8px;text-decoration:none;font-size:0.82rem;font-weight:600;">📄 라이선스 증빙</a>
+      </div>
+
+      <div style="margin-top:0.75rem;font-size:0.75rem;color:var(--text-muted);">
+        소스: <a href="https://archive.org/details/MusopenCollectionAsFlac" target="_blank" style="color:var(--accent);text-decoration:none;">Internet Archive — Musopen Collection</a> | Public Domain Mark 1.0
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>확정 전략: 자체 오디오 + YouTube 홍보 연결</h2>
+      <p>동일한 퍼블릭 도메인 음원을 <strong>앱(자체 호스팅)</strong>과 <strong>YouTube 채널(홍보)</strong> 두 채널에서 독립적으로 활용하여 상호 시너지를 만드는 전략입니다.</p>
+
+      <div class="alert alert-green">
+        <strong>법적 결론:</strong> PD 작곡 + PD 녹음(Musopen 등)을 사용하면 앱 내 재생과 YouTube 채널 업로드 모두 <strong>저작권 문제 없음</strong>. YouTube에서 오디오를 추출하지 않으므로 YouTube TOS 위반도 없음.
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>아키텍처 다이어그램</h2>
+      <div class="diagram">                    ┌──────────────────────┐
+                    │   PD 음원 소스         │
+                    │  (Musopen PD 녹음 등)  │
+                    └──────┬───────┬────────┘
+                           │       │
+              ┌────────────▼─┐   ┌─▼────────────────┐
+              │   앱 내 재생   │   │  YouTube 채널     │
+              │  (핵심 경험)   │   │  (홍보/마케팅)     │
+              ├──────────────┤   ├──────────────────┤
+              │ Supabase/CDN │   │ 정적이미지 + 음원  │
+              │ HTML5 Audio  │   │ ReadingTree 브랜딩 │
+              │ 48px 슬림 바  │   │ 앱 다운로드 유도    │
+              │ 백그라운드 재생│   │ SEO 키워드 점유    │
+              │ Media Session│   │ 커뮤니티 소통      │
+              └──────┬───────┘   └────────┬─────────┘
+                     │                     │
+                     │   ◄── 상호 연결 ──►  │
+                     │                     │
+              "YouTube에서 보기"    "앱에서 들어보세요"
+              (앱 → YouTube)       (YouTube → 앱)</div>
+    </div>
+
+    <div class="section">
+      <h2>두 채널 역할 비교</h2>
+      <table>
+        <thead><tr><th>항목</th><th>앱 내 자체 오디오</th><th>YouTube 채널</th></tr></thead>
+        <tbody>
+          <tr><td><strong>역할</strong></td><td>핵심 사용자 경험 (독서 배경음악)</td><td>마케팅 / 유입 / 브랜딩</td></tr>
+          <tr><td><strong>기술</strong></td><td>Supabase Storage + HTML5 Audio</td><td>FFmpeg 영상 합성 + 업로드</td></tr>
+          <tr><td><strong>UI</strong></td><td>48px 슬림 미니 플레이어</td><td>YouTube 표준 플레이어</td></tr>
+          <tr><td><strong>백그라운드 재생</strong></td><td><span class="badge badge-green">가능</span></td><td><span class="badge badge-yellow">YouTube Premium만</span></td></tr>
+          <tr><td><strong>오프라인</strong></td><td><span class="badge badge-green">SW 캐시 가능</span></td><td><span class="badge badge-red">불가</span></td></tr>
+          <tr><td><strong>광고</strong></td><td><span class="badge badge-green">없음</span></td><td><span class="badge badge-yellow">YouTube 광고 가능</span></td></tr>
+          <tr><td><strong>데이터 사용</strong></td><td><span class="badge badge-green">오디오만 (낮음)</span></td><td><span class="badge badge-yellow">비디오 (높음)</span></td></tr>
+          <tr><td><strong>수익</strong></td><td>앱 리텐션/구독 기여</td><td>YouTube 광고 수익 (장기)</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="section">
+      <h2>상호 연결 흐름</h2>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1rem;margin-top:1rem;">
+        <!-- App → YouTube -->
+        <div style="background:var(--bg);border:1px solid rgba(96,165,250,0.3);border-radius:12px;padding:1.25rem;">
+          <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.75rem;">
+            <span style="font-size:1.2rem;">📱</span>
+            <span style="font-size:0.85rem;font-weight:700;color:var(--accent);">앱 → YouTube 유입</span>
+          </div>
+          <ul style="font-size:0.82rem;color:var(--text-muted);padding-left:1rem;line-height:1.8;">
+            <li>미니 플레이어 "YouTube에서 보기 ↗" 링크</li>
+            <li>플레이리스트 화면 "YouTube에서 전체 듣기" 버튼</li>
+            <li>독서 완료 카드 "이 곡과 함께 독서 완료! 공유하기"</li>
+            <li>음악 설정 → 채널 구독 안내</li>
+          </ul>
+        </div>
+        <!-- YouTube → App -->
+        <div style="background:var(--bg);border:1px solid rgba(74,222,128,0.3);border-radius:12px;padding:1.25rem;">
+          <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.75rem;">
+            <span style="font-size:1.2rem;">▶</span>
+            <span style="font-size:0.85rem;font-weight:700;color:var(--green);">YouTube → 앱 유입</span>
+          </div>
+          <ul style="font-size:0.82rem;color:var(--text-muted);padding-left:1rem;line-height:1.8;">
+            <li>영상 설명란 "ReadingTree에서 독서하며 들어보세요" + UTM</li>
+            <li>엔드스크린 (마지막 20초) 앱 소개 카드</li>
+            <li>고정 댓글 앱 홍보 + 다운로드 링크</li>
+            <li>커뮤니티 탭 독서 팁 + 앱 소식</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>금지 사항 (반드시 피해야 할 것)</h2>
+      <div class="risk-grid">
+        <div class="risk-card red">
+          <h4>YouTube → 오디오 추출 금지</h4>
+          <p>YouTube 영상에서 오디오를 다운로드/추출하여 앱에 사용하는 것은 <strong>YouTube TOS 명시 위반</strong>입니다. 반드시 원본 소스(Musopen 등)에서 독립적으로 확보해야 합니다.</p>
+        </div>
+        <div class="risk-card red">
+          <h4>YouTube API 스트리밍 금지</h4>
+          <p>YouTube API를 통해 영상/오디오를 앱 내에서 직접 스트리밍하면서 UI를 숨기는 것은 <strong>API TOS 위반</strong>입니다.</p>
+        </div>
+        <div class="risk-card yellow">
+          <h4>보호 중 녹음 사용 금지</h4>
+          <p>작곡이 PD여도 유명 오케스트라의 현대 녹음은 실연자/음반 권리가 살아있습니다. <strong>PD 3중 확인</strong>(작곡+실연+음반) 필수.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tab 1: 법적 분석 -->
+  <div class="tab-panel" id="tab-legal">
+
+    <div class="section">
+      <h2>저작권 3단 구조</h2>
+      <p>클래식 음악에는 <strong>3가지 독립된 권리</strong>가 존재합니다. 작곡이 퍼블릭 도메인이어도 연주 녹음에는 별도 보호가 적용됩니다.</p>
+
+      <div class="copyright-flow">
+        <div class="copyright-box">
+          <div class="icon">🎼</div>
+          <h4>작곡 저작권</h4>
+          <p>저작재산권<br>저작권법 제39조</p>
+          <span class="period badge-green">사망 후 70년</span>
+        </div>
+        <div class="copyright-box">
+          <div class="icon">🎻</div>
+          <h4>실연자 권리</h4>
+          <p>저작인접권<br>저작권법 제64조</p>
+          <span class="period badge-yellow">실연 후 70년</span>
+        </div>
+        <div class="copyright-box">
+          <div class="icon">💿</div>
+          <h4>음반제작자 권리</h4>
+          <p>저작인접권<br>저작권법 제66조</p>
+          <span class="period badge-yellow">발행 후 70년</span>
+        </div>
+      </div>
+
+      <div class="alert alert-red" style="margin-top:1.5rem;">
+        <strong>핵심 주의사항:</strong> 바흐, 모차르트 등의 작곡은 퍼블릭 도메인이지만, 빈 필하모닉이 2020년에 연주한 녹음은 2090년까지 보호됩니다. <strong>작곡 PD + 실연 PD + 음반 PD</strong> 세 가지 모두 확인해야 합니다.
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>리스크 매트릭스</h2>
+      <p>접근 방식별 저작권 및 YouTube TOS 리스크를 평가합니다.</p>
+
+      <table>
+        <thead>
+          <tr>
+            <th>접근 방식</th>
+            <th>저작권</th>
+            <th>YouTube TOS</th>
+            <th>종합</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>YouTube 임베딩 (비디오 보이게)</td>
+            <td><span class="badge badge-green">LOW</span></td>
+            <td><span class="badge badge-green">LOW</span></td>
+            <td><span class="badge badge-green">GREEN</span></td>
+          </tr>
+          <tr>
+            <td>YouTube 임베딩 (오디오만/숨김)</td>
+            <td><span class="badge badge-green">LOW</span></td>
+            <td><span class="badge badge-red">CRITICAL</span></td>
+            <td><span class="badge badge-red">RED</span></td>
+          </tr>
+          <tr>
+            <td>YouTube 배경재생 (앱 최소화)</td>
+            <td><span class="badge badge-green">LOW</span></td>
+            <td><span class="badge badge-red">CRITICAL</span></td>
+            <td><span class="badge badge-red">RED</span></td>
+          </tr>
+          <tr style="background:rgba(74,222,128,0.08);">
+            <td><strong>자체 호스팅 (PD 녹음만) ← 확정 전략</strong></td>
+            <td><span class="badge badge-green">NONE</span></td>
+            <td><span class="badge badge-blue">N/A</span></td>
+            <td><span class="badge badge-green">GREEN</span></td>
+          </tr>
+          <tr>
+            <td>자체 호스팅 (CC 라이선스 녹음)</td>
+            <td><span class="badge badge-yellow">LOW</span></td>
+            <td><span class="badge badge-blue">N/A</span></td>
+            <td><span class="badge badge-yellow">YELLOW</span></td>
+          </tr>
+          <tr>
+            <td>메이저 레이블 녹음 무단 사용</td>
+            <td><span class="badge badge-red">CRITICAL</span></td>
+            <td><span class="badge badge-blue">N/A</span></td>
+            <td><span class="badge badge-red">RED</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="section">
+      <h2>YouTube TOS 핵심 금지사항</h2>
+
+      <div class="risk-grid">
+        <div class="risk-card red">
+          <h4>백그라운드 재생 금지</h4>
+          <p>API 서비스 창이 닫히거나 최소화될 때 비디오 재생을 유지하는 것은 금지됩니다. YouTube Premium의 핵심 유료 기능입니다.</p>
+        </div>
+        <div class="risk-card red">
+          <h4>오디오 전용 사용 금지</h4>
+          <p>플레이어를 숨기고(display:none, opacity:0, 화면 밖 이동) 오디오만 재생하는 것은 명시적으로 금지됩니다.</p>
+        </div>
+        <div class="risk-card yellow">
+          <h4>최소 플레이어 크기</h4>
+          <p>YouTube 플레이어는 최소 200x200 픽셀 이상이어야 합니다. 이보다 작은 플레이어는 TOS 위반입니다.</p>
+        </div>
+        <div class="risk-card yellow">
+          <h4>오버레이 금지</h4>
+          <p>YouTube 플레이어 위에 HTML 요소를 덮어씌우는 것은 금지됩니다. 플레이어가 완전히 보여야 합니다.</p>
+        </div>
+      </div>
+
+      <div class="alert alert-green" style="margin-top:1.5rem;">
+        <strong>합법적 사용:</strong> YouTube 플레이어를 화면에 200x200px 이상으로 표시하고, 사용자가 수동으로 재생하며, 플레이어가 보이는 상태에서 음악을 듣는 것은 <strong>완전히 합법</strong>입니다.
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>한국 저작권법 제29조 — 적용 불가</h2>
+      <p>"영리를 목적으로 하지 아니하는 공연/방송" 예외 조항은 ReadingTree에 적용할 수 <strong>없습니다</strong>.</p>
+
+      <table>
+        <thead>
+          <tr><th>요건</th><th>충족 여부</th><th>근거</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>영리 목적 없을 것</td><td><span class="badge badge-red">불충족</span></td><td>유료 포인트 충전이 있는 상업적 서비스</td></tr>
+          <tr><td>대가를 받지 않을 것</td><td><span class="badge badge-red">불충족</span></td><td>음악이 서비스 매력도를 높이는 요소</td></tr>
+          <tr><td>실연자 보수 없을 것</td><td><span class="badge badge-blue">판단 불요</span></td><td>위 두 요건 불충족</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Tab 2: 기능 설계 -->
+  <div class="tab-panel" id="tab-design">
+
+    <div class="section">
+      <h2>사용자 흐름</h2>
+
+      <h3>기본 흐름</h3>
+      <div class="diagram">책 상세 페이지 진입
+    │
+    ▼
+하단 음악 미니 플레이어 표시
+    │
+    ├─ "플레이리스트 선택" 탭
+    │   └─ 분위기별 플레이리스트 목록
+    │       ├─ 집중 모드 (바로크/고전)
+    │       ├─ 편안한 독서 (낭만주의)
+    │       ├─ 깊은 사색 (현대 클래식)
+    │       └─ 자연 + 클래식 (앰비언트)
+    │
+    ├─ 재생/일시정지
+    ├─ 다음 곡 / 이전 곡
+    └─ 볼륨 조절</div>
+
+      <h3>확정 UI: 자체 오디오 미니 플레이어 + YouTube 연결</h3>
+      <div class="wireframe">
+        <div class="wireframe-header">독서 화면 — 책 상세 페이지</div>
+        <div class="wireframe-content">
+          📖 책 내용 / 독서 메모 영역
+        </div>
+        <div class="wireframe-player">
+          <div class="thumb">▶</div>
+          <div class="info">
+            <div class="title">바흐 — 골드베르크 변주곡</div>
+            <div class="artist">Musopen Orchestra</div>
+          </div>
+          <div class="controls">⏮ ⏸ ⏭</div>
+        </div>
+      </div>
+
+      <div class="alert alert-green">
+        <strong>자체 오디오 장점:</strong> 비디오 영역 불필요, 48px 슬림 바만으로 완전한 배경음악 경험. 하단에 "YouTube에서 보기 ↗" 링크로 채널 유입.
+      </div>
+
+      <h3>독서 + 미니 플레이어 + YouTube 연결</h3>
+      <div class="wireframe">
+        <div class="wireframe-header">독서 화면 — 책 상세 페이지</div>
+        <div class="wireframe-content">
+          📖 책 내용 / 독서 메모 영역<br><br>
+          <span style="font-size:0.75rem;color:var(--accent);">전체 화면 활용 (플레이어 최소화 가능)</span>
+        </div>
+        <div class="wireframe-player">
+          <div class="thumb">🎵</div>
+          <div class="info">
+            <div class="title">쇼팽 — 녹턴 Op.9 No.2</div>
+            <div class="artist">Musopen • PD</div>
+          </div>
+          <div class="controls">⏮ ⏸ ⏭</div>
+        </div>
+      </div>
+
+      <div class="alert alert-blue">
+        <strong>YouTube 연결:</strong> 미니 플레이어 하단에 "YouTube에서 보기 ↗" 링크를 제공하여 YouTube 채널로 자연스럽게 유입. 앱은 독서 경험에 최적화, YouTube는 브랜딩/SEO 역할.
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>플레이리스트 카테고리 (안)</h2>
+
+      <table>
+        <thead>
+          <tr><th>카테고리</th><th>분위기</th><th>추천 작곡가</th><th>대표곡</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>집중 모드</strong></td>
+            <td>규칙적, 안정적</td>
+            <td>바흐, 하이든, 모차르트</td>
+            <td>골드베르크 변주곡, 피아노 소나타 K.545</td>
+          </tr>
+          <tr>
+            <td><strong>편안한 독서</strong></td>
+            <td>서정적, 부드러운</td>
+            <td>쇼팽, 드뷔시, 사티</td>
+            <td>녹턴 Op.9, 달빛(Clair de Lune), 짐노페디</td>
+          </tr>
+          <tr>
+            <td><strong>깊은 사색</strong></td>
+            <td>웅장한, 감성적</td>
+            <td>베토벤, 브람스, 차이콥스키</td>
+            <td>월광 소나타, 간주곡 Op.118, 백조의 호수</td>
+          </tr>
+          <tr>
+            <td><strong>활력 충전</strong></td>
+            <td>경쾌한, 에너지</td>
+            <td>비발디, 모차르트, 멘델스존</td>
+            <td>사계 '봄', 아이네 클라이네, 바이올린 협주곡</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="section">
+      <h2>핵심 기능 목록</h2>
+
+      <ul class="checklist">
+        <li><span class="check-icon">✅</span> 독서 화면 하단 미니 플레이어 (항상 접근 가능)</li>
+        <li><span class="check-icon">✅</span> 분위기별 플레이리스트 선택</li>
+        <li><span class="check-icon">✅</span> 재생/일시정지/다음곡/이전곡 컨트롤</li>
+        <li><span class="check-icon">✅</span> 볼륨 조절</li>
+        <li><span class="check-icon">✅</span> 마지막 재생 위치 기억 (사용자별)</li>
+        <li><span class="check-icon">🔮</span> 셔플/반복 모드 (Phase 2)</li>
+        <li><span class="check-icon">🔮</span> 백그라운드 재생 (Phase 2, 자체 호스팅 시)</li>
+        <li><span class="check-icon">🔮</span> 독서 타이머와 연동 (Phase 3)</li>
+        <li><span class="check-icon">🔮</span> AI 추천 플레이리스트 (Phase 3)</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Tab 3: 기술 아키텍처 -->
+  <div class="tab-panel" id="tab-arch">
+
+    <div class="section">
+      <h2>컴포넌트 구조</h2>
+
+      <div class="diagram">app/(main)/books/[id]/page.tsx
+  └── components/music/
+        ├── music-mini-player.tsx      ← 미니 플레이어 UI
+        ├── playlist-sheet.tsx         ← 플레이리스트 선택 바텀시트
+        ├── youtube-player.tsx         ← Phase 1: YouTube IFrame
+        └── audio-player.tsx           ← Phase 2: HTML5 Audio
+
+hooks/
+  └── use-music-player.ts             ← zustand 스토어 (재생 상태)
+
+app/actions/
+  └── music.ts                        ← 서버 액션 (플레이리스트 CRUD)
+
+types/
+  └── music.ts                        ← 타입 정의</div>
+    </div>
+
+    <div class="section">
+      <h2>DB 스키마</h2>
+
+      <h3>music_playlists</h3>
+      <table>
+        <thead><tr><th>컬럼</th><th>타입</th><th>설명</th></tr></thead>
+        <tbody>
+          <tr><td>id</td><td>uuid PK</td><td>플레이리스트 ID</td></tr>
+          <tr><td>name</td><td>text NOT NULL</td><td>플레이리스트 이름</td></tr>
+          <tr><td>description</td><td>text</td><td>설명</td></tr>
+          <tr><td>category</td><td>text</td><td>카테고리 (focus, relaxing, deep, energetic)</td></tr>
+          <tr><td>cover_url</td><td>text</td><td>커버 이미지 URL</td></tr>
+          <tr><td>track_count</td><td>int DEFAULT 0</td><td>트랙 수</td></tr>
+          <tr><td>is_active</td><td>bool DEFAULT true</td><td>활성 여부</td></tr>
+          <tr><td>created_at</td><td>timestamptz</td><td>생성일</td></tr>
+        </tbody>
+      </table>
+
+      <h3>music_tracks</h3>
+      <table>
+        <thead><tr><th>컬럼</th><th>타입</th><th>설명</th></tr></thead>
+        <tbody>
+          <tr><td>id</td><td>uuid PK</td><td>트랙 ID</td></tr>
+          <tr><td>playlist_id</td><td>uuid FK</td><td>플레이리스트 참조</td></tr>
+          <tr><td>title</td><td>text NOT NULL</td><td>곡 제목</td></tr>
+          <tr><td>composer</td><td>text</td><td>작곡가</td></tr>
+          <tr><td>performer</td><td>text</td><td>연주자/오케스트라</td></tr>
+          <tr><td>source_type</td><td>text DEFAULT 'hosted'</td><td>'hosted' (자체 호스팅 오디오)</td></tr>
+          <tr><td>source_url</td><td>text NOT NULL</td><td>CDN 오디오 URL (재생용)</td></tr>
+          <tr><td>youtube_video_id</td><td>text</td><td>YouTube 영상 ID ("YouTube에서 보기" 링크용)</td></tr>
+          <tr><td>duration_seconds</td><td>int</td><td>길이 (초)</td></tr>
+          <tr><td>license_type</td><td>text</td><td>'pd' | 'cc-by' | 'cc-by-sa' | 'licensed'</td></tr>
+          <tr><td>license_url</td><td>text</td><td>라이선스 출처 URL</td></tr>
+          <tr><td>sort_order</td><td>int</td><td>정렬 순서</td></tr>
+          <tr><td>created_at</td><td>timestamptz</td><td>생성일</td></tr>
+        </tbody>
+      </table>
+
+      <h3>user_music_preferences</h3>
+      <table>
+        <thead><tr><th>컬럼</th><th>타입</th><th>설명</th></tr></thead>
+        <tbody>
+          <tr><td>id</td><td>uuid PK</td><td></td></tr>
+          <tr><td>user_id</td><td>uuid FK UNIQUE</td><td>사용자 (RLS: auth.uid())</td></tr>
+          <tr><td>last_playlist_id</td><td>uuid FK</td><td>마지막 재생 플레이리스트</td></tr>
+          <tr><td>last_track_id</td><td>uuid FK</td><td>마지막 재생 트랙</td></tr>
+          <tr><td>volume</td><td>float DEFAULT 0.5</td><td>볼륨 (0~1)</td></tr>
+          <tr><td>autoplay</td><td>bool DEFAULT false</td><td>자동재생 여부</td></tr>
+          <tr><td>updated_at</td><td>timestamptz</td><td>마지막 업데이트</td></tr>
+        </tbody>
+      </table>
+
+      <div class="alert alert-yellow">
+        <strong>RLS 정책:</strong> music_playlists, music_tracks는 읽기 전용 공개. user_music_preferences는 <code>auth.uid() = user_id</code> 패턴으로 본인만 읽기/쓰기.
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>자체 오디오 + YouTube 연결 아키텍처</h2>
+
+      <div class="diagram">데이터 흐름:
+━━━━━━━━━━
+
+Musopen PD 녹음 (원본)
+  ├─→ Supabase Storage / CDN  →  music_tracks.source_url (앱 재생용)
+  └─→ FFmpeg + 배경이미지      →  YouTube 업로드  →  music_tracks.youtube_video_id
+
+앱 컴포넌트:
+━━━━━━━━━━
+
+audio-player.tsx (HTML5 Audio)      ← source_url로 재생
+  └─ "YouTube에서 보기 ↗"           ← youtube_video_id로 링크 생성
+     https://youtube.com/watch?v={youtube_video_id}
+
+미니 플레이어:
+━━━━━━━━━━
+
+┌─────────────────────────────────────────┐
+│ ▶  바흐 — 무반주 첼로 모음곡 1번   ⏸ ⏭  │  ← 자체 오디오 재생
+│ ──●────────── 1:24/4:02               │
+│ [YouTube에서 보기 ↗]                    │  ← YouTube 채널 유입
+└─────────────────────────────────────────┘</div>
+
+      <p style="margin-top:1rem;font-size:0.85rem;color:var(--text-muted);">
+        <strong>source_url</strong>은 앱 내 재생용 CDN URL, <strong>youtube_video_id</strong>는 "YouTube에서 보기" 링크용입니다. 두 필드는 독립적이며, YouTube 영상이 없는 트랙도 앱에서 정상 재생됩니다.
+      </p>
+    </div>
+  </div>
+
+  <!-- Tab 4: 구현 로드맵 -->
+  <div class="tab-panel" id="tab-roadmap">
+
+    <div class="section">
+      <h2>3단계 구현 로드맵</h2>
+
+      <div class="timeline">
+        <div class="timeline-item">
+          <div class="timeline-title"><span class="badge badge-blue">Phase 1</span> 자체 오디오 + YouTube 채널 개설 (3주)</div>
+          <div class="timeline-meta">앱 개발 2주 + YouTube 채널 1주 (병행)</div>
+          <div class="timeline-content">
+            <strong style="color:var(--text);font-size:0.85rem;">앱 개발:</strong>
+            <ul>
+              <li>Musopen PD 녹음 10~20곡 다운로드 + 라이선스 검증</li>
+              <li>Supabase Storage 업로드 + CDN 설정</li>
+              <li>DB 마이그레이션 (music_playlists, music_tracks, user_music_preferences)</li>
+              <li>HTML5 Audio 기반 미니 플레이어 (48px 슬림 바)</li>
+              <li>zustand 상태 관리 + Media Session API</li>
+              <li>플레이리스트 선택 바텀시트 (4개 카테고리)</li>
+              <li>"YouTube에서 보기 ↗" 링크 연동</li>
+            </ul>
+            <strong style="color:var(--text);font-size:0.85rem;margin-top:0.5rem;display:block;">YouTube 채널:</strong>
+            <ul>
+              <li>ReadingTree Music 채널 개설 + 브랜딩</li>
+              <li>배경 이미지 4종 제작 (카테고리별)</li>
+              <li>FFmpeg로 영상 10편 합성 + 업로드</li>
+              <li>영상 설명란 앱 링크 + UTM 파라미터</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="timeline-item phase2">
+          <div class="timeline-title"><span class="badge badge-purple">Phase 2</span> 고도화 (4주)</div>
+          <div class="timeline-meta">플레이리스트 확장 + 오프라인 + YouTube 컴필레이션</div>
+          <div class="timeline-content">
+            <ul>
+              <li>플레이리스트 확장 (카테고리당 20곡+)</li>
+              <li>Service Worker 오프라인 캐시</li>
+              <li>셔플/반복 모드</li>
+              <li>저대역폭 자동 전환 (128kbps)</li>
+              <li>독서 완료 카드에 음악+YouTube 공유 기능</li>
+              <li>YouTube 장시간 컴필레이션 영상 (1~3시간) 4편</li>
+              <li>YouTube 커뮤니티 탭 운영 시작</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="timeline-item phase3">
+          <div class="timeline-title"><span class="badge badge-green">Phase 3</span> 확장 (장기)</div>
+          <div class="timeline-meta">AI 추천 + 커뮤니티 + YouTube 성장</div>
+          <div class="timeline-content">
+            <ul>
+              <li>AI 기반 분위기 추천 (독서 장르별 자동 매칭)</li>
+              <li>독서 타이머 연동 (타이머 종료 시 페이드 아웃)</li>
+              <li>사용자 커뮤니티 플레이리스트 공유</li>
+              <li>YouTube 라이브 스트림 독서 모임</li>
+              <li>자체 커미셔닝 연주 또는 AI 생성 클래식</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>Phase 1 세부 태스크</h2>
+
+      <table>
+        <thead>
+          <tr><th>#</th><th>태스크</th><th>우선순위</th><th>예상 시간</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>1</td><td>DB 마이그레이션 (3 테이블 + RLS)</td><td><span class="badge badge-red">P0</span></td><td>2h</td></tr>
+          <tr><td>2</td><td>types/music.ts 타입 정의</td><td><span class="badge badge-red">P0</span></td><td>1h</td></tr>
+          <tr><td>3</td><td>app/actions/music.ts 서버 액션</td><td><span class="badge badge-red">P0</span></td><td>3h</td></tr>
+          <tr><td>4</td><td>use-music-player.ts zustand 스토어</td><td><span class="badge badge-red">P0</span></td><td>2h</td></tr>
+          <tr><td>5</td><td>audio-player.tsx HTML5 Audio 플레이어</td><td><span class="badge badge-red">P0</span></td><td>4h</td></tr>
+          <tr><td>6</td><td>music-mini-player.tsx 48px 슬림 바</td><td><span class="badge badge-red">P0</span></td><td>4h</td></tr>
+          <tr><td>7</td><td>playlist-sheet.tsx 선택 UI</td><td><span class="badge badge-yellow">P1</span></td><td>3h</td></tr>
+          <tr><td>8</td><td>Musopen PD 녹음 다운로드 + CDN 업로드</td><td><span class="badge badge-yellow">P1</span></td><td>4h</td></tr>
+          <tr><td>9</td><td>초기 데이터 시드 스크립트</td><td><span class="badge badge-yellow">P1</span></td><td>2h</td></tr>
+          <tr><td>10</td><td>Media Session API 연동 (잠금 화면)</td><td><span class="badge badge-yellow">P1</span></td><td>2h</td></tr>
+          <tr><td>11</td><td>YouTube 채널 개설 + 영상 10편 제작</td><td><span class="badge badge-yellow">P1</span></td><td>6h</td></tr>
+          <tr><td>12</td><td>"YouTube에서 보기" 링크 + 통합 테스트</td><td><span class="badge badge-yellow">P1</span></td><td>3h</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Tab 5: 음원 라이선스 -->
+  <div class="tab-panel" id="tab-license">
+
+    <div class="section">
+      <h2>음원 소스 비교</h2>
+
+      <table>
+        <thead>
+          <tr>
+            <th>소스</th>
+            <th>라이선스</th>
+            <th>상업 사용</th>
+            <th>음질</th>
+            <th>추천도</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Musopen</strong></td>
+            <td>PD / CC</td>
+            <td><span class="badge badge-green">무제한</span></td>
+            <td>FLAC, WAV, MP3</td>
+            <td>⭐⭐⭐⭐⭐</td>
+          </tr>
+          <tr>
+            <td><strong>Free Music Archive</strong></td>
+            <td>CC (혼재)</td>
+            <td><span class="badge badge-yellow">CC-BY만</span></td>
+            <td>MP3</td>
+            <td>⭐⭐⭐⭐</td>
+          </tr>
+          <tr>
+            <td><strong>IMSLP</strong></td>
+            <td>혼재</td>
+            <td><span class="badge badge-yellow">개별확인</span></td>
+            <td>가변적</td>
+            <td>⭐⭐⭐</td>
+          </tr>
+          <tr>
+            <td><strong>Classicals.de</strong></td>
+            <td>NC / 상업별도</td>
+            <td><span class="badge badge-yellow">유료</span></td>
+            <td>MP3, WAV</td>
+            <td>⭐⭐⭐</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="section">
+      <h2>추천 퍼블릭 도메인 곡 목록</h2>
+      <p>작곡 PD 확정 + Musopen에서 PD 녹음을 제공하는 곡 위주</p>
+
+      <h3>집중 모드 (바로크/고전)</h3>
+      <table>
+        <thead><tr><th>곡명</th><th>작곡가</th><th>작곡 PD</th></tr></thead>
+        <tbody>
+          <tr><td>골드베르크 변주곡 BWV 988</td><td>J.S. 바흐</td><td>✅</td></tr>
+          <tr><td>무반주 첼로 모음곡 1번 BWV 1007</td><td>J.S. 바흐</td><td>✅</td></tr>
+          <tr><td>평균율 클라비어곡집 1권</td><td>J.S. 바흐</td><td>✅</td></tr>
+          <tr><td>피아노 소나타 K.545</td><td>모차르트</td><td>✅</td></tr>
+          <tr><td>피아노 협주곡 21번 K.467</td><td>모차르트</td><td>✅</td></tr>
+          <tr><td>아이네 클라이네 나흐트무지크 K.525</td><td>모차르트</td><td>✅</td></tr>
+          <tr><td>사계 (Le quattro stagioni)</td><td>비발디</td><td>✅</td></tr>
+        </tbody>
+      </table>
+
+      <h3>편안한 독서 (낭만주의)</h3>
+      <table>
+        <thead><tr><th>곡명</th><th>작곡가</th><th>작곡 PD</th></tr></thead>
+        <tbody>
+          <tr><td>녹턴 Op.9 No.2</td><td>쇼팽</td><td>✅</td></tr>
+          <tr><td>발라드 1번 Op.23</td><td>쇼팽</td><td>✅</td></tr>
+          <tr><td>달빛 (Clair de Lune)</td><td>드뷔시</td><td>✅</td></tr>
+          <tr><td>아라베스크 1번</td><td>드뷔시</td><td>✅</td></tr>
+          <tr><td>짐노페디 1번</td><td>사티</td><td>✅</td></tr>
+          <tr><td>트로이메라이 (꿈) Op.15 No.7</td><td>슈만</td><td>✅</td></tr>
+          <tr><td>자장가 Op.49 No.4</td><td>브람스</td><td>✅</td></tr>
+        </tbody>
+      </table>
+
+      <h3>깊은 사색 (대규모)</h3>
+      <table>
+        <thead><tr><th>곡명</th><th>작곡가</th><th>작곡 PD</th></tr></thead>
+        <tbody>
+          <tr><td>월광 소나타 Op.27 No.2</td><td>베토벤</td><td>✅</td></tr>
+          <tr><td>비창 소나타 Op.13</td><td>베토벤</td><td>✅</td></tr>
+          <tr><td>간주곡 Op.118</td><td>브람스</td><td>✅</td></tr>
+          <tr><td>피아노 협주곡 2번 Op.18</td><td>라흐마니노프</td><td>✅</td></tr>
+          <tr><td>보칼리제 Op.34 No.14</td><td>라흐마니노프</td><td>✅</td></tr>
+          <tr><td>백조의 호수 — 정경</td><td>차이콥스키</td><td>✅</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="section">
+      <h2>라이선스 관리 체크리스트</h2>
+
+      <ul class="checklist">
+        <li><span class="check-icon">⬜</span> 각 트랙별 라이선스 유형 DB에 기록 (license_type, license_url)</li>
+        <li><span class="check-icon">⬜</span> PD 녹음: 작곡 PD + 실연 PD + 음반 PD 3중 확인</li>
+        <li><span class="check-icon">⬜</span> CC-BY 녹음: 앱 내 크레딧 표시 (연주자, 출처)</li>
+        <li><span class="check-icon">⬜</span> CC-BY-SA 녹음: 파생물 동일 라이선스 적용 확인</li>
+        <li><span class="check-icon">⬜</span> CC-BY-NC 녹음: 상업적 서비스 사용 불가 → 제외</li>
+        <li><span class="check-icon">⬜</span> YouTube 임베딩: 업로더가 임베딩 허용했는지 확인</li>
+        <li><span class="check-icon">⬜</span> 음원 소스 URL 변경 모니터링 (분기별 점검)</li>
+        <li><span class="check-icon">⬜</span> 라이선스 변경 사항 추적 (Musopen 정책 변경 등)</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Tab 6: YouTube 채널 전략 -->
+  <div class="tab-panel" id="tab-youtube">
+
+    <div class="section">
+      <h2>YouTube 채널 역할: 홍보/마케팅/유입 채널</h2>
+      <p>YouTube 채널은 앱의 배경음악 기능을 <strong>직접 제공하는 것이 아니라</strong>, ReadingTree 앱으로 사용자를 유입시키는 <strong>마케팅 채널</strong>로 운영합니다.</p>
+
+      <div class="alert alert-blue">
+        <strong>핵심 원칙:</strong> 앱 내 음악 재생은 자체 오디오 호스팅으로, YouTube 채널은 브랜딩/SEO/유입 목적으로 운영. 동일한 PD 음원을 각각 독립적으로 활용.
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:0.75rem;margin-top:1rem;">
+        <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:1rem;text-align:center;">
+          <div style="font-size:1.5rem;margin-bottom:0.35rem;">📥</div>
+          <div style="font-size:0.8rem;font-weight:700;color:var(--green);">앱 유입</div>
+          <div style="font-size:0.72rem;color:var(--text-muted);margin-top:0.25rem;">영상 설명란 + 엔드스크린으로 앱 다운로드 유도</div>
+        </div>
+        <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:1rem;text-align:center;">
+          <div style="font-size:1.5rem;margin-bottom:0.35rem;">🎯</div>
+          <div style="font-size:0.8rem;font-weight:700;color:var(--accent);">SEO 점유</div>
+          <div style="font-size:0.72rem;color:var(--text-muted);margin-top:0.25rem;">"독서 배경음악", "공부 클래식" 키워드 선점</div>
+        </div>
+        <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:1rem;text-align:center;">
+          <div style="font-size:1.5rem;margin-bottom:0.35rem;">💬</div>
+          <div style="font-size:0.8rem;font-weight:700;color:var(--purple);">커뮤니티</div>
+          <div style="font-size:0.72rem;color:var(--text-muted);margin-top:0.25rem;">댓글/커뮤니티 탭으로 사용자 소통</div>
+        </div>
+        <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:1rem;text-align:center;">
+          <div style="font-size:1.5rem;margin-bottom:0.35rem;">💰</div>
+          <div style="font-size:0.8rem;font-weight:700;color:var(--yellow);">수익</div>
+          <div style="font-size:0.72rem;color:var(--text-muted);margin-top:0.25rem;">장기적으로 YouTube 광고 수익 확보</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>영상 제작 파이프라인</h2>
+
+      <div class="diagram">1. 음원 확보
+   └─ Musopen PD 녹음 다운로드
+   └─ 라이선스 증빙 보관 (doc/music/licenses/)
+
+2. 배경 이미지 제작 (ReadingTree 브랜딩, 1920x1080)
+   └─ 카테고리별 4종: 집중 / 편안한 독서 / 깊은 사색 / 활력
+
+3. FFmpeg 영상 합성
+   └─ ffmpeg -loop 1 -i bg.jpg -i audio.mp3 \
+        -c:v libx264 -tune stillimage \
+        -c:a aac -b:a 192k \
+        -shortest -pix_fmt yuv420p output.mp4
+
+4. YouTube 업로드 + 메타데이터
+   └─ 제목: "바흐 무반주 첼로 모음곡 1번 | 독서 배경음악"
+   └─ 설명: 크레딧 + "ReadingTree 앱에서 들어보세요 → [링크+UTM]"
+   └─ 엔드스크린: 앱 소개 카드 (마지막 20초)
+   └─ 고정 댓글: 앱 홍보
+
+5. 앱 DB 연동
+   └─ music_tracks.youtube_video_id 업데이트
+   └─ 앱 내 "YouTube에서 보기 ↗" 링크 활성화</div>
+    </div>
+
+    <div class="section">
+      <h2>상호 연결 흐름 상세</h2>
+
+      <h3>앱 → YouTube (구독/조회 유도)</h3>
+      <table>
+        <thead><tr><th>터치포인트</th><th>위치</th><th>내용</th></tr></thead>
+        <tbody>
+          <tr><td>미니 플레이어</td><td>각 트랙 재생 중</td><td>"YouTube에서 보기 ↗" 링크 (해당 곡 영상)</td></tr>
+          <tr><td>플레이리스트 화면</td><td>플레이리스트 상단</td><td>"YouTube에서 전체 듣기 ↗" 버튼</td></tr>
+          <tr><td>독서 완료 카드</td><td>독서 완료 시 표시</td><td>"이 곡과 함께 독서 완료! YouTube에서 공유"</td></tr>
+          <tr><td>음악 설정</td><td>설정 > 음악</td><td>ReadingTree YouTube 채널 구독 안내</td></tr>
+          <tr><td>공유 기능</td><td>SNS 공유 시</td><td>"쇼팽 녹턴 들으며 데미안 읽는 중" + YouTube 링크</td></tr>
+        </tbody>
+      </table>
+
+      <h3>YouTube → 앱 (다운로드/방문 유도)</h3>
+      <table>
+        <thead><tr><th>터치포인트</th><th>위치</th><th>내용</th></tr></thead>
+        <tbody>
+          <tr><td>영상 설명란</td><td>모든 영상</td><td>"ReadingTree에서 독서하며 들어보세요" + UTM 링크</td></tr>
+          <tr><td>엔드스크린</td><td>영상 마지막 20초</td><td>앱 소개 카드 + 채널 구독 버튼</td></tr>
+          <tr><td>고정 댓글</td><td>모든 영상 최상단</td><td>앱 홍보 + 기능 소개 + 다운로드 링크</td></tr>
+          <tr><td>채널 소개</td><td>채널 홈 배너</td><td>ReadingTree 앱 설명 + 링크</td></tr>
+          <tr><td>커뮤니티 탭</td><td>주 1-2회 포스트</td><td>독서 팁, 음악 추천, 앱 업데이트 소식</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="section">
+      <h2>채널 단계별 운영 계획</h2>
+
+      <table>
+        <thead><tr><th>단계</th><th>목표</th><th>콘텐츠</th><th>KPI</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><span class="badge badge-blue">1차 (2주)</span></td>
+            <td>채널 개설 + MVP</td>
+            <td>카테고리별 대표곡 2~3개씩 = 10편</td>
+            <td>앱 링크 클릭 100+</td>
+          </tr>
+          <tr>
+            <td><span class="badge badge-purple">2차 (1개월)</span></td>
+            <td>장시간 컴필레이션</td>
+            <td>1~3시간 믹스 영상 4편 (카테고리별)</td>
+            <td>구독자 500+, 앱 유입 5%+</td>
+          </tr>
+          <tr>
+            <td><span class="badge badge-green">3차 (3개월+)</span></td>
+            <td>커뮤니티 성장</td>
+            <td>라이브 스트림, 독서 모임, 요청곡</td>
+            <td>구독자 5,000+, 브랜드 인지도</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="section">
+      <h2>Content ID 오인 클레임 대응</h2>
+
+      <div class="alert alert-yellow">
+        <strong>주의:</strong> PD 녹음도 Content ID가 유사한 상업 녹음과 매칭하여 자동 클레임을 발행할 수 있습니다. 오인(false positive)이며 이의 제기로 해결 가능합니다.
+      </div>
+
+      <table>
+        <thead><tr><th>단계</th><th>조치</th><th>기간</th></tr></thead>
+        <tbody>
+          <tr><td>1. 클레임 수신</td><td>YouTube Studio에서 확인</td><td>즉시</td></tr>
+          <tr><td>2. 증빙 준비</td><td>보관된 PD/CC 라이선스 증빙 첨부</td><td>1일</td></tr>
+          <tr><td>3. 이의 제기</td><td>"PD 녹음이며 Musopen에서 PD 라이선스로 배포"</td><td>1일</td></tr>
+          <tr><td>4. 대기</td><td>클레이머가 반박하지 않으면 자동 해제</td><td>30일</td></tr>
+          <tr><td>5. 반복 시</td><td>DMCA 반대 통지서(Counter-notification) 제출</td><td>필요시</td></tr>
+        </tbody>
+      </table>
+
+      <h3>예방 조치</h3>
+      <ul style="font-size:0.85rem;color:var(--text-muted);padding-left:1.25rem;margin-top:0.5rem;">
+        <li><strong>Musopen 자체 녹음 우선</strong> — Content ID 등록 가능성이 가장 낮음</li>
+        <li>영상 설명란에 라이선스 출처 명시</li>
+        <li>라이선스 증빙 PDF/스크린샷 <code>doc/music/licenses/</code>에 보관</li>
+      </ul>
+    </div>
+
+    <div class="section">
+      <h2>YouTube 영상 메타데이터 템플릿</h2>
+
+      <div class="diagram">【제목】
+바흐 무반주 첼로 모음곡 1번 BWV 1007 | 독서 배경음악 | ReadingTree
+
+【설명】
+작곡: J.S. 바흐 (1685-1750) — Public Domain
+연주: Musopen Orchestra — Public Domain Recording
+출처: musopen.org (PD License)
+
+독서할 때 듣기 좋은 클래식 음악을 모았습니다.
+ReadingTree 앱에서 독서하며 배경음악으로 들어보세요!
+
+📱 ReadingTree 앱 다운로드: https://readtree.app/?utm_source=youtube&utm_medium=description
+🌿 더 많은 독서 음악: [플레이리스트 링크]
+
+#독서배경음악 #클래식음악 #공부음악 #바흐 #ReadingTree
+
+【태그】
+classical music, study music, reading bgm, 독서 음악,
+공부 음악, 집중 음악, bach, cello suite, readingtree</div>
+    </div>
+  </div>
+
+  <!-- Tab 7: 모바일 전략 -->
+  <div class="tab-panel" id="tab-mobile">
+
+    <div class="section">
+      <h2>모바일 환경 핵심 문제점</h2>
+      <p>ReadingTree는 PWA(standalone) 모드로 동작하며, 모바일 사용자가 다수입니다. YouTube 임베딩의 모바일 제약을 정확히 이해해야 합니다.</p>
+
+      <div class="risk-grid" style="margin-top:1rem;">
+        <div class="risk-card red">
+          <h4>1. 백그라운드 재생 불가</h4>
+          <p>화면 잠금, 앱 전환, 탭 전환 시 YouTube 재생이 <strong>즉시 중단</strong>됩니다. iOS/Android 모두 해당. 독서 중 카톡 확인만 해도 음악이 멈춥니다.</p>
+        </div>
+        <div class="risk-card red">
+          <h4>2. 자동재생 완전 차단</h4>
+          <p>모바일 브라우저/PWA에서 사용자 탭(터치) 없이 영상 자동 재생이 <strong>불가능</strong>합니다. 페이지 진입 시 자동으로 음악이 시작되지 않습니다.</p>
+        </div>
+        <div class="risk-card yellow">
+          <h4>3. 화면 공간 부족</h4>
+          <p>375px 화면에서 YouTube 200x200px 플레이어 = 화면 너비의 <strong>53%</strong>. 독서 공간이 크게 줄어들며 UX가 저하됩니다.</p>
+        </div>
+        <div class="risk-card yellow">
+          <h4>4. 하단 네비 + 플레이어 충돌</h4>
+          <p>모바일 네비(56px) + 미니 플레이어(64px+) = 하단 <strong>120px 이상</strong> 점유. 독서 영역이 크게 축소됩니다.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>Phase 1 모바일 전략: YouTube 임베딩</h2>
+      <p>YouTube TOS를 준수하면서 모바일 UX를 최대한 살리는 방법입니다.</p>
+
+      <h3>A. 접이식(Collapsible) 미니 플레이어</h3>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1rem;margin-top:1rem;">
+        <!-- Collapsed State -->
+        <div style="background:var(--bg);border:1px solid var(--border);border-radius:16px;overflow:hidden;max-width:320px;margin:0 auto;">
+          <div style="padding:0.5rem 0.75rem;background:rgba(167,139,250,0.1);border-bottom:1px solid var(--border);font-size:0.7rem;color:var(--purple);text-align:center;font-weight:600;">접힌 상태 (기본)</div>
+          <div style="padding:0.75rem;background:var(--surface);">
+            <div style="height:160px;display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:0.85rem;">📖 독서 영역 (최대 활용)</div>
+          </div>
+          <!-- Collapsed player -->
+          <div style="padding:0.5rem 0.75rem;background:linear-gradient(135deg,rgba(15,23,42,0.98),rgba(30,27,75,0.98));border-top:1px solid var(--border);display:flex;align-items:center;gap:0.6rem;">
+            <span style="font-size:1rem;">▶</span>
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:0.75rem;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">바흐 — 첼로 모음곡 1번</div>
+            </div>
+            <div style="display:flex;gap:0.25rem;align-items:center;">
+              <span style="font-size:0.85rem;cursor:pointer;">⏸</span>
+              <span style="font-size:0.85rem;cursor:pointer;">⏭</span>
+              <span style="font-size:0.7rem;padding:0.15rem 0.4rem;background:var(--surface2);border-radius:4px;color:var(--text-muted);cursor:pointer;">▲</span>
+            </div>
+          </div>
+          <div style="padding:0.25rem 0.75rem;background:rgba(30,27,75,0.98);font-size:0.65rem;color:var(--text-muted);text-align:center;border-top:1px solid rgba(71,85,105,0.3);">높이: ~48px | 네비 위 배치</div>
+        </div>
+
+        <!-- Expanded State -->
+        <div style="background:var(--bg);border:1px solid var(--border);border-radius:16px;overflow:hidden;max-width:320px;margin:0 auto;">
+          <div style="padding:0.5rem 0.75rem;background:rgba(56,189,248,0.1);border-bottom:1px solid var(--border);font-size:0.7rem;color:var(--accent);text-align:center;font-weight:600;">펼친 상태 (사용자 탭 시)</div>
+          <div style="padding:0.75rem;background:var(--surface);">
+            <div style="height:80px;display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:0.85rem;">📖 독서 영역 (축소됨)</div>
+          </div>
+          <!-- Expanded player with YouTube -->
+          <div style="padding:0.75rem;background:linear-gradient(135deg,rgba(15,23,42,0.98),rgba(30,27,75,0.98));border-top:1px solid var(--border);">
+            <div style="display:flex;gap:0.75rem;align-items:center;">
+              <div style="width:160px;height:90px;background:var(--surface2);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1.5rem;flex-shrink:0;">▶ YT</div>
+              <div>
+                <div style="font-size:0.78rem;font-weight:600;color:var(--text);">바흐 — 첼로 모음곡 1번</div>
+                <div style="font-size:0.68rem;color:var(--text-muted);margin-top:0.15rem;">Musopen Orchestra</div>
+                <div style="display:flex;gap:0.5rem;margin-top:0.5rem;">
+                  <span style="font-size:1rem;cursor:pointer;">⏮</span>
+                  <span style="font-size:1rem;cursor:pointer;">⏸</span>
+                  <span style="font-size:1rem;cursor:pointer;">⏭</span>
+                </div>
+              </div>
+            </div>
+            <div style="margin-top:0.5rem;display:flex;align-items:center;gap:0.5rem;">
+              <span style="font-size:0.65rem;color:var(--text-muted);">1:24</span>
+              <div style="flex:1;height:3px;background:var(--surface2);border-radius:2px;">
+                <div style="width:35%;height:100%;background:var(--purple);border-radius:2px;"></div>
+              </div>
+              <span style="font-size:0.65rem;color:var(--text-muted);">4:02</span>
+              <span style="font-size:0.7rem;padding:0.15rem 0.4rem;background:var(--surface2);border-radius:4px;color:var(--text-muted);cursor:pointer;">▼</span>
+            </div>
+          </div>
+          <div style="padding:0.25rem 0.75rem;background:rgba(30,27,75,0.98);font-size:0.65rem;color:var(--text-muted);text-align:center;border-top:1px solid rgba(71,85,105,0.3);">YouTube 160x90px (TOS 준수) | 네비 위</div>
+        </div>
+      </div>
+
+      <div class="alert alert-blue" style="margin-top:1rem;">
+        <strong>접이식 전략 핵심:</strong> 기본은 48px 슬림 바(곡 정보 + 재생 버튼만 표시). 사용자가 ▲ 탭하면 YouTube 플레이어가 펼쳐짐. YouTube 플레이어가 보이는 상태에서만 재생되므로 TOS 준수.
+      </div>
+
+      <h3>B. 모바일 레이아웃 배치도</h3>
+      <div class="diagram">┌─────────────────────────────┐
+│  Header (sticky, 48px)      │  ← z-40
+├─────────────────────────────┤
+│                             │
+│                             │
+│     독서 콘텐츠 영역          │  ← flex-1, overflow-y-auto
+│     (스크롤 가능)             │     pb 계산 필요
+│                             │
+│                             │
+├─────────────────────────────┤
+│  🎵 미니 플레이어 (48~140px) │  ← fixed, z-30
+│  [접힌 상태] ▶ 바흐—첼로 ⏸⏭▲│     bottom: 56px (네비 위)
+├─────────────────────────────┤
+│  🏠 📚  ➕  📅  ☰           │  ← fixed, z-50
+│  Mobile Nav (56px)          │     bottom: 0
+├─────────────────────────────┤
+│  Safe Area Inset Bottom     │  ← env(safe-area-inset-bottom)
+└─────────────────────────────┘
+
+Z-index 스택:
+  z-50: MobileNav, BottomSheet
+  z-40: Header
+  z-30: MusicMiniPlayer  ← 네비 아래, 콘텐츠 위
+  z-20: Sticky 액션바</div>
+
+      <h3>C. CSS 구현 핵심</h3>
+      <div class="diagram">/* 미니 플레이어 모바일 위치 */
+.music-mini-player {
+  position: fixed;
+  bottom: 56px;              /* h-14 = 모바일 네비 높이 */
+  left: 0;
+  right: 0;
+  z-index: 30;
+  padding-bottom: 0;         /* safe-area는 네비가 처리 */
+  background: hsl(var(--background) / 0.98);
+  backdrop-filter: blur(12px);
+  border-top: 1px solid hsl(var(--border));
+}
+
+@media (min-width: 640px) {
+  .music-mini-player { bottom: 64px; }  /* sm:h-16 */
+}
+
+@media (min-width: 1024px) {
+  .music-mini-player {
+    bottom: 0;               /* 데스크톱: 네비 없음 */
+    left: 256px;             /* lg:pl-64 사이드바 */
+    padding-bottom: 0;
+  }
+}
+
+/* 콘텐츠 영역 하단 패딩 (플레이어 높이만큼) */
+.reading-content-with-player {
+  padding-bottom: calc(48px + 56px + 16px);  /* 플레이어 + 네비 + 여유 */
+}
+
+@media (min-width: 1024px) {
+  .reading-content-with-player {
+    padding-bottom: calc(64px + 16px);  /* 플레이어 + 여유 */
+  }
+}</div>
+    </div>
+
+    <div class="section">
+      <h2>Phase 2 모바일 전략: 자체 오디오 (권장 최종안)</h2>
+      <p>자체 호스팅 오디오는 YouTube의 모바일 제약을 대부분 해결합니다.</p>
+
+      <table>
+        <thead><tr><th>문제</th><th>YouTube (Phase 1)</th><th>자체 오디오 (Phase 2)</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>자동재생</td>
+            <td><span class="badge badge-red">불가 (모바일 전체)</span></td>
+            <td><span class="badge badge-yellow">제한적 가능 *</span></td>
+          </tr>
+          <tr>
+            <td>백그라운드 재생</td>
+            <td><span class="badge badge-red">불가 (TOS + OS 제한)</span></td>
+            <td><span class="badge badge-green">PWA에서 가능 **</span></td>
+          </tr>
+          <tr>
+            <td>화면 잠금 시 재생</td>
+            <td><span class="badge badge-red">즉시 중단</span></td>
+            <td><span class="badge badge-yellow">iOS 제한, Android 가능</span></td>
+          </tr>
+          <tr>
+            <td>플레이어 크기</td>
+            <td><span class="badge badge-yellow">200x200px 필수</span></td>
+            <td><span class="badge badge-green">자유 (48px 바 가능)</span></td>
+          </tr>
+          <tr>
+            <td>오프라인 재생</td>
+            <td><span class="badge badge-red">불가</span></td>
+            <td><span class="badge badge-green">Service Worker 캐시 가능</span></td>
+          </tr>
+          <tr>
+            <td>데이터 사용량</td>
+            <td><span class="badge badge-yellow">비디오 스트리밍 (높음)</span></td>
+            <td><span class="badge badge-green">오디오만 (매우 낮음)</span></td>
+          </tr>
+          <tr>
+            <td>광고</td>
+            <td><span class="badge badge-yellow">YouTube 광고 포함 가능</span></td>
+            <td><span class="badge badge-green">없음</span></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="alert alert-yellow" style="margin-top:1rem;">
+        <strong>* 자동재생 조건:</strong> HTML5 Audio의 <code>play()</code>는 모바일에서도 사용자 제스처(터치) 이후에만 호출 가능합니다. 하지만 한번 터치로 재생 시작하면 <code>ended</code> 이벤트에서 다음 곡 자동 재생이 가능합니다 (플레이리스트 연속 재생).<br><br>
+        <strong>** PWA 백그라운드 오디오:</strong> PWA standalone 모드에서 Web Audio API / HTML5 Audio는 앱 전환 후에도 재생이 유지될 수 있습니다. Android Chrome PWA에서 가장 안정적. iOS Safari PWA는 제한적.
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>모바일 UX 최적화 체크리스트</h2>
+
+      <h3>터치 & 인터랙션</h3>
+      <ul class="checklist">
+        <li><span class="check-icon">⬜</span> 모든 터치 타겟 최소 44x44px (Apple HIG 기준)</li>
+        <li><span class="check-icon">⬜</span> 스와이프 제스처: 플레이어 위로 스와이프 = 펼치기, 아래로 = 접기</li>
+        <li><span class="check-icon">⬜</span> 진행률 바 터치 영역 확대 (높이 12px 이상, 터치 판정 44px)</li>
+        <li><span class="check-icon">⬜</span> 볼륨은 시스템 볼륨 위임 (별도 볼륨 슬라이더 불필요)</li>
+        <li><span class="check-icon">⬜</span> 햅틱 피드백: 재생/정지 전환 시 가벼운 진동</li>
+      </ul>
+
+      <h3>레이아웃 & 충돌 방지</h3>
+      <ul class="checklist">
+        <li><span class="check-icon">⬜</span> 기록 작성 바텀시트(z-50) 열릴 때 플레이어 자동 접기</li>
+        <li><span class="check-icon">⬜</span> 키보드 올라올 때 플레이어 숨기기 (입력 폼 방해 방지)</li>
+        <li><span class="check-icon">⬜</span> 모바일 메뉴 시트 열릴 때 플레이어 뒤로 이동</li>
+        <li><span class="check-icon">⬜</span> 콘텐츠 영역 하단 패딩 동적 계산 (플레이어 상태에 따라)</li>
+        <li><span class="check-icon">⬜</span> iPhone Safe Area (노치/홈 인디케이터) 대응</li>
+        <li><span class="check-icon">⬜</span> 가로 모드 레이아웃 대응 (플레이어 우측 사이드로 이동)</li>
+      </ul>
+
+      <h3>성능 & 네트워크</h3>
+      <ul class="checklist">
+        <li><span class="check-icon">⬜</span> YouTube IFrame 지연 로딩 (독서 페이지 진입 후 로드)</li>
+        <li><span class="check-icon">⬜</span> Phase 2: 오디오 파일 프리로딩 (다음 곡 미리 버퍼링)</li>
+        <li><span class="check-icon">⬜</span> Phase 2: 저대역폭 감지 시 128kbps MP3 자동 전환</li>
+        <li><span class="check-icon">⬜</span> Phase 2: Service Worker 캐시로 자주 듣는 곡 오프라인 지원</li>
+        <li><span class="check-icon">⬜</span> 모바일 데이터 사용 경고 (YouTube 비디오 스트리밍은 데이터 소모 큼)</li>
+      </ul>
+
+      <h3>Media Session API (Phase 2)</h3>
+      <ul class="checklist">
+        <li><span class="check-icon">⬜</span> 잠금 화면 미디어 컨트롤 표시 (곡명, 아티스트, 앨범아트)</li>
+        <li><span class="check-icon">⬜</span> 이어폰 버튼 재생/정지 연동</li>
+        <li><span class="check-icon">⬜</span> 블루투스 기기 컨트롤 연동</li>
+        <li><span class="check-icon">⬜</span> 알림 센터 미디어 컨트롤 (Android)</li>
+      </ul>
+    </div>
+
+    <div class="section">
+      <h2>모바일 Phase별 사용자 경험 비교</h2>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1rem;margin-top:1rem;">
+        <!-- Phase 1 -->
+        <div style="background:var(--bg);border:1px solid var(--border);border-radius:12px;overflow:hidden;">
+          <div style="padding:0.75rem;background:rgba(96,165,250,0.1);border-bottom:1px solid var(--border);">
+            <span class="badge badge-blue">Phase 1</span> <span style="font-size:0.85rem;font-weight:600;">YouTube 임베딩</span>
+          </div>
+          <div style="padding:1rem;">
+            <div style="font-size:0.85rem;color:var(--text-muted);line-height:1.8;">
+              <p><strong>시나리오: 출퇴근길 독서</strong></p>
+              <p>1. 책 페이지 진입 → 하단에 슬림 바 표시</p>
+              <p>2. ▲ 탭 → YouTube 플레이어 펼쳐짐</p>
+              <p>3. ▶ 탭 → 음악 재생 시작 (영상 보이는 상태)</p>
+              <p>4. ▼ 탭 → 접기 시도... <span style="color:var(--red);">재생 중단!</span></p>
+              <p>5. 카톡 확인 → <span style="color:var(--red);">재생 중단!</span></p>
+              <p>6. 화면 잠금 → <span style="color:var(--red);">재생 중단!</span></p>
+            </div>
+            <div class="alert alert-red" style="margin-top:0.75rem;font-size:0.8rem;">
+              <strong>UX 한계:</strong> 영상이 보이는 동안만 재생. 독서에 집중하기 어려움. 모바일에서는 보조적 기능으로만 활용.
+            </div>
+          </div>
+        </div>
+        <!-- Phase 2 -->
+        <div style="background:var(--bg);border:1px solid var(--border);border-radius:12px;overflow:hidden;">
+          <div style="padding:0.75rem;background:rgba(167,139,250,0.1);border-bottom:1px solid var(--border);">
+            <span class="badge badge-purple">Phase 2</span> <span style="font-size:0.85rem;font-weight:600;">자체 오디오</span>
+          </div>
+          <div style="padding:1rem;">
+            <div style="font-size:0.85rem;color:var(--text-muted);line-height:1.8;">
+              <p><strong>시나리오: 출퇴근길 독서</strong></p>
+              <p>1. 책 페이지 진입 → 하단에 슬림 바 (48px)</p>
+              <p>2. ▶ 탭 → 즉시 음악 재생 (영상 불필요)</p>
+              <p>3. 독서에 집중 → <span style="color:var(--green);">계속 재생</span></p>
+              <p>4. 카톡 확인 → <span style="color:var(--green);">계속 재생 (Android)</span></p>
+              <p>5. 곡 끝남 → <span style="color:var(--green);">다음 곡 자동 재생</span></p>
+              <p>6. 잠금 화면 → <span style="color:var(--green);">컨트롤 표시 (Media Session)</span></p>
+            </div>
+            <div class="alert alert-green" style="margin-top:0.75rem;font-size:0.8rem;">
+              <strong>최적의 UX:</strong> 48px 슬림 바만으로 완전한 배경음악 경험. 독서 집중도 향상.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>권장 모바일 전략</h2>
+
+      <div class="alert alert-blue">
+        <strong>핵심 결론:</strong> YouTube 임베딩(Phase 1)은 모바일에서 <strong>심각한 UX 제약</strong>이 있습니다. 데스크톱 검증용 MVP로만 활용하고, <strong>모바일 사용자에게는 Phase 2(자체 오디오)를 우선 적용</strong>하는 것을 강력히 권장합니다.
+      </div>
+
+      <h3>권장 접근법: 플랫폼별 분기</h3>
+      <table>
+        <thead><tr><th>환경</th><th>Phase 1 전략</th><th>Phase 2 전략</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>데스크톱</strong> (lg+)</td>
+            <td>YouTube 미니 플레이어 (우측 하단)</td>
+            <td>자체 오디오 + 슬림 하단 바</td>
+          </tr>
+          <tr>
+            <td><strong>모바일</strong> (&lt;lg)</td>
+            <td>
+              YouTube 접이식 플레이어<br>
+              <span style="font-size:0.78rem;color:var(--text-muted);">또는 "곧 출시" 안내 후 Phase 2 대기</span>
+            </td>
+            <td>
+              48px 슬림 바 + Media Session API<br>
+              <span style="font-size:0.78rem;color:var(--green);">최적의 독서 배경음악 경험</span>
+            </td>
+          </tr>
+          <tr>
+            <td><strong>PWA</strong> (standalone)</td>
+            <td>YouTube 제한적 지원</td>
+            <td>
+              네이티브 앱 수준 경험<br>
+              <span style="font-size:0.78rem;color:var(--text-muted);">Service Worker 오프라인 캐시</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>Media Session API 구현 (Phase 2 핵심)</h3>
+      <div class="diagram">// 잠금 화면 미디어 컨트롤 연동
+if ('mediaSession' in navigator) {
+  navigator.mediaSession.metadata = new MediaMetadata({
+    title: '무반주 첼로 모음곡 1번',
+    artist: 'J.S. 바흐 · Musopen Orchestra',
+    album: '집중 모드 플레이리스트',
+    artwork: [
+      { src: '/images/music/focus-96.png', sizes: '96x96' },
+      { src: '/images/music/focus-256.png', sizes: '256x256' },
+    ]
+  });
+
+  navigator.mediaSession.setActionHandler('play', () => { /* 재생 */ });
+  navigator.mediaSession.setActionHandler('pause', () => { /* 일시정지 */ });
+  navigator.mediaSession.setActionHandler('previoustrack', () => { /* 이전곡 */ });
+  navigator.mediaSession.setActionHandler('nexttrack', () => { /* 다음곡 */ });
+}
+
+// → Android: 알림 센터 + 잠금 화면에 미디어 컨트롤 표시
+// → iOS Safari: 잠금 화면 + 컨트롤 센터에 표시 (PWA standalone 제한적)</div>
+    </div>
+
+    <div class="section">
+      <h2>iOS vs Android 차이점</h2>
+
+      <table>
+        <thead><tr><th>기능</th><th>Android Chrome/PWA</th><th>iOS Safari/PWA</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>YouTube 임베딩</td>
+            <td><span class="badge badge-green">정상 동작</span></td>
+            <td><span class="badge badge-green">정상 동작</span></td>
+          </tr>
+          <tr>
+            <td>YouTube 백그라운드</td>
+            <td><span class="badge badge-red">불가</span></td>
+            <td><span class="badge badge-red">불가</span></td>
+          </tr>
+          <tr>
+            <td>HTML5 Audio 백그라운드</td>
+            <td><span class="badge badge-green">PWA에서 가능</span></td>
+            <td><span class="badge badge-yellow">제한적 (15초 후 중단 가능)</span></td>
+          </tr>
+          <tr>
+            <td>Media Session API</td>
+            <td><span class="badge badge-green">완전 지원</span></td>
+            <td><span class="badge badge-yellow">부분 지원 (iOS 15+)</span></td>
+          </tr>
+          <tr>
+            <td>Service Worker 오디오 캐시</td>
+            <td><span class="badge badge-green">완전 지원</span></td>
+            <td><span class="badge badge-yellow">50MB 제한</span></td>
+          </tr>
+          <tr>
+            <td>자동재생 (사용자 제스처 후)</td>
+            <td><span class="badge badge-green">가능</span></td>
+            <td><span class="badge badge-yellow">제한적</span></td>
+          </tr>
+          <tr>
+            <td>인라인 비디오 재생</td>
+            <td><span class="badge badge-green">기본</span></td>
+            <td><span class="badge badge-yellow">playsinline 속성 필수</span></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="alert alert-yellow" style="margin-top:1rem;">
+        <strong>iOS 대응 전략:</strong> iOS Safari PWA에서는 HTML5 Audio 백그라운드 재생이 불안정합니다. <code>audioSession</code> API(실험적)와 <code>Web Audio API</code>를 결합하거나, iOS 사용자에게는 "화면 유지 모드"(화면 꺼짐 방지)를 제공하는 것이 현실적 대안입니다. Wake Lock API: <code>navigator.wakeLock.request('screen')</code>
+      </div>
+    </div>
+  </div>
+
+
+</div>
+
+<!-- Footer -->
+<div class="footer">
+  <p>ReadingTree (Habitree) — 클래식 음악 배경음악 기능 기획서 v2.0 — 자체 오디오 + YouTube 홍보 연결 전략</p>
+  <p style="margin-top:0.25rem;">이 문서는 법률 자문을 대체하지 않습니다. 실제 적용 전 전문 저작권 변호사 검토를 권장합니다.</p>
+</div>
+
+<script>
+  // Tab switching
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      // Deactivate all
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      // Activate selected
+      btn.classList.add('active');
+      document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+    });
+  });
+</script>
+
+</body>
+</html>

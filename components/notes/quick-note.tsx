@@ -90,6 +90,7 @@ export function QuickNote({
   const [isBooksLoading, setIsBooksLoading] = useState(true);
   const [isExpanded, setIsExpanded] = useState(!compact);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [todayNoteCount, setTodayNoteCount] = useState(0);
 
   // 읽고 있는 책 목록 로드
   useEffect(() => {
@@ -150,6 +151,9 @@ export function QuickNote({
         is_public: true,
       });
 
+      // 오늘 기록 횟수 증가
+      setTodayNoteCount(prev => prev + 1);
+
       // 축하 효과
       setShowSuccess(true);
       import("canvas-confetti").then((m) =>
@@ -161,9 +165,9 @@ export function QuickNote({
         })
       );
 
-      // 랜덤 칭찬 메시지
+      // 랜덤 칭찬 메시지 + 포인트 획득 안내
       const randomPraise = PRAISE_MESSAGES[Math.floor(Math.random() * PRAISE_MESSAGES.length)];
-      toast.success(randomPraise);
+      toast.success(`${randomPraise} +P 획득!`);
 
       // 입력 초기화
       setContent("");
@@ -233,7 +237,7 @@ export function QuickNote({
           >
             <div className="flex flex-col items-center gap-2 text-white">
               <CheckCircle2 className="h-12 w-12" />
-              <span className="text-lg font-semibold">{t("notes.saveComplete")}</span>
+              <span className="text-lg font-semibold">{t("notes.saveComplete")} · 오늘 {todayNoteCount}번째 기록</span>
             </div>
           </motion.div>
         )}

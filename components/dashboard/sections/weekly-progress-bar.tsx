@@ -119,35 +119,49 @@ export const WeeklyProgressBar = memo(function WeeklyProgressBar({
         {/* 스트릭 메시지 */}
         <motion.div
           className={cn(
-            "flex items-center justify-center gap-1.5 pt-2 border-t border-slate-100 dark:border-slate-800",
-            streakStatus === "at_risk" && "text-amber-600 dark:text-amber-400"
+            "flex flex-col items-center gap-1 pt-2 border-t border-slate-100 dark:border-slate-800",
+            streakStatus === "at_risk" && "bg-rose-50 dark:bg-rose-950/30 -mx-3 sm:-mx-4 px-3 sm:px-4 -mb-3 sm:-mb-4 pb-3 sm:pb-4 rounded-b-xl"
           )}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.5 }}
         >
-          {streak > 0 && (
-            <motion.div
-              animate={
-                streakStatus === "at_risk"
-                  ? { scale: [1, 1.1, 1] }
-                  : {}
-              }
-              transition={{ duration: 0.5, repeat: streakStatus === "at_risk" ? Infinity : 0, repeatDelay: 1 }}
-            >
-              <Flame
-                className={cn(
-                  "h-4 w-4",
-                  streakStatus === "active"
-                    ? "text-orange-500"
-                    : "text-amber-500"
-                )}
-              />
-            </motion.div>
+          <div className="flex items-center justify-center gap-1.5">
+            {streak > 0 && (
+              <motion.div
+                animate={
+                  streakStatus === "at_risk"
+                    ? { scale: [1, 1.1, 1] }
+                    : {}
+                }
+                transition={{ duration: 0.5, repeat: streakStatus === "at_risk" ? Infinity : 0, repeatDelay: 1 }}
+              >
+                <Flame
+                  className={cn(
+                    "h-4 w-4",
+                    streakStatus === "active"
+                      ? "text-orange-500"
+                      : streakStatus === "at_risk"
+                        ? "text-rose-500"
+                        : "text-amber-500"
+                  )}
+                />
+              </motion.div>
+            )}
+            <span className={cn(
+              "text-xs",
+              streakStatus === "at_risk"
+                ? "text-rose-600 dark:text-rose-400 font-semibold"
+                : "text-slate-600 dark:text-slate-400"
+            )}>
+              {getStreakMessage()}
+            </span>
+          </div>
+          {streakStatus === "at_risk" && (
+            <span className="text-[10px] text-rose-500 dark:text-rose-400">
+              {t("dashboard.streakAtRiskSub")}
+            </span>
           )}
-          <span className="text-xs text-slate-600 dark:text-slate-400">
-            {getStreakMessage()}
-          </span>
         </motion.div>
       </div>
     </Card>
