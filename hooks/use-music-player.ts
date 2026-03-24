@@ -69,7 +69,7 @@ export const useMusicPlayer = create<MusicPlayerState>((set, get) => ({
   currentTrack: null,
   playlist: [],
   currentIndex: 0,
-  volume: 0.7,
+  volume: 0.35,
   currentTime: 0,
   duration: 0,
   ...INITIAL_TIMER,

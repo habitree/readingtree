@@ -9,12 +9,13 @@ import {
 } from "@/components/ui/dialog";
 import { useMusicPlayer } from "@/hooks/use-music-player";
 import { useMobileNoteSheet } from "@/hooks/use-mobile-note-sheet";
+import { BookOpen, PenLine, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const CONTINUE_PRESETS = [
-  { label: "+15분", seconds: 15 * 60 },
-  { label: "+30분", seconds: 30 * 60 },
-  { label: "+60분", seconds: 60 * 60 },
+  { label: "+15분", seconds: 15 * 60, emoji: "☕" },
+  { label: "+30분", seconds: 30 * 60, emoji: "📖" },
+  { label: "+60분", seconds: 60 * 60, emoji: "📚" },
 ] as const;
 
 function formatDuration(seconds: number): string {
@@ -22,7 +23,8 @@ function formatDuration(seconds: number): string {
   const m = Math.floor((seconds % 3600) / 60);
   if (h > 0 && m > 0) return `${h}시간 ${m}분`;
   if (h > 0) return `${h}시간`;
-  return `${m}분`;
+  if (m > 0) return `${m}분`;
+  return `${seconds}초`;
 }
 
 export function ReadingCompleteDialog() {
@@ -39,7 +41,6 @@ export function ReadingCompleteDialog() {
 
   function handleRecord() {
     closeCompleteDialog();
-    // 노트 작성 시트 열기 (메모 모드)
     openNoteSheet("memo");
   }
 
@@ -64,53 +65,66 @@ export function ReadingCompleteDialog() {
         }
       }}
     >
-      <DialogContent className="sm:max-w-[340px] rounded-2xl p-6">
-        <DialogHeader className="items-center space-y-3">
-          <div className="text-4xl">📚</div>
-          <DialogTitle className="text-lg">독서 완료!</DialogTitle>
-          <p className="text-sm text-muted-foreground">
-            <span className="font-semibold text-foreground">
-              {formatDuration(elapsedSeconds)}
-            </span>{" "}
-            동안 독서했습니다
-          </p>
-        </DialogHeader>
+      <DialogContent className="sm:max-w-[360px] rounded-2xl p-0 overflow-hidden">
+        {/* 상단 비주얼 영역 */}
+        <div className="bg-gradient-to-b from-primary/10 to-transparent px-6 pt-8 pb-4 text-center">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/15 mb-4">
+            <BookOpen className="w-8 h-8 text-primary" />
+          </div>
+          <DialogHeader className="items-center space-y-1.5">
+            <DialogTitle className="text-xl font-bold">
+              독서 완료!
+            </DialogTitle>
+            <div className="flex items-center justify-center gap-2">
+              <span className="text-2xl font-bold text-primary tabular-nums">
+                {formatDuration(elapsedSeconds)}
+              </span>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              동안 독서에 집중했습니다
+            </p>
+          </DialogHeader>
+        </div>
 
-        <div className="mt-4 space-y-2.5">
+        {/* 액션 영역 */}
+        <div className="px-5 pb-6 space-y-2.5">
+          {/* 기록하기 (메인 CTA) */}
+          <button
+            onClick={handleRecord}
+            className="w-full py-3.5 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90 transition-colors flex items-center justify-center gap-2"
+          >
+            <PenLine className="w-4 h-4" />
+            독서 기록 남기기
+          </button>
+
           {/* 계속 읽기 */}
           {!showContinueOptions ? (
             <button
               onClick={() => setShowContinueOptions(true)}
-              className="w-full py-3 rounded-xl bg-muted text-sm font-semibold hover:bg-muted/80 transition-colors"
+              className="w-full py-3 rounded-xl bg-muted font-medium text-sm hover:bg-muted/80 transition-colors flex items-center justify-center gap-2"
             >
-              계속 읽기
+              <ArrowRight className="w-3.5 h-3.5" />
+              조금 더 읽기
             </button>
           ) : (
-            <div className="flex gap-2">
-              {CONTINUE_PRESETS.map(({ label, seconds }) => (
+            <div className="grid grid-cols-3 gap-2">
+              {CONTINUE_PRESETS.map(({ label, seconds, emoji }) => (
                 <button
                   key={seconds}
                   onClick={() => handleContinue(seconds)}
-                  className="flex-1 py-3 rounded-xl bg-muted text-xs font-semibold hover:bg-muted/80 transition-colors"
+                  className="py-3 rounded-xl bg-muted hover:bg-muted/80 transition-colors text-center"
                 >
-                  {label}
+                  <span className="text-lg block mb-0.5">{emoji}</span>
+                  <span className="text-xs font-semibold">{label}</span>
                 </button>
               ))}
             </div>
           )}
 
-          {/* 기록하기 */}
-          <button
-            onClick={handleRecord}
-            className="w-full py-3 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors"
-          >
-            기록하기
-          </button>
-
           {/* 그만 읽기 */}
           <button
             onClick={handleStop}
-            className="w-full py-2.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+            className="w-full py-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
           >
             그만 읽기
           </button>
