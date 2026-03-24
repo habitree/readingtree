@@ -5,7 +5,19 @@ import { useMusicPlayer } from "@/hooks/use-music-player";
 import { MUSIC_CATEGORIES } from "@/lib/music-data";
 import { TimerSheet } from "./playlist-sheet";
 import { ReadingCompleteDialog } from "./reading-complete-dialog";
-import { Pause, Play, SkipBack, SkipForward, Square, Timer } from "lucide-react";
+import { TrackListSheet } from "./track-list-sheet";
+import {
+  Pause,
+  Play,
+  SkipBack,
+  SkipForward,
+  Square,
+  Timer,
+  Volume2,
+  VolumeX,
+  Music2,
+  ListMusic,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 
 function formatTime(sec: number): string {
@@ -14,7 +26,7 @@ function formatTime(sec: number): string {
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
-/** 원형 타이머 인디케이터 (미니 사이즈) */
+/** 원형 타이머 인디케이터 */
 function CircleTimer({
   remaining,
   total,
@@ -31,35 +43,10 @@ function CircleTimer({
   const progress = total > 0 ? remaining / total : 0;
 
   return (
-    <div
-      className="relative shrink-0"
-      style={{ width: size, height: size }}
-    >
-      <svg
-        viewBox={`0 0 ${size} ${size}`}
-        className="w-full h-full -rotate-90"
-      >
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={r}
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={stroke}
-          className="text-muted/40"
-        />
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={r}
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={stroke}
-          strokeLinecap="round"
-          strokeDasharray={circumference}
-          strokeDashoffset={circumference * (1 - progress)}
-          className="text-primary transition-all duration-1000"
-        />
+    <div className="relative shrink-0" style={{ width: size, height: size }}>
+      <svg viewBox={`0 0 ${size} ${size}`} className="w-full h-full -rotate-90">
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="currentColor" strokeWidth={stroke} className="text-muted/40" />
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="currentColor" strokeWidth={stroke} strokeLinecap="round" strokeDasharray={circumference} strokeDashoffset={circumference * (1 - progress)} className="text-primary transition-all duration-1000" />
       </svg>
       <div className="absolute inset-0 flex items-center justify-center">
         <Timer className="w-3.5 h-3.5 text-primary" />
@@ -68,19 +55,15 @@ function CircleTimer({
   );
 }
 
-/** 헤더 음악/타이머 버튼 */
+/** 헤더 타이머 + 음악 버튼 */
 export function MusicToggleButton() {
-  const { isVisible, timerStatus, remainingSeconds, targetSeconds, openTimerSheet, pauseTimer, resumeTimer } =
+  const { isVisible, timerStatus, remainingSeconds, openTimerSheet, pauseTimer, resumeTimer } =
     useMusicPlayer();
 
   function handleClick() {
-    if (timerStatus === "running") {
-      pauseTimer();
-    } else if (timerStatus === "paused") {
-      resumeTimer();
-    } else {
-      openTimerSheet();
-    }
+    if (timerStatus === "running") pauseTimer();
+    else if (timerStatus === "paused") resumeTimer();
+    else openTimerSheet();
   }
 
   const isActive = timerStatus === "running";
@@ -90,39 +73,34 @@ export function MusicToggleButton() {
     <button
       onClick={handleClick}
       className={cn(
-        "flex items-center justify-center rounded-full transition-all",
-        isActive || isPaused
-          ? "gap-1 px-2.5 h-8 sm:h-9"
-          : "w-9 h-9 sm:w-10 sm:h-10",
+        "flex items-center justify-center rounded-full transition-all gap-1",
+        isActive || isPaused ? "px-2.5 h-8 sm:h-9" : "w-9 h-9 sm:w-10 sm:h-10",
         isActive
           ? "bg-primary/10 text-primary"
           : isPaused
             ? "bg-orange-500/10 text-orange-500"
             : "text-muted-foreground hover:bg-muted"
       )}
-      title={
-        isActive
-          ? "독서 일시정지"
-          : isPaused
-            ? "독서 계속하기"
-            : "독서 타이머"
-      }
+      title={isActive ? "독서 일시정지" : isPaused ? "독서 계속하기" : "독서 타이머 + 음악"}
     >
       {isActive || isPaused ? (
         <>
-          <Timer className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+          <Timer className="w-3.5 h-3.5" />
           <span className="text-xs font-semibold tabular-nums">
             {formatTime(remainingSeconds)}
           </span>
         </>
       ) : (
-        <Timer className="w-4 h-4 sm:w-[18px] sm:h-[18px]" />
+        <div className="relative">
+          <Timer className="w-4 h-4 sm:w-[18px] sm:h-[18px]" />
+          <Music2 className="w-2 h-2 absolute -bottom-0.5 -right-0.5 text-primary" />
+        </div>
       )}
     </button>
   );
 }
 
-/** 미니 플레이어 (하단 고정) */
+/** 미니 플레이어 */
 export function MusicMiniPlayer() {
   const audioRef = useRef<HTMLAudioElement>(null);
   const progressRef = useRef<HTMLDivElement>(null);
@@ -139,14 +117,18 @@ export function MusicMiniPlayer() {
     targetSeconds,
     remainingSeconds,
     elapsedSeconds,
+    isVolumeOpen,
     toggle,
     next,
     prev,
     seekTo,
+    setVolume,
     updateTime,
     pauseTimer,
     resumeTimer,
     stopTimer,
+    openTrackList,
+    toggleVolume,
   } = useMusicPlayer();
 
   const isTimerActive = timerStatus === "running" || timerStatus === "paused";
@@ -173,9 +155,7 @@ export function MusicMiniPlayer() {
     const audio = audioRef.current;
     if (!audio) return;
     if (isPlaying) {
-      audio.play().catch(() => {
-        useMusicPlayer.getState().pause();
-      });
+      audio.play().catch(() => useMusicPlayer.getState().pause());
     } else {
       audio.pause();
     }
@@ -188,9 +168,7 @@ export function MusicMiniPlayer() {
     audio.src = currentTrack.sourceUrl;
     audio.load();
     if (isPlaying) {
-      audio.play().catch(() => {
-        useMusicPlayer.getState().pause();
-      });
+      audio.play().catch(() => useMusicPlayer.getState().pause());
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentTrack?.id]);
@@ -214,7 +192,6 @@ export function MusicMiniPlayer() {
     lastSeek.current = currentTime;
   }, [currentTime]);
 
-  // ── 오디오 이벤트 ──
   const handleTimeUpdate = useCallback(() => {
     const audio = audioRef.current;
     if (!audio) return;
@@ -222,20 +199,14 @@ export function MusicMiniPlayer() {
     updateTime(audio.currentTime, audio.duration || 0);
   }, [updateTime]);
 
-  const handleEnded = useCallback(() => {
-    next();
-  }, [next]);
+  const handleEnded = useCallback(() => next(), [next]);
 
   // ── Media Session API ──
   useEffect(() => {
     if (!currentTrack || !("mediaSession" in navigator)) return;
-    const catInfo = MUSIC_CATEGORIES.find(
-      (c) => c.id === currentTrack.category
-    );
+    const catInfo = MUSIC_CATEGORIES.find((c) => c.id === currentTrack.category);
     navigator.mediaSession.metadata = new MediaMetadata({
-      title: isTimerActive
-        ? `${formatTime(remainingSeconds)} 남음 — ${currentTrack.title}`
-        : currentTrack.title,
+      title: isTimerActive ? `${formatTime(remainingSeconds)} 남음 — ${currentTrack.title}` : currentTrack.title,
       artist: `${currentTrack.composer} · ${currentTrack.performer}`,
       album: catInfo ? `ReadingTree - ${catInfo.name}` : "ReadingTree Music",
     });
@@ -249,15 +220,10 @@ export function MusicMiniPlayer() {
       if (s.timerStatus === "running") s.pauseTimer();
       else s.pause();
     });
-    navigator.mediaSession.setActionHandler("previoustrack", () =>
-      useMusicPlayer.getState().prev()
-    );
-    navigator.mediaSession.setActionHandler("nexttrack", () =>
-      useMusicPlayer.getState().next()
-    );
+    navigator.mediaSession.setActionHandler("previoustrack", () => useMusicPlayer.getState().prev());
+    navigator.mediaSession.setActionHandler("nexttrack", () => useMusicPlayer.getState().next());
   }, [currentTrack, isTimerActive, remainingSeconds]);
 
-  // ── 프로그레스 바 클릭 ──
   function handleProgressClick(e: React.MouseEvent<HTMLDivElement>) {
     if (isTimerActive) return;
     const bar = progressRef.current;
@@ -265,9 +231,8 @@ export function MusicMiniPlayer() {
     if (!bar || !audio || !audio.duration) return;
     const rect = bar.getBoundingClientRect();
     const pct = (e.clientX - rect.left) / rect.width;
-    const newTime = pct * audio.duration;
-    audio.currentTime = newTime;
-    seekTo(newTime);
+    audio.currentTime = pct * audio.duration;
+    seekTo(pct * audio.duration);
   }
 
   function handleTimerToggle() {
@@ -275,38 +240,30 @@ export function MusicMiniPlayer() {
     else if (timerStatus === "paused") resumeTimer();
   }
 
-  // TimerSheet/ReadingCompleteDialog는 항상 렌더링
+  function handleVolumeChange(e: React.ChangeEvent<HTMLInputElement>) {
+    setVolume(parseFloat(e.target.value));
+  }
+
+  // TimerSheet/ReadingCompleteDialog/TrackListSheet는 항상 렌더링
   if (!isVisible || !currentTrack) {
     return (
       <>
         <TimerSheet />
         <ReadingCompleteDialog />
+        <TrackListSheet />
       </>
     );
   }
 
-  const catInfo = MUSIC_CATEGORIES.find(
-    (c) => c.id === currentTrack.category
-  );
-
+  const catInfo = MUSIC_CATEGORIES.find((c) => c.id === currentTrack.category);
   const progress = isTimerActive
-    ? targetSeconds > 0
-      ? ((targetSeconds - remainingSeconds) / targetSeconds) * 100
-      : 0
-    : duration > 0
-      ? (currentTime / duration) * 100
-      : 0;
+    ? targetSeconds > 0 ? ((targetSeconds - remainingSeconds) / targetSeconds) * 100 : 0
+    : duration > 0 ? (currentTime / duration) * 100 : 0;
 
   return (
     <>
-      <audio
-        ref={audioRef}
-        preload="metadata"
-        onTimeUpdate={handleTimeUpdate}
-        onEnded={handleEnded}
-      />
+      <audio ref={audioRef} preload="metadata" onTimeUpdate={handleTimeUpdate} onEnded={handleEnded} />
 
-      {/* 미니 플레이어 */}
       <div
         className={cn(
           "fixed bottom-14 sm:bottom-16 lg:bottom-0 left-0 right-0 lg:left-64",
@@ -322,133 +279,153 @@ export function MusicMiniPlayer() {
         <div
           ref={progressRef}
           onClick={handleProgressClick}
-          className={cn(
-            "h-1 bg-muted transition-all",
-            !isTimerActive && "cursor-pointer hover:h-1.5"
-          )}
+          className={cn("h-1 bg-muted transition-all", !isTimerActive && "cursor-pointer hover:h-1.5")}
         >
           <div
             className={cn(
               "h-full rounded-r-full transition-[width] duration-1000",
-              isTimerActive
-                ? timerStatus === "paused"
-                  ? "bg-orange-400"
-                  : "bg-primary"
-                : "bg-primary"
+              isTimerActive && timerStatus === "paused" ? "bg-orange-400" : "bg-primary"
             )}
             style={{ width: `${progress}%` }}
           />
         </div>
 
-        {/* 플레이어 컨텐츠 */}
-        <div className="flex items-center gap-2.5 px-3 py-2 sm:px-4 sm:py-2.5">
-          {/* 좌측: 타이머 원형 or 이모지 */}
+        {/* 메인 컨텐츠 */}
+        <div className="flex items-center gap-2 px-2.5 py-1.5 sm:px-4 sm:py-2">
+          {/* 좌측: 타이머 or 카테고리 아이콘 */}
           {isTimerActive ? (
-            <CircleTimer
-              remaining={remainingSeconds}
-              total={targetSeconds}
-              size={38}
-              stroke={3}
-            />
+            <CircleTimer remaining={remainingSeconds} total={targetSeconds} size={36} stroke={3} />
           ) : (
-            <span className="text-lg shrink-0 w-[38px] text-center">
-              {catInfo?.emoji ?? "🎵"}
-            </span>
+            <button
+              onClick={openTrackList}
+              className="w-9 h-9 shrink-0 rounded-lg bg-primary/10 flex items-center justify-center"
+              title="재생 목록"
+            >
+              <Music2 className="w-4 h-4 text-primary" />
+            </button>
           )}
 
-          {/* 트랙 + 타이머 정보 */}
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-medium truncate">
+          {/* 곡 정보 (탭하면 트랙리스트) */}
+          <button onClick={openTrackList} className="min-w-0 flex-1 text-left">
+            <p className="text-[13px] font-medium truncate leading-tight">
               {currentTrack.composer} — {currentTrack.title}
             </p>
             {isTimerActive ? (
-              <div className="flex items-center gap-2 text-xs">
-                <span
-                  className={cn(
-                    "font-bold tabular-nums",
-                    timerStatus === "paused"
-                      ? "text-orange-500"
-                      : "text-primary"
-                  )}
-                >
+              <div className="flex items-center gap-1.5 text-xs mt-0.5">
+                <span className={cn("font-bold tabular-nums", timerStatus === "paused" ? "text-orange-500" : "text-primary")}>
                   {formatTime(remainingSeconds)}
                 </span>
                 <span className="text-muted-foreground">남음</span>
-                {timerStatus === "paused" && (
-                  <span className="text-orange-500/70 text-[10px] font-medium">
-                    일시정지
-                  </span>
-                )}
-                <span className="text-muted-foreground/50 ml-auto text-[10px] tabular-nums hidden sm:block">
+                {timerStatus === "paused" && <span className="text-orange-500/70 text-[10px]">일시정지</span>}
+                <span className="text-muted-foreground/40 ml-auto text-[10px] tabular-nums hidden sm:block">
                   {formatTime(elapsedSeconds)} 경과
                 </span>
               </div>
             ) : (
-              <p className="text-xs text-muted-foreground truncate">
-                {currentTrack.performer} · {catInfo?.name}
+              <p className="text-[11px] text-muted-foreground truncate mt-0.5 leading-tight">
+                {catInfo?.emoji} {catInfo?.name} · {formatTime(currentTime)}/{formatTime(duration)}
               </p>
             )}
-          </div>
-
-          {/* 시간 (타이머 미사용 시만) */}
-          {!isTimerActive && (
-            <span className="text-xs text-muted-foreground tabular-nums hidden sm:block">
-              {formatTime(currentTime)} / {formatTime(duration)}
-            </span>
-          )}
+          </button>
 
           {/* 컨트롤 */}
-          <div className="flex items-center gap-0.5">
-            {!isTimerActive && (
-              <button
-                onClick={prev}
-                className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
-                title="이전 곡"
-              >
-                <SkipBack className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              </button>
-            )}
+          <div className="flex items-center gap-px shrink-0">
+            <button
+              onClick={prev}
+              className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
+              title="이전 곡"
+            >
+              <SkipBack className="w-3.5 h-3.5" />
+            </button>
 
             <button
               onClick={isTimerActive ? handleTimerToggle : toggle}
               className={cn(
-                "w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-full transition-colors",
+                "w-9 h-9 flex items-center justify-center rounded-full transition-colors",
                 isTimerActive && timerStatus === "paused"
-                  ? "bg-orange-500 text-white hover:bg-orange-600"
-                  : "bg-primary text-primary-foreground hover:bg-primary/90"
+                  ? "bg-orange-500 text-white"
+                  : "bg-primary text-primary-foreground"
               )}
               title={isPlaying ? "일시정지" : "재생"}
             >
-              {isPlaying ? (
-                <Pause className="w-4 h-4" />
-              ) : (
-                <Play className="w-4 h-4 ml-0.5" />
-              )}
+              {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 ml-0.5" />}
             </button>
 
             <button
               onClick={next}
-              className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
+              className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
               title="다음 곡"
             >
-              <SkipForward className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <SkipForward className="w-3.5 h-3.5" />
             </button>
 
+            {/* 음량 버튼 */}
+            <button
+              onClick={toggleVolume}
+              className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
+              title="음량 조절"
+            >
+              {volume === 0 ? (
+                <VolumeX className="w-3.5 h-3.5 text-muted-foreground" />
+              ) : (
+                <Volume2 className="w-3.5 h-3.5 text-muted-foreground" />
+              )}
+            </button>
+
+            {/* 트랙리스트 버튼 */}
+            <button
+              onClick={openTrackList}
+              className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
+              title="재생 목록"
+            >
+              <ListMusic className="w-3.5 h-3.5 text-muted-foreground" />
+            </button>
+
+            {/* 타이머 종료 버튼 */}
             {isTimerActive && (
               <button
                 onClick={stopTimer}
-                className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-full hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
                 title="독서 종료"
               >
-                <Square className="w-3.5 h-3.5" />
+                <Square className="w-3 h-3" />
               </button>
             )}
           </div>
         </div>
+
+        {/* 음량 슬라이더 (토글) */}
+        {isVolumeOpen && (
+          <div className="flex items-center gap-3 px-4 pb-2 pt-0.5">
+            <VolumeX
+              className="w-3.5 h-3.5 text-muted-foreground shrink-0 cursor-pointer"
+              onClick={() => setVolume(0)}
+            />
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="0.05"
+              value={volume}
+              onChange={handleVolumeChange}
+              className="flex-1 h-1.5 bg-muted rounded-full appearance-none cursor-pointer accent-primary
+                [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4
+                [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary [&::-webkit-slider-thumb]:shadow-sm"
+            />
+            <Volume2
+              className="w-3.5 h-3.5 text-muted-foreground shrink-0 cursor-pointer"
+              onClick={() => setVolume(0.7)}
+            />
+            <span className="text-[10px] text-muted-foreground tabular-nums w-7 text-right">
+              {Math.round(volume * 100)}
+            </span>
+          </div>
+        )}
       </div>
 
       <TimerSheet />
       <ReadingCompleteDialog />
+      <TrackListSheet />
     </>
   );
 }

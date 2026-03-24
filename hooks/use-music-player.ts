@@ -24,6 +24,8 @@ interface MusicPlayerState {
   elapsedSeconds: number;
   isTimerSheetOpen: boolean;
   isCompleteDialogOpen: boolean;
+  isTrackListOpen: boolean;
+  isVolumeOpen: boolean;
 
   // ── 음악 액션 ──
   loadPlaylist: (tracks: MusicTrack[], startIndex?: number) => void;
@@ -48,6 +50,9 @@ interface MusicPlayerState {
   openTimerSheet: () => void;
   closeTimerSheet: () => void;
   closeCompleteDialog: () => void;
+  openTrackList: () => void;
+  closeTrackList: () => void;
+  toggleVolume: () => void;
 
   // ── 공통 ──
   close: () => void;
@@ -57,6 +62,8 @@ const INITIAL_TIMER = {
   timerStatus: "idle" as TimerStatus,
   targetSeconds: 0,
   remainingSeconds: 0,
+  isTrackListOpen: false,
+  isVolumeOpen: false,
   elapsedSeconds: 0,
   isTimerSheetOpen: false,
   isCompleteDialogOpen: false,
@@ -217,6 +224,9 @@ export const useMusicPlayer = create<MusicPlayerState>((set, get) => ({
   openTimerSheet: () => set({ isTimerSheetOpen: true }),
   closeTimerSheet: () => set({ isTimerSheetOpen: false }),
   closeCompleteDialog: () => set({ isCompleteDialogOpen: false }),
+  openTrackList: () => set({ isTrackListOpen: true }),
+  closeTrackList: () => set({ isTrackListOpen: false }),
+  toggleVolume: () => set((s) => ({ isVolumeOpen: !s.isVolumeOpen })),
 
   // ── 전체 종료 ──
   close: () =>
