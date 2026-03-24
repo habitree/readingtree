@@ -205,7 +205,15 @@ export function MusicMiniPlayer() {
     else if (timerStatus === "paused") resumeTimer();
   }
 
-  if (!isVisible || !currentTrack) return null;
+  // TimerSheet와 ReadingCompleteDialog는 플레이어 비표시 상태에서도 접근 가능해야 함
+  if (!isVisible || !currentTrack) {
+    return (
+      <>
+        <TimerSheet />
+        <ReadingCompleteDialog />
+      </>
+    );
+  }
 
   const catInfo = MUSIC_CATEGORIES.find(
     (c) => c.id === currentTrack.category
