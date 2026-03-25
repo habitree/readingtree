@@ -14,7 +14,6 @@ import { Trophy, BookOpen, PartyPopper, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { updateBookStatus } from "@/app/actions/books";
 import { toast } from "sonner";
-import confetti from "canvas-confetti";
 
 interface BookCompletionDialogProps {
   open: boolean;
@@ -45,13 +44,18 @@ export function BookCompletionDialog({
   const [isConfirming, setIsConfirming] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
 
+  // confetti를 dynamic import로 실행하는 헬퍼
+  const fireConfetti = (options: Record<string, unknown>) => {
+    import("canvas-confetti").then((m) => m.default(options as Parameters<typeof m.default>[0]));
+  };
+
   // 다이얼로그 열릴 때 초기 confetti
   useEffect(() => {
     if (open) {
       setShowCelebration(false);
       // 작은 confetti로 주의 끌기
       setTimeout(() => {
-        confetti({
+        fireConfetti({
           particleCount: 40,
           spread: 60,
           origin: { y: 0.7 },
@@ -74,14 +78,14 @@ export function BookCompletionDialog({
       const end = Date.now() + duration;
 
       const frame = () => {
-        confetti({
+        fireConfetti({
           particleCount: 3,
           angle: 60,
           spread: 55,
           origin: { x: 0, y: 0.6 },
           colors: ["#22c55e", "#10b981", "#059669", "#fbbf24", "#f59e0b"],
         });
-        confetti({
+        fireConfetti({
           particleCount: 3,
           angle: 120,
           spread: 55,
@@ -97,7 +101,7 @@ export function BookCompletionDialog({
 
       // 큰 중앙 폭발
       setTimeout(() => {
-        confetti({
+        fireConfetti({
           particleCount: 100,
           spread: 100,
           origin: { y: 0.5 },

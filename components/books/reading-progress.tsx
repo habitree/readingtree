@@ -501,16 +501,18 @@ export function ReadingProgress({
       })()}
 
       {/* 완독 확인 다이얼로그 */}
-      <BookCompletionDialog
-        open={showCompletionDialog}
-        onOpenChange={setShowCompletionDialog}
-        userBookId={userBookId}
-        bookTitle={bookTitle}
-        bookAuthor={bookAuthor}
-        onCompleted={() => {
-          window.location.reload();
-        }}
-      />
+      {showCompletionDialog && (
+        <BookCompletionDialog
+          open={showCompletionDialog}
+          onOpenChange={setShowCompletionDialog}
+          userBookId={userBookId}
+          bookTitle={bookTitle}
+          bookAuthor={bookAuthor}
+          onCompleted={() => {
+            window.location.reload();
+          }}
+        />
+      )}
 
       {/* 페이지 수정 UI */}
       {isEditing ? (

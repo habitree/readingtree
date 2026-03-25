@@ -119,7 +119,7 @@ export const ContinueReadingCard = memo(function ContinueReadingCard({
     }
   }, [pageInput, totalPages, localProgress, userBookId, t, currentPage, progressPercent]);
 
-  const completionDialog = (
+  const completionDialog = showCompletionDialog ? (
     <BookCompletionDialog
       open={showCompletionDialog}
       onOpenChange={setShowCompletionDialog}
@@ -130,7 +130,7 @@ export const ContinueReadingCard = memo(function ContinueReadingCard({
         window.location.reload();
       }}
     />
-  );
+  ) : null;
 
   // compact 모드: 세로 레이아웃의 작은 카드 + 인라인 진행률
   if (compact) {
