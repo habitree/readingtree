@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { updateBookProgress } from "@/app/actions/books";
 import { toast } from "sonner";
 import { TotalPagesEditor } from "./total-pages-editor";
+import { BookCompletionDialog } from "./book-completion-dialog";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/lib/i18n";
 
@@ -63,6 +64,9 @@ export function ReadingProgress({
   const [inlineMemo, setInlineMemo] = useState("");
   const [pendingPageUpdate, setPendingPageUpdate] = useState<number | null>(null);
   const [isInlineSaving, setIsInlineSaving] = useState(false);
+
+  // 완독 확인 다이얼로그
+  const [showCompletionDialog, setShowCompletionDialog] = useState(false);
 
   // 총 페이지 수 업데이트 핸들러
   const handleTotalPagesUpdate = (newTotalPages: number | null) => {
@@ -128,10 +132,9 @@ export function ReadingProgress({
       setDragValue(pendingPageUpdate);
       onUpdate?.(pendingPageUpdate);
 
-      if (result.autoCompleted) {
-        toast.success("완독을 축하합니다! 🎉", { duration: 4000 });
-        // 완독 상태 반영을 위해 페이지 새로고침
-        window.location.reload();
+      if (result.reachedEnd) {
+        // 완독 확인 다이얼로그 표시
+        setShowCompletionDialog(true);
       } else {
         toast.success(t("books.progressUpdatedTo", { page: pendingPageUpdate }));
       }
@@ -174,9 +177,9 @@ export function ReadingProgress({
       onUpdate?.(pendingPageUpdate);
       onRecordCreated?.();
 
-      if (result.autoCompleted) {
-        toast.success("완독을 축하합니다! 🎉", { duration: 4000 });
-        window.location.reload();
+      if (result.reachedEnd) {
+        // 완독 확인 다이얼로그 표시
+        setShowCompletionDialog(true);
       } else {
         toast.success(t("books.progressRecordSaved"));
       }
@@ -215,9 +218,8 @@ export function ReadingProgress({
         setIsEditing(false);
         onUpdate?.(newPage);
 
-        if (result.autoCompleted) {
-          toast.success("완독을 축하합니다! 🎉", { duration: 4000 });
-          window.location.reload();
+        if (result.reachedEnd) {
+          setShowCompletionDialog(true);
         } else {
           toast.success(t("books.progressUpdatedSuccess"));
         }
@@ -497,6 +499,18 @@ export function ReadingProgress({
           </div>
         );
       })()}
+
+      {/* 완독 확인 다이얼로그 */}
+      <BookCompletionDialog
+        open={showCompletionDialog}
+        onOpenChange={setShowCompletionDialog}
+        userBookId={userBookId}
+        bookTitle={bookTitle}
+        bookAuthor={bookAuthor}
+        onCompleted={() => {
+          window.location.reload();
+        }}
+      />
 
       {/* 페이지 수정 UI */}
       {isEditing ? (

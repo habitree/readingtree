@@ -13,6 +13,7 @@ import { useHapticFeedback } from "@/components/ui/touch-feedback";
 import { useTranslation } from "@/lib/i18n";
 import { updateBookProgress } from "@/app/actions/books";
 import { toast } from "sonner";
+import { BookCompletionDialog } from "@/components/books/book-completion-dialog";
 
 interface ContinueReadingCardProps {
   userBookId: string;
@@ -52,6 +53,7 @@ export const ContinueReadingCard = memo(function ContinueReadingCard({
   const inputRef = useRef<HTMLInputElement>(null);
   const { lightTap } = useHapticFeedback();
   const { t } = useTranslation();
+  const [showCompletionDialog, setShowCompletionDialog] = useState(false);
 
   // 뒤로가기 등으로 경로가 변경되면 네비게이션 상태 리셋
   useEffect(() => {
@@ -102,9 +104,8 @@ export const ContinueReadingCard = memo(function ContinueReadingCard({
 
     try {
       const result = await updateBookProgress(userBookId, page);
-      if (result.autoCompleted) {
-        toast.success("완독을 축하합니다! 🎉", { duration: 4000 });
-        window.location.reload();
+      if (result.reachedEnd) {
+        setShowCompletionDialog(true);
       } else {
         toast.success(t("dashboard.updatePageSuccess"));
       }
@@ -118,10 +119,23 @@ export const ContinueReadingCard = memo(function ContinueReadingCard({
     }
   }, [pageInput, totalPages, localProgress, userBookId, t, currentPage, progressPercent]);
 
+  const completionDialog = (
+    <BookCompletionDialog
+      open={showCompletionDialog}
+      onOpenChange={setShowCompletionDialog}
+      userBookId={userBookId}
+      bookTitle={title}
+      bookAuthor={author}
+      onCompleted={() => {
+        window.location.reload();
+      }}
+    />
+  );
+
   // compact 모드: 세로 레이아웃의 작은 카드 + 인라인 진행률
   if (compact) {
     return (
-      <motion.div
+      <>{completionDialog}<motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.3 }}
@@ -225,13 +239,13 @@ export const ContinueReadingCard = memo(function ContinueReadingCard({
               </div>
             </div>
           </Card>
-      </motion.div>
+      </motion.div></>
     );
   }
 
   // 기본 모드: 가로 레이아웃의 큰 카드
   return (
-    <motion.div
+    <>{completionDialog}<motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.3 }}
@@ -305,7 +319,7 @@ export const ContinueReadingCard = memo(function ContinueReadingCard({
           <ChevronRight className="h-5 w-5 text-slate-400 group-hover:text-forest-500 transition-colors shrink-0" />
         </div>
       </Card>
-    </motion.div>
+    </motion.div></>
   );
 });
 

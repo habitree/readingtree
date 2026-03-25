@@ -159,14 +159,9 @@ export async function updateBookProgress(
     throw new Error(`페이지 수는 전체 페이지(${totalPages})를 초과할 수 없습니다.`);
   }
 
-  // 진행률 100% 도달 시 자동 완독 처리
-  const isAutoComplete = totalPages && currentPage >= totalPages;
+  // 진행률 100% 도달 여부 확인 (자동 완독하지 않고 클라이언트에 알림)
+  const reachedEnd = !!(totalPages && currentPage >= totalPages);
   const updateData: Record<string, unknown> = { current_page: currentPage };
-
-  if (isAutoComplete) {
-    updateData.status = "completed" as ReadingStatus;
-    updateData.completed_at = new Date().toISOString();
-  }
 
   const { error } = await supabase
     .from("user_books")
@@ -177,35 +172,11 @@ export async function updateBookProgress(
     throw new Error(`진행률 업데이트 실패: ${error.message}`);
   }
 
-  // 자동 완독 시 포인트 적립
-  if (isAutoComplete) {
-    try {
-      await updateStreak(currentUser);
-
-      const { data: bookInfo } = await supabase
-        .from("user_books")
-        .select("books(title)")
-        .eq("id", userBookId)
-        .single();
-
-      const bookTitle = ((bookInfo?.books as unknown) as { title?: string } | null)?.title || "책";
-
-      await earnPoints("book_complete", {
-        user: currentUser,
-        referenceId: userBookId,
-        referenceType: "user_book",
-        description: `${bookTitle} 완독`,
-      });
-    } catch (pointError) {
-      console.error("포인트 적립 오류:", sanitizeErrorForLogging(pointError));
-    }
-  }
-
   revalidatePath("/books");
   revalidatePath(`/books/${userBookId}`);
   revalidatePath("/");
 
-  return { success: true, autoCompleted: !!isAutoComplete };
+  return { success: true, reachedEnd };
 }
 
 /**
