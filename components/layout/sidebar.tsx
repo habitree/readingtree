@@ -91,21 +91,16 @@ export function Sidebar() {
     // action 기반 항목 (Quick Capture 등)
     if (item.action === "quickCapture") {
       return (
-        <button
+        <Button
           key="quickCapture"
-          type="button"
+          variant="ghost"
+          className="w-full justify-start gap-3 h-11"
           onClick={openQuickCapture}
           aria-label={item.label}
         >
-          <Button
-            variant="ghost"
-            className="w-full justify-start gap-3 h-11"
-            aria-label={item.label}
-          >
-            <Icon className="h-5 w-5" aria-hidden="true" />
-            <span className="flex-1 text-left">{item.label}</span>
-          </Button>
-        </button>
+          <Icon className="h-5 w-5" aria-hidden="true" />
+          <span className="flex-1 text-left">{item.label}</span>
+        </Button>
       );
     }
 

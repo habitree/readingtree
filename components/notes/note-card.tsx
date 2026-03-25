@@ -106,9 +106,9 @@ export function NoteCard({ note, showDeleteButton = false, onDelete }: NoteCardP
                   )}
                 </div>
                 {note.content && (
-                  <p className="text-xs text-muted-foreground line-clamp-1 mt-1">
+                  <div className="text-xs text-muted-foreground line-clamp-1 mt-1">
                     <NoteContentViewer content={note.content} pageNumber={null} maxLength={60} compact />
-                  </p>
+                  </div>
                 )}
               </div>
 
@@ -184,18 +184,21 @@ export function NoteCard({ note, showDeleteButton = false, onDelete }: NoteCardP
 
               {/* 책 정보 또는 출처 - 이미지 아래에 심플하게 */}
               {note.book ? (
-                <Link
-                  href={`/books/${note.book.id}`}
-                  className="block p-1.5 sm:p-2 bg-background/80 backdrop-blur-sm border-t hover:bg-muted/50 transition-colors"
-                  onClick={(e) => e.stopPropagation()}
+                <div
+                  className="block p-1.5 sm:p-2 bg-background/80 backdrop-blur-sm border-t hover:bg-muted/50 transition-colors cursor-pointer"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    window.location.href = `/books/${note.book!.id}`;
+                  }}
                 >
                   <div className="flex items-center gap-1">
                     <BookOpen className="h-3 w-3 text-muted-foreground shrink-0" />
-                    <p className="text-[9px] sm:text-[10px] font-medium text-foreground/80 line-clamp-2 leading-tight">
+                    <span className="text-[9px] sm:text-[10px] font-medium text-foreground/80 line-clamp-2 leading-tight">
                       {note.book.title}
-                    </p>
+                    </span>
                   </div>
-                </Link>
+                </div>
               ) : (note as any).source_label ? (
                 <div className="p-1.5 sm:p-2 bg-background/80 backdrop-blur-sm border-t">
                   <div className="flex items-center gap-1">
