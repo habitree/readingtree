@@ -145,6 +145,7 @@ const nextConfig = {
               value: [
                 "default-src 'self'",
                 "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://*.supabase.co https://*.kakao.com https://*.googleapis.com https://*.tosspayments.com",
+                "worker-src 'self' blob:",
                 "style-src 'self' 'unsafe-inline'",
                 "img-src 'self' data: https: blob:",
                 "font-src 'self' data: https://fonts.gstatic.com",
@@ -175,6 +176,7 @@ const nextConfig = {
               // 프로덕션에서는 unsafe-eval 제거, strict-dynamic 사용 고려
               // Next.js 15+에서는 대부분 필요 없음, 문제 발생 시 unsafe-eval 추가
               "script-src 'self' 'unsafe-inline' https://*.supabase.co https://*.kakao.com https://*.googleapis.com https://*.tosspayments.com",
+              "worker-src 'self' blob:",
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "img-src 'self' data: https: blob:",
               "font-src 'self' data: https://fonts.gstatic.com",
