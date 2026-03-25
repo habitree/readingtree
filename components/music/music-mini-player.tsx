@@ -145,6 +145,12 @@ export function MusicMiniPlayer() {
   const audioRef = useRef<HTMLAudioElement>(null);
   const progressRef = useRef<HTMLDivElement>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  /** 트랙 변경 중 플래그 — isPlaying effect와 경쟁 방지 */
+  const isLoadingTrack = useRef(false);
+  /** 에러 재시도 카운터 */
+  const retryCount = useRef(0);
+  const retryTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const MAX_RETRIES = 3;
 
   const {
     isVisible,
@@ -197,35 +203,81 @@ export function MusicMiniPlayer() {
     };
   }, [timerStatus]);
 
+  // ── 안전한 play 호출 (재시도 포함) ──
+  const safePlay = useCallback((audio: HTMLAudioElement) => {
+    audio.play().catch((err: DOMException) => {
+      // NotAllowedError = autoplay 정책 차단 → 재시도 불필요
+      if (err.name === "NotAllowedError") {
+        useMusicPlayer.getState().pause();
+        return;
+      }
+      // 네트워크/디코딩 에러 → 재시도
+      if (retryCount.current < MAX_RETRIES) {
+        retryCount.current += 1;
+        const delay = 1000 * Math.pow(2, retryCount.current - 1); // 1s, 2s, 4s
+        retryTimer.current = setTimeout(() => {
+          const state = useMusicPlayer.getState();
+          if (state.isPlaying && audio === audioRef.current) {
+            safePlay(audio);
+          }
+        }, delay);
+      } else {
+        // 재시도 소진 → 다음 곡으로
+        retryCount.current = 0;
+        useMusicPlayer.getState().next();
+      }
+    });
+  }, []);
+
   // ── 재생/정지 동기화 ──
   // handlePlayToggle/handleTimerToggle에서 직접 audio를 제어하므로
   // useEffect에서는 보조적 역할만 (상태와 audio가 불일치할 때 동기화)
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
+    // 트랙 로딩 중이면 canplay 이벤트가 처리하므로 skip
+    if (isLoadingTrack.current && isPlaying) return;
     // audio 상태와 isPlaying이 이미 일치하면 skip
     if (isPlaying && !audio.paused) return;
     if (!isPlaying && audio.paused) return;
     if (isPlaying) {
-      audio.play().catch(() => useMusicPlayer.getState().pause());
+      safePlay(audio);
     } else {
       audio.pause();
     }
-  }, [isPlaying]);
+  }, [isPlaying, safePlay]);
 
-  // ── 트랙 변경 시 src 업데이트 ──
+  // ── 트랙 변경 시 src 업데이트 (canplay 대기 후 재생) ──
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio || !currentTrack) return;
     // 이미 동일 src가 설정되어 있으면 skip (handleStart에서 직접 설정한 경우)
     if (audio.src.endsWith(currentTrack.sourceUrl)) return;
+
+    isLoadingTrack.current = true;
+    retryCount.current = 0;
+    if (retryTimer.current) {
+      clearTimeout(retryTimer.current);
+      retryTimer.current = null;
+    }
+
+    const onCanPlay = () => {
+      isLoadingTrack.current = false;
+      audio.removeEventListener("canplay", onCanPlay);
+      if (useMusicPlayer.getState().isPlaying) {
+        safePlay(audio);
+      }
+    };
+
+    audio.addEventListener("canplay", onCanPlay);
     audio.src = currentTrack.sourceUrl;
     audio.load();
-    if (isPlaying) {
-      audio.play().catch(() => useMusicPlayer.getState().pause());
-    }
+
+    return () => {
+      audio.removeEventListener("canplay", onCanPlay);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentTrack?.id]);
+  }, [currentTrack?.id, safePlay]);
 
   // ── 볼륨 동기화 ──
   useEffect(() => {
@@ -255,13 +307,97 @@ export function MusicMiniPlayer() {
 
   const handleEnded = useCallback(() => next(), [next]);
 
-  // ── 외부 URL 로딩 실패 시 다음 곡 스킵 ──
+  // ── 로딩 실패 시 재시도 or 다음 곡 스킵 ──
   const handleError = useCallback(() => {
+    isLoadingTrack.current = false;
     const state = useMusicPlayer.getState();
-    if (state.currentTrack?.isExternal) {
+    if (!state.isPlaying) return;
+    // 재시도 가능하면 재시도
+    if (retryCount.current < MAX_RETRIES) {
+      retryCount.current += 1;
+      const delay = 1000 * Math.pow(2, retryCount.current - 1);
+      retryTimer.current = setTimeout(() => {
+        const audio = audioRef.current;
+        const s = useMusicPlayer.getState();
+        if (audio && s.isPlaying && s.currentTrack) {
+          audio.load();
+          audio.addEventListener("canplay", function onRetry() {
+            audio.removeEventListener("canplay", onRetry);
+            if (useMusicPlayer.getState().isPlaying) {
+              safePlay(audio);
+            }
+          });
+        }
+      }, delay);
+    } else {
+      retryCount.current = 0;
       state.next();
     }
-  }, []);
+  }, [safePlay]);
+
+  // ── 네트워크 복구 시 재생 재개 ──
+  useEffect(() => {
+    function handleOnline() {
+      const audio = audioRef.current;
+      const state = useMusicPlayer.getState();
+      if (!audio || !state.isPlaying || !state.currentTrack) return;
+      // 네트워크 복구 → 현재 트랙 다시 로드
+      if (audio.paused && state.isPlaying) {
+        retryCount.current = 0;
+        audio.load();
+        audio.addEventListener("canplay", function onRecover() {
+          audio.removeEventListener("canplay", onRecover);
+          if (useMusicPlayer.getState().isPlaying) {
+            safePlay(audio);
+          }
+        });
+      }
+    }
+
+    function handleStalled() {
+      // stalled 이벤트: 데이터 다운로드가 멈춤
+      const audio = audioRef.current;
+      const state = useMusicPlayer.getState();
+      if (!audio || !state.isPlaying) return;
+      // 짧은 지연 후 재시도
+      retryTimer.current = setTimeout(() => {
+        if (audio.paused && useMusicPlayer.getState().isPlaying) {
+          safePlay(audio);
+        }
+      }, 2000);
+    }
+
+    const audio = audioRef.current;
+    window.addEventListener("online", handleOnline);
+    audio?.addEventListener("stalled", handleStalled);
+
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      audio?.removeEventListener("stalled", handleStalled);
+      if (retryTimer.current) {
+        clearTimeout(retryTimer.current);
+        retryTimer.current = null;
+      }
+    };
+  }, [safePlay]);
+
+  // ── 모바일 백그라운드 복귀 시 재생 복구 ──
+  useEffect(() => {
+    function handleVisibilityChange() {
+      if (document.visibilityState !== "visible") return;
+      const audio = audioRef.current;
+      const state = useMusicPlayer.getState();
+      if (!audio || !state.isPlaying || !state.currentTrack) return;
+      // 백그라운드에서 돌아왔는데 audio가 멈춰있으면 복구
+      if (audio.paused) {
+        retryCount.current = 0;
+        safePlay(audio);
+      }
+    }
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
+  }, [safePlay]);
 
   // ── Media Session API ──
   useEffect(() => {
