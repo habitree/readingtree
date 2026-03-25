@@ -6,7 +6,9 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { PenTool, BookPlus, Camera, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useMobileNoteSheet, type NoteMode } from "@/hooks/use-mobile-note-sheet";
+import { useQuickCaptureStore } from "@/hooks/use-quick-capture";
+
+type NoteMode = "memo" | "transcription";
 import { useLoginPrompt } from "@/hooks/use-login-prompt";
 import { LoginPromptModal } from "@/components/ui/login-prompt-modal";
 import { useMediaQuery } from "@/hooks/use-media-query";
@@ -68,7 +70,7 @@ const QUICK_ACTION_KEYS = [
  * 모바일: 바텀시트 / 데스크톱: URL 네비게이션
  */
 export function MobileQuickActions() {
-  const { open } = useMobileNoteSheet();
+  const { open: openQuickCapture } = useQuickCaptureStore();
   const { isOpen, setIsOpen, title, description, requireLogin } = useLoginPrompt();
   const isDesktop = useMediaQuery("(min-width: 640px)");
   const router = useRouter();
@@ -94,9 +96,9 @@ export function MobileQuickActions() {
     }
     // 모바일에서는 바텀시트
     if (action.sheetMode) {
-      open(action.sheetMode);
+      openQuickCapture();
     }
-  }, [open, requireLogin, isDesktop, router]);
+  }, [openQuickCapture, requireLogin, isDesktop, router]);
 
   const handleLinkClick = useCallback((e: React.MouseEvent, action: QuickActionItem) => {
     const isSearch = action.label === t("dashboard.quickSearch");

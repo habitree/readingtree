@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "@/lib/i18n";
 import { useMediaQuery } from "@/hooks/use-media-query";
-import { useMobileNoteSheet } from "@/hooks/use-mobile-note-sheet";
+import { useQuickCaptureStore } from "@/hooks/use-quick-capture";
 
 /**
  * 첫 기록 유도 CTA 카드
@@ -16,11 +16,11 @@ export function FirstNotePrompt() {
   const { t } = useTranslation();
   const router = useRouter();
   const isMobile = useMediaQuery("(max-width: 768px)");
-  const { open } = useMobileNoteSheet();
+  const { open } = useQuickCaptureStore();
 
   const handleClick = () => {
     if (isMobile) {
-      open("memo");
+      open();
     } else {
       router.push("/notes/new?quickstart=true");
     }

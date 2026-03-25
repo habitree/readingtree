@@ -8,7 +8,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useMusicPlayer } from "@/hooks/use-music-player";
-import { useMobileNoteSheet } from "@/hooks/use-mobile-note-sheet";
 import { useQuickCaptureStore } from "@/hooks/use-quick-capture";
 import { BookOpen, PenLine, ArrowRight, Zap, Loader2, Infinity as InfinityIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -39,7 +38,6 @@ export function ReadingCompleteDialog() {
     close,
   } = useMusicPlayer();
 
-  const { openWithTimer: openNoteSheetWithTimer } = useMobileNoteSheet();
   const quickCapture = useQuickCaptureStore();
   const [showContinueOptions, setShowContinueOptions] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -59,10 +57,10 @@ export function ReadingCompleteDialog() {
     }
   }
 
-  /** 상세 기록: MobileNoteSheet에 타이머 데이터 전달하여 열기 */
+  /** 상세 기록: QuickCapture에 타이머 데이터 전달하여 열기 */
   function handleDetailRecord() {
     closeCompleteDialog();
-    openNoteSheetWithTimer(elapsedSeconds, timerStartedAt ?? null, "memo");
+    quickCapture.openWithTimer(null, elapsedSeconds);
   }
 
   function handleContinue(seconds: number) {
