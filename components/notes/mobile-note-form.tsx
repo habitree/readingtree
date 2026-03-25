@@ -38,6 +38,8 @@ interface MobileNoteFormProps {
   onSaved?: () => void;
   /** 취소 콜백 */
   onCancel?: () => void;
+  /** 타이머 독서 시간 (초) - 타이머 완료 시 자동 전달 */
+  readingDurationSeconds?: number | null;
 }
 
 /**
@@ -49,6 +51,7 @@ export function MobileNoteForm({
   mode,
   onSaved,
   onCancel,
+  readingDurationSeconds,
 }: MobileNoteFormProps) {
   const { t } = useTranslation();
   // 폼 상태
@@ -123,6 +126,7 @@ export function MobileNoteForm({
       isPublic,
       sourceType: !bookId && sourceType ? sourceType : undefined,
       sourceLabel: !bookId && sourceLabel.trim() ? sourceLabel.trim() : undefined,
+      readingDurationSeconds: readingDurationSeconds ?? undefined,
     });
   };
 

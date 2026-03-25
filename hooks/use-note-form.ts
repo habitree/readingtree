@@ -20,6 +20,7 @@ export interface NoteFormData {
   isPublic: boolean;
   sourceType?: string;
   sourceLabel?: string;
+  readingDurationSeconds?: number;
 }
 
 /**
@@ -302,6 +303,7 @@ export function useNoteForm(options: UseNoteFormOptions): UseNoteFormReturn {
         is_public: data.isPublic,
         source_type: data.sourceType as any || undefined,
         source_label: data.sourceLabel?.trim() || undefined,
+        reading_duration_seconds: data.readingDurationSeconds,
       };
 
       // 다중 이미지 업로드 시 각 이미지별로 기록 생성

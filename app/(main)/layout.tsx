@@ -5,6 +5,7 @@ import { MobileNav } from "@/components/layout/mobile-nav";
 import { Footer } from "@/components/layout/footer";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { MobileNoteSheetProvider } from "@/components/notes/mobile-note-sheet";
+import { QuickCaptureSheet } from "@/components/notes/quick-capture-sheet";
 import { NavigationProgress } from "@/components/ui/navigation-progress";
 import { UpgradeModal } from "@/components/subscription/upgrade-modal";
 import { PageTracker } from "@/components/tracking/page-tracker";
@@ -43,6 +44,7 @@ export default function MainLayout({
         <MusicMiniPlayer />
         <PageTracker />
         <MobileNoteSheetProvider />
+        <QuickCaptureSheet />
         <UpgradeModal />
       </div>
     </ErrorBoundary>

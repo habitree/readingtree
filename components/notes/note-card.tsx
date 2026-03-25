@@ -88,6 +88,11 @@ export function NoteCard({ note, showDeleteButton = false, onDelete }: NoteCardP
               {/* 내용 */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-0.5">
+                  {note.status === "draft" && (
+                    <Badge variant="outline" className="text-[10px] h-5 px-1.5 font-semibold border-amber-300 bg-amber-50 text-amber-600 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-700">
+                      draft
+                    </Badge>
+                  )}
                   <Badge variant="secondary" className="text-[10px] h-5 px-1.5 bg-teal-100 dark:bg-teal-900/50 text-teal-700 dark:text-teal-300">
                     {t("notes.progressRecord")}
                   </Badge>
@@ -200,6 +205,11 @@ export function NoteCard({ note, showDeleteButton = false, onDelete }: NoteCardP
             <div className="flex-1 min-w-0 p-3 sm:p-4 flex flex-col">
               {/* 상단: 타입 + 페이지 + OCR 상태 */}
               <div className="flex items-center gap-1.5 mb-2">
+                {note.status === "draft" && (
+                  <Badge variant="outline" className="text-[10px] h-5 px-1.5 font-semibold border-amber-300 bg-amber-50 text-amber-600 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-700">
+                    draft
+                  </Badge>
+                )}
                 <Badge variant="secondary" className="text-[10px] sm:text-xs h-5 px-1.5 font-medium">
                   {typeLabel}
                 </Badge>

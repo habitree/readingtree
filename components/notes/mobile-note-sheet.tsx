@@ -33,6 +33,7 @@ export function MobileNoteSheet() {
     mode,
     selectedBook,
     currentStep,
+    readingDurationSeconds,
     selectBook,
     clearBook,
     skipBook,
@@ -162,6 +163,7 @@ export function MobileNoteSheet() {
               mode={mode}
               onSaved={handleSaved}
               onCancel={handleClose}
+              readingDurationSeconds={readingDurationSeconds}
             />
           )}
         </div>

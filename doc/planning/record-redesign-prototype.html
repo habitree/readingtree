@@ -1,0 +1,1345 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ReadTree - 기록 기능 통합 개편 5가지 방향 프로토타입</title>
+<style>
+  :root {
+    --green-50: #f0fdf4; --green-100: #dcfce7; --green-200: #bbf7d0;
+    --green-500: #22c55e; --green-600: #16a34a; --green-700: #15803d;
+    --gray-50: #f9fafb; --gray-100: #f3f4f6; --gray-200: #e5e7eb;
+    --gray-300: #d1d5db; --gray-400: #9ca3af; --gray-500: #6b7280;
+    --gray-600: #4b5563; --gray-700: #374151; --gray-800: #1f2937;
+    --gray-900: #111827;
+    --amber-100: #fef3c7; --amber-500: #f59e0b;
+    --blue-100: #dbeafe; --blue-500: #3b82f6; --blue-600: #2563eb;
+    --purple-100: #ede9fe; --purple-500: #8b5cf6;
+    --rose-100: #ffe4e6; --rose-500: #f43f5e;
+    --radius: 12px; --shadow: 0 4px 24px rgba(0,0,0,0.08);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, 'Pretendard', sans-serif; background: #f5f5f5; color: var(--gray-800); }
+
+  /* Navigation */
+  .nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; background: white; border-bottom: 1px solid var(--gray-200); }
+  .nav-inner { max-width: 1400px; margin: 0 auto; padding: 0 24px; display: flex; align-items: center; height: 64px; gap: 16px; }
+  .nav-logo { font-size: 20px; font-weight: 800; color: var(--green-700); white-space: nowrap; }
+  .nav-tabs { display: flex; gap: 4px; overflow-x: auto; flex: 1; }
+  .nav-tab { padding: 8px 16px; border-radius: 8px; border: none; background: none; font-size: 13px; font-weight: 600;
+    cursor: pointer; color: var(--gray-500); white-space: nowrap; transition: all 0.2s; position: relative; }
+  .nav-tab:hover { background: var(--gray-100); color: var(--gray-700); }
+  .nav-tab.active { background: var(--green-100); color: var(--green-700); }
+  .nav-tab .badge { position: absolute; top: 2px; right: 2px; font-size: 9px; background: var(--green-600);
+    color: white; padding: 1px 5px; border-radius: 8px; }
+
+  /* Main */
+  .main { margin-top: 64px; padding: 32px 24px; max-width: 1400px; margin-left: auto; margin-right: auto; }
+  .section { display: none; }
+  .section.active { display: block; }
+
+  /* Overview */
+  .overview-hero { text-align: center; padding: 48px 0 32px; }
+  .overview-hero h1 { font-size: 32px; font-weight: 800; margin-bottom: 12px; }
+  .overview-hero p { font-size: 16px; color: var(--gray-500); max-width: 600px; margin: 0 auto; line-height: 1.6; }
+
+  .problem-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin: 32px 0; }
+  .problem-card { background: white; border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow); border-left: 4px solid var(--rose-500); }
+  .problem-card h3 { font-size: 15px; margin-bottom: 8px; color: var(--rose-500); }
+  .problem-card p { font-size: 13px; color: var(--gray-600); line-height: 1.6; }
+
+  .compare-table { width: 100%; border-collapse: collapse; margin: 32px 0; background: white;
+    border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); }
+  .compare-table th { background: var(--gray-800); color: white; padding: 14px 12px; font-size: 13px; text-align: center; }
+  .compare-table td { padding: 12px; font-size: 13px; text-align: center; border-bottom: 1px solid var(--gray-100); }
+  .compare-table tr:hover { background: var(--green-50); }
+  .compare-table .rec { background: var(--green-100); font-weight: 700; }
+  .pill { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+  .pill-high { background: var(--rose-100); color: var(--rose-500); }
+  .pill-mid { background: var(--amber-100); color: var(--amber-500); }
+  .pill-low { background: var(--green-100); color: var(--green-600); }
+
+  /* Direction sections */
+  .dir-header { padding: 32px 0 24px; border-bottom: 1px solid var(--gray-200); margin-bottom: 32px; }
+  .dir-header .dir-num { font-size: 14px; font-weight: 700; color: var(--green-600); margin-bottom: 4px; }
+  .dir-header h2 { font-size: 28px; font-weight: 800; margin-bottom: 8px; }
+  .dir-header .dir-quote { font-size: 16px; color: var(--gray-500); font-style: italic; }
+  .dir-meta { display: flex; gap: 12px; margin-top: 12px; flex-wrap: wrap; }
+  .dir-meta .tag { padding: 4px 12px; border-radius: 16px; font-size: 12px; font-weight: 600; }
+
+  /* Phone mockup */
+  .mockup-row { display: flex; gap: 32px; flex-wrap: wrap; justify-content: center; margin: 32px 0; }
+  .phone { width: 320px; height: 640px; background: white; border-radius: 32px; border: 3px solid var(--gray-800);
+    overflow: hidden; box-shadow: 0 8px 40px rgba(0,0,0,0.15); position: relative; flex-shrink: 0; }
+  .phone-notch { width: 120px; height: 24px; background: var(--gray-800); border-radius: 0 0 16px 16px;
+    position: absolute; top: 0; left: 50%; transform: translateX(-50%); z-index: 10; }
+  .phone-screen { height: 100%; display: flex; flex-direction: column; overflow: hidden; }
+  .phone-status { height: 44px; background: white; display: flex; align-items: flex-end; justify-content: center;
+    padding-bottom: 4px; font-size: 11px; font-weight: 600; }
+  .phone-header { height: 48px; background: white; border-bottom: 1px solid var(--gray-200);
+    display: flex; align-items: center; padding: 0 16px; gap: 12px; }
+  .phone-header .back { font-size: 18px; color: var(--gray-600); }
+  .phone-header .title { font-size: 16px; font-weight: 700; flex: 1; }
+  .phone-body { flex: 1; overflow-y: auto; background: var(--gray-50); position: relative; }
+  .phone-bottom-nav { height: 56px; background: white; border-top: 1px solid var(--gray-200);
+    display: flex; align-items: center; justify-content: space-around; flex-shrink: 0; }
+  .phone-bottom-nav .nav-item { text-align: center; font-size: 10px; color: var(--gray-400); cursor: pointer; }
+  .phone-bottom-nav .nav-item.active { color: var(--green-600); }
+  .phone-bottom-nav .nav-item .icon { font-size: 20px; display: block; margin-bottom: 2px; }
+  .phone-bottom-nav .fab { width: 48px; height: 48px; background: var(--green-600); border-radius: 50%;
+    display: flex; align-items: center; justify-content: center; color: white; font-size: 24px;
+    margin-top: -24px; box-shadow: 0 4px 12px rgba(22,163,74,0.4); }
+
+  /* Bottom Sheet */
+  .bottom-sheet { position: absolute; bottom: 0; left: 0; right: 0; background: white;
+    border-radius: 16px 16px 0 0; box-shadow: 0 -4px 24px rgba(0,0,0,0.1); z-index: 20;
+    transition: height 0.3s ease; }
+  .sheet-handle { width: 40px; height: 4px; background: var(--gray-300); border-radius: 2px;
+    margin: 8px auto; }
+  .sheet-content { padding: 0 16px 16px; }
+
+  /* Form elements */
+  .form-input { width: 100%; padding: 10px 12px; border: 1px solid var(--gray-200); border-radius: 8px;
+    font-size: 14px; background: var(--gray-50); outline: none; resize: none; }
+  .form-input:focus { border-color: var(--green-500); background: white; }
+  .form-input::placeholder { color: var(--gray-400); }
+  .form-label { font-size: 12px; font-weight: 600; color: var(--gray-600); margin-bottom: 4px; display: block; }
+  .btn { padding: 8px 16px; border-radius: 8px; border: none; font-size: 13px; font-weight: 600;
+    cursor: pointer; transition: all 0.2s; }
+  .btn-primary { background: var(--green-600); color: white; }
+  .btn-primary:hover { background: var(--green-700); }
+  .btn-ghost { background: none; color: var(--gray-500); }
+  .btn-sm { padding: 6px 12px; font-size: 12px; }
+
+  /* Cards */
+  .note-card { background: white; border-radius: 10px; padding: 14px; margin: 8px 12px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+  .note-card .book-tag { font-size: 11px; color: var(--green-600); font-weight: 600; margin-bottom: 6px; }
+  .note-card .quote { font-size: 13px; color: var(--gray-700); font-style: italic;
+    border-left: 2px solid var(--green-500); padding-left: 10px; margin-bottom: 8px; line-height: 1.5; }
+  .note-card .memo { font-size: 13px; color: var(--gray-600); line-height: 1.5; }
+  .note-card .meta { font-size: 11px; color: var(--gray-400); margin-top: 8px; }
+
+  /* Direction-specific */
+  .book-chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px 4px 4px;
+    background: var(--green-50); border: 1px solid var(--green-200); border-radius: 20px; font-size: 12px; }
+  .book-chip img { width: 20px; height: 28px; border-radius: 3px; object-fit: cover; background: var(--green-200); }
+
+  .toolbar { display: flex; gap: 8px; padding: 8px 0; }
+  .toolbar-btn { width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--gray-200);
+    display: flex; align-items: center; justify-content: center; font-size: 16px; background: white; cursor: pointer; }
+  .toolbar-btn:hover { background: var(--gray-100); }
+
+  /* Timeline */
+  .timeline-line { position: absolute; left: 28px; top: 0; bottom: 0; width: 2px; background: var(--green-200); }
+  .timeline-item { position: relative; padding-left: 48px; padding-right: 12px; margin-bottom: 16px; }
+  .timeline-dot { position: absolute; left: 22px; top: 8px; width: 14px; height: 14px;
+    border-radius: 50%; border: 2px solid var(--green-500); background: white; z-index: 2; }
+  .timeline-dot.filled { background: var(--green-500); }
+  .timeline-date { font-size: 11px; color: var(--gray-400); font-weight: 600; margin-bottom: 6px; }
+
+  /* Heatmap */
+  .heatmap { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; padding: 12px; }
+  .heatmap-cell { aspect-ratio: 1; border-radius: 3px; }
+  .heatmap-0 { background: var(--gray-100); }
+  .heatmap-1 { background: var(--green-100); }
+  .heatmap-2 { background: var(--green-200); }
+  .heatmap-3 { background: #86efac; }
+  .heatmap-4 { background: var(--green-500); }
+
+  /* AI Review */
+  .ai-card { background: linear-gradient(135deg, var(--purple-100), var(--blue-100));
+    border-radius: 10px; padding: 14px; margin: 8px 12px; border: 1px solid rgba(139,92,246,0.2); }
+  .ai-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 600;
+    color: var(--purple-500); margin-bottom: 8px; }
+
+  /* Animations */
+  @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+  .animate-slide-up { animation: slideUp 0.3s ease; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  .animate-fade { animation: fadeIn 0.5s ease; }
+
+  /* Pros/Cons */
+  .pros-cons { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 24px 0; }
+  .pros, .cons { background: white; border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow); }
+  .pros { border-left: 4px solid var(--green-500); }
+  .cons { border-left: 4px solid var(--rose-500); }
+  .pros h4 { color: var(--green-600); margin-bottom: 12px; font-size: 14px; }
+  .cons h4 { color: var(--rose-500); margin-bottom: 12px; font-size: 14px; }
+  .pros li, .cons li { font-size: 13px; color: var(--gray-600); line-height: 1.8; list-style: none; }
+  .pros li::before { content: "+"; color: var(--green-500); font-weight: 700; margin-right: 6px; }
+  .cons li::before { content: "-"; color: var(--rose-500); font-weight: 700; margin-right: 6px; }
+
+  /* Description */
+  .desc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin: 24px 0; }
+  .desc-block { background: white; border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow); }
+  .desc-block h4 { font-size: 14px; font-weight: 700; margin-bottom: 10px; color: var(--gray-800); }
+  .desc-block p, .desc-block li { font-size: 13px; color: var(--gray-600); line-height: 1.7; }
+  .desc-block ul { padding-left: 16px; }
+
+  /* Desktop mockup */
+  .desktop-mockup { background: white; border-radius: var(--radius); border: 2px solid var(--gray-200);
+    overflow: hidden; box-shadow: var(--shadow); margin: 24px 0; }
+  .desktop-titlebar { height: 32px; background: var(--gray-100); border-bottom: 1px solid var(--gray-200);
+    display: flex; align-items: center; padding: 0 12px; gap: 6px; }
+  .desktop-titlebar .dot { width: 10px; height: 10px; border-radius: 50%; }
+  .desktop-body { display: flex; min-height: 400px; }
+  .desktop-sidebar { width: 220px; background: var(--gray-50); border-right: 1px solid var(--gray-200); padding: 16px; }
+  .desktop-content { flex: 1; padding: 24px; }
+  .sidebar-item { padding: 8px 12px; border-radius: 6px; font-size: 13px; color: var(--gray-600);
+    cursor: pointer; margin-bottom: 2px; display: flex; align-items: center; gap: 8px; }
+  .sidebar-item:hover { background: var(--gray-100); }
+  .sidebar-item.active { background: var(--green-100); color: var(--green-700); font-weight: 600; }
+
+  .caption { text-align: center; font-size: 13px; color: var(--gray-500); margin-top: 12px; font-weight: 500; }
+
+  /* Context indicators */
+  .context-badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px;
+    border-radius: 12px; font-size: 11px; font-weight: 600; }
+  .ctx-timer { background: var(--amber-100); color: var(--amber-500); }
+  .ctx-book { background: var(--blue-100); color: var(--blue-600); }
+  .ctx-free { background: var(--purple-100); color: var(--purple-500); }
+
+  /* Draft indicator */
+  .draft-badge { background: var(--amber-100); color: var(--amber-500); font-size: 10px; font-weight: 700;
+    padding: 2px 8px; border-radius: 8px; }
+
+  /* Toast */
+  .toast { position: absolute; bottom: 68px; left: 12px; right: 12px; background: var(--gray-800);
+    color: white; padding: 12px 16px; border-radius: 10px; display: flex; align-items: center;
+    justify-content: space-between; font-size: 13px; z-index: 30; }
+  .toast .action { color: var(--green-200); font-weight: 600; cursor: pointer; }
+
+  /* Flow arrows */
+  .flow-diagram { background: white; border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow);
+    margin: 24px 0; text-align: center; }
+  .flow-step { display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px;
+    border-radius: 8px; font-size: 13px; font-weight: 600; }
+  .flow-arrow { color: var(--gray-400); font-size: 20px; margin: 0 4px; }
+
+  @media (max-width: 768px) {
+    .mockup-row { flex-direction: column; align-items: center; }
+    .pros-cons, .desc-grid { grid-template-columns: 1fr; }
+    .compare-table { font-size: 11px; }
+    .compare-table th, .compare-table td { padding: 8px 4px; }
+    .desktop-mockup .desktop-body { flex-direction: column; }
+    .desktop-sidebar { width: 100%; border-right: none; border-bottom: 1px solid var(--gray-200); }
+  }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <div class="nav-logo">ReadTree</div>
+    <div class="nav-tabs">
+      <button class="nav-tab active" onclick="showSection('overview')">현황 분석</button>
+      <button class="nav-tab" onclick="showSection('dir1')">1. 통합 캡처</button>
+      <button class="nav-tab" onclick="showSection('dir2')">2. 2-tier 기록<span class="badge">추천</span></button>
+      <button class="nav-tab" onclick="showSection('dir3')">3. 컨텍스트</button>
+      <button class="nav-tab" onclick="showSection('dir4')">4. 타임라인</button>
+      <button class="nav-tab" onclick="showSection('dir5')">5. 스마트</button>
+    </div>
+  </div>
+</nav>
+
+<div class="main">
+
+<!-- ==================== Overview ==================== -->
+<div id="overview" class="section active">
+  <div class="overview-hero animate-fade">
+    <h1>독서 기록 기능 통합 개편</h1>
+    <p>현재 3개의 기록 기능과 5개 이상의 진입점이 중복되어 사용자 혼란을 야기하고 있습니다.<br>5가지 방향을 비교하여 최적의 UX를 결정합니다.</p>
+  </div>
+
+  <div class="problem-cards">
+    <div class="problem-card">
+      <h3>기능 중복</h3>
+      <p><strong>메모없이 저장</strong>, <strong>한줄기록</strong>, <strong>기록작성</strong> 3가지 기능이 각각 다른 UI와 DB 테이블을 사용하면서 비슷한 역할을 수행</p>
+    </div>
+    <div class="problem-card">
+      <h3>진입점 분산</h3>
+      <p>FAB, 타이머, 책 상세, /notes/new, /notes/free 등 <strong>5개 이상의 진입점</strong>이 분산되어 "어디서 기록하지?" 의사결정 부담</p>
+    </div>
+    <div class="problem-card">
+      <h3>코드 중복</h3>
+      <p>NoteFormNew, MobileNoteForm, NoteCreationFlow, MobileNoteSheet 등 <strong>6개 이상의 폼 컴포넌트</strong>가 유사한 로직을 반복</p>
+    </div>
+  </div>
+
+  <h3 style="font-size:18px; margin: 32px 0 16px;">5가지 방향 비교</h3>
+  <table class="compare-table">
+    <thead>
+      <tr>
+        <th>항목</th>
+        <th>1: 통합 캡처</th>
+        <th style="background:var(--green-700)">2: 2-tier 기록 &#11088;</th>
+        <th>3: 컨텍스트</th>
+        <th>4: 타임라인</th>
+        <th>5: 스마트</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="text-align:left;font-weight:600">구현 난이도</td>
+        <td><span class="pill pill-high">상</span></td>
+        <td class="rec"><span class="pill pill-low">중</span></td>
+        <td><span class="pill pill-high">상</span></td>
+        <td><span class="pill pill-high">상</span></td>
+        <td><span class="pill pill-high">상</span></td>
+      </tr>
+      <tr>
+        <td style="text-align:left;font-weight:600">기록 마찰</td>
+        <td>낮음</td>
+        <td class="rec"><strong>매우 낮음</strong></td>
+        <td>낮음</td>
+        <td>낮음</td>
+        <td><strong>매우 낮음</strong></td>
+      </tr>
+      <tr>
+        <td style="text-align:left;font-weight:600">코드 감소</td>
+        <td>높음</td>
+        <td class="rec">중간</td>
+        <td>낮음</td>
+        <td>높음</td>
+        <td>중간</td>
+      </tr>
+      <tr>
+        <td style="text-align:left;font-weight:600">DB 변경</td>
+        <td>중간</td>
+        <td class="rec"><strong>낮음</strong></td>
+        <td>중간</td>
+        <td>높음</td>
+        <td>중간</td>
+      </tr>
+      <tr>
+        <td style="text-align:left;font-weight:600">기존 UX 유지</td>
+        <td>중간</td>
+        <td class="rec"><strong>높음</strong></td>
+        <td>높음</td>
+        <td>낮음</td>
+        <td>중간</td>
+      </tr>
+      <tr>
+        <td style="text-align:left;font-weight:600">차별화</td>
+        <td>낮음</td>
+        <td class="rec">낮음</td>
+        <td>중간</td>
+        <td>중간</td>
+        <td><strong>높음</strong></td>
+      </tr>
+      <tr>
+        <td style="text-align:left;font-weight:600">단계적 출시</td>
+        <td>어려움</td>
+        <td class="rec"><strong>쉬움</strong></td>
+        <td>중간</td>
+        <td>어려움</td>
+        <td>중간</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ==================== Direction 1: Unified Capture ==================== -->
+<div id="dir1" class="section">
+  <div class="dir-header animate-fade">
+    <div class="dir-num">DIRECTION 1</div>
+    <h2>통합 캡처 (Unified Capture)</h2>
+    <div class="dir-quote">"모든 기록은 하나의 문으로 들어온다"</div>
+    <div class="dir-meta">
+      <span class="tag" style="background:var(--rose-100);color:var(--rose-500)">난이도: 상</span>
+      <span class="tag" style="background:var(--green-100);color:var(--green-600)">마찰: 낮음</span>
+      <span class="tag" style="background:var(--blue-100);color:var(--blue-600)">코드감소: 높음</span>
+    </div>
+  </div>
+
+  <div class="flow-diagram">
+    <span class="flow-step" style="background:var(--green-100)">FAB / 타이머 / 책상세</span>
+    <span class="flow-arrow">&rarr;</span>
+    <span class="flow-step" style="background:var(--amber-100)">Bottom Sheet (3단계)</span>
+    <span class="flow-arrow">&rarr;</span>
+    <span class="flow-step" style="background:var(--blue-100)">notes 테이블 통합 저장</span>
+  </div>
+
+  <div class="mockup-row">
+    <!-- Phone 1: Collapsed -->
+    <div>
+      <div class="phone">
+        <div class="phone-notch"></div>
+        <div class="phone-screen">
+          <div class="phone-status">9:41</div>
+          <div class="phone-header">
+            <span class="title">홈</span>
+          </div>
+          <div class="phone-body" style="background:var(--gray-50)">
+            <div style="padding:16px 12px">
+              <div style="font-size:18px;font-weight:700;margin-bottom:12px">안녕하세요!</div>
+              <div class="note-card" style="opacity:0.5">
+                <div class="book-tag">데미안 - 헤르만 헤세</div>
+                <div class="memo">어제의 기록이 여기에...</div>
+              </div>
+            </div>
+            <!-- Bottom Sheet Collapsed -->
+            <div class="bottom-sheet animate-slide-up" style="height: 120px;">
+              <div class="sheet-handle"></div>
+              <div class="sheet-content">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+                  <div class="book-chip">
+                    <img><span>데미안</span>
+                  </div>
+                  <span style="font-size:11px;color:var(--gray-400)">자동 선택</span>
+                </div>
+                <div style="display:flex;gap:8px">
+                  <input class="form-input" placeholder="한줄 생각을 적어보세요..." style="flex:1">
+                  <button class="btn btn-primary btn-sm">전송</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="phone-bottom-nav">
+            <div class="nav-item active"><span class="icon">&#127968;</span>홈</div>
+            <div class="nav-item"><span class="icon">&#128218;</span>서재</div>
+            <div class="nav-item"><div class="fab">+</div></div>
+            <div class="nav-item"><span class="icon">&#128336;</span>타임라인</div>
+            <div class="nav-item"><span class="icon">&#8943;</span>더보기</div>
+          </div>
+        </div>
+      </div>
+      <div class="caption">Step 1: Collapsed (20%) - 한줄 입력</div>
+    </div>
+
+    <!-- Phone 2: Half -->
+    <div>
+      <div class="phone">
+        <div class="phone-notch"></div>
+        <div class="phone-screen">
+          <div class="phone-status">9:41</div>
+          <div class="phone-body" style="background:rgba(0,0,0,0.3)">
+            <div class="bottom-sheet animate-slide-up" style="height: 380px;">
+              <div class="sheet-handle"></div>
+              <div class="sheet-content">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+                  <div class="book-chip"><img><span>데미안</span></div>
+                  <button class="btn btn-ghost btn-sm">책 변경</button>
+                </div>
+                <div style="margin-bottom:12px">
+                  <label class="form-label">인상깊은 구절</label>
+                  <textarea class="form-input" rows="2" placeholder='"새는 알에서 나오려고 투쟁한다..."'></textarea>
+                </div>
+                <div style="margin-bottom:12px">
+                  <label class="form-label">내 생각</label>
+                  <textarea class="form-input" rows="2" placeholder="이 구절에서 느낀 점..."></textarea>
+                </div>
+                <div class="toolbar">
+                  <div class="toolbar-btn">&#128247;</div>
+                  <div class="toolbar-btn">&#128196;</div>
+                  <div class="toolbar-btn" style="font-size:12px">p.</div>
+                </div>
+                <div style="display:flex;justify-content:space-between;margin-top:8px">
+                  <button class="btn btn-ghost">더 많은 옵션 &#8595;</button>
+                  <button class="btn btn-primary">저장</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="caption">Step 2: Half (50%) - 인용구 + 생각</div>
+    </div>
+
+    <!-- Phone 3: Full -->
+    <div>
+      <div class="phone">
+        <div class="phone-notch"></div>
+        <div class="phone-screen">
+          <div class="phone-status">9:41</div>
+          <div class="phone-body" style="background:rgba(0,0,0,0.3)">
+            <div class="bottom-sheet animate-slide-up" style="height: 540px;">
+              <div class="sheet-handle"></div>
+              <div class="sheet-content" style="overflow-y:auto;max-height:500px">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+                  <div class="book-chip"><img><span>데미안</span></div>
+                  <button class="btn btn-ghost btn-sm">&#10005;</button>
+                </div>
+                <div style="margin-bottom:10px">
+                  <label class="form-label">제목</label>
+                  <input class="form-input" placeholder="기록 제목 (선택)">
+                </div>
+                <div style="margin-bottom:10px">
+                  <label class="form-label">인상깊은 구절</label>
+                  <textarea class="form-input" rows="2" style="font-size:12px">"새는 알에서 나오려고 투쟁한다"</textarea>
+                </div>
+                <div style="margin-bottom:10px">
+                  <label class="form-label">내 생각</label>
+                  <textarea class="form-input" rows="2" style="font-size:12px">성장의 고통을 아름답게 표현한...</textarea>
+                </div>
+                <div style="margin-bottom:10px">
+                  <label class="form-label">이미지</label>
+                  <div style="border:1px dashed var(--gray-300);border-radius:8px;padding:16px;text-align:center;font-size:12px;color:var(--gray-400)">+ 사진 추가</div>
+                </div>
+                <div style="display:flex;gap:8px;margin-bottom:10px">
+                  <div style="flex:1"><label class="form-label">페이지</label><input class="form-input" placeholder="p.42" style="font-size:12px"></div>
+                  <div style="flex:1"><label class="form-label">출처</label><input class="form-input" placeholder="책" style="font-size:12px"></div>
+                </div>
+                <div style="margin-bottom:10px">
+                  <label class="form-label">태그</label>
+                  <div style="display:flex;gap:4px;flex-wrap:wrap">
+                    <span style="padding:3px 10px;background:var(--green-100);border-radius:12px;font-size:11px;color:var(--green-700)">#성장</span>
+                    <span style="padding:3px 10px;background:var(--gray-100);border-radius:12px;font-size:11px;color:var(--gray-500)">+ 태그 추가</span>
+                  </div>
+                </div>
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px">
+                  <label style="font-size:12px;color:var(--gray-500);display:flex;align-items:center;gap:4px">
+                    <input type="checkbox" checked> 공개
+                  </label>
+                  <button class="btn btn-primary">저장</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="caption">Step 3: Full (90%) - 전체 옵션</div>
+    </div>
+  </div>
+
+  <div class="pros-cons">
+    <div class="pros">
+      <h4>&#10003; 장점</h4>
+      <ul>
+        <li>진입점 1개로 통합, 사용자 혼란 제거</li>
+        <li>Progressive Disclosure로 초보자/파워유저 모두 만족</li>
+        <li>DB 통합으로 쿼리 단순화</li>
+        <li>4개 폼 컴포넌트 &rarr; 1개로 코드 대폭 감소</li>
+      </ul>
+    </div>
+    <div class="cons">
+      <h4>&#10007; 단점</h4>
+      <ul>
+        <li>3단계 시트 드래그 인터랙션 구현 복잡</li>
+        <li>reading_logs &rarr; notes 데이터 마이그레이션 필요</li>
+        <li>단일 컴포넌트에 로직 집중 (복잡도)</li>
+        <li>데스크톱에서 Bottom Sheet 패턴 부자연스러움</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== Direction 2: 2-tier ==================== -->
+<div id="dir2" class="section">
+  <div class="dir-header animate-fade">
+    <div class="dir-num">DIRECTION 2 &#11088; 권장</div>
+    <h2>2-tier 기록 (Quick + Deep)</h2>
+    <div class="dir-quote">"빠른 포착은 즉시, 깊은 기록은 나중에"</div>
+    <div class="dir-meta">
+      <span class="tag" style="background:var(--green-100);color:var(--green-600)">난이도: 중</span>
+      <span class="tag" style="background:var(--green-100);color:var(--green-600)">마찰: 매우 낮음</span>
+      <span class="tag" style="background:var(--amber-100);color:var(--amber-500)">코드감소: 중간</span>
+      <span class="tag" style="background:var(--green-100);color:var(--green-600)">단계적 출시: 쉬움</span>
+    </div>
+  </div>
+
+  <div class="flow-diagram">
+    <span class="flow-step" style="background:var(--green-100)">FAB / 타이머 / 책상세</span>
+    <span class="flow-arrow">&rarr;</span>
+    <span class="flow-step" style="background:var(--amber-100)">Quick Capture (draft)</span>
+    <span class="flow-arrow">&rarr;</span>
+    <span class="flow-step" style="background:var(--gray-200)">토스트: "상세 추가하기"</span>
+    <span class="flow-arrow">&rarr;</span>
+    <span class="flow-step" style="background:var(--blue-100)">Full Note Editor</span>
+  </div>
+
+  <div class="mockup-row">
+    <!-- Quick Capture -->
+    <div>
+      <div class="phone">
+        <div class="phone-notch"></div>
+        <div class="phone-screen">
+          <div class="phone-status">9:41</div>
+          <div class="phone-header">
+            <span class="title">홈</span>
+          </div>
+          <div class="phone-body" style="background:var(--gray-50)">
+            <div style="padding:16px 12px;opacity:0.3">
+              <div style="font-size:18px;font-weight:700;margin-bottom:12px">안녕하세요!</div>
+            </div>
+            <!-- Quick Capture Sheet -->
+            <div class="bottom-sheet animate-slide-up" style="height: 220px;">
+              <div class="sheet-handle"></div>
+              <div class="sheet-content">
+                <div style="font-size:15px;font-weight:700;margin-bottom:12px">빠른 기록</div>
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+                  <div class="book-chip"><img><span>데미안 - 헤르만 헤세</span></div>
+                  <span style="font-size:10px;color:var(--gray-400)">이어읽기</span>
+                </div>
+                <textarea class="form-input" rows="3" placeholder="읽으면서 떠오른 생각, 인상깊은 구절을 자유롭게 적어보세요..." style="margin-bottom:10px"></textarea>
+                <div style="display:flex;justify-content:space-between;align-items:center">
+                  <div style="display:flex;gap:6px">
+                    <div class="toolbar-btn" style="width:28px;height:28px;font-size:14px">&#128247;</div>
+                    <div class="toolbar-btn" style="width:28px;height:28px;font-size:11px">p.</div>
+                    <button class="btn btn-ghost btn-sm" style="font-size:11px">책 변경</button>
+                  </div>
+                  <button class="btn btn-primary">저장</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="phone-bottom-nav">
+            <div class="nav-item active"><span class="icon">&#127968;</span>홈</div>
+            <div class="nav-item"><span class="icon">&#128218;</span>서재</div>
+            <div class="nav-item"><div class="fab">+</div></div>
+            <div class="nav-item"><span class="icon">&#128336;</span>타임라인</div>
+            <div class="nav-item"><span class="icon">&#8943;</span>더보기</div>
+          </div>
+        </div>
+      </div>
+      <div class="caption">Tier 1: Quick Capture - 즉시 저장 (draft)</div>
+    </div>
+
+    <!-- Toast + Transition -->
+    <div>
+      <div class="phone">
+        <div class="phone-notch"></div>
+        <div class="phone-screen">
+          <div class="phone-status">9:41</div>
+          <div class="phone-header">
+            <span class="title">홈</span>
+          </div>
+          <div class="phone-body" style="background:var(--gray-50)">
+            <div style="padding:16px 12px">
+              <div style="font-size:18px;font-weight:700;margin-bottom:12px">안녕하세요!</div>
+              <div class="note-card">
+                <div style="display:flex;justify-content:space-between;align-items:center">
+                  <div class="book-tag">데미안 - 헤르만 헤세</div>
+                  <span class="draft-badge">draft</span>
+                </div>
+                <div class="memo">성장이란 결국 기존의 껍질을 깨는 과정이라는 생각이 들었다</div>
+                <div class="meta">방금 전 &middot; p.42</div>
+              </div>
+              <div class="note-card" style="opacity:0.5">
+                <div class="book-tag">데미안 - 헤르만 헤세</div>
+                <div class="quote">"새는 알에서 나오려고 투쟁한다"</div>
+                <div class="meta">어제</div>
+              </div>
+            </div>
+            <div class="toast animate-slide-up">
+              <span>&#10003; 기록이 저장되었습니다</span>
+              <span class="action">상세 추가하기 &rarr;</span>
+            </div>
+          </div>
+          <div class="phone-bottom-nav">
+            <div class="nav-item active"><span class="icon">&#127968;</span>홈</div>
+            <div class="nav-item"><span class="icon">&#128218;</span>서재</div>
+            <div class="nav-item"><div class="fab">+</div></div>
+            <div class="nav-item"><span class="icon">&#128336;</span>타임라인</div>
+            <div class="nav-item"><span class="icon">&#8943;</span>더보기</div>
+          </div>
+        </div>
+      </div>
+      <div class="caption">저장 후 토스트 - "상세 추가하기" 유도</div>
+    </div>
+
+    <!-- Full Note -->
+    <div>
+      <div class="phone">
+        <div class="phone-notch"></div>
+        <div class="phone-screen">
+          <div class="phone-status">9:41</div>
+          <div class="phone-header">
+            <span class="back">&larr;</span>
+            <span class="title">기록 편집</span>
+            <button class="btn btn-primary btn-sm">저장</button>
+          </div>
+          <div class="phone-body" style="background:white;padding:16px">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px">
+              <div class="book-chip"><img><span>데미안</span></div>
+              <span class="draft-badge">draft &rarr; 발행</span>
+            </div>
+            <div style="margin-bottom:14px">
+              <label class="form-label">제목 (선택)</label>
+              <input class="form-input" placeholder="기록 제목">
+            </div>
+            <div style="margin-bottom:14px">
+              <label class="form-label">인상깊은 구절</label>
+              <textarea class="form-input" rows="2" placeholder="인용구...">"새는 알에서 나오려고 투쟁한다"</textarea>
+            </div>
+            <div style="margin-bottom:14px">
+              <label class="form-label">내 생각</label>
+              <textarea class="form-input" rows="3">성장이란 결국 기존의 껍질을 깨는 과정이라는 생각이 들었다</textarea>
+            </div>
+            <div style="margin-bottom:14px">
+              <label class="form-label">이미지</label>
+              <div style="border:1px dashed var(--gray-300);border-radius:8px;padding:16px;text-align:center;font-size:12px;color:var(--gray-400)">+ 사진 추가</div>
+            </div>
+            <div style="display:flex;gap:8px;margin-bottom:14px">
+              <div style="flex:1"><label class="form-label">페이지</label><input class="form-input" value="p.42" style="font-size:12px"></div>
+              <div style="flex:1"><label class="form-label">태그</label>
+                <div style="display:flex;gap:4px">
+                  <span style="padding:3px 8px;background:var(--green-100);border-radius:10px;font-size:10px;color:var(--green-700)">#성장</span>
+                  <span style="padding:3px 8px;background:var(--gray-100);border-radius:10px;font-size:10px;color:var(--gray-500)">+</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="caption">Tier 2: Full Note Editor - draft를 확장</div>
+    </div>
+  </div>
+
+  <!-- Desktop mockup -->
+  <div class="desktop-mockup">
+    <div class="desktop-titlebar">
+      <div class="dot" style="background:#ff5f57"></div>
+      <div class="dot" style="background:#febc2e"></div>
+      <div class="dot" style="background:#28c840"></div>
+    </div>
+    <div class="desktop-body">
+      <div class="desktop-sidebar">
+        <div style="font-size:14px;font-weight:700;margin-bottom:12px;color:var(--green-700)">ReadTree</div>
+        <div class="sidebar-item active">&#127968; 홈</div>
+        <div class="sidebar-item">&#128218; 서재</div>
+        <div class="sidebar-item">&#128270; 검색</div>
+        <div class="sidebar-item">&#128336; 타임라인</div>
+        <div style="border-top:1px solid var(--gray-200);margin:12px 0"></div>
+        <button class="btn btn-primary" style="width:100%;margin-bottom:12px">+ 빠른 기록</button>
+        <div class="sidebar-item">&#128221; 내 기록</div>
+        <div class="sidebar-item" style="margin-left:12px;font-size:12px;color:var(--amber-500)">&#9679; 임시저장 3</div>
+        <div class="sidebar-item">&#128101; 그룹</div>
+      </div>
+      <div class="desktop-content">
+        <div style="max-width:600px">
+          <!-- Quick capture inline -->
+          <div style="background:var(--gray-50);border:1px solid var(--gray-200);border-radius:12px;padding:16px;margin-bottom:24px">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+              <div class="book-chip"><img><span>데미안 - 헤르만 헤세</span></div>
+              <span style="font-size:11px;color:var(--gray-400)">이어읽기 자동 선택</span>
+            </div>
+            <div style="display:flex;gap:8px">
+              <input class="form-input" placeholder="생각을 적어보세요..." style="flex:1">
+              <button class="btn btn-primary">저장</button>
+            </div>
+          </div>
+          <!-- Draft cards -->
+          <div style="font-size:14px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:8px">
+            최근 기록
+            <span style="font-size:12px;color:var(--gray-400);font-weight:400">draft 포함</span>
+          </div>
+          <div class="note-card" style="margin:0 0 12px 0;border:1px solid var(--amber-100)">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <div class="book-tag">데미안 - 헤르만 헤세</div>
+              <div style="display:flex;gap:8px;align-items:center">
+                <span class="draft-badge">draft</span>
+                <button class="btn btn-ghost btn-sm" style="color:var(--blue-600)">상세 추가</button>
+              </div>
+            </div>
+            <div class="memo">성장이란 결국 기존의 껍질을 깨는 과정이라는 생각이 들었다</div>
+            <div class="meta">5분 전</div>
+          </div>
+          <div class="note-card" style="margin:0 0 12px 0">
+            <div class="book-tag">데미안 - 헤르만 헤세</div>
+            <div class="quote">"새는 알에서 나오려고 투쟁한다. 알은 세계이다."</div>
+            <div class="memo">자아를 찾아가는 과정의 고통과 아름다움</div>
+            <div class="meta">어제 &middot; p.42 &middot; #성장 #자아</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="caption">데스크톱: 사이드바 "빠른 기록" + 인라인 Quick Capture + draft 관리</div>
+
+  <div class="pros-cons">
+    <div class="pros">
+      <h4>&#10003; 장점</h4>
+      <ul>
+        <li>가장 직관적인 멘탈모델: "빠르게 적고, 나중에 정리"</li>
+        <li>Quick Capture로 기록 시작 마찰 극적 감소</li>
+        <li>draft 시스템으로 미완성 기록 관리 가능</li>
+        <li>Tier별 독립 개발 &rarr; 단계적 릴리스 용이</li>
+        <li>기존 UX와 유사하여 학습 비용 낮음</li>
+      </ul>
+    </div>
+    <div class="cons">
+      <h4>&#10007; 단점</h4>
+      <ul>
+        <li>draft 기록이 쌓이면 정리 부담</li>
+        <li>2가지 UI 유지 필요 (Quick + Full)</li>
+        <li>"Quick으로 할까, Full로 할까" 결정 필요</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="desc-grid">
+    <div class="desc-block">
+      <h4>DB 변경</h4>
+      <ul>
+        <li>notes 테이블에 <code>status</code> 컬럼 추가 (draft/published)</li>
+        <li>notes에 <code>reading_duration_seconds</code> 등 타이머 컬럼 추가</li>
+        <li>reading_logs 데이터를 notes로 마이그레이션</li>
+      </ul>
+    </div>
+    <div class="desc-block">
+      <h4>컴포넌트 변경</h4>
+      <ul>
+        <li>QuickCaptureSheet (신규) - 경량 바텀시트</li>
+        <li>FullNoteEditor (통합) - NoteFormNew + MobileNoteForm</li>
+        <li>MobileNoteSheet, NoteCreationFlow 제거</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== Direction 3: Context-Aware ==================== -->
+<div id="dir3" class="section">
+  <div class="dir-header animate-fade">
+    <div class="dir-num">DIRECTION 3</div>
+    <h2>컨텍스트 기반 (Context-Aware)</h2>
+    <div class="dir-quote">"상황이 최적의 폼을 결정한다"</div>
+    <div class="dir-meta">
+      <span class="tag" style="background:var(--rose-100);color:var(--rose-500)">난이도: 상</span>
+      <span class="tag" style="background:var(--green-100);color:var(--green-600)">마찰: 낮음</span>
+      <span class="tag" style="background:var(--rose-100);color:var(--rose-500)">코드감소: 낮음</span>
+    </div>
+  </div>
+
+  <div class="flow-diagram">
+    <span class="flow-step" style="background:var(--blue-100)">&#128214; 책 상세</span>
+    <span class="flow-step" style="background:var(--amber-100)">&#9202; 타이머 중</span>
+    <span class="flow-step" style="background:var(--purple-100)">&#127968; 홈/자유</span>
+    <br style="margin:8px">
+    <div style="margin-top:8px">
+      <span class="flow-arrow">&darr;</span>
+      <span style="font-size:13px;color:var(--gray-500);margin:0 8px">컨텍스트 자동 감지</span>
+      <span class="flow-arrow">&darr;</span>
+    </div>
+    <div style="margin-top:8px">
+      <span class="flow-step" style="background:var(--green-100)">최적화된 기록 UI 자동 제공</span>
+    </div>
+  </div>
+
+  <div class="mockup-row">
+    <!-- Context: Book Detail -->
+    <div>
+      <div class="phone">
+        <div class="phone-notch"></div>
+        <div class="phone-screen">
+          <div class="phone-status">9:41</div>
+          <div class="phone-header">
+            <span class="back">&larr;</span>
+            <span class="title">데미안</span>
+          </div>
+          <div class="phone-body" style="background:white">
+            <div style="padding:16px 12px">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+                <span class="context-badge ctx-book">&#128214; 책 상세 모드</span>
+              </div>
+              <div style="background:var(--green-50);border-radius:12px;padding:16px">
+                <div style="font-size:14px;font-weight:700;margin-bottom:12px">인상깊은 구절 기록</div>
+                <textarea class="form-input" rows="3" placeholder='"책에서 인상깊었던 구절을 적어보세요..."' style="margin-bottom:10px;border-color:var(--green-200)"></textarea>
+                <textarea class="form-input" rows="2" placeholder="이 구절에 대한 내 생각..." style="margin-bottom:10px"></textarea>
+                <div style="display:flex;gap:8px;margin-bottom:10px">
+                  <input class="form-input" placeholder="페이지" style="width:80px;font-size:12px;text-align:center;font-weight:700">
+                  <div style="flex:1;display:flex;align-items:center;gap:4px">
+                    <div class="toolbar-btn" style="width:28px;height:28px;font-size:14px">&#128247;</div>
+                    <div class="toolbar-btn" style="width:28px;height:28px;font-size:14px">&#128196;</div>
+                  </div>
+                  <button class="btn btn-primary">저장</button>
+                </div>
+              </div>
+              <div style="margin-top:16px;font-size:13px;font-weight:600;color:var(--gray-700)">이전 기록</div>
+              <div class="note-card" style="margin:8px 0">
+                <div class="quote">"모든 사람의 삶은 자기 자신에게로 이르는 길이다"</div>
+                <div class="meta">3월 24일 &middot; p.28</div>
+              </div>
+            </div>
+          </div>
+          <div class="phone-bottom-nav">
+            <div class="nav-item"><span class="icon">&#127968;</span>홈</div>
+            <div class="nav-item active"><span class="icon">&#128218;</span>서재</div>
+            <div class="nav-item"><div class="fab">+</div></div>
+            <div class="nav-item"><span class="icon">&#128336;</span>타임라인</div>
+            <div class="nav-item"><span class="icon">&#8943;</span>더보기</div>
+          </div>
+        </div>
+      </div>
+      <div class="caption">컨텍스트: 책 상세 &rarr; 인용구 중심 폼</div>
+    </div>
+
+    <!-- Context: Timer Running -->
+    <div>
+      <div class="phone">
+        <div class="phone-notch"></div>
+        <div class="phone-screen">
+          <div class="phone-status">9:41</div>
+          <div class="phone-header" style="background:var(--amber-100)">
+            <span style="font-size:20px">&#9202;</span>
+            <span class="title" style="font-size:14px">독서 중 &middot; 23:42 남음</span>
+            <span style="font-size:11px;color:var(--amber-500);font-weight:600">데미안</span>
+          </div>
+          <div class="phone-body" style="background:var(--gray-50)">
+            <div style="padding:16px 12px">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+                <span class="context-badge ctx-timer">&#9202; 타이머 메모 모드</span>
+                <span style="font-size:11px;color:var(--gray-400)">타이머 계속 진행 중</span>
+              </div>
+              <!-- Inline memo during timer -->
+              <div style="background:white;border-radius:12px;padding:14px;border:1px solid var(--amber-100);margin-bottom:12px">
+                <div style="display:flex;gap:8px;align-items:center">
+                  <textarea class="form-input" rows="1" placeholder="읽으면서 떠오른 생각..." style="flex:1;border-color:var(--amber-100)"></textarea>
+                  <button class="btn btn-sm" style="background:var(--amber-500);color:white">&#10003;</button>
+                </div>
+              </div>
+              <!-- Previous inline memos -->
+              <div style="font-size:12px;color:var(--gray-500);margin-bottom:8px">이번 세션 메모</div>
+              <div style="background:white;border-radius:8px;padding:10px;margin-bottom:6px;border-left:3px solid var(--amber-500)">
+                <div style="font-size:13px;color:var(--gray-700)">크로머에서 벗어나는 장면이 인상적</div>
+                <div style="font-size:10px;color:var(--gray-400);margin-top:4px">5분 전 &middot; p.42</div>
+              </div>
+              <div style="background:white;border-radius:8px;padding:10px;margin-bottom:6px;border-left:3px solid var(--amber-500)">
+                <div style="font-size:13px;color:var(--gray-700)">싱클레어의 내면 묘사가 정말 섬세하다</div>
+                <div style="font-size:10px;color:var(--gray-400);margin-top:4px">12분 전 &middot; p.38</div>
+              </div>
+            </div>
+          </div>
+          <div class="phone-bottom-nav">
+            <div class="nav-item"><span class="icon">&#127968;</span>홈</div>
+            <div class="nav-item"><span class="icon">&#128218;</span>서재</div>
+            <div class="nav-item"><div class="fab" style="background:var(--amber-500)">&#9998;</div></div>
+            <div class="nav-item"><span class="icon">&#128336;</span>타임라인</div>
+            <div class="nav-item"><span class="icon">&#8943;</span>더보기</div>
+          </div>
+        </div>
+      </div>
+      <div class="caption">컨텍스트: 타이머 실행 중 &rarr; 인라인 메모</div>
+    </div>
+
+    <!-- Context: Free -->
+    <div>
+      <div class="phone">
+        <div class="phone-notch"></div>
+        <div class="phone-screen">
+          <div class="phone-status">9:41</div>
+          <div class="phone-header">
+            <span class="title">홈</span>
+          </div>
+          <div class="phone-body" style="background:rgba(0,0,0,0.3)">
+            <div class="bottom-sheet animate-slide-up" style="height: 340px;">
+              <div class="sheet-handle"></div>
+              <div class="sheet-content">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+                  <span class="context-badge ctx-free">&#128221; 자유 기록 모드</span>
+                </div>
+                <div style="font-size:13px;color:var(--gray-500);margin-bottom:10px">최근 읽은 책</div>
+                <div style="display:flex;gap:8px;margin-bottom:12px;overflow-x:auto">
+                  <div style="min-width:60px;text-align:center">
+                    <div style="width:48px;height:64px;background:var(--green-200);border-radius:4px;margin:0 auto 4px;border:2px solid var(--green-500)"></div>
+                    <div style="font-size:10px;color:var(--green-600);font-weight:600">데미안</div>
+                  </div>
+                  <div style="min-width:60px;text-align:center">
+                    <div style="width:48px;height:64px;background:var(--blue-100);border-radius:4px;margin:0 auto 4px"></div>
+                    <div style="font-size:10px;color:var(--gray-500)">사피엔스</div>
+                  </div>
+                  <div style="min-width:60px;text-align:center">
+                    <div style="width:48px;height:64px;background:var(--purple-100);border-radius:4px;margin:0 auto 4px"></div>
+                    <div style="font-size:10px;color:var(--gray-500)">1984</div>
+                  </div>
+                  <div style="min-width:60px;text-align:center">
+                    <div style="width:48px;height:64px;background:var(--gray-100);border-radius:4px;margin:0 auto 4px;display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--gray-400)">&#128270;</div>
+                    <div style="font-size:10px;color:var(--gray-400)">검색</div>
+                  </div>
+                </div>
+                <button class="btn btn-ghost btn-sm" style="margin-bottom:10px;color:var(--purple-500)">&#128221; 책 없이 기록</button>
+                <textarea class="form-input" rows="2" placeholder="생각을 적어보세요..." style="margin-bottom:10px"></textarea>
+                <div style="display:flex;justify-content:flex-end">
+                  <button class="btn btn-primary">저장</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="phone-bottom-nav">
+            <div class="nav-item active"><span class="icon">&#127968;</span>홈</div>
+            <div class="nav-item"><span class="icon">&#128218;</span>서재</div>
+            <div class="nav-item"><div class="fab">+</div></div>
+            <div class="nav-item"><span class="icon">&#128336;</span>타임라인</div>
+            <div class="nav-item"><span class="icon">&#8943;</span>더보기</div>
+          </div>
+        </div>
+      </div>
+      <div class="caption">컨텍스트: 홈 &rarr; 자유 기록 + 책 추천</div>
+    </div>
+  </div>
+
+  <div class="pros-cons">
+    <div class="pros">
+      <h4>&#10003; 장점</h4>
+      <ul>
+        <li>사용자 의사결정 부담 최소화</li>
+        <li>각 상황에 최적화된 UX</li>
+        <li>타이머 중 인라인 메모 (Bookly 패턴)</li>
+        <li>기존 화면과 자연스러운 통합</li>
+      </ul>
+    </div>
+    <div class="cons">
+      <h4>&#10007; 단점</h4>
+      <ul>
+        <li>컨텍스트 판단 로직 복잡 (엣지케이스)</li>
+        <li>4~5개 폼 변형 유지보수 부담</li>
+        <li>"다른 모드를 쓰고 싶다" 시 불편</li>
+        <li>컨텍스트 전환 시 예상치 못한 동작</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== Direction 4: Activity Feed ==================== -->
+<div id="dir4" class="section">
+  <div class="dir-header animate-fade">
+    <div class="dir-num">DIRECTION 4</div>
+    <h2>타임라인 중심 (Activity Feed)</h2>
+    <div class="dir-quote">"기록은 흐름이다"</div>
+    <div class="dir-meta">
+      <span class="tag" style="background:var(--rose-100);color:var(--rose-500)">난이도: 상</span>
+      <span class="tag" style="background:var(--green-100);color:var(--green-600)">마찰: 낮음</span>
+      <span class="tag" style="background:var(--green-100);color:var(--green-600)">코드감소: 높음</span>
+    </div>
+  </div>
+
+  <div class="mockup-row">
+    <div>
+      <div class="phone">
+        <div class="phone-notch"></div>
+        <div class="phone-screen">
+          <div class="phone-status">9:41</div>
+          <div class="phone-header">
+            <span class="title">내 독서 활동</span>
+            <span style="font-size:12px;color:var(--gray-400)">3월</span>
+          </div>
+          <div class="phone-body" style="background:white;overflow-y:auto">
+            <!-- Heatmap -->
+            <div style="padding:8px 12px;background:var(--gray-50);border-bottom:1px solid var(--gray-200)">
+              <div style="font-size:11px;color:var(--gray-500);margin-bottom:4px;display:flex;justify-content:space-between">
+                <span>3월 독서 캘린더</span>
+                <span style="color:var(--green-600);font-weight:600">&#128293; 17일 연속</span>
+              </div>
+              <div class="heatmap">
+                <div class="heatmap-cell heatmap-3"></div><div class="heatmap-cell heatmap-4"></div>
+                <div class="heatmap-cell heatmap-2"></div><div class="heatmap-cell heatmap-1"></div>
+                <div class="heatmap-cell heatmap-4"></div><div class="heatmap-cell heatmap-3"></div>
+                <div class="heatmap-cell heatmap-0"></div><div class="heatmap-cell heatmap-4"></div>
+                <div class="heatmap-cell heatmap-3"></div><div class="heatmap-cell heatmap-0"></div>
+                <div class="heatmap-cell heatmap-2"></div><div class="heatmap-cell heatmap-4"></div>
+                <div class="heatmap-cell heatmap-3"></div><div class="heatmap-cell heatmap-4"></div>
+                <div class="heatmap-cell heatmap-2"></div><div class="heatmap-cell heatmap-3"></div>
+                <div class="heatmap-cell heatmap-4"></div><div class="heatmap-cell heatmap-4"></div>
+                <div class="heatmap-cell heatmap-3"></div><div class="heatmap-cell heatmap-4"></div>
+                <div class="heatmap-cell heatmap-2"></div><div class="heatmap-cell heatmap-1"></div>
+                <div class="heatmap-cell heatmap-3"></div><div class="heatmap-cell heatmap-4"></div>
+                <div class="heatmap-cell heatmap-4"></div><div class="heatmap-cell heatmap-0"></div>
+                <div class="heatmap-cell heatmap-0"></div><div class="heatmap-cell heatmap-0"></div>
+              </div>
+            </div>
+            <!-- Inline composer -->
+            <div style="padding:12px;border-bottom:1px solid var(--gray-100)">
+              <div style="display:flex;gap:8px;align-items:center">
+                <div style="width:32px;height:32px;border-radius:50%;background:var(--green-200);display:flex;align-items:center;justify-content:center;font-size:14px">&#128100;</div>
+                <input class="form-input" placeholder="무슨 생각을 하셨나요?" style="flex:1;border-radius:20px;padding:8px 14px">
+              </div>
+              <div style="display:flex;gap:6px;margin-top:6px;margin-left:40px">
+                <span style="font-size:11px;color:var(--gray-400);cursor:pointer">&#128214; 책 태그</span>
+                <span style="font-size:11px;color:var(--gray-400)">|</span>
+                <span style="font-size:11px;color:var(--gray-400);cursor:pointer">&#10077; 인용구</span>
+                <span style="font-size:11px;color:var(--gray-400)">|</span>
+                <span style="font-size:11px;color:var(--gray-400);cursor:pointer">&#128247; 사진</span>
+              </div>
+            </div>
+            <!-- Timeline -->
+            <div style="position:relative;padding:16px 0">
+              <div class="timeline-line"></div>
+              <div class="timeline-date" style="padding-left:48px;margin-bottom:8px">오늘</div>
+
+              <div class="timeline-item">
+                <div class="timeline-dot filled"></div>
+                <div class="note-card" style="margin:0;border-left:3px solid var(--amber-500)">
+                  <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+                    <span style="font-size:14px">&#9202;</span>
+                    <span style="font-size:12px;font-weight:600;color:var(--amber-500)">45분 독서 세션</span>
+                  </div>
+                  <div class="book-tag">데미안 - 헤르만 헤세</div>
+                  <div style="font-size:12px;color:var(--gray-500)">p.38 &rarr; p.52 &middot; 14페이지</div>
+                  <div style="margin-top:6px">
+                    <button class="btn btn-ghost btn-sm" style="font-size:11px;color:var(--green-600)">+ 감상 추가</button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="timeline-item">
+                <div class="timeline-dot"></div>
+                <div class="note-card" style="margin:0">
+                  <div class="book-tag">데미안 - 헤르만 헤세</div>
+                  <div class="quote">"새는 알에서 나오려고 투쟁한다"</div>
+                  <div class="memo">성장의 고통을 가장 아름답게 표현한 문장</div>
+                  <div class="meta">오전 10:23 &middot; p.42 &middot; #성장</div>
+                </div>
+              </div>
+
+              <div class="timeline-date" style="padding-left:48px;margin:8px 0">어제</div>
+
+              <div class="timeline-item">
+                <div class="timeline-dot filled" style="border-color:var(--green-600);background:var(--green-600)"></div>
+                <div class="note-card" style="margin:0;background:var(--green-50);border:1px solid var(--green-200)">
+                  <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+                    <span style="font-size:14px">&#127881;</span>
+                    <span style="font-size:12px;font-weight:700;color:var(--green-600)">100페이지 달성!</span>
+                  </div>
+                  <div class="book-tag">데미안 - 헤르만 헤세</div>
+                  <div style="font-size:12px;color:var(--green-600)">총 독서시간: 4시간 30분</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="phone-bottom-nav">
+            <div class="nav-item"><span class="icon">&#127968;</span>홈</div>
+            <div class="nav-item"><span class="icon">&#128218;</span>서재</div>
+            <div class="nav-item"><div class="fab">+</div></div>
+            <div class="nav-item active"><span class="icon">&#128336;</span>활동</div>
+            <div class="nav-item"><span class="icon">&#8943;</span>더보기</div>
+          </div>
+        </div>
+      </div>
+      <div class="caption">Activity Feed: 히트맵 + 인라인 입력 + 타임라인</div>
+    </div>
+
+    <!-- Card types -->
+    <div style="max-width:320px">
+      <h4 style="font-size:14px;margin-bottom:16px">카드 타입별 디자인</h4>
+
+      <div class="note-card" style="border-left:3px solid var(--green-500);margin:0 0 12px 0">
+        <div style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--green-600);font-weight:600;margin-bottom:4px">&#10077; 인용구 기록</div>
+        <div class="book-tag">데미안</div>
+        <div class="quote">"새는 알에서 나오려고 투쟁한다"</div>
+        <div class="memo">성장의 고통과 아름다움</div>
+        <div class="meta">p.42 &middot; #성장</div>
+      </div>
+
+      <div class="note-card" style="border-left:3px solid var(--blue-500);margin:0 0 12px 0">
+        <div style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--blue-600);font-weight:600;margin-bottom:4px">&#128173; 생각 메모</div>
+        <div class="book-tag">사피엔스</div>
+        <div class="memo">인지혁명이 실제로 의미하는 건 결국 "이야기를 만드는 능력"이 아닐까</div>
+        <div class="meta">오후 3:15</div>
+      </div>
+
+      <div class="note-card" style="border-left:3px solid var(--amber-500);margin:0 0 12px 0">
+        <div style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--amber-500);font-weight:600;margin-bottom:4px">&#9202; 독서 세션</div>
+        <div class="book-tag">데미안</div>
+        <div style="display:flex;gap:16px;font-size:12px;color:var(--gray-600);margin-top:4px">
+          <span>&#128337; 45분</span>
+          <span>&#128196; p.38-52</span>
+          <span>&#128170; 집중 높음</span>
+        </div>
+      </div>
+
+      <div class="note-card" style="border-left:3px solid var(--green-600);margin:0 0 12px 0;background:var(--green-50)">
+        <div style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--green-600);font-weight:600;margin-bottom:4px">&#127881; 완독</div>
+        <div class="book-tag">멋진 신세계</div>
+        <div style="font-size:12px;color:var(--gray-600);margin-top:4px">총 8시간 &middot; 14일 &middot; &#11088;&#11088;&#11088;&#11088;&#9734;</div>
+      </div>
+
+      <div class="note-card" style="border-left:3px solid var(--purple-500);margin:0 0 12px 0">
+        <div style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--purple-500);font-weight:600;margin-bottom:4px">&#128247; 사진 기록</div>
+        <div class="book-tag">데미안</div>
+        <div style="height:80px;background:var(--gray-100);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:24px;color:var(--gray-300)">&#128444;</div>
+        <div class="meta" style="margin-top:6px">p.42</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="pros-cons">
+    <div class="pros">
+      <h4>&#10003; 장점</h4>
+      <ul>
+        <li>모든 독서 활동을 한 눈에 파악</li>
+        <li>인라인 입력으로 기록 마찰 최소화</li>
+        <li>캘린더 히트맵으로 동기부여</li>
+        <li>SNS 피드와 유사한 익숙한 UX</li>
+        <li>자동 이벤트 (완독, 마일스톤)로 성취감</li>
+      </ul>
+    </div>
+    <div class="cons">
+      <h4>&#10007; 단점</h4>
+      <ul>
+        <li>가장 큰 규모의 전면 리팩토링</li>
+        <li>기존 URL 호환성 깨짐</li>
+        <li>무한 스크롤 성능 최적화 필요</li>
+        <li>기존 사용자의 학습 비용</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== Direction 5: AI-Powered ==================== -->
+<div id="dir5" class="section">
+  <div class="dir-header animate-fade">
+    <div class="dir-num">DIRECTION 5</div>
+    <h2>스마트 기록 (AI-Powered)</h2>
+    <div class="dir-quote">"최소한의 입력, 최대한의 기록"</div>
+    <div class="dir-meta">
+      <span class="tag" style="background:var(--rose-100);color:var(--rose-500)">난이도: 상</span>
+      <span class="tag" style="background:var(--green-100);color:var(--green-600)">마찰: 매우 낮음</span>
+      <span class="tag" style="background:var(--purple-100);color:var(--purple-500)">차별화: 높음</span>
+    </div>
+  </div>
+
+  <div class="flow-diagram">
+    <span class="flow-step" style="background:var(--purple-100)">자유 텍스트 / 음성 입력</span>
+    <span class="flow-arrow">&rarr;</span>
+    <span class="flow-step" style="background:linear-gradient(135deg,var(--purple-100),var(--blue-100))">&#10024; AI 자동 구조화</span>
+    <span class="flow-arrow">&rarr;</span>
+    <span class="flow-step" style="background:var(--green-100)">사용자 검토 &amp; 저장</span>
+  </div>
+
+  <div class="mockup-row">
+    <!-- Input -->
+    <div>
+      <div class="phone">
+        <div class="phone-notch"></div>
+        <div class="phone-screen">
+          <div class="phone-status">9:41</div>
+          <div class="phone-header">
+            <span class="back">&larr;</span>
+            <span class="title">스마트 기록</span>
+          </div>
+          <div class="phone-body" style="background:white;padding:16px">
+            <div style="text-align:center;margin:24px 0 16px">
+              <div style="font-size:48px;margin-bottom:8px">&#128172;</div>
+              <div style="font-size:15px;font-weight:700;margin-bottom:4px">자유롭게 이야기해주세요</div>
+              <div style="font-size:12px;color:var(--gray-500)">AI가 인용구, 감상, 태그를 자동 정리합니다</div>
+            </div>
+            <textarea class="form-input" rows="6" style="margin-bottom:12px;border-color:var(--purple-100)">오늘 읽은 데미안 3장에서 싱클레어가 크로머한테서 벗어나는 장면이 인상적이었어. 특히 "새는 알에서 나오려고 투쟁한다" 이 문장이 성장의 고통을 너무 아름답게 표현한 것 같아.</textarea>
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <div style="display:flex;gap:8px">
+                <button class="btn btn-sm" style="background:var(--purple-100);color:var(--purple-500)">&#127908; 음성 입력</button>
+                <button class="btn btn-sm" style="background:var(--gray-100);color:var(--gray-600)">&#128247; 사진</button>
+              </div>
+              <button class="btn btn-primary" style="background:var(--purple-500)">&#10024; AI 분석</button>
+            </div>
+          </div>
+          <div class="phone-bottom-nav">
+            <div class="nav-item"><span class="icon">&#127968;</span>홈</div>
+            <div class="nav-item"><span class="icon">&#128218;</span>서재</div>
+            <div class="nav-item"><div class="fab" style="background:var(--purple-500)">&#10024;</div></div>
+            <div class="nav-item"><span class="icon">&#128336;</span>타임라인</div>
+            <div class="nav-item"><span class="icon">&#8943;</span>더보기</div>
+          </div>
+        </div>
+      </div>
+      <div class="caption">Step 1: 자유 텍스트 / 음성 입력</div>
+    </div>
+
+    <!-- AI Processing -->
+    <div>
+      <div class="phone">
+        <div class="phone-notch"></div>
+        <div class="phone-screen">
+          <div class="phone-status">9:41</div>
+          <div class="phone-header">
+            <span class="back">&larr;</span>
+            <span class="title">AI 분석 결과</span>
+            <button class="btn btn-primary btn-sm" style="background:var(--green-600)">저장</button>
+          </div>
+          <div class="phone-body" style="background:var(--gray-50);padding:12px;overflow-y:auto">
+            <!-- Book match -->
+            <div class="ai-card">
+              <div class="ai-badge">&#10024; AI가 매칭한 책</div>
+              <div style="display:flex;align-items:center;gap:10px">
+                <div style="width:40px;height:56px;background:var(--green-200);border-radius:4px"></div>
+                <div>
+                  <div style="font-size:14px;font-weight:700">데미안</div>
+                  <div style="font-size:12px;color:var(--gray-500)">헤르만 헤세 &middot; 3장 (p.38-52)</div>
+                </div>
+                <span style="font-size:12px;color:var(--green-600);margin-left:auto">&#10003;</span>
+              </div>
+            </div>
+
+            <!-- Quote -->
+            <div class="ai-card" style="background:white;border:1px solid var(--gray-200)">
+              <div class="ai-badge">&#10077; 추출된 인용구</div>
+              <div class="quote" style="margin:0">"새는 알에서 나오려고 투쟁한다"</div>
+              <div style="text-align:right;margin-top:4px">
+                <button class="btn btn-ghost btn-sm" style="font-size:11px">&#9998; 수정</button>
+              </div>
+            </div>
+
+            <!-- Reflection -->
+            <div class="ai-card" style="background:white;border:1px solid var(--gray-200)">
+              <div class="ai-badge">&#128173; 정리된 감상</div>
+              <div style="font-size:13px;color:var(--gray-700);line-height:1.6">
+                싱클레어가 크로머에게서 벗어나는 장면이 인상적이었다. "새는 알에서 나오려고 투쟁한다"는 문장이 성장의 고통을 아름답게 표현한 것 같다.
+              </div>
+              <div style="text-align:right;margin-top:4px">
+                <button class="btn btn-ghost btn-sm" style="font-size:11px">&#9998; 수정</button>
+              </div>
+            </div>
+
+            <!-- Tags -->
+            <div class="ai-card" style="background:white;border:1px solid var(--gray-200)">
+              <div class="ai-badge">&#127991; AI 추천 태그</div>
+              <div style="display:flex;gap:6px;flex-wrap:wrap">
+                <span style="padding:4px 10px;background:var(--green-100);border-radius:12px;font-size:11px;color:var(--green-700);border:1px solid var(--green-200)">#성장 &#10003;</span>
+                <span style="padding:4px 10px;background:var(--purple-100);border-radius:12px;font-size:11px;color:var(--purple-500);border:1px solid rgba(139,92,246,0.2)">#자아발견 &#10003;</span>
+                <span style="padding:4px 10px;background:var(--blue-100);border-radius:12px;font-size:11px;color:var(--blue-600);border:1px solid rgba(59,130,246,0.2)">#해방 &#10003;</span>
+                <span style="padding:4px 10px;background:var(--gray-100);border-radius:12px;font-size:11px;color:var(--gray-400);text-decoration:line-through">#문학</span>
+              </div>
+            </div>
+
+            <!-- Additional options -->
+            <div style="padding:12px 0;display:flex;justify-content:space-between;align-items:center">
+              <label style="font-size:12px;color:var(--gray-500);display:flex;align-items:center;gap:4px">
+                <input type="checkbox" checked> 공개
+              </label>
+              <button class="btn btn-ghost btn-sm" style="font-size:11px">일반 모드로 전환</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="caption">Step 2: AI 구조화 결과 검토 &amp; 편집</div>
+    </div>
+  </div>
+
+  <div class="pros-cons">
+    <div class="pros">
+      <h4>&#10003; 장점</h4>
+      <ul>
+        <li>가장 낮은 입력 마찰 (자유 텍스트/음성)</li>
+        <li>AI가 구조화하여 기록 품질 향상</li>
+        <li>경쟁 독서 앱에 없는 차별화 기능</li>
+        <li>기존 AI 태그 기능의 자연스러운 확장</li>
+        <li>프리미엄 기능으로 수익화 가능</li>
+      </ul>
+    </div>
+    <div class="cons">
+      <h4>&#10007; 단점</h4>
+      <ul>
+        <li>AI API 비용 (매 기록마다 LLM 호출)</li>
+        <li>1-3초 AI 처리 지연</li>
+        <li>AI 부정확 시 사용자 신뢰 하락</li>
+        <li>오프라인 사용 불가</li>
+        <li>음성 입력 브라우저 호환성 이슈</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<script>
+function showSection(id) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  event.target.classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+</script>
+
+</body>
+</html>

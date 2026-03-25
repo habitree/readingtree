@@ -10,7 +10,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useLoginPrompt } from "@/hooks/use-login-prompt";
 import { LoginPromptModal } from "@/components/ui/login-prompt-modal";
 import { MobileMenuSheet } from "./mobile-menu-sheet";
-import { useMobileNoteSheet } from "@/hooks/use-mobile-note-sheet";
+import { useQuickCaptureStore } from "@/hooks/use-quick-capture";
 import { useTranslation, type TranslationKey } from "@/lib/i18n";
 import { getContinueReadingBooks } from "@/app/actions/books";
 
@@ -54,7 +54,7 @@ export function MobileNav() {
   const { user, isLoading } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { isOpen, setIsOpen, title, description, requireLogin } = useLoginPrompt();
-  const noteSheet = useMobileNoteSheet();
+  const quickCapture = useQuickCaptureStore();
 
   // 이어읽기 책 캐시 (FAB 원탭 진입용)
   const [continueBook, setContinueBook] = useState<{
@@ -91,13 +91,13 @@ export function MobileNav() {
       });
       return;
     }
-    // 원탭 진입: 이어읽기 책이 있으면 자동 선택 → 바로 입력
+    // Quick Capture: 이어읽기 책이 있으면 자동 선택 → 바로 입력
     if (continueBook) {
-      noteSheet.openWithBook(continueBook);
+      quickCapture.openWithBook(continueBook);
     } else {
-      noteSheet.open();
+      quickCapture.open();
     }
-  }, [user, requireLogin, noteSheet, continueBook]);
+  }, [user, requireLogin, quickCapture, continueBook]);
 
   return (
     <>
