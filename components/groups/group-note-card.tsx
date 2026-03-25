@@ -6,16 +6,14 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
-  Quote,
-  Camera,
-  FileText,
-  ScanText,
   MoreVertical,
   Trash2,
   ExternalLink,
   ChevronDown,
   ChevronUp,
 } from "lucide-react";
+import { NOTE_TYPE_STYLES } from "@/lib/constants/note-type-styles";
+import type { NoteStyleType } from "@/lib/constants/note-type-styles";
 import { formatSmartDate } from "@/lib/utils/date";
 import Image from "next/image";
 import Link from "next/link";
@@ -61,36 +59,7 @@ interface GroupNoteCardProps {
   onUnshare?: (noteId: string) => void;
 }
 
-const noteTypeConfigBase = {
-  quote: {
-    icon: Quote,
-    labelKey: "groups.noteTypeQuote" as const,
-    color: "text-amber-600",
-    bgColor: "bg-amber-50 dark:bg-amber-950/30",
-    borderColor: "border-l-amber-400",
-  },
-  photo: {
-    icon: Camera,
-    labelKey: "groups.noteTypePhoto" as const,
-    color: "text-blue-600",
-    bgColor: "bg-blue-50 dark:bg-blue-950/30",
-    borderColor: "border-l-blue-400",
-  },
-  memo: {
-    icon: FileText,
-    labelKey: "groups.noteTypeMemo" as const,
-    color: "text-green-600",
-    bgColor: "bg-green-50 dark:bg-green-950/30",
-    borderColor: "border-l-green-400",
-  },
-  transcription: {
-    icon: ScanText,
-    labelKey: "groups.noteTypeTranscription" as const,
-    color: "text-purple-600",
-    bgColor: "bg-purple-50 dark:bg-purple-950/30",
-    borderColor: "border-l-purple-400",
-  },
-};
+// noteTypeConfig는 lib/constants/note-type-styles.ts에서 공통 관리
 
 const CONTENT_PREVIEW_LENGTH = 200;
 
@@ -104,7 +73,8 @@ export function GroupNoteCard({
   const [isExpanded, setIsExpanded] = useState(false);
   const [showUnshareDialog, setShowUnshareDialog] = useState(false);
 
-  const config = noteTypeConfigBase[note.type];
+  const styleType = (note.type in NOTE_TYPE_STYLES ? note.type : "memo") as NoteStyleType;
+  const config = NOTE_TYPE_STYLES[styleType];
   const TypeIcon = config.icon;
   const isOwner = currentUserId === note.user_id;
 
@@ -152,7 +122,7 @@ export function GroupNoteCard({
                 className={`${config.bgColor} ${config.color} border-0`}
               >
                 <TypeIcon className="mr-1 h-3 w-3" />
-                <span className="hidden sm:inline">{t(config.labelKey)}</span>
+                <span className="hidden sm:inline">{t(config.labelKey as Parameters<typeof t>[0])}</span>
               </Badge>
               {isOwner && onUnshare && (
                 <DropdownMenu>

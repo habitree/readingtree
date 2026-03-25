@@ -8,19 +8,16 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import {
-  Loader2,
-  Quote,
-  Camera,
-  FileText,
-  ScanText,
   Filter,
   MessageSquareOff,
   PenLine,
   Share2,
 } from "lucide-react";
+import { NOTE_TYPE_STYLES } from "@/lib/constants/note-type-styles";
+import type { NoteFilterType } from "@/lib/constants/note-type-styles";
 import { getGroupBookNotes, unshareNoteFromGroup } from "@/app/actions/groups";
 import { toast } from "sonner";
-import type { NoteType } from "@/types/group";
+
 import { useTranslation } from "@/lib/i18n";
 
 interface GroupNoteFeedProps {
@@ -31,16 +28,18 @@ interface GroupNoteFeedProps {
 }
 
 const noteTypeFilterDefs: {
-  type: NoteType | "all";
+  type: NoteFilterType;
   labelKey: string;
   icon: React.ElementType;
   color?: string;
 }[] = [
   { type: "all", labelKey: "groups.filterAll", icon: Filter },
-  { type: "quote", labelKey: "groups.noteTypeQuote", icon: Quote, color: "text-amber-600" },
-  { type: "memo", labelKey: "groups.noteTypeMemo", icon: FileText, color: "text-green-600" },
-  { type: "photo", labelKey: "groups.noteTypePhoto", icon: Camera, color: "text-blue-600" },
-  { type: "transcription", labelKey: "groups.noteTypeTranscription", icon: ScanText, color: "text-purple-600" },
+  ...Object.entries(NOTE_TYPE_STYLES).map(([type, style]) => ({
+    type: type as NoteFilterType,
+    labelKey: style.labelKey,
+    icon: style.icon,
+    color: style.color,
+  })),
 ];
 
 function FeedSkeleton() {
@@ -77,7 +76,7 @@ export function GroupNoteFeed({
   const { t } = useTranslation();
   const [notes, setNotes] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeFilter, setActiveFilter] = useState<NoteType | "all">("all");
+  const [activeFilter, setActiveFilter] = useState<NoteFilterType>("all");
 
   const noteTypeFilters = noteTypeFilterDefs.map((f) => ({
     ...f,

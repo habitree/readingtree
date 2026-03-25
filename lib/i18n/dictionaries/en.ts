@@ -1276,6 +1276,12 @@ export const en: Dictionary = {
     backToGroup: "Back to group",
     leaderOnlyError: "Only the leader can access group settings.",
     groupLoadError: "Could not load group information.",
+
+    // Book grouping
+    bookGroupCount: "{count} notes",
+    showMoreNotes: "{count} more",
+    showLessNotes: "Show less",
+    otherBook: "Other",
   },
 
   profile: {

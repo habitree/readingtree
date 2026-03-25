@@ -315,7 +315,7 @@ export async function getGroupDetail(groupId: string) {
       )
       .eq("group_id", groupId)
       .order("shared_at", { ascending: false })
-      .limit(20),
+      .limit(50),
     // 지정도서 목록 조회
     supabase
       .from("group_books")

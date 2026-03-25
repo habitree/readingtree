@@ -1276,6 +1276,12 @@ export const ko = {
     backToGroup: "모임으로 돌아가기",
     leaderOnlyError: "리더만 모임 설정에 접근할 수 있습니다.",
     groupLoadError: "모임 정보를 불러올 수 없습니다.",
+
+    // 책별 그루핑
+    bookGroupCount: "{count}개 기록",
+    showMoreNotes: "{count}개 더 보기",
+    showLessNotes: "접기",
+    otherBook: "기타",
   },
 
   profile: {
