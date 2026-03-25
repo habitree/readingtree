@@ -9,8 +9,8 @@ import {
 } from "@/components/ui/dialog";
 import { useMusicPlayer } from "@/hooks/use-music-player";
 import { useMobileNoteSheet } from "@/hooks/use-mobile-note-sheet";
-import { createProgressLog } from "@/app/actions/progress";
-import { BookOpen, PenLine, ArrowRight, Zap, Loader2 } from "lucide-react";
+import { useQuickCaptureStore } from "@/hooks/use-quick-capture";
+import { BookOpen, PenLine, ArrowRight, Zap, Loader2, Infinity as InfinityIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -39,20 +39,18 @@ export function ReadingCompleteDialog() {
     close,
   } = useMusicPlayer();
 
-  const { open: openNoteSheet } = useMobileNoteSheet();
+  const { openWithTimer: openNoteSheetWithTimer } = useMobileNoteSheet();
+  const quickCapture = useQuickCaptureStore();
   const [showContinueOptions, setShowContinueOptions] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  /** 빠른 기록: reading_logs에 시간만 바로 저장 */
+  /** 빠른 기록: Quick Capture에 타이머 데이터를 전달하여 열기 */
   async function handleQuickRecord() {
     setIsSaving(true);
     try {
-      // 사용자의 현재 읽고 있는 책 중 하나를 자동 선택하기 위해
-      // 여기서는 기본값으로 저장. user_book_id가 필요하므로
-      // 실제로는 책 선택이 필요하지만, Phase 1에서는 간단히 처리
-      // → MobileNoteSheet로 우회하여 책 선택 후 저장
       closeCompleteDialog();
-      openNoteSheet("memo");
+      // Quick Capture Sheet에 타이머 데이터 전달
+      quickCapture.openWithTimer(null, elapsedSeconds);
       toast.success(`📖 ${formatDuration(elapsedSeconds)} 독서 완료!`);
     } catch {
       toast.error("기록 저장에 실패했습니다.");
@@ -61,10 +59,10 @@ export function ReadingCompleteDialog() {
     }
   }
 
-  /** 상세 기록: MobileNoteSheet 열기 */
+  /** 상세 기록: MobileNoteSheet에 타이머 데이터 전달하여 열기 */
   function handleDetailRecord() {
     closeCompleteDialog();
-    openNoteSheet("memo");
+    openNoteSheetWithTimer(elapsedSeconds, timerStartedAt ?? null, "memo");
   }
 
   function handleContinue(seconds: number) {
@@ -146,7 +144,7 @@ export function ReadingCompleteDialog() {
               조금 더 읽기
             </button>
           ) : (
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-4 gap-2">
               {CONTINUE_PRESETS.map(({ label, seconds, emoji }) => (
                 <button
                   key={seconds}
@@ -157,6 +155,13 @@ export function ReadingCompleteDialog() {
                   <span className="text-xs font-semibold">{label}</span>
                 </button>
               ))}
+              <button
+                onClick={() => handleContinue(Infinity)}
+                className="py-3 rounded-xl bg-primary/10 hover:bg-primary/20 transition-colors text-center text-primary"
+              >
+                <InfinityIcon className="w-5 h-5 mx-auto mb-0.5" />
+                <span className="text-xs font-semibold">무제한</span>
+              </button>
             </div>
           )}
 

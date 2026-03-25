@@ -23,6 +23,7 @@ interface MusicPlayerState {
   remainingSeconds: number;
   elapsedSeconds: number;
   timerStartedAt: string | null;
+  isUnlimited: boolean;
   isTimerSheetOpen: boolean;
   isCompleteDialogOpen: boolean;
   isTrackListOpen: boolean;
@@ -64,6 +65,7 @@ const INITIAL_TIMER = {
   targetSeconds: 0,
   remainingSeconds: 0,
   timerStartedAt: null as string | null,
+  isUnlimited: false,
   isTrackListOpen: false,
   isVolumeOpen: false,
   elapsedSeconds: 0,
@@ -180,14 +182,14 @@ export const useMusicPlayer = create<MusicPlayerState>((set, get) => ({
     set({ timerStatus: "running", isPlaying: true }),
 
   tickTimer: () => {
-    const { remainingSeconds, timerStatus } = get();
+    const { remainingSeconds, timerStatus, isUnlimited } = get();
     if (timerStatus !== "running") return;
-    if (remainingSeconds <= 1) {
+    if (!isUnlimited && remainingSeconds <= 1) {
       get().completeTimer();
       return;
     }
     set((s) => ({
-      remainingSeconds: s.remainingSeconds - 1,
+      remainingSeconds: isUnlimited ? s.remainingSeconds : s.remainingSeconds - 1,
       elapsedSeconds: s.elapsedSeconds + 1,
     }));
   },
@@ -200,14 +202,17 @@ export const useMusicPlayer = create<MusicPlayerState>((set, get) => ({
       isCompleteDialogOpen: true,
     }),
 
-  continueReading: (seconds) =>
+  continueReading: (seconds) => {
+    const unlimited = seconds === Infinity;
     set({
       timerStatus: "running",
-      targetSeconds: seconds,
-      remainingSeconds: seconds,
+      targetSeconds: unlimited ? 0 : seconds,
+      remainingSeconds: unlimited ? 0 : seconds,
+      isUnlimited: unlimited,
       isPlaying: true,
       isCompleteDialogOpen: false,
-    }),
+    });
+  },
 
   stopTimer: () => {
     const { elapsedSeconds } = get();

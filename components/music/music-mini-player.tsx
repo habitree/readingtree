@@ -57,7 +57,7 @@ function CircleTimer({
 
 /** 헤더 타이머 + 음악 버튼 */
 export function MusicToggleButton() {
-  const { isVisible, timerStatus, remainingSeconds, openTimerSheet, pauseTimer, resumeTimer } =
+  const { isVisible, timerStatus, remainingSeconds, elapsedSeconds, isUnlimited, openTimerSheet, pauseTimer, resumeTimer } =
     useMusicPlayer();
 
   function handleClick() {
@@ -87,7 +87,7 @@ export function MusicToggleButton() {
         <>
           <Timer className="w-3.5 h-3.5" />
           <span className="text-xs font-semibold tabular-nums">
-            {formatTime(remainingSeconds)}
+            {isUnlimited ? formatTime(elapsedSeconds) : formatTime(remainingSeconds)}
           </span>
         </>
       ) : (
@@ -117,6 +117,7 @@ export function MusicMiniPlayer() {
     targetSeconds,
     remainingSeconds,
     elapsedSeconds,
+    isUnlimited,
     isVolumeOpen,
     toggle,
     next,
@@ -206,7 +207,11 @@ export function MusicMiniPlayer() {
     if (!currentTrack || !("mediaSession" in navigator)) return;
     const catInfo = MUSIC_CATEGORIES.find((c) => c.id === currentTrack.category);
     navigator.mediaSession.metadata = new MediaMetadata({
-      title: isTimerActive ? `${formatTime(remainingSeconds)} 남음 — ${currentTrack.title}` : currentTrack.title,
+      title: isTimerActive
+        ? isUnlimited
+          ? `${formatTime(elapsedSeconds)} 경과 — ${currentTrack.title}`
+          : `${formatTime(remainingSeconds)} 남음 — ${currentTrack.title}`
+        : currentTrack.title,
       artist: `${currentTrack.composer} · ${currentTrack.performer}`,
       album: catInfo ? `ReadingTree - ${catInfo.name}` : "ReadingTree Music",
     });
@@ -222,10 +227,10 @@ export function MusicMiniPlayer() {
     });
     navigator.mediaSession.setActionHandler("previoustrack", () => useMusicPlayer.getState().prev());
     navigator.mediaSession.setActionHandler("nexttrack", () => useMusicPlayer.getState().next());
-  }, [currentTrack, isTimerActive, remainingSeconds]);
+  }, [currentTrack, isTimerActive, isUnlimited, remainingSeconds, elapsedSeconds]);
 
   function handleProgressClick(e: React.MouseEvent<HTMLDivElement>) {
-    if (isTimerActive) return;
+    if (isTimerActive && !isUnlimited) return;
     const bar = progressRef.current;
     const audio = audioRef.current;
     if (!bar || !audio || !audio.duration) return;
@@ -256,7 +261,7 @@ export function MusicMiniPlayer() {
   }
 
   const catInfo = MUSIC_CATEGORIES.find((c) => c.id === currentTrack.category);
-  const progress = isTimerActive
+  const progress = isTimerActive && !isUnlimited
     ? targetSeconds > 0 ? ((targetSeconds - remainingSeconds) / targetSeconds) * 100 : 0
     : duration > 0 ? (currentTime / duration) * 100 : 0;
 
@@ -279,7 +284,7 @@ export function MusicMiniPlayer() {
         <div
           ref={progressRef}
           onClick={handleProgressClick}
-          className={cn("h-1 bg-muted transition-all", !isTimerActive && "cursor-pointer hover:h-1.5")}
+          className={cn("h-1 bg-muted transition-all", (!isTimerActive || isUnlimited) && "cursor-pointer hover:h-1.5")}
         >
           <div
             className={cn(
@@ -294,7 +299,13 @@ export function MusicMiniPlayer() {
         <div className="flex items-center gap-2 px-2.5 py-1.5 sm:px-4 sm:py-2">
           {/* 좌측: 타이머 or 카테고리 아이콘 */}
           {isTimerActive ? (
-            <CircleTimer remaining={remainingSeconds} total={targetSeconds} size={36} stroke={3} />
+            isUnlimited ? (
+              <div className="relative shrink-0 w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center">
+                <Timer className="w-4 h-4 text-primary animate-pulse" />
+              </div>
+            ) : (
+              <CircleTimer remaining={remainingSeconds} total={targetSeconds} size={36} stroke={3} />
+            )
           ) : (
             <button
               onClick={openTrackList}
@@ -312,14 +323,27 @@ export function MusicMiniPlayer() {
             </p>
             {isTimerActive ? (
               <div className="flex items-center gap-1.5 text-xs mt-0.5">
-                <span className={cn("font-bold tabular-nums", timerStatus === "paused" ? "text-orange-500" : "text-primary")}>
-                  {formatTime(remainingSeconds)}
-                </span>
-                <span className="text-muted-foreground">남음</span>
-                {timerStatus === "paused" && <span className="text-orange-500/70 text-[10px]">일시정지</span>}
-                <span className="text-muted-foreground/40 ml-auto text-[10px] tabular-nums hidden sm:block">
-                  {formatTime(elapsedSeconds)} 경과
-                </span>
+                {isUnlimited ? (
+                  <>
+                    <span className={cn("font-bold tabular-nums", timerStatus === "paused" ? "text-orange-500" : "text-primary")}>
+                      {formatTime(elapsedSeconds)}
+                    </span>
+                    <span className="text-muted-foreground">경과</span>
+                    {timerStatus === "paused" && <span className="text-orange-500/70 text-[10px]">일시정지</span>}
+                    <span className="text-muted-foreground/40 ml-auto text-[10px]">무제한</span>
+                  </>
+                ) : (
+                  <>
+                    <span className={cn("font-bold tabular-nums", timerStatus === "paused" ? "text-orange-500" : "text-primary")}>
+                      {formatTime(remainingSeconds)}
+                    </span>
+                    <span className="text-muted-foreground">남음</span>
+                    {timerStatus === "paused" && <span className="text-orange-500/70 text-[10px]">일시정지</span>}
+                    <span className="text-muted-foreground/40 ml-auto text-[10px] tabular-nums hidden sm:block">
+                      {formatTime(elapsedSeconds)} 경과
+                    </span>
+                  </>
+                )}
               </div>
             ) : (
               <p className="text-[11px] text-muted-foreground truncate mt-0.5 leading-tight">
