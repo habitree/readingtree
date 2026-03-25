@@ -13,6 +13,7 @@ import {
   Bot,
   Sparkles,
   StickyNote,
+  PenLine,
   Coins,
   Lightbulb,
   ChevronDown,
@@ -25,6 +26,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { BookshelfTree } from "./bookshelf-tree";
 import { useEffect, useState, useCallback } from "react";
 import { useTranslation } from "@/lib/i18n";
+import { useQuickCaptureStore } from "@/hooks/use-quick-capture";
 
 /**
  * 사이드바 네비게이션 아이템 타입
@@ -32,7 +34,8 @@ import { useTranslation } from "@/lib/i18n";
 interface SidebarItem {
   icon: LucideIcon;
   label: string;
-  href: string;
+  href?: string;
+  action?: "quickCapture";
   badge?: number;
   adminOnly?: boolean;
 }
@@ -50,6 +53,7 @@ export function Sidebar() {
   const primaryItems: SidebarItem[] = [
     { icon: Home, label: t("nav.home"), href: "/" },
     { icon: Library, label: t("nav.myLibrary"), href: "/books" },
+    { icon: PenLine, label: t("nav.writeNote"), action: "quickCapture" },
     { icon: Search, label: t("nav.search"), href: "/search" },
     { icon: Clock, label: t("nav.timeline"), href: "/timeline" },
     { icon: User, label: t("nav.profile"), href: "/profile" },
@@ -71,16 +75,42 @@ export function Sidebar() {
   // 더보기 영역의 항목이 활성화되어 있으면 자동으로 열기
   useEffect(() => {
     const isSecondaryActive = secondaryItems.some(
-      (item) => pathname === item.href || pathname.startsWith(item.href + "/")
+      (item) => item.href && (pathname === item.href || pathname.startsWith(item.href + "/"))
     );
     if (isSecondaryActive) {
       setIsMoreOpen(true);
     }
   }, [pathname]);
 
+  const openQuickCapture = useQuickCaptureStore((s) => s.open);
+
   const renderNavItem = useCallback((item: SidebarItem) => {
     const Icon = item.icon;
-    const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
+
+    // action 기반 항목 (Quick Capture 등)
+    if (item.action === "quickCapture") {
+      return (
+        <button
+          key="quickCapture"
+          type="button"
+          onClick={openQuickCapture}
+          aria-label={item.label}
+        >
+          <Button
+            variant="ghost"
+            className="w-full justify-start gap-3 h-11"
+            aria-label={item.label}
+          >
+            <Icon className="h-5 w-5" aria-hidden="true" />
+            <span className="flex-1 text-left">{item.label}</span>
+          </Button>
+        </button>
+      );
+    }
+
+    const isActive = item.href
+      ? pathname === item.href || pathname.startsWith(item.href + "/")
+      : false;
 
     // "내 서재" 항목은 서재 트리로 대체
     if (item.href === "/books" && user) {
@@ -90,7 +120,7 @@ export function Sidebar() {
     return (
       <Link
         key={item.href}
-        href={item.href}
+        href={item.href!}
         aria-label={item.label}
         aria-current={isActive ? "page" : undefined}
       >
@@ -113,7 +143,7 @@ export function Sidebar() {
         </Button>
       </Link>
     );
-  }, [pathname, user]);
+  }, [pathname, user, openQuickCapture]);
 
   const visibleSecondaryItems = secondaryItems.filter(
     (item) => !item.adminOnly || isAdmin

@@ -2,7 +2,6 @@
 
 import { useCallback } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { PenTool, BookPlus, Camera, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -11,7 +10,6 @@ import { useQuickCaptureStore } from "@/hooks/use-quick-capture";
 type NoteMode = "memo" | "transcription";
 import { useLoginPrompt } from "@/hooks/use-login-prompt";
 import { LoginPromptModal } from "@/components/ui/login-prompt-modal";
-import { useMediaQuery } from "@/hooks/use-media-query";
 import { useTranslation } from "@/lib/i18n";
 
 interface QuickActionItem {
@@ -72,8 +70,6 @@ const QUICK_ACTION_KEYS = [
 export function MobileQuickActions() {
   const { open: openQuickCapture } = useQuickCaptureStore();
   const { isOpen, setIsOpen, title, description, requireLogin } = useLoginPrompt();
-  const isDesktop = useMediaQuery("(min-width: 640px)");
-  const router = useRouter();
   const { t } = useTranslation();
 
   // Build quickActions with translated labels
@@ -89,16 +85,11 @@ export function MobileQuickActions() {
       description: t("auth.loginToWriteDesc"),
     })) return;
 
-    // 데스크톱에서는 URL 네비게이션
-    if (isDesktop && action.desktopHref) {
-      router.push(action.desktopHref);
-      return;
-    }
-    // 모바일에서는 바텀시트
+    // 모바일/데스크톱 모두 Quick Capture 사용
     if (action.sheetMode) {
       openQuickCapture();
     }
-  }, [openQuickCapture, requireLogin, isDesktop, router]);
+  }, [openQuickCapture, requireLogin, t]);
 
   const handleLinkClick = useCallback((e: React.MouseEvent, action: QuickActionItem) => {
     const isSearch = action.label === t("dashboard.quickSearch");
@@ -166,12 +157,12 @@ export function MobileQuickActions() {
   );
 }
 
-/** 데스크탑용 퀵 액션 아이템 (href 필수) */
+/** 데스크탑용 퀵 액션 아이템 */
 const DESKTOP_QUICK_ACTION_KEYS = [
   {
     icon: PenTool,
     labelKey: "dashboard.quickWriteNote" as const,
-    href: "/notes/new",
+    quickCapture: true,
     color: "text-forest-600",
     descKey: "dashboard.quickWriteNoteDesc" as const,
   },
@@ -185,7 +176,7 @@ const DESKTOP_QUICK_ACTION_KEYS = [
   {
     icon: Camera,
     labelKey: "dashboard.quickTranscription" as const,
-    href: "/notes/new?type=transcription",
+    quickCapture: true,
     color: "text-forest-600",
     descKey: "dashboard.quickTranscriptionDesc" as const,
   },
@@ -193,26 +184,46 @@ const DESKTOP_QUICK_ACTION_KEYS = [
 
 /**
  * 데스크탑용 퀵 액션 (가로 형태)
- * 데스크탑에서는 기존 URL 방식 유지
+ * 기록 관련 액션은 Quick Capture Dialog를 열고, 나머지는 URL 이동
  */
 export function DesktopQuickActions() {
   const { t } = useTranslation();
+  const { open: openQuickCapture } = useQuickCaptureStore();
+
   return (
     <div className="hidden sm:flex gap-2">
-      {DESKTOP_QUICK_ACTION_KEYS.map((action) => (
-        <Button
-          key={action.href}
-          variant="outline"
-          size="sm"
-          asChild
-          className="gap-2"
-        >
-          <Link href={action.href}>
-            <action.icon className={cn("h-4 w-4", action.color)} />
-            {t(action.descKey)}
-          </Link>
-        </Button>
-      ))}
+      {DESKTOP_QUICK_ACTION_KEYS.map((action) => {
+        // Quick Capture 대상 액션 (기록 작성, 필사)
+        if (action.quickCapture) {
+          return (
+            <Button
+              key={action.labelKey}
+              variant="outline"
+              size="sm"
+              className="gap-2"
+              onClick={openQuickCapture}
+            >
+              <action.icon className={cn("h-4 w-4", action.color)} />
+              {t(action.descKey)}
+            </Button>
+          );
+        }
+
+        return (
+          <Button
+            key={action.href}
+            variant="outline"
+            size="sm"
+            asChild
+            className="gap-2"
+          >
+            <Link href={action.href!}>
+              <action.icon className={cn("h-4 w-4", action.color)} />
+              {t(action.descKey)}
+            </Link>
+          </Button>
+        );
+      })}
     </div>
   );
 }

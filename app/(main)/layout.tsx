@@ -4,7 +4,7 @@ import { Sidebar } from "@/components/layout/sidebar";
 import { MobileNav } from "@/components/layout/mobile-nav";
 import { Footer } from "@/components/layout/footer";
 import { ErrorBoundary } from "@/components/error-boundary";
-import { QuickCaptureSheet } from "@/components/notes/quick-capture-sheet";
+import { QuickCaptureAdapter } from "@/components/notes/quick-capture-adapter";
 import { NavigationProgress } from "@/components/ui/navigation-progress";
 import { UpgradeModal } from "@/components/subscription/upgrade-modal";
 import { PageTracker } from "@/components/tracking/page-tracker";
@@ -42,7 +42,7 @@ export default function MainLayout({
         <MobileNav />
         <MusicMiniPlayer />
         <PageTracker />
-        <QuickCaptureSheet />
+        <QuickCaptureAdapter />
         <UpgradeModal />
       </div>
     </ErrorBoundary>

@@ -25,7 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { updateNote } from "@/app/actions/notes";
+import { updateNote, promoteNote } from "@/app/actions/notes";
 import { toast } from "sonner";
 import { Loader2, Upload, X } from "lucide-react";
 import Image from "next/image";
@@ -182,7 +182,7 @@ export function NoteEditForm({ note }: NoteEditFormProps) {
       // 이미지가 있으면 첫 번째 이미지만 사용 (수정 시 단일 이미지)
       const imageUrl = images.length > 0 ? images[0] : null;
 
-      await updateNote(note.id, {
+      const updateData = {
         title: data.title,
         quote_content: data.quoteContent?.trim() || undefined,
         memo_content: data.memoContent?.trim() || undefined,
@@ -191,7 +191,14 @@ export function NoteEditForm({ note }: NoteEditFormProps) {
         page_number: data.pageNumber?.trim() || undefined,
         tags: data.tags ? data.tags.split(",").map((t) => t.trim()).filter(Boolean) : undefined,
         is_public: data.isPublic,
-      });
+      };
+
+      // draft 상태 기록은 저장 시 자동으로 published로 전환
+      if (note.status === "draft") {
+        await promoteNote(note.id, updateData);
+      } else {
+        await updateNote(note.id, updateData);
+      }
 
       toast.success(t("notes.saved"));
       router.push(`/notes/${note.id}`);

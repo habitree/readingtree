@@ -57,12 +57,6 @@ export function ReadingCompleteDialog() {
     }
   }
 
-  /** 상세 기록: QuickCapture에 타이머 데이터 전달하여 열기 */
-  function handleDetailRecord() {
-    closeCompleteDialog();
-    quickCapture.openWithTimer(null, elapsedSeconds);
-  }
-
   function handleContinue(seconds: number) {
     setShowContinueOptions(false);
     continueReading(seconds);
