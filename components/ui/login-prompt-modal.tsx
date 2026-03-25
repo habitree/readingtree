@@ -18,8 +18,8 @@ import {
   SheetTitle,
   SheetDescription,
 } from "@/components/ui/sheet";
-import { useMediaQuery } from "@/hooks/use-media-query";
 import { useTranslation } from "@/lib/i18n";
+import { useEffect, useState } from "react";
 
 interface LoginPromptModalProps {
   open: boolean;
@@ -43,7 +43,17 @@ export function LoginPromptModal({
   const resolvedTitle = title || t("auth.loginNeeded");
   const resolvedDescription = description || t("auth.loginNeededDesc");
   const router = useRouter();
-  const isMobile = useMediaQuery("(max-width: 768px)");
+  const [isMobile, setIsMobile] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    const mql = window.matchMedia("(max-width: 768px)");
+    setIsMobile(mql.matches);
+    setMounted(true);
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mql.addEventListener("change", handler);
+    return () => mql.removeEventListener("change", handler);
+  }, []);
 
   const currentPath =
     typeof window !== "undefined" ? window.location.pathname : "/";
@@ -116,6 +126,8 @@ export function LoginPromptModal({
       </Button>
     </div>
   );
+
+  if (!mounted) return null;
 
   if (isMobile) {
     return (

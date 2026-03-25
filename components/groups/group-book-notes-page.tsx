@@ -22,7 +22,6 @@ import {
 } from "lucide-react";
 import { getImageUrl, isValidImageUrl } from "@/lib/utils/image";
 import { getGroupBookNoteCounts } from "@/app/actions/groups";
-import { useMediaQuery } from "@/hooks/use-media-query";
 import { useTranslation } from "@/lib/i18n";
 import { typography, spacing } from "@/lib/design-tokens";
 
@@ -54,7 +53,15 @@ export function GroupBookNotesPage({
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [noteCount, setNoteCount] = useState<number | null>(null);
-  const isMobile = useMediaQuery("(max-width: 768px)");
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const mql = window.matchMedia("(max-width: 768px)");
+    setIsMobile(mql.matches);
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mql.addEventListener("change", handler);
+    return () => mql.removeEventListener("change", handler);
+  }, []);
 
   useEffect(() => {
     loadNoteCount();

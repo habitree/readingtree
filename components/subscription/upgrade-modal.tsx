@@ -17,8 +17,8 @@ import {
   SheetTitle,
   SheetDescription,
 } from "@/components/ui/sheet";
-import { useMediaQuery } from "@/hooks/use-media-query";
 import { useUpgradeModal } from "@/hooks/use-upgrade-modal";
+import { useEffect, useState } from "react";
 import { IS_BETA_MODE } from "@/lib/subscription/beta";
 
 /** 포인트로 가능한 사용 횟수 예시 */
@@ -35,8 +35,18 @@ const POINT_VALUE_EXAMPLES = [
  */
 export function UpgradeModal() {
   const router = useRouter();
-  const isMobile = useMediaQuery("(max-width: 768px)");
+  const [isMobile, setIsMobile] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const { open, message, closeUpgradeModal } = useUpgradeModal();
+
+  useEffect(() => {
+    const mql = window.matchMedia("(max-width: 768px)");
+    setIsMobile(mql.matches);
+    setMounted(true);
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mql.addEventListener("change", handler);
+    return () => mql.removeEventListener("change", handler);
+  }, []);
 
   // 베타 모드에서는 한도 9999이므로 트리거되지 않지만 안전장치
   if (IS_BETA_MODE) return null;
@@ -115,6 +125,8 @@ export function UpgradeModal() {
       </div>
     </div>
   );
+
+  if (!mounted) return null;
 
   if (isMobile) {
     return (
