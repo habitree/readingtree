@@ -4,6 +4,8 @@
 
 export type NoteType = "quote" | "photo" | "memo" | "transcription" | "progress";
 
+export type NoteStatus = "draft" | "published";
+
 export type SourceType = "book" | "youtube" | "instagram" | "article" | "other";
 
 export interface Note {
@@ -20,6 +22,7 @@ export interface Note {
   related_user_book_ids: string[] | null;
   source_type: SourceType | null;
   source_label: string | null;
+  status: NoteStatus;
   created_at: string;
   updated_at: string;
 }
@@ -64,6 +67,7 @@ export interface CreateNoteInput {
   source_type?: SourceType;
   source_label?: string;
   reading_duration_seconds?: number;
+  status?: NoteStatus;
 }
 
 export interface UpdateNoteInput {

@@ -22,11 +22,17 @@ interface MobileNoteSheetState {
   selectedBook: SelectedBook | null;
   /** 현재 스텝 (1: 책 선택, 2: 내용 입력) */
   currentStep: number;
+  /** 타이머 독서 시간 (초) - 타이머 완료 시 자동 전달 */
+  readingDurationSeconds: number | null;
+  /** 타이머 시작 시각 (ISO) */
+  timerStartedAt: string | null;
 
   /** 시트 열기 (책 정보 전달 시 바로 Step 2로 진입) */
   open: (mode?: NoteMode) => void;
   /** 이어읽기 책으로 바로 열기 (원탭 진입) */
   openWithBook: (book: SelectedBook, mode?: NoteMode) => void;
+  /** 타이머 데이터와 함께 열기 */
+  openWithTimer: (durationSeconds: number, startedAt: string | null, mode?: NoteMode) => void;
   /** 시트 닫기 */
   close: () => void;
   /** 모드 변경 */
@@ -54,6 +60,8 @@ export const useMobileNoteSheet = create<MobileNoteSheetState>((set) => ({
   mode: "memo",
   selectedBook: null,
   currentStep: 1,
+  readingDurationSeconds: null,
+  timerStartedAt: null,
 
   open: (mode = "memo") =>
     set({
@@ -61,6 +69,8 @@ export const useMobileNoteSheet = create<MobileNoteSheetState>((set) => ({
       mode,
       currentStep: 1,
       selectedBook: null,
+      readingDurationSeconds: null,
+      timerStartedAt: null,
     }),
 
   openWithBook: (book, mode = "memo") =>
@@ -69,6 +79,18 @@ export const useMobileNoteSheet = create<MobileNoteSheetState>((set) => ({
       mode,
       selectedBook: book,
       currentStep: 2,
+      readingDurationSeconds: null,
+      timerStartedAt: null,
+    }),
+
+  openWithTimer: (durationSeconds, startedAt, mode = "memo") =>
+    set({
+      isOpen: true,
+      mode,
+      currentStep: 1,
+      selectedBook: null,
+      readingDurationSeconds: durationSeconds,
+      timerStartedAt: startedAt,
     }),
 
   close: () =>
@@ -112,6 +134,8 @@ export const useMobileNoteSheet = create<MobileNoteSheetState>((set) => ({
       mode: "memo",
       selectedBook: null,
       currentStep: 1,
+      readingDurationSeconds: null,
+      timerStartedAt: null,
     }),
 }));
 

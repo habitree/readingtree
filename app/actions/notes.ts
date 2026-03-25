@@ -229,6 +229,7 @@ export async function createNote(data: CreateNoteInput, user?: User | null) {
       related_user_book_ids: relatedUserBookIds,
       source_type: data.source_type || null,
       source_label: data.source_label || null,
+      status: data.status || "published",
     })
     .select()
     .single();
@@ -276,6 +277,105 @@ export async function createNote(data: CreateNoteInput, user?: User | null) {
   revalidatePath("/");
 
   return { success: true, noteId: note.id };
+}
+
+/**
+ * 빠른 기록 (Quick Capture)
+ * 최소한의 입력으로 draft 상태 기록을 즉시 생성
+ * @param content 자유 텍스트 (인용구/생각 자동 구분 없이 memo로 저장)
+ * @param bookId user_books.id (선택, 없으면 READTREE_BOOK_ID)
+ * @param readingDurationSeconds 독서 시간 (타이머 연동, 선택)
+ */
+export async function createQuickNote(
+  content: string,
+  bookId?: string,
+  readingDurationSeconds?: number,
+) {
+  if (!content || content.trim().length === 0) {
+    throw new Error("내용을 입력해주세요.");
+  }
+
+  if (!isValidLength(content, 1, 10000)) {
+    throw new Error("내용은 10,000자 이하여야 합니다.");
+  }
+
+  return createNote({
+    book_id: bookId,
+    memo_content: content.trim(),
+    status: "draft",
+    is_public: true,
+    reading_duration_seconds: readingDurationSeconds,
+  });
+}
+
+/**
+ * draft → published 전환 (상세 추가 후 발행)
+ * @param noteId 기록 ID
+ * @param data 추가/수정할 데이터 (선택)
+ */
+export async function promoteNote(
+  noteId: string,
+  data?: UpdateNoteInput,
+  user?: User | null,
+) {
+  const supabase = await createServerSupabaseClient();
+
+  if (!isValidUUID(noteId)) {
+    throw new Error("유효하지 않은 기록 ID입니다.");
+  }
+
+  let currentUser = user;
+  if (!currentUser) {
+    const { data: { user: fetchedUser }, error: authError } = await supabase.auth.getUser();
+    if (authError || !fetchedUser) throw new Error("로그인이 필요합니다.");
+    currentUser = fetchedUser;
+  }
+
+  // 소유권 확인
+  const { data: existingNote, error: fetchError } = await supabase
+    .from("notes")
+    .select("id, status, user_id")
+    .eq("id", noteId)
+    .eq("user_id", currentUser.id)
+    .single();
+
+  if (fetchError || !existingNote) {
+    throw new Error("기록을 찾을 수 없거나 권한이 없습니다.");
+  }
+
+  // 업데이트할 데이터 구성
+  const updateData: Record<string, unknown> = { status: "published" };
+
+  if (data) {
+    if (data.title !== undefined) updateData.title = data.title;
+    if (data.quote_content || data.memo_content) {
+      const contentData: { quote?: string; memo?: string } = {};
+      if (data.quote_content?.trim()) contentData.quote = data.quote_content.trim();
+      if (data.memo_content?.trim()) contentData.memo = data.memo_content.trim();
+      updateData.content = JSON.stringify(contentData);
+    }
+    if (data.image_url !== undefined) updateData.image_url = data.image_url;
+    if (data.page_number !== undefined) updateData.page_number = data.page_number;
+    if (data.is_public !== undefined) updateData.is_public = data.is_public;
+    if (data.tags !== undefined) updateData.tags = data.tags;
+    if (data.related_user_book_ids !== undefined) updateData.related_user_book_ids = data.related_user_book_ids;
+  }
+
+  const { error } = await supabase
+    .from("notes")
+    .update(updateData)
+    .eq("id", noteId)
+    .eq("user_id", currentUser.id);
+
+  if (error) {
+    throw new Error("기록 발행에 실패했습니다.");
+  }
+
+  revalidatePath("/notes");
+  revalidatePath(`/notes/${noteId}`);
+  revalidatePath("/");
+
+  return { success: true };
 }
 
 /**
@@ -683,6 +783,9 @@ export async function getNotes(bookId?: string, type?: NoteType, user?: User | n
   if (type) {
     query = query.eq("type", type);
   }
+
+  // 기본적으로 published만 반환 (draft는 getDraftNotes로 별도 조회)
+  query = query.eq("status", "published");
 
   const { data, error } = await query;
 
@@ -1314,6 +1417,37 @@ export async function getFreeNoteStats(user?: User | null): Promise<{
 /**
  * 자유 기록 목록 조회
  * book_id = READTREE_BOOK_ID 기록만 반환, progress 타입 제외
+ * draft 기록 목록 조회
+ * @param user 선택적 사용자 정보
+ */
+export async function getDraftNotes(user?: User | null): Promise<NoteWithBook[]> {
+  const supabase = await createServerSupabaseClient();
+
+  let currentUser = user;
+  if (!currentUser) {
+    const { data: { user: fetchedUser }, error: authError } = await supabase.auth.getUser();
+    if (authError || !fetchedUser) return [];
+    currentUser = fetchedUser;
+  }
+
+  const { data, error } = await supabase
+    .from("notes")
+    .select("*, books (id, title, author, cover_image_url)")
+    .eq("user_id", currentUser.id)
+    .eq("status", "draft")
+    .order("created_at", { ascending: false })
+    .limit(50);
+
+  if (error || !data) return [];
+
+  return data.map((note: Record<string, unknown>) => {
+    const book = Array.isArray(note.books) ? (note.books as Record<string, unknown>[])[0] : note.books;
+    const { books, ...restNote } = note;
+    return { ...restNote, book: book || undefined } as NoteWithBook;
+  });
+}
+
+/**
  * @param type 기록 유형 필터 (선택)
  * @param sourceType 출처 유형 필터 (선택)
  * @param user 선택적 사용자 정보
