@@ -6,6 +6,7 @@ import {
   SheetContent,
   SheetHeader,
   SheetTitle,
+  SheetDescription,
 } from "@/components/ui/sheet";
 import { useQuickCapture } from "@/hooks/use-quick-capture";
 import { cn } from "@/lib/utils";
@@ -67,6 +68,7 @@ export function QuickCaptureSheet() {
           <SheetTitle className="text-base font-bold">
             {showBookSelector ? "책 선택" : "빠른 기록"}
           </SheetTitle>
+          <SheetDescription className="sr-only">읽으면서 떠오른 생각을 빠르게 기록합니다</SheetDescription>
         </SheetHeader>
 
         <div className="px-4">

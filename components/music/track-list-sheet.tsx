@@ -5,6 +5,7 @@ import {
   SheetContent,
   SheetHeader,
   SheetTitle,
+  SheetDescription,
 } from "@/components/ui/sheet";
 import { useMusicPlayer } from "@/hooks/use-music-player";
 import { getTrackMoodLabel } from "@/lib/music";
@@ -50,6 +51,7 @@ export function TrackListSheet() {
             <Music2 className="w-4 h-4" />
             재생 목록
           </SheetTitle>
+          <SheetDescription className="sr-only">클래식 음악 재생 목록</SheetDescription>
           <p className="text-xs text-muted-foreground text-center">
             {playlist.length}곡 ·{" "}
             {Math.floor(

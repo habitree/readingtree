@@ -18,6 +18,7 @@ import {
   SheetContent,
   SheetHeader,
   SheetTitle,
+  SheetDescription,
 } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -83,6 +84,7 @@ export function PointsModal({ open, onOpenChange }: PointsModalProps) {
               </Badge>
             ) : null}
           </SheetTitle>
+          <SheetDescription className="sr-only">포인트 현황 및 내역</SheetDescription>
         </SheetHeader>
 
         <ScrollArea className="h-[calc(100vh-5rem)]">

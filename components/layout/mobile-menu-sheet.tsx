@@ -22,6 +22,7 @@ import {
   SheetContent,
   SheetHeader,
   SheetTitle,
+  SheetDescription,
   SheetClose,
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -79,6 +80,7 @@ export function MobileMenuSheet({ open, onOpenChange }: MobileMenuSheetProps) {
 
         <SheetHeader className="sr-only">
           <SheetTitle>{t("nav.menu")}</SheetTitle>
+          <SheetDescription className="sr-only">메뉴 및 설정</SheetDescription>
         </SheetHeader>
 
         <div className="space-y-1 px-4 pb-6">

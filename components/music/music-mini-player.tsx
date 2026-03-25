@@ -100,6 +100,14 @@ export function MusicToggleButton() {
   );
 }
 
+/**
+ * 전역 audio 엘리먼트 참조
+ * 사용자 클릭 이벤트 핸들러에서 직접 audio.play()를 호출하기 위해 노출
+ * (useEffect 내 play()는 브라우저 autoplay 정책에 의해 차단됨)
+ */
+let globalAudioRef: HTMLAudioElement | null = null;
+export function getGlobalAudio() { return globalAudioRef; }
+
 /** 미니 플레이어 */
 export function MusicMiniPlayer() {
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -133,6 +141,12 @@ export function MusicMiniPlayer() {
   } = useMusicPlayer();
 
   const isTimerActive = timerStatus === "running" || timerStatus === "paused";
+
+  // ── 전역 audio 참조 동기화 ──
+  useEffect(() => {
+    globalAudioRef = audioRef.current;
+    return () => { globalAudioRef = null; };
+  }, []);
 
   // ── 타이머 setInterval ──
   useEffect(() => {

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import {
   Sheet,
   SheetContent,
+  SheetDescription,
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
@@ -11,6 +12,7 @@ import { useMusicPlayer } from "@/hooks/use-music-player";
 import { Star, Plus, X, Clock, Infinity as InfinityIcon, Music2, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MUSIC_PLAYLISTS, MUSIC_THEME_GROUPS, getPlaylistTracks } from "@/lib/music";
+import { getGlobalAudio } from "./music-mini-player";
 
 // ── 즐겨찾기 localStorage 관리 ──
 const FAVORITES_KEY = "readingtree-timer-favorites";
@@ -70,11 +72,25 @@ export function TimerSheet() {
   function handleStart() {
     if (isUnlimited) {
       startUnlimitedTimer(selectedPlaylistId);
-      return;
+    } else {
+      const minutes = isCustom ? parseInt(customInput, 10) : selectedMinutes;
+      if (!minutes || minutes < 1) return;
+      startTimer(minutes * 60, selectedPlaylistId);
     }
-    const minutes = isCustom ? parseInt(customInput, 10) : selectedMinutes;
-    if (!minutes || minutes < 1) return;
-    startTimer(minutes * 60, selectedPlaylistId);
+
+    // 사용자 클릭 이벤트 컨텍스트에서 직접 audio.play() 호출
+    // (useEffect 경유 시 브라우저 autoplay 정책에 의해 차단됨)
+    requestAnimationFrame(() => {
+      const audio = getGlobalAudio();
+      if (audio) {
+        const state = useMusicPlayer.getState();
+        if (state.currentTrack) {
+          audio.src = state.currentTrack.sourceUrl;
+          audio.load();
+          audio.play().catch(() => {});
+        }
+      }
+    });
   }
 
   function toggleFavorite(minutes: number) {
@@ -131,6 +147,7 @@ export function TimerSheet() {
             <Clock className="w-4.5 h-4.5" />
             독서 타이머
           </SheetTitle>
+          <SheetDescription className="sr-only">독서 타이머 시간 및 플레이리스트 설정</SheetDescription>
           <p className="text-xs text-muted-foreground text-center mt-1">
             시간을 설정하면 클래식 음악과 함께 독서가 시작됩니다
           </p>
