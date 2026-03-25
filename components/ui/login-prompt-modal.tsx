@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { LogIn, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -43,6 +43,7 @@ export function LoginPromptModal({
   const resolvedTitle = title || t("auth.loginNeeded");
   const resolvedDescription = description || t("auth.loginNeededDesc");
   const router = useRouter();
+  const pathname = usePathname();
   const [isMobile, setIsMobile] = useState(false);
   const [mounted, setMounted] = useState(false);
 
@@ -55,23 +56,20 @@ export function LoginPromptModal({
     return () => mql.removeEventListener("change", handler);
   }, []);
 
-  const currentPath =
-    typeof window !== "undefined" ? window.location.pathname : "/";
-
   const handleLogin = useCallback(() => {
     onOpenChange(false);
-    router.push(`/login?redirectedFrom=${encodeURIComponent(currentPath)}`);
-  }, [router, onOpenChange, currentPath]);
+    router.push(`/login?redirectedFrom=${encodeURIComponent(pathname)}`);
+  }, [router, onOpenChange, pathname]);
 
   const handleKakaoLogin = useCallback(() => {
     onOpenChange(false);
-    router.push(`/login?provider=kakao&redirectedFrom=${encodeURIComponent(currentPath)}`);
-  }, [router, onOpenChange, currentPath]);
+    router.push(`/login?provider=kakao&redirectedFrom=${encodeURIComponent(pathname)}`);
+  }, [router, onOpenChange, pathname]);
 
   const handleGoogleLogin = useCallback(() => {
     onOpenChange(false);
-    router.push(`/login?provider=google&redirectedFrom=${encodeURIComponent(currentPath)}`);
-  }, [router, onOpenChange, currentPath]);
+    router.push(`/login?provider=google&redirectedFrom=${encodeURIComponent(pathname)}`);
+  }, [router, onOpenChange, pathname]);
 
   const content = (
     <div className="space-y-4">
