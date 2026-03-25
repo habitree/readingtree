@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 };
 
 interface NotesPageProps {
-  searchParams: {
+  searchParams: Promise<{
     tab?: string;
     group?: string;
     sort?: string;
@@ -20,7 +20,7 @@ interface NotesPageProps {
     free?: string;
     type?: string;
     status?: string;
-  };
+  }>;
 }
 
 /**
@@ -30,14 +30,16 @@ interface NotesPageProps {
  * ?sort=latest|oldest
  */
 export default async function NotesPage({ searchParams }: NotesPageProps) {
+  const resolvedParams = await searchParams;
+
   // 탭 결정 (하위호환: free=true → tab은 유지, isFree 플래그)
-  let tab = searchParams.tab ?? "all";
-  const isFree = searchParams.free === "true";
-  const isGrouped = searchParams.group === "book";
-  const sort = searchParams.sort ?? "latest";
+  let tab = resolvedParams.tab ?? "all";
+  const isFree = resolvedParams.free === "true";
+  const isGrouped = resolvedParams.group === "book";
+  const sort = resolvedParams.sort ?? "latest";
 
   // 하위호환: ?status=draft → ?tab=inbox
-  if (searchParams.status === "draft") tab = "inbox";
+  if (resolvedParams.status === "draft") tab = "inbox";
 
   // 탭 → status/type 매핑
   const isInbox = tab === "inbox";
