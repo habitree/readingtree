@@ -8,7 +8,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { useMusicPlayer } from "@/hooks/use-music-player";
-import { Star, Plus, X, Clock } from "lucide-react";
+import { Star, Plus, X, Clock, Infinity as InfinityIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // ── 즐겨찾기 localStorage 관리 ──
@@ -35,8 +35,9 @@ function saveFavorites(favorites: number[]) {
 const DEFAULT_PRESETS = [15, 30, 45, 60, 90];
 
 export function TimerSheet() {
-  const { isTimerSheetOpen, closeTimerSheet, startTimer } = useMusicPlayer();
+  const { isTimerSheetOpen, closeTimerSheet, startTimer, startUnlimitedTimer } = useMusicPlayer();
   const [selectedMinutes, setSelectedMinutes] = useState(30);
+  const [isUnlimited, setIsUnlimited] = useState(false);
   const [isCustom, setIsCustom] = useState(false);
   const [customInput, setCustomInput] = useState("");
   const [favorites, setFavorites] = useState<number[]>([]);
@@ -55,9 +56,19 @@ export function TimerSheet() {
   function handlePresetClick(minutes: number) {
     setSelectedMinutes(minutes);
     setIsCustom(false);
+    setIsUnlimited(false);
+  }
+
+  function handleUnlimitedClick() {
+    setIsUnlimited(true);
+    setIsCustom(false);
   }
 
   function handleStart() {
+    if (isUnlimited) {
+      startUnlimitedTimer();
+      return;
+    }
     const minutes = isCustom ? parseInt(customInput, 10) : selectedMinutes;
     if (!minutes || minutes < 1) return;
     startTimer(minutes * 60);
@@ -84,9 +95,11 @@ export function TimerSheet() {
     setCustomInput("");
   }
 
-  const canStart = isCustom
-    ? !!customInput && parseInt(customInput, 10) >= 1
-    : selectedMinutes > 0;
+  const canStart = isUnlimited
+    ? true
+    : isCustom
+      ? !!customInput && parseInt(customInput, 10) >= 1
+      : selectedMinutes > 0;
 
   return (
     <Sheet
@@ -96,6 +109,7 @@ export function TimerSheet() {
           closeTimerSheet();
           setIsEditingFavorites(false);
           setIsCustom(false);
+          setIsUnlimited(false);
         }
       }}
     >
@@ -142,19 +156,30 @@ export function TimerSheet() {
                 strokeLinecap="round"
                 strokeDasharray={2 * Math.PI * 54}
                 strokeDashoffset={
-                  2 * Math.PI * 54 * (1 - (isCustom ? parseInt(customInput, 10) || 0 : selectedMinutes) / 120)
+                  isUnlimited
+                    ? 0
+                    : 2 * Math.PI * 54 * (1 - (isCustom ? parseInt(customInput, 10) || 0 : selectedMinutes) / 120)
                 }
                 className="text-primary transition-all duration-500"
               />
             </svg>
             {/* 중앙 시간 */}
             <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-3xl sm:text-4xl font-bold tabular-nums">
-                {isCustom
-                  ? customInput || "0"
-                  : selectedMinutes}
-              </span>
-              <span className="text-xs text-muted-foreground -mt-0.5">분</span>
+              {isUnlimited ? (
+                <>
+                  <InfinityIcon className="w-10 h-10 text-primary" />
+                  <span className="text-xs text-muted-foreground mt-0.5">무제한</span>
+                </>
+              ) : (
+                <>
+                  <span className="text-3xl sm:text-4xl font-bold tabular-nums">
+                    {isCustom
+                      ? customInput || "0"
+                      : selectedMinutes}
+                  </span>
+                  <span className="text-xs text-muted-foreground -mt-0.5">분</span>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -225,11 +250,28 @@ export function TimerSheet() {
               );
             })}
 
+            {/* 무제한 버튼 */}
+            {!isEditingFavorites && (
+              <button
+                onClick={handleUnlimitedClick}
+                className={cn(
+                  "flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all",
+                  isUnlimited
+                    ? "bg-primary text-primary-foreground shadow-sm scale-105"
+                    : "bg-muted text-muted-foreground hover:bg-muted/80"
+                )}
+              >
+                <InfinityIcon className="w-4 h-4" />
+                무제한
+              </button>
+            )}
+
             {/* 직접 입력 버튼 */}
             {!isEditingFavorites && (
               <button
                 onClick={() => {
                   setIsCustom(true);
+                  setIsUnlimited(false);
                   setCustomInput("");
                 }}
                 className={cn(

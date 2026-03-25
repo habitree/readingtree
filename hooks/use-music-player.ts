@@ -43,6 +43,7 @@ interface MusicPlayerState {
 
   // ── 타이머 액션 ──
   startTimer: (seconds: number) => void;
+  startUnlimitedTimer: () => void;
   pauseTimer: () => void;
   resumeTimer: () => void;
   tickTimer: () => void;
@@ -169,6 +170,27 @@ export const useMusicPlayer = create<MusicPlayerState>((set, get) => ({
       targetSeconds: seconds,
       remainingSeconds: seconds,
       elapsedSeconds: 0,
+      timerStartedAt: new Date().toISOString(),
+      isTimerSheetOpen: false,
+      isCompleteDialogOpen: false,
+    });
+  },
+
+  startUnlimitedTimer: () => {
+    const tracks = getDefaultPlaylistTracks();
+    set({
+      playlist: tracks,
+      currentIndex: 0,
+      currentTrack: tracks[0] ?? null,
+      isVisible: true,
+      isPlaying: true,
+      currentTime: 0,
+      duration: tracks[0]?.durationSeconds ?? 0,
+      timerStatus: "running",
+      targetSeconds: 0,
+      remainingSeconds: 0,
+      elapsedSeconds: 0,
+      isUnlimited: true,
       timerStartedAt: new Date().toISOString(),
       isTimerSheetOpen: false,
       isCompleteDialogOpen: false,
