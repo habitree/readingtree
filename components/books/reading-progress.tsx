@@ -325,6 +325,16 @@ export function ReadingProgress({
             )}>
               {displayPercent}%
             </span>
+            {displayPercent >= 95 && (
+              <button
+                type="button"
+                onClick={() => setShowCompletionDialog(true)}
+                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400 hover:bg-emerald-200 dark:hover:bg-emerald-900/60 transition-colors"
+              >
+                <Trophy className="h-3 w-3" />
+                완독
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -455,26 +465,11 @@ export function ReadingProgress({
           )}
 
           {/* 동기부여 메시지 */}
-          {motivation && !isDragging && !showInlineMemo && displayPercent !== null && displayPercent < 95 && (
+          {motivation && !isDragging && !showInlineMemo && (
             <div className={cn("flex items-center gap-1.5 text-xs", motivation.color)}>
               <MotivationIcon className="h-3.5 w-3.5" />
               <span className="font-medium">{motivation.message}</span>
             </div>
-          )}
-
-          {/* 95% 이상일 때 완독 버튼 */}
-          {displayPercent !== null && displayPercent >= 95 && !isDragging && !showInlineMemo && (
-            <Button
-              size="sm"
-              onClick={() => setShowCompletionDialog(true)}
-              className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white shadow-sm"
-            >
-              <Trophy className="h-4 w-4 mr-1.5" />
-              {completedDates && completedDates.length > 0
-                ? `${completedDates.length + 1}회독 완독하기`
-                : "완독하기"
-              }
-            </Button>
           )}
 
         </div>
