@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useRef, useCallback } from "react";
+import { useState, useEffect, useTransition, useRef, useCallback } from "react";
 import { Progress } from "@/components/ui/progress";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
@@ -67,6 +67,24 @@ export function ReadingProgress({
 
   // 완독 확인 다이얼로그
   const [showCompletionDialog, setShowCompletionDialog] = useState(false);
+
+  // 읽기 모멘텀 통계 (hydration 안전: 클라이언트에서만 계산)
+  const [momentumStats, setMomentumStats] = useState<{
+    daysSinceStart: number;
+    avgPagesPerDay: string | null;
+  } | null>(null);
+
+  useEffect(() => {
+    if (startedAt && currentPage > 0) {
+      const startDate = new Date(startedAt);
+      const now = new Date();
+      const days = Math.max(1, Math.ceil((now.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)));
+      setMomentumStats({
+        daysSinceStart: days,
+        avgPagesPerDay: (currentPage / days).toFixed(1),
+      });
+    }
+  }, [startedAt, currentPage]);
 
   // 총 페이지 수 업데이트 핸들러
   const handleTotalPagesUpdate = (newTotalPages: number | null) => {
@@ -480,25 +498,19 @@ export function ReadingProgress({
         </div>
       )}
 
-      {/* 읽기 모멘텀 통계 - 항상 표시 */}
-      {startedAt && !isDragging && !showInlineMemo && (() => {
-        const startDate = new Date(startedAt);
-        const now = new Date();
-        const daysSinceStart = Math.max(1, Math.ceil((now.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)));
-        const avgPagesPerDay = currentPage > 0 ? (currentPage / daysSinceStart).toFixed(1) : null;
-        return (
-          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-            <Calendar className="h-3 w-3 shrink-0" />
-            <span>
-              {t("books.readingDays", { days: daysSinceStart })}
-              {avgPagesPerDay && <> · {t("books.avgPagesPerDay", { avg: avgPagesPerDay })}</>}
-              {avgPagesPerDay && totalPages && remainingPages > 0 && (
-                <> · {t("books.estimatedCompletion", { days: Math.ceil(remainingPages / Number(avgPagesPerDay)) })}</>
-              )}
-            </span>
-          </div>
-        );
-      })()}
+      {/* 읽기 모멘텀 통계 - 클라이언트에서만 표시 (hydration 안전) */}
+      {momentumStats && !isDragging && !showInlineMemo && (
+        <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+          <Calendar className="h-3 w-3 shrink-0" />
+          <span>
+            {t("books.readingDays", { days: momentumStats.daysSinceStart })}
+            {momentumStats.avgPagesPerDay && <> · {t("books.avgPagesPerDay", { avg: momentumStats.avgPagesPerDay })}</>}
+            {momentumStats.avgPagesPerDay && totalPages && remainingPages > 0 && (
+              <> · {t("books.estimatedCompletion", { days: Math.ceil(remainingPages / Number(momentumStats.avgPagesPerDay)) })}</>
+            )}
+          </span>
+        </div>
+      )}
 
       {/* 완독 확인 다이얼로그 */}
       {showCompletionDialog && (
