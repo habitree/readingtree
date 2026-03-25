@@ -298,10 +298,12 @@ export function MusicMiniPlayer() {
     setVolume(parseFloat(e.target.value));
   }
 
-  // TimerSheet/ReadingCompleteDialog/TrackListSheet는 항상 렌더링
+  // audio 엘리먼트는 항상 렌더링 (autoplay 정책 우회를 위해)
+  // isVisible=false일 때는 UI만 숨기고 audio는 유지
   if (!isVisible || !currentTrack) {
     return (
       <>
+        <audio ref={audioRef} preload="metadata" onTimeUpdate={handleTimeUpdate} onEnded={handleEnded} onError={handleError} />
         <TimerSheet />
         <ReadingCompleteDialog />
         <TrackListSheet />
