@@ -2,7 +2,7 @@
 
 import { create } from "zustand";
 import type { MusicTrack } from "@/types/music";
-import { getDefaultPlaylistTracks } from "@/lib/music-data";
+import { getDefaultPlaylistTracks, getPlaylistTracks } from "@/lib/music";
 
 export type TimerStatus = "idle" | "running" | "paused" | "completed";
 
@@ -42,8 +42,9 @@ interface MusicPlayerState {
   updateTime: (current: number, dur: number) => void;
 
   // ── 타이머 액션 ──
-  startTimer: (seconds: number) => void;
-  startUnlimitedTimer: () => void;
+  selectedPlaylistId: string | null;
+  startTimer: (seconds: number, playlistId?: string) => void;
+  startUnlimitedTimer: (playlistId?: string) => void;
   pauseTimer: () => void;
   resumeTimer: () => void;
   tickTimer: () => void;
@@ -84,6 +85,7 @@ export const useMusicPlayer = create<MusicPlayerState>((set, get) => ({
   volume: 0.35,
   currentTime: 0,
   duration: 0,
+  selectedPlaylistId: null,
   ...INITIAL_TIMER,
 
   // ── 음악 액션 ──
@@ -154,10 +156,12 @@ export const useMusicPlayer = create<MusicPlayerState>((set, get) => ({
   updateTime: (current, dur) => set({ currentTime: current, duration: dur }),
 
   // ── 타이머 액션 ──
-  startTimer: (seconds) => {
-    const tracks = getDefaultPlaylistTracks();
+  startTimer: (seconds, playlistId) => {
+    const tracks = playlistId
+      ? getPlaylistTracks(playlistId)
+      : getDefaultPlaylistTracks();
+    if (tracks.length === 0) return;
     set({
-      // 음악
       playlist: tracks,
       currentIndex: 0,
       currentTrack: tracks[0] ?? null,
@@ -165,7 +169,7 @@ export const useMusicPlayer = create<MusicPlayerState>((set, get) => ({
       isPlaying: true,
       currentTime: 0,
       duration: tracks[0]?.durationSeconds ?? 0,
-      // 타이머
+      selectedPlaylistId: playlistId ?? "mood-focus",
       timerStatus: "running",
       targetSeconds: seconds,
       remainingSeconds: seconds,
@@ -176,8 +180,11 @@ export const useMusicPlayer = create<MusicPlayerState>((set, get) => ({
     });
   },
 
-  startUnlimitedTimer: () => {
-    const tracks = getDefaultPlaylistTracks();
+  startUnlimitedTimer: (playlistId) => {
+    const tracks = playlistId
+      ? getPlaylistTracks(playlistId)
+      : getDefaultPlaylistTracks();
+    if (tracks.length === 0) return;
     set({
       playlist: tracks,
       currentIndex: 0,
@@ -186,6 +193,7 @@ export const useMusicPlayer = create<MusicPlayerState>((set, get) => ({
       isPlaying: true,
       currentTime: 0,
       duration: tracks[0]?.durationSeconds ?? 0,
+      selectedPlaylistId: playlistId ?? "mood-focus",
       timerStatus: "running",
       targetSeconds: 0,
       remainingSeconds: 0,

@@ -2,7 +2,7 @@
 
 import { useRef, useEffect, useCallback } from "react";
 import { useMusicPlayer } from "@/hooks/use-music-player";
-import { MUSIC_CATEGORIES } from "@/lib/music-data";
+import { getTrackMoodLabel } from "@/lib/music";
 import { TimerSheet } from "./playlist-sheet";
 import { ReadingCompleteDialog } from "./reading-complete-dialog";
 import { TrackListSheet } from "./track-list-sheet";
@@ -202,10 +202,18 @@ export function MusicMiniPlayer() {
 
   const handleEnded = useCallback(() => next(), [next]);
 
+  // ── 외부 URL 로딩 실패 시 다음 곡 스킵 ──
+  const handleError = useCallback(() => {
+    const state = useMusicPlayer.getState();
+    if (state.currentTrack?.isExternal) {
+      state.next();
+    }
+  }, []);
+
   // ── Media Session API ──
   useEffect(() => {
     if (!currentTrack || !("mediaSession" in navigator)) return;
-    const catInfo = MUSIC_CATEGORIES.find((c) => c.id === currentTrack.category);
+    const moodLabel = getTrackMoodLabel(currentTrack);
     navigator.mediaSession.metadata = new MediaMetadata({
       title: isTimerActive
         ? isUnlimited
@@ -213,7 +221,7 @@ export function MusicMiniPlayer() {
           : `${formatTime(remainingSeconds)} 남음 — ${currentTrack.title}`
         : currentTrack.title,
       artist: `${currentTrack.composer} · ${currentTrack.performer}`,
-      album: catInfo ? `ReadingTree - ${catInfo.name}` : "ReadingTree Music",
+      album: `ReadingTree - ${moodLabel.name}`,
     });
     navigator.mediaSession.setActionHandler("play", () => {
       const s = useMusicPlayer.getState();
@@ -260,14 +268,14 @@ export function MusicMiniPlayer() {
     );
   }
 
-  const catInfo = MUSIC_CATEGORIES.find((c) => c.id === currentTrack.category);
+  const catInfo = getTrackMoodLabel(currentTrack);
   const progress = isTimerActive && !isUnlimited
     ? targetSeconds > 0 ? ((targetSeconds - remainingSeconds) / targetSeconds) * 100 : 0
     : duration > 0 ? (currentTime / duration) * 100 : 0;
 
   return (
     <>
-      <audio ref={audioRef} preload="metadata" onTimeUpdate={handleTimeUpdate} onEnded={handleEnded} />
+      <audio ref={audioRef} preload="metadata" onTimeUpdate={handleTimeUpdate} onEnded={handleEnded} onError={handleError} />
 
       <div
         className={cn(

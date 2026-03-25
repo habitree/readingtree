@@ -8,8 +8,9 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { useMusicPlayer } from "@/hooks/use-music-player";
-import { Star, Plus, X, Clock, Infinity as InfinityIcon } from "lucide-react";
+import { Star, Plus, X, Clock, Infinity as InfinityIcon, Music2, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { MUSIC_PLAYLISTS, MUSIC_THEME_GROUPS, getPlaylistTracks } from "@/lib/music";
 
 // ── 즐겨찾기 localStorage 관리 ──
 const FAVORITES_KEY = "readingtree-timer-favorites";
@@ -42,6 +43,8 @@ export function TimerSheet() {
   const [customInput, setCustomInput] = useState("");
   const [favorites, setFavorites] = useState<number[]>([]);
   const [isEditingFavorites, setIsEditingFavorites] = useState(false);
+  const [selectedPlaylistId, setSelectedPlaylistId] = useState("mood-focus");
+  const [showAllPlaylists, setShowAllPlaylists] = useState(false);
 
   // 즐겨찾기 로드
   useEffect(() => {
@@ -66,12 +69,12 @@ export function TimerSheet() {
 
   function handleStart() {
     if (isUnlimited) {
-      startUnlimitedTimer();
+      startUnlimitedTimer(selectedPlaylistId);
       return;
     }
     const minutes = isCustom ? parseInt(customInput, 10) : selectedMinutes;
     if (!minutes || minutes < 1) return;
-    startTimer(minutes * 60);
+    startTimer(minutes * 60, selectedPlaylistId);
   }
 
   function toggleFavorite(minutes: number) {
@@ -110,6 +113,7 @@ export function TimerSheet() {
           setIsEditingFavorites(false);
           setIsCustom(false);
           setIsUnlimited(false);
+          setShowAllPlaylists(false);
         }
       }}
     >
@@ -313,6 +317,89 @@ export function TimerSheet() {
                 <Star className="w-3 h-3" />
                 저장
               </button>
+            )}
+          </div>
+        )}
+
+        {/* ── 배경음악 선택 ── */}
+        {!isEditingFavorites && (
+          <div className="mb-3">
+            <div className="flex items-center justify-between mb-2 px-0.5">
+              <span className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                <Music2 className="w-3 h-3" />
+                배경음악
+              </span>
+              <button
+                onClick={() => setShowAllPlaylists(!showAllPlaylists)}
+                className="flex items-center gap-0.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+              >
+                {showAllPlaylists ? "접기" : "더 보기"}
+                <ChevronRight className={cn("w-3 h-3 transition-transform", showAllPlaylists && "rotate-90")} />
+              </button>
+            </div>
+
+            {!showAllPlaylists ? (
+              /* 퀵 선택 (인기 4개) */
+              <div className="grid grid-cols-4 gap-1.5">
+                {["mood-focus", "mood-relaxing", "time-night", "mood-emotional"].map((pid) => {
+                  const pl = MUSIC_PLAYLISTS.find((p) => p.id === pid);
+                  if (!pl) return null;
+                  const isSelected = selectedPlaylistId === pid;
+                  const trackCount = pl.trackIds.length;
+                  return (
+                    <button
+                      key={pid}
+                      onClick={() => setSelectedPlaylistId(pid)}
+                      className={cn(
+                        "flex flex-col items-center gap-0.5 py-2 px-1 rounded-xl text-center transition-all",
+                        isSelected
+                          ? "bg-primary/10 ring-1 ring-primary/30 text-primary"
+                          : "bg-muted/50 text-muted-foreground hover:bg-muted"
+                      )}
+                    >
+                      <span className="text-base">{pl.emoji}</span>
+                      <span className="text-[10px] font-semibold leading-tight">{pl.name}</span>
+                      <span className="text-[9px] opacity-60">{trackCount}곡</span>
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              /* 전체 테마 브라우저 */
+              <div className="space-y-3 max-h-48 overflow-y-auto">
+                {MUSIC_THEME_GROUPS.map((group) => (
+                  <div key={group.id}>
+                    <p className="text-[10px] font-semibold text-muted-foreground mb-1">
+                      {group.emoji} {group.name}
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {group.playlists.map((pid) => {
+                        const pl = MUSIC_PLAYLISTS.find((p) => p.id === pid);
+                        if (!pl) return null;
+                        const isSelected = selectedPlaylistId === pid;
+                        const tracks = getPlaylistTracks(pid);
+                        const totalMin = Math.floor(tracks.reduce((s, t) => s + t.durationSeconds, 0) / 60);
+                        return (
+                          <button
+                            key={pid}
+                            onClick={() => setSelectedPlaylistId(pid)}
+                            className={cn(
+                              "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs transition-all",
+                              isSelected
+                                ? "bg-primary/10 ring-1 ring-primary/30 text-primary font-semibold"
+                                : "bg-muted/50 text-muted-foreground hover:bg-muted"
+                            )}
+                          >
+                            <span>{pl.emoji}</span>
+                            <span>{pl.name}</span>
+                            <span className="text-[9px] opacity-50">{pl.trackIds.length}곡·{totalMin}분</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
             )}
           </div>
         )}

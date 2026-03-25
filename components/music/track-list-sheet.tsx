@@ -7,7 +7,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { useMusicPlayer } from "@/hooks/use-music-player";
-import { MUSIC_CATEGORIES } from "@/lib/music-data";
+import { getTrackMoodLabel } from "@/lib/music";
 import { Music2, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -62,9 +62,7 @@ export function TrackListSheet() {
         <div className="flex-1 overflow-y-auto -mx-1">
           {playlist.map((track, i) => {
             const isActive = i === currentIndex;
-            const catInfo = MUSIC_CATEGORIES.find(
-              (c) => c.id === track.category
-            );
+            const moodLabel = getTrackMoodLabel(track);
 
             return (
               <button
@@ -109,7 +107,7 @@ export function TrackListSheet() {
                     </span>
                     <span className="text-muted-foreground/30">·</span>
                     <span className="text-[10px] text-muted-foreground/60">
-                      {catInfo?.emoji} {catInfo?.name}
+                      {moodLabel.emoji} {moodLabel.name}
                     </span>
                   </div>
                 </div>
