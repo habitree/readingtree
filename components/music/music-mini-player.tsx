@@ -19,6 +19,7 @@ import {
   ListMusic,
   BookOpen,
   Headphones,
+  Clock,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -57,7 +58,7 @@ function CircleTimer({
   );
 }
 
-/** 헤더 타이머 + 음악 버튼 */
+/** 헤더 클래식 음악 + 타이머 버튼 */
 export function MusicToggleButton() {
   const { isVisible, timerStatus, remainingSeconds, elapsedSeconds, isUnlimited, openTimerSheet, pauseTimer, resumeTimer } =
     useMusicPlayer();
@@ -80,42 +81,50 @@ export function MusicToggleButton() {
           ? "h-8 sm:h-9 px-3 rounded-full gap-1.5"
           : "w-9 h-9 sm:w-10 sm:h-10 rounded-xl",
         isActive
-          ? "bg-gradient-to-r from-emerald-500/15 to-primary/15 text-primary shadow-sm shadow-primary/10 ring-1 ring-primary/20"
+          ? "bg-gradient-to-r from-amber-500/12 to-yellow-600/12 text-amber-700 dark:text-amber-400 shadow-sm ring-1 ring-amber-500/20"
           : isPaused
-            ? "bg-gradient-to-r from-orange-500/15 to-amber-500/15 text-orange-500 shadow-sm shadow-orange-500/10 ring-1 ring-orange-400/20"
-            : "text-muted-foreground hover:bg-gradient-to-br hover:from-primary/10 hover:to-emerald-500/10 hover:text-primary hover:shadow-sm"
+            ? "bg-gradient-to-r from-orange-500/12 to-amber-500/12 text-orange-500 shadow-sm ring-1 ring-orange-400/20"
+            : "text-muted-foreground hover:bg-amber-500/8 hover:text-amber-700 dark:hover:text-amber-400 hover:shadow-sm"
       )}
-      title={isActive ? "독서 일시정지" : isPaused ? "독서 계속하기" : "독서 타이머 + 음악"}
+      title={isActive ? "독서 일시정지" : isPaused ? "독서 계속하기" : "클래식 음악 + 독서 타이머"}
     >
       {isActive ? (
         <>
-          {/* 활성 상태 — 펄스 링 애니메이션 */}
-          <span className="absolute inset-0 rounded-full animate-ping bg-primary/10 pointer-events-none" style={{ animationDuration: "2s" }} />
+          {/* 활성 — 음표 메인 + 작은 시계 뱃지 + 시간 */}
+          <span className="absolute inset-0 rounded-full animate-ping bg-amber-500/8 pointer-events-none" style={{ animationDuration: "2.5s" }} />
           <span className="relative flex items-center gap-1.5">
             <span className="relative flex items-center justify-center w-5 h-5">
-              <BookOpen className="w-3.5 h-3.5 text-primary" />
-              <Headphones className="w-2 h-2 absolute -bottom-0.5 -right-1 text-emerald-500" />
+              <Music2 className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+              <span className="absolute -top-1 -right-1.5 flex items-center justify-center w-2.5 h-2.5 rounded-full bg-primary/90 ring-1 ring-background">
+                <Clock className="w-1.5 h-1.5 text-primary-foreground" />
+              </span>
             </span>
-            <span className="text-xs font-bold tabular-nums tracking-tight">
+            <span className="text-[11px] font-bold tabular-nums tracking-tight">
               {isUnlimited ? formatTime(elapsedSeconds) : formatTime(remainingSeconds)}
             </span>
           </span>
         </>
       ) : isPaused ? (
         <>
-          <span className="relative flex items-center justify-center w-5 h-5">
-            <Pause className="w-3.5 h-3.5 text-orange-500" />
-          </span>
-          <span className="text-xs font-bold tabular-nums tracking-tight">
-            {isUnlimited ? formatTime(elapsedSeconds) : formatTime(remainingSeconds)}
+          {/* 일시정지 — 음표 + 일시정지 뱃지 + 시간 */}
+          <span className="relative flex items-center gap-1.5">
+            <span className="relative flex items-center justify-center w-5 h-5">
+              <Music2 className="w-4 h-4 text-orange-500 opacity-60" />
+              <span className="absolute -top-1 -right-1.5 flex items-center justify-center w-2.5 h-2.5 rounded-full bg-orange-500 ring-1 ring-background">
+                <Pause className="w-1.5 h-1.5 text-white" />
+              </span>
+            </span>
+            <span className="text-[11px] font-bold tabular-nums tracking-tight">
+              {isUnlimited ? formatTime(elapsedSeconds) : formatTime(remainingSeconds)}
+            </span>
           </span>
         </>
       ) : (
-        /* 비활성(idle) — 책+헤드폰 결합 아이콘 */
+        /* idle — 클래식 음악 음표 메인 + 작은 시계 뱃지 */
         <span className="relative flex items-center justify-center w-full h-full">
-          <BookOpen className="w-[18px] h-[18px] sm:w-5 sm:h-5 transition-transform duration-200 group-hover:scale-110" />
-          <span className="absolute -bottom-0.5 -right-0.5 sm:-bottom-0 sm:-right-0 flex items-center justify-center w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full bg-background shadow-sm ring-1 ring-border/50">
-            <Headphones className="w-2 h-2 sm:w-2.5 sm:h-2.5 text-primary" />
+          <Music2 className="w-[18px] h-[18px] sm:w-5 sm:h-5 transition-transform duration-200 group-hover:scale-110 group-hover:text-amber-600 dark:group-hover:text-amber-400" />
+          <span className="absolute -top-0.5 -right-0.5 sm:top-0 sm:right-0 flex items-center justify-center w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-full bg-background shadow-sm ring-1 ring-border/60">
+            <Clock className="w-2 h-2 sm:w-2.5 sm:h-2.5 text-muted-foreground group-hover:text-primary" />
           </span>
         </span>
       )}
