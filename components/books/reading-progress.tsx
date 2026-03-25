@@ -329,10 +329,10 @@ export function ReadingProgress({
               <button
                 type="button"
                 onClick={() => setShowCompletionDialog(true)}
-                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400 hover:bg-emerald-200 dark:hover:bg-emerald-900/60 transition-colors"
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500 text-white hover:bg-emerald-600 active:scale-95 transition-all shadow-sm"
               >
-                <Trophy className="h-3 w-3" />
-                완독
+                <Check className="h-3.5 w-3.5" />
+                완독하기
               </button>
             )}
           </div>
