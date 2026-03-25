@@ -17,6 +17,8 @@ import {
   VolumeX,
   Music2,
   ListMusic,
+  BookOpen,
+  Headphones,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -49,7 +51,7 @@ function CircleTimer({
         <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="currentColor" strokeWidth={stroke} strokeLinecap="round" strokeDasharray={circumference} strokeDashoffset={circumference * (1 - progress)} className="text-primary transition-all duration-1000" />
       </svg>
       <div className="absolute inset-0 flex items-center justify-center">
-        <Timer className="w-3.5 h-3.5 text-primary" />
+        <BookOpen className="w-3.5 h-3.5 text-primary" />
       </div>
     </div>
   );
@@ -73,28 +75,49 @@ export function MusicToggleButton() {
     <button
       onClick={handleClick}
       className={cn(
-        "flex items-center justify-center rounded-full transition-all gap-1",
-        isActive || isPaused ? "px-2.5 h-8 sm:h-9" : "w-9 h-9 sm:w-10 sm:h-10",
+        "group relative flex items-center justify-center transition-all duration-300",
+        isActive || isPaused
+          ? "h-8 sm:h-9 px-3 rounded-full gap-1.5"
+          : "w-9 h-9 sm:w-10 sm:h-10 rounded-xl",
         isActive
-          ? "bg-primary/10 text-primary"
+          ? "bg-gradient-to-r from-emerald-500/15 to-primary/15 text-primary shadow-sm shadow-primary/10 ring-1 ring-primary/20"
           : isPaused
-            ? "bg-orange-500/10 text-orange-500"
-            : "text-muted-foreground hover:bg-muted"
+            ? "bg-gradient-to-r from-orange-500/15 to-amber-500/15 text-orange-500 shadow-sm shadow-orange-500/10 ring-1 ring-orange-400/20"
+            : "text-muted-foreground hover:bg-gradient-to-br hover:from-primary/10 hover:to-emerald-500/10 hover:text-primary hover:shadow-sm"
       )}
       title={isActive ? "독서 일시정지" : isPaused ? "독서 계속하기" : "독서 타이머 + 음악"}
     >
-      {isActive || isPaused ? (
+      {isActive ? (
         <>
-          <Timer className="w-3.5 h-3.5" />
-          <span className="text-xs font-semibold tabular-nums">
+          {/* 활성 상태 — 펄스 링 애니메이션 */}
+          <span className="absolute inset-0 rounded-full animate-ping bg-primary/10 pointer-events-none" style={{ animationDuration: "2s" }} />
+          <span className="relative flex items-center gap-1.5">
+            <span className="relative flex items-center justify-center w-5 h-5">
+              <BookOpen className="w-3.5 h-3.5 text-primary" />
+              <Headphones className="w-2 h-2 absolute -bottom-0.5 -right-1 text-emerald-500" />
+            </span>
+            <span className="text-xs font-bold tabular-nums tracking-tight">
+              {isUnlimited ? formatTime(elapsedSeconds) : formatTime(remainingSeconds)}
+            </span>
+          </span>
+        </>
+      ) : isPaused ? (
+        <>
+          <span className="relative flex items-center justify-center w-5 h-5">
+            <Pause className="w-3.5 h-3.5 text-orange-500" />
+          </span>
+          <span className="text-xs font-bold tabular-nums tracking-tight">
             {isUnlimited ? formatTime(elapsedSeconds) : formatTime(remainingSeconds)}
           </span>
         </>
       ) : (
-        <div className="relative">
-          <Timer className="w-4 h-4 sm:w-[18px] sm:h-[18px]" />
-          <Music2 className="w-2 h-2 absolute -bottom-0.5 -right-0.5 text-primary" />
-        </div>
+        /* 비활성(idle) — 책+헤드폰 결합 아이콘 */
+        <span className="relative flex items-center justify-center w-full h-full">
+          <BookOpen className="w-[18px] h-[18px] sm:w-5 sm:h-5 transition-transform duration-200 group-hover:scale-110" />
+          <span className="absolute -bottom-0.5 -right-0.5 sm:-bottom-0 sm:-right-0 flex items-center justify-center w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full bg-background shadow-sm ring-1 ring-border/50">
+            <Headphones className="w-2 h-2 sm:w-2.5 sm:h-2.5 text-primary" />
+          </span>
+        </span>
       )}
     </button>
   );
@@ -348,22 +371,23 @@ export function MusicMiniPlayer() {
 
         {/* 메인 컨텐츠 */}
         <div className="flex items-center gap-2 px-2.5 py-1.5 sm:px-4 sm:py-2">
-          {/* 좌측: 타이머 or 카테고리 아이콘 */}
+          {/* 좌측: 타이머 or 음악 아이콘 */}
           {isTimerActive ? (
             isUnlimited ? (
-              <div className="relative shrink-0 w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center">
-                <Timer className="w-4 h-4 text-primary animate-pulse" />
+              <div className="relative shrink-0 w-10 h-10 rounded-xl bg-gradient-to-br from-primary/15 to-emerald-500/15 flex items-center justify-center ring-1 ring-primary/10 shadow-sm">
+                <BookOpen className="w-4 h-4 text-primary" />
+                <span className="absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-500 animate-pulse ring-2 ring-background" />
               </div>
             ) : (
-              <CircleTimer remaining={remainingSeconds} total={targetSeconds} size={36} stroke={3} />
+              <CircleTimer remaining={remainingSeconds} total={targetSeconds} size={40} stroke={3} />
             )
           ) : (
             <button
               onClick={openTrackList}
-              className="w-9 h-9 shrink-0 rounded-lg bg-primary/10 flex items-center justify-center"
+              className="w-10 h-10 shrink-0 rounded-xl bg-gradient-to-br from-primary/10 to-violet-500/10 flex items-center justify-center ring-1 ring-primary/10 shadow-sm hover:shadow-md transition-shadow"
               title="재생 목록"
             >
-              <Music2 className="w-4 h-4 text-primary" />
+              <Headphones className="w-4.5 h-4.5 text-primary" />
             </button>
           )}
 
@@ -416,10 +440,11 @@ export function MusicMiniPlayer() {
             <button
               onClick={isTimerActive ? handleTimerToggle : handlePlayToggle}
               className={cn(
-                "w-9 h-9 flex items-center justify-center rounded-full transition-colors",
+                "w-9 h-9 flex items-center justify-center rounded-full transition-all duration-200 shadow-sm",
                 isTimerActive && timerStatus === "paused"
-                  ? "bg-orange-500 text-white"
-                  : "bg-primary text-primary-foreground"
+                  ? "bg-gradient-to-br from-orange-500 to-amber-500 text-white shadow-orange-500/25"
+                  : "bg-gradient-to-br from-primary to-emerald-600 text-primary-foreground shadow-primary/25",
+                "hover:scale-105 active:scale-95"
               )}
               title={isPlaying ? "일시정지" : "재생"}
             >
