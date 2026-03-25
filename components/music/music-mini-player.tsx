@@ -180,6 +180,8 @@ export function MusicMiniPlayer() {
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio || !currentTrack) return;
+    // 이미 동일 트랙이 재생 중이면 skip (handleStart에서 직접 play한 경우)
+    if (audio.src.endsWith(currentTrack.sourceUrl) && !audio.paused) return;
     audio.src = currentTrack.sourceUrl;
     audio.load();
     if (isPlaying) {
@@ -263,8 +265,28 @@ export function MusicMiniPlayer() {
   }
 
   function handleTimerToggle() {
-    if (timerStatus === "running") pauseTimer();
-    else if (timerStatus === "paused") resumeTimer();
+    const audio = audioRef.current;
+    if (timerStatus === "running") {
+      audio?.pause();
+      pauseTimer();
+    } else if (timerStatus === "paused") {
+      audio?.play().catch(() => {});
+      resumeTimer();
+    }
+  }
+
+  // 사용자 클릭에서 직접 audio.play() 호출 (autoplay 정책 우회)
+  function handlePlayToggle() {
+    const audio = audioRef.current;
+    if (!audio) { toggle(); return; }
+    if (isPlaying) {
+      audio.pause();
+      useMusicPlayer.getState().pause();
+    } else {
+      audio.play().then(() => {
+        useMusicPlayer.getState().play();
+      }).catch(() => {});
+    }
   }
 
   function handleVolumeChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -385,7 +407,7 @@ export function MusicMiniPlayer() {
             </button>
 
             <button
-              onClick={isTimerActive ? handleTimerToggle : toggle}
+              onClick={isTimerActive ? handleTimerToggle : handlePlayToggle}
               className={cn(
                 "w-9 h-9 flex items-center justify-center rounded-full transition-colors",
                 isTimerActive && timerStatus === "paused"

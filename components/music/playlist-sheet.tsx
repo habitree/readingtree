@@ -70,6 +70,19 @@ export function TimerSheet() {
   }
 
   function handleStart() {
+    // 1. 사용자 클릭 동기 컨텍스트에서 먼저 audio를 준비하고 play 호출
+    //    (비동기/useEffect 경유 시 브라우저 autoplay 정책에 의해 차단됨)
+    const audio = getGlobalAudio();
+    const tracks = getPlaylistTracks(selectedPlaylistId);
+    const firstTrack = tracks[0];
+
+    if (audio && firstTrack) {
+      audio.src = firstTrack.sourceUrl;
+      audio.volume = useMusicPlayer.getState().volume;
+      audio.play().catch(() => {});
+    }
+
+    // 2. zustand 상태 업데이트 (UI 동기화)
     if (isUnlimited) {
       startUnlimitedTimer(selectedPlaylistId);
     } else {
@@ -77,20 +90,6 @@ export function TimerSheet() {
       if (!minutes || minutes < 1) return;
       startTimer(minutes * 60, selectedPlaylistId);
     }
-
-    // 사용자 클릭 이벤트 컨텍스트에서 직접 audio.play() 호출
-    // (useEffect 경유 시 브라우저 autoplay 정책에 의해 차단됨)
-    requestAnimationFrame(() => {
-      const audio = getGlobalAudio();
-      if (audio) {
-        const state = useMusicPlayer.getState();
-        if (state.currentTrack) {
-          audio.src = state.currentTrack.sourceUrl;
-          audio.load();
-          audio.play().catch(() => {});
-        }
-      }
-    });
   }
 
   function toggleFavorite(minutes: number) {
