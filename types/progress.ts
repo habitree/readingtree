@@ -13,6 +13,9 @@ export interface ReadingLog {
   page_number: number;
   memo: string | null;
   is_public: boolean;
+  started_at: string | null;
+  ended_at: string | null;
+  reading_duration_seconds: number;
   created_at: string;
   updated_at: string;
 }
@@ -25,6 +28,9 @@ export interface CreateReadingLogInput {
   page_number: number;
   memo?: string;
   is_public?: boolean;
+  started_at?: string;
+  ended_at?: string;
+  reading_duration_seconds?: number;
 }
 
 /**
@@ -75,4 +81,10 @@ export interface ReadingLogStats {
   pages_read_this_month: number;
   average_pages_per_day: number;
   streak_days: number;
+  /** 총 독서 시간 (초) */
+  total_reading_seconds: number;
+  /** 시간 기록이 있는 세션 수 */
+  timed_sessions: number;
+  /** 평균 세션 독서 시간 (초) */
+  average_reading_seconds_per_session: number;
 }

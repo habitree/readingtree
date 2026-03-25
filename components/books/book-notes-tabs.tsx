@@ -3,7 +3,8 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { NoteList } from "@/components/notes/note-list";
 import { ReadingJourney } from "./reading-journey";
-import { Map, FileText } from "lucide-react";
+import { ReadingTimeTab } from "./reading-time-tab";
+import { Map, FileText, Clock } from "lucide-react";
 import { useTranslation } from "@/lib/i18n";
 import type { NoteWithBook } from "@/types/note";
 
@@ -19,7 +20,7 @@ interface BookNotesTabsProps {
 
 /**
  * 책 상세 페이지의 기록 탭 컴포넌트
- * "독서 여정" 탭(기본)과 "독서 기록" 탭으로 구성
+ * "독서 기록" + "독서 여정" + "독서 시간" 3탭 구성
  */
 export function BookNotesTabs({
   userBookId,
@@ -39,24 +40,31 @@ export function BookNotesTabs({
 
   return (
     <Tabs defaultValue="notes" className="w-full">
-      <TabsList className="grid w-full grid-cols-2 mb-4">
-        <TabsTrigger value="notes" className="flex items-center gap-1.5">
-          <FileText className="h-4 w-4" />
-          <span>{t("books.detailedRecords")}</span>
+      <TabsList className="grid w-full grid-cols-3 mb-4">
+        <TabsTrigger value="notes" className="flex items-center gap-1 text-xs sm:text-sm">
+          <FileText className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+          <span className="hidden sm:inline">{t("books.detailedRecords")}</span>
+          <span className="sm:hidden">기록</span>
           {detailNotesCount > 0 && (
-            <span className="ml-1 text-xs bg-muted-foreground/20 text-muted-foreground px-1.5 py-0.5 rounded-full">
+            <span className="ml-0.5 text-[10px] bg-muted-foreground/20 text-muted-foreground px-1 py-0.5 rounded-full">
               {detailNotesCount}
             </span>
           )}
         </TabsTrigger>
-        <TabsTrigger value="journey" className="flex items-center gap-1.5">
-          <Map className="h-4 w-4" />
-          <span>독서 여정</span>
+        <TabsTrigger value="journey" className="flex items-center gap-1 text-xs sm:text-sm">
+          <Map className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+          <span className="hidden sm:inline">독서 여정</span>
+          <span className="sm:hidden">여정</span>
           {totalCount > 0 && (
-            <span className="ml-1 text-xs bg-blue-500/20 text-blue-600 dark:text-blue-400 px-1.5 py-0.5 rounded-full">
+            <span className="ml-0.5 text-[10px] bg-blue-500/20 text-blue-600 dark:text-blue-400 px-1 py-0.5 rounded-full">
               {totalCount}
             </span>
           )}
+        </TabsTrigger>
+        <TabsTrigger value="time" className="flex items-center gap-1 text-xs sm:text-sm">
+          <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+          <span className="hidden sm:inline">독서 시간</span>
+          <span className="sm:hidden">시간</span>
         </TabsTrigger>
       </TabsList>
 
@@ -74,6 +82,10 @@ export function BookNotesTabs({
           progressNotes={progressNotes}
           detailNotes={detailNotes}
         />
+      </TabsContent>
+
+      <TabsContent value="time">
+        <ReadingTimeTab userBookId={userBookId} />
       </TabsContent>
     </Tabs>
   );

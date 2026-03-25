@@ -71,6 +71,9 @@ export async function createProgressLog(
       page_number: data.page_number,
       memo: data.memo?.trim() || null,
       is_public: data.is_public ?? true,
+      started_at: data.started_at || null,
+      ended_at: data.ended_at || null,
+      reading_duration_seconds: data.reading_duration_seconds || 0,
     })
     .select()
     .single();
@@ -265,4 +268,84 @@ export async function updateProgressLog(
   revalidatePath("/");
 
   return { success: true };
+}
+
+/**
+ * 독서 시간 기록 목록 조회 (시간 데이터가 있는 로그만)
+ */
+export async function getReadingTimeLogs(
+  userBookId: string,
+  user?: User | null
+): Promise<ReadingLog[]> {
+  const supabase = await createServerSupabaseClient();
+
+  let currentUser = user;
+  if (!currentUser) {
+    const {
+      data: { user: fetchedUser },
+      error: authError,
+    } = await supabase.auth.getUser();
+    if (authError || !fetchedUser) throw new Error("로그인이 필요합니다.");
+    currentUser = fetchedUser;
+  }
+
+  if (!isValidUUID(userBookId)) throw new Error("유효하지 않은 책 ID입니다.");
+
+  const { data, error } = await supabase
+    .from("reading_logs")
+    .select("*")
+    .eq("user_book_id", userBookId)
+    .eq("user_id", currentUser.id)
+    .gt("reading_duration_seconds", 0)
+    .order("created_at", { ascending: false });
+
+  if (error) throw new Error(sanitizeErrorMessage(error));
+  return data || [];
+}
+
+/**
+ * 독서 시간 통계 조회
+ */
+export async function getReadingTimeStats(
+  userBookId: string,
+  user?: User | null
+): Promise<{
+  totalSeconds: number;
+  sessionCount: number;
+  averageSeconds: number;
+}> {
+  const supabase = await createServerSupabaseClient();
+
+  let currentUser = user;
+  if (!currentUser) {
+    const {
+      data: { user: fetchedUser },
+      error: authError,
+    } = await supabase.auth.getUser();
+    if (authError || !fetchedUser) throw new Error("로그인이 필요합니다.");
+    currentUser = fetchedUser;
+  }
+
+  if (!isValidUUID(userBookId)) throw new Error("유효하지 않은 책 ID입니다.");
+
+  const { data, error } = await supabase
+    .from("reading_logs")
+    .select("reading_duration_seconds")
+    .eq("user_book_id", userBookId)
+    .eq("user_id", currentUser.id)
+    .gt("reading_duration_seconds", 0);
+
+  if (error) throw new Error(sanitizeErrorMessage(error));
+
+  const logs = data || [];
+  const totalSeconds = logs.reduce(
+    (sum, l) => sum + (l.reading_duration_seconds || 0),
+    0
+  );
+
+  return {
+    totalSeconds,
+    sessionCount: logs.length,
+    averageSeconds: logs.length > 0 ? Math.round(totalSeconds / logs.length) : 0,
+  };
 }

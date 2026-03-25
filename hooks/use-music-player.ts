@@ -22,6 +22,7 @@ interface MusicPlayerState {
   targetSeconds: number;
   remainingSeconds: number;
   elapsedSeconds: number;
+  timerStartedAt: string | null;
   isTimerSheetOpen: boolean;
   isCompleteDialogOpen: boolean;
   isTrackListOpen: boolean;
@@ -62,6 +63,7 @@ const INITIAL_TIMER = {
   timerStatus: "idle" as TimerStatus,
   targetSeconds: 0,
   remainingSeconds: 0,
+  timerStartedAt: null as string | null,
   isTrackListOpen: false,
   isVolumeOpen: false,
   elapsedSeconds: 0,
@@ -165,6 +167,7 @@ export const useMusicPlayer = create<MusicPlayerState>((set, get) => ({
       targetSeconds: seconds,
       remainingSeconds: seconds,
       elapsedSeconds: 0,
+      timerStartedAt: new Date().toISOString(),
       isTimerSheetOpen: false,
       isCompleteDialogOpen: false,
     });
