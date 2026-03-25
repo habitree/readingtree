@@ -886,6 +886,29 @@ export const en: Dictionary = {
     // tag cloud
     tagCloud: "Explore Tags",
     tagFilterClear: "Clear filter",
+
+    // Unified view modes
+    viewList: "List",
+    viewTimeline: "Timeline",
+    viewBook: "By Book",
+
+    // Unified search/filter
+    unifiedSearchPlaceholder: "Search notes, book titles, authors...",
+    filterPanel: "Filter",
+    filterSelectBook: "Select Book",
+    filterDate: "Date Range",
+    filterSelectTags: "Tags",
+    clearFilters: "Clear Filters",
+    totalResults: "{count} total",
+    sortLatest: "Latest",
+    sortOldest: "Oldest",
+
+    // Empty states
+    noResultsFound: "No results found",
+    tryDifferentSearch: "Try a different search term or adjust your filters",
+    emptyInbox: "Inbox is empty",
+    emptyNotes: "No notes yet",
+    emptyNotesDesc: "Start recording your thoughts while reading",
   },
 
   dashboard: {

@@ -15,9 +15,11 @@ interface NoteDetailNavBarProps {
   note: NoteWithBook & { user_book_id?: string | null };
   backUrl: string;
   isGuest: boolean;
+  /** 서버에서 이미 로드된 OCR 상태 */
+  initialOcrStatus?: "processing" | "completed" | "failed" | null;
 }
 
-export function NoteDetailNavBar({ note, backUrl, isGuest }: NoteDetailNavBarProps) {
+export function NoteDetailNavBar({ note, backUrl, isGuest, initialOcrStatus }: NoteDetailNavBarProps) {
   const { t } = useTranslation();
 
   return (
@@ -58,6 +60,7 @@ export function NoteDetailNavBar({ note, backUrl, isGuest }: NoteDetailNavBarPro
             noteId={note.id}
             noteType={note.type}
             hasImage={!!note.image_url}
+            initialOcrStatus={initialOcrStatus}
           />
         </div>
       </div>

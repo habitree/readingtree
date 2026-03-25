@@ -8,6 +8,8 @@ import type { User } from "@supabase/supabase-js";
 
 const ITEMS_PER_PAGE = 20;
 
+export type SearchSortBy = "latest" | "oldest" | "book";
+
 export interface SearchParams {
   query?: string;
   bookId?: string;
@@ -16,6 +18,8 @@ export interface SearchParams {
   tags?: string[];
   types?: string[];
   page?: number;
+  sort?: SearchSortBy;
+  status?: "draft" | "published";
 }
 
 export interface SearchResults {
@@ -155,16 +159,28 @@ export async function searchNotes(params: SearchParams, user?: User | null): Pro
     supabaseQuery = supabaseQuery.in("type", params.types);
   }
 
+  // 상태 필터 (draft/published)
+  if (params.status) {
+    supabaseQuery = supabaseQuery.eq("status", params.status);
+  }
+
   // 페이지네이션
   const page = params.page || 1;
   const from = (page - 1) * ITEMS_PER_PAGE;
   const to = from + ITEMS_PER_PAGE - 1;
   supabaseQuery = supabaseQuery.range(from, to);
 
-  // 정렬: 최신 등록 순(created_at 내림차순), 그 다음 페이지 번호 순
-  supabaseQuery = supabaseQuery
-    .order("created_at", { ascending: false })
-    .order("page_number", { ascending: true, nullsFirst: false });
+  // 정렬
+  const sort = params.sort || "latest";
+  if (sort === "book") {
+    supabaseQuery = supabaseQuery
+      .order("book_id", { ascending: true, nullsFirst: false })
+      .order("created_at", { ascending: false });
+  } else {
+    supabaseQuery = supabaseQuery
+      .order("created_at", { ascending: sort === "oldest" })
+      .order("page_number", { ascending: true, nullsFirst: false });
+  }
 
   const { data, error, count } = await supabaseQuery;
 

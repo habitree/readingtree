@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  Search,
   Users,
   Bot,
   Lightbulb,
@@ -108,21 +107,6 @@ export function MobileMenuSheet({ open, onOpenChange }: MobileMenuSheetProps) {
               >
                 <StickyNote className="h-5 w-5" />
                 <span>{t("notes.myNotes")}</span>
-              </Button>
-            </Link>
-          </SheetClose>
-
-          <SheetClose asChild>
-            <Link href="/search" onClick={handleMenuClick}>
-              <Button
-                variant={pathname === "/search" ? "secondary" : "ghost"}
-                className={cn(
-                  "w-full justify-start gap-3 h-12",
-                  pathname === "/search" && "bg-secondary font-medium"
-                )}
-              >
-                <Search className="h-5 w-5" />
-                <span>{t("nav.search")}</span>
               </Button>
             </Link>
           </SheetClose>

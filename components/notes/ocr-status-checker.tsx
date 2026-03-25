@@ -15,6 +15,8 @@ interface OCRStatusCheckerProps {
   noteId: string;
   noteType: string;
   hasImage: boolean;
+  /** 서버에서 이미 로드된 OCR 상태 — completed/failed면 폴링 건너뜀 */
+  initialOcrStatus?: "processing" | "completed" | "failed" | null;
 }
 
 /**
@@ -25,14 +27,23 @@ export function OCRStatusChecker({
   noteId,
   noteType,
   hasImage,
+  initialOcrStatus,
 }: OCRStatusCheckerProps) {
   const { t } = useTranslation();
   const router = useRouter();
   const { showUpgradeModal } = useUpgradeModal();
   const [isRetrying, setIsRetrying] = useState(false);
-  const { status } = useOCRStatus({
+
+  // 이미 완료/실패 상태면 폴링 불필요
+  const needsPolling =
+    noteType === "transcription" &&
+    hasImage &&
+    initialOcrStatus !== "completed" &&
+    initialOcrStatus !== "failed";
+
+  const { status: polledStatus } = useOCRStatus({
     noteId,
-    enabled: noteType === "transcription" && hasImage,
+    enabled: needsPolling,
     pollInterval: 3000,
     onComplete: () => {
       toast.success(t("notes.ocrCompleteToast"), {
@@ -45,6 +56,9 @@ export function OCRStatusChecker({
       }, 1000);
     },
   });
+
+  // 서버에서 받은 초기 상태 우선, 폴링 결과로 오버라이드
+  const status = polledStatus ?? initialOcrStatus ?? null;
 
   // OCR 재실행 함수
   const handleRetry = async () => {

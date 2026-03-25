@@ -886,6 +886,29 @@ export const ko = {
     // tag cloud
     tagCloud: "태그 탐색",
     tagFilterClear: "필터 해제",
+
+    // 통합 뷰 모드
+    viewList: "목록",
+    viewTimeline: "타임라인",
+    viewBook: "책별",
+
+    // 통합 검색/필터
+    unifiedSearchPlaceholder: "기록, 책 제목, 저자 검색...",
+    filterPanel: "필터",
+    filterSelectBook: "책 선택",
+    filterDate: "날짜 범위",
+    filterSelectTags: "태그",
+    clearFilters: "필터 초기화",
+    totalResults: "총 {count}개",
+    sortLatest: "최신순",
+    sortOldest: "오래된순",
+
+    // 빈 상태
+    noResultsFound: "검색 결과가 없어요",
+    tryDifferentSearch: "다른 검색어를 입력하거나 필터를 변경해보세요",
+    emptyInbox: "인박스가 비어있어요",
+    emptyNotes: "기록이 없어요",
+    emptyNotesDesc: "독서하며 떠오른 생각을 기록해보세요",
   },
 
   dashboard: {

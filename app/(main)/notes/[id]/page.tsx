@@ -107,6 +107,7 @@ export default async function NoteDetailPage({ params }: NoteDetailPageProps) {
         note={noteWithBook}
         backUrl={backUrl}
         isGuest={isGuest}
+        initialOcrStatus={transcription?.status ?? null}
       />
 
       {/* 2. 메인 리딩 카드 (통합 디자인) - 개선된 장식 */}

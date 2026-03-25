@@ -1,10 +1,12 @@
 import { Suspense } from "react";
 import { Metadata } from "next";
-import { getNotes, getDraftNotesCount, getUserTagsWithCount } from "@/app/actions/notes";
+import { searchNotes } from "@/app/actions/search";
+import { getDraftNotesCount, getUserTagsWithCount } from "@/app/actions/notes";
 import { getCachedCurrentUser } from "@/lib/cached";
 import { NotesHubClient } from "@/components/notes/notes-hub-client";
 import { NoteList } from "@/components/notes/note-list";
 import type { NoteType } from "@/types/note";
+import type { SearchSortBy } from "@/app/actions/search";
 
 export const metadata: Metadata = {
   title: "내 기록 | ReadTree",
@@ -15,8 +17,15 @@ interface NotesPageProps {
   searchParams: Promise<{
     tab?: string;
     group?: string;
+    view?: string;
     sort?: string;
-    /** 하위호환: /notes/free → /notes?free=true 리다이렉트 */
+    q?: string;
+    bookId?: string;
+    startDate?: string;
+    endDate?: string;
+    tags?: string;
+    page?: string;
+    /** 하위호환 */
     free?: string;
     type?: string;
     status?: string;
@@ -24,37 +33,51 @@ interface NotesPageProps {
 }
 
 /**
- * 기록 허브 페이지
+ * 통합 기록 허브 페이지
+ * 내기록 + 검색 + 타임라인을 하나로 통합
+ *
  * ?tab=all|inbox|quote|memo|photo|transcription|progress
- * ?group=book (책별 그룹 뷰)
- * ?sort=latest|oldest
+ * ?view=list|timeline|book
+ * ?sort=latest|oldest|book
+ * ?q=검색어
+ * ?bookId=xxx&startDate=...&endDate=...&tags=...
+ * ?page=1
  */
 export default async function NotesPage({ searchParams }: NotesPageProps) {
-  const resolvedParams = await searchParams;
+  const sp = await searchParams;
 
-  // 탭 결정 (하위호환: free=true → tab은 유지, isFree 플래그)
-  let tab = resolvedParams.tab ?? "all";
-  const isFree = resolvedParams.free === "true";
-  const isGrouped = resolvedParams.group === "book";
-  const sort = resolvedParams.sort ?? "latest";
+  // 탭 결정
+  let tab = sp.tab ?? "all";
+  if (sp.status === "draft") tab = "inbox";
 
-  // 하위호환: ?status=draft → ?tab=inbox
-  if (resolvedParams.status === "draft") tab = "inbox";
+  // 뷰 모드 (하위호환: group=book → view=book)
+  const view = sp.view ?? (sp.group === "book" ? "book" : "list");
+  const sort = (sp.sort ?? "latest") as SearchSortBy;
+  const page = Number(sp.page) || 1;
 
-  // 탭 → status/type 매핑
+  // 탭 → types/status 매핑
   const isInbox = tab === "inbox";
-  const typeFilter = (!isInbox && tab !== "all") ? tab as NoteType : undefined;
-  const statusFilter = isInbox ? "draft" as const : "all" as const;
+  const types =
+    !isInbox && tab !== "all" ? [tab as NoteType] : undefined;
+  const status = isInbox ? ("draft" as const) : undefined;
+
+  // 태그 파싱
+  const tags = sp.tags ? sp.tags.split(",").filter(Boolean) : undefined;
 
   return (
     <Suspense fallback={<NoteList notes={[]} isLoading />}>
       <NotesHubContent
         tab={tab}
-        typeFilter={typeFilter}
-        statusFilter={statusFilter}
-        isFree={isFree}
-        isGrouped={isGrouped}
+        view={view}
         sort={sort}
+        page={page}
+        query={sp.q}
+        bookId={sp.bookId}
+        startDate={sp.startDate}
+        endDate={sp.endDate}
+        tags={tags}
+        types={types}
+        status={status}
       />
     </Suspense>
   );
@@ -62,43 +85,72 @@ export default async function NotesPage({ searchParams }: NotesPageProps) {
 
 async function NotesHubContent({
   tab,
-  typeFilter,
-  statusFilter,
-  isFree,
-  isGrouped,
+  view,
   sort,
+  page,
+  query,
+  bookId,
+  startDate,
+  endDate,
+  tags,
+  types,
+  status,
 }: {
   tab: string;
-  typeFilter?: NoteType;
-  statusFilter: "draft" | "all";
-  isFree: boolean;
-  isGrouped: boolean;
-  sort: string;
+  view: string;
+  sort: SearchSortBy;
+  page: number;
+  query?: string;
+  bookId?: string;
+  startDate?: string;
+  endDate?: string;
+  tags?: string[];
+  types?: string[];
+  status?: "draft" | "published";
 }) {
   const user = await getCachedCurrentUser();
 
-  const [notes, draftCount, tags] = await Promise.all([
-    getNotes(undefined, typeFilter, user, true, {
-      status: statusFilter,
-      isFree: isFree || undefined,
-    }),
+  const [searchResult, draftCount, userTags] = await Promise.all([
+    searchNotes(
+      {
+        query,
+        bookId,
+        startDate,
+        endDate,
+        tags,
+        types,
+        page,
+        sort,
+        status,
+      },
+      user
+    ),
     getDraftNotesCount(user),
     user ? getUserTagsWithCount(user) : Promise.resolve([]),
   ]);
 
-  // 정렬
-  const sortedNotes = sort === "oldest"
-    ? [...notes].reverse()
-    : notes;
+  // searchNotes 결과를 NoteWithBook 형태로 정규화
+  const notes = searchResult.results.map((note: any) => {
+    const book = Array.isArray(note.books) ? note.books[0] : note.books;
+    return { ...note, book };
+  });
 
   return (
     <NotesHubClient
-      notes={sortedNotes}
-      tags={tags}
+      notes={notes}
+      tags={userTags}
       draftCount={draftCount}
       activeTab={tab}
-      isGrouped={isGrouped}
+      activeView={view as "list" | "timeline" | "book"}
       sort={sort}
+      searchQuery={query}
+      total={searchResult.total}
+      totalPages={searchResult.totalPages}
+      currentPage={searchResult.page}
+      activeBookId={bookId}
+      activeStartDate={startDate}
+      activeEndDate={endDate}
+      activeTags={tags}
     />
   );
 }

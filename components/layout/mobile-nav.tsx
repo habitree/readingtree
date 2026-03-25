@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Library, Clock, Plus, Menu } from "lucide-react";
+import { Home, Library, FileText, Plus, Menu } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
@@ -40,7 +40,7 @@ const mobileNavItemsConfig: MobileNavItemConfig[] = [
   { icon: Home, labelKey: "nav.home", href: "/" },
   { icon: Library, labelKey: "nav.bookshelf", href: "/books" },
   { icon: Plus, labelKey: "nav.writeNote", action: "note", requiresAuth: true, isFab: true },
-  { icon: Clock, labelKey: "nav.timeline", href: "/timeline" },
+  { icon: FileText, labelKey: "notes.myNotes", href: "/notes" },
   { icon: Menu, labelKey: "nav.more", action: "menu" },
 ];
 

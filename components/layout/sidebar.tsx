@@ -5,8 +5,6 @@ import { usePathname } from "next/navigation";
 import {
   Home,
   Library,
-  Search,
-  Clock,
   Users,
   User,
   Trees,
@@ -56,8 +54,6 @@ export function Sidebar() {
     { icon: Library, label: t("nav.myLibrary"), href: "/books" },
     { icon: PenLine, label: t("nav.writeNote"), action: "quickCapture" },
     { icon: FileText, label: t("notes.myNotes"), href: "/notes" },
-    { icon: Search, label: t("nav.search"), href: "/search" },
-    { icon: Clock, label: t("nav.timeline"), href: "/timeline" },
     { icon: User, label: t("nav.profile"), href: "/profile" },
   ];
 
