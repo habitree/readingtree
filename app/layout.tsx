@@ -137,7 +137,7 @@ export default async function RootLayout({
           </Script>
         </head>
       )}
-      <body className={`${inter.variable} ${notoSerifKr.variable} font-sans`}>
+      <body className={`${inter.variable} ${notoSerifKr.variable} font-sans`} suppressHydrationWarning>
         <ThemeProvider
           attribute="class"
           defaultTheme="dark"

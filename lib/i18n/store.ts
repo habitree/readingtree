@@ -8,19 +8,14 @@ interface LanguageState {
   locale: Locale;
   setLocale: (locale: Locale) => void;
   toggleLocale: () => void;
-}
-
-function getInitialLocale(): Locale {
-  if (typeof window === "undefined") return "ko";
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored === "en" || stored === "ko") return stored;
-  } catch {}
-  return "ko";
+  _hydrated: boolean;
 }
 
 export const useLanguageStore = create<LanguageState>((set, get) => ({
-  locale: getInitialLocale(),
+  // SSR/클라이언트 모두 "ko"로 시작하여 hydration mismatch 방지
+  // useEffect에서 localStorage 값으로 동기화
+  locale: "ko",
+  _hydrated: false,
 
   setLocale: (locale: Locale) => {
     set({ locale });
