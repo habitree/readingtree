@@ -2,11 +2,12 @@ import Link from "next/link";
 import { Coins, ArrowRight, Gift, Zap } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { IS_BETA_MODE, BETA_MESSAGE } from "@/lib/subscription/beta";
+import { FEATURE_GATES } from "@/lib/subscription/gates";
 
 const FREE_LIMITS = [
-  { label: "AI 채팅", limit: "10회/월" },
-  { label: "OCR 필사", limit: "5회/월" },
-  { label: "AI 리포트", limit: "1회/월" },
+  { label: "AI 채팅", limit: `${FEATURE_GATES.ai_chat.limit}회/월` },
+  { label: "OCR 필사", limit: `${FEATURE_GATES.ocr.limit}회/월` },
+  { label: "AI 리포트", limit: `${FEATURE_GATES.ai_report.limit}회/월` },
 ];
 
 const BETA_LIMITS = [
@@ -16,9 +17,9 @@ const BETA_LIMITS = [
 ];
 
 const POINT_COSTS = [
-  { label: "AI 채팅", cost: "40P" },
-  { label: "OCR 필사", cost: "25P" },
-  { label: "AI 리포트", cost: "100P" },
+  { label: "AI 채팅", cost: `${FEATURE_GATES.ai_chat.pointCost}P` },
+  { label: "OCR 필사", cost: `${FEATURE_GATES.ocr.pointCost}P` },
+  { label: "AI 리포트", cost: `${FEATURE_GATES.ai_report.pointCost}P` },
 ];
 
 /**
