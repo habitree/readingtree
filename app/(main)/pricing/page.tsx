@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Sparkles, Zap, BookOpen, ScanText, FileBarChart } from "lucide-react";
+import { Sparkles, Zap, BookOpen, ScanText, FileBarChart, Gift, Flame, Trophy, Pen, UserPlus, Coins } from "lucide-react";
 import { IS_BETA_MODE, BETA_MESSAGE } from "@/lib/subscription/beta";
 import { POINT_PACKAGES } from "@/lib/subscription/pricing-data";
 import { PricingPackageCard } from "@/components/subscription/pricing-package-card";
@@ -103,6 +103,56 @@ export default function PricingPage() {
           </section>
         </>
       )}
+
+      {/* 포인트 적립 방법 — 한눈에 보기 */}
+      <section className="space-y-4">
+        <div className="text-center space-y-1">
+          <h2 className="text-xl font-semibold flex items-center justify-center gap-2">
+            <Coins className="h-5 w-5 text-amber-500" />
+            포인트 적립 방법
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            독서 활동만으로 포인트가 쌓여요
+          </p>
+        </div>
+
+        {/* 시작 보너스 강조 */}
+        <div className="rounded-xl bg-gradient-to-r from-violet-50 to-indigo-50 dark:from-violet-950/20 dark:to-indigo-950/20 border border-violet-200 dark:border-violet-800 p-4 text-center">
+          <p className="text-sm font-semibold text-violet-700 dark:text-violet-300">
+            가입 즉시
+          </p>
+          <p className="text-3xl font-bold text-violet-600 dark:text-violet-400 mt-1">
+            200P
+          </p>
+          <p className="text-xs text-muted-foreground mt-1">
+            + 프로필 완성 50P · 첫 노트 50P · 첫 책 등록 35P = 최대 <span className="font-bold text-foreground">335P</span>
+          </p>
+        </div>
+
+        {/* 적립 카드 그리드 */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {([
+            { icon: Pen, label: "노트 작성", points: "10~15P", desc: "인용구·메모·필사" },
+            { icon: Trophy, label: "책 완독", points: "60P", desc: "완독할 때마다" },
+            { icon: Flame, label: "매일 활동", points: "8P/일", desc: "오늘 첫 활동" },
+            { icon: Gift, label: "연속 7일", points: "50P", desc: "30일 200P · 100일 500P" },
+          ] as const).map(({ icon: Icon, label, points, desc }) => (
+            <div
+              key={label}
+              className="rounded-xl border bg-card p-3 text-center space-y-1.5"
+            >
+              <Icon className="h-5 w-5 mx-auto text-amber-500" />
+              <p className="text-sm font-semibold">{label}</p>
+              <p className="text-lg font-bold text-amber-600 dark:text-amber-400">{points}</p>
+              <p className="text-[11px] text-muted-foreground leading-tight">{desc}</p>
+            </div>
+          ))}
+        </div>
+
+        <p className="text-xs text-center text-muted-foreground">
+          그 외 노트 공유(8P) · 일일 미션(12P) · 친구 추천(100P) 등 다양한 활동으로 적립 가능
+        </p>
+      </section>
 
       {/* 무료 한도 + 포인트 비용 테이블 */}
       <section className="space-y-4">

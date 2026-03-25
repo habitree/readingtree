@@ -36,7 +36,7 @@ export const FEATURE_GATES: Record<FeatureKey, FeatureGate> = {
     countMethod: "point_transactions",
   },
   ocr: {
-    limit: 5,
+    limit: 3,
     pointCost: 25,
     countPeriod: "monthly",
     countMethod: "point_transactions",

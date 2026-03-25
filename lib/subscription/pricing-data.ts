@@ -34,7 +34,7 @@ export const POINT_PACKAGES: PointPackageInfo[] = [
 
 const _FEATURE_INFO_ROWS: FeatureInfoRow[] = [
   { key: "ai_chat", label: "AI 채팅", freeLimit: "10회/월", pointCost: "40P/회" },
-  { key: "ocr", label: "OCR 필사", freeLimit: "5회/월", pointCost: "25P/회" },
+  { key: "ocr", label: "OCR 필사", freeLimit: "3회/월", pointCost: "25P/회" },
   { key: "ai_report", label: "AI 독서 리포트", freeLimit: "1회/월", pointCost: "100P/회" },
   { key: "notes_create", label: "노트 작성", freeLimit: "100개/월", pointCost: "-" },
   { key: "groups_create", label: "모임 생성", freeLimit: "5개", pointCost: "-" },
