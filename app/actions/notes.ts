@@ -239,24 +239,16 @@ export async function createNote(data: CreateNoteInput, user?: User | null) {
   }
 
   // 포인트 적립 (완전히 독립적으로 처리 - 실패해도 노트 생성에 영향 없음)
-  // 포인트 시스템이 설정되지 않은 경우에도 노트 생성은 정상 동작해야 함
+  let pointsEarned = 0;
   try {
-    // 노트 타입에 따른 포인트 적립
     let pointActionType: PointActionType = "note_create";
-    if (noteType === "quote") {
-      pointActionType = "note_quote";
-    } else if (noteType === "memo") {
-      pointActionType = "note_memo";
-    } else if (noteType === "photo") {
-      pointActionType = "note_photo";
-    } else if (noteType === "transcription") {
-      pointActionType = "note_transcription";
-    } else if (noteType === "progress") {
-      pointActionType = "note_progress";
-    }
+    if (noteType === "quote") pointActionType = "note_quote";
+    else if (noteType === "memo") pointActionType = "note_memo";
+    else if (noteType === "photo") pointActionType = "note_photo";
+    else if (noteType === "transcription") pointActionType = "note_transcription";
+    else if (noteType === "progress") pointActionType = "note_progress";
 
-    // 포인트 시스템 호출 (실패해도 무시)
-    await Promise.all([
+    const [, pointsResult] = await Promise.all([
       updateStreak(currentUser).catch(() => null),
       earnPoints(pointActionType, {
         user: currentUser,
@@ -264,7 +256,11 @@ export async function createNote(data: CreateNoteInput, user?: User | null) {
         referenceType: "note",
         description: `${data.title || "기록"} 작성`,
       }).catch(() => null),
-    ]).catch(() => null);
+    ]).catch(() => [null, null]);
+
+    if (pointsResult && pointsResult.success) {
+      pointsEarned = pointsResult.points_earned;
+    }
   } catch {
     // 포인트 설정 중 에러 발생해도 완전히 무시
   }
@@ -276,7 +272,7 @@ export async function createNote(data: CreateNoteInput, user?: User | null) {
   revalidatePath(`/notes/${note.id}`);
   revalidatePath("/");
 
-  return { success: true, noteId: note.id };
+  return { success: true, noteId: note.id, pointsEarned };
 }
 
 /**
@@ -290,6 +286,13 @@ export async function createQuickNote(
   content: string,
   bookId?: string,
   readingDurationSeconds?: number,
+  options?: {
+    status?: "draft" | "published";
+    quoteContent?: string;
+    pageNumber?: string;
+    imageUrl?: string;
+    uploadType?: "photo" | "transcription";
+  },
 ) {
   if (!content || content.trim().length === 0) {
     throw new Error("내용을 입력해주세요.");
@@ -302,7 +305,11 @@ export async function createQuickNote(
   return createNote({
     book_id: bookId,
     memo_content: content.trim(),
-    status: "draft",
+    quote_content: options?.quoteContent?.trim() || undefined,
+    page_number: options?.pageNumber || undefined,
+    image_url: options?.imageUrl || undefined,
+    upload_type: options?.uploadType || undefined,
+    status: options?.status ?? "draft",
     is_public: true,
     reading_duration_seconds: readingDurationSeconds,
   });
@@ -684,7 +691,16 @@ export async function deleteNote(noteId: string, user?: User | null) {
  * @param user 선택적 사용자 정보 (전달되지 않으면 자동 조회)
  * @param includeBook books 정보 포함 여부 (기본값: true, 하위 호환성 유지)
  */
-export async function getNotes(bookId?: string, type?: NoteType, user?: User | null, includeBook: boolean = true): Promise<NoteWithBook[]> {
+export interface GetNotesOptions {
+  /** status 필터 (기본값: "all" — draft+published 모두) */
+  status?: "draft" | "published" | "all";
+  /** 자유 기록만 (READTREE_BOOK_ID, progress 제외) */
+  isFree?: boolean;
+  /** 출처 타입 필터 */
+  sourceType?: SourceType;
+}
+
+export async function getNotes(bookId?: string, type?: NoteType, user?: User | null, includeBook: boolean = true, options?: GetNotesOptions): Promise<NoteWithBook[]> {
   const supabase = await createServerSupabaseClient();
 
   // 현재 사용자 확인
@@ -784,8 +800,21 @@ export async function getNotes(bookId?: string, type?: NoteType, user?: User | n
     query = query.eq("type", type);
   }
 
-  // 기본적으로 published만 반환 (draft는 getDraftNotes로 별도 조회)
-  query = query.eq("status", "published");
+  // status 필터 (기본: 전체)
+  const statusFilter = options?.status ?? "all";
+  if (statusFilter !== "all") {
+    query = query.eq("status", statusFilter);
+  }
+
+  // 자유 기록 필터 (READTREE_BOOK_ID, progress 제외)
+  if (options?.isFree) {
+    query = query.eq("book_id", READTREE_BOOK_ID).neq("type", "progress");
+  }
+
+  // 출처 타입 필터
+  if (options?.sourceType) {
+    query = query.eq("source_type", options.sourceType);
+  }
 
   const { data, error } = await query;
 
@@ -1445,6 +1474,29 @@ export async function getDraftNotes(user?: User | null): Promise<NoteWithBook[]>
     const { books, ...restNote } = note;
     return { ...restNote, book: book || undefined } as NoteWithBook;
   });
+}
+
+/**
+ * draft 기록 개수 조회 (경량 쿼리, 네비게이션 뱃지용)
+ */
+export async function getDraftNotesCount(user?: User | null): Promise<number> {
+  const supabase = await createServerSupabaseClient();
+
+  let currentUser = user;
+  if (!currentUser) {
+    const { data: { user: fetchedUser }, error: authError } = await supabase.auth.getUser();
+    if (authError || !fetchedUser) return 0;
+    currentUser = fetchedUser;
+  }
+
+  const { count, error } = await supabase
+    .from("notes")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", currentUser.id)
+    .eq("status", "draft");
+
+  if (error) return 0;
+  return count ?? 0;
 }
 
 /**

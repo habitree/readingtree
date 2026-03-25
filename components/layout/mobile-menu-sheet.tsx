@@ -94,18 +94,18 @@ export function MobileMenuSheet({ open, onOpenChange }: MobileMenuSheetProps) {
             </SheetClose>
           )}
 
-          {/* 자유 기록, 검색, 프로필, 독서모임, AI 도우미 */}
+          {/* 내 기록, 검색, 프로필, 독서모임, AI 도우미 */}
           <SheetClose asChild>
-            <Link href="/notes/free" onClick={handleMenuClick}>
+            <Link href="/notes" onClick={handleMenuClick}>
               <Button
-                variant={pathname.startsWith("/notes/free") ? "secondary" : "ghost"}
+                variant={pathname === "/notes" || pathname.startsWith("/notes?") ? "secondary" : "ghost"}
                 className={cn(
                   "w-full justify-start gap-3 h-12",
-                  pathname.startsWith("/notes/free") && "bg-secondary font-medium"
+                  pathname === "/notes" && "bg-secondary font-medium"
                 )}
               >
                 <StickyNote className="h-5 w-5" />
-                <span>{t("nav.freeNotes")}</span>
+                <span>{t("notes.myNotes")}</span>
               </Button>
             </Link>
           </SheetClose>

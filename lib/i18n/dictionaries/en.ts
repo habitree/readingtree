@@ -864,6 +864,16 @@ export const en: Dictionary = {
     freeNotesPageDesc: "Collect insights discovered beyond books",
     freeNotesWrite: "Write Free Note",
     sourceAll: "All",
+    // notes hub
+    statusAll: "All",
+    statusPublished: "Organized",
+    statusDraft: "Inbox",
+    filterBook: "Book Notes",
+    filterFree: "Memos",
+    hubDescription: "View all your reading notes",
+    draftBanner: "{count} notes in inbox waiting to be organized",
+    draftBannerCta: "View",
+    editDraft: "Refine",
     // quick capture
     quickCapturePlaceholder: "Quick memo… (Enter to save)",
     quickCaptureSuccess: "Saved!",

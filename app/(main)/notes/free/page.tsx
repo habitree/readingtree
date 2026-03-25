@@ -1,37 +1,18 @@
 import { redirect } from "next/navigation";
-import { getCachedCurrentUser } from "@/lib/cached";
-import { getFreeNotes, getUserTagsWithCount } from "@/app/actions/notes";
-import { FreeNotesPageClient } from "@/components/notes/free-notes-page-client";
-import type { NoteType, SourceType } from "@/types/note";
 
-interface FreeNotesPageProps {
-  searchParams: Promise<{
-    type?: string;
-    source?: string;
-  }>;
-}
-
-export default async function FreeNotesPage({ searchParams }: FreeNotesPageProps) {
-  const user = await getCachedCurrentUser();
-  if (!user) {
-    redirect("/login");
-  }
-
-  const resolvedParams = await searchParams;
-  const type = resolvedParams.type as NoteType | undefined;
-  const sourceType = resolvedParams.source as SourceType | undefined;
-
-  const [notes, tags] = await Promise.all([
-    getFreeNotes(type, sourceType, user).catch(() => []),
-    getUserTagsWithCount(user).catch(() => []),
-  ]);
-
-  return (
-    <FreeNotesPageClient
-      initialNotes={notes}
-      tags={tags}
-      activeType={type}
-      activeSource={sourceType}
-    />
-  );
+/**
+ * /notes/free → /notes?free=true 리다이렉트
+ * 기존 URL 호환성 유지
+ */
+export default async function FreeNotesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ type?: string; source?: string }>;
+}) {
+  const params = await searchParams;
+  const urlParams = new URLSearchParams();
+  urlParams.set("free", "true");
+  if (params.type) urlParams.set("type", params.type);
+  if (params.source) urlParams.set("source", params.source);
+  redirect(`/notes?${urlParams.toString()}`);
 }

@@ -14,6 +14,7 @@ import {
   Sparkles,
   StickyNote,
   PenLine,
+  FileText,
   Coins,
   Lightbulb,
   ChevronDown,
@@ -54,13 +55,13 @@ export function Sidebar() {
     { icon: Home, label: t("nav.home"), href: "/" },
     { icon: Library, label: t("nav.myLibrary"), href: "/books" },
     { icon: PenLine, label: t("nav.writeNote"), action: "quickCapture" },
+    { icon: FileText, label: t("notes.myNotes"), href: "/notes" },
     { icon: Search, label: t("nav.search"), href: "/search" },
     { icon: Clock, label: t("nav.timeline"), href: "/timeline" },
     { icon: User, label: t("nav.profile"), href: "/profile" },
   ];
 
   const secondaryItems: SidebarItem[] = [
-    { icon: StickyNote, label: t("nav.freeNotes"), href: "/notes/free" },
     { icon: Users, label: t("nav.groups"), href: "/groups" },
     { icon: Sparkles, label: t("persona.pageTitle"), href: "/stats" },
     { icon: Bot, label: t("nav.aiChat"), href: "/chat" },

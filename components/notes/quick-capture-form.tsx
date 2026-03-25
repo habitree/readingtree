@@ -1,14 +1,16 @@
 "use client";
 
-import { useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { BookOpen, Send, ChevronDown, Clock, ArrowRight } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { BookOpen, Send, ChevronDown, ChevronUp, Clock, ArrowRight, Quote } from "lucide-react";
 import { QuickBookSelector } from "@/components/books/quick-book-selector";
 import type { BookWithNotes } from "@/app/actions/books";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
 import Link from "next/link";
+import { useTranslation } from "@/lib/i18n";
 
 function formatDuration(seconds: number): string {
   const h = Math.floor(seconds / 3600);
@@ -31,6 +33,12 @@ interface QuickCaptureFormProps {
   content: string;
   setContent: (content: string) => void;
   onSubmit: () => void;
+  /** 확장 모드 제출 (구절/페이지 포함, published) */
+  onSubmitExpanded?: (data: {
+    quoteContent?: string;
+    pageNumber?: string;
+    publishDirectly?: boolean;
+  }) => void;
   isSubmitting: boolean;
   selectedBook: SelectedBook | null;
   readingDurationSeconds: number | null;
@@ -42,13 +50,15 @@ interface QuickCaptureFormProps {
 }
 
 /**
- * Quick Capture 공유 입력 폼
- * 모바일 Sheet과 PC Dialog 양쪽에서 재사용
+ * Quick Capture 공유 입력 폼 (Progressive Disclosure)
+ * 기본 모드: 텍스트 + 책 + 전송 (draft)
+ * 확장 모드: + 구절 + 페이지 + 바로 발행 옵션
  */
 export function QuickCaptureForm({
   content,
   setContent,
   onSubmit,
+  onSubmitExpanded,
   isSubmitting,
   selectedBook,
   readingDurationSeconds,
@@ -58,9 +68,13 @@ export function QuickCaptureForm({
   showBookSelector,
   setShowBookSelector,
 }: QuickCaptureFormProps) {
+  const { t } = useTranslation();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [expanded, setExpanded] = useState(false);
+  const [quoteContent, setQuoteContent] = useState("");
+  const [pageNumber, setPageNumber] = useState("");
+  const [publishDirectly, setPublishDirectly] = useState(false);
 
-  // 책 선택기가 닫히면 포커스
   useEffect(() => {
     if (!showBookSelector) {
       setTimeout(() => textareaRef.current?.focus(), 100);
@@ -82,16 +96,27 @@ export function QuickCaptureForm({
     [onSelectBook, setShowBookSelector],
   );
 
-  // Enter로 전송 (Shift+Enter는 줄바꿈)
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
-      if (e.key === "Enter" && !e.shiftKey) {
+      if (e.key === "Enter" && !e.shiftKey && !expanded) {
         e.preventDefault();
         onSubmit();
       }
     },
-    [onSubmit],
+    [onSubmit, expanded],
   );
+
+  const handleSubmit = useCallback(() => {
+    if (expanded && onSubmitExpanded) {
+      onSubmitExpanded({
+        quoteContent: quoteContent.trim() || undefined,
+        pageNumber: pageNumber.trim() || undefined,
+        publishDirectly,
+      });
+    } else {
+      onSubmit();
+    }
+  }, [expanded, onSubmit, onSubmitExpanded, quoteContent, pageNumber, publishDirectly]);
 
   if (showBookSelector) {
     return (
@@ -165,37 +190,87 @@ export function QuickCaptureForm({
         )}
       </div>
 
-      {/* 텍스트 입력 */}
+      {/* 내 생각 (메인 입력) */}
       <Textarea
         ref={textareaRef}
         value={content}
         onChange={(e) => setContent(e.target.value)}
         onKeyDown={handleKeyDown}
-        placeholder="읽으면서 떠오른 생각, 인상깊은 구절을 자유롭게 적어보세요..."
+        placeholder="읽으면서 떠오른 생각을 자유롭게 적어보세요..."
         className="min-h-[80px] max-h-[200px] resize-none text-sm border-muted-foreground/20 focus-visible:ring-primary/30"
         maxLength={10000}
       />
 
+      {/* 확장 모드 토글 */}
+      <button
+        type="button"
+        onClick={() => setExpanded(!expanded)}
+        className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+      >
+        {expanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+        {expanded ? "간단하게" : "더 추가"}
+      </button>
+
+      {/* 확장 필드 */}
+      {expanded && (
+        <div className="space-y-2 animate-in slide-in-from-top-2 duration-200">
+          {/* 인상깊은 구절 */}
+          <div>
+            <label className="text-[11px] font-medium text-muted-foreground flex items-center gap-1 mb-1">
+              <Quote className="w-3 h-3" />
+              인상깊은 구절
+            </label>
+            <Textarea
+              value={quoteContent}
+              onChange={(e) => setQuoteContent(e.target.value)}
+              placeholder="책에서 인상깊었던 문장..."
+              className="min-h-[50px] max-h-[120px] resize-none text-sm border-blue-200/50 dark:border-blue-800/30 focus-visible:ring-blue-300/30"
+              maxLength={5000}
+            />
+          </div>
+
+          {/* 페이지 번호 */}
+          <div className="flex items-center gap-2">
+            <label className="text-[11px] font-medium text-muted-foreground shrink-0">페이지</label>
+            <Input
+              value={pageNumber}
+              onChange={(e) => setPageNumber(e.target.value)}
+              placeholder="p."
+              className="w-20 h-7 text-xs"
+            />
+
+            {/* 바로 발행 체크 */}
+            <label className="ml-auto flex items-center gap-1.5 text-[11px] text-muted-foreground cursor-pointer">
+              <input
+                type="checkbox"
+                checked={publishDirectly}
+                onChange={(e) => setPublishDirectly(e.target.checked)}
+                className="rounded border-muted-foreground/30"
+              />
+              바로 발행
+            </label>
+          </div>
+        </div>
+      )}
+
       {/* 하단 액션 */}
       <div className="flex items-center justify-between pb-2">
-        <div className="flex items-center gap-2">
-          <Link
-            href={`/notes/new${selectedBook ? `?bookId=${selectedBook.id}` : ""}`}
-            onClick={() => onReset()}
-            className="text-xs text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1"
-          >
-            상세 기록
-            <ArrowRight className="w-3 h-3" />
-          </Link>
-        </div>
+        <Link
+          href={`/notes/new${selectedBook ? `?bookId=${selectedBook.id}` : ""}`}
+          onClick={() => onReset()}
+          className="text-xs text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1"
+        >
+          상세 기록
+          <ArrowRight className="w-3 h-3" />
+        </Link>
         <Button
           size="sm"
-          onClick={onSubmit}
+          onClick={handleSubmit}
           disabled={!content.trim() || isSubmitting}
           className="gap-1.5"
         >
           <Send className="w-3.5 h-3.5" />
-          {isSubmitting ? "저장 중..." : "저장"}
+          {isSubmitting ? "저장 중..." : expanded && publishDirectly ? "발행" : "저장"}
         </Button>
       </div>
     </div>

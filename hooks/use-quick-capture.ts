@@ -89,15 +89,68 @@ export function useQuickCapture() {
 
         if (result.success) {
           setLastSavedNoteId(result.noteId);
-          toast.success("기록이 저장되었습니다", {
+          const pointsMsg = result.pointsEarned ? ` +${result.pointsEarned}P` : "";
+          toast.success(`기록이 저장되었습니다${pointsMsg}`, {
             action: {
-              label: "상세 추가하기",
+              label: "보완하기",
               onClick: () => {
                 window.location.href = `/notes/${result.noteId}/edit`;
               },
             },
             duration: 5000,
           });
+          store.reset();
+        }
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "기록 저장에 실패했습니다.";
+        toast.error(message);
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+    [isSubmitting, store],
+  );
+
+  const submitExpandedNote = useCallback(
+    async (
+      content: string,
+      expandedData: {
+        quoteContent?: string;
+        pageNumber?: string;
+        publishDirectly?: boolean;
+      },
+    ) => {
+      if (!content.trim() || isSubmitting) return;
+
+      setIsSubmitting(true);
+      try {
+        const result = await createQuickNote(
+          content,
+          store.selectedBook?.id,
+          store.readingDurationSeconds ?? undefined,
+          {
+            status: expandedData.publishDirectly ? "published" : "draft",
+            quoteContent: expandedData.quoteContent,
+            pageNumber: expandedData.pageNumber,
+          },
+        );
+
+        if (result.success) {
+          setLastSavedNoteId(result.noteId);
+          const pointsMsg = result.pointsEarned ? ` +${result.pointsEarned}P` : "";
+          if (expandedData.publishDirectly) {
+            toast.success(`기록이 발행되었습니다${pointsMsg}`);
+          } else {
+            toast.success(`기록이 저장되었습니다${pointsMsg}`, {
+              action: {
+                label: "보완하기",
+                onClick: () => {
+                  window.location.href = `/notes/${result.noteId}/edit`;
+                },
+              },
+              duration: 5000,
+            });
+          }
           store.reset();
         }
       } catch (error) {
@@ -124,5 +177,6 @@ export function useQuickCapture() {
     close: store.close,
     reset: store.reset,
     submitQuickNote,
+    submitExpandedNote,
   };
 }

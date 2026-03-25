@@ -23,6 +23,7 @@ export interface Note {
   source_type: SourceType | null;
   source_label: string | null;
   status: NoteStatus;
+  reading_duration_seconds: number | null;
   created_at: string;
   updated_at: string;
 }

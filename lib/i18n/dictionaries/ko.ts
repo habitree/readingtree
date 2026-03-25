@@ -864,6 +864,16 @@ export const ko = {
     freeNotesPageDesc: "책 밖에서 발견한 인사이트를 모아보세요",
     freeNotesWrite: "자유 기록 쓰기",
     sourceAll: "전체",
+    // notes hub
+    statusAll: "전체",
+    statusPublished: "정리됨",
+    statusDraft: "인박스",
+    filterBook: "책 기록",
+    filterFree: "메모",
+    hubDescription: "내가 작성한 모든 기록을 확인하세요",
+    draftBanner: "인박스에 {count}개의 메모가 정리를 기다리고 있어요",
+    draftBannerCta: "확인하기",
+    editDraft: "보완하기",
     // quick capture
     quickCapturePlaceholder: "빠른 메모 기록… (Enter로 저장)",
     quickCaptureSuccess: "기록됐어요!",

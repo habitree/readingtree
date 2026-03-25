@@ -24,7 +24,7 @@ import { NoteContentViewer } from "./note-content-viewer";
 import { OCRStatusBadge } from "./ocr-status-badge";
 import { useOCRStatus } from "@/hooks/use-ocr-status";
 import type { NoteWithBook } from "@/types/note";
-import { FileText, Image as ImageIcon, PenTool, Camera, Trash2, Loader2, BookOpen, TrendingUp } from "lucide-react";
+import { FileText, StickyNote, PenTool, Camera, Trash2, Loader2, BookOpen, TrendingUp, PenLine, Clock } from "lucide-react";
 import { BookLinkRenderer } from "./book-link-renderer";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/lib/i18n";
@@ -48,9 +48,12 @@ export function NoteCard({ note, showDeleteButton = false, onDelete }: NoteCardP
     quote: FileText,
     transcription: PenTool,
     photo: Camera,
-    memo: ImageIcon,
+    memo: StickyNote,
     progress: TrendingUp,
   };
+
+  const isDraft = note.status === "draft";
+  const noteHref = isDraft ? `/notes/${note.id}/edit` : `/notes/${note.id}`;
 
   const hasImage = !!note.image_url;
   const typeLabel = getNoteTypeLabel(note.type, hasImage);
@@ -76,8 +79,8 @@ export function NoteCard({ note, showDeleteButton = false, onDelete }: NoteCardP
   // progress 타입용 컴팩트 카드
   if (isProgressType) {
     return (
-      <Link href={`/notes/${note.id}`} className="block">
-        <Card className="hover:shadow-md active:scale-[0.99] transition-shadow cursor-pointer relative group border-teal-200/50 dark:border-teal-800/50 bg-gradient-to-r from-teal-50/50 to-transparent dark:from-teal-950/30">
+      <Link href={noteHref} className="block">
+        <Card className={cn("hover:shadow-md active:scale-[0.99] transition-shadow cursor-pointer relative group border-teal-200/50 dark:border-teal-800/50 bg-gradient-to-r from-teal-50/50 to-transparent dark:from-teal-950/30", isDraft && "border-dashed border-amber-300/60 dark:border-amber-700/40")}>
           <CardContent className="p-3 sm:p-4">
             <div className="flex items-center gap-3">
               {/* 아이콘 */}
@@ -137,7 +140,7 @@ export function NoteCard({ note, showDeleteButton = false, onDelete }: NoteCardP
   // 기존 카드 레이아웃 (progress 외 타입)
   const cardContent = (
     <Link
-      href={`/notes/${note.id}`}
+      href={noteHref}
       className="block h-full"
       onClick={(e) => {
         // 삭제 버튼 영역 클릭 시 링크 이동 방지
@@ -148,7 +151,7 @@ export function NoteCard({ note, showDeleteButton = false, onDelete }: NoteCardP
         }
       }}
     >
-      <Card className="hover:shadow-lg active:shadow-md active:scale-[0.99] transition-shadow cursor-pointer h-full relative group overflow-hidden">
+      <Card className={cn("hover:shadow-lg active:shadow-md active:scale-[0.99] transition-shadow cursor-pointer h-full relative group overflow-hidden", isDraft && "border-dashed border-amber-300/60 dark:border-amber-700/40 bg-amber-50/20 dark:bg-amber-950/10")}>
         <CardContent className="p-0">
           <div className="flex">
             {/* 좌측: 이미지/표지 + 책 정보 통합 영역 */}
@@ -181,14 +184,18 @@ export function NoteCard({ note, showDeleteButton = false, onDelete }: NoteCardP
 
               {/* 책 정보 또는 출처 - 이미지 아래에 심플하게 */}
               {note.book ? (
-                <div className="p-1.5 sm:p-2 bg-background/80 backdrop-blur-sm border-t">
+                <Link
+                  href={`/books/${note.book.id}`}
+                  className="block p-1.5 sm:p-2 bg-background/80 backdrop-blur-sm border-t hover:bg-muted/50 transition-colors"
+                  onClick={(e) => e.stopPropagation()}
+                >
                   <div className="flex items-center gap-1">
                     <BookOpen className="h-3 w-3 text-muted-foreground shrink-0" />
                     <p className="text-[9px] sm:text-[10px] font-medium text-foreground/80 line-clamp-2 leading-tight">
                       {note.book.title}
                     </p>
                   </div>
-                </div>
+                </Link>
               ) : (note as any).source_label ? (
                 <div className="p-1.5 sm:p-2 bg-background/80 backdrop-blur-sm border-t">
                   <div className="flex items-center gap-1">
@@ -219,6 +226,14 @@ export function NoteCard({ note, showDeleteButton = false, onDelete }: NoteCardP
                   </Badge>
                 )}
                 <OCRStatusBadge status={ocrStatus} className="shrink-0" />
+                {note.reading_duration_seconds != null && note.reading_duration_seconds > 0 && (
+                  <Badge variant="outline" className="text-[10px] h-5 px-1.5 text-muted-foreground gap-0.5">
+                    <Clock className="w-2.5 h-2.5" />
+                    {note.reading_duration_seconds >= 3600
+                      ? `${Math.floor(note.reading_duration_seconds / 3600)}h${Math.floor((note.reading_duration_seconds % 3600) / 60)}m`
+                      : `${Math.floor(note.reading_duration_seconds / 60)}분`}
+                  </Badge>
+                )}
               </div>
 
               {/* 제목 (있는 경우) */}
@@ -270,9 +285,16 @@ export function NoteCard({ note, showDeleteButton = false, onDelete }: NoteCardP
                 ) : (
                   <div className="flex-1" />
                 )}
-                <time className="text-[10px] sm:text-xs text-muted-foreground shrink-0">
-                  {formatSmartDate(note.created_at)}
-                </time>
+                {isDraft ? (
+                  <span className="inline-flex items-center gap-1 text-xs font-semibold text-amber-600 dark:text-amber-400 shrink-0">
+                    <PenLine className="w-3 h-3" />
+                    {t("notes.editDraft")}
+                  </span>
+                ) : (
+                  <time className="text-[10px] sm:text-xs text-muted-foreground shrink-0">
+                    {formatSmartDate(note.created_at)}
+                  </time>
+                )}
               </div>
             </div>
           </div>

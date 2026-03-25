@@ -22,6 +22,7 @@ export function QuickCaptureDialog() {
     readingDurationSeconds,
     isSubmitting,
     submitQuickNote,
+    submitExpandedNote,
     selectBook,
     clearBook,
     reset,
@@ -61,6 +62,13 @@ export function QuickCaptureDialog() {
           content={content}
           setContent={setContent}
           onSubmit={handleSubmit}
+          onSubmitExpanded={(data) => {
+            if (!content.trim()) return;
+            submitExpandedNote(content, data).then(() => {
+              setContent("");
+              setShowBookSelector(false);
+            });
+          }}
           isSubmitting={isSubmitting}
           selectedBook={selectedBook}
           readingDurationSeconds={readingDurationSeconds}
