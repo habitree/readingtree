@@ -455,11 +455,26 @@ export function ReadingProgress({
           )}
 
           {/* 동기부여 메시지 */}
-          {motivation && !isDragging && !showInlineMemo && (
+          {motivation && !isDragging && !showInlineMemo && displayPercent !== null && displayPercent < 95 && (
             <div className={cn("flex items-center gap-1.5 text-xs", motivation.color)}>
               <MotivationIcon className="h-3.5 w-3.5" />
               <span className="font-medium">{motivation.message}</span>
             </div>
+          )}
+
+          {/* 95% 이상일 때 완독 버튼 */}
+          {displayPercent !== null && displayPercent >= 95 && !isDragging && !showInlineMemo && (
+            <Button
+              size="sm"
+              onClick={() => setShowCompletionDialog(true)}
+              className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white shadow-sm"
+            >
+              <Trophy className="h-4 w-4 mr-1.5" />
+              {completedDates && completedDates.length > 0
+                ? `${completedDates.length + 1}회독 완독하기`
+                : "완독하기"
+              }
+            </Button>
           )}
 
         </div>
@@ -520,6 +535,7 @@ export function ReadingProgress({
           userBookId={userBookId}
           bookTitle={bookTitle}
           bookAuthor={bookAuthor}
+          completedCount={completedDates?.length ?? 0}
           onCompleted={() => {
             window.location.reload();
           }}

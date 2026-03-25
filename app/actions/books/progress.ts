@@ -33,10 +33,10 @@ export async function updateBookStatus(
     }
   }
 
-  // 사용자의 책인지 확인
+  // 사용자의 책인지 확인 + completed_dates 조회 (완독 누적용)
   const { data: userBook } = await supabase
     .from("user_books")
-    .select("id")
+    .select("id, completed_dates")
     .eq("id", userBookId)
     .eq("user_id", currentUser.id)
     .single();
@@ -49,16 +49,33 @@ export async function updateBookStatus(
   const updateData: {
     status: ReadingStatus;
     completed_at?: string | null;
+    completed_dates?: string[];
   } = {
     status,
   };
 
-  // 완독 시 completed_at 자동 기록
+  // 완독 시 completed_at + completed_dates 배열 누적
   if (status === "completed") {
-    updateData.completed_at = new Date().toISOString();
+    const now = new Date().toISOString();
+    updateData.completed_at = now;
+
+    // 기존 completed_dates 배열에 새 완독일 추가
+    let existingDates: string[] = [];
+    if (userBook.completed_dates) {
+      if (Array.isArray(userBook.completed_dates)) {
+        existingDates = userBook.completed_dates as string[];
+      } else if (typeof userBook.completed_dates === "string") {
+        try {
+          existingDates = JSON.parse(userBook.completed_dates);
+        } catch {
+          existingDates = [];
+        }
+      }
+    }
+    updateData.completed_dates = [...existingDates, now];
   } else if (status === "rereading") {
     // 재독 상태는 이전 완독일을 유지 (이미 완독한 책을 다시 읽는 경우)
-    // completed_at은 변경하지 않음 (기존 값 유지)
+    // completed_at, completed_dates 변경하지 않음
   } else {
     // 완독이 아닌 상태로 변경 시 completed_at 초기화
     updateData.completed_at = null;

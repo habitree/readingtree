@@ -21,6 +21,8 @@ interface BookCompletionDialogProps {
   userBookId: string;
   bookTitle: string;
   bookAuthor?: string | null;
+  /** 현재까지 완독한 횟수 (completed_dates 배열 길이) */
+  completedCount?: number;
   /** 완독 확정 후 콜백 */
   onCompleted?: () => void;
   /** 완독 취소 (아직 읽는 중) 콜백 */
@@ -38,9 +40,12 @@ export function BookCompletionDialog({
   userBookId,
   bookTitle,
   bookAuthor,
+  completedCount = 0,
   onCompleted,
   onDismiss,
 }: BookCompletionDialogProps) {
+  // 다음 회독 번호 (0회 완독 → 1회독, 1회 완독 → 2회독, ...)
+  const nextReadCount = completedCount + 1;
   const [isConfirming, setIsConfirming] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
 
@@ -165,9 +170,19 @@ export function BookCompletionDialog({
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 }}
               >
-                마지막 페이지까지 도달했어요!
-                <br />
-                완독으로 기록할까요?
+                {completedCount > 0 ? (
+                  <>
+                    {nextReadCount}회독을 마치셨군요!
+                    <br />
+                    완독으로 기록할까요?
+                  </>
+                ) : (
+                  <>
+                    마지막 페이지까지 도달했어요!
+                    <br />
+                    완독으로 기록할까요?
+                  </>
+                )}
               </motion.p>
 
               <div className="flex flex-col gap-2">
@@ -230,7 +245,10 @@ export function BookCompletionDialog({
               >
                 <span className="font-medium text-foreground">{bookTitle}</span>
                 <br />
-                완독을 기록했어요
+                {completedCount > 0
+                  ? `${nextReadCount}회독 완독을 기록했어요`
+                  : "완독을 기록했어요"
+                }
               </motion.p>
             </motion.div>
           )}
