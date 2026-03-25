@@ -4,6 +4,7 @@ import { useState, useCallback } from "react";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -56,6 +57,9 @@ export function QuickCaptureDialog() {
           <DialogTitle className="text-base font-bold">
             {showBookSelector ? "책 선택" : "빠른 기록"}
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            읽으면서 떠오른 생각을 빠르게 기록합니다
+          </DialogDescription>
         </DialogHeader>
 
         <QuickCaptureForm

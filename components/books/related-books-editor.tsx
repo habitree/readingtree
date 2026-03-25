@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -145,6 +146,7 @@ export function RelatedBooksEditor({ userBookId }: RelatedBooksEditorProps) {
             <Link2 className="h-4 w-4" />
             {t("books.relatedBooksTitle")}
           </DialogTitle>
+          <DialogDescription className="sr-only">관련 도서를 검색하고 연결합니다</DialogDescription>
         </DialogHeader>
 
         {isLoading ? (

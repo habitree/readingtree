@@ -4,6 +4,7 @@ import { useState } from "react";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -86,6 +87,7 @@ export function ReadingCompleteDialog() {
           </div>
           <DialogHeader className="items-center space-y-1.5">
             <DialogTitle className="text-xl font-bold">독서 완료!</DialogTitle>
+            <DialogDescription className="sr-only">독서 타이머가 완료되었습니다</DialogDescription>
             <div className="flex items-center justify-center gap-2">
               <span className="text-2xl font-bold text-primary tabular-nums">
                 {formatDuration(elapsedSeconds)}

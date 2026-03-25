@@ -4,6 +4,7 @@ import { useState } from "react";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
@@ -127,6 +128,7 @@ export function CustomServiceDialog({
               ? t("admin.apiInfo.editCustomService")
               : t("admin.apiInfo.addCustomService")}
           </DialogTitle>
+          <DialogDescription className="sr-only">커스텀 API 서비스 설정</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-2">
