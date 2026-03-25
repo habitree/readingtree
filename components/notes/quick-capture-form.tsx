@@ -193,6 +193,7 @@ export function QuickCaptureForm({
       {/* 내 생각 (메인 입력) */}
       <Textarea
         ref={textareaRef}
+        name="quick-capture-content"
         value={content}
         onChange={(e) => setContent(e.target.value)}
         onKeyDown={handleKeyDown}
@@ -221,6 +222,7 @@ export function QuickCaptureForm({
               인상깊은 구절
             </label>
             <Textarea
+              name="quick-capture-quote"
               value={quoteContent}
               onChange={(e) => setQuoteContent(e.target.value)}
               placeholder="책에서 인상깊었던 문장..."
@@ -233,6 +235,7 @@ export function QuickCaptureForm({
           <div className="flex items-center gap-2">
             <label className="text-[11px] font-medium text-muted-foreground shrink-0">페이지</label>
             <Input
+              name="quick-capture-page"
               value={pageNumber}
               onChange={(e) => setPageNumber(e.target.value)}
               placeholder="p."

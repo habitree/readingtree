@@ -206,6 +206,7 @@ export function SearchFilters({ onBooksLoaded }: SearchFiltersProps) {
             <Input
               ref={bookInputRef}
               type="search"
+              name="filter-book-search"
               placeholder={selectedBookTitle || t("searchFilters.searchByBookTitle")}
               value={bookSearchQuery}
               onChange={(e) => handleBookSearchChange(e.target.value)}
@@ -311,6 +312,7 @@ export function SearchFilters({ onBooksLoaded }: SearchFiltersProps) {
           <Label>{t("searchFilters.startDate")}</Label>
           <Input
             type="date"
+            name="filter-start-date"
             value={startDate}
             onChange={(e) => updateFilter("startDate", e.target.value)}
             max={endDate || undefined}
@@ -320,6 +322,7 @@ export function SearchFilters({ onBooksLoaded }: SearchFiltersProps) {
           <Label>{t("searchFilters.endDate")}</Label>
           <Input
             type="date"
+            name="filter-end-date"
             value={endDate}
             onChange={(e) => updateFilter("endDate", e.target.value)}
             min={startDate || undefined}

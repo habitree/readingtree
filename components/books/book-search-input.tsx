@@ -122,6 +122,7 @@ export function BookSearchInput({ className, basePath: propBasePath }: BookSearc
       />
       <Input
         type="search"
+        name="book-search"
         placeholder={t("books.searchInputPlaceholder")}
         value={query}
         onChange={handleQueryChange}
