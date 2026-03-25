@@ -82,7 +82,7 @@ export function Header() {
                   size="icon"
                   className="relative h-8 w-8 sm:h-10 sm:w-10"
                   onClick={handleThemeToggle}
-                  aria-label={isDarkMode ? t("theme.switchToLight") : t("theme.switchToDark")}
+                  aria-label={mounted && isDarkMode ? t("theme.switchToLight") : t("theme.switchToDark")}
                 >
                   {mounted && isDarkMode ? (
                     <Sun className="h-4 w-4 sm:h-5 sm:w-5" />
