@@ -70,8 +70,14 @@ export function TimerSheet() {
   }
 
   function handleStart() {
-    // 1. 사용자 클릭 동기 컨텍스트에서 먼저 audio를 준비하고 play 호출
-    //    (비동기/useEffect 경유 시 브라우저 autoplay 정책에 의해 차단됨)
+    // validation 먼저
+    if (!isUnlimited) {
+      const minutes = isCustom ? parseInt(customInput, 10) : selectedMinutes;
+      if (!minutes || minutes < 1) return;
+    }
+
+    // 1. 사용자 클릭 동기 컨텍스트에서 audio.play() 호출
+    //    (useEffect 경유 시 브라우저 autoplay 정책에 의해 차단됨)
     const audio = getGlobalAudio();
     const tracks = getPlaylistTracks(selectedPlaylistId);
     const firstTrack = tracks[0];
@@ -87,7 +93,6 @@ export function TimerSheet() {
       startUnlimitedTimer(selectedPlaylistId);
     } else {
       const minutes = isCustom ? parseInt(customInput, 10) : selectedMinutes;
-      if (!minutes || minutes < 1) return;
       startTimer(minutes * 60, selectedPlaylistId);
     }
   }

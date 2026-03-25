@@ -166,22 +166,27 @@ export function MusicMiniPlayer() {
   }, [timerStatus]);
 
   // ── 재생/정지 동기화 ──
+  // handlePlayToggle/handleTimerToggle에서 직접 audio를 제어하므로
+  // useEffect에서는 보조적 역할만 (상태와 audio가 불일치할 때 동기화)
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
+    // audio 상태와 isPlaying이 이미 일치하면 skip
+    if (isPlaying && !audio.paused) return;
+    if (!isPlaying && audio.paused) return;
     if (isPlaying) {
       audio.play().catch(() => useMusicPlayer.getState().pause());
     } else {
       audio.pause();
     }
-  }, [isPlaying, currentTrack]);
+  }, [isPlaying]);
 
   // ── 트랙 변경 시 src 업데이트 ──
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio || !currentTrack) return;
-    // 이미 동일 트랙이 재생 중이면 skip (handleStart에서 직접 play한 경우)
-    if (audio.src.endsWith(currentTrack.sourceUrl) && !audio.paused) return;
+    // 이미 동일 src가 설정되어 있으면 skip (handleStart에서 직접 설정한 경우)
+    if (audio.src.endsWith(currentTrack.sourceUrl)) return;
     audio.src = currentTrack.sourceUrl;
     audio.load();
     if (isPlaying) {
