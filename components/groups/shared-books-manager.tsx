@@ -159,7 +159,7 @@ export function SharedBooksManager({ groupId }: SharedBooksManagerProps) {
                         alt={book.title}
                         fill
                         className="object-cover"
-                        sizes="(max-width: 640px) 33vw, (max-width: 768px) 25vw, (max-width: 1024px) 20vw, 16vw"
+                        sizes="(max-width: 640px) 33vw, (max-width: 768px) 25vw, (max-width: 1024px) 25vw, 20vw"
                       />
                     ) : (
                       <div className="flex items-center justify-center h-full">
@@ -179,13 +179,13 @@ export function SharedBooksManager({ groupId }: SharedBooksManagerProps) {
                   <div className="p-2 sm:p-3">
                     <h4 className="font-semibold text-xs sm:text-sm line-clamp-2 leading-tight">{book.title}</h4>
                     {book.author && (
-                      <p className="text-[9px] sm:text-[10px] text-muted-foreground line-clamp-1 mt-0.5">
+                      <p className="text-[10px] sm:text-xs text-muted-foreground line-clamp-1 mt-0.5">
                         {book.author}
                       </p>
                     )}
                     <div className="flex items-center gap-1 mt-1">
                       {userBook.status && (
-                        <BookStatusBadge status={userBook.status} className="scale-[0.7] origin-left" />
+                        <BookStatusBadge status={userBook.status} className="scale-[0.8] sm:scale-100 origin-left" />
                       )}
                     </div>
                   </div>
