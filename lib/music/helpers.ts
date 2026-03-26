@@ -10,6 +10,7 @@ export const MOOD_LABELS: Record<MusicMoodTag, { emoji: string; name: string }> 
   emotional: { emoji: "💧", name: "감성" },
   peaceful: { emoji: "☁️", name: "평화" },
   bright: { emoji: "☀️", name: "밝은" },
+  energetic: { emoji: "🔥", name: "신나는" },
 };
 
 /** ID로 트랙 조회 */

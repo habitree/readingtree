@@ -5,7 +5,8 @@ export type MusicMoodTag =
   | "contemplative"
   | "emotional"
   | "peaceful"
-  | "bright";
+  | "bright"
+  | "energetic";
 
 /** 시대 태그 */
 export type MusicEraTag = "baroque" | "classical" | "romantic" | "impressionist";

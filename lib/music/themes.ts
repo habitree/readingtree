@@ -6,7 +6,7 @@ export const MUSIC_THEME_GROUPS: MusicThemeGroup[] = [
     id: "mood",
     name: "기분별",
     emoji: "🎭",
-    playlists: ["mood-focus", "mood-relaxing", "mood-contemplative", "mood-emotional"],
+    playlists: ["mood-focus", "mood-relaxing", "mood-contemplative", "mood-emotional", "mood-energetic"],
   },
   {
     id: "time",

@@ -47,6 +47,17 @@ export const MUSIC_PLAYLISTS: MusicPlaylist[] = [
       "track-041", "track-042", "track-045", "track-051",
     ],
   },
+  {
+    id: "mood-energetic",
+    name: "신나는 클래식",
+    description: "빠른 템포와 강렬한 에너지의 명곡",
+    emoji: "🔥",
+    trackIds: [
+      "track-061", "track-062", "track-063", "track-064",
+      "track-065", "track-066", "track-067", "track-068",
+      "track-069", "track-070", "track-052",
+    ],
+  },
 
   // ─── 시간대별 ───
   {
