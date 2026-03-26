@@ -203,7 +203,7 @@ export function GroupBooksManager({ groupId, isLeader }: GroupBooksManagerProps)
           </CardContent>
         </Card>
       ) : (
-        <div className={grids.threeCol}>
+        <div className={grids.groupBookGrid}>
           {groupBooks.map((groupBook) => {
             const book = groupBook.books;
             if (!book) return null;

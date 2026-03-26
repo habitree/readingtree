@@ -151,7 +151,7 @@ export function SharedBooksManager({ groupId }: SharedBooksManagerProps) {
 
             return (
               <div key={sharedBook.id} className="relative group">
-                <Card className="overflow-hidden h-full">
+                <Card className="overflow-hidden h-full hover:shadow-md transition-shadow">
                   <div className="relative aspect-[3/4] w-full bg-muted">
                     {isValidImageUrl(book.cover_image_url) ? (
                       <Image
