@@ -10,6 +10,8 @@ interface UseOCRStatusOptions {
   enabled?: boolean;
   pollInterval?: number;
   onComplete?: () => void;
+  /** 서버에서 받은 초기 OCR 상태 — completed/failed면 폴링하지 않음 */
+  initialStatus?: OCRStatus;
 }
 
 /**
@@ -25,8 +27,12 @@ export function useOCRStatus({
   enabled = true,
   pollInterval = 3000, // 3초마다 확인
   onComplete,
+  initialStatus,
 }: UseOCRStatusOptions) {
-  const [status, setStatus] = useState<OCRStatus>(null);
+  const [status, setStatus] = useState<OCRStatus>(initialStatus ?? null);
+
+  // 이미 완료/실패 상태면 폴링 불필요
+  const needsPolling = enabled && initialStatus !== "completed" && initialStatus !== "failed";
   const pollCountRef = useRef(0);
   const onCompleteRef = useRef(onComplete);
   const isFirstCheckRef = useRef(true); // 첫 번째 확인인지 추적
@@ -41,8 +47,7 @@ export function useOCRStatus({
   }, [onComplete]);
 
   useEffect(() => {
-    if (!enabled || !noteId) {
-      setStatus(null);
+    if (!needsPolling || !noteId) {
       return;
     }
 
@@ -166,7 +171,7 @@ export function useOCRStatus({
         clearInterval(intervalId);
       }
     };
-  }, [noteId, enabled, pollInterval]);
+  }, [noteId, needsPolling, pollInterval]);
 
   return { status };
 }

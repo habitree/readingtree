@@ -114,6 +114,9 @@ export async function searchNotes(params: SearchParams, user?: User | null): Pro
         title,
         author,
         cover_image_url
+      ),
+      transcriptions (
+        status
       )
     `,
       { count: "exact" }
@@ -190,13 +193,12 @@ export async function searchNotes(params: SearchParams, user?: User | null): Pro
     throw new Error(sanitizeErrorMessage(error));
   }
 
-  // notes 결과에 user_books 정보 추가 (reading_reason 표시용)
-  // book_id와 user_id를 사용하여 user_books 조회
+  // notes 결과에 user_books 정보 추가 (reading_reason 표시용 — 검색어 있을 때만)
   const notes = data || [];
   const bookIds = [...new Set(notes.map((note: any) => note.book_id).filter(Boolean))];
-  
+
   let userBooksMap = new Map<string, any>();
-  if (bookIds.length > 0) {
+  if (sanitizedQuery && bookIds.length > 0) {
     const { data: userBooksData } = await supabase
       .from("user_books")
       .select("id, book_id, reading_reason, status")

@@ -132,7 +132,10 @@ async function NotesHubContent({
   // searchNotes 결과를 NoteWithBook 형태로 정규화
   const notes = searchResult.results.map((note: any) => {
     const book = Array.isArray(note.books) ? note.books[0] : note.books;
-    return { ...note, book };
+    const transcription = Array.isArray(note.transcriptions)
+      ? note.transcriptions[0]
+      : note.transcriptions;
+    return { ...note, book, transcription };
   });
 
   return (

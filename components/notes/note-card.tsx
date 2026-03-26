@@ -60,10 +60,12 @@ export function NoteCard({ note, showDeleteButton = false, onDelete }: NoteCardP
   const Icon = typeIcons[note.type];
   const pageNumber = parsePageNumber(note.page_number);
 
-  // OCR 상태 확인: transcription 타입이고 이미지가 있는 경우 실제 상태 확인
+  // OCR 상태 확인: transcription 타입이고 이미지가 있는 경우
+  // initialStatus를 전달하여 이미 completed/failed면 폴링하지 않음
   const { status: ocrStatus } = useOCRStatus({
     noteId: note.id,
     enabled: note.type === "transcription" && hasImage,
+    initialStatus: (note as any).transcription?.status ?? null,
     pollInterval: 3000,
   });
 
