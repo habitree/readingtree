@@ -13,6 +13,7 @@ import {
   Plus,
   Trash2,
 } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getImageUrl, isValidImageUrl } from "@/lib/utils/image";
 import { BookStatusBadge } from "@/components/books/book-status-badge";
 import type { ReadingStatus } from "@/types/book";
@@ -31,6 +32,7 @@ interface GroupBookCardEnhancedProps {
     };
     isInMyLibrary?: boolean;
     myStatus?: string | null;
+    recentContributors?: { id: string; name: string; avatar_url: string | null }[];
   };
   noteCount: number;
   onAddToLibrary?: (bookId: string) => void;
@@ -97,6 +99,23 @@ export function GroupBookCardEnhanced({
             <p className="text-xs md:text-sm text-muted-foreground truncate">
               {book.author}
             </p>
+          )}
+
+          {/* 최근 기록자 */}
+          {groupBook.recentContributors && groupBook.recentContributors.length > 0 && (
+            <div className="flex items-center gap-1.5">
+              <div className="flex -space-x-1.5">
+                {groupBook.recentContributors.map((contributor) => (
+                  <Avatar key={contributor.id} className="h-5 w-5 ring-1 ring-background">
+                    <AvatarImage src={contributor.avatar_url || undefined} />
+                    <AvatarFallback className="text-[8px]">{contributor.name?.[0] || "?"}</AvatarFallback>
+                  </Avatar>
+                ))}
+              </div>
+              <span className="text-[10px] text-muted-foreground">
+                {t("groups.recentContributors")}
+              </span>
+            </div>
           )}
 
           {/* 내 서재 상태 */}

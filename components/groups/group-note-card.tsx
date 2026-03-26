@@ -11,6 +11,9 @@ import {
   ExternalLink,
   ChevronDown,
   ChevronUp,
+  Heart,
+  Lightbulb,
+  HandHeart,
 } from "lucide-react";
 import { NOTE_TYPE_STYLES } from "@/lib/constants/note-type-styles";
 import type { NoteStyleType } from "@/lib/constants/note-type-styles";
@@ -36,6 +39,16 @@ import {
 } from "@/components/ui/alert-dialog";
 import type { NoteType } from "@/types/group";
 import { useTranslation } from "@/lib/i18n";
+import { toggleNoteReaction } from "@/app/actions/groups";
+import type { ReactionType } from "@/app/actions/groups";
+import { NoteComments } from "./note-comments";
+import { MessageCircle } from "lucide-react";
+
+interface ReactionData {
+  like: { count: number; hasReacted: boolean };
+  insightful: { count: number; hasReacted: boolean };
+  empathy: { count: number; hasReacted: boolean };
+}
 
 interface GroupNoteCardProps {
   note: {
@@ -54,8 +67,11 @@ interface GroupNoteCardProps {
       avatar_url: string | null;
     };
   };
+  groupNoteId?: string;
   sharedAt: string;
   currentUserId?: string;
+  reactions?: ReactionData;
+  commentCount?: number;
   onUnshare?: (noteId: string) => void;
 }
 
@@ -63,15 +79,39 @@ interface GroupNoteCardProps {
 
 const CONTENT_PREVIEW_LENGTH = 200;
 
+const REACTION_CONFIG: {
+  type: ReactionType;
+  icon: typeof Heart;
+  labelKey: string;
+  activeColor: string;
+  activeBg: string;
+}[] = [
+  { type: "like", icon: Heart, labelKey: "groups.reactionLike", activeColor: "text-rose-500", activeBg: "bg-rose-50 dark:bg-rose-950/30" },
+  { type: "insightful", icon: Lightbulb, labelKey: "groups.reactionInsightful", activeColor: "text-amber-500", activeBg: "bg-amber-50 dark:bg-amber-950/30" },
+  { type: "empathy", icon: HandHeart, labelKey: "groups.reactionEmpathy", activeColor: "text-blue-500", activeBg: "bg-blue-50 dark:bg-blue-950/30" },
+];
+
 export function GroupNoteCard({
   note,
+  groupNoteId,
   sharedAt,
   currentUserId,
+  reactions: initialReactions,
+  commentCount: initialCommentCount = 0,
   onUnshare,
 }: GroupNoteCardProps) {
   const { t } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(false);
   const [showUnshareDialog, setShowUnshareDialog] = useState(false);
+  const [reactions, setReactions] = useState<ReactionData>(
+    initialReactions || {
+      like: { count: 0, hasReacted: false },
+      insightful: { count: 0, hasReacted: false },
+      empathy: { count: 0, hasReacted: false },
+    }
+  );
+  const [isReacting, setIsReacting] = useState(false);
+  const [showComments, setShowComments] = useState(false);
 
   const styleType = (note.type in NOTE_TYPE_STYLES ? note.type : "memo") as NoteStyleType;
   const config = NOTE_TYPE_STYLES[styleType];
@@ -88,6 +128,33 @@ export function GroupNoteCard({
   const handleUnshare = () => {
     onUnshare?.(note.id);
     setShowUnshareDialog(false);
+  };
+
+  const handleReaction = async (reactionType: ReactionType) => {
+    if (!groupNoteId || isReacting) return;
+    setIsReacting(true);
+
+    // 낙관적 업데이트
+    const prev = reactions[reactionType];
+    setReactions((r) => ({
+      ...r,
+      [reactionType]: {
+        count: prev.hasReacted ? prev.count - 1 : prev.count + 1,
+        hasReacted: !prev.hasReacted,
+      },
+    }));
+
+    try {
+      await toggleNoteReaction(groupNoteId, reactionType);
+    } catch {
+      // 롤백
+      setReactions((r) => ({
+        ...r,
+        [reactionType]: prev,
+      }));
+    } finally {
+      setIsReacting(false);
+    }
   };
 
   return (
@@ -207,6 +274,44 @@ export function GroupNoteCard({
             </div>
           )}
 
+          {/* 리액션 버튼 */}
+          {groupNoteId && (
+            <div className="flex items-center gap-1 pt-1">
+              {REACTION_CONFIG.map((rc) => {
+                const data = reactions[rc.type];
+                const Icon = rc.icon;
+                return (
+                  <button
+                    key={rc.type}
+                    onClick={() => handleReaction(rc.type)}
+                    disabled={isReacting}
+                    className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs transition-colors ${
+                      data.hasReacted
+                        ? `${rc.activeBg} ${rc.activeColor} font-medium`
+                        : "hover:bg-muted text-muted-foreground"
+                    }`}
+                    title={t(rc.labelKey as Parameters<typeof t>[0])}
+                  >
+                    <Icon className={`h-3.5 w-3.5 ${data.hasReacted ? "fill-current" : ""}`} />
+                    {data.count > 0 && <span>{data.count}</span>}
+                  </button>
+                );
+              })}
+              {/* 댓글 토글 */}
+              <button
+                onClick={() => setShowComments(!showComments)}
+                className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs transition-colors ${
+                  showComments
+                    ? "bg-primary/10 text-primary font-medium"
+                    : "hover:bg-muted text-muted-foreground"
+                }`}
+              >
+                <MessageCircle className="h-3.5 w-3.5" />
+                {initialCommentCount > 0 && <span>{initialCommentCount}</span>}
+              </button>
+            </div>
+          )}
+
           <div className="flex items-center gap-2 flex-wrap text-xs text-muted-foreground pt-2 border-t">
             {note.page_number && (
               <Badge variant="outline" className="text-xs font-normal">
@@ -233,6 +338,14 @@ export function GroupNoteCard({
               {t("groups.writtenAtDate").replace("{date}", formatSmartDate(note.created_at))}
             </span>
           </div>
+
+          {/* 댓글 영역 */}
+          {showComments && groupNoteId && (
+            <NoteComments
+              groupNoteId={groupNoteId}
+              currentUserId={currentUserId}
+            />
+          )}
         </CardContent>
       </Card>
 

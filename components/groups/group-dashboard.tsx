@@ -28,6 +28,7 @@ import { MemberList } from "./member-list";
 import { SharedNotesList } from "./shared-notes-list";
 import { GroupBooksManager } from "./group-books-manager";
 import { SharedBooksManager } from "./shared-books-manager";
+import { WeeklyActivitySummary } from "./weekly-activity-summary";
 import {
   joinGroup,
   leaveGroup,
@@ -56,6 +57,10 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useTranslation } from "@/lib/i18n";
 import { useUpgradeModal, isUpgradeLimitError } from "@/hooks/use-upgrade-modal";
 import { typography, spacing } from "@/lib/design-tokens";
+import { NOTE_TYPE_STYLES } from "@/lib/constants/note-type-styles";
+import type { NoteStyleType } from "@/lib/constants/note-type-styles";
+import Image from "next/image";
+import { getImageUrl, isValidImageUrl } from "@/lib/utils/image";
 
 interface GroupDashboardProps {
   groupData: {
@@ -380,6 +385,9 @@ export function GroupDashboard({ groupData, currentUserId }: GroupDashboardProps
               </Card>
             </div>
 
+            {/* 이번 주 활동 요약 */}
+            <WeeklyActivitySummary groupId={group.id} />
+
             {/* 최근 공유 기록 미리보기 */}
             {sharedNotes.length > 0 && (
               <Card>
@@ -402,8 +410,14 @@ export function GroupDashboard({ groupData, currentUserId }: GroupDashboardProps
                     const note = item.notes;
                     const noteUser = note?.users;
                     const noteBook = note?.books || note?.book;
+                    const styleType = (note?.type && note.type in NOTE_TYPE_STYLES ? note.type : "memo") as NoteStyleType;
+                    const config = NOTE_TYPE_STYLES[styleType];
+                    const TypeIcon = config.icon;
                     return (
                       <div key={item.id} className="flex items-center gap-3 py-1.5 px-2 -mx-2 rounded-lg hover:bg-muted/50 transition-colors">
+                        <div className={`p-1.5 rounded-full shrink-0 ${config.bgColor}`}>
+                          <TypeIcon className={`h-3.5 w-3.5 ${config.color}`} />
+                        </div>
                         {noteUser && (
                           <Avatar className="h-6 w-6 shrink-0">
                             <AvatarImage src={noteUser.avatar_url || undefined} />
@@ -418,13 +432,75 @@ export function GroupDashboard({ groupData, currentUserId }: GroupDashboardProps
                             )}
                           </p>
                           <p className="text-xs text-muted-foreground truncate">
-                            {note?.content?.slice(0, 50) || ""}
+                            {note?.content?.slice(0, 80) || ""}
                           </p>
                         </div>
+                        {note?.image_url && isValidImageUrl(note.image_url) && (
+                          <div className="relative w-10 h-10 rounded-md overflow-hidden bg-muted shrink-0">
+                            <Image src={getImageUrl(note.image_url)} alt="" fill className="object-cover" sizes="40px" />
+                          </div>
+                        )}
                         <span className="text-[10px] text-muted-foreground shrink-0">
                           {formatSmartDate(item.shared_at)}
                         </span>
                       </div>
+                    );
+                  })}
+                </CardContent>
+              </Card>
+            )}
+
+            {/* 지정도서 현황 미리보기 */}
+            {groupData.groupBooks && groupData.groupBooks.length > 0 && (
+              <Card>
+                <CardHeader className="pb-2">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-base">{t("groups.designatedBooksCardTitle")}</CardTitle>
+                    <button
+                      className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                      onClick={() => {
+                        const tab = document.querySelector('[value="books"]') as HTMLElement;
+                        tab?.click();
+                      }}
+                    >
+                      {t("stats.viewAllBooks")} →
+                    </button>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  {groupData.groupBooks.slice(0, 3).map((gb: any) => {
+                    const book = gb.books;
+                    if (!book) return null;
+                    const bookNoteCount = sharedNotes.filter((sn: any) => {
+                      const noteBook = sn.notes?.books || sn.notes?.book;
+                      return noteBook?.id === book.id;
+                    }).length;
+                    return (
+                      <Link
+                        key={gb.id}
+                        href={`/groups/${group.id}/books/${book.id}`}
+                        className="flex items-center gap-3 py-1.5 px-2 -mx-2 rounded-lg hover:bg-muted/50 transition-colors"
+                      >
+                        <div className="relative w-8 h-11 rounded-md overflow-hidden bg-muted shrink-0">
+                          {isValidImageUrl(book.cover_image_url) ? (
+                            <Image src={getImageUrl(book.cover_image_url)} alt={book.title} fill className="object-cover" sizes="32px" />
+                          ) : (
+                            <div className="flex items-center justify-center h-full">
+                              <BookOpen className="h-3 w-3 text-muted-foreground" />
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{book.title}</p>
+                          {book.author && (
+                            <p className="text-xs text-muted-foreground truncate">{book.author}</p>
+                          )}
+                        </div>
+                        <Badge variant="secondary" className="shrink-0 text-xs">
+                          <PenLine className="mr-1 h-3 w-3" />
+                          {bookNoteCount}
+                        </Badge>
+                      </Link>
                     );
                   })}
                 </CardContent>

@@ -460,3 +460,147 @@ export async function unshareNoteFromGroup(noteId: string, groupId: string) {
   revalidatePath(`/groups/${groupId}`);
   return { success: true };
 }
+
+// ============================================================================
+// 리액션 (좋아요/통찰/공감)
+// ============================================================================
+
+export type ReactionType = "like" | "insightful" | "empathy";
+
+/**
+ * 리액션 토글 (추가/삭제)
+ */
+export async function toggleNoteReaction(
+  groupNoteId: string,
+  reactionType: ReactionType
+) {
+  const supabase = await createServerSupabaseClient();
+
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    throw new Error("로그인이 필요합니다.");
+  }
+
+  // group_note 존재 및 멤버십 확인
+  const { data: groupNote } = await supabase
+    .from("group_notes")
+    .select("group_id")
+    .eq("id", groupNoteId)
+    .single();
+
+  if (!groupNote) {
+    throw new Error("공유 기록을 찾을 수 없습니다.");
+  }
+
+  const { data: membership } = await supabase
+    .from("group_members")
+    .select("id")
+    .eq("group_id", groupNote.group_id)
+    .eq("user_id", user.id)
+    .eq("status", "approved")
+    .maybeSingle();
+
+  const { data: group } = await supabase
+    .from("groups")
+    .select("leader_id")
+    .eq("id", groupNote.group_id)
+    .single();
+
+  if (!membership && group?.leader_id !== user.id) {
+    throw new Error("모임 멤버만 리액션할 수 있습니다.");
+  }
+
+  // 기존 리액션 확인
+  const { data: existing } = await supabase
+    .from("group_note_reactions")
+    .select("id")
+    .eq("group_note_id", groupNoteId)
+    .eq("user_id", user.id)
+    .eq("reaction_type", reactionType)
+    .maybeSingle();
+
+  if (existing) {
+    // 삭제 (토글 off)
+    await supabase
+      .from("group_note_reactions")
+      .delete()
+      .eq("id", existing.id);
+    return { action: "removed" as const, reactionType };
+  } else {
+    // 추가 (토글 on)
+    const { error: insertError } = await supabase
+      .from("group_note_reactions")
+      .insert({
+        group_note_id: groupNoteId,
+        user_id: user.id,
+        reaction_type: reactionType,
+      });
+
+    if (insertError) {
+      throw new Error(`리액션 추가 실패: ${insertError.message}`);
+    }
+    return { action: "added" as const, reactionType };
+  }
+}
+
+/**
+ * 여러 공유 기록의 리액션 조회 (일괄)
+ */
+export async function getNoteReactions(groupNoteIds: string[]) {
+  if (groupNoteIds.length === 0) return {};
+
+  const supabase = await createServerSupabaseClient();
+
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    throw new Error("로그인이 필요합니다.");
+  }
+
+  const { data: reactions, error } = await supabase
+    .from("group_note_reactions")
+    .select("group_note_id, user_id, reaction_type")
+    .in("group_note_id", groupNoteIds);
+
+  if (error) {
+    throw new Error(`리액션 조회 실패: ${error.message}`);
+  }
+
+  // group_note_id별로 리액션 집계
+  const result: Record<
+    string,
+    {
+      like: { count: number; hasReacted: boolean };
+      insightful: { count: number; hasReacted: boolean };
+      empathy: { count: number; hasReacted: boolean };
+    }
+  > = {};
+
+  for (const id of groupNoteIds) {
+    result[id] = {
+      like: { count: 0, hasReacted: false },
+      insightful: { count: 0, hasReacted: false },
+      empathy: { count: 0, hasReacted: false },
+    };
+  }
+
+  for (const reaction of reactions || []) {
+    const key = reaction.group_note_id;
+    const type = reaction.reaction_type as ReactionType;
+    if (result[key] && result[key][type]) {
+      result[key][type].count++;
+      if (reaction.user_id === user.id) {
+        result[key][type].hasReacted = true;
+      }
+    }
+  }
+
+  return result;
+}

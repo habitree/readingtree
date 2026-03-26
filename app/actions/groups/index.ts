@@ -15,7 +15,11 @@ export { joinGroup, approveMember, rejectMember, removeMember, leaveGroup, getPe
 export { addGroupBook, getGroupBooks, getGroupBooksWithUserStatus, addGroupBookToMyLibrary, removeGroupBook, shareUserBookToGroup, getSharedBooks, unshareUserBookFromGroup } from "./books";
 
 // Note sharing
-export { shareNoteToGroup, getGroupBookNotes, getGroupBookNoteCounts, getShareableNotes, shareNotesToGroup, unshareNoteFromGroup } from "./notes";
+export { shareNoteToGroup, getGroupBookNotes, getGroupBookNoteCounts, getShareableNotes, shareNotesToGroup, unshareNoteFromGroup, toggleNoteReaction, getNoteReactions } from "./notes";
+export type { ReactionType } from "./notes";
+
+// Comments
+export { addComment, getComments, updateComment, deleteComment, getCommentCounts } from "./comments";
 
 // Analytics
 export { getMemberProgress, getMemberActivities, getGroupWeeklyStats } from "./analytics";

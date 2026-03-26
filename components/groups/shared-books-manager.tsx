@@ -13,7 +13,7 @@ import { BookStatusBadge } from "@/components/books/book-status-badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { UserBookSelectDialog } from "@/components/books/user-book-select-dialog";
 import { useTranslation } from "@/lib/i18n";
-import { typography, spacing } from "@/lib/design-tokens";
+import { typography, spacing, grids } from "@/lib/design-tokens";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -140,7 +140,7 @@ export function SharedBooksManager({ groupId }: SharedBooksManagerProps) {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2.5 sm:gap-3">
+        <div className={grids.groupBookGrid}>
           {sharedBooks.map((sharedBook) => {
             const userBook = sharedBook.user_books;
             if (!userBook || !userBook.books) return null;
@@ -159,7 +159,7 @@ export function SharedBooksManager({ groupId }: SharedBooksManagerProps) {
                         alt={book.title}
                         fill
                         className="object-cover"
-                        sizes="(max-width: 768px) 33vw, (max-width: 1024px) 20vw, 16vw"
+                        sizes="(max-width: 640px) 33vw, (max-width: 768px) 25vw, (max-width: 1024px) 20vw, 16vw"
                       />
                     ) : (
                       <div className="flex items-center justify-center h-full">
@@ -176,8 +176,8 @@ export function SharedBooksManager({ groupId }: SharedBooksManagerProps) {
                       </Avatar>
                     </div>
                   </div>
-                  <div className="p-1.5 sm:p-2">
-                    <h4 className="font-semibold text-[10px] sm:text-xs line-clamp-2 leading-tight">{book.title}</h4>
+                  <div className="p-2 sm:p-3">
+                    <h4 className="font-semibold text-xs sm:text-sm line-clamp-2 leading-tight">{book.title}</h4>
                     {book.author && (
                       <p className="text-[9px] sm:text-[10px] text-muted-foreground line-clamp-1 mt-0.5">
                         {book.author}

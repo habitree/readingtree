@@ -132,6 +132,7 @@ export function GroupBookNotesPage({
                   alt={book.title}
                   fill
                   className="object-cover"
+                  sizes="(max-width: 768px) 80px, 96px"
                 />
               ) : (
                 <div className="flex items-center justify-center h-full">

@@ -184,7 +184,43 @@ export async function getGroupBooksWithUserStatus(groupId: string) {
     userBooks = userBooksData || [];
   }
 
-  // 지정도서에 사용자 상태 추가
+  // 최근 기록자 정보 조회 (지정도서별)
+  let recentContributorsMap: Record<string, { id: string; name: string; avatar_url: string | null }[]> = {};
+  if (bookIds.length > 0) {
+    const { data: sharedNotes } = await supabase
+      .from("group_notes")
+      .select(`
+        notes!inner (
+          book_id,
+          user_id,
+          users (
+            id,
+            name,
+            avatar_url
+          )
+        )
+      `)
+      .eq("group_id", groupId)
+      .order("shared_at", { ascending: false });
+
+    // 책별로 최근 기록자 3명씩 추출 (중복 제거)
+    for (const sn of sharedNotes || []) {
+      const note = (sn as any).notes;
+      const bookId = note?.book_id;
+      const noteUser = note?.users;
+      if (!bookId || !noteUser || !bookIds.includes(bookId)) continue;
+
+      if (!recentContributorsMap[bookId]) {
+        recentContributorsMap[bookId] = [];
+      }
+      const existing = recentContributorsMap[bookId];
+      if (existing.length < 3 && !existing.some((u) => u.id === noteUser.id)) {
+        existing.push(noteUser);
+      }
+    }
+  }
+
+  // 지정도서에 사용자 상태 + 최근 기록자 추가
   const groupBooksWithStatus = groupBooks.map((gb: any) => {
     const userBook = userBooks.find((ub) => ub.book_id === gb.book_id);
     return {
@@ -193,6 +229,7 @@ export async function getGroupBooksWithUserStatus(groupId: string) {
       myStatus: userBook?.status || null,
       myStartedAt: userBook?.started_at || null,
       myReadingReason: userBook?.reading_reason || null,
+      recentContributors: recentContributorsMap[gb.book_id] || [],
     };
   });
 

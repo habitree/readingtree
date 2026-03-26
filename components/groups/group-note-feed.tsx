@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { NOTE_TYPE_STYLES } from "@/lib/constants/note-type-styles";
 import type { NoteFilterType } from "@/lib/constants/note-type-styles";
-import { getGroupBookNotes, unshareNoteFromGroup } from "@/app/actions/groups";
+import { getGroupBookNotes, unshareNoteFromGroup, getNoteReactions, getCommentCounts } from "@/app/actions/groups";
 import { toast } from "sonner";
 
 import { useTranslation } from "@/lib/i18n";
@@ -77,6 +77,8 @@ export function GroupNoteFeed({
   const [notes, setNotes] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState<NoteFilterType>("all");
+  const [reactionsMap, setReactionsMap] = useState<Record<string, any>>({});
+  const [commentCountsMap, setCommentCountsMap] = useState<Record<string, number>>({});
 
   const noteTypeFilters = noteTypeFilterDefs.map((f) => ({
     ...f,
@@ -89,6 +91,21 @@ export function GroupNoteFeed({
       const options = activeFilter !== "all" ? { type: activeFilter } : undefined;
       const data = await getGroupBookNotes(groupId, bookId, options);
       setNotes(data);
+
+      // 리액션 + 댓글 수 일괄 로드
+      const groupNoteIds = data.map((sn: any) => sn.id).filter(Boolean);
+      if (groupNoteIds.length > 0) {
+        try {
+          const [reactionsData, commentCounts] = await Promise.all([
+            getNoteReactions(groupNoteIds),
+            getCommentCounts(groupNoteIds),
+          ]);
+          setReactionsMap(reactionsData);
+          setCommentCountsMap(commentCounts);
+        } catch {
+          // 로드 실패 시 무시
+        }
+      }
     } catch (error) {
       console.error("기록 조회 오류:", error);
       toast.error(t("errors.loadError"));
@@ -123,8 +140,26 @@ export function GroupNoteFeed({
 
   return (
     <div className="space-y-4">
-      {/* 필터 - 모바일에서 가로 스크롤 */}
-      <ScrollArea className="w-full whitespace-nowrap">
+      {/* 필터 - 모바일: 가로 스크롤, PC: flex-wrap */}
+      <div className="hidden sm:flex flex-wrap items-center gap-2 pb-2">
+        {noteTypeFilters.map((filter) => {
+          const Icon = filter.icon;
+          const isActive = activeFilter === filter.type;
+          return (
+            <Button
+              key={filter.type}
+              variant={isActive ? "default" : "outline"}
+              size="sm"
+              onClick={() => setActiveFilter(filter.type)}
+              className={isActive ? "" : filter.color || ""}
+            >
+              <Icon className="mr-1.5 h-4 w-4" />
+              {filter.label}
+            </Button>
+          );
+        })}
+      </div>
+      <ScrollArea className="w-full whitespace-nowrap sm:hidden">
         <div className="flex items-center gap-2 pb-2">
           {noteTypeFilters.map((filter) => {
             const Icon = filter.icon;
@@ -193,8 +228,11 @@ export function GroupNoteFeed({
             >
               <GroupNoteCard
                 note={sharedNote.notes}
+                groupNoteId={sharedNote.id}
                 sharedAt={sharedNote.shared_at}
                 currentUserId={currentUserId}
+                reactions={reactionsMap[sharedNote.id]}
+                commentCount={commentCountsMap[sharedNote.id] || 0}
                 onUnshare={handleUnshare}
               />
             </div>
