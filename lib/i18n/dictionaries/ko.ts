@@ -1264,6 +1264,7 @@ export const ko = {
     joinMessagePlaceholder: "안녕하세요! 함께 독서하고 싶어서 신청합니다.",
     joining: "신청 중...",
     submitJoinRequest: "가입 신청",
+    reapplyJoin: "다시 신청하기",
     leftGroup: "모임에서 나왔어요.",
     leaveFailed: "모임 나가기에 실패했습니다.",
     groupDeleted: "모임이 삭제됐어요.",

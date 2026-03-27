@@ -61,6 +61,13 @@ export async function joinGroup(groupId: string, joinMessage?: string) {
     if (existingMember.status === "pending") {
       throw new Error("이미 참여 신청이 대기 중입니다.");
     }
+    // rejected 상태면 기존 레코드 삭제 후 재신청
+    if (existingMember.status === "rejected") {
+      await supabase
+        .from("group_members")
+        .delete()
+        .eq("id", existingMember.id);
+    }
   }
 
   // open: 자동 승인, approval: 대기

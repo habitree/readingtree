@@ -151,6 +151,29 @@ export function GroupDashboard({ groupData, currentUserId }: GroupDashboardProps
     }
   };
 
+  const handleReapply = async () => {
+    const joinType = group.join_type ?? (group.is_public ? "open" : "approval");
+    if (joinType === "approval") {
+      setShowJoinDialog(true);
+      return;
+    }
+    // open 모임은 바로 재신청
+    setIsJoining(true);
+    try {
+      const result = await joinGroup(group.id);
+      toast.success(
+        result.autoApproved
+          ? t("groups.joinedGroup")
+          : t("groups.joinRequestSent")
+      );
+      router.refresh();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : t("groups.joinFailed"));
+    } finally {
+      setIsJoining(false);
+    }
+  };
+
   const handleLeave = async () => {
     setIsLeaving(true);
     try {
@@ -638,6 +661,16 @@ export function GroupDashboard({ groupData, currentUserId }: GroupDashboardProps
                       {t("groups.rejectedDesc")}
                     </p>
                   </div>
+                  <Button onClick={handleReapply} disabled={isJoining} size="lg">
+                    {isJoining ? (
+                      <>
+                        <Clock className="mr-2 h-4 w-4 animate-spin" />
+                        {t("groups.joining")}
+                      </>
+                    ) : (
+                      t("groups.reapplyJoin")
+                    )}
+                  </Button>
                 </>
               )}
               {isGuestPreview && (
