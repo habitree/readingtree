@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Card } from "@/components/ui/card";
@@ -47,24 +48,29 @@ export function GroupBookCardEnhanced({
 }: GroupBookCardEnhancedProps) {
   const { t } = useTranslation();
   const book = groupBook.books;
+  const [imgError, setImgError] = useState(false);
   if (!book) return null;
+
+  const hasValidImage = isValidImageUrl(book.cover_image_url) && !imgError;
 
   return (
     <div className="relative group">
       <Card className="overflow-hidden h-full hover:shadow-md transition-shadow">
         <Link href={`/groups/${groupId}/books/${book.id}`}>
           <div className="relative aspect-[3/4] w-full bg-muted">
-            {isValidImageUrl(book.cover_image_url) ? (
+            {hasValidImage ? (
               <Image
                 src={getImageUrl(book.cover_image_url)}
                 alt={book.title}
                 fill
                 className="object-cover group-hover:scale-105 transition-transform duration-300"
                 sizes="(max-width: 640px) 33vw, (max-width: 768px) 25vw, (max-width: 1024px) 25vw, 20vw"
+                onError={() => setImgError(true)}
               />
             ) : (
-              <div className="flex items-center justify-center h-full">
+              <div className="flex flex-col items-center justify-center h-full gap-1 p-2">
                 <BookOpen className="h-6 w-6 text-muted-foreground" />
+                <span className="text-[10px] text-muted-foreground text-center line-clamp-2">{book.title}</span>
               </div>
             )}
 

@@ -26,9 +26,9 @@ export function GuestChatPlaceholder() {
 
   return (
     <>
-      <div className="flex h-[calc(100vh-8rem)] flex-col">
+      <div className="flex h-[calc(100dvh-9rem)] max-h-[calc(100dvh-9rem)] flex-col overflow-hidden md:h-[calc(100dvh-7rem)] md:max-h-[calc(100dvh-7rem)]">
         {/* 헤더 */}
-        <div className="flex items-center gap-3 border-b px-4 py-3">
+        <div className="flex shrink-0 items-center gap-3 border-b px-4 py-3 sm:pt-4">
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
             <Bot className="h-4 w-4 text-primary" />
           </div>
@@ -39,7 +39,7 @@ export function GuestChatPlaceholder() {
         </div>
 
         {/* 빈 채팅 영역 */}
-        <div className="flex-1 flex flex-col items-center justify-center p-6 space-y-6">
+        <div className="min-h-0 flex-1 flex flex-col items-center justify-center overflow-y-auto p-6 pt-8 space-y-6">
           <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
             <Bot className="h-8 w-8 text-primary" />
           </div>

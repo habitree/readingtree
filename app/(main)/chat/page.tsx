@@ -17,7 +17,7 @@ export default async function ChatPage() {
   // 게스트 사용자: 빈 채팅 UI 표시, 입력 시 로그인 유도
   if (!user) {
     return (
-      <div className="-m-4 sm:-m-6">
+      <div className="-mx-4 sm:-mx-6 min-h-0">
         <GuestChatPlaceholder />
       </div>
     );
@@ -27,7 +27,7 @@ export default async function ChatPage() {
   const profile = await getCachedCurrentUserProfile();
 
   return (
-    <div className="-m-4 sm:-m-6">
+    <div className="-mx-4 sm:-mx-6 min-h-0">
       <ChatInterface
         userId={user.id}
         userAvatar={profile?.avatar_url}

@@ -100,8 +100,8 @@ export function ChatSidebar({
     <>
       <div className="flex h-full w-64 flex-col border-r bg-background">
         {/* 헤더 */}
-        <div className="flex items-center justify-between border-b p-4">
-          <h2 className="font-semibold">{t("chat.chatHistory")}</h2>
+        <div className="flex shrink-0 items-center justify-between border-b px-4 pb-3 pt-4 sm:pt-5">
+          <h2 className="font-semibold leading-tight">{t("chat.chatHistory")}</h2>
           <div className="flex gap-1">
             <Button variant="ghost" size="icon" onClick={onNewSession}>
               <Plus className="h-5 w-5" />

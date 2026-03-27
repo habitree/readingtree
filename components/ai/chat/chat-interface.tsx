@@ -399,7 +399,7 @@ export function ChatInterface({ userId, userAvatar, userName }: ChatInterfacePro
   };
 
   return (
-    <div className="relative flex h-[calc(100dvh-8rem)] overflow-hidden md:h-[calc(100dvh-4rem)]">
+    <div className="relative flex h-[calc(100dvh-9rem)] max-h-[calc(100dvh-9rem)] overflow-x-hidden overflow-y-hidden md:h-[calc(100dvh-7rem)] md:max-h-[calc(100dvh-7rem)]">
       {/* 모바일 오버레이 */}
       {sidebarOpen && (
         <div
@@ -525,9 +525,9 @@ export function ChatInterface({ userId, userAvatar, userName }: ChatInterfacePro
               </div>
             )}
 
-            {/* 메시지 목록 - 스크롤 영역 */}
-            <div className="flex-1 overflow-y-auto overscroll-contain scroll-smooth">
-              <div className="min-h-full">
+            {/* 메시지 목록 - 스크롤 영역 (min-h-0 필수: flex 자식이 잘리지 않도록) */}
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain scroll-smooth scroll-pt-4">
+              <div className="min-h-full px-1 pt-4 pb-2 sm:px-2 sm:pt-5">
                 {messages.map((message) => (
                   <ChatMessage
                     key={message.id}
@@ -573,8 +573,8 @@ export function ChatInterface({ userId, userAvatar, userName }: ChatInterfacePro
         ) : (
           /* 시작 화면 */
           <div className="flex flex-1 flex-col min-h-0">
-            <div className="flex-1 overflow-y-auto">
-              <div className="flex flex-col items-center justify-center min-h-full p-4 sm:p-8">
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+              <div className="flex min-h-full flex-col items-center justify-center p-4 pt-6 sm:p-8 sm:pt-8">
                 <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 sm:mb-8 sm:h-16 sm:w-16">
                   <Bot className="h-7 w-7 text-primary sm:h-8 sm:w-8" />
                 </div>
