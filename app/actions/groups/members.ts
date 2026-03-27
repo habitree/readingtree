@@ -185,15 +185,16 @@ export async function rejectMember(groupId: string, userId: string) {
     throw new Error("멤버 거부 권한이 없습니다.");
   }
 
-  // 멤버 거부 (삭제)
-  const { error: deleteError } = await supabase
+  // 멤버 거부 (status를 rejected로 변경)
+  const { error: updateError } = await supabase
     .from("group_members")
-    .delete()
+    .update({ status: "rejected" })
     .eq("group_id", groupId)
-    .eq("user_id", userId);
+    .eq("user_id", userId)
+    .eq("status", "pending");
 
-  if (deleteError) {
-    throw new Error(`거부 실패: ${deleteError.message}`);
+  if (updateError) {
+    throw new Error(`거부 실패: ${updateError.message}`);
   }
 
   revalidatePath(`/groups/${groupId}`);

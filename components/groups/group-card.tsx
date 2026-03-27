@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Users, Lock, Globe, ShieldCheck } from "lucide-react";
+import { Users, Lock, Globe, ShieldCheck, Clock, XCircle } from "lucide-react";
 import { formatSmartDate } from "@/lib/utils/date";
 import { useTranslation } from "@/lib/i18n";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -24,6 +24,7 @@ interface GroupCardProps {
     };
     group_members?: Array<{
       user_id: string;
+      status?: string;
     }>;
   };
   memberCount?: number;
@@ -69,9 +70,14 @@ function getJoinTypeBadge(
 export function GroupCard({ group, memberCount }: GroupCardProps) {
   const { t } = useTranslation();
 
+  // 현재 사용자의 멤버십 상태 (group_members에서 자신의 상태)
+  const myStatus = group.group_members?.[0]?.status;
+
   return (
     <Link href={`/groups/${group.id}`}>
-      <Card className="hover:shadow-lg transition-all duration-200 cursor-pointer h-full hover:border-primary/20">
+      <Card className={`hover:shadow-lg transition-all duration-200 cursor-pointer h-full hover:border-primary/20 ${
+        myStatus === "rejected" ? "border-destructive/30 opacity-75" : ""
+      } ${myStatus === "pending" ? "border-amber-300/50" : ""}`}>
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between gap-3">
             <div className="flex-1 min-w-0 space-y-1.5">
@@ -83,7 +89,7 @@ export function GroupCard({ group, memberCount }: GroupCardProps) {
             {getJoinTypeBadge(group.join_type, group.is_public, t)}
           </div>
         </CardHeader>
-        <CardContent className="pt-0">
+        <CardContent className="pt-0 space-y-2">
           <div className="flex items-center justify-between text-xs sm:text-sm text-muted-foreground">
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-1.5">
@@ -102,6 +108,18 @@ export function GroupCard({ group, memberCount }: GroupCardProps) {
             </div>
             <span className="shrink-0">{formatSmartDate(group.created_at)}</span>
           </div>
+          {myStatus === "pending" && (
+            <Badge className="text-xs bg-amber-100 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 border-0">
+              <Clock className="mr-1 h-3 w-3" />
+              {t("groups.pendingApprovalTitle")}
+            </Badge>
+          )}
+          {myStatus === "rejected" && (
+            <Badge className="text-xs bg-red-100 dark:bg-red-950/30 text-red-700 dark:text-red-400 border-0">
+              <XCircle className="mr-1 h-3 w-3" />
+              {t("groups.rejectedTitle")}
+            </Badge>
+          )}
         </CardContent>
       </Card>
     </Link>

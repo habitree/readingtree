@@ -84,11 +84,12 @@ export async function getGroups(isPublic?: boolean) {
   }
 
   // 먼저 사용자가 멤버인 그룹 ID 목록 조회 (RLS 재귀 방지)
+  // approved + pending + rejected 모두 포함하여 "내 모임"에 상태 표시
   const { data: memberships, error: membersError } = await supabase
     .from("group_members")
     .select("group_id, role, status")
     .eq("user_id", user.id)
-    .eq("status", "approved");
+    .in("status", ["approved", "pending", "rejected"]);
 
   if (membersError) {
     throw new Error(`멤버십 조회 실패: ${membersError.message}`);
