@@ -348,9 +348,15 @@ export function MemberList({
                           >
                             {userName}
                           </Link>
-                          <p className="text-xs text-muted-foreground">
-                            {t("groups.pendingRequestWaiting")}
-                          </p>
+                          {member.join_message ? (
+                            <p className="text-xs text-muted-foreground line-clamp-2">
+                              &ldquo;{member.join_message}&rdquo;
+                            </p>
+                          ) : (
+                            <p className="text-xs text-muted-foreground">
+                              {t("groups.pendingRequestWaiting")}
+                            </p>
+                          )}
                         </div>
                       </div>
                       <div className="flex items-center gap-2 shrink-0">

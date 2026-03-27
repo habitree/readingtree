@@ -56,6 +56,7 @@ import {
 import { formatSmartDate } from "@/lib/utils/date";
 import { parseNoteContentFields } from "@/lib/utils/note";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Textarea } from "@/components/ui/textarea";
 import { useTranslation } from "@/lib/i18n";
 import { useUpgradeModal, isUpgradeLimitError } from "@/hooks/use-upgrade-modal";
 import { typography, spacing } from "@/lib/design-tokens";
@@ -96,6 +97,8 @@ export function GroupDashboard({ groupData, currentUserId }: GroupDashboardProps
   const [isDeleting, setIsDeleting] = useState(false);
   const [showLeaveDialog, setShowLeaveDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showJoinDialog, setShowJoinDialog] = useState(false);
+  const [joinMessage, setJoinMessage] = useState("");
   const [pendingCount, setPendingCount] = useState(0);
 
   const isModerator = myMembership?.role === "moderator";
@@ -117,14 +120,23 @@ export function GroupDashboard({ groupData, currentUserId }: GroupDashboardProps
   };
 
   const handleJoin = async () => {
+    // 승인제 모임이면 메시지 입력 다이얼로그 표시
+    const joinType = group.join_type ?? (group.is_public ? "open" : "approval");
+    if (joinType === "approval" && !showJoinDialog) {
+      setShowJoinDialog(true);
+      return;
+    }
+
     setIsJoining(true);
     try {
-      const result = await joinGroup(group.id);
+      const result = await joinGroup(group.id, joinMessage.trim() || undefined);
       toast.success(
         result.autoApproved
           ? t("groups.joinedGroup")
           : t("groups.joinRequestSent")
       );
+      setShowJoinDialog(false);
+      setJoinMessage("");
       router.refresh();
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : t("groups.joinFailed");
@@ -692,6 +704,36 @@ export function GroupDashboard({ groupData, currentUserId }: GroupDashboardProps
               variant="destructive"
             >
               {isDeleting ? t("groups.deleting") : t("groups.deleteAction")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* 가입 신청 메시지 다이얼로그 (승인제 모임) */}
+      <AlertDialog open={showJoinDialog} onOpenChange={(open) => {
+        setShowJoinDialog(open);
+        if (!open) setJoinMessage("");
+      }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("groups.joinRequestTitle")}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("groups.joinRequestDesc")}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <Textarea
+            placeholder={t("groups.joinMessagePlaceholder")}
+            value={joinMessage}
+            onChange={(e) => setJoinMessage(e.target.value)}
+            rows={3}
+            maxLength={200}
+            className="mt-2"
+          />
+          <p className="text-xs text-muted-foreground text-right">{joinMessage.length}/200</p>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleJoin} disabled={isJoining}>
+              {isJoining ? t("groups.joining") : t("groups.submitJoinRequest")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

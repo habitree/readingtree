@@ -9,7 +9,7 @@ import { checkFeatureAccess } from "../subscription";
  * 모임 참여 신청
  * 공개 모임은 자동 승인, 비공개 모임은 리더 승인 필요
  */
-export async function joinGroup(groupId: string) {
+export async function joinGroup(groupId: string, joinMessage?: string) {
   const supabase = await createServerSupabaseClient();
 
   // 현재 사용자 확인
@@ -71,6 +71,7 @@ export async function joinGroup(groupId: string) {
     user_id: user.id,
     role: "member",
     status,
+    ...(joinMessage?.trim() ? { join_message: joinMessage.trim() } : {}),
   });
 
   if (memberError) {
@@ -374,6 +375,7 @@ export async function getPendingMembers(groupId: string) {
       user_id,
       group_id,
       joined_at,
+      join_message,
       users (
         id,
         name,

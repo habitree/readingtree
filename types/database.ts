@@ -431,6 +431,7 @@ export type Database = {
         Row: {
           group_id: string
           id: string
+          join_message: string | null
           joined_at: string | null
           role: Database["public"]["Enums"]["member_role"] | null
           status: Database["public"]["Enums"]["member_status"] | null
@@ -439,6 +440,7 @@ export type Database = {
         Insert: {
           group_id: string
           id?: string
+          join_message?: string | null
           joined_at?: string | null
           role?: Database["public"]["Enums"]["member_role"] | null
           status?: Database["public"]["Enums"]["member_status"] | null
@@ -447,6 +449,7 @@ export type Database = {
         Update: {
           group_id?: string
           id?: string
+          join_message?: string | null
           joined_at?: string | null
           role?: Database["public"]["Enums"]["member_role"] | null
           status?: Database["public"]["Enums"]["member_status"] | null
