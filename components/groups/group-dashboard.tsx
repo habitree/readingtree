@@ -101,6 +101,7 @@ export function GroupDashboard({ groupData, currentUserId }: GroupDashboardProps
   const [showJoinDialog, setShowJoinDialog] = useState(false);
   const [joinMessage, setJoinMessage] = useState("");
   const [pendingCount, setPendingCount] = useState(0);
+  const [activeTab, setActiveTab] = useState("overview");
 
   const isModerator = myMembership?.role === "moderator";
 
@@ -337,7 +338,7 @@ export function GroupDashboard({ groupData, currentUserId }: GroupDashboardProps
 
       {/* 대시보드 탭 */}
       {myMembership && myMembership.status === "approved" && (
-        <Tabs defaultValue="overview" className={spacing.pageSection}>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className={spacing.pageSection}>
           <TabsList className="flex-wrap h-auto gap-1 w-full sm:w-auto">
             <TabsTrigger value="overview">{t("groups.overviewTab")}</TabsTrigger>
             <TabsTrigger value="members" className="relative">
@@ -359,10 +360,7 @@ export function GroupDashboard({ groupData, currentUserId }: GroupDashboardProps
           <TabsContent value="overview" className={spacing.pageSection}>
             {/* 컴팩트 통계 요약 */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-              <Card className="hover:bg-muted/50 transition-colors cursor-pointer" onClick={() => {
-                const tab = document.querySelector('[value="members"]') as HTMLElement;
-                tab?.click();
-              }}>
+              <Card className="hover:bg-muted/50 transition-colors cursor-pointer" onClick={() => setActiveTab("members")}>
                 <CardContent className="pt-4 pb-3 px-4">
                   <div className="flex items-center gap-2 mb-2">
                     <div className="p-1.5 rounded-lg bg-blue-50 dark:bg-blue-950/30">
@@ -377,10 +375,7 @@ export function GroupDashboard({ groupData, currentUserId }: GroupDashboardProps
                 </CardContent>
               </Card>
 
-              <Card className="hover:bg-muted/50 transition-colors cursor-pointer" onClick={() => {
-                const tab = document.querySelector('[value="notes"]') as HTMLElement;
-                tab?.click();
-              }}>
+              <Card className="hover:bg-muted/50 transition-colors cursor-pointer" onClick={() => setActiveTab("notes")}>
                 <CardContent className="pt-4 pb-3 px-4">
                   <div className="flex items-center gap-2 mb-2">
                     <div className="p-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/30">
@@ -395,10 +390,7 @@ export function GroupDashboard({ groupData, currentUserId }: GroupDashboardProps
                 </CardContent>
               </Card>
 
-              <Card className="hover:bg-muted/50 transition-colors cursor-pointer" onClick={() => {
-                const tab = document.querySelector('[value="books"]') as HTMLElement;
-                tab?.click();
-              }}>
+              <Card className="hover:bg-muted/50 transition-colors cursor-pointer" onClick={() => setActiveTab("books")}>
                 <CardContent className="pt-4 pb-3 px-4">
                   <div className="flex items-center gap-2 mb-2">
                     <div className="p-1.5 rounded-lg bg-orange-50 dark:bg-orange-950/30">
@@ -413,10 +405,7 @@ export function GroupDashboard({ groupData, currentUserId }: GroupDashboardProps
                 </CardContent>
               </Card>
 
-              <Card className="hover:bg-muted/50 transition-colors cursor-pointer" onClick={() => {
-                const tab = document.querySelector('[value="shared-library"]') as HTMLElement;
-                tab?.click();
-              }}>
+              <Card className="hover:bg-muted/50 transition-colors cursor-pointer" onClick={() => setActiveTab("shared-library")}>
                 <CardContent className="pt-4 pb-3 px-4">
                   <div className="flex items-center gap-2 mb-2">
                     <div className="p-1.5 rounded-lg bg-purple-50 dark:bg-purple-950/30">
@@ -443,12 +432,9 @@ export function GroupDashboard({ groupData, currentUserId }: GroupDashboardProps
                     <CardTitle className="text-base">{t("groups.sharedNotesCardTitle")}</CardTitle>
                     <button
                       className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-                      onClick={() => {
-                        const tab = document.querySelector('[value="notes"]') as HTMLElement;
-                        tab?.click();
-                      }}
+                      onClick={() => setActiveTab("notes")}
                     >
-                      {t("stats.viewAllBooks")} →
+                      {t("groups.viewAll")} →
                     </button>
                   </div>
                 </CardHeader>
@@ -508,12 +494,9 @@ export function GroupDashboard({ groupData, currentUserId }: GroupDashboardProps
                     <CardTitle className="text-base">{t("groups.designatedBooksCardTitle")}</CardTitle>
                     <button
                       className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-                      onClick={() => {
-                        const tab = document.querySelector('[value="books"]') as HTMLElement;
-                        tab?.click();
-                      }}
+                      onClick={() => setActiveTab("books")}
                     >
-                      {t("stats.viewAllBooks")} →
+                      {t("groups.viewAll")} →
                     </button>
                   </div>
                 </CardHeader>
@@ -564,12 +547,9 @@ export function GroupDashboard({ groupData, currentUserId }: GroupDashboardProps
                   <CardTitle className="text-base">{t("groups.membersCardTitle")}</CardTitle>
                   <button
                     className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-                    onClick={() => {
-                      const tab = document.querySelector('[value="members"]') as HTMLElement;
-                      tab?.click();
-                    }}
+                    onClick={() => setActiveTab("members")}
                   >
-                    {t("stats.viewAllBooks")} →
+                    {t("groups.viewAll")} →
                   </button>
                 </div>
               </CardHeader>

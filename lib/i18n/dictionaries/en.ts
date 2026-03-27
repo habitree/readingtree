@@ -1265,6 +1265,7 @@ export const en: Dictionary = {
     joining: "Requesting...",
     submitJoinRequest: "Submit Request",
     reapplyJoin: "Apply Again",
+    viewAll: "View All",
     leftGroup: "You have left the group.",
     leaveFailed: "Failed to leave the group.",
     groupDeleted: "Group has been deleted.",
