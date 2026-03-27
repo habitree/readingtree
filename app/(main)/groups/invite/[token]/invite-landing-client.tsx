@@ -13,7 +13,8 @@ interface InviteLandingClientProps {
     id: string;
     name: string;
     description: string | null;
-    is_public: boolean;
+    is_public?: boolean;
+    join_type?: string;
     max_members: number | null;
   };
   memberCount: number;

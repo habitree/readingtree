@@ -11,7 +11,8 @@ import { sanitizeSearchQuery } from "@/lib/utils/validation";
 export async function createGroup(data: {
   name: string;
   description?: string;
-  isPublic: boolean;
+  isPublic?: boolean; // deprecated — use joinType
+  joinType?: "open" | "approval" | "private";
 }) {
   const supabase = await createServerSupabaseClient();
 
@@ -25,6 +26,9 @@ export async function createGroup(data: {
     throw new Error("로그인이 필요합니다.");
   }
 
+  // joinType 결정 (joinType 우선, 없으면 isPublic에서 변환)
+  const joinType = data.joinType ?? (data.isPublic ? "open" : "approval");
+
   // 모임 생성 (RLS 재귀 방지를 위해 select 제거)
   const { data: insertResult, error: groupError } = await supabase
     .from("groups")
@@ -32,7 +36,7 @@ export async function createGroup(data: {
       name: data.name,
       description: data.description || null,
       leader_id: user.id,
-      is_public: data.isPublic,
+      join_type: joinType,
     })
     .select("id")
     .single();
@@ -105,7 +109,12 @@ export async function getGroups(isPublic?: boolean) {
     .in("id", groupIds);
 
   if (isPublic !== undefined) {
-    query = query.eq("is_public", isPublic);
+    // 하위 호환: isPublic=true → open/approval, isPublic=false → private
+    if (isPublic) {
+      query = query.in("join_type", ["open", "approval"]);
+    } else {
+      query = query.eq("join_type", "private");
+    }
   }
 
   const { data: groupsData, error } = await query;
@@ -159,7 +168,7 @@ export async function getPublicGroups(searchQuery?: string) {
       )
     `
     )
-    .eq("is_public", true)
+    .in("join_type", ["open", "approval"])
     .order("created_at", { ascending: false });
 
   if (searchQuery) {
@@ -250,7 +259,7 @@ export async function getGroupDetail(groupId: string) {
   }
 
   // 비공개 모임 + 비멤버인 경우: 제한된 정보만 반환 (링크 접근 허용)
-  const isNonMemberPrivateGroup = !membership && !group.is_public && group.leader_id !== user.id;
+  const isNonMemberPrivateGroup = !membership && group.join_type === "private" && group.leader_id !== user.id;
 
   if (isNonMemberPrivateGroup) {
     // 비멤버가 비공개 모임에 링크로 접근한 경우
@@ -389,7 +398,8 @@ export async function updateGroup(
   data: {
     name?: string;
     description?: string;
-    isPublic?: boolean;
+    isPublic?: boolean; // deprecated — use joinType
+    joinType?: "open" | "approval" | "private";
   }
 ): Promise<{ success: boolean }> {
   const supabase = await createServerSupabaseClient();
@@ -432,8 +442,11 @@ export async function updateGroup(
     updateData.description = data.description.trim() || null;
   }
 
-  if (data.isPublic !== undefined) {
-    updateData.is_public = data.isPublic;
+  if (data.joinType !== undefined) {
+    updateData.join_type = data.joinType;
+  } else if (data.isPublic !== undefined) {
+    // 하위 호환: isPublic → join_type 변환
+    updateData.join_type = data.isPublic ? "open" : "approval";
   }
 
   if (Object.keys(updateData).length === 0) {

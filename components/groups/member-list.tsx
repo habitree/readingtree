@@ -282,6 +282,8 @@ export function MemberList({
   }
 
   const approvedMembers = members.filter((m) => m.status === "approved");
+  const moderatorCount = approvedMembers.filter((m) => m.role === "moderator").length;
+  const isMaxModerators = moderatorCount >= 2;
   const sortedMembers = [...approvedMembers].sort((a, b) => {
     const roleOrder: Record<string, number> = { leader: 0, moderator: 1, member: 2 };
     return (roleOrder[a.role] || 2) - (roleOrder[b.role] || 2);
@@ -493,9 +495,14 @@ export function MemberList({
                                     onClick={() =>
                                       openConfirmDialog("role", member.user_id, userName, "moderator")
                                     }
+                                    disabled={isMaxModerators}
+                                    title={isMaxModerators ? t("groups.maxModeratorsReached") : undefined}
                                   >
                                     <Shield className="mr-2 h-4 w-4" />
                                     {t("groups.promoteSubleader")}
+                                    {isMaxModerators && (
+                                      <span className="ml-1 text-xs text-muted-foreground">(2/2)</span>
+                                    )}
                                   </DropdownMenuItem>
                                 )}
                                 <DropdownMenuItem

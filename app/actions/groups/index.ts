@@ -2,7 +2,7 @@
 // Maintains backward compatibility for imports from "@/app/actions/groups"
 
 // Types and shared utilities
-export type { MemberRole, MemberStatus, GroupAccessResult, SupabaseClient } from "./_shared";
+export type { MemberRole, MemberStatus, JoinType, GroupAccessResult, SupabaseClient } from "./_shared";
 export { checkGroupAccess, updateGroupActivityStats, getWeekStart } from "./_shared";
 
 // Core group operations

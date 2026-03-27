@@ -1,0 +1,1223 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>독서모임 고도화 기획서 v1.0 — Habitree Reading Hub</title>
+<style>
+  /* ── Reset & Base ── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    color: #1e293b; background: #f8fafc; line-height: 1.7; font-size: 15px;
+  }
+  a { color: inherit; text-decoration: none; }
+
+  /* ── Print ── */
+  @media print {
+    body { background: #fff; font-size: 12px; }
+    .no-print { display: none !important; }
+    .page-break { page-break-before: always; }
+    .container { max-width: 100%; padding: 0; }
+    .phase-card, .toc { box-shadow: none; border: 1px solid #ccc; }
+  }
+
+  /* ── Layout ── */
+  .container { max-width: 1100px; margin: 0 auto; padding: 24px 20px 80px; }
+
+  /* ── Header ── */
+  .doc-header {
+    background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%);
+    color: #fff; padding: 48px 0 40px; text-align: center;
+  }
+  .doc-header h1 { font-size: 2rem; font-weight: 800; margin-bottom: 6px; }
+  .doc-header .subtitle { font-size: 1.05rem; opacity: .85; margin-bottom: 20px; }
+  .meta-row {
+    display: flex; justify-content: center; gap: 32px; flex-wrap: wrap;
+    font-size: .88rem; opacity: .75;
+  }
+  .meta-row span::before { margin-right: 6px; }
+
+  /* ── Status Cards ── */
+  .status-cards {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 16px; margin: -28px auto 32px; max-width: 1100px; padding: 0 20px; position: relative; z-index: 2;
+  }
+  .phase-card {
+    background: #fff; border-radius: 12px; padding: 24px 28px;
+    box-shadow: 0 2px 12px rgba(0,0,0,.07); border-top: 4px solid;
+  }
+  .phase-card.p0 { border-color: #ef4444; }
+  .phase-card.p1 { border-color: #3b82f6; }
+  .phase-card.p2 { border-color: #8b5cf6; }
+  .phase-card .label { font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 4px; }
+  .phase-card.p0 .label { color: #ef4444; }
+  .phase-card.p1 .label { color: #3b82f6; }
+  .phase-card.p2 .label { color: #8b5cf6; }
+  .phase-card h3 { font-size: 1.05rem; margin-bottom: 8px; }
+  .phase-card ul { font-size: .88rem; color: #475569; padding-left: 18px; }
+  .phase-card ul li { margin-bottom: 2px; }
+  .phase-card .status-badge {
+    display: inline-block; margin-top: 12px; font-size: .78rem; font-weight: 600;
+    padding: 3px 12px; border-radius: 20px;
+  }
+  .phase-card.p0 .status-badge { background: #fef2f2; color: #dc2626; }
+  .phase-card.p1 .status-badge { background: #eff6ff; color: #2563eb; }
+  .phase-card.p2 .status-badge { background: #f5f3ff; color: #7c3aed; }
+
+  /* ── TOC ── */
+  .toc {
+    background: #fff; border-radius: 12px; padding: 28px 32px;
+    box-shadow: 0 2px 12px rgba(0,0,0,.06); margin-bottom: 40px;
+  }
+  .toc h2 { font-size: 1.1rem; margin-bottom: 14px; color: #0f172a; }
+  .toc ol { padding-left: 22px; }
+  .toc li { margin-bottom: 6px; }
+  .toc a { color: #3b82f6; font-weight: 500; }
+  .toc a:hover { text-decoration: underline; }
+  .toc .sub { padding-left: 20px; list-style: disc; }
+  .toc .sub li { font-size: .9rem; }
+
+  /* ── Section ── */
+  .section {
+    background: #fff; border-radius: 12px; padding: 32px 36px;
+    box-shadow: 0 2px 12px rgba(0,0,0,.06); margin-bottom: 28px;
+  }
+  .section h2 {
+    font-size: 1.35rem; font-weight: 800; margin-bottom: 6px;
+    padding-bottom: 10px; border-bottom: 2px solid #e2e8f0;
+  }
+  .section h2 .phase-tag {
+    font-size: .72rem; font-weight: 700; padding: 2px 10px; border-radius: 20px;
+    vertical-align: middle; margin-left: 10px;
+  }
+  .tag-p0 { background: #fef2f2; color: #dc2626; }
+  .tag-p1 { background: #eff6ff; color: #2563eb; }
+  .tag-p2 { background: #f5f3ff; color: #7c3aed; }
+  .section h3 { font-size: 1.1rem; font-weight: 700; margin: 24px 0 10px; color: #1e293b; }
+  .section h4 { font-size: .98rem; font-weight: 700; margin: 18px 0 8px; color: #334155; }
+  .section p, .section li { color: #475569; }
+  .section p { margin-bottom: 12px; }
+  .section ul, .section ol { padding-left: 22px; margin-bottom: 12px; }
+  .section li { margin-bottom: 4px; }
+
+  /* ── Tables ── */
+  table {
+    width: 100%; border-collapse: collapse; margin: 14px 0 20px;
+    font-size: .9rem;
+  }
+  thead th {
+    background: #f1f5f9; text-align: left; padding: 10px 14px;
+    font-weight: 700; color: #334155; border-bottom: 2px solid #cbd5e1;
+    font-size: .82rem; text-transform: uppercase; letter-spacing: .3px;
+  }
+  tbody td {
+    padding: 10px 14px; border-bottom: 1px solid #e2e8f0; vertical-align: top;
+  }
+  tbody tr:hover { background: #f8fafc; }
+  td code, th code {
+    background: #f1f5f9; padding: 1px 6px; border-radius: 4px; font-size: .85rem;
+    color: #0f172a;
+  }
+
+  /* ── Comparison Grid ── */
+  .comparison-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 16px; margin: 16px 0 24px;
+  }
+  .comparison-card {
+    border-radius: 10px; padding: 20px 22px; border: 1px solid #e2e8f0;
+  }
+  .comparison-card.open { background: linear-gradient(135deg, #f0fdf4, #fff); border-color: #86efac; }
+  .comparison-card.approval { background: linear-gradient(135deg, #eff6ff, #fff); border-color: #93c5fd; }
+  .comparison-card.private { background: linear-gradient(135deg, #fffbeb, #fff); border-color: #fcd34d; }
+  .comparison-card h4 { margin: 0 0 10px; }
+  .comparison-card .badge {
+    display: inline-block; font-size: .75rem; font-weight: 700;
+    padding: 2px 10px; border-radius: 12px; margin-bottom: 10px;
+  }
+  .comparison-card.open .badge { background: #dcfce7; color: #16a34a; }
+  .comparison-card.approval .badge { background: #dbeafe; color: #2563eb; }
+  .comparison-card.private .badge { background: #fef3c7; color: #d97706; }
+  .comparison-card dl { font-size: .88rem; }
+  .comparison-card dt { font-weight: 600; color: #334155; margin-top: 6px; }
+  .comparison-card dd { color: #64748b; margin-left: 0; }
+
+  /* ── Wireframe ── */
+  .wireframe {
+    background: #f8fafc; border: 2px dashed #cbd5e1; border-radius: 12px;
+    padding: 24px; margin: 16px 0 24px; font-family: 'Courier New', monospace;
+    font-size: .85rem; color: #334155; line-height: 1.6; overflow-x: auto;
+  }
+  .wireframe .title-bar {
+    background: #e2e8f0; border-radius: 6px; padding: 8px 14px;
+    font-weight: 700; margin-bottom: 14px; display: flex; justify-content: space-between;
+    align-items: center; font-family: inherit;
+  }
+  .wireframe .row { display: flex; gap: 12px; align-items: center; margin-bottom: 8px; flex-wrap: wrap; }
+  .wireframe .field {
+    flex: 1; min-width: 120px; background: #fff; border: 1px solid #cbd5e1;
+    border-radius: 6px; padding: 6px 12px; color: #94a3b8;
+  }
+  .wireframe .radio-group { display: flex; gap: 16px; margin: 8px 0; flex-wrap: wrap; }
+  .wireframe .radio-option {
+    background: #fff; border: 2px solid #e2e8f0; border-radius: 8px;
+    padding: 10px 16px; cursor: default; flex: 1; min-width: 140px;
+  }
+  .wireframe .radio-option.selected { border-color: #3b82f6; background: #eff6ff; }
+  .wireframe .radio-option strong { display: block; font-size: .9rem; }
+  .wireframe .radio-option small { color: #64748b; font-size: .78rem; }
+  .wireframe .btn {
+    display: inline-block; background: #3b82f6; color: #fff; padding: 8px 20px;
+    border-radius: 8px; font-weight: 600; font-size: .88rem; margin-top: 10px;
+  }
+  .wireframe .btn-outline {
+    display: inline-block; background: #fff; border: 1px solid #cbd5e1; color: #475569;
+    padding: 6px 14px; border-radius: 8px; font-size: .82rem; margin: 2px;
+  }
+  .wireframe .card-preview {
+    background: #fff; border: 1px solid #e2e8f0; border-radius: 10px;
+    overflow: hidden; max-width: 320px;
+  }
+  .wireframe .card-preview .cover {
+    background: linear-gradient(135deg, #c7d2fe, #a5b4fc); height: 80px;
+  }
+  .wireframe .card-preview .body { padding: 14px; }
+  .wireframe .post-item {
+    background: #fff; border: 1px solid #e2e8f0; border-radius: 8px;
+    padding: 12px 16px; margin-bottom: 8px;
+  }
+  .wireframe .post-item .pin { color: #ef4444; font-weight: 700; margin-right: 4px; }
+  .wireframe .event-card {
+    background: #fff; border: 1px solid #e2e8f0; border-radius: 10px;
+    padding: 16px 20px; margin-bottom: 10px;
+  }
+  .wireframe .event-card .date { font-weight: 700; color: #0f172a; margin-bottom: 4px; }
+  .wireframe .event-card .loc { color: #64748b; font-size: .85rem; margin-bottom: 4px; }
+  .wireframe .event-card .rsvp { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+  .wireframe .notif-item {
+    display: flex; gap: 10px; align-items: flex-start; padding: 10px 0;
+    border-bottom: 1px solid #f1f5f9;
+  }
+  .wireframe .notif-dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 6px; flex-shrink: 0; }
+  .wireframe .notif-dot.unread { background: #22c55e; }
+  .wireframe .notif-dot.read { background: #cbd5e1; }
+
+  /* ── Code / SQL block ── */
+  .code-block {
+    background: #1e293b; color: #e2e8f0; border-radius: 10px;
+    padding: 20px 24px; margin: 14px 0 20px; font-family: 'Fira Code', 'Courier New', monospace;
+    font-size: .84rem; line-height: 1.65; overflow-x: auto;
+  }
+  .code-block .kw { color: #93c5fd; }
+  .code-block .str { color: #86efac; }
+  .code-block .cmt { color: #64748b; font-style: italic; }
+  .code-block .type { color: #c4b5fd; }
+
+  /* ── Permission Matrix ── */
+  .perm-matrix td:nth-child(n+2) { text-align: center; }
+  .perm-matrix thead th:nth-child(n+2) { text-align: center; }
+  .perm-check { color: #16a34a; font-weight: 700; }
+  .perm-cross { color: #dc2626; font-weight: 700; }
+
+  /* ── Roadmap ── */
+  .roadmap { position: relative; padding-left: 32px; margin: 20px 0 28px; }
+  .roadmap::before {
+    content: ''; position: absolute; left: 12px; top: 0; bottom: 0;
+    width: 3px; background: #e2e8f0; border-radius: 2px;
+  }
+  .roadmap-item { position: relative; margin-bottom: 20px; }
+  .roadmap-item::before {
+    content: ''; position: absolute; left: -26px; top: 6px;
+    width: 14px; height: 14px; border-radius: 50%; border: 3px solid;
+  }
+  .roadmap-item.p0::before { border-color: #ef4444; background: #fef2f2; }
+  .roadmap-item.p1::before { border-color: #3b82f6; background: #eff6ff; }
+  .roadmap-item.p2::before { border-color: #8b5cf6; background: #f5f3ff; }
+  .roadmap-item h4 { margin: 0 0 4px; font-size: .95rem; }
+  .roadmap-item p { font-size: .88rem; color: #64748b; margin: 0; }
+
+  /* ── Data Model Diagram ── */
+  .model-diagram {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 16px; margin: 16px 0 24px;
+  }
+  .model-table {
+    background: #fff; border: 1px solid #e2e8f0; border-radius: 10px;
+    overflow: hidden;
+  }
+  .model-table .table-name {
+    padding: 10px 16px; font-weight: 700; font-size: .9rem;
+  }
+  .model-table.existing .table-name { background: #f0f9ff; color: #0369a1; border-bottom: 2px solid #bae6fd; }
+  .model-table.new .table-name { background: #faf5ff; color: #7c3aed; border-bottom: 2px solid #d8b4fe; }
+  .model-table .cols { padding: 10px 16px; font-size: .82rem; }
+  .model-table .col-item { padding: 3px 0; display: flex; justify-content: space-between; }
+  .model-table .col-item .col-phase { font-size: .72rem; font-weight: 600; padding: 1px 8px; border-radius: 10px; }
+
+  /* ── KPI Cards ── */
+  .kpi-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px; margin: 16px 0;
+  }
+  .kpi-card {
+    background: #fff; border: 1px solid #e2e8f0; border-radius: 10px;
+    padding: 20px; text-align: center;
+  }
+  .kpi-card .kpi-value { font-size: 1.6rem; font-weight: 800; color: #0f172a; }
+  .kpi-card .kpi-label { font-size: .82rem; color: #64748b; margin-top: 4px; }
+  .kpi-card .kpi-target { font-size: .78rem; color: #3b82f6; margin-top: 6px; font-weight: 600; }
+
+  /* ── Caution Box ── */
+  .caution-box {
+    background: #fffbeb; border-left: 4px solid #f59e0b; border-radius: 0 8px 8px 0;
+    padding: 16px 20px; margin: 16px 0;
+  }
+  .caution-box strong { color: #b45309; }
+  .caution-box li { color: #78350f; }
+
+  /* ── Changelog ── */
+  .changelog-table tbody td:first-child { font-weight: 600; white-space: nowrap; }
+
+  /* ── Responsive ── */
+  @media (max-width: 768px) {
+    .container { padding: 16px 12px 60px; }
+    .section { padding: 20px 18px; }
+    .doc-header { padding: 32px 16px 28px; }
+    .doc-header h1 { font-size: 1.5rem; }
+    .status-cards { margin-top: -20px; padding: 0 12px; }
+    .meta-row { gap: 16px; font-size: .8rem; }
+    table { font-size: .8rem; }
+    thead th, tbody td { padding: 8px 10px; }
+    .comparison-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ════════════════════════════ HEADER ════════════════════════════ -->
+<header class="doc-header">
+  <div class="container" style="padding-top:0;padding-bottom:0;">
+    <h1>독서모임 고도화 기획서</h1>
+    <p class="subtitle">소모임형 커뮤니티 독서모임 서비스로의 전환</p>
+    <div class="meta-row">
+      <span>프로젝트: Habitree Reading Hub</span>
+      <span>버전: v1.0</span>
+      <span>날짜: 2026-03-27</span>
+      <span>상태: 기획 완료, 개발 대기</span>
+    </div>
+  </div>
+</header>
+
+<!-- ════════════════════════════ STATUS CARDS ════════════════════════════ -->
+<div class="status-cards">
+  <div class="phase-card p0">
+    <div class="label">Phase 1 (P0) -- 즉시 구현</div>
+    <h3>가입 방식 재설계 + 부리더 제한</h3>
+    <ul>
+      <li>3가지 가입 방식 (open / approval / private)</li>
+      <li>부리더 최대 2명 제한</li>
+      <li>UI/UX 전면 변경</li>
+    </ul>
+    <span class="status-badge">개발 대기</span>
+  </div>
+  <div class="phase-card p1">
+    <div class="label">Phase 2 (P1) -- 프로필/공지/검색</div>
+    <h3>모임 프로필 + 공지 + 검색 고도화</h3>
+    <ul>
+      <li>커버 이미지, 카테고리, 태그</li>
+      <li>모임 공지사항 시스템</li>
+      <li>검색 필터 및 정렬</li>
+    </ul>
+    <span class="status-badge">기획 완료</span>
+  </div>
+  <div class="phase-card p2">
+    <div class="label">Phase 3 (P2) -- 커뮤니티</div>
+    <h3>게시판 + 일정 + 알림</h3>
+    <ul>
+      <li>모임 게시판/자료실</li>
+      <li>일정 관리 + RSVP</li>
+      <li>통합 알림 시스템</li>
+    </ul>
+    <span class="status-badge">기획 완료</span>
+  </div>
+</div>
+
+<div class="container">
+
+<!-- ════════════════════════════ TOC ════════════════════════════ -->
+<nav class="toc no-print" id="toc">
+  <h2>목차</h2>
+  <ol>
+    <li><a href="#sec1">배경 및 목적</a>
+      <ul class="sub">
+        <li><a href="#sec1-1">현재 상태</a></li>
+        <li><a href="#sec1-2">고도화 목적</a></li>
+        <li><a href="#sec1-3">핵심 요구사항</a></li>
+      </ul>
+    </li>
+    <li><a href="#sec2">Phase 1 (P0) -- 가입 방식 재설계 + 부리더 제한</a>
+      <ul class="sub">
+        <li><a href="#sec2-1">가입 방식 3종</a></li>
+        <li><a href="#sec2-2">DB 마이그레이션 전략</a></li>
+        <li><a href="#sec2-3">부리더 최대 2명 제한</a></li>
+        <li><a href="#sec2-4">UI/UX 변경사항</a></li>
+        <li><a href="#sec2-5">수정 대상 파일</a></li>
+      </ul>
+    </li>
+    <li><a href="#sec3">Phase 2 (P1) -- 모임 프로필 + 공지 + 검색 고도화</a>
+      <ul class="sub">
+        <li><a href="#sec3-1">모임 프로필 확장</a></li>
+        <li><a href="#sec3-2">모임 공지사항</a></li>
+        <li><a href="#sec3-3">검색/발견 고도화</a></li>
+      </ul>
+    </li>
+    <li><a href="#sec4">Phase 3 (P2) -- 커뮤니티 기능</a>
+      <ul class="sub">
+        <li><a href="#sec4-1">게시판/자료실</a></li>
+        <li><a href="#sec4-2">일정 관리</a></li>
+        <li><a href="#sec4-3">멤버 모임 내 프로필</a></li>
+        <li><a href="#sec4-4">알림 시스템</a></li>
+      </ul>
+    </li>
+    <li><a href="#sec5">마이그레이션 로드맵</a></li>
+    <li><a href="#sec6">데이터 모델 변경 요약</a></li>
+    <li><a href="#sec7">주의사항 및 제약</a></li>
+    <li><a href="#sec8">성공 지표</a></li>
+    <li><a href="#sec9">변경 이력</a></li>
+  </ol>
+</nav>
+
+<!-- ════════════════════════════ 1. 배경 및 목적 ════════════════════════════ -->
+<section class="section" id="sec1">
+  <h2>1. 배경 및 목적</h2>
+
+  <h3 id="sec1-1">1.1 현재 상태</h3>
+  <table>
+    <thead><tr><th>항목</th><th>현재 구현</th></tr></thead>
+    <tbody>
+      <tr><td>가입 방식</td><td><code>is_public</code> boolean (공개=자동승인, 비공개=승인대기)</td></tr>
+      <tr><td>역할 체계</td><td>leader / moderator / member (moderator 수 제한 없음)</td></tr>
+      <tr><td>모임 프로필</td><td>이름, 설명만 존재</td></tr>
+      <tr><td>콘텐츠</td><td>기록 공유 + 리액션(3종) + 댓글/대댓글</td></tr>
+      <tr><td>초대</td><td>토큰 기반 초대 링크 (7일 유효)</td></tr>
+      <tr><td>분석</td><td>주간 활동 통계, 멤버별 진행률</td></tr>
+      <tr><td>실시간</td><td>Realtime 구독 (새 기록/멤버 알림)</td></tr>
+      <tr><td>일정/게시판</td><td style="color:#dc2626;font-weight:600;">미지원</td></tr>
+    </tbody>
+  </table>
+
+  <h3 id="sec1-2">1.2 고도화 목적</h3>
+  <p>특정 목적의 모임이나 조직이 독서모임을 만들고, <strong>소모임 서비스</strong>처럼 사람들이 가입하여 자료를 공유하는 <strong>커뮤니티형 독서모임 서비스</strong>를 구축한다.</p>
+
+  <h3 id="sec1-3">1.3 핵심 요구사항</h3>
+  <ol>
+    <li><strong>3가지 가입 방식</strong>: 자유 가입 / 승인제 / 완전 비공개</li>
+    <li><strong>서브 관리자 최대 2명</strong>: 관리자가 부리더를 2명까지만 지정</li>
+    <li><strong>소모임형 커뮤니티 기능</strong>: 모임 프로필, 공지, 게시판, 일정, 알림</li>
+  </ol>
+</section>
+
+<!-- ════════════════════════════ 2. Phase 1 (P0) ════════════════════════════ -->
+<section class="section page-break" id="sec2">
+  <h2>2. Phase 1 <span class="phase-tag tag-p0">P0 -- 즉시 구현</span></h2>
+
+  <h3 id="sec2-1">2.1 가입 방식 3종 (<code>join_type</code>)</h3>
+  <p>기존 <code>is_public</code> boolean을 <code>join_type</code> ENUM으로 교체한다.</p>
+  <div class="code-block">
+    <span class="type">join_type</span>: <span class="str">'open'</span> | <span class="str">'approval'</span> | <span class="str">'private'</span>
+  </div>
+
+  <!-- 3종 카드 -->
+  <div class="comparison-grid">
+    <div class="comparison-card open">
+      <span class="badge">자유 가입</span>
+      <h4>Open</h4>
+      <dl>
+        <dt>검색 노출</dt><dd>O (모임 찾기에 표시)</dd>
+        <dt>가입 경로</dt><dd>검색, 직접 URL, 초대 링크</dd>
+        <dt>가입 프로세스</dt><dd>가입 버튼 클릭 &rarr; <strong>즉시 승인</strong></dd>
+        <dt>대시보드 접근</dt><dd>가입 즉시 가능</dd>
+        <dt>사용 시나리오</dt><dd>개방적인 독서 커뮤니티, 대규모 공개 모임</dd>
+      </dl>
+    </div>
+    <div class="comparison-card approval">
+      <span class="badge">승인제</span>
+      <h4>Approval</h4>
+      <dl>
+        <dt>검색 노출</dt><dd>O (모임 찾기에 표시)</dd>
+        <dt>가입 경로</dt><dd>검색, 직접 URL, 초대 링크</dd>
+        <dt>가입 프로세스</dt><dd>가입 신청 &rarr; <strong>대기(pending)</strong> &rarr; 관리자 승인</dd>
+        <dt>대시보드 접근</dt><dd>승인 후 가능</dd>
+        <dt>사용 시나리오</dt><dd>학교/회사 독서모임, 질적 관리가 필요한 모임</dd>
+      </dl>
+    </div>
+    <div class="comparison-card private">
+      <span class="badge">비공개</span>
+      <h4>Private</h4>
+      <dl>
+        <dt>검색 노출</dt><dd>X (검색/목록에 미노출)</dd>
+        <dt>가입 경로</dt><dd><strong>초대 토큰(링크)으로만</strong> 가입 가능</dd>
+        <dt>가입 프로세스</dt><dd>초대 링크 접속 &rarr; <strong>즉시 승인</strong> (초대 = 승인)</dd>
+        <dt>직접 가입 시도</dt><dd>에러: "이 모임은 초대를 통해서만 가입 가능합니다"</dd>
+        <dt>사용 시나리오</dt><dd>사내 비공개 독서모임, 소규모 친목 모임</dd>
+      </dl>
+    </div>
+  </div>
+
+  <h4>가입 방식 비교표</h4>
+  <table>
+    <thead>
+      <tr><th></th><th style="text-align:center">open</th><th style="text-align:center">approval</th><th style="text-align:center">private</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>검색 노출</td><td style="text-align:center;color:#16a34a;font-weight:700">O</td><td style="text-align:center;color:#16a34a;font-weight:700">O</td><td style="text-align:center;color:#dc2626;font-weight:700">X</td></tr>
+      <tr><td>직접 가입</td><td style="text-align:center">즉시승인</td><td style="text-align:center">승인대기</td><td style="text-align:center;color:#dc2626">불가</td></tr>
+      <tr><td>초대 토큰</td><td style="text-align:center">즉시승인</td><td style="text-align:center">즉시승인</td><td style="text-align:center">즉시승인</td></tr>
+      <tr><td>모임 정보</td><td style="text-align:center">전체공개</td><td style="text-align:center">기본공개</td><td style="text-align:center">멤버만 접근</td></tr>
+    </tbody>
+  </table>
+
+  <!-- DB Migration -->
+  <h3 id="sec2-2">2.2 DB 마이그레이션 전략</h3>
+
+  <h4>1단계: join_type 컬럼 추가</h4>
+  <div class="code-block">
+<span class="cmt">-- join_type ENUM 생성</span>
+<span class="kw">CREATE TYPE</span> <span class="type">join_type</span> <span class="kw">AS ENUM</span> (<span class="str">'open'</span>, <span class="str">'approval'</span>, <span class="str">'private'</span>);
+
+<span class="cmt">-- groups 테이블에 join_type 컬럼 추가</span>
+<span class="kw">ALTER TABLE</span> groups <span class="kw">ADD COLUMN</span> join_type <span class="type">join_type</span> <span class="kw">NOT NULL DEFAULT</span> <span class="str">'approval'</span>;
+
+<span class="cmt">-- 기존 데이터 마이그레이션</span>
+<span class="kw">UPDATE</span> groups <span class="kw">SET</span> join_type = <span class="str">'open'</span> <span class="kw">WHERE</span> is_public = <span class="str">true</span>;
+<span class="kw">UPDATE</span> groups <span class="kw">SET</span> join_type = <span class="str">'approval'</span> <span class="kw">WHERE</span> is_public = <span class="str">false</span>;
+
+<span class="cmt">-- 인덱스 생성</span>
+<span class="kw">CREATE INDEX</span> idx_groups_join_type <span class="kw">ON</span> groups(join_type);
+  </div>
+
+  <h4>2단계: is_public 컬럼 제거 (코드 전환 완료 후)</h4>
+  <div class="code-block">
+<span class="kw">ALTER TABLE</span> groups <span class="kw">DROP COLUMN</span> is_public;
+<span class="kw">DROP INDEX IF EXISTS</span> idx_groups_is_public;
+  </div>
+
+  <!-- 부리더 제한 -->
+  <h3 id="sec2-3">2.3 부리더(서브 관리자) 최대 2명 제한</h3>
+
+  <h4>현재 상태</h4>
+  <ul>
+    <li><code>member_role</code> ENUM: leader / moderator / member</li>
+    <li>moderator 역할은 존재하지만 <strong>수 제한 없음</strong></li>
+  </ul>
+
+  <h4>변경사항</h4>
+  <ul>
+    <li><code>updateMemberRole()</code> 함수에서 moderator 승격 시 <strong>기존 moderator 수 체크</strong></li>
+    <li>2명 이상이면 에러: <code>"부리더는 최대 2명까지 지정할 수 있습니다"</code></li>
+    <li>DB 레벨 트리거는 불필요 (Server Action 레벨 검증으로 충분)</li>
+  </ul>
+
+  <h4>부리더 권한 범위</h4>
+  <table class="perm-matrix">
+    <thead>
+      <tr><th>기능</th><th>리더</th><th>부리더</th><th>일반멤버</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>모임 정보 수정</td><td class="perm-check">&#10003;</td><td class="perm-cross">&#10007;</td><td class="perm-cross">&#10007;</td></tr>
+      <tr><td>모임 삭제</td><td class="perm-check">&#10003;</td><td class="perm-cross">&#10007;</td><td class="perm-cross">&#10007;</td></tr>
+      <tr><td>멤버 승인/거부</td><td class="perm-check">&#10003;</td><td class="perm-check">&#10003;</td><td class="perm-cross">&#10007;</td></tr>
+      <tr><td>멤버 강퇴</td><td class="perm-check">&#10003;</td><td class="perm-check">&#10003;</td><td class="perm-cross">&#10007;</td></tr>
+      <tr><td>부리더 지정/해제</td><td class="perm-check">&#10003;</td><td class="perm-cross">&#10007;</td><td class="perm-cross">&#10007;</td></tr>
+      <tr><td>리더 위임</td><td class="perm-check">&#10003;</td><td class="perm-cross">&#10007;</td><td class="perm-cross">&#10007;</td></tr>
+      <tr><td>지정도서 추가/삭제</td><td class="perm-check">&#10003;</td><td class="perm-check">&#10003;</td><td class="perm-cross">&#10007;</td></tr>
+      <tr><td>초대 토큰 생성</td><td class="perm-check">&#10003;</td><td class="perm-check">&#10003;</td><td class="perm-cross">&#10007;</td></tr>
+      <tr><td>공지사항 수정 (P1)</td><td class="perm-check">&#10003;</td><td class="perm-check">&#10003;</td><td class="perm-cross">&#10007;</td></tr>
+      <tr><td>기록 공유</td><td class="perm-check">&#10003;</td><td class="perm-check">&#10003;</td><td class="perm-check">&#10003;</td></tr>
+      <tr><td>리액션/댓글</td><td class="perm-check">&#10003;</td><td class="perm-check">&#10003;</td><td class="perm-check">&#10003;</td></tr>
+    </tbody>
+  </table>
+
+  <!-- UI/UX -->
+  <h3 id="sec2-4">2.4 UI/UX 변경사항</h3>
+
+  <h4>모임 생성 페이지</h4>
+  <p><strong>Before</strong>: Switch (공개/비공개) &rarr; <strong>After</strong>: RadioGroup 3옵션</p>
+
+  <div class="wireframe">
+    <div class="title-bar">
+      <span>가입 방식 선택</span>
+    </div>
+    <div class="radio-group">
+      <div class="radio-option">
+        <strong>&#9675; &#127760; 자유 가입</strong>
+        <small>누구나 자유롭게 가입할 수 있습니다</small>
+      </div>
+      <div class="radio-option selected">
+        <strong>&#9679; &#128737;&#65039; 승인제</strong>
+        <small>관리자 승인 후 가입할 수 있습니다</small>
+      </div>
+      <div class="radio-option">
+        <strong>&#9675; &#128274; 완전 비공개</strong>
+        <small>초대받은 사람만 가입할 수 있습니다</small>
+      </div>
+    </div>
+  </div>
+
+  <h4>모임 카드 (목록)</h4>
+  <div class="wireframe">
+    <div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:16px 20px;max-width:340px;">
+      <div style="font-weight:700;font-size:1rem;margin-bottom:6px;">&#128218; 함께 읽는 고전문학</div>
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">
+        <span style="background:#dbeafe;color:#2563eb;font-size:.75rem;font-weight:600;padding:2px 10px;border-radius:12px;">승인제</span>
+        <span style="color:#64748b;font-size:.85rem;">&#128101; 12명</span>
+      </div>
+      <div style="color:#64748b;font-size:.88rem;margin-bottom:6px;">매주 토요일 고전을 함께...</div>
+      <div style="color:#94a3b8;font-size:.8rem;">리더: 홍길동 &nbsp;|&nbsp; 생성: 3일전</div>
+    </div>
+  </div>
+
+  <h4>모임 대시보드 헤더</h4>
+  <div class="wireframe">
+    <div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:20px 24px;max-width:480px;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+        <span style="font-weight:700;font-size:1.1rem;">&#128218; 함께 읽는 고전문학</span>
+        <span style="background:#dbeafe;color:#2563eb;font-size:.72rem;font-weight:600;padding:2px 10px;border-radius:12px;">승인제</span>
+      </div>
+      <div style="color:#64748b;font-size:.88rem;margin-bottom:14px;">
+        &#128101; 12명 &nbsp;|&nbsp; &#128214; 3권 &nbsp;|&nbsp; &#128221; 47개 기록
+      </div>
+      <div style="display:flex;gap:8px;">
+        <span class="btn">참여하기</span>
+        <span class="btn-outline" style="color:#94a3b8;">또는 "승인 대기 중"</span>
+      </div>
+      <div style="margin-top:8px;font-size:.82rem;color:#94a3b8;">(private 비멤버: "초대를 통해서만 가입 가능합니다")</div>
+    </div>
+  </div>
+
+  <h4>모임 설정 페이지</h4>
+  <ul>
+    <li>Switch &rarr; RadioGroup 동일 적용</li>
+    <li>join_type 변경 시 경고 다이얼로그:
+      <ul>
+        <li><strong>open &rarr; private</strong>: "기존 검색 노출이 중단됩니다"</li>
+        <li><strong>private &rarr; open</strong>: "모임이 검색에 노출됩니다"</li>
+      </ul>
+    </li>
+  </ul>
+
+  <h4>모임 목록 (모임 찾기)</h4>
+  <ul>
+    <li>탭 명칭 변경: "공개 모임" &rarr; "모임 찾기"</li>
+    <li>private 모임은 검색 결과에서 제외</li>
+    <li>각 카드에 join_type 뱃지 표시</li>
+  </ul>
+
+  <h4>멤버 관리</h4>
+  <ul>
+    <li>moderator 2명 도달 시 "부리더 지정" 메뉴 비활성화</li>
+    <li>비활성화 툴팁: "부리더는 최대 2명까지 지정할 수 있습니다"</li>
+  </ul>
+
+  <!-- 수정 대상 파일 -->
+  <h3 id="sec2-5">2.5 수정 대상 파일</h3>
+  <table>
+    <thead><tr><th>파일</th><th>변경 내용</th></tr></thead>
+    <tbody>
+      <tr><td><code>types/group.ts</code></td><td>JoinType 타입 추가, Group 인터페이스 변경</td></tr>
+      <tr><td><code>types/database.ts</code></td><td>groups 테이블 타입 변경</td></tr>
+      <tr><td><code>app/actions/groups/core.ts</code></td><td>createGroup, updateGroup, getPublicGroups, getGroupDetail</td></tr>
+      <tr><td><code>app/actions/groups/members.ts</code></td><td>joinGroup 분기, updateMemberRole 제한</td></tr>
+      <tr><td><code>app/actions/groups/_shared.ts</code></td><td>JoinType export</td></tr>
+      <tr><td><code>app/(main)/groups/new/page.tsx</code></td><td>생성 폼 RadioGroup</td></tr>
+      <tr><td><code>app/(main)/groups/[id]/settings/page.tsx</code></td><td>설정 폼 RadioGroup</td></tr>
+      <tr><td><code>components/groups/group-card.tsx</code></td><td>뱃지 3종</td></tr>
+      <tr><td><code>components/groups/group-dashboard.tsx</code></td><td>뱃지 + 상태 표시</td></tr>
+      <tr><td><code>components/groups/groups-content.tsx</code></td><td>탭명 + 필터</td></tr>
+      <tr><td><code>components/groups/member-list.tsx</code></td><td>moderator 제한 UI</td></tr>
+      <tr><td><code>hooks/use-groups.ts</code></td><td>타입 반영</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ════════════════════════════ 3. Phase 2 (P1) ════════════════════════════ -->
+<section class="section page-break" id="sec3">
+  <h2>3. Phase 2 <span class="phase-tag tag-p1">P1 -- 프로필/공지/검색</span></h2>
+
+  <h3 id="sec3-1">3.1 모임 프로필 확장</h3>
+
+  <h4>새 컬럼</h4>
+  <table>
+    <thead><tr><th>컬럼</th><th>타입</th><th>설명</th></tr></thead>
+    <tbody>
+      <tr><td><code>cover_image_url</code></td><td>TEXT</td><td>커버 이미지 URL</td></tr>
+      <tr><td><code>category</code></td><td>VARCHAR(50)</td><td>주요 카테고리</td></tr>
+      <tr><td><code>tags</code></td><td>TEXT[]</td><td>태그 배열</td></tr>
+      <tr><td><code>max_members</code></td><td>INTEGER</td><td>최대 멤버 수 (null=무제한)</td></tr>
+    </tbody>
+  </table>
+
+  <h4>카테고리 목록</h4>
+  <p>앱 코드에서 관리 (<code>lib/constants/group-categories.ts</code>):</p>
+  <table>
+    <thead><tr><th>카테고리</th><th style="text-align:center">아이콘</th></tr></thead>
+    <tbody>
+      <tr><td>문학</td><td style="text-align:center">&#128214;</td></tr>
+      <tr><td>비문학</td><td style="text-align:center">&#128203;</td></tr>
+      <tr><td>자기계발</td><td style="text-align:center">&#127919;</td></tr>
+      <tr><td>인문학</td><td style="text-align:center">&#127963;&#65039;</td></tr>
+      <tr><td>과학</td><td style="text-align:center">&#128300;</td></tr>
+      <tr><td>경영/경제</td><td style="text-align:center">&#128188;</td></tr>
+      <tr><td>기술/IT</td><td style="text-align:center">&#128187;</td></tr>
+      <tr><td>예술</td><td style="text-align:center">&#127912;</td></tr>
+      <tr><td>기타</td><td style="text-align:center">&#128218;</td></tr>
+    </tbody>
+  </table>
+
+  <h4>UI 와이어프레임: 모임 생성 (확장)</h4>
+  <div class="wireframe">
+    <div class="title-bar"><span>모임 만들기</span></div>
+    <div style="background:#e2e8f0;border-radius:8px;height:80px;display:flex;align-items:center;justify-content:center;color:#64748b;margin-bottom:14px;">
+      &#128247; 커버 이미지 업로드
+    </div>
+    <div class="row">
+      <span style="font-weight:600;min-width:70px;">모임 이름:</span>
+      <div class="field">함께 읽는 고전문학</div>
+    </div>
+    <div class="row">
+      <span style="font-weight:600;min-width:70px;">설명:</span>
+      <div class="field">매주 토요일 고전을 함께 읽어요</div>
+    </div>
+    <div class="row">
+      <span style="font-weight:600;min-width:70px;">카테고리:</span>
+      <div class="field" style="max-width:180px;">문학 &#9660;</div>
+    </div>
+    <div class="row">
+      <span style="font-weight:600;min-width:70px;">태그:</span>
+      <span class="btn-outline">소설</span>
+      <span class="btn-outline">고전</span>
+      <span class="btn-outline" style="border-style:dashed;">+ 추가</span>
+    </div>
+    <div class="row">
+      <span style="font-weight:600;min-width:70px;">최대 인원:</span>
+      <div class="field" style="max-width:120px;">30 명</div>
+      <span style="color:#94a3b8;font-size:.82rem;">(비워두면 무제한)</span>
+    </div>
+    <div style="margin-top:12px;">
+      <span style="font-weight:600;">가입 방식:</span>
+      <div class="radio-group" style="margin-top:6px;">
+        <div class="radio-option"><strong>&#9675; 자유 가입</strong></div>
+        <div class="radio-option selected"><strong>&#9679; 승인제</strong></div>
+        <div class="radio-option"><strong>&#9675; 완전 비공개</strong></div>
+      </div>
+    </div>
+    <div class="btn" style="margin-top:16px;">모임 만들기</div>
+  </div>
+
+  <h4>모임 카드 (커버 이미지 포함)</h4>
+  <div class="wireframe">
+    <div class="card-preview">
+      <div class="cover"></div>
+      <div class="body">
+        <div style="font-weight:700;margin-bottom:6px;">&#128218; 함께 읽는 고전문학</div>
+        <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px;">
+          <span style="background:#f0f9ff;color:#0369a1;font-size:.72rem;font-weight:600;padding:2px 8px;border-radius:10px;">문학</span>
+          <span style="background:#dbeafe;color:#2563eb;font-size:.72rem;font-weight:600;padding:2px 8px;border-radius:10px;">승인제</span>
+          <span style="color:#64748b;font-size:.82rem;">&#128101; 12/30명</span>
+        </div>
+        <div style="color:#64748b;font-size:.85rem;">매주 토요일 고전을 함께...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 공지사항 -->
+  <h3 id="sec3-2">3.2 모임 공지사항</h3>
+
+  <h4>새 컬럼</h4>
+  <table>
+    <thead><tr><th>컬럼</th><th>타입</th><th>설명</th></tr></thead>
+    <tbody>
+      <tr><td><code>announcement</code></td><td>TEXT</td><td>공지 내용</td></tr>
+      <tr><td><code>announcement_updated_at</code></td><td>TIMESTAMPTZ</td><td>수정 시간</td></tr>
+    </tbody>
+  </table>
+  <p>모임당 1개의 공지만 존재. 복수 공지가 필요해지면 Phase 3 게시판의 pinned post로 확장.</p>
+
+  <h4>UI: 대시보드 공지 카드</h4>
+  <div class="wireframe">
+    <div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:18px 22px;max-width:480px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <span style="font-weight:700;">&#128226; 공지사항</span>
+        <span class="btn-outline" style="font-size:.78rem;">&#9998;&#65039; 수정</span>
+      </div>
+      <hr style="border:none;border-top:1px solid #e2e8f0;margin-bottom:10px;">
+      <p style="margin-bottom:6px;">이번 주 모임은 '데미안' 3장까지 읽어오세요.</p>
+      <p style="margin-bottom:10px;">토론 주제: 성장과 자아 탐색</p>
+      <div style="color:#94a3b8;font-size:.8rem;">수정: 2026-03-27</div>
+    </div>
+  </div>
+  <ul>
+    <li>리더/부리더: 수정 버튼 표시</li>
+    <li>일반멤버: 읽기 전용</li>
+    <li>공지 미설정 시: 리더/부리더에게 "공지를 작성해보세요" 프롬프트</li>
+  </ul>
+
+  <!-- 검색 고도화 -->
+  <h3 id="sec3-3">3.3 모임 검색/발견 고도화</h3>
+
+  <h4>검색 필터 UI</h4>
+  <div class="wireframe">
+    <div style="max-width:500px;">
+      <div class="field" style="margin-bottom:12px;">&#128269; 모임 검색...</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;">
+        <span class="btn-outline" style="background:#0f172a;color:#fff;border-color:#0f172a;">전체</span>
+        <span class="btn-outline">문학</span>
+        <span class="btn-outline">비문학</span>
+        <span class="btn-outline">자기계발</span>
+        <span class="btn-outline">인문학</span>
+        <span class="btn-outline">과학</span>
+        <span class="btn-outline">경영</span>
+        <span class="btn-outline">기술</span>
+        <span class="btn-outline">예술</span>
+        <span class="btn-outline">기타</span>
+      </div>
+      <div class="row">
+        <span style="font-weight:600;">정렬:</span>
+        <div class="field" style="max-width:180px;">최신순 &#9660;</div>
+      </div>
+      <ul style="font-size:.82rem;color:#94a3b8;margin-top:6px;">
+        <li>최신순</li>
+        <li>인기순 (멤버 수)</li>
+        <li>활동순 (최근 활동)</li>
+      </ul>
+    </div>
+  </div>
+
+  <h4>Server Action 확장</h4>
+  <ul>
+    <li><code>getPublicGroups(query, { category, tags, sortBy })</code>: 필터+정렬 지원</li>
+    <li><code>getPopularCategories()</code>: 카테고리별 모임 수 집계</li>
+    <li><code>getRecommendedGroups()</code>: 활동이 활발한 모임 추천</li>
+  </ul>
+</section>
+
+<!-- ════════════════════════════ 4. Phase 3 (P2) ════════════════════════════ -->
+<section class="section page-break" id="sec4">
+  <h2>4. Phase 3 <span class="phase-tag tag-p2">P2 -- 커뮤니티</span></h2>
+
+  <!-- 게시판 -->
+  <h3 id="sec4-1">4.1 모임 게시판/자료실</h3>
+  <p>현재는 개인 기록을 모임에 "공유"하는 방식만 존재. 자유 형식의 게시글을 작성할 수 있는 게시판을 추가한다.</p>
+
+  <h4>새 테이블: <code>group_posts</code></h4>
+  <table>
+    <thead><tr><th>컬럼</th><th>타입</th><th>설명</th></tr></thead>
+    <tbody>
+      <tr><td><code>id</code></td><td>UUID PK</td><td></td></tr>
+      <tr><td><code>group_id</code></td><td>UUID FK &rarr; groups</td><td>ON DELETE CASCADE</td></tr>
+      <tr><td><code>author_id</code></td><td>UUID FK &rarr; users</td><td>ON DELETE CASCADE</td></tr>
+      <tr><td><code>type</code></td><td>VARCHAR(20)</td><td>'general' / 'question' / 'resource'</td></tr>
+      <tr><td><code>title</code></td><td>VARCHAR(200) NOT NULL</td><td>제목</td></tr>
+      <tr><td><code>content</code></td><td>TEXT</td><td>본문 (마크다운 지원)</td></tr>
+      <tr><td><code>is_pinned</code></td><td>BOOLEAN DEFAULT FALSE</td><td>고정 여부 (leader/moderator만)</td></tr>
+      <tr><td><code>attachment_urls</code></td><td>TEXT[]</td><td>첨부 파일 URL 배열</td></tr>
+      <tr><td><code>created_at</code></td><td>TIMESTAMPTZ DEFAULT now()</td><td></td></tr>
+      <tr><td><code>updated_at</code></td><td>TIMESTAMPTZ DEFAULT now()</td><td></td></tr>
+    </tbody>
+  </table>
+
+  <h4>RLS 정책</h4>
+  <table>
+    <thead><tr><th>정책</th><th>조건</th></tr></thead>
+    <tbody>
+      <tr><td><strong>SELECT</strong></td><td>승인된 멤버만 조회</td></tr>
+      <tr><td><strong>INSERT</strong></td><td>승인된 멤버만 작성</td></tr>
+      <tr><td><strong>UPDATE</strong></td><td>작성자 본인 OR leader/moderator</td></tr>
+      <tr><td><strong>DELETE</strong></td><td>작성자 본인 OR leader/moderator</td></tr>
+    </tbody>
+  </table>
+
+  <h4>게시글 타입</h4>
+  <table>
+    <thead><tr><th>타입</th><th style="text-align:center">아이콘</th><th>용도</th></tr></thead>
+    <tbody>
+      <tr><td>general</td><td style="text-align:center">&#128172;</td><td>자유 게시글, 토론</td></tr>
+      <tr><td>question</td><td style="text-align:center">&#10067;</td><td>질문 (Q&amp;A)</td></tr>
+      <tr><td>resource</td><td style="text-align:center">&#128206;</td><td>자료 공유 (PDF, 링크 등)</td></tr>
+    </tbody>
+  </table>
+
+  <h4>UI: 게시판 탭</h4>
+  <div class="wireframe">
+    <div class="title-bar">
+      <span>게시판</span>
+      <span class="btn" style="margin:0;font-size:.82rem;padding:5px 14px;">+ 글쓰기</span>
+    </div>
+    <div style="display:flex;gap:6px;margin-bottom:14px;">
+      <span class="btn-outline" style="background:#0f172a;color:#fff;border-color:#0f172a;">전체</span>
+      <span class="btn-outline">자유</span>
+      <span class="btn-outline">질문</span>
+      <span class="btn-outline">자료</span>
+    </div>
+    <div class="post-item">
+      <div><span class="pin">&#128204;</span> <strong>이번 달 독서 계획</strong> <span style="float:right;color:#94a3b8;font-size:.82rem;">홍길동 &middot; 3시간 전</span></div>
+      <div style="color:#64748b;font-size:.85rem;margin-top:4px;">3월은 '데미안'을 함께...</div>
+    </div>
+    <div class="post-item">
+      <div>&#10067; <strong>데미안 3장 해석 질문</strong> <span style="float:right;color:#94a3b8;font-size:.82rem;">김철수 &middot; 1일 전</span></div>
+      <div style="color:#64748b;font-size:.85rem;margin-top:4px;">싱클레어가 데미안을...</div>
+    </div>
+    <div class="post-item">
+      <div>&#128206; <strong>데미안 독서 가이드 PDF</strong> <span style="float:right;color:#94a3b8;font-size:.82rem;">이영희 &middot; 2일 전</span></div>
+      <div style="color:#64748b;font-size:.85rem;margin-top:4px;">출판사 제공 독서 가이드...</div>
+    </div>
+  </div>
+
+  <!-- 일정 -->
+  <h3 id="sec4-2">4.2 모임 일정 관리</h3>
+  <p>오프라인/온라인 모임 일정을 관리할 수 있는 기능.</p>
+
+  <h4>새 테이블: <code>group_events</code></h4>
+  <table>
+    <thead><tr><th>컬럼</th><th>타입</th><th>설명</th></tr></thead>
+    <tbody>
+      <tr><td><code>id</code></td><td>UUID PK</td><td></td></tr>
+      <tr><td><code>group_id</code></td><td>UUID FK &rarr; groups</td><td>ON DELETE CASCADE</td></tr>
+      <tr><td><code>created_by</code></td><td>UUID FK &rarr; users</td><td></td></tr>
+      <tr><td><code>title</code></td><td>VARCHAR(200) NOT NULL</td><td>일정 제목</td></tr>
+      <tr><td><code>description</code></td><td>TEXT</td><td>상세 설명</td></tr>
+      <tr><td><code>event_date</code></td><td>TIMESTAMPTZ NOT NULL</td><td>일정 날짜/시간</td></tr>
+      <tr><td><code>location</code></td><td>VARCHAR(500)</td><td>장소 or 온라인 링크</td></tr>
+      <tr><td><code>is_online</code></td><td>BOOLEAN DEFAULT FALSE</td><td>온/오프라인</td></tr>
+      <tr><td><code>max_attendees</code></td><td>INTEGER</td><td>최대 참석 인원 (null=무제한)</td></tr>
+      <tr><td><code>created_at</code></td><td>TIMESTAMPTZ DEFAULT now()</td><td></td></tr>
+    </tbody>
+  </table>
+
+  <h4>새 테이블: <code>group_event_attendees</code></h4>
+  <table>
+    <thead><tr><th>컬럼</th><th>타입</th><th>설명</th></tr></thead>
+    <tbody>
+      <tr><td><code>id</code></td><td>UUID PK</td><td></td></tr>
+      <tr><td><code>event_id</code></td><td>UUID FK &rarr; group_events</td><td>ON DELETE CASCADE</td></tr>
+      <tr><td><code>user_id</code></td><td>UUID FK &rarr; users</td><td>ON DELETE CASCADE</td></tr>
+      <tr><td><code>status</code></td><td>VARCHAR(20)</td><td>'attending' / 'maybe' / 'declined'</td></tr>
+      <tr><td><code>created_at</code></td><td>TIMESTAMPTZ DEFAULT now()</td><td></td></tr>
+      <tr><td colspan="3"><strong>UNIQUE</strong> (event_id, user_id)</td></tr>
+    </tbody>
+  </table>
+
+  <h4>UI: 일정 탭</h4>
+  <div class="wireframe">
+    <div class="title-bar">
+      <span>일정</span>
+      <span class="btn" style="margin:0;font-size:.82rem;padding:5px 14px;">+ 일정 추가</span>
+    </div>
+    <div style="font-weight:600;margin-bottom:10px;">&#128197; 다가오는 일정</div>
+    <div class="event-card">
+      <div class="date">3월 29일 (토) 14:00</div>
+      <div class="loc">&#128205; 스타벅스 강남점</div>
+      <div style="font-size:.9rem;">데미안 3~5장 토론</div>
+      <div style="color:#64748b;font-size:.82rem;margin-top:6px;">참석 8 &middot; 미정 2 &middot; 불참 1</div>
+      <div class="rsvp">
+        <span class="btn-outline" style="background:#dcfce7;border-color:#86efac;color:#16a34a;">&#10003; 참석</span>
+        <span class="btn-outline">&#129300; 미정</span>
+        <span class="btn-outline">&#10007; 불참</span>
+      </div>
+    </div>
+    <div style="font-weight:600;margin-top:16px;color:#94a3b8;">&#128197; 지난 일정</div>
+    <div style="color:#cbd5e1;font-size:.88rem;margin-top:4px;">...</div>
+  </div>
+
+  <p>대시보드 overview에 다가오는 일정 1~2개를 미리보기로 표시.</p>
+
+  <!-- 멤버 프로필 -->
+  <h3 id="sec4-3">4.3 멤버 모임 내 프로필</h3>
+
+  <h4><code>group_members</code> 컬럼 추가</h4>
+  <table>
+    <thead><tr><th>컬럼</th><th>타입</th><th>설명</th></tr></thead>
+    <tbody>
+      <tr><td><code>bio</code></td><td>VARCHAR(200)</td><td>모임 내 자기소개</td></tr>
+      <tr><td><code>nickname</code></td><td>VARCHAR(50)</td><td>모임 내 별명 (선택)</td></tr>
+    </tbody>
+  </table>
+
+  <h4>UI: 멤버 프로필 팝오버</h4>
+  <div class="wireframe">
+    <div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:18px 22px;max-width:280px;">
+      <div style="font-weight:700;margin-bottom:2px;">&#129489; 홍길동 <span style="color:#64748b;font-weight:400;font-size:.88rem;">(길동이)</span></div>
+      <div style="font-size:.82rem;color:#3b82f6;font-weight:600;margin-bottom:10px;">부리더</div>
+      <div style="color:#475569;font-size:.88rem;font-style:italic;margin-bottom:10px;">"고전문학을 좋아하는 직장인입니다"</div>
+      <div style="font-size:.82rem;color:#94a3b8;margin-bottom:4px;">가입: 2026-01-15</div>
+      <div style="font-size:.82rem;color:#94a3b8;margin-bottom:10px;">공유 기록: 23개</div>
+      <span class="btn-outline" style="font-size:.82rem;">프로필 편집</span>
+    </div>
+  </div>
+
+  <!-- 알림 시스템 -->
+  <h3 id="sec4-4">4.4 알림 시스템</h3>
+
+  <h4>새 테이블: <code>notifications</code></h4>
+  <table>
+    <thead><tr><th>컬럼</th><th>타입</th><th>설명</th></tr></thead>
+    <tbody>
+      <tr><td><code>id</code></td><td>UUID PK</td><td></td></tr>
+      <tr><td><code>user_id</code></td><td>UUID FK &rarr; users</td><td>수신자</td></tr>
+      <tr><td><code>type</code></td><td>VARCHAR(50) NOT NULL</td><td>알림 유형</td></tr>
+      <tr><td><code>title</code></td><td>VARCHAR(200)</td><td>알림 제목</td></tr>
+      <tr><td><code>message</code></td><td>TEXT</td><td>알림 내용</td></tr>
+      <tr><td><code>data</code></td><td>JSONB</td><td>추가 데이터</td></tr>
+      <tr><td><code>is_read</code></td><td>BOOLEAN DEFAULT FALSE</td><td>읽음 여부</td></tr>
+      <tr><td><code>created_at</code></td><td>TIMESTAMPTZ DEFAULT now()</td><td></td></tr>
+    </tbody>
+  </table>
+
+  <h4>알림 유형</h4>
+  <table>
+    <thead><tr><th>type</th><th>대상</th><th>트리거</th></tr></thead>
+    <tbody>
+      <tr><td><code>group_join_request</code></td><td>leader/moderator</td><td>새 가입 신청</td></tr>
+      <tr><td><code>group_join_approved</code></td><td>신청자</td><td>가입 승인</td></tr>
+      <tr><td><code>group_join_rejected</code></td><td>신청자</td><td>가입 거부</td></tr>
+      <tr><td><code>group_new_note</code></td><td>모임 멤버 전체</td><td>새 기록 공유</td></tr>
+      <tr><td><code>group_new_post</code></td><td>모임 멤버 전체</td><td>새 게시글</td></tr>
+      <tr><td><code>group_new_event</code></td><td>모임 멤버 전체</td><td>새 일정</td></tr>
+      <tr><td><code>group_announcement</code></td><td>모임 멤버 전체</td><td>공지 변경</td></tr>
+      <tr><td><code>group_role_changed</code></td><td>해당 멤버</td><td>역할 변경</td></tr>
+      <tr><td><code>note_reaction</code></td><td>기록 작성자</td><td>리액션 추가</td></tr>
+      <tr><td><code>note_comment</code></td><td>기록 작성자</td><td>댓글 추가</td></tr>
+    </tbody>
+  </table>
+
+  <h4>UI: 알림 벨</h4>
+  <div class="wireframe">
+    <div style="max-width:360px;">
+      <div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid #e2e8f0;">
+          <span style="font-weight:700;">알림</span>
+          <span style="color:#3b82f6;font-size:.82rem;font-weight:600;cursor:pointer;">모두 읽음</span>
+        </div>
+        <div style="padding:10px 18px;">
+          <div class="notif-item">
+            <div class="notif-dot unread"></div>
+            <div>
+              <div style="font-size:.88rem;"><strong>홍길동</strong>님이 '데미안' 기록을 공유했습니다</div>
+              <div style="font-size:.78rem;color:#94a3b8;">2분 전</div>
+            </div>
+          </div>
+          <div class="notif-item">
+            <div class="notif-dot unread"></div>
+            <div>
+              <div style="font-size:.88rem;"><strong>김철수</strong>님이 모임 가입을 신청했습니다</div>
+              <div style="font-size:.78rem;color:#94a3b8;">1시간 전</div>
+            </div>
+          </div>
+          <div class="notif-item" style="border-bottom:none;">
+            <div class="notif-dot read"></div>
+            <div>
+              <div style="font-size:.88rem;color:#94a3b8;"><strong>이영희</strong>님이 댓글을 남겼습니다</div>
+              <div style="font-size:.78rem;color:#cbd5e1;">어제</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════ 5. 마이그레이션 로드맵 ════════════════════════════ -->
+<section class="section page-break" id="sec5">
+  <h2>5. 마이그레이션 로드맵</h2>
+
+  <div class="roadmap">
+    <div class="roadmap-item p0">
+      <h4><span style="color:#ef4444;">Phase 1 (P0)</span> -- 즉시 구현</h4>
+      <p></p>
+    </div>
+  </div>
+
+  <table>
+    <thead><tr><th>#</th><th>마이그레이션</th><th>내용</th><th>Phase</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>1</td>
+        <td><code>__groups__add_join_type.sql</code></td>
+        <td>join_type ENUM + 컬럼 + 데이터 변환</td>
+        <td><span class="phase-tag tag-p0" style="font-size:.7rem;">P0</span></td>
+      </tr>
+      <tr>
+        <td>2</td>
+        <td><code>__groups__drop_is_public.sql</code></td>
+        <td>is_public 제거 (코드 전환 후)</td>
+        <td><span class="phase-tag tag-p0" style="font-size:.7rem;">P0</span></td>
+      </tr>
+      <tr>
+        <td>3</td>
+        <td><code>__groups__add_profile_fields.sql</code></td>
+        <td>cover_image_url, category, tags, max_members</td>
+        <td><span class="phase-tag tag-p1" style="font-size:.7rem;">P1</span></td>
+      </tr>
+      <tr>
+        <td>4</td>
+        <td><code>__groups__add_announcement.sql</code></td>
+        <td>announcement, announcement_updated_at</td>
+        <td><span class="phase-tag tag-p1" style="font-size:.7rem;">P1</span></td>
+      </tr>
+      <tr>
+        <td>5</td>
+        <td><code>__groups__create_posts.sql</code></td>
+        <td>group_posts 테이블 + RLS</td>
+        <td><span class="phase-tag tag-p2" style="font-size:.7rem;">P2</span></td>
+      </tr>
+      <tr>
+        <td>6</td>
+        <td><code>__groups__create_events.sql</code></td>
+        <td>group_events + attendees + RLS</td>
+        <td><span class="phase-tag tag-p2" style="font-size:.7rem;">P2</span></td>
+      </tr>
+      <tr>
+        <td>7</td>
+        <td><code>__notifications__create.sql</code></td>
+        <td>notifications 테이블 + RLS</td>
+        <td><span class="phase-tag tag-p2" style="font-size:.7rem;">P2</span></td>
+      </tr>
+      <tr>
+        <td>8</td>
+        <td><code>__group_members__add_profile.sql</code></td>
+        <td>bio, nickname 컬럼</td>
+        <td><span class="phase-tag tag-p2" style="font-size:.7rem;">P2</span></td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ════════════════════════════ 6. 데이터 모델 변경 요약 ════════════════════════════ -->
+<section class="section" id="sec6">
+  <h2>6. 데이터 모델 변경 요약</h2>
+
+  <h3>6.1 기존 테이블 변경</h3>
+  <div class="model-diagram">
+    <div class="model-table existing">
+      <div class="table-name">groups (기존 테이블)</div>
+      <div class="cols">
+        <div class="col-item"><span><code>+ join_type</code> &nbsp; join_type ENUM, NOT NULL, DEFAULT 'approval'</span> <span class="col-phase tag-p0" style="font-size:.68rem;">P0</span></div>
+        <div class="col-item"><span><code>- is_public</code> &nbsp; DROP after code migration</span> <span class="col-phase tag-p0" style="font-size:.68rem;">P0</span></div>
+        <div class="col-item"><span><code>+ cover_image_url</code> &nbsp; TEXT</span> <span class="col-phase tag-p1" style="font-size:.68rem;">P1</span></div>
+        <div class="col-item"><span><code>+ category</code> &nbsp; VARCHAR(50)</span> <span class="col-phase tag-p1" style="font-size:.68rem;">P1</span></div>
+        <div class="col-item"><span><code>+ tags</code> &nbsp; TEXT[]</span> <span class="col-phase tag-p1" style="font-size:.68rem;">P1</span></div>
+        <div class="col-item"><span><code>+ max_members</code> &nbsp; INTEGER</span> <span class="col-phase tag-p1" style="font-size:.68rem;">P1</span></div>
+        <div class="col-item"><span><code>+ announcement</code> &nbsp; TEXT</span> <span class="col-phase tag-p1" style="font-size:.68rem;">P1</span></div>
+        <div class="col-item"><span><code>+ announcement_updated_at</code> &nbsp; TIMESTAMPTZ</span> <span class="col-phase tag-p1" style="font-size:.68rem;">P1</span></div>
+      </div>
+    </div>
+    <div class="model-table existing">
+      <div class="table-name">group_members (기존 테이블)</div>
+      <div class="cols">
+        <div class="col-item"><span><code>+ bio</code> &nbsp; VARCHAR(200)</span> <span class="col-phase tag-p2" style="font-size:.68rem;">P2</span></div>
+        <div class="col-item"><span><code>+ nickname</code> &nbsp; VARCHAR(50)</span> <span class="col-phase tag-p2" style="font-size:.68rem;">P2</span></div>
+      </div>
+    </div>
+  </div>
+
+  <h3>6.2 새 테이블</h3>
+  <div class="model-diagram">
+    <div class="model-table new">
+      <div class="table-name">group_posts <span class="phase-tag tag-p2" style="font-size:.68rem;margin-left:8px;">P2</span></div>
+      <div class="cols"><div class="col-item">모임 게시판</div></div>
+    </div>
+    <div class="model-table new">
+      <div class="table-name">group_events <span class="phase-tag tag-p2" style="font-size:.68rem;margin-left:8px;">P2</span></div>
+      <div class="cols"><div class="col-item">모임 일정</div></div>
+    </div>
+    <div class="model-table new">
+      <div class="table-name">group_event_attendees <span class="phase-tag tag-p2" style="font-size:.68rem;margin-left:8px;">P2</span></div>
+      <div class="cols"><div class="col-item">일정 참석자</div></div>
+    </div>
+    <div class="model-table new">
+      <div class="table-name">notifications <span class="phase-tag tag-p2" style="font-size:.68rem;margin-left:8px;">P2</span></div>
+      <div class="cols"><div class="col-item">알림</div></div>
+    </div>
+  </div>
+
+  <h3>6.3 새 인덱스</h3>
+  <table>
+    <thead><tr><th>인덱스</th><th>대상</th><th>Phase</th></tr></thead>
+    <tbody>
+      <tr><td><code>idx_groups_join_type</code></td><td>groups(join_type)</td><td><span class="phase-tag tag-p0" style="font-size:.68rem;">P0</span></td></tr>
+      <tr><td><code>idx_groups_category</code></td><td>groups(category)</td><td><span class="phase-tag tag-p1" style="font-size:.68rem;">P1</span></td></tr>
+      <tr><td><code>idx_groups_tags</code></td><td>groups USING GIN(tags)</td><td><span class="phase-tag tag-p1" style="font-size:.68rem;">P1</span></td></tr>
+      <tr><td><code>idx_group_posts_group_id</code></td><td>group_posts(group_id)</td><td><span class="phase-tag tag-p2" style="font-size:.68rem;">P2</span></td></tr>
+      <tr><td><code>idx_group_events_group_id</code></td><td>group_events(group_id)</td><td><span class="phase-tag tag-p2" style="font-size:.68rem;">P2</span></td></tr>
+      <tr><td><code>idx_group_events_event_date</code></td><td>group_events(event_date)</td><td><span class="phase-tag tag-p2" style="font-size:.68rem;">P2</span></td></tr>
+      <tr><td><code>idx_notifications_user_id_read</code></td><td>notifications(user_id, is_read)</td><td><span class="phase-tag tag-p2" style="font-size:.68rem;">P2</span></td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ════════════════════════════ 7. 주의사항 ════════════════════════════ -->
+<section class="section" id="sec7">
+  <h2>7. 주의사항 및 제약</h2>
+
+  <div class="caution-box">
+    <ol>
+      <li><strong>RLS 재귀 방지</strong>: 현재 코드베이스는 <code>group_members</code> JOIN을 피하고 <code>groups</code> 테이블만 참조하는 RLS 패턴을 사용. 새 RLS 정책도 이 패턴을 반드시 유지</li>
+      <li style="margin-top:8px;"><strong>하위 호환성</strong>: <code>is_public</code> 참조가 10개 이상 파일에 산재 -- 모든 참조를 <code>join_type</code>으로 전환 완료한 후 컬럼 DROP</li>
+      <li style="margin-top:8px;"><strong>초대 토큰 정책</strong>: 모든 join_type에서 <code>joinByToken()</code> = 자동 승인 유지 (초대 = 승인 의미)</li>
+      <li style="margin-top:8px;"><strong>구독 체크</strong>: <code>joinGroup()</code>의 <code>checkFeatureAccess()</code> 유지</li>
+      <li style="margin-top:8px;"><strong>i18n</strong>: 새 UI 문구 번역 키 추가 필요</li>
+      <li style="margin-top:8px;"><strong>Supabase Storage</strong>: 커버 이미지 업로드 시 <code>group-covers</code> 버킷 생성 필요</li>
+    </ol>
+  </div>
+</section>
+
+<!-- ════════════════════════════ 8. 성공 지표 ════════════════════════════ -->
+<section class="section" id="sec8">
+  <h2>8. 성공 지표</h2>
+
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-value">+30%</div>
+      <div class="kpi-label">모임 생성 수</div>
+      <div class="kpi-target">기존 대비 증가 목표</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-value">50%+</div>
+      <div class="kpi-label">모임 가입률</div>
+      <div class="kpi-target">open 모임 가입 전환율</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-value">+20%</div>
+      <div class="kpi-label">멤버 활동률</div>
+      <div class="kpi-target">주간 기록 공유 증가</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-value">70%+</div>
+      <div class="kpi-label">모임 유지율</div>
+      <div class="kpi-target">30일 후 활성 모임 비율</div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════ 9. 변경 이력 ════════════════════════════ -->
+<section class="section" id="sec9">
+  <h2>9. 변경 이력</h2>
+
+  <table class="changelog-table">
+    <thead><tr><th>날짜</th><th>버전</th><th>변경 내용</th></tr></thead>
+    <tbody>
+      <tr><td>2026-03-27</td><td>v1.0</td><td>초안 작성</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ════════════════════════════ Footer ════════════════════════════ -->
+<footer style="text-align:center;padding:32px 0 0;color:#94a3b8;font-size:.82rem;border-top:1px solid #e2e8f0;margin-top:20px;">
+  Habitree Reading Hub &mdash; 독서모임 고도화 기획서 v1.0 &mdash; 2026-03-27
+</footer>
+
+</div><!-- /.container -->
+</body>
+</html>

@@ -4,13 +4,15 @@
 
 export type MemberRole = "leader" | "moderator" | "member";
 export type MemberStatus = "pending" | "approved" | "rejected";
+export type JoinType = "open" | "approval" | "private";
 
 export interface Group {
   id: string;
   name: string;
   description: string | null;
   leader_id: string;
-  is_public: boolean;
+  is_public: boolean; // deprecated — use join_type
+  join_type: JoinType;
   created_at: string;
   updated_at: string;
 }

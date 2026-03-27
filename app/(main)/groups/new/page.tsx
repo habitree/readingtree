@@ -6,13 +6,39 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { createGroup } from "@/app/actions/groups";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, Globe, ShieldCheck, Lock } from "lucide-react";
 import { useTranslation } from "@/lib/i18n";
 import { typography, spacing } from "@/lib/design-tokens";
+import type { JoinType } from "@/types/group";
+
+const JOIN_TYPE_OPTIONS: Array<{
+  value: JoinType;
+  icon: typeof Globe;
+  colorClass: string;
+  selectedClass: string;
+}> = [
+  {
+    value: "open",
+    icon: Globe,
+    colorClass: "text-green-600 dark:text-green-400",
+    selectedClass: "border-green-500 bg-green-50 dark:bg-green-950/20",
+  },
+  {
+    value: "approval",
+    icon: ShieldCheck,
+    colorClass: "text-blue-600 dark:text-blue-400",
+    selectedClass: "border-blue-500 bg-blue-50 dark:bg-blue-950/20",
+  },
+  {
+    value: "private",
+    icon: Lock,
+    colorClass: "text-amber-600 dark:text-amber-400",
+    selectedClass: "border-amber-500 bg-amber-50 dark:bg-amber-950/20",
+  },
+];
 
 /**
  * 모임 생성 페이지
@@ -25,7 +51,7 @@ export default function NewGroupPage() {
   const [formData, setFormData] = useState({
     name: "",
     description: "",
-    isPublic: true,
+    joinType: "approval" as JoinType,
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -36,7 +62,7 @@ export default function NewGroupPage() {
       const result = await createGroup({
         name: formData.name,
         description: formData.description || undefined,
-        isPublic: formData.isPublic,
+        joinType: formData.joinType,
       });
 
       toast.success(t("groups.groupCreatedSuccess"));
@@ -95,20 +121,48 @@ export default function NewGroupPage() {
               />
             </div>
 
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label htmlFor="isPublic">{t("groups.groupPublicLabel")}</Label>
-                <p className="text-sm text-muted-foreground">
-                  {t("groups.groupPublicDesc")}
-                </p>
+            {/* 가입 방식 선택 */}
+            <div className="space-y-3">
+              <Label>{t("groups.joinTypeLabel")}</Label>
+              <div className="grid gap-2">
+                {JOIN_TYPE_OPTIONS.map((option) => {
+                  const Icon = option.icon;
+                  const isSelected = formData.joinType === option.value;
+                  const labelKey = `joinType${option.value.charAt(0).toUpperCase() + option.value.slice(1)}` as
+                    | "joinTypeOpen"
+                    | "joinTypeApproval"
+                    | "joinTypePrivate";
+                  const descKey = `${labelKey}Desc` as
+                    | "joinTypeOpenDesc"
+                    | "joinTypeApprovalDesc"
+                    | "joinTypePrivateDesc";
+
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() =>
+                        setFormData({ ...formData, joinType: option.value })
+                      }
+                      className={`flex items-center gap-3 p-3 rounded-lg border-2 transition-all text-left ${
+                        isSelected
+                          ? option.selectedClass
+                          : "border-transparent bg-muted/50 hover:bg-muted"
+                      }`}
+                    >
+                      <Icon className={`h-5 w-5 shrink-0 ${option.colorClass}`} />
+                      <div className="min-w-0">
+                        <p className="font-medium text-sm">
+                          {t(`groups.${labelKey}`)}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {t(`groups.${descKey}`)}
+                        </p>
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
-              <Switch
-                id="isPublic"
-                checked={formData.isPublic}
-                onCheckedChange={(checked) =>
-                  setFormData({ ...formData, isPublic: checked })
-                }
-              />
             </div>
 
             <div className="flex flex-col gap-2 pt-4">
@@ -142,4 +196,3 @@ export default function NewGroupPage() {
     </div>
   );
 }
-

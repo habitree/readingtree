@@ -547,6 +547,7 @@ export type Database = {
           description: string | null
           id: string
           is_public: boolean | null
+          join_type: Database["public"]["Enums"]["join_type"]
           leader_id: string
           name: string
           updated_at: string | null
@@ -556,6 +557,7 @@ export type Database = {
           description?: string | null
           id?: string
           is_public?: boolean | null
+          join_type?: Database["public"]["Enums"]["join_type"]
           leader_id: string
           name: string
           updated_at?: string | null
@@ -565,6 +567,7 @@ export type Database = {
           description?: string | null
           id?: string
           is_public?: boolean | null
+          join_type?: Database["public"]["Enums"]["join_type"]
           leader_id?: string
           name?: string
           updated_at?: string | null
@@ -1427,6 +1430,7 @@ export type Database = {
         | "in_progress"
         | "completed"
         | "declined"
+      join_type: "open" | "approval" | "private"
       member_role: "leader" | "moderator" | "member"
       member_status: "pending" | "approved" | "rejected"
       note_type: "quote" | "photo" | "memo" | "transcription" | "progress"
@@ -1602,6 +1606,7 @@ export const Constants = {
         "completed",
         "declined",
       ],
+      join_type: ["open", "approval", "private"],
       member_role: ["leader", "moderator", "member"],
       member_status: ["pending", "approved", "rejected"],
       note_type: ["quote", "photo", "memo", "transcription", "progress"],

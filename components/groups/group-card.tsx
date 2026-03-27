@@ -3,17 +3,19 @@
 import Link from "next/link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Users, Lock, Globe, Crown } from "lucide-react";
+import { Users, Lock, Globe, ShieldCheck } from "lucide-react";
 import { formatSmartDate } from "@/lib/utils/date";
 import { useTranslation } from "@/lib/i18n";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import type { JoinType } from "@/types/group";
 
 interface GroupCardProps {
   group: {
     id: string;
     name: string;
     description: string | null;
-    is_public: boolean;
+    is_public?: boolean;
+    join_type?: JoinType;
     created_at: string;
     users?: {
       id: string;
@@ -25,6 +27,39 @@ interface GroupCardProps {
     }>;
   };
   memberCount?: number;
+}
+
+function getJoinTypeBadge(
+  joinType: JoinType | undefined,
+  isPublic: boolean | undefined,
+  t: ReturnType<typeof useTranslation>["t"]
+) {
+  // join_type 우선, 없으면 is_public에서 추론
+  const effectiveType = joinType ?? (isPublic ? "open" : "approval");
+
+  switch (effectiveType) {
+    case "open":
+      return (
+        <Badge className="shrink-0 text-xs bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-400 border-0">
+          <Globe className="mr-1 h-3 w-3" />
+          {t("groups.joinTypeOpen")}
+        </Badge>
+      );
+    case "approval":
+      return (
+        <Badge className="shrink-0 text-xs bg-blue-100 dark:bg-blue-950/30 text-blue-700 dark:text-blue-400 border-0">
+          <ShieldCheck className="mr-1 h-3 w-3" />
+          {t("groups.joinTypeApproval")}
+        </Badge>
+      );
+    case "private":
+      return (
+        <Badge className="shrink-0 text-xs bg-amber-100 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 border-0">
+          <Lock className="mr-1 h-3 w-3" />
+          {t("groups.joinTypePrivate")}
+        </Badge>
+      );
+  }
 }
 
 /**
@@ -45,22 +80,7 @@ export function GroupCard({ group, memberCount }: GroupCardProps) {
                 {group.description || t("groups.noDescription")}
               </CardDescription>
             </div>
-            <Badge
-              variant={group.is_public ? "default" : "secondary"}
-              className="shrink-0 text-xs"
-            >
-              {group.is_public ? (
-                <>
-                  <Globe className="mr-1 h-3 w-3" />
-                  {t("groups.public")}
-                </>
-              ) : (
-                <>
-                  <Lock className="mr-1 h-3 w-3" />
-                  {t("groups.private")}
-                </>
-              )}
-            </Badge>
+            {getJoinTypeBadge(group.join_type, group.is_public, t)}
           </div>
         </CardHeader>
         <CardContent className="pt-0">
@@ -87,4 +107,3 @@ export function GroupCard({ group, memberCount }: GroupCardProps) {
     </Link>
   );
 }
-

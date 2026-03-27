@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
 import {
   Card,
   CardContent,
@@ -32,10 +31,37 @@ import {
   deleteGroup,
 } from "@/app/actions/groups";
 import { toast } from "sonner";
-import { ArrowLeft, Loader2, Trash2, AlertTriangle, Copy, Check, Link as LinkIcon } from "lucide-react";
+import { ArrowLeft, Loader2, Trash2, AlertTriangle, Copy, Check, Link as LinkIcon, Globe, ShieldCheck, Lock } from "lucide-react";
 import { useTranslation } from "@/lib/i18n";
 import { InviteLinkDialog } from "@/components/groups/invite-link-dialog";
 import { typography, spacing } from "@/lib/design-tokens";
+import type { JoinType } from "@/types/group";
+
+const JOIN_TYPE_OPTIONS: Array<{
+  value: JoinType;
+  icon: typeof Globe;
+  colorClass: string;
+  selectedClass: string;
+}> = [
+  {
+    value: "open",
+    icon: Globe,
+    colorClass: "text-green-600 dark:text-green-400",
+    selectedClass: "border-green-500 bg-green-50 dark:bg-green-950/20",
+  },
+  {
+    value: "approval",
+    icon: ShieldCheck,
+    colorClass: "text-blue-600 dark:text-blue-400",
+    selectedClass: "border-blue-500 bg-blue-50 dark:bg-blue-950/20",
+  },
+  {
+    value: "private",
+    icon: Lock,
+    colorClass: "text-amber-600 dark:text-amber-400",
+    selectedClass: "border-amber-500 bg-amber-50 dark:bg-amber-950/20",
+  },
+];
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -56,7 +82,7 @@ export default function GroupSettingsPage({ params }: PageProps) {
   const [formData, setFormData] = useState({
     name: "",
     description: "",
-    isPublic: true,
+    joinType: "approval" as JoinType,
   });
   const [isCopied, setIsCopied] = useState(false);
 
@@ -71,7 +97,7 @@ export default function GroupSettingsPage({ params }: PageProps) {
         setFormData({
           name: group.name || "",
           description: group.description || "",
-          isPublic: group.is_public ?? true,
+          joinType: (group.join_type as JoinType) || (group.is_public ? "open" : "approval"),
         });
       } catch (err) {
         console.error("모임 설정 로드 오류:", err);
@@ -93,7 +119,7 @@ export default function GroupSettingsPage({ params }: PageProps) {
       await updateGroup(groupId, {
         name: formData.name,
         description: formData.description,
-        isPublic: formData.isPublic,
+        joinType: formData.joinType,
       });
       toast.success(t("groups.groupSaveSuccess"));
       router.push(`/groups/${groupId}`);
@@ -218,22 +244,51 @@ export default function GroupSettingsPage({ params }: PageProps) {
               />
             </div>
 
-            <div className="flex items-center justify-between py-2">
-              <div className="space-y-0.5">
-                <Label htmlFor="isPublic">{t("groups.groupPublicLabel")}</Label>
-                <p className="text-sm text-muted-foreground">
-                  {t("groups.groupPublicPrivateDesc").split("\n").map((line, i) => (
-                    i === 0 ? line : <><br key={i} />{line}</>
-                  ))}
-                </p>
+            {/* 가입 방식 선택 */}
+            <div className="space-y-3">
+              <Label>{t("groups.joinTypeLabel")}</Label>
+              <div className="grid gap-2">
+                {JOIN_TYPE_OPTIONS.map((option) => {
+                  const Icon = option.icon;
+                  const isSelected = formData.joinType === option.value;
+                  const labelKey = `joinType${option.value.charAt(0).toUpperCase() + option.value.slice(1)}` as
+                    | "joinTypeOpen"
+                    | "joinTypeApproval"
+                    | "joinTypePrivate";
+                  const descKey = `${labelKey}Desc` as
+                    | "joinTypeOpenDesc"
+                    | "joinTypeApprovalDesc"
+                    | "joinTypePrivateDesc";
+
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() =>
+                        setFormData({ ...formData, joinType: option.value })
+                      }
+                      className={`flex items-center gap-3 p-3 rounded-lg border-2 transition-all text-left ${
+                        isSelected
+                          ? option.selectedClass
+                          : "border-transparent bg-muted/50 hover:bg-muted"
+                      }`}
+                    >
+                      <Icon className={`h-5 w-5 shrink-0 ${option.colorClass}`} />
+                      <div className="min-w-0">
+                        <p className="font-medium text-sm">
+                          {t(`groups.${labelKey}`)}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {t(`groups.${descKey}`)}
+                        </p>
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
-              <Switch
-                id="isPublic"
-                checked={formData.isPublic}
-                onCheckedChange={(checked) =>
-                  setFormData({ ...formData, isPublic: checked })
-                }
-              />
+              <p className="text-xs text-muted-foreground">
+                {t("groups.joinTypeChangeWarning")}
+              </p>
             </div>
 
             <div className="flex gap-2 pt-4">
@@ -267,9 +322,9 @@ export default function GroupSettingsPage({ params }: PageProps) {
             {t("groups.inviteLinkCardTitle")}
           </CardTitle>
           <CardDescription>
-            {formData.isPublic
-              ? t("groups.inviteLinkPublicDesc")
-              : t("groups.inviteLinkPrivateDesc")}
+            {formData.joinType === "private"
+              ? t("groups.inviteLinkPrivateDesc")
+              : t("groups.inviteLinkPublicDesc")}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -298,7 +353,7 @@ export default function GroupSettingsPage({ params }: PageProps) {
               )}
             </Button>
           </div>
-          {!formData.isPublic && (
+          {formData.joinType === "approval" && (
             <p className="text-sm text-amber-600 mt-3">
               {t("groups.privateGroupApprovalHint")}
             </p>

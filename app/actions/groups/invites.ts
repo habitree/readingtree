@@ -57,7 +57,7 @@ export async function getGroupByInviteToken(token: string) {
 
   const { data: inviteToken, error } = await supabase
     .from("group_invite_tokens")
-    .select("*, groups(id, name, description, is_public, max_members)")
+    .select("*, groups(id, name, description, is_public, join_type, max_members)")
     .eq("token", token)
     .eq("is_active", true)
     .gt("expires_at", new Date().toISOString())

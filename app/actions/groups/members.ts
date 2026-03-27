@@ -33,12 +33,17 @@ export async function joinGroup(groupId: string) {
   // 모임 정보 조회
   const { data: group, error: groupError } = await supabase
     .from("groups")
-    .select("is_public")
+    .select("join_type")
     .eq("id", groupId)
     .single();
 
   if (groupError || !group) {
     throw new Error("모임을 찾을 수 없습니다.");
+  }
+
+  // 완전 비공개 모임은 직접 가입 불가 (초대 토큰으로만 가입 가능)
+  if (group.join_type === "private") {
+    throw new Error("이 모임은 초대를 통해서만 가입할 수 있습니다.");
   }
 
   // 이미 멤버인지 확인
@@ -58,8 +63,8 @@ export async function joinGroup(groupId: string) {
     }
   }
 
-  // 공개 모임은 자동 승인, 비공개 모임은 대기
-  const status: MemberStatus = group.is_public ? "approved" : "pending";
+  // open: 자동 승인, approval: 대기
+  const status: MemberStatus = group.join_type === "open" ? "approved" : "pending";
 
   const { error: memberError } = await supabase.from("group_members").insert({
     group_id: groupId,
@@ -74,7 +79,7 @@ export async function joinGroup(groupId: string) {
 
   revalidatePath(`/groups/${groupId}`);
   revalidatePath("/groups");
-  return { success: true, autoApproved: group.is_public };
+  return { success: true, autoApproved: group.join_type === "open" };
 }
 
 /**
@@ -497,6 +502,20 @@ export async function updateMemberRole(
   // 리더의 역할은 변경 불가
   if (group.leader_id === userId) {
     throw new Error("리더의 역할은 변경할 수 없습니다.");
+  }
+
+  // 부리더(moderator) 최대 2명 제한
+  if (newRole === "moderator") {
+    const { count } = await supabase
+      .from("group_members")
+      .select("id", { count: "exact", head: true })
+      .eq("group_id", groupId)
+      .eq("role", "moderator")
+      .eq("status", "approved");
+
+    if ((count ?? 0) >= 2) {
+      throw new Error("부리더는 최대 2명까지 지정할 수 있습니다.");
+    }
   }
 
   // 역할 변경

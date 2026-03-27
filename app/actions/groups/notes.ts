@@ -116,7 +116,7 @@ export async function getGroupBookNotes(
   // 리더인지 확인
   const { data: group } = await supabase
     .from("groups")
-    .select("leader_id, is_public")
+    .select("leader_id, join_type")
     .eq("id", groupId)
     .single();
 
@@ -126,7 +126,7 @@ export async function getGroupBookNotes(
 
   const isLeader = group.leader_id === user.id;
   const isMember = !!membership;
-  const isPublic = group.is_public;
+  const isPublic = group.join_type !== "private";
 
   // 접근 권한 확인
   if (!isLeader && !isMember && !isPublic) {
@@ -212,7 +212,7 @@ export async function getGroupBookNoteCounts(groupId: string) {
   // 리더인지 확인
   const { data: group } = await supabase
     .from("groups")
-    .select("leader_id, is_public")
+    .select("leader_id, join_type")
     .eq("id", groupId)
     .single();
 
@@ -222,7 +222,7 @@ export async function getGroupBookNoteCounts(groupId: string) {
 
   const isLeader = group.leader_id === user.id;
   const isMember = !!membership;
-  const isPublic = group.is_public;
+  const isPublic = group.join_type !== "private";
 
   if (!isLeader && !isMember && !isPublic) {
     throw new Error("모임 멤버만 조회할 수 있습니다.");

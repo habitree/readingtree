@@ -2,6 +2,7 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 export type MemberRole = "leader" | "moderator" | "member";
 export type MemberStatus = "pending" | "approved" | "rejected";
+export type JoinType = "open" | "approval" | "private";
 
 /**
  * createServerSupabaseClient의 반환 타입을 다른 도메인 파일에서 사용할 수 있도록 export

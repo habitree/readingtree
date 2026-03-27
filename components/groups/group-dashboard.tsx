@@ -40,6 +40,7 @@ import {
   Users,
   Lock,
   Globe,
+  ShieldCheck,
   CheckCircle2,
   Clock,
   Settings,
@@ -176,19 +177,27 @@ export function GroupDashboard({ groupData, currentUserId }: GroupDashboardProps
         <div className="space-y-2 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <h1 className={typography.pageTitle}>{group.name}</h1>
-            <Badge variant={group.is_public ? "default" : "secondary"}>
-              {group.is_public ? (
-                <>
+            {(() => {
+              const joinType = group.join_type ?? (group.is_public ? "open" : "approval");
+              if (joinType === "open") return (
+                <Badge className="bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-400 border-0">
                   <Globe className="mr-1 h-3 w-3" />
-                  {t("groups.public")}
-                </>
-              ) : (
-                <>
+                  {t("groups.joinTypeOpen")}
+                </Badge>
+              );
+              if (joinType === "private") return (
+                <Badge className="bg-amber-100 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 border-0">
                   <Lock className="mr-1 h-3 w-3" />
-                  {t("groups.private")}
-                </>
-              )}
-            </Badge>
+                  {t("groups.joinTypePrivate")}
+                </Badge>
+              );
+              return (
+                <Badge className="bg-blue-100 dark:bg-blue-950/30 text-blue-700 dark:text-blue-400 border-0">
+                  <ShieldCheck className="mr-1 h-3 w-3" />
+                  {t("groups.joinTypeApproval")}
+                </Badge>
+              );
+            })()}
           </div>
           {group.description && (
             <p className="text-sm text-muted-foreground">{group.description}</p>
