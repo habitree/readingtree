@@ -8,6 +8,8 @@ import { getGroups, getPublicGroups } from "@/app/actions/groups";
 import { Loader2, Search, Users, Globe } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "@/lib/i18n";
+import { useAuth } from "@/contexts/auth-context";
+import { GuestAlert } from "@/components/ui/guest-alert";
 import { grids } from "@/lib/design-tokens";
 
 /**
@@ -16,15 +18,24 @@ import { grids } from "@/lib/design-tokens";
  */
 export function GroupsContent() {
   const { t } = useTranslation();
+  const { user } = useAuth();
+  const isGuest = !user;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [myGroups, setMyGroups] = useState<any[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [publicGroups, setPublicGroups] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("my");
+  const [activeTab, setActiveTab] = useState(isGuest ? "public" : "my");
 
   useEffect(() => {
-    loadMyGroups();
-  }, []);
+    if (!isGuest) {
+      loadMyGroups();
+    } else {
+      // 게스트는 공개 모임만 로드
+      loadPublicGroups();
+    }
+  }, [isGuest]);
 
   useEffect(() => {
     if (activeTab === "public") {
@@ -67,28 +78,39 @@ export function GroupsContent() {
 
   return (
     <div className="space-y-4">
+      {isGuest && (
+        <GuestAlert
+          variant="compact"
+          message="공개 독서 모임을 미리보고 있어요"
+        />
+      )}
+
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
-          <TabsTrigger value="my">{t("groups.myGroupsTab")}</TabsTrigger>
+          {!isGuest && (
+            <TabsTrigger value="my">{t("groups.myGroupsTab")}</TabsTrigger>
+          )}
           <TabsTrigger value="public">{t("groups.publicGroupsTab")}</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="my" className="space-y-4">
-          {myGroups.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
-                <Users className="h-8 w-8 text-muted-foreground" />
+        {!isGuest && (
+          <TabsContent value="my" className="space-y-4">
+            {myGroups.length === 0 ? (
+              <div className="text-center py-12">
+                <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
+                  <Users className="h-8 w-8 text-muted-foreground" />
+                </div>
+                <h4 className="font-semibold mb-2">{t("groups.noJoinedGroups")}</h4>
               </div>
-              <h4 className="font-semibold mb-2">{t("groups.noJoinedGroups")}</h4>
-            </div>
-          ) : (
-            <div className={grids.threeCol}>
-              {myGroups.map((group) => (
-                <GroupCard key={group.id} group={group} />
-              ))}
-            </div>
-          )}
-        </TabsContent>
+            ) : (
+              <div className={grids.threeCol}>
+                {myGroups.map((group: any) => (
+                  <GroupCard key={group.id} group={group} />
+                ))}
+              </div>
+            )}
+          </TabsContent>
+        )}
 
         <TabsContent value="public" className="space-y-4">
           <div className="relative">
@@ -117,7 +139,7 @@ export function GroupsContent() {
             </div>
           ) : (
             <div className={grids.threeCol}>
-              {publicGroups.map((group) => (
+              {publicGroups.map((group: any) => (
                 <GroupCard key={group.id} group={group} />
               ))}
             </div>
@@ -127,4 +149,3 @@ export function GroupsContent() {
     </div>
   );
 }
-

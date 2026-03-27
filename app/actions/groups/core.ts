@@ -1,6 +1,7 @@
 "use server";
 
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { revalidatePath } from "next/cache";
 import { sanitizeSearchQuery } from "@/lib/utils/validation";
 
@@ -156,7 +157,11 @@ export async function getGroups(isPublic?: boolean) {
 export async function getPublicGroups(searchQuery?: string) {
   const supabase = await createServerSupabaseClient();
 
-  let query = supabase
+  // 인증 여부 확인 — 비로그인이면 Admin Client로 RLS 우회
+  const { data: { user } } = await supabase.auth.getUser();
+  const client = user ? supabase : createAdminSupabaseClient();
+
+  let query = client
     .from("groups")
     .select(
       `
@@ -197,11 +202,64 @@ export async function getGroupDetail(groupId: string) {
   // 현재 사용자 확인
   const {
     data: { user },
-    error: authError,
   } = await supabase.auth.getUser();
 
-  if (authError || !user) {
-    throw new Error("로그인이 필요합니다.");
+  // 게스트: 공개 모임만 제한된 정보로 반환
+  if (!user) {
+    const adminSupabase = createAdminSupabaseClient();
+    const { data: group, error: groupError } = await adminSupabase
+      .from("groups")
+      .select(`
+        *,
+        users!groups_leader_id_fkey (
+          id,
+          name,
+          avatar_url
+        )
+      `)
+      .eq("id", groupId)
+      .single();
+
+    if (groupError || !group) {
+      throw new Error("모임을 찾을 수 없습니다.");
+    }
+
+    // 비공개 모임은 게스트에게 노출하지 않음
+    if (group.join_type === "private") {
+      throw new Error("비공개 모임입니다. 로그인 후 이용해주세요.");
+    }
+
+    // 공개 모임: 멤버 수 + 지정도서만 표시
+    const [membersResult, groupBooksResult] = await Promise.all([
+      adminSupabase
+        .from("group_members")
+        .select(`
+          *,
+          users (id, name, avatar_url)
+        `)
+        .eq("group_id", groupId)
+        .eq("status", "approved"),
+      adminSupabase
+        .from("group_books")
+        .select(`
+          *,
+          books (id, title, author, cover_image_url)
+        `)
+        .eq("group_id", groupId)
+        .order("created_at", { ascending: false })
+        .limit(10),
+    ]);
+
+    return {
+      group,
+      members: membersResult.data || [],
+      myMembership: null,
+      sharedNotes: [],
+      groupBooks: groupBooksResult.data || [],
+      sharedBooks: [],
+      isLeader: false,
+      isGuestPreview: true,
+    };
   }
 
   // Phase 1: 병렬로 membership, group, pendingMembership 조회

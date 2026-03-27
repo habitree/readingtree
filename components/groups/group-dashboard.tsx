@@ -76,6 +76,7 @@ interface GroupDashboardProps {
     sharedBooks?: any[];
     isLeader: boolean;
     isPrivatePreview?: boolean; // 비공개 모임 링크 접근 시
+    isGuestPreview?: boolean; // 비로그인 사용자 접근 시
   };
   currentUserId?: string;
 }
@@ -88,7 +89,7 @@ export function GroupDashboard({ groupData, currentUserId }: GroupDashboardProps
   const router = useRouter();
   const { t } = useTranslation();
   const { showUpgradeModal } = useUpgradeModal();
-  const { group, members, myMembership, sharedNotes, isLeader, isPrivatePreview } = groupData;
+  const { group, members, myMembership, sharedNotes, isLeader, isPrivatePreview, isGuestPreview } = groupData;
   const [isJoining, setIsJoining] = useState(false);
   const [isLeaving, setIsLeaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -611,7 +612,18 @@ export function GroupDashboard({ groupData, currentUserId }: GroupDashboardProps
                   </div>
                 </>
               )}
-              {!isPrivatePreview && !myMembership && (
+              {isGuestPreview && (
+                <>
+                  <Users className="h-12 w-12 text-primary/60 mx-auto" />
+                  <div>
+                    <h3 className="text-lg font-semibold mb-2">공개 모임 미리보기</h3>
+                    <p className="text-muted-foreground">
+                      로그인하면 모임에 참여하고 기록을 함께 나눌 수 있어요
+                    </p>
+                  </div>
+                </>
+              )}
+              {!isPrivatePreview && !isGuestPreview && !myMembership && (
                 <p className="text-muted-foreground">
                   {t("groups.joinToDashboard")}
                 </p>
