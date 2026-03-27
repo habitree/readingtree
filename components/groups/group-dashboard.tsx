@@ -54,6 +54,7 @@ import {
   Library,
 } from "lucide-react";
 import { formatSmartDate } from "@/lib/utils/date";
+import { parseNoteContentFields } from "@/lib/utils/note";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useTranslation } from "@/lib/i18n";
 import { useUpgradeModal, isUpgradeLimitError } from "@/hooks/use-upgrade-modal";
@@ -442,7 +443,10 @@ export function GroupDashboard({ groupData, currentUserId }: GroupDashboardProps
                             )}
                           </p>
                           <p className="text-xs text-muted-foreground truncate">
-                            {note?.content?.slice(0, 80) || ""}
+                            {(() => {
+                              const { quote, memo } = parseNoteContentFields(note?.content);
+                              return (quote || memo || "")?.slice(0, 80);
+                            })()}
                           </p>
                         </div>
                         {note?.image_url && isValidImageUrl(note.image_url) && (

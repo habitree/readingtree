@@ -40,6 +40,7 @@ import {
 import type { NoteType } from "@/types/group";
 import { useTranslation } from "@/lib/i18n";
 import { toggleNoteReaction } from "@/app/actions/groups";
+import { parseNoteContentFields } from "@/lib/utils/note";
 import type { ReactionType } from "@/app/actions/groups";
 import { NoteComments } from "./note-comments";
 import { MessageCircle } from "lucide-react";
@@ -118,12 +119,15 @@ export function GroupNoteCard({
   const TypeIcon = config.icon;
   const isOwner = currentUserId === note.user_id;
 
+  // JSON content를 파싱하여 실제 표시 텍스트 추출
+  const { quote: parsedQuote, memo: parsedMemo } = parseNoteContentFields(note.content);
+  const readableContent = [parsedQuote, parsedMemo].filter(Boolean).join("\n\n") || note.content;
   const shouldTruncate =
-    note.content && note.content.length > CONTENT_PREVIEW_LENGTH;
+    readableContent && readableContent.length > CONTENT_PREVIEW_LENGTH;
   const displayContent =
     shouldTruncate && !isExpanded
-      ? note.content?.slice(0, CONTENT_PREVIEW_LENGTH) + "..."
-      : note.content;
+      ? readableContent?.slice(0, CONTENT_PREVIEW_LENGTH) + "..."
+      : readableContent;
 
   const handleUnshare = () => {
     onUnshare?.(note.id);
