@@ -3,6 +3,7 @@ import { getBookshelves, getMainBookshelf } from "@/app/actions/bookshelves";
 import { getSampleBookshelves } from "@/app/actions/sample";
 import { BookshelfList } from "@/components/bookshelves/bookshelf-list";
 import { CreateBookshelfDialog } from "@/components/bookshelves/create-bookshelf-dialog";
+import { AIOrganizeDialog } from "@/components/bookshelves/ai-organize-dialog";
 import { getCachedCurrentUser } from "@/lib/cached";
 import type { BookshelfWithStats } from "@/types/bookshelf";
 import { PageHeader } from "@/components/layout/page-header";
@@ -58,7 +59,12 @@ export default async function BookshelvesPage() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <PageHeader titleKey="bookshelves.pageTitle" descriptionKey="bookshelves.pageDesc" />
-          {!isGuest && <CreateBookshelfDialog />}
+          {!isGuest && (
+            <div className="flex items-center gap-2">
+              <AIOrganizeDialog />
+              <CreateBookshelfDialog />
+            </div>
+          )}
         </div>
 
         <BookshelfList bookshelves={sortedBookshelves} isGuest={isGuest} />
