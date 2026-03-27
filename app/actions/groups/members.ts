@@ -373,7 +373,7 @@ export async function getPendingMembers(groupId: string) {
       id,
       user_id,
       group_id,
-      created_at,
+      joined_at,
       users (
         id,
         name,
@@ -383,7 +383,7 @@ export async function getPendingMembers(groupId: string) {
     )
     .eq("group_id", groupId)
     .eq("status", "pending")
-    .order("created_at", { ascending: true });
+    .order("joined_at", { ascending: true });
 
   if (error) {
     throw new Error(`대기 멤버 조회 실패: ${error.message}`);

@@ -123,7 +123,7 @@ export interface PendingMember {
   id: string;
   user_id: string;
   group_id: string;
-  created_at: string;
+  joined_at: string;
   user: {
     id: string;
     name: string;
