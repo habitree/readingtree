@@ -1132,3 +1132,294 @@ export async function getSamplePointsDashboardData(): Promise<{
     return { userLevel: 1, levelTitle: undefined, totalPoints: 0 };
   }
 }
+
+// =============================================================================
+// 게스트 독서성향(Stats) 페이지용 샘플 데이터
+// =============================================================================
+
+/**
+ * 샘플 사용자의 독서 통계 (게스트 Stats 페이지용)
+ */
+export async function getSampleReadingStats() {
+  try {
+    const sampleUserId = await getSampleUserId();
+    const supabase = createAdminSupabaseClient();
+
+    const now = new Date();
+    const weekStart = new Date(now);
+    weekStart.setDate(now.getDate() - now.getDay());
+    weekStart.setHours(0, 0, 0, 0);
+
+    const yearStart = new Date(now.getFullYear(), 0, 1);
+
+    const [weekNotes, yearNotes, yearBooks, topBooksResult, recentBooksResult] = await Promise.all([
+      supabase
+        .from("notes")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", sampleUserId)
+        .gte("created_at", weekStart.toISOString()),
+      supabase
+        .from("notes")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", sampleUserId)
+        .gte("created_at", yearStart.toISOString()),
+      supabase
+        .from("user_books")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", sampleUserId)
+        .eq("status", "completed")
+        .gte("completed_at", yearStart.toISOString()),
+      supabase
+        .from("user_books")
+        .select("book_id, books(title, author, cover_image_url)")
+        .eq("user_id", sampleUserId)
+        .eq("status", "completed")
+        .order("completed_at", { ascending: false })
+        .limit(5),
+      supabase
+        .from("user_books")
+        .select("book_id, books(title, author, cover_image_url), updated_at")
+        .eq("user_id", sampleUserId)
+        .order("updated_at", { ascending: false })
+        .limit(5),
+    ]);
+
+    return {
+      thisWeek: { notes: weekNotes.count ?? 0 },
+      thisYear: {
+        completedBooks: yearBooks.count ?? 0,
+        notes: yearNotes.count ?? 0,
+      },
+      topBooks: (topBooksResult.data ?? []).map((b: Record<string, unknown>) => {
+        const book = Array.isArray(b.books) ? b.books[0] : b.books;
+        return book ?? {};
+      }),
+      recentBooks: (recentBooksResult.data ?? []).map((b: Record<string, unknown>) => {
+        const book = Array.isArray(b.books) ? b.books[0] : b.books;
+        return book ?? {};
+      }),
+    };
+  } catch {
+    return {
+      thisWeek: { notes: 0 },
+      thisYear: { completedBooks: 0, notes: 0 },
+      topBooks: [],
+      recentBooks: [],
+    };
+  }
+}
+
+/**
+ * 샘플 사용자의 월별 통계 (게스트 Stats 페이지용)
+ */
+export async function getSampleMonthlyStats() {
+  try {
+    const sampleUserId = await getSampleUserId();
+    const supabase = createAdminSupabaseClient();
+
+    const months: { month: string; count: number }[] = [];
+    const now = new Date();
+
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const start = d.toISOString();
+      const end = new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59).toISOString();
+
+      const { count } = await supabase
+        .from("notes")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", sampleUserId)
+        .gte("created_at", start)
+        .lte("created_at", end);
+
+      months.push({
+        month: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`,
+        count: count ?? 0,
+      });
+    }
+
+    return months;
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * 샘플 사용자의 주간 진행률 (게스트 Stats 페이지용)
+ */
+export async function getSampleWeeklyProgress() {
+  const dayLabels = ["일", "월", "화", "수", "목", "금", "토"];
+
+  const makeDays = (records: Map<string, number> = new Map()) => {
+    const now = new Date();
+    const todayStr = now.toISOString().split("T")[0];
+    const days = [];
+
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(now.getDate() - i);
+      const dateStr = d.toISOString().split("T")[0];
+      const count = records.get(dateStr) ?? 0;
+      days.push({
+        date: dateStr,
+        dayOfWeek: d.getDay(),
+        dayLabel: dayLabels[d.getDay()],
+        hasRecord: count > 0,
+        count,
+        isToday: dateStr === todayStr,
+        isFuture: false,
+      });
+    }
+    return days;
+  };
+
+  try {
+    const sampleUserId = await getSampleUserId();
+    const supabase = createAdminSupabaseClient();
+
+    const now = new Date();
+    const weekAgo = new Date(now);
+    weekAgo.setDate(now.getDate() - 6);
+
+    const { data: notes } = await supabase
+      .from("notes")
+      .select("created_at")
+      .eq("user_id", sampleUserId)
+      .gte("created_at", weekAgo.toISOString());
+
+    const records = new Map<string, number>();
+    if (notes) {
+      for (const n of notes) {
+        const date = new Date(n.created_at).toISOString().split("T")[0];
+        records.set(date, (records.get(date) ?? 0) + 1);
+      }
+    }
+
+    const days = makeDays(records);
+    const recordedDays = days.filter((d) => d.hasRecord).length;
+
+    // 연속 기록 계산 (뒤에서부터)
+    let streak = 0;
+    for (let i = days.length - 1; i >= 0; i--) {
+      if (days[i].hasRecord) streak++;
+      else break;
+    }
+
+    return {
+      days,
+      recordedDays,
+      totalDays: 7,
+      streak,
+      streakStatus: streak > 0 ? ("active" as const) : ("none" as const),
+    };
+  } catch {
+    return {
+      days: makeDays(),
+      recordedDays: 0,
+      totalDays: 7,
+      streak: 0,
+      streakStatus: "none" as const,
+    };
+  }
+}
+
+/**
+ * 샘플 사용자의 목표 진행률 (게스트 Stats 페이지용)
+ */
+export async function getSampleGoalProgress() {
+  try {
+    const sampleUserId = await getSampleUserId();
+    const supabase = createAdminSupabaseClient();
+
+    const { data: profile } = await supabase
+      .from("users")
+      .select("reading_goal")
+      .eq("id", sampleUserId)
+      .maybeSingle();
+
+    const goal = (profile as Record<string, unknown>)?.reading_goal as number ?? 12;
+    const yearStart = new Date(new Date().getFullYear(), 0, 1).toISOString();
+
+    const { count } = await supabase
+      .from("user_books")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", sampleUserId)
+      .eq("status", "completed")
+      .gte("completed_at", yearStart);
+
+    const completed = count ?? 0;
+    return {
+      goal,
+      completed,
+      progress: goal > 0 ? Math.round((completed / goal) * 100) : 0,
+      remaining: Math.max(0, goal - completed),
+    };
+  } catch {
+    return { goal: 0, completed: 0, progress: 0, remaining: 0 };
+  }
+}
+
+/**
+ * 샘플 사용자의 캘린더 기록 (게스트 Stats 페이지용)
+ */
+export async function getSampleDailyRecordsForCalendar(
+  startDate: Date,
+  endDate: Date
+): Promise<Record<string, number>> {
+  try {
+    const sampleUserId = await getSampleUserId();
+    const supabase = createAdminSupabaseClient();
+
+    const { data: notes } = await supabase
+      .from("notes")
+      .select("created_at")
+      .eq("user_id", sampleUserId)
+      .gte("created_at", startDate.toISOString())
+      .lte("created_at", endDate.toISOString());
+
+    if (!notes) return {};
+
+    const records: Record<string, number> = {};
+    for (const note of notes) {
+      const date = new Date(note.created_at).toISOString().split("T")[0];
+      records[date] = (records[date] || 0) + 1;
+    }
+    return records;
+  } catch {
+    return {};
+  }
+}
+
+/**
+ * 샘플 사용자의 태그 목록 (게스트용)
+ */
+export async function getSampleUserTagsWithCount(): Promise<{ tag: string; count: number }[]> {
+  try {
+    const sampleUserId = await getSampleUserId();
+    const supabase = createAdminSupabaseClient();
+
+    const { data: notes } = await supabase
+      .from("notes")
+      .select("tags")
+      .eq("user_id", sampleUserId)
+      .not("tags", "is", null);
+
+    if (!notes) return [];
+
+    const tagMap = new Map<string, number>();
+    for (const note of notes) {
+      const tags = note.tags as string[] | null;
+      if (tags) {
+        for (const tag of tags) {
+          tagMap.set(tag, (tagMap.get(tag) || 0) + 1);
+        }
+      }
+    }
+
+    return Array.from(tagMap.entries())
+      .map(([tag, count]) => ({ tag, count }))
+      .sort((a, b) => b.count - a.count);
+  } catch {
+    return [];
+  }
+}

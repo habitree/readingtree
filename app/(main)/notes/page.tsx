@@ -3,9 +3,10 @@ import { Metadata } from "next";
 import { searchNotes } from "@/app/actions/search";
 import { getDraftNotesCount, getUserTagsWithCount } from "@/app/actions/notes";
 import { getCachedCurrentUser } from "@/lib/cached";
+import { getSampleAllNotes, getSampleUserTagsWithCount } from "@/app/actions/sample";
 import { NotesHubClient } from "@/components/notes/notes-hub-client";
 import { NoteList } from "@/components/notes/note-list";
-import type { NoteType } from "@/types/note";
+import type { NoteType, NoteWithBook } from "@/types/note";
 import type { SearchSortBy } from "@/app/actions/search";
 
 export const metadata: Metadata = {
@@ -109,6 +110,46 @@ async function NotesHubContent({
   status?: "draft" | "published";
 }) {
   const user = await getCachedCurrentUser();
+  const isGuest = !user;
+
+  if (isGuest) {
+    // 게스트: 샘플 노트 데이터 표시
+    const [sampleNotes, sampleTags] = await Promise.all([
+      getSampleAllNotes(),
+      getSampleUserTagsWithCount(),
+    ]);
+
+    // 타입 필터 적용
+    let filtered = sampleNotes;
+    if (types && types.length > 0) {
+      filtered = filtered.filter((n) => types.includes(n.type));
+    }
+
+    // 간단한 페이징
+    const perPage = 20;
+    const total = filtered.length;
+    const totalPages = Math.ceil(total / perPage);
+    const paged = filtered.slice((page - 1) * perPage, page * perPage);
+
+    return (
+      <NotesHubClient
+        notes={paged}
+        tags={sampleTags}
+        draftCount={0}
+        activeTab={tab}
+        activeView={view as "list" | "timeline" | "book"}
+        sort={sort}
+        searchQuery={query}
+        total={total}
+        totalPages={totalPages}
+        currentPage={page}
+        activeBookId={bookId}
+        activeStartDate={startDate}
+        activeEndDate={endDate}
+        activeTags={tags}
+      />
+    );
+  }
 
   const [searchResult, draftCount, userTags] = await Promise.all([
     searchNotes(
@@ -126,17 +167,17 @@ async function NotesHubContent({
       user
     ),
     getDraftNotesCount(user),
-    user ? getUserTagsWithCount(user) : Promise.resolve([]),
+    getUserTagsWithCount(user),
   ]);
 
   // searchNotes 결과를 NoteWithBook 형태로 정규화
-  const notes = searchResult.results.map((note: any) => {
+  const notes = searchResult.results.map((note: Record<string, unknown>) => {
     const book = Array.isArray(note.books) ? note.books[0] : note.books;
     const transcription = Array.isArray(note.transcriptions)
       ? note.transcriptions[0]
       : note.transcriptions;
     return { ...note, book, transcription };
-  });
+  }) as NoteWithBook[];
 
   return (
     <NotesHubClient
