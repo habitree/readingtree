@@ -20,6 +20,12 @@ import {
   History,
   CheckCircle2,
   ArrowUp,
+  Gift,
+  Bot,
+  Camera,
+  FileText,
+  Star,
+  Users,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -35,6 +41,8 @@ import type {
   MissionWithDetails,
 } from "@/types/points";
 import { LEVEL_STYLES, LEVEL_DEFAULTS, POINT_ACTION_DEFAULTS } from "@/types/points";
+import { POINT_PACKAGES, FEATURE_INFO_ROWS } from "@/lib/subscription/pricing-data";
+import { LoginPromptModal } from "@/components/ui/login-prompt-modal";
 
 interface PointsPageContentProps {
   dashboardData: PointsDashboardData;
@@ -69,14 +77,7 @@ export function PointsPageContent({
   const completedMissions = missions.filter((m) => m.status === "completed").length;
 
   if (!userPoints) {
-    return (
-      <div className="container max-w-4xl mx-auto py-6 px-4">
-        <PageHeader titleKey={"points.pageTitle" as TranslationKey} />
-        <div className="text-center py-12 text-muted-foreground">
-          {t("points.noData")}
-        </div>
-      </div>
-    );
+    return <GuestPointsGuide />;
   }
 
   return (
@@ -584,4 +585,262 @@ function getNextMilestoneText(
   if (streak < 30) return t("points.milestone30", { days: 30 - streak });
   if (streak < 100) return t("points.milestone100", { days: 100 - streak });
   return "";
+}
+
+// =============================================================================
+// 게스트 포인트 안내 컴포넌트
+// =============================================================================
+
+function GuestPointsGuide() {
+  const { t } = useTranslation();
+  const [loginOpen, setLoginOpen] = useState(false);
+
+  const earningActions = [
+    { icon: PenLine, label: "노트 작성", points: "10P", desc: "인용·메모·사진·필사" },
+    { icon: BookOpen, label: "완독 달성", points: "60P", desc: "책 한 권 완독 시" },
+    { icon: Flame, label: "매일 첫 활동", points: "8P", desc: "하루 첫 기록 보너스" },
+    { icon: Target, label: "일일 미션 완료", points: "10~40P", desc: "매일 2~3개 미션 제공" },
+    { icon: Trophy, label: "연속 기록 달성", points: "50~500P", desc: "7일·30일·100일 보너스" },
+    { icon: Star, label: "가입 환영 보너스", points: "200P", desc: "첫 가입 시 즉시 지급" },
+  ];
+
+  const spendingFeatures = FEATURE_INFO_ROWS.filter((f) =>
+    ["ai_chat", "ocr", "ai_report"].includes(f.key)
+  );
+
+  const levelPreview = LEVEL_DEFAULTS.slice(0, 5);
+
+  return (
+    <div className="container max-w-4xl mx-auto py-6 px-4 space-y-6">
+      <PageHeader titleKey={"points.pageTitle" as TranslationKey} />
+
+      {/* 히어로: 포인트 시스템 소개 */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="relative rounded-2xl border-2 overflow-hidden bg-gradient-to-br from-forest-50 to-emerald-50 dark:from-forest-950/30 dark:to-emerald-950/30 border-forest-200 dark:border-forest-800"
+      >
+        <div className="absolute inset-0 opacity-[0.03] bg-[radial-gradient(circle_at_30%_20%,currentColor_1px,transparent_1px)] [background-size:16px_16px]" />
+        <div className="relative p-6 sm:p-8 text-center space-y-4">
+          <div className="w-20 h-20 mx-auto rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-lg">
+            <Coins className="h-10 w-10 text-white" />
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold text-forest-700 dark:text-forest-300">
+              읽고 기록하면 포인트가 쌓여요
+            </h2>
+            <p className="text-sm text-muted-foreground mt-2 max-w-md mx-auto">
+              독서 활동으로 포인트를 적립하고, AI 채팅·OCR 필사·독서 리포트 등 프리미엄 기능을 이용하세요
+            </p>
+          </div>
+          <Button
+            size="lg"
+            className="mt-2"
+            onClick={() => setLoginOpen(true)}
+          >
+            <Gift className="h-4 w-4 mr-2" />
+            가입하고 200P 받기
+          </Button>
+        </div>
+      </motion.div>
+
+      {/* 포인트 적립 방법 */}
+      <Card className="overflow-hidden">
+        <div className="px-5 py-4 border-b bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20">
+          <h3 className="font-semibold flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-amber-500" />
+            포인트 적립 방법
+          </h3>
+          <p className="text-xs text-muted-foreground mt-1">
+            하루 평균 60~100P 적립 가능 · 월 약 2,000P
+          </p>
+        </div>
+        <div className="divide-y">
+          {earningActions.map((action) => (
+            <div key={action.label} className="px-5 py-3.5 flex items-center gap-3">
+              <div className="w-9 h-9 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center shrink-0">
+                <action.icon className="h-4 w-4 text-green-600 dark:text-green-400" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium">{action.label}</p>
+                <p className="text-xs text-muted-foreground">{action.desc}</p>
+              </div>
+              <Badge variant="secondary" className="shrink-0 text-xs font-semibold text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-950/30">
+                +{action.points}
+              </Badge>
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      {/* 무료 한도 & 포인트 사용처 */}
+      <Card className="overflow-hidden">
+        <div className="px-5 py-4 border-b bg-gradient-to-r from-violet-50 to-purple-50 dark:from-violet-950/20 dark:to-purple-950/20">
+          <h3 className="font-semibold flex items-center gap-2">
+            <Zap className="h-5 w-5 text-violet-500" />
+            프리미엄 기능 · 무료 한도
+          </h3>
+          <p className="text-xs text-muted-foreground mt-1">
+            매달 무료 한도가 제공되며, 추가 사용 시 포인트로 이용
+          </p>
+        </div>
+        <div className="divide-y">
+          {spendingFeatures.map((feature) => {
+            const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
+              ai_chat: Bot,
+              ocr: Camera,
+              ai_report: FileText,
+            };
+            const Icon = iconMap[feature.key] || Zap;
+            return (
+              <div key={feature.key} className="px-5 py-3.5 flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center shrink-0">
+                  <Icon className="h-4 w-4 text-violet-600 dark:text-violet-400" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium">{feature.label}</p>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <Badge variant="outline" className="text-xs">
+                      무료 {feature.freeLimit}
+                    </Badge>
+                    <span className="text-xs text-muted-foreground">
+                      초과 시 {feature.pointCost}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        {/* 무제한 기능 */}
+        <div className="px-5 py-3 bg-muted/30 border-t">
+          <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+            <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />
+            노트 작성(100개/월) · 모임 · 책장 · 통계 · 데이터 내보내기는 무료
+          </p>
+        </div>
+      </Card>
+
+      {/* 포인트 충전 패키지 */}
+      <Card className="overflow-hidden">
+        <div className="px-5 py-4 border-b bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20">
+          <h3 className="font-semibold flex items-center gap-2">
+            <CreditCard className="h-5 w-5 text-amber-500" />
+            포인트 충전 패키지
+          </h3>
+          <p className="text-xs text-muted-foreground mt-1">
+            첫 충전 시 보너스 2배 · 일반 충전에도 보너스 포인트 포함
+          </p>
+        </div>
+        <div className="grid grid-cols-3 gap-3 p-4">
+          {POINT_PACKAGES.map((pkg) => (
+            <div
+              key={pkg.id}
+              className={cn(
+                "rounded-xl border p-4 text-center space-y-2 transition-colors",
+                pkg.highlighted
+                  ? "border-amber-300 dark:border-amber-700 bg-amber-50/50 dark:bg-amber-950/20 ring-1 ring-amber-200 dark:ring-amber-800"
+                  : "border-border"
+              )}
+            >
+              {pkg.highlighted && (
+                <Badge className="text-[10px] bg-amber-500 text-white">인기</Badge>
+              )}
+              <p className="text-sm font-semibold">{pkg.displayName}</p>
+              <p className="text-2xl font-bold text-forest-600 dark:text-forest-400">
+                {pkg.points.toLocaleString()}
+                <span className="text-xs font-normal text-muted-foreground ml-0.5">P</span>
+              </p>
+              {pkg.bonusPoints > 0 && (
+                <p className="text-xs text-amber-600 dark:text-amber-400">
+                  +{pkg.bonusPoints}P 보너스
+                </p>
+              )}
+              <p className="text-sm font-medium text-muted-foreground">
+                ₩{pkg.price.toLocaleString()}
+              </p>
+              <p className="text-[10px] text-amber-500">
+                첫충전 +{pkg.firstPurchaseBonusPoints}P
+              </p>
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      {/* 레벨 시스템 미리보기 */}
+      <Card className="overflow-hidden">
+        <div className="px-5 py-4 border-b">
+          <h3 className="font-semibold flex items-center gap-2">
+            <TrendingUp className="h-5 w-5 text-emerald-500" />
+            성장 레벨 시스템
+          </h3>
+          <p className="text-xs text-muted-foreground mt-1">
+            독서 활동으로 경험치를 쌓아 씨앗에서 황금숲까지 성장
+          </p>
+        </div>
+        <div className="divide-y">
+          {LEVEL_DEFAULTS.map((level) => {
+            const style = LEVEL_STYLES[level.level];
+            return (
+              <div key={level.level} className="px-5 py-3 flex items-center gap-3">
+                <div className={cn(
+                  "w-10 h-10 rounded-xl flex items-center justify-center text-xl border",
+                  style.bgColor, style.borderColor
+                )}>
+                  {style.emoji}
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium">
+                    Lv.{level.level} {level.title}
+                  </p>
+                  <p className="text-xs text-muted-foreground">{level.description}</p>
+                </div>
+                <span className="text-xs text-muted-foreground tabular-nums">
+                  {level.required_points > 0
+                    ? `${level.required_points.toLocaleString()}P`
+                    : "시작"}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </Card>
+
+      {/* CTA */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3 }}
+      >
+        <Card
+          className="p-5 bg-gradient-to-r from-forest-50 to-emerald-50 dark:from-forest-950/20 dark:to-emerald-950/20 border-forest-200 dark:border-forest-800 cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => setLoginOpen(true)}
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-forest-500 to-emerald-600 flex items-center justify-center shadow-md">
+                <Users className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <p className="font-semibold text-forest-700 dark:text-forest-300">
+                  지금 시작하면 200P 지급
+                </p>
+                <p className="text-xs text-forest-600/70 dark:text-forest-400/60">
+                  가입 즉시 환영 보너스 · AI 채팅 5회 분량
+                </p>
+              </div>
+            </div>
+            <ChevronRight className="h-5 w-5 text-forest-500" />
+          </div>
+        </Card>
+      </motion.div>
+
+      <LoginPromptModal
+        open={loginOpen}
+        onOpenChange={setLoginOpen}
+        title="포인트 시스템 이용하기"
+        description="가입하면 즉시 200P 환영 보너스가 지급됩니다"
+      />
+    </div>
+  );
 }
