@@ -1151,6 +1151,8 @@ export const en: Dictionary = {
     requestJoin: "Request to Join",
     pendingApprovalTitle: "Pending Approval",
     pendingApprovalDesc: "Your join request has been submitted. Waiting for leader approval.",
+    rejectedTitle: "Join Request Declined",
+    rejectedDesc: "Your join request was not approved. Please contact the group admin for details.",
     joinToDashboard: "Join the group to view the dashboard.",
     leaveConfirmTitle: "Leave this group?",
     leaveConfirmDesc: "You will leave {name}. You will need to request again to rejoin.",

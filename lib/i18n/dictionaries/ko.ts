@@ -1151,6 +1151,8 @@ export const ko = {
     requestJoin: "참여 신청하기",
     pendingApprovalTitle: "승인 대기 중",
     pendingApprovalDesc: "참여 신청이 완료되었습니다. 리더의 승인을 기다리고 있습니다.",
+    rejectedTitle: "가입 신청이 승인되지 않았습니다",
+    rejectedDesc: "관리자가 가입 신청을 승인하지 않았습니다. 자세한 내용은 모임 관리자에게 문의해주세요.",
     joinToDashboard: "모임에 참여하여 대시보드를 확인하세요.",
     leaveConfirmTitle: "모임을 나가시겠어요?",
     leaveConfirmDesc: "{name} 모임에서 나갑니다. 다시 참여하려면 새로 신청해야 합니다.",

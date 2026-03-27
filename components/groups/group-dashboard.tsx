@@ -41,6 +41,7 @@ import {
   Lock,
   Globe,
   ShieldCheck,
+  AlertCircle,
   CheckCircle2,
   Clock,
   Settings,
@@ -624,6 +625,17 @@ export function GroupDashboard({ groupData, currentUserId }: GroupDashboardProps
                     <h3 className="text-lg font-semibold mb-2">{t("groups.pendingApprovalTitle")}</h3>
                     <p className="text-muted-foreground">
                       {t("groups.pendingApprovalDesc")}
+                    </p>
+                  </div>
+                </>
+              )}
+              {myMembership?.status === "rejected" && (
+                <>
+                  <AlertCircle className="h-12 w-12 text-destructive mx-auto" />
+                  <div>
+                    <h3 className="text-lg font-semibold mb-2">{t("groups.rejectedTitle")}</h3>
+                    <p className="text-muted-foreground">
+                      {t("groups.rejectedDesc")}
                     </p>
                   </div>
                 </>

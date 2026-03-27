@@ -287,13 +287,13 @@ export async function getGroupDetail(groupId: string) {
       )
       .eq("id", groupId)
       .single(),
-    // 대기 중인 멤버십 확인 (pending 상태)
+    // 대기/거부 멤버십 확인 (pending 또는 rejected 상태)
     supabase
       .from("group_members")
       .select("role, status")
       .eq("group_id", groupId)
       .eq("user_id", user.id)
-      .eq("status", "pending")
+      .in("status", ["pending", "rejected"])
       .single(),
   ]);
 
