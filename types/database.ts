@@ -1355,11 +1355,15 @@ export type Database = {
         Row: {
           ai_enabled: boolean | null
           avatar_url: string | null
+          bio: string | null
           consent_date: string | null
           created_at: string | null
           email: string | null
+          favorite_book: string | null
+          favorite_quote: string | null
           id: string
           is_admin: boolean | null
+          is_profile_public: boolean
           name: string
           onboarding_checklist: Json | null
           privacy_agreed: boolean | null
@@ -1371,11 +1375,15 @@ export type Database = {
         Insert: {
           ai_enabled?: boolean | null
           avatar_url?: string | null
+          bio?: string | null
           consent_date?: string | null
           created_at?: string | null
           email?: string | null
+          favorite_book?: string | null
+          favorite_quote?: string | null
           id: string
           is_admin?: boolean | null
+          is_profile_public?: boolean
           name: string
           onboarding_checklist?: Json | null
           privacy_agreed?: boolean | null
@@ -1387,11 +1395,15 @@ export type Database = {
         Update: {
           ai_enabled?: boolean | null
           avatar_url?: string | null
+          bio?: string | null
           consent_date?: string | null
           created_at?: string | null
           email?: string | null
+          favorite_book?: string | null
+          favorite_quote?: string | null
           id?: string
           is_admin?: boolean | null
+          is_profile_public?: boolean
           name?: string
           onboarding_checklist?: Json | null
           privacy_agreed?: boolean | null

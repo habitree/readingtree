@@ -25,7 +25,7 @@ export async function getProfile() {
   // 프로필 조회 (필요한 필드만 명시적으로 선택)
   let { data, error } = await supabase
     .from("users")
-    .select("id, name, email, avatar_url, reading_goal, bio, is_admin, terms_agreed, privacy_agreed, created_at, updated_at")
+    .select("id, name, email, avatar_url, reading_goal, bio, favorite_book, favorite_quote, is_profile_public, is_admin, terms_agreed, privacy_agreed, created_at, updated_at")
     .eq("id", user.id)
     .single();
 
@@ -65,6 +65,10 @@ export async function getProfile() {
 export async function updateProfile(data: {
   name?: string;
   reading_goal?: number;
+  bio?: string;
+  favorite_book?: string;
+  favorite_quote?: string;
+  is_profile_public?: boolean;
 }) {
   const supabase = await createServerSupabaseClient();
 
@@ -93,16 +97,25 @@ export async function updateProfile(data: {
   }
 
   // 프로필 업데이트
-  const updateData: {
-    name?: string;
-    reading_goal?: number;
-  } = {};
+  const updateData: Record<string, unknown> = {};
 
   if (data.name !== undefined) {
     updateData.name = data.name.trim();
   }
   if (data.reading_goal !== undefined) {
     updateData.reading_goal = data.reading_goal;
+  }
+  if (data.bio !== undefined) {
+    updateData.bio = data.bio.trim() || null;
+  }
+  if (data.favorite_book !== undefined) {
+    updateData.favorite_book = data.favorite_book.trim() || null;
+  }
+  if (data.favorite_quote !== undefined) {
+    updateData.favorite_quote = data.favorite_quote.trim() || null;
+  }
+  if (data.is_profile_public !== undefined) {
+    updateData.is_profile_public = data.is_profile_public;
   }
 
   const { error } = await supabase
@@ -118,7 +131,7 @@ export async function updateProfile(data: {
   revalidatePath("/profile");
   revalidatePath("/");
   revalidatePath("/chat");
-  revalidatePath("/", "layout"); // 레이아웃 캐시도 무효화
+  revalidatePath("/", "layout");
   return { success: true };
 }
 
@@ -309,12 +322,26 @@ export async function getUserById(userId: string) {
 
   const { data, error } = await supabase
     .from("users")
-    .select("id, name, avatar_url")
+    .select("id, name, avatar_url, bio, favorite_book, favorite_quote, is_profile_public, created_at")
     .eq("id", userId)
     .single();
 
   if (error || !data) {
     return null;
+  }
+
+  // 비공개 프로필인 경우 기본 정보만 반환
+  if (!data.is_profile_public) {
+    return {
+      id: data.id,
+      name: data.name,
+      avatar_url: data.avatar_url,
+      is_profile_public: false,
+      bio: null,
+      favorite_book: null,
+      favorite_quote: null,
+      created_at: data.created_at,
+    };
   }
 
   return data;

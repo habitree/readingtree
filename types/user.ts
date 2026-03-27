@@ -8,6 +8,10 @@ export interface User {
   name: string;
   avatar_url: string | null;
   reading_goal: number;
+  bio: string | null;
+  favorite_book: string | null;
+  favorite_quote: string | null;
+  is_profile_public: boolean;
   ai_enabled: boolean | null;
   created_at: string;
   updated_at: string;
