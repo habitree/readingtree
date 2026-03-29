@@ -414,7 +414,7 @@ export function MusicMiniPlayer() {
           ? `${formatTime(elapsedSeconds)} 경과 — ${currentTrack.title}`
           : `${formatTime(remainingSeconds)} 남음 — ${currentTrack.title}`
         : currentTrack.title,
-      artist: `${currentTrack.composer} · ${currentTrack.performer}`,
+      artist: currentTrack.composer,
       album: `ReadingTree - ${moodLabel.name}`,
     });
     navigator.mediaSession.setActionHandler("play", () => {

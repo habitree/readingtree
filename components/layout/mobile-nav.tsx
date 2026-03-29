@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Library, FileText, Plus, Menu } from "lucide-react";
+import { Home, Library, FileText, Plus, Menu, Music2 } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
@@ -11,6 +11,7 @@ import { useLoginPrompt } from "@/hooks/use-login-prompt";
 import { LoginPromptModal } from "@/components/ui/login-prompt-modal";
 import { MobileMenuSheet } from "./mobile-menu-sheet";
 import { useQuickCaptureStore } from "@/hooks/use-quick-capture";
+import { useMusicPlayer } from "@/hooks/use-music-player";
 import { useTranslation, type TranslationKey } from "@/lib/i18n";
 import { getContinueReadingBooks } from "@/app/actions/books";
 
@@ -21,7 +22,7 @@ interface MobileNavItem {
   icon: React.ComponentType<{ className?: string }>;
   label: string;
   href?: string;
-  action?: "menu" | "note";
+  action?: "menu" | "note" | "music";
   /** 게스트에게 로그인 유도가 필요한 항목 */
   requiresAuth?: boolean;
   /** FAB 스타일 (중앙 기록 버튼) */
@@ -41,6 +42,7 @@ const mobileNavItemsConfig: MobileNavItemConfig[] = [
   { icon: Library, labelKey: "nav.bookshelf", href: "/books" },
   { icon: Plus, labelKey: "nav.writeNote", action: "note", requiresAuth: true, isFab: true },
   { icon: FileText, labelKey: "notes.myNotes", href: "/notes" },
+  { icon: Music2, labelKey: "nav.more", action: "music" },
   { icon: Menu, labelKey: "nav.more", action: "menu" },
 ];
 
@@ -113,6 +115,34 @@ export function MobileNav() {
               ? pathname === item.href || pathname.startsWith(item.href + "/")
               : false;
             const key = item.href || `action-${item.action}-${index}`;
+
+            // 음악 버튼
+            if (item.action === "music") {
+              const timerStatus = useMusicPlayer.getState().timerStatus;
+              const isPlaying = timerStatus === "running" || timerStatus === "paused";
+              return (
+                <button
+                  key={key}
+                  onClick={() => useMusicPlayer.getState().openTimerSheet()}
+                  className="flex-1 min-h-[44px]"
+                  aria-label="음악"
+                >
+                  <div
+                    className={cn(
+                      "w-full flex flex-col items-center justify-center h-full gap-0.5 sm:gap-1 rounded-none touch-manipulation",
+                      isPlaying
+                        ? "text-primary"
+                        : "hover:bg-accent hover:text-accent-foreground"
+                    )}
+                  >
+                    <Icon className={cn("h-4 w-4 sm:h-5 sm:w-5", isPlaying && "text-primary animate-pulse")} aria-hidden="true" />
+                    <span className={cn("text-[10px] sm:text-xs leading-tight", isPlaying && "text-primary font-medium")}>
+                      음악
+                    </span>
+                  </div>
+                </button>
+              );
+            }
 
             // 더보기 메뉴 버튼
             if (item.action === "menu") {
