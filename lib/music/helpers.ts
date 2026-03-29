@@ -13,6 +13,41 @@ let _themeGroups: MusicThemeGroup[] = [];
 let _loaded = false;
 let _loading: Promise<void> | null = null;
 
+// ── localStorage 캐시 ──
+const CACHE_KEY = "music-cache-v1";
+const CACHE_TTL = 24 * 60 * 60 * 1000; // 24시간
+
+interface MusicCache {
+  tracks: MusicTrack[];
+  playlists: MusicPlaylist[];
+  themeGroups: MusicThemeGroup[];
+  timestamp: number;
+}
+
+function loadLocalCache(): MusicCache | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(CACHE_KEY);
+    if (!raw) return null;
+    const cache = JSON.parse(raw) as MusicCache;
+    if (Date.now() - cache.timestamp > CACHE_TTL) return null;
+    if (!cache.tracks?.length || !cache.playlists?.length) return null;
+    return cache;
+  } catch {
+    return null;
+  }
+}
+
+function saveLocalCache(data: Omit<MusicCache, "timestamp">): void {
+  if (typeof window === "undefined") return;
+  try {
+    const cache: MusicCache = { ...data, timestamp: Date.now() };
+    localStorage.setItem(CACHE_KEY, JSON.stringify(cache));
+  } catch {
+    // localStorage 용량 초과 등 무시
+  }
+}
+
 /** mood 태그 → 이모지 + 한글명 매핑 */
 export const MOOD_LABELS: Record<
   MusicMoodTag,
@@ -27,9 +62,40 @@ export const MOOD_LABELS: Record<
   energetic: { emoji: "🔥", name: "신나는" },
 };
 
+/** Supabase에서 fetch 후 메모리 + localStorage 캐시 갱신 */
+async function fetchAndUpdate(): Promise<void> {
+  const [tracks, playlists, themeGroups] = await Promise.all([
+    fetchTracks(),
+    fetchPlaylists(),
+    fetchThemeGroups(),
+  ]);
+  _tracks = tracks;
+  _playlists = playlists;
+  _themeGroups = themeGroups;
+  _loaded = true;
+  saveLocalCache({ tracks, playlists, themeGroups });
+}
+
+/** 하드코딩 폴백 데이터 로드 */
+async function loadFallback(): Promise<void> {
+  const [{ MUSIC_TRACKS }, { MUSIC_PLAYLISTS }, { MUSIC_THEME_GROUPS }] =
+    await Promise.all([
+      import("./tracks"),
+      import("./playlists"),
+      import("./themes"),
+    ]);
+  _tracks = MUSIC_TRACKS;
+  _playlists = MUSIC_PLAYLISTS;
+  _themeGroups = MUSIC_THEME_GROUPS;
+  _loaded = true;
+}
+
 /**
  * 음악 데이터 초기화 (앱 시작 시 1회 호출)
- * Music Supabase에서 tracks, playlists, themeGroups를 fetch하여 캐시
+ *
+ * 1) localStorage 캐시 히트 → 즉시 로드 + 백그라운드 revalidate
+ * 2) Supabase fetch 시도 → 성공 시 캐시 저장
+ * 3) 실패 시 하드코딩 폴백 (tracks.ts 등)
  */
 export async function initMusicData(): Promise<void> {
   if (_loaded) return;
@@ -37,17 +103,24 @@ export async function initMusicData(): Promise<void> {
 
   _loading = (async () => {
     try {
-      const [tracks, playlists, themeGroups] = await Promise.all([
-        fetchTracks(),
-        fetchPlaylists(),
-        fetchThemeGroups(),
-      ]);
-      _tracks = tracks;
-      _playlists = playlists;
-      _themeGroups = themeGroups;
-      _loaded = true;
+      // 1) localStorage 캐시
+      const cached = loadLocalCache();
+      if (cached) {
+        _tracks = cached.tracks;
+        _playlists = cached.playlists;
+        _themeGroups = cached.themeGroups;
+        _loaded = true;
+        // 백그라운드 revalidate (에러 무시)
+        fetchAndUpdate().catch(() => {});
+        return;
+      }
+
+      // 2) Supabase fetch
+      await fetchAndUpdate();
     } catch (err) {
-      console.error("[Music] 데이터 초기화 실패:", err);
+      // 3) 하드코딩 폴백
+      console.warn("[Music] DB 실패, 하드코딩 폴백 사용:", err);
+      await loadFallback();
     } finally {
       _loading = null;
     }
