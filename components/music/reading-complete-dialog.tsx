@@ -10,6 +10,9 @@ import {
 } from "@/components/ui/dialog";
 import { useMusicPlayer } from "@/hooks/use-music-player";
 import { useQuickCaptureStore } from "@/hooks/use-quick-capture";
+import { useAuth } from "@/hooks/use-auth";
+import { useLoginPrompt } from "@/hooks/use-login-prompt";
+import { LoginPromptModal } from "@/components/ui/login-prompt-modal";
 import { BookOpen, PenLine, ArrowRight, Zap, Loader2, Infinity as InfinityIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -40,11 +43,19 @@ export function ReadingCompleteDialog() {
   } = useMusicPlayer();
 
   const quickCapture = useQuickCaptureStore();
+  const { user } = useAuth();
+  const { isOpen: isLoginOpen, setIsOpen: setIsLoginOpen, title: loginTitle, description: loginDesc, requireLogin } = useLoginPrompt();
   const [showContinueOptions, setShowContinueOptions] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
   /** 빠른 기록: Quick Capture에 타이머 데이터를 전달하여 열기 */
   async function handleQuickRecord() {
+    // 비로그인 시 가입 유도
+    if (requireLogin({
+      title: "독서 기록을 남기려면",
+      description: "로그인 후 독서 기록을 저장할 수 있어요.",
+    })) return;
+
     setIsSaving(true);
     try {
       closeCompleteDialog();
@@ -70,6 +81,7 @@ export function ReadingCompleteDialog() {
   }
 
   return (
+    <>
     <Dialog
       open={isCompleteDialogOpen}
       onOpenChange={(open) => {
@@ -169,5 +181,9 @@ export function ReadingCompleteDialog() {
         </div>
       </DialogContent>
     </Dialog>
+
+    {/* 로그인 유도 모달 */}
+    <LoginPromptModal open={isLoginOpen} onOpenChange={setIsLoginOpen} title={loginTitle} description={loginDesc} />
+    </>
   );
 }
