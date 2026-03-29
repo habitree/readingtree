@@ -14,7 +14,7 @@ let _loaded = false;
 let _loading: Promise<void> | null = null;
 
 // ── localStorage 캐시 ──
-const CACHE_KEY = "music-cache-v1";
+const CACHE_KEY = "music-cache-v2";
 const CACHE_TTL = 24 * 60 * 60 * 1000; // 24시간
 
 interface MusicCache {
@@ -160,7 +160,7 @@ export function getPlaylistTracks(playlistId: string): MusicTrack[] {
 
 /** 기본 플레이리스트 (깊은 집중) 트랙 반환 */
 export function getDefaultPlaylistTracks(): MusicTrack[] {
-  return getPlaylistTracks("mood-focus");
+  return getPlaylistTracks("comfortable");
 }
 
 /** 플레이리스트 ID로 플레이리스트 조회 */

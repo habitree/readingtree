@@ -45,7 +45,7 @@ export function TimerSheet() {
   const [customInput, setCustomInput] = useState("");
   const [favorites, setFavorites] = useState<number[]>([]);
   const [isEditingFavorites, setIsEditingFavorites] = useState(false);
-  const [selectedPlaylistId, setSelectedPlaylistId] = useState("mood-focus");
+  const [selectedPlaylistId, setSelectedPlaylistId] = useState("comfortable");
   const [showAllPlaylists, setShowAllPlaylists] = useState(false);
 
   const playlists = getPlaylists();
@@ -365,7 +365,7 @@ export function TimerSheet() {
             {!showAllPlaylists ? (
               /* 퀵 선택 (인기 4개) */
               <div className="grid grid-cols-4 gap-1.5">
-                {["mood-focus", "mood-relaxing", "time-night", "mood-emotional"].map((pid) => {
+                {["comfortable", "night", "energetic", "calm"].map((pid) => {
                   const pl = playlists.find((p) => p.id === pid);
                   if (!pl) return null;
                   const isSelected = selectedPlaylistId === pid;
