@@ -197,7 +197,7 @@ export function QuickCaptureForm({
         value={content}
         onChange={(e) => setContent(e.target.value)}
         onKeyDown={handleKeyDown}
-        placeholder="읽으면서 떠오른 생각을 자유롭게 적어보세요..."
+        placeholder="이 책에서 떠오른 생각을 적어보세요"
         className="min-h-[80px] max-h-[200px] resize-none text-sm border-muted-foreground/20 focus-visible:ring-primary/30"
         maxLength={10000}
       />
@@ -209,7 +209,7 @@ export function QuickCaptureForm({
         className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
       >
         {expanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-        {expanded ? "간단하게" : "더 추가"}
+        {expanded ? "접기" : "구절·페이지 추가"}
       </button>
 
       {/* 확장 필드 */}
@@ -225,7 +225,7 @@ export function QuickCaptureForm({
               name="quick-capture-quote"
               value={quoteContent}
               onChange={(e) => setQuoteContent(e.target.value)}
-              placeholder="책에서 인상깊었던 문장..."
+              placeholder="기억하고 싶은 문장을 적어보세요"
               className="min-h-[50px] max-h-[120px] resize-none text-sm border-blue-200/50 dark:border-blue-800/30 focus-visible:ring-blue-300/30"
               maxLength={5000}
             />
@@ -258,14 +258,32 @@ export function QuickCaptureForm({
 
       {/* 하단 액션 */}
       <div className="flex items-center justify-between pb-2">
-        <Link
-          href={`/notes/new${selectedBook ? `?bookId=${selectedBook.id}` : ""}`}
-          onClick={() => onReset()}
-          className="text-xs text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1"
-        >
-          상세 기록
-          <ArrowRight className="w-3 h-3" />
-        </Link>
+        {/* 입력 진행 도트 */}
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
+            {[
+              content.trim().length > 0,
+              expanded && quoteContent.trim().length > 0,
+              expanded && pageNumber.trim().length > 0,
+            ].map((filled, i) => (
+              <div
+                key={i}
+                className={cn(
+                  "w-1.5 h-1.5 rounded-full transition-colors",
+                  filled ? "bg-primary" : "bg-muted-foreground/20"
+                )}
+              />
+            ))}
+          </div>
+          <Link
+            href={`/notes/new${selectedBook ? `?bookId=${selectedBook.id}` : ""}`}
+            onClick={() => onReset()}
+            className="text-xs text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1"
+          >
+            사진으로 기록
+            <ArrowRight className="w-3 h-3" />
+          </Link>
+        </div>
         <Button
           size="sm"
           onClick={handleSubmit}
@@ -273,7 +291,7 @@ export function QuickCaptureForm({
           className="gap-1.5"
         >
           <Send className="w-3.5 h-3.5" />
-          {isSubmitting ? "저장 중..." : expanded && publishDirectly ? "발행" : "저장"}
+          {isSubmitting ? "저장 중..." : expanded && publishDirectly ? "발행" : "기록 저장"}
         </Button>
       </div>
     </div>
