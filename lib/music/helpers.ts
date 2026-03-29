@@ -14,7 +14,7 @@ let _loaded = false;
 let _loading: Promise<void> | null = null;
 
 // ── localStorage 캐시 ──
-const CACHE_KEY = "music-cache-v4";
+const CACHE_KEY = "music-cache-v5";
 const CACHE_TTL = 24 * 60 * 60 * 1000; // 24시간
 
 interface MusicCache {
@@ -132,6 +132,11 @@ export async function initMusicData(): Promise<void> {
 /** 데이터 로드 완료 여부 */
 export function isMusicDataLoaded(): boolean {
   return _loaded;
+}
+
+/** 캐시된 전체 트랙 반환 */
+export function getAllTracks(): MusicTrack[] {
+  return _tracks;
 }
 
 /** 캐시된 전체 플레이리스트 반환 */

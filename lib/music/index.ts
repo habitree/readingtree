@@ -2,6 +2,7 @@ export {
   MOOD_LABELS,
   initMusicData,
   isMusicDataLoaded,
+  getAllTracks,
   getPlaylists,
   getThemeGroups,
   getTrackById,
