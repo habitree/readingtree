@@ -154,13 +154,68 @@ export function getTrackById(id: string): MusicTrack | undefined {
   return _tracks.find((t) => t.id === id);
 }
 
-/** 플레이리스트의 트랙 목록 반환 */
+/** 플레이리스트의 트랙 목록 반환 (커스텀 플레이리스트 포함) */
 export function getPlaylistTracks(playlistId: string): MusicTrack[] {
+  if (playlistId === "my-playlist") return getMyPlaylistTracks();
   const playlist = _playlists.find((p) => p.id === playlistId);
   if (!playlist) return [];
   return playlist.trackIds
     .map((id) => getTrackById(id))
     .filter((t): t is MusicTrack => t !== undefined);
+}
+
+// ── 내 플레이리스트 (localStorage) ──
+const MY_PLAYLIST_KEY = "music-my-playlist";
+
+function loadMyPlaylistIds(): string[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(MY_PLAYLIST_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((v): v is string => typeof v === "string");
+  } catch {
+    return [];
+  }
+}
+
+function saveMyPlaylistIds(ids: string[]): void {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(MY_PLAYLIST_KEY, JSON.stringify(ids));
+  } catch {}
+}
+
+/** 내 플레이리스트 트랙 목록 */
+export function getMyPlaylistTracks(): MusicTrack[] {
+  return loadMyPlaylistIds()
+    .map((id) => getTrackById(id))
+    .filter((t): t is MusicTrack => t !== undefined);
+}
+
+/** 내 플레이리스트 트랙 ID 목록 */
+export function getMyPlaylistIds(): string[] {
+  return loadMyPlaylistIds();
+}
+
+/** 내 플레이리스트에 곡 추가 */
+export function addToMyPlaylist(trackId: string): void {
+  const ids = loadMyPlaylistIds();
+  if (!ids.includes(trackId)) {
+    saveMyPlaylistIds([...ids, trackId]);
+  }
+}
+
+/** 내 플레이리스트에서 곡 제거 */
+export function removeFromMyPlaylist(trackId: string): void {
+  const ids = loadMyPlaylistIds();
+  saveMyPlaylistIds(ids.filter((id) => id !== trackId));
+}
+
+/** 내 플레이리스트에 포함 여부 */
+export function isInMyPlaylist(trackId: string): boolean {
+  return loadMyPlaylistIds().includes(trackId);
 }
 
 /** 기본 플레이리스트 (깊은 집중) 트랙 반환 */

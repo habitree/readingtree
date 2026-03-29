@@ -9,8 +9,8 @@ import {
   SheetDescription,
 } from "@/components/ui/sheet";
 import { useMusicPlayer } from "@/hooks/use-music-player";
-import { getTrackMoodLabel, getAllTracks, getPlaylists } from "@/lib/music";
-import { Music2, Check, ListMusic, Library, Play } from "lucide-react";
+import { getTrackMoodLabel, getAllTracks, getPlaylists, isInMyPlaylist, addToMyPlaylist, removeFromMyPlaylist } from "@/lib/music";
+import { Music2, Check, ListMusic, Library, Play, Heart } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { MusicTrack } from "@/types/music";
 
@@ -35,6 +35,17 @@ export function TrackListSheet() {
 
   const [tab, setTab] = useState<TabMode>("current");
   const [filterPlaylistId, setFilterPlaylistId] = useState<string | null>(null);
+  const [myListVersion, setMyListVersion] = useState(0); // 내 플레이리스트 변경 감지용
+
+  function toggleMyPlaylist(trackId: string, e: React.MouseEvent) {
+    e.stopPropagation();
+    if (isInMyPlaylist(trackId)) {
+      removeFromMyPlaylist(trackId);
+    } else {
+      addToMyPlaylist(trackId);
+    }
+    setMyListVersion((v) => v + 1);
+  }
 
   function handleSelectCurrent(index: number) {
     selectTrack(index);
@@ -207,9 +218,27 @@ export function TrackListSheet() {
                   </div>
                 </div>
 
-                <span className="text-xs text-muted-foreground tabular-nums shrink-0">
+                <span className="text-xs text-muted-foreground tabular-nums shrink-0 mr-1">
                   {formatTime(track.durationSeconds)}
                 </span>
+
+                {/* 내 플레이리스트 추가/제거 */}
+                {tab === "all" && (
+                  <button
+                    onClick={(e) => toggleMyPlaylist(track.id, e)}
+                    className={cn(
+                      "shrink-0 p-1 rounded-md transition-colors",
+                      isInMyPlaylist(track.id)
+                        ? "text-pink-500"
+                        : "text-muted-foreground/40 hover:text-pink-400"
+                    )}
+                  >
+                    <Heart
+                      className="w-4 h-4"
+                      fill={isInMyPlaylist(track.id) ? "currentColor" : "none"}
+                    />
+                  </button>
+                )}
               </button>
             );
           })}

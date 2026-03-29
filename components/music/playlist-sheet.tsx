@@ -11,7 +11,7 @@ import {
 import { useMusicPlayer } from "@/hooks/use-music-player";
 import { Star, Plus, X, Clock, Infinity as InfinityIcon, Music2, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { getPlaylists, getThemeGroups, getPlaylistTracks } from "@/lib/music";
+import { getPlaylists, getThemeGroups, getPlaylistTracks, getMyPlaylistIds } from "@/lib/music";
 import { getGlobalAudio } from "./music-mini-player";
 
 // ── 즐겨찾기 localStorage 관리 ──
@@ -364,7 +364,7 @@ export function TimerSheet() {
 
             {!showAllPlaylists ? (
               /* 퀵 선택 (인기 4개) */
-              <div className="grid grid-cols-4 gap-1.5">
+              <div className="grid grid-cols-5 gap-1.5">
                 {["comfortable", "night", "energetic", "calm"].map((pid) => {
                   const pl = playlists.find((p) => p.id === pid);
                   if (!pl) return null;
@@ -387,6 +387,28 @@ export function TimerSheet() {
                     </button>
                   );
                 })}
+                {/* 내 플레이리스트 */}
+                {(() => {
+                  const myCount = getMyPlaylistIds().length;
+                  const isSelected = selectedPlaylistId === "my-playlist";
+                  return (
+                    <button
+                      onClick={() => myCount > 0 && setSelectedPlaylistId("my-playlist")}
+                      className={cn(
+                        "flex flex-col items-center gap-0.5 py-2 px-1 rounded-xl text-center transition-all",
+                        isSelected
+                          ? "bg-primary/10 ring-1 ring-primary/30 text-primary"
+                          : myCount > 0
+                            ? "bg-muted/50 text-muted-foreground hover:bg-muted"
+                            : "bg-muted/30 text-muted-foreground/40 cursor-not-allowed"
+                      )}
+                    >
+                      <span className="text-base">💜</span>
+                      <span className="text-[10px] font-semibold leading-tight">내 목록</span>
+                      <span className="text-[9px] opacity-60">{myCount}곡</span>
+                    </button>
+                  );
+                })()}
               </div>
             ) : (
               /* 전체 테마 브라우저 */
