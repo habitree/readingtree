@@ -2,7 +2,7 @@
 
 import { useRef, useEffect, useCallback } from "react";
 import { useMusicPlayer } from "@/hooks/use-music-player";
-import { getTrackMoodLabel } from "@/lib/music";
+import { getTrackMoodLabel, initMusicData } from "@/lib/music";
 import { TimerSheet } from "./playlist-sheet";
 import { ReadingCompleteDialog } from "./reading-complete-dialog";
 import { TrackListSheet } from "./track-list-sheet";
@@ -179,6 +179,11 @@ export function MusicMiniPlayer() {
   } = useMusicPlayer();
 
   const isTimerActive = timerStatus === "running" || timerStatus === "paused";
+
+  // ── Music Supabase 데이터 초기화 ──
+  useEffect(() => {
+    initMusicData();
+  }, []);
 
   // ── 전역 audio 참조 동기화 ──
   useEffect(() => {

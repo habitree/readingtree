@@ -11,7 +11,7 @@ import {
 import { useMusicPlayer } from "@/hooks/use-music-player";
 import { Star, Plus, X, Clock, Infinity as InfinityIcon, Music2, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { MUSIC_PLAYLISTS, MUSIC_THEME_GROUPS, getPlaylistTracks } from "@/lib/music";
+import { getPlaylists, getThemeGroups, getPlaylistTracks } from "@/lib/music";
 import { getGlobalAudio } from "./music-mini-player";
 
 // ── 즐겨찾기 localStorage 관리 ──
@@ -47,6 +47,9 @@ export function TimerSheet() {
   const [isEditingFavorites, setIsEditingFavorites] = useState(false);
   const [selectedPlaylistId, setSelectedPlaylistId] = useState("mood-focus");
   const [showAllPlaylists, setShowAllPlaylists] = useState(false);
+
+  const playlists = getPlaylists();
+  const themeGroups = getThemeGroups();
 
   // 즐겨찾기 로드
   useEffect(() => {
@@ -363,7 +366,7 @@ export function TimerSheet() {
               /* 퀵 선택 (인기 4개) */
               <div className="grid grid-cols-4 gap-1.5">
                 {["mood-focus", "mood-relaxing", "time-night", "mood-emotional"].map((pid) => {
-                  const pl = MUSIC_PLAYLISTS.find((p) => p.id === pid);
+                  const pl = playlists.find((p) => p.id === pid);
                   if (!pl) return null;
                   const isSelected = selectedPlaylistId === pid;
                   const trackCount = pl.trackIds.length;
@@ -388,14 +391,14 @@ export function TimerSheet() {
             ) : (
               /* 전체 테마 브라우저 */
               <div className="space-y-3 max-h-48 overflow-y-auto">
-                {MUSIC_THEME_GROUPS.map((group) => (
+                {themeGroups.map((group) => (
                   <div key={group.id}>
                     <p className="text-[10px] font-semibold text-muted-foreground mb-1">
                       {group.emoji} {group.name}
                     </p>
                     <div className="flex flex-wrap gap-1.5">
                       {group.playlists.map((pid) => {
-                        const pl = MUSIC_PLAYLISTS.find((p) => p.id === pid);
+                        const pl = playlists.find((p) => p.id === pid);
                         if (!pl) return null;
                         const isSelected = selectedPlaylistId === pid;
                         const tracks = getPlaylistTracks(pid);

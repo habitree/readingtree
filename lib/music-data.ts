@@ -3,10 +3,11 @@
  * 기존 import 호환을 위한 re-export.
  */
 export {
-  MUSIC_TRACKS,
-  MUSIC_PLAYLISTS,
-  MUSIC_THEME_GROUPS,
   MOOD_LABELS,
+  initMusicData,
+  isMusicDataLoaded,
+  getPlaylists,
+  getThemeGroups,
   getTrackById,
   getPlaylistTracks,
   getDefaultPlaylistTracks,
