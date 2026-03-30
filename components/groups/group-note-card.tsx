@@ -182,7 +182,7 @@ export function GroupNoteCard({
                 >
                   {note.users.name}
                 </Link>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-muted-foreground" suppressHydrationWarning>
                   {t("groups.sharedAt").replace("{date}", formatSmartDate(sharedAt))}
                 </p>
               </div>
@@ -338,7 +338,7 @@ export function GroupNoteCard({
                 )}
               </div>
             )}
-            <span className="ml-auto">
+            <span className="ml-auto" suppressHydrationWarning>
               {t("groups.writtenAtDate").replace("{date}", formatSmartDate(note.created_at))}
             </span>
           </div>

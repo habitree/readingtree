@@ -115,7 +115,7 @@ export function NoteCard({ note, showDeleteButton = false, onDelete }: NoteCardP
               </div>
 
               {/* 날짜 */}
-              <time className="text-[10px] sm:text-xs text-muted-foreground shrink-0">
+              <time className="text-[10px] sm:text-xs text-muted-foreground shrink-0" suppressHydrationWarning>
                 {formatSmartDate(note.created_at)}
               </time>
             </div>
@@ -296,7 +296,7 @@ export function NoteCard({ note, showDeleteButton = false, onDelete }: NoteCardP
                     {t("notes.editDraft")}
                   </span>
                 ) : (
-                  <time className="text-[10px] sm:text-xs text-muted-foreground shrink-0">
+                  <time className="text-[10px] sm:text-xs text-muted-foreground shrink-0" suppressHydrationWarning>
                     {formatSmartDate(note.created_at)}
                   </time>
                 )}

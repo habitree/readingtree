@@ -113,7 +113,7 @@ export function ProgressLogList({ userBookId, initialNotes }: ProgressLogListPro
                           p.{pageNumber}
                         </Badge>
                       )}
-                      <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                      <span className="flex items-center gap-1 text-[10px] text-muted-foreground" suppressHydrationWarning>
                         <Clock className="h-3 w-3" />
                         {formatSmartDate(log.created_at)}
                       </span>

@@ -226,7 +226,7 @@ export function ShareNoteSheet({
                               {note.content}
                             </p>
                           )}
-                          <p className="text-xs text-muted-foreground mt-1">
+                          <p className="text-xs text-muted-foreground mt-1" suppressHydrationWarning>
                             {formatSmartDate(note.created_at)}
                           </p>
                         </div>

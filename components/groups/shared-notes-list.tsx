@@ -338,7 +338,7 @@ function SharedNoteItem({
                 </>
               )}
               <span className="text-muted-foreground/40">·</span>
-              <span className="shrink-0">
+              <span className="shrink-0" suppressHydrationWarning>
                 {formatSmartDate(item.shared_at)}
               </span>
             </div>

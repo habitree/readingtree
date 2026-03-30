@@ -106,7 +106,7 @@ export function GroupCard({ group, memberCount }: GroupCardProps) {
                 </div>
               )}
             </div>
-            <span className="shrink-0">{formatSmartDate(group.created_at)}</span>
+            <span className="shrink-0" suppressHydrationWarning>{formatSmartDate(group.created_at)}</span>
           </div>
           {myStatus === "pending" && (
             <Badge className="text-xs bg-amber-100 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 border-0">

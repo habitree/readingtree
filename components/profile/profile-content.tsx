@@ -84,7 +84,7 @@ export function ProfileContent({ initialProfile }: ProfileContentProps) {
               {initialProfile.bio && (
                 <p className="text-sm text-muted-foreground">{initialProfile.bio}</p>
               )}
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-muted-foreground" suppressHydrationWarning>
                 {t("profile.joinDateLabel", { date: formatSmartDate(initialProfile.created_at) })}
               </p>
             </div>

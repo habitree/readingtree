@@ -269,7 +269,7 @@ function CommentItem({
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
           <span className="text-xs font-medium">{comment.users?.name}</span>
-          <span className="text-[10px] text-muted-foreground">{formatSmartDate(comment.created_at)}</span>
+          <span className="text-[10px] text-muted-foreground" suppressHydrationWarning>{formatSmartDate(comment.created_at)}</span>
           {comment.created_at !== comment.updated_at && (
             <span className="text-[10px] text-muted-foreground">({t("groups.commentEdited")})</span>
           )}

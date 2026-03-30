@@ -257,7 +257,7 @@ export function GroupDashboard({ groupData, currentUserId }: GroupDashboardProps
                 <span>{leader?.name || t("groups.unknownUser")}</span>
               </div>
             )}
-            <span>{formatSmartDate(group.created_at)}</span>
+            <span suppressHydrationWarning>{formatSmartDate(group.created_at)}</span>
           </div>
         </div>
 
@@ -476,7 +476,7 @@ export function GroupDashboard({ groupData, currentUserId }: GroupDashboardProps
                             <Image src={getImageUrl(note.image_url)} alt="" fill className="object-cover" sizes="40px" />
                           </div>
                         )}
-                        <span className="text-[10px] text-muted-foreground shrink-0">
+                        <span className="text-[10px] text-muted-foreground shrink-0" suppressHydrationWarning>
                           {formatSmartDate(item.shared_at)}
                         </span>
                       </div>

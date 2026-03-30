@@ -58,7 +58,7 @@ export default async function BooksPage({ searchParams }: BooksPageProps) {
             <div className="min-w-0">
               <BooksPageTitle />
             </div>
-            <MobileBookshelfSelector />
+            <MobileBookshelfSelector isGuest={isGuest} />
           </div>
           <div className="flex items-center gap-1 sm:gap-2 shrink-0">
             <Button variant="outline" size="sm" asChild className="hidden sm:inline-flex">

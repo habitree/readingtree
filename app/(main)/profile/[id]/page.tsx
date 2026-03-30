@@ -50,7 +50,7 @@ export default async function UserProfilePage({ params }: ProfilePageProps) {
                 <p className="text-sm text-muted-foreground">{user.bio}</p>
               )}
               {user.created_at && (
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-muted-foreground" suppressHydrationWarning>
                   {formatSmartDate(user.created_at)}
                 </p>
               )}

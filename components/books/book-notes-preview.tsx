@@ -118,7 +118,7 @@ function NotePreviewItem({
         {ocrStatus && (
           <OCRStatusBadge status={ocrStatus} className="text-xs" />
         )}
-        <span className="text-xs text-muted-foreground">
+        <span className="text-xs text-muted-foreground" suppressHydrationWarning>
           {formatSmartDate(note.created_at)}
         </span>
       </div>

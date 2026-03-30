@@ -111,7 +111,7 @@ export function SearchResultCard({ note, searchQuery }: SearchResultCardProps) {
             <div className="flex-1 min-w-0 space-y-2">
               <div className="flex items-start justify-between gap-2">
                 <Badge variant="secondary">{typeLabel}</Badge>
-                <span className="text-xs text-muted-foreground">
+                <span className="text-xs text-muted-foreground" suppressHydrationWarning>
                   {formatSmartDate(note.created_at)}
                 </span>
               </div>
