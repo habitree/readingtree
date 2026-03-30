@@ -1,0 +1,1520 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ReadingTree QA 점검 보고서</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f8fafc; color: #1e293b; line-height: 1.6; }
+  .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+  h1 { font-size: 1.8rem; margin-bottom: 8px; }
+  h2 { font-size: 1.3rem; margin: 32px 0 16px; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px; }
+  h3 { font-size: 1.1rem; margin: 20px 0 12px; }
+  .meta { color: #64748b; font-size: 0.9rem; margin-bottom: 24px; }
+  .dashboard { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 32px; }
+  .card { background: white; border-radius: 12px; padding: 20px; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+  .card .count { font-size: 2.4rem; font-weight: 700; }
+  .card .label { font-size: 0.85rem; color: #64748b; margin-top: 4px; }
+  .viewport-compare { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 32px; }
+  .viewport-box { background: white; border-radius: 12px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+  .viewport-box h3 { margin-top: 0; }
+  table { width: 100%; border-collapse: collapse; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 16px; }
+  th { background: #f1f5f9; padding: 10px 12px; text-align: left; font-size: 0.85rem; color: #475569; font-weight: 600; }
+  td { padding: 10px 12px; border-top: 1px solid #f1f5f9; font-size: 0.85rem; }
+  tr:hover td { background: #f8fafc; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 0.75rem; font-weight: 600; color: white; }
+  .group-section { margin-bottom: 24px; }
+  details { background: white; border-radius: 12px; padding: 16px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+  summary { cursor: pointer; font-weight: 600; font-size: 1rem; }
+  summary:hover { color: #2563eb; }
+  .error-item { background: #fef2f2; border-left: 3px solid #dc2626; padding: 8px 12px; margin: 8px 0; border-radius: 0 8px 8px 0; font-size: 0.82rem; word-break: break-all; }
+  .warning-item { background: #fffbeb; border-left: 3px solid #ca8a04; padding: 8px 12px; margin: 8px 0; border-radius: 0 8px 8px 0; font-size: 0.82rem; }
+  .screenshot-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+  .screenshot-card { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+  .screenshot-card img { width: 100%; height: 200px; object-fit: cover; object-position: top; }
+  .screenshot-card .info { padding: 8px 12px; font-size: 0.82rem; }
+  .tab-container { margin-bottom: 16px; }
+  .tab-btn { padding: 8px 16px; border: none; background: #e2e8f0; cursor: pointer; border-radius: 8px 8px 0 0; font-size: 0.85rem; }
+  .tab-btn.active { background: white; font-weight: 600; }
+  @media (max-width: 768px) {
+    .dashboard { grid-template-columns: repeat(3, 1fr); }
+    .viewport-compare { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>ReadingTree QA 전체 점검 보고서</h1>
+  <div class="meta">
+    생성일: 2026. 3. 30. PM 3:48:32 | 총 점검: 80개 페이지 | 대상: https://readingtree-tan.vercel.app
+  </div>
+
+  <div class="dashboard">
+    <div class="card"><div class="count" style="color:#dc2626">0</div><div class="label">Critical</div></div>
+    <div class="card"><div class="count" style="color:#ea580c">0</div><div class="label">Major</div></div>
+    <div class="card"><div class="count" style="color:#ca8a04">2</div><div class="label">Minor</div></div>
+    <div class="card"><div class="count" style="color:#2563eb">4</div><div class="label">Info</div></div>
+    <div class="card"><div class="count" style="color:#16a34a">74</div><div class="label">Pass</div></div>
+  </div>
+
+  <h2>뷰포트별 비교</h2>
+  <div class="viewport-compare">
+    <div class="viewport-box">
+      <h3>Desktop (1280x720)</h3>
+      <p>총 40개 | Critical: 0 | Major: 0 | Minor: 1 | Pass: 35</p>
+      <p>평균 로딩: 2802ms</p>
+    </div>
+    <div class="viewport-box">
+      <h3>Mobile (375x812)</h3>
+      <p>총 40개 | Critical: 0 | Major: 0 | Minor: 1 | Pass: 39</p>
+      <p>평균 로딩: 2577ms</p>
+    </div>
+  </div>
+
+  <h2>그룹별 상세 결과</h2>
+  
+  <details >
+    <summary>관리자 (14개) — Critical: 0, Major: 0</summary>
+    <table>
+      <tr><th>페이지</th><th>경로</th><th>뷰포트</th><th>상태</th><th>로딩</th><th>심각도</th><th>이슈</th></tr>
+      
+      <tr>
+        <td>관리자 대시보드</td>
+        <td><code>/admin</code></td>
+        <td>desktop</td>
+        <td>200 → /login?redirectedFrom=%2Fadmin</td>
+        <td>2763ms</td>
+        <td><span class="badge" style="background:#16a34a">pass</span></td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td>AI 설정</td>
+        <td><code>/admin/ai-settings</code></td>
+        <td>desktop</td>
+        <td>200 → /login?redirectedFrom=%2Fadmin%2Fai-settings</td>
+        <td>2428ms</td>
+        <td><span class="badge" style="background:#16a34a">pass</span></td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td>AI 사용량</td>
+        <td><code>/admin/ai-usage</code></td>
+        <td>desktop</td>
+        <td>200 → /login?redirectedFrom=%2Fadmin%2Fai-usage</td>
+        <td>2526ms</td>
+        <td><span class="badge" style="background:#16a34a">pass</span></td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td>API 정보</td>
+        <td><code>/admin/api-info</code></td>
+        <td>desktop</td>
+        <td>200 → /login?redirectedFrom=%2Fadmin%2Fapi-info</td>
+        <td>2580ms</td>
+        <td><span class="badge" style="background:#16a34a">pass</span></td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td>OCR 설정</td>
+        <td><code>/admin/ocr-settings</code></td>
+        <td>desktop</td>
+        <td>200 → /login?redirectedFrom=%2Fadmin%2Focr-settings</td>
+        <td>2508ms</td>
+        <td><span class="badge" style="background:#16a34a">pass</span></td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td>추적 데이터</td>
+        <td><code>/admin/tracking</code></td>
+        <td>desktop</td>
+        <td>200 → /login?redirectedFrom=%2Fadmin%2Ftracking</td>
+        <td>2509ms</td>
+        <td><span class="badge" style="background:#16a34a">pass</span></td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td>사용자 관리</td>
+        <td><code>/admin/users</code></td>
+        <td>desktop</td>
+        <td>200 → /login?redirectedFrom=%2Fadmin%2Fusers</td>
+        <td>2471ms</td>
+        <td><span class="badge" style="background:#16a34a">pass</span></td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td>관리자 대시보드</td>
+        <td><code>/admin</code></td>
+        <td>mobile</td>
+        <td>200 → /login?redirectedFrom=%2Fadmin</td>
+        <td>2876ms</td>
+        <td><span class="badge" style="background:#16a34a">pass</span></td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td>AI 설정</td>
+        <td><code>/admin/ai-settings</code></td>
+        <td>mobile</td>
+        <td>200 → /login?redirectedFrom=%2Fadmin%2Fai-settings</td>
+        <td>2720ms</td>
+        <td><span class="badge" style="background:#16a34a">pass</span></td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td>AI 사용량</td>
+        <td><code>/admin/ai-usage</code></td>
+        <td>mobile</td>
+        <td>200 → /login?redirectedFrom=%2Fadmin%2Fai-usage</td>
+        <td>2408ms</td>
+        <td><span class="badge" style="background:#16a34a">pass</span></td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td>API 정보</td>
+        <td><code>/admin/api-info</code></td>
+        <td>mobile</td>
+        <td>200 → /login?redirectedFrom=%2Fadmin%2Fapi-info</td>
+        <td>2550ms</td>
+        <td><span class="badge" style="background:#16a34a">pass</span></td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td>OCR 설정</td>
+        <td><code>/admin/ocr-settings</code></td>
+        <td>mobile</td>
+        <td>200 → /login?redirectedFrom=%2Fadmin%2Focr-settings</td>
+        <td>2589ms</td>
+        <td><span class="badge" style="background:#16a34a">pass</span></td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td>추적 데이터</td>
+        <td><code>/admin/tracking</code></td>
+        <td>mobile</td>
+        <td>200 → /login?redirectedFrom=%2Fadmin%2Ftracking</td>
+        <td>2448ms</td>
+        <td><span class="badge" style="background:#16a34a">pass</span></td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td>사용자 관리</td>
+        <td><code>/admin/users</code></td>
+        <td>mobile</td>
+        <td>200 → /login?redirectedFrom=%2Fadmin%2Fusers</td>
+        <td>2759ms</td>
+        <td><span class="badge" style="background:#16a34a">pass</span></td>
+        <td>—</td>
+      </tr>
+    </table>
+  </details>
+  <details >
+    <summary>인증 페이지 (14개) — Critical: 0, Major: 0</summary>
+    <table>
+      <tr><th>페이지</th><th>경로</th><th>뷰포트</th><th>상태</th><th>로딩</th><th>심각도</th><th>이슈</th></tr>
+      
+      <tr>
+        <td>로그인</td>
+        <td><code>/login</code></td>
+        <td>desktop</td>
+        <td>200</td>
+        <td>4257ms</td>
+        <td><span class="badge" style="background:#2563eb">info</span></td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td>온보딩 시작</td>
+        <td><code>/onboarding</code></td>
+        <td>desktop</td>
+        <td>200 → /login</td>
+        <td>2708ms</td>
+        <td><span class="badge" style="background:#16a34a">pass</span></td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td>약관 동의</td>
+        <td><code>/onboarding/consent</code></td>
+        <td>desktop</td>
+        <td>200 → /login</td>
+        <td>2787ms</td>
+        <td><span class="badge" style="background:#16a34a">pass</span></td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td>목표 설정</td>
+        <td><code>/onboarding/goal</code></td>
+        <td>desktop</td>
+        <td>200 → /login</td>
+        <td>2414ms</td>
+        <td><span class="badge" style="background:#16a34a">pass</span></td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td>튜토리얼</td>
+        <td><code>/onboarding/tutorial</code></td>
+        <td>desktop</td>
+        <td>200 → /login</td>
+        <td>2398ms</td>
+        <td><span class="badge" style="background:#16a34a">pass</span></td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td>회원가입</td>
+        <td><code>/signup</code></td>
+        <td>desktop</td>
+        <td>200</td>
+        <td>4332ms</td>
+        <td><span class="badge" style="background:#2563eb">info</span></td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td>이메일 검증</td>
+        <td><code>/verify-email</code></td>
+        <td>desktop</td>
+        <td>200</td>
+        <td>4002ms</td>
+        <td><span class="badge" style="background:#2563eb">info</span></td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td>로그인</td>
+        <td><code>/login</code></td>
+        <td>mobile</td>
+        <td>200</td>
+        <td>2598ms</td>
+        <td><span class="badge" style="background:#16a34a">pass</span></td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td>온보딩 시작</td>
+        <td><code>/onboarding</code></td>
+        <td>mobile</td>
+        <td>200 → /login</td>
+        <td>2531ms</td>
+        <td><span class="badge" style="background:#16a34a">pass</span></td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td>약관 동의</td>
+        <td><code>/onboarding/consent</code></td>
+        <td>mobile</td>
+        <td>200 → /login</td>
+        <td>2398ms</td>
+        <td><span class="badge" style="background:#16a34a">pass</span></td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td>목표 설정</td>
+        <td><code>/onboarding/goal</code></td>
+        <td>mobile</td>
+        <td>200 → /login</td>
+        <td>2459ms</td>
+        <td><span class="badge" style="background:#16a34a">pass</span></td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td>튜토리얼</td>
+        <td><code>/onboarding/tutorial</code></td>
+        <td>mobile</td>
+        <td>200 → /login</td>
+        <td>2577ms</td>
+        <td><span class="badge" style="background:#16a34a">pass</span></td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td>회원가입</td>
+        <td><code>/signup</code></td>
+        <td>mobile</td>
+        <td>200</td>
+        <td>2596ms</td>
+        <td><span class="badge" style="background:#16a34a">pass</span></td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td>이메일 검증</td>
+        <td><code>/verify-email</code></td>
+        <td>mobile</td>
+        <td>200</td>
+        <td>2466ms</td>
+        <td><span class="badge" style="background:#16a34a">pass</span></td>
+        <td>—</td>
+      </tr>
+    </table>
+  </details>
+  <details >
+    <summary>핵심 기능 (18개) — Critical: 0, Major: 0</summary>
+    <table>
+      <tr><th>페이지</th><th>경로</th><th>뷰포트</th><th>상태</th><th>로딩</th><th>심각도</th><th>이슈</th></tr>
+      
+      <tr>
+        <td>내 서재</td>
+        <td><code>/books</code></td>
+        <td>desktop</td>
+        <td>200</td>
+        <td>4621ms</td>
+        <td><span class="badge" style="background:#ca8a04">minor</span></td>
+        <td>콘솔에러 2</td>
+      </tr>
+      <tr>
+        <td>서재 목록</td>
+        <td><code>/bookshelves</code></td>
+        <td>desktop</td>
+        <td>200</td>
+        <td>2692ms</td>
+        <td><span class="badge" style="background:#16a34a">pass</span></td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td>도서 검색</td>
+        <td><code>/books/search</code></td>
+        <td>desktop</td>
+        <td>200 → /login?redirectedFrom=%2Fbooks%2Fsearch</td>
+        <td>2852ms</td>
+        <td><span class="badge" style="background:#16a34a">pass</span></td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td>홈 대시보드</td>
+        <td><code>/</code></td>
+        <td>desktop</td>
+        <td>200</td>
+        <td>4313ms</td>
+        <td><span class="badge" style="background:#2563eb">info</span></td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td>내 기록</td>
+        <td><code>/notes</code></td>
+        <td>desktop</td>
+        <td>200</td>
+        <td>2942ms</td>
+        <td><span class="badge" style="background:#16a34a">pass</span></td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td>자유 기록</td>
+        <td><code>/notes/free</code></td>
+        <td>desktop</td>
+        <td>200 → /notes?free=true</td>
+        <td>2653ms</td>
+        <td><span class="badge" style="background:#16a34a">pass</span></td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td>새 기록 작성</td>
+        <td><code>/notes/new</code></td>
+        <td>desktop</td>
+        <td>200 → /login?redirectedFrom=%2Fnotes%2Fnew</td>
+        <td>2824ms</td>
+        <td><span class="badge" style="background:#16a34a">pass</span></td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td>샘플 데이터</td>
+        <td><code>/sample</code></td>
+        <td>desktop</td>
+        <td>200 → /</td>
+        <td>2389ms</td>
+        <td><span class="badge" style="background:#16a34a">pass</span></td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td>전체 검색</td>
+        <td><code>/search</code></td>
+        <td>desktop</td>
+        <td>200 → /notes</td>
+        <td>2437ms</td>
+        <td><span class="badge" style="background:#16a34a">pass</span></td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td>내 서재</td>
+        <td><code>/books</code></td>
+        <td>mobile</td>
+        <td>200</td>
+        <td>2814ms</td>
+        <td><span class="badge" style="background:#ca8a04">minor</span></td>
+        <td>콘솔에러 2</td>
+      </tr>
+      <tr>
+        <td>서재 목록</td>
+        <td><code>/bookshelves</code></td>
+        <td>mobile</td>
+        <td>200</td>
+        <td>2799ms</td>
+        <td><span class="badge" style="background:#16a34a">pass</span></td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td>도서 검색</td>
+        <td><code>/books/search</code></td>
+        <td>mobile</td>
+        <td>200 → /login?redirectedFrom=%2Fbooks%2Fsearch</td>
+        <td>2533ms</td>
+        <td><span class="badge" style="background:#16a34a">pass</span></td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td>홈 대시보드</td>
+        <td><code>/</code></td>
+        <td>mobile</td>
+        <td>200</td>
+        <td>2769ms</td>
+        <td><span class="badge" style="background:#16a34a">pass</span></td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td>내 기록</td>
+        <td><code>/notes</code></td>
+        <td>mobile</td>
+        <td>200</td>
+        <td>2635ms</td>
+        <td><span class="badge" style="background:#16a34a">pass</span></td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td>자유 기록</td>
+        <td><code>/notes/free</code></td>
+        <td>mobile</td>
+        <td>200 → /notes?free=true</td>
+        <td>2672ms</td>
+        <td><span class="badge" style="background:#16a34a">pass</span></td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td>새 기록 작성</td>
+        <td><code>/notes/new</code></td>
+        <td>mobile</td>
+        <td>200 → /login?redirectedFrom=%2Fnotes%2Fnew</td>
+        <td>2842ms</td>
+        <td><span class="badge" style="background:#16a34a">pass</span></td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td>샘플 데이터</td>
+        <td><code>/sample</code></td>
+        <td>mobile</td>
+        <td>200 → /</td>
+        <td>2723ms</td>
+        <td><span class="badge" style="background:#16a34a">pass</span></td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td>전체 검색</td>
+        <td><code>/search</code></td>
+        <td>mobile</td>
+        <td>200 → /notes</td>
+        <td>2993ms</td>
+        <td><span class="badge" style="background:#16a34a">pass</span></td>
+        <td>—</td>
+      </tr>
+    </table>
+  </details>
+  <details >
+    <summary>소셜/부가 기능 (22개) — Critical: 0, Major: 0</summary>
+    <table>
+      <tr><th>페이지</th><th>경로</th><th>뷰포트</th><th>상태</th><th>로딩</th><th>심각도</th><th>이슈</th></tr>
+      
+      <tr>
+        <td>소개</td>
+        <td><code>/about</code></td>
+        <td>desktop</td>
+        <td>200</td>
+        <td>2649ms</td>
+        <td><span class="badge" style="background:#16a34a">pass</span></td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td>AI 도우미</td>
+        <td><code>/chat</code></td>
+        <td>desktop</td>
+        <td>200</td>
+        <td>2441ms</td>
+        <td><span class="badge" style="background:#16a34a">pass</span></td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td>기능 요청</td>
+        <td><code>/feature-requests</code></td>
+        <td>desktop</td>
+        <td>200</td>
+        <td>2641ms</td>
+        <td><span class="badge" style="background:#16a34a">pass</span></td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td>새 기능 요청</td>
+        <td><code>/feature-requests/new</code></td>
+        <td>desktop</td>
+        <td>200 → /login?redirectedFrom=%2Ffeature-requests%2Fnew</td>
+        <td>2762ms</td>
+        <td><span class="badge" style="background:#16a34a">pass</span></td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td>독서모임</td>
+        <td><code>/groups</code></td>
+        <td>desktop</td>
+        <td>200</td>
+        <td>2689ms</td>
+        <td><span class="badge" style="background:#16a34a">pass</span></td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td>새 모임 생성</td>
+        <td><code>/groups/new</code></td>
+        <td>desktop</td>
+        <td>200 → /login?redirectedFrom=%2Fgroups%2Fnew</td>
+        <td>2551ms</td>
+        <td><span class="badge" style="background:#16a34a">pass</span></td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td>포인트</td>
+        <td><code>/points</code></td>
+        <td>desktop</td>
+        <td>200</td>
+        <td>2491ms</td>
+        <td><span class="badge" style="background:#16a34a">pass</span></td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td>가격 정책</td>
+        <td><code>/pricing</code></td>
+        <td>desktop</td>
+        <td>200</td>
+        <td>2832ms</td>
+        <td><span class="badge" style="background:#16a34a">pass</span></td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td>내 프로필</td>
+        <td><code>/profile</code></td>
+        <td>desktop</td>
+        <td>200 → /login?redirectedFrom=%2Fprofile</td>
+        <td>2543ms</td>
+        <td><span class="badge" style="background:#16a34a">pass</span></td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td>통계/페르소나</td>
+        <td><code>/stats</code></td>
+        <td>desktop</td>
+        <td>200</td>
+        <td>2825ms</td>
+        <td><span class="badge" style="background:#16a34a">pass</span></td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td>타임라인</td>
+        <td><code>/timeline</code></td>
+        <td>desktop</td>
+        <td>200 → /notes?view=timeline</td>
+        <td>2452ms</td>
+        <td><span class="badge" style="background:#16a34a">pass</span></td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td>소개</td>
+        <td><code>/about</code></td>
+        <td>mobile</td>
+        <td>200</td>
+        <td>2366ms</td>
+        <td><span class="badge" style="background:#16a34a">pass</span></td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td>AI 도우미</td>
+        <td><code>/chat</code></td>
+        <td>mobile</td>
+        <td>200</td>
+        <td>2520ms</td>
+        <td><span class="badge" style="background:#16a34a">pass</span></td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td>기능 요청</td>
+        <td><code>/feature-requests</code></td>
+        <td>mobile</td>
+        <td>200</td>
+        <td>2704ms</td>
+        <td><span class="badge" style="background:#16a34a">pass</span></td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td>새 기능 요청</td>
+        <td><code>/feature-requests/new</code></td>
+        <td>mobile</td>
+        <td>200 → /login?redirectedFrom=%2Ffeature-requests%2Fnew</td>
+        <td>2408ms</td>
+        <td><span class="badge" style="background:#16a34a">pass</span></td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td>독서모임</td>
+        <td><code>/groups</code></td>
+        <td>mobile</td>
+        <td>200</td>
+        <td>2815ms</td>
+        <td><span class="badge" style="background:#16a34a">pass</span></td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td>새 모임 생성</td>
+        <td><code>/groups/new</code></td>
+        <td>mobile</td>
+        <td>200 → /login?redirectedFrom=%2Fgroups%2Fnew</td>
+        <td>2653ms</td>
+        <td><span class="badge" style="background:#16a34a">pass</span></td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td>포인트</td>
+        <td><code>/points</code></td>
+        <td>mobile</td>
+        <td>200</td>
+        <td>2319ms</td>
+        <td><span class="badge" style="background:#16a34a">pass</span></td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td>가격 정책</td>
+        <td><code>/pricing</code></td>
+        <td>mobile</td>
+        <td>200</td>
+        <td>2535ms</td>
+        <td><span class="badge" style="background:#16a34a">pass</span></td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td>내 프로필</td>
+        <td><code>/profile</code></td>
+        <td>mobile</td>
+        <td>200 → /login?redirectedFrom=%2Fprofile</td>
+        <td>2452ms</td>
+        <td><span class="badge" style="background:#16a34a">pass</span></td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td>통계/페르소나</td>
+        <td><code>/stats</code></td>
+        <td>mobile</td>
+        <td>200</td>
+        <td>2638ms</td>
+        <td><span class="badge" style="background:#16a34a">pass</span></td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td>타임라인</td>
+        <td><code>/timeline</code></td>
+        <td>mobile</td>
+        <td>200 → /notes?view=timeline</td>
+        <td>2422ms</td>
+        <td><span class="badge" style="background:#16a34a">pass</span></td>
+        <td>—</td>
+      </tr>
+    </table>
+  </details>
+  <details >
+    <summary>결제 (4개) — Critical: 0, Major: 0</summary>
+    <table>
+      <tr><th>페이지</th><th>경로</th><th>뷰포트</th><th>상태</th><th>로딩</th><th>심각도</th><th>이슈</th></tr>
+      
+      <tr>
+        <td>결제 실패</td>
+        <td><code>/payment/fail</code></td>
+        <td>desktop</td>
+        <td>200</td>
+        <td>2364ms</td>
+        <td><span class="badge" style="background:#16a34a">pass</span></td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td>결제 성공</td>
+        <td><code>/payment/success</code></td>
+        <td>desktop</td>
+        <td>200</td>
+        <td>2594ms</td>
+        <td><span class="badge" style="background:#16a34a">pass</span></td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td>결제 실패</td>
+        <td><code>/payment/fail</code></td>
+        <td>mobile</td>
+        <td>200</td>
+        <td>2408ms</td>
+        <td><span class="badge" style="background:#16a34a">pass</span></td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td>결제 성공</td>
+        <td><code>/payment/success</code></td>
+        <td>mobile</td>
+        <td>200</td>
+        <td>2433ms</td>
+        <td><span class="badge" style="background:#16a34a">pass</span></td>
+        <td>—</td>
+      </tr>
+    </table>
+  </details>
+  <details >
+    <summary>공유 페이지 (4개) — Critical: 0, Major: 0</summary>
+    <table>
+      <tr><th>페이지</th><th>경로</th><th>뷰포트</th><th>상태</th><th>로딩</th><th>심각도</th><th>이슈</th></tr>
+      
+      <tr>
+        <td>공유 서재 (404)</td>
+        <td><code>/share/bookshelves/test-id</code></td>
+        <td>desktop</td>
+        <td>200</td>
+        <td>2556ms</td>
+        <td><span class="badge" style="background:#16a34a">pass</span></td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td>공유 기록 (404)</td>
+        <td><code>/share/notes/test-id</code></td>
+        <td>desktop</td>
+        <td>200</td>
+        <td>2424ms</td>
+        <td><span class="badge" style="background:#16a34a">pass</span></td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td>공유 서재 (404)</td>
+        <td><code>/share/bookshelves/test-id</code></td>
+        <td>mobile</td>
+        <td>200</td>
+        <td>2410ms</td>
+        <td><span class="badge" style="background:#16a34a">pass</span></td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td>공유 기록 (404)</td>
+        <td><code>/share/notes/test-id</code></td>
+        <td>mobile</td>
+        <td>200</td>
+        <td>2467ms</td>
+        <td><span class="badge" style="background:#16a34a">pass</span></td>
+        <td>—</td>
+      </tr>
+    </table>
+  </details>
+  <details >
+    <summary>정적 페이지 (4개) — Critical: 0, Major: 0</summary>
+    <table>
+      <tr><th>페이지</th><th>경로</th><th>뷰포트</th><th>상태</th><th>로딩</th><th>심각도</th><th>이슈</th></tr>
+      
+      <tr>
+        <td>개인정보 처리방침</td>
+        <td><code>/privacy</code></td>
+        <td>desktop</td>
+        <td>200</td>
+        <td>2534ms</td>
+        <td><span class="badge" style="background:#16a34a">pass</span></td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td>이용약관</td>
+        <td><code>/terms</code></td>
+        <td>desktop</td>
+        <td>200</td>
+        <td>2312ms</td>
+        <td><span class="badge" style="background:#16a34a">pass</span></td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td>개인정보 처리방침</td>
+        <td><code>/privacy</code></td>
+        <td>mobile</td>
+        <td>200</td>
+        <td>2354ms</td>
+        <td><span class="badge" style="background:#16a34a">pass</span></td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td>이용약관</td>
+        <td><code>/terms</code></td>
+        <td>mobile</td>
+        <td>200</td>
+        <td>2415ms</td>
+        <td><span class="badge" style="background:#16a34a">pass</span></td>
+        <td>—</td>
+      </tr>
+    </table>
+  </details>
+
+  <h2>Critical/Major 이슈 상세</h2>
+  <p style="color:#16a34a;font-weight:600">Critical/Major 이슈가 없습니다!</p>
+
+  <h2>성능 순위 (로딩 시간 Top 10)</h2>
+  <table>
+    <tr><th>#</th><th>페이지</th><th>경로</th><th>뷰포트</th><th>로딩 시간</th><th>심각도</th></tr>
+    
+    <tr>
+      <td>1</td>
+      <td>내 서재</td>
+      <td><code>/books</code></td>
+      <td>desktop</td>
+      <td><strong>4621ms</strong></td>
+      <td><span class="badge" style="background:#ca8a04">minor</span></td>
+    </tr>
+    <tr>
+      <td>2</td>
+      <td>회원가입</td>
+      <td><code>/signup</code></td>
+      <td>desktop</td>
+      <td><strong>4332ms</strong></td>
+      <td><span class="badge" style="background:#2563eb">info</span></td>
+    </tr>
+    <tr>
+      <td>3</td>
+      <td>홈 대시보드</td>
+      <td><code>/</code></td>
+      <td>desktop</td>
+      <td><strong>4313ms</strong></td>
+      <td><span class="badge" style="background:#2563eb">info</span></td>
+    </tr>
+    <tr>
+      <td>4</td>
+      <td>로그인</td>
+      <td><code>/login</code></td>
+      <td>desktop</td>
+      <td><strong>4257ms</strong></td>
+      <td><span class="badge" style="background:#2563eb">info</span></td>
+    </tr>
+    <tr>
+      <td>5</td>
+      <td>이메일 검증</td>
+      <td><code>/verify-email</code></td>
+      <td>desktop</td>
+      <td><strong>4002ms</strong></td>
+      <td><span class="badge" style="background:#2563eb">info</span></td>
+    </tr>
+    <tr>
+      <td>6</td>
+      <td>전체 검색</td>
+      <td><code>/search</code></td>
+      <td>mobile</td>
+      <td><strong>2993ms</strong></td>
+      <td><span class="badge" style="background:#16a34a">pass</span></td>
+    </tr>
+    <tr>
+      <td>7</td>
+      <td>내 기록</td>
+      <td><code>/notes</code></td>
+      <td>desktop</td>
+      <td><strong>2942ms</strong></td>
+      <td><span class="badge" style="background:#16a34a">pass</span></td>
+    </tr>
+    <tr>
+      <td>8</td>
+      <td>관리자 대시보드</td>
+      <td><code>/admin</code></td>
+      <td>mobile</td>
+      <td><strong>2876ms</strong></td>
+      <td><span class="badge" style="background:#16a34a">pass</span></td>
+    </tr>
+    <tr>
+      <td>9</td>
+      <td>도서 검색</td>
+      <td><code>/books/search</code></td>
+      <td>desktop</td>
+      <td><strong>2852ms</strong></td>
+      <td><span class="badge" style="background:#16a34a">pass</span></td>
+    </tr>
+    <tr>
+      <td>10</td>
+      <td>새 기록 작성</td>
+      <td><code>/notes/new</code></td>
+      <td>mobile</td>
+      <td><strong>2842ms</strong></td>
+      <td><span class="badge" style="background:#16a34a">pass</span></td>
+    </tr>
+  </table>
+
+  
+
+  
+  <h2>콘솔 에러 전체 목록 (4건)</h2>
+  <div class="error-item"><strong>내 서재 (desktop)</strong> /books<br>Failed to load resource: the server responded with a status of 500 ()</div><div class="error-item"><strong>내 서재 (desktop)</strong> /books<br>서재 목록 조회 오류: Error: An error occurred in the Server Components render. The specific message is omitted in production builds to avoid leaking sensitive details. A digest property is included on this error instance which may provide additional details about the nature of the error.</div><div class="error-item"><strong>내 서재 (mobile)</strong> /books<br>Failed to load resource: the server responded with a status of 500 ()</div><div class="error-item"><strong>내 서재 (mobile)</strong> /books<br>서재 목록 조회 오류: Error: An error occurred in the Server Components render. The specific message is omitted in production builds to avoid leaking sensitive details. A digest property is included on this error instance which may provide additional details about the nature of the error.</div>
+  
+
+  
+
+  <h2>스크린샷 갤러리</h2>
+  <h3>Desktop</h3>
+  <div class="screenshot-grid">
+    
+    <div class="screenshot-card">
+      <img src="screenshots/desktop/admin.jpg" alt="관리자 대시보드" loading="lazy" onerror="this.style.display='none'">
+      <div class="info">
+        <strong>관리자 대시보드</strong><br>
+        <code>/admin</code> | 2763ms | <span style="color:#16a34a">pass</span>
+      </div>
+    </div>
+    <div class="screenshot-card">
+      <img src="screenshots/desktop/admin_ai-settings.jpg" alt="AI 설정" loading="lazy" onerror="this.style.display='none'">
+      <div class="info">
+        <strong>AI 설정</strong><br>
+        <code>/admin/ai-settings</code> | 2428ms | <span style="color:#16a34a">pass</span>
+      </div>
+    </div>
+    <div class="screenshot-card">
+      <img src="screenshots/desktop/admin_ai-usage.jpg" alt="AI 사용량" loading="lazy" onerror="this.style.display='none'">
+      <div class="info">
+        <strong>AI 사용량</strong><br>
+        <code>/admin/ai-usage</code> | 2526ms | <span style="color:#16a34a">pass</span>
+      </div>
+    </div>
+    <div class="screenshot-card">
+      <img src="screenshots/desktop/admin_api-info.jpg" alt="API 정보" loading="lazy" onerror="this.style.display='none'">
+      <div class="info">
+        <strong>API 정보</strong><br>
+        <code>/admin/api-info</code> | 2580ms | <span style="color:#16a34a">pass</span>
+      </div>
+    </div>
+    <div class="screenshot-card">
+      <img src="screenshots/desktop/admin_ocr-settings.jpg" alt="OCR 설정" loading="lazy" onerror="this.style.display='none'">
+      <div class="info">
+        <strong>OCR 설정</strong><br>
+        <code>/admin/ocr-settings</code> | 2508ms | <span style="color:#16a34a">pass</span>
+      </div>
+    </div>
+    <div class="screenshot-card">
+      <img src="screenshots/desktop/admin_tracking.jpg" alt="추적 데이터" loading="lazy" onerror="this.style.display='none'">
+      <div class="info">
+        <strong>추적 데이터</strong><br>
+        <code>/admin/tracking</code> | 2509ms | <span style="color:#16a34a">pass</span>
+      </div>
+    </div>
+    <div class="screenshot-card">
+      <img src="screenshots/desktop/admin_users.jpg" alt="사용자 관리" loading="lazy" onerror="this.style.display='none'">
+      <div class="info">
+        <strong>사용자 관리</strong><br>
+        <code>/admin/users</code> | 2471ms | <span style="color:#16a34a">pass</span>
+      </div>
+    </div>
+    <div class="screenshot-card">
+      <img src="screenshots/desktop/login.jpg" alt="로그인" loading="lazy" onerror="this.style.display='none'">
+      <div class="info">
+        <strong>로그인</strong><br>
+        <code>/login</code> | 4257ms | <span style="color:#2563eb">info</span>
+      </div>
+    </div>
+    <div class="screenshot-card">
+      <img src="screenshots/desktop/onboarding.jpg" alt="온보딩 시작" loading="lazy" onerror="this.style.display='none'">
+      <div class="info">
+        <strong>온보딩 시작</strong><br>
+        <code>/onboarding</code> | 2708ms | <span style="color:#16a34a">pass</span>
+      </div>
+    </div>
+    <div class="screenshot-card">
+      <img src="screenshots/desktop/onboarding_consent.jpg" alt="약관 동의" loading="lazy" onerror="this.style.display='none'">
+      <div class="info">
+        <strong>약관 동의</strong><br>
+        <code>/onboarding/consent</code> | 2787ms | <span style="color:#16a34a">pass</span>
+      </div>
+    </div>
+    <div class="screenshot-card">
+      <img src="screenshots/desktop/onboarding_goal.jpg" alt="목표 설정" loading="lazy" onerror="this.style.display='none'">
+      <div class="info">
+        <strong>목표 설정</strong><br>
+        <code>/onboarding/goal</code> | 2414ms | <span style="color:#16a34a">pass</span>
+      </div>
+    </div>
+    <div class="screenshot-card">
+      <img src="screenshots/desktop/onboarding_tutorial.jpg" alt="튜토리얼" loading="lazy" onerror="this.style.display='none'">
+      <div class="info">
+        <strong>튜토리얼</strong><br>
+        <code>/onboarding/tutorial</code> | 2398ms | <span style="color:#16a34a">pass</span>
+      </div>
+    </div>
+    <div class="screenshot-card">
+      <img src="screenshots/desktop/signup.jpg" alt="회원가입" loading="lazy" onerror="this.style.display='none'">
+      <div class="info">
+        <strong>회원가입</strong><br>
+        <code>/signup</code> | 4332ms | <span style="color:#2563eb">info</span>
+      </div>
+    </div>
+    <div class="screenshot-card">
+      <img src="screenshots/desktop/verify-email.jpg" alt="이메일 검증" loading="lazy" onerror="this.style.display='none'">
+      <div class="info">
+        <strong>이메일 검증</strong><br>
+        <code>/verify-email</code> | 4002ms | <span style="color:#2563eb">info</span>
+      </div>
+    </div>
+    <div class="screenshot-card">
+      <img src="screenshots/desktop/books.jpg" alt="내 서재" loading="lazy" onerror="this.style.display='none'">
+      <div class="info">
+        <strong>내 서재</strong><br>
+        <code>/books</code> | 4621ms | <span style="color:#ca8a04">minor</span>
+      </div>
+    </div>
+    <div class="screenshot-card">
+      <img src="screenshots/desktop/bookshelves.jpg" alt="서재 목록" loading="lazy" onerror="this.style.display='none'">
+      <div class="info">
+        <strong>서재 목록</strong><br>
+        <code>/bookshelves</code> | 2692ms | <span style="color:#16a34a">pass</span>
+      </div>
+    </div>
+    <div class="screenshot-card">
+      <img src="screenshots/desktop/books_search.jpg" alt="도서 검색" loading="lazy" onerror="this.style.display='none'">
+      <div class="info">
+        <strong>도서 검색</strong><br>
+        <code>/books/search</code> | 2852ms | <span style="color:#16a34a">pass</span>
+      </div>
+    </div>
+    <div class="screenshot-card">
+      <img src="screenshots/desktop/home.jpg" alt="홈 대시보드" loading="lazy" onerror="this.style.display='none'">
+      <div class="info">
+        <strong>홈 대시보드</strong><br>
+        <code>/</code> | 4313ms | <span style="color:#2563eb">info</span>
+      </div>
+    </div>
+    <div class="screenshot-card">
+      <img src="screenshots/desktop/notes.jpg" alt="내 기록" loading="lazy" onerror="this.style.display='none'">
+      <div class="info">
+        <strong>내 기록</strong><br>
+        <code>/notes</code> | 2942ms | <span style="color:#16a34a">pass</span>
+      </div>
+    </div>
+    <div class="screenshot-card">
+      <img src="screenshots/desktop/notes_free.jpg" alt="자유 기록" loading="lazy" onerror="this.style.display='none'">
+      <div class="info">
+        <strong>자유 기록</strong><br>
+        <code>/notes/free</code> | 2653ms | <span style="color:#16a34a">pass</span>
+      </div>
+    </div>
+    <div class="screenshot-card">
+      <img src="screenshots/desktop/notes_new.jpg" alt="새 기록 작성" loading="lazy" onerror="this.style.display='none'">
+      <div class="info">
+        <strong>새 기록 작성</strong><br>
+        <code>/notes/new</code> | 2824ms | <span style="color:#16a34a">pass</span>
+      </div>
+    </div>
+    <div class="screenshot-card">
+      <img src="screenshots/desktop/sample.jpg" alt="샘플 데이터" loading="lazy" onerror="this.style.display='none'">
+      <div class="info">
+        <strong>샘플 데이터</strong><br>
+        <code>/sample</code> | 2389ms | <span style="color:#16a34a">pass</span>
+      </div>
+    </div>
+    <div class="screenshot-card">
+      <img src="screenshots/desktop/search.jpg" alt="전체 검색" loading="lazy" onerror="this.style.display='none'">
+      <div class="info">
+        <strong>전체 검색</strong><br>
+        <code>/search</code> | 2437ms | <span style="color:#16a34a">pass</span>
+      </div>
+    </div>
+    <div class="screenshot-card">
+      <img src="screenshots/desktop/about.jpg" alt="소개" loading="lazy" onerror="this.style.display='none'">
+      <div class="info">
+        <strong>소개</strong><br>
+        <code>/about</code> | 2649ms | <span style="color:#16a34a">pass</span>
+      </div>
+    </div>
+    <div class="screenshot-card">
+      <img src="screenshots/desktop/chat.jpg" alt="AI 도우미" loading="lazy" onerror="this.style.display='none'">
+      <div class="info">
+        <strong>AI 도우미</strong><br>
+        <code>/chat</code> | 2441ms | <span style="color:#16a34a">pass</span>
+      </div>
+    </div>
+    <div class="screenshot-card">
+      <img src="screenshots/desktop/feature-requests.jpg" alt="기능 요청" loading="lazy" onerror="this.style.display='none'">
+      <div class="info">
+        <strong>기능 요청</strong><br>
+        <code>/feature-requests</code> | 2641ms | <span style="color:#16a34a">pass</span>
+      </div>
+    </div>
+    <div class="screenshot-card">
+      <img src="screenshots/desktop/feature-requests_new.jpg" alt="새 기능 요청" loading="lazy" onerror="this.style.display='none'">
+      <div class="info">
+        <strong>새 기능 요청</strong><br>
+        <code>/feature-requests/new</code> | 2762ms | <span style="color:#16a34a">pass</span>
+      </div>
+    </div>
+    <div class="screenshot-card">
+      <img src="screenshots/desktop/groups.jpg" alt="독서모임" loading="lazy" onerror="this.style.display='none'">
+      <div class="info">
+        <strong>독서모임</strong><br>
+        <code>/groups</code> | 2689ms | <span style="color:#16a34a">pass</span>
+      </div>
+    </div>
+    <div class="screenshot-card">
+      <img src="screenshots/desktop/groups_new.jpg" alt="새 모임 생성" loading="lazy" onerror="this.style.display='none'">
+      <div class="info">
+        <strong>새 모임 생성</strong><br>
+        <code>/groups/new</code> | 2551ms | <span style="color:#16a34a">pass</span>
+      </div>
+    </div>
+    <div class="screenshot-card">
+      <img src="screenshots/desktop/points.jpg" alt="포인트" loading="lazy" onerror="this.style.display='none'">
+      <div class="info">
+        <strong>포인트</strong><br>
+        <code>/points</code> | 2491ms | <span style="color:#16a34a">pass</span>
+      </div>
+    </div>
+    <div class="screenshot-card">
+      <img src="screenshots/desktop/pricing.jpg" alt="가격 정책" loading="lazy" onerror="this.style.display='none'">
+      <div class="info">
+        <strong>가격 정책</strong><br>
+        <code>/pricing</code> | 2832ms | <span style="color:#16a34a">pass</span>
+      </div>
+    </div>
+    <div class="screenshot-card">
+      <img src="screenshots/desktop/profile.jpg" alt="내 프로필" loading="lazy" onerror="this.style.display='none'">
+      <div class="info">
+        <strong>내 프로필</strong><br>
+        <code>/profile</code> | 2543ms | <span style="color:#16a34a">pass</span>
+      </div>
+    </div>
+    <div class="screenshot-card">
+      <img src="screenshots/desktop/stats.jpg" alt="통계/페르소나" loading="lazy" onerror="this.style.display='none'">
+      <div class="info">
+        <strong>통계/페르소나</strong><br>
+        <code>/stats</code> | 2825ms | <span style="color:#16a34a">pass</span>
+      </div>
+    </div>
+    <div class="screenshot-card">
+      <img src="screenshots/desktop/timeline.jpg" alt="타임라인" loading="lazy" onerror="this.style.display='none'">
+      <div class="info">
+        <strong>타임라인</strong><br>
+        <code>/timeline</code> | 2452ms | <span style="color:#16a34a">pass</span>
+      </div>
+    </div>
+    <div class="screenshot-card">
+      <img src="screenshots/desktop/payment_fail.jpg" alt="결제 실패" loading="lazy" onerror="this.style.display='none'">
+      <div class="info">
+        <strong>결제 실패</strong><br>
+        <code>/payment/fail</code> | 2364ms | <span style="color:#16a34a">pass</span>
+      </div>
+    </div>
+    <div class="screenshot-card">
+      <img src="screenshots/desktop/payment_success.jpg" alt="결제 성공" loading="lazy" onerror="this.style.display='none'">
+      <div class="info">
+        <strong>결제 성공</strong><br>
+        <code>/payment/success</code> | 2594ms | <span style="color:#16a34a">pass</span>
+      </div>
+    </div>
+    <div class="screenshot-card">
+      <img src="screenshots/desktop/share_bookshelves_test-id.jpg" alt="공유 서재 (404)" loading="lazy" onerror="this.style.display='none'">
+      <div class="info">
+        <strong>공유 서재 (404)</strong><br>
+        <code>/share/bookshelves/test-id</code> | 2556ms | <span style="color:#16a34a">pass</span>
+      </div>
+    </div>
+    <div class="screenshot-card">
+      <img src="screenshots/desktop/share_notes_test-id.jpg" alt="공유 기록 (404)" loading="lazy" onerror="this.style.display='none'">
+      <div class="info">
+        <strong>공유 기록 (404)</strong><br>
+        <code>/share/notes/test-id</code> | 2424ms | <span style="color:#16a34a">pass</span>
+      </div>
+    </div>
+    <div class="screenshot-card">
+      <img src="screenshots/desktop/privacy.jpg" alt="개인정보 처리방침" loading="lazy" onerror="this.style.display='none'">
+      <div class="info">
+        <strong>개인정보 처리방침</strong><br>
+        <code>/privacy</code> | 2534ms | <span style="color:#16a34a">pass</span>
+      </div>
+    </div>
+    <div class="screenshot-card">
+      <img src="screenshots/desktop/terms.jpg" alt="이용약관" loading="lazy" onerror="this.style.display='none'">
+      <div class="info">
+        <strong>이용약관</strong><br>
+        <code>/terms</code> | 2312ms | <span style="color:#16a34a">pass</span>
+      </div>
+    </div>
+  </div>
+  <h3>Mobile</h3>
+  <div class="screenshot-grid">
+    
+    <div class="screenshot-card">
+      <img src="screenshots/mobile/admin.jpg" alt="관리자 대시보드" loading="lazy" onerror="this.style.display='none'">
+      <div class="info">
+        <strong>관리자 대시보드</strong><br>
+        <code>/admin</code> | 2876ms | <span style="color:#16a34a">pass</span>
+      </div>
+    </div>
+    <div class="screenshot-card">
+      <img src="screenshots/mobile/admin_ai-settings.jpg" alt="AI 설정" loading="lazy" onerror="this.style.display='none'">
+      <div class="info">
+        <strong>AI 설정</strong><br>
+        <code>/admin/ai-settings</code> | 2720ms | <span style="color:#16a34a">pass</span>
+      </div>
+    </div>
+    <div class="screenshot-card">
+      <img src="screenshots/mobile/admin_ai-usage.jpg" alt="AI 사용량" loading="lazy" onerror="this.style.display='none'">
+      <div class="info">
+        <strong>AI 사용량</strong><br>
+        <code>/admin/ai-usage</code> | 2408ms | <span style="color:#16a34a">pass</span>
+      </div>
+    </div>
+    <div class="screenshot-card">
+      <img src="screenshots/mobile/admin_api-info.jpg" alt="API 정보" loading="lazy" onerror="this.style.display='none'">
+      <div class="info">
+        <strong>API 정보</strong><br>
+        <code>/admin/api-info</code> | 2550ms | <span style="color:#16a34a">pass</span>
+      </div>
+    </div>
+    <div class="screenshot-card">
+      <img src="screenshots/mobile/admin_ocr-settings.jpg" alt="OCR 설정" loading="lazy" onerror="this.style.display='none'">
+      <div class="info">
+        <strong>OCR 설정</strong><br>
+        <code>/admin/ocr-settings</code> | 2589ms | <span style="color:#16a34a">pass</span>
+      </div>
+    </div>
+    <div class="screenshot-card">
+      <img src="screenshots/mobile/admin_tracking.jpg" alt="추적 데이터" loading="lazy" onerror="this.style.display='none'">
+      <div class="info">
+        <strong>추적 데이터</strong><br>
+        <code>/admin/tracking</code> | 2448ms | <span style="color:#16a34a">pass</span>
+      </div>
+    </div>
+    <div class="screenshot-card">
+      <img src="screenshots/mobile/admin_users.jpg" alt="사용자 관리" loading="lazy" onerror="this.style.display='none'">
+      <div class="info">
+        <strong>사용자 관리</strong><br>
+        <code>/admin/users</code> | 2759ms | <span style="color:#16a34a">pass</span>
+      </div>
+    </div>
+    <div class="screenshot-card">
+      <img src="screenshots/mobile/login.jpg" alt="로그인" loading="lazy" onerror="this.style.display='none'">
+      <div class="info">
+        <strong>로그인</strong><br>
+        <code>/login</code> | 2598ms | <span style="color:#16a34a">pass</span>
+      </div>
+    </div>
+    <div class="screenshot-card">
+      <img src="screenshots/mobile/onboarding.jpg" alt="온보딩 시작" loading="lazy" onerror="this.style.display='none'">
+      <div class="info">
+        <strong>온보딩 시작</strong><br>
+        <code>/onboarding</code> | 2531ms | <span style="color:#16a34a">pass</span>
+      </div>
+    </div>
+    <div class="screenshot-card">
+      <img src="screenshots/mobile/onboarding_consent.jpg" alt="약관 동의" loading="lazy" onerror="this.style.display='none'">
+      <div class="info">
+        <strong>약관 동의</strong><br>
+        <code>/onboarding/consent</code> | 2398ms | <span style="color:#16a34a">pass</span>
+      </div>
+    </div>
+    <div class="screenshot-card">
+      <img src="screenshots/mobile/onboarding_goal.jpg" alt="목표 설정" loading="lazy" onerror="this.style.display='none'">
+      <div class="info">
+        <strong>목표 설정</strong><br>
+        <code>/onboarding/goal</code> | 2459ms | <span style="color:#16a34a">pass</span>
+      </div>
+    </div>
+    <div class="screenshot-card">
+      <img src="screenshots/mobile/onboarding_tutorial.jpg" alt="튜토리얼" loading="lazy" onerror="this.style.display='none'">
+      <div class="info">
+        <strong>튜토리얼</strong><br>
+        <code>/onboarding/tutorial</code> | 2577ms | <span style="color:#16a34a">pass</span>
+      </div>
+    </div>
+    <div class="screenshot-card">
+      <img src="screenshots/mobile/signup.jpg" alt="회원가입" loading="lazy" onerror="this.style.display='none'">
+      <div class="info">
+        <strong>회원가입</strong><br>
+        <code>/signup</code> | 2596ms | <span style="color:#16a34a">pass</span>
+      </div>
+    </div>
+    <div class="screenshot-card">
+      <img src="screenshots/mobile/verify-email.jpg" alt="이메일 검증" loading="lazy" onerror="this.style.display='none'">
+      <div class="info">
+        <strong>이메일 검증</strong><br>
+        <code>/verify-email</code> | 2466ms | <span style="color:#16a34a">pass</span>
+      </div>
+    </div>
+    <div class="screenshot-card">
+      <img src="screenshots/mobile/books.jpg" alt="내 서재" loading="lazy" onerror="this.style.display='none'">
+      <div class="info">
+        <strong>내 서재</strong><br>
+        <code>/books</code> | 2814ms | <span style="color:#ca8a04">minor</span>
+      </div>
+    </div>
+    <div class="screenshot-card">
+      <img src="screenshots/mobile/bookshelves.jpg" alt="서재 목록" loading="lazy" onerror="this.style.display='none'">
+      <div class="info">
+        <strong>서재 목록</strong><br>
+        <code>/bookshelves</code> | 2799ms | <span style="color:#16a34a">pass</span>
+      </div>
+    </div>
+    <div class="screenshot-card">
+      <img src="screenshots/mobile/books_search.jpg" alt="도서 검색" loading="lazy" onerror="this.style.display='none'">
+      <div class="info">
+        <strong>도서 검색</strong><br>
+        <code>/books/search</code> | 2533ms | <span style="color:#16a34a">pass</span>
+      </div>
+    </div>
+    <div class="screenshot-card">
+      <img src="screenshots/mobile/home.jpg" alt="홈 대시보드" loading="lazy" onerror="this.style.display='none'">
+      <div class="info">
+        <strong>홈 대시보드</strong><br>
+        <code>/</code> | 2769ms | <span style="color:#16a34a">pass</span>
+      </div>
+    </div>
+    <div class="screenshot-card">
+      <img src="screenshots/mobile/notes.jpg" alt="내 기록" loading="lazy" onerror="this.style.display='none'">
+      <div class="info">
+        <strong>내 기록</strong><br>
+        <code>/notes</code> | 2635ms | <span style="color:#16a34a">pass</span>
+      </div>
+    </div>
+    <div class="screenshot-card">
+      <img src="screenshots/mobile/notes_free.jpg" alt="자유 기록" loading="lazy" onerror="this.style.display='none'">
+      <div class="info">
+        <strong>자유 기록</strong><br>
+        <code>/notes/free</code> | 2672ms | <span style="color:#16a34a">pass</span>
+      </div>
+    </div>
+    <div class="screenshot-card">
+      <img src="screenshots/mobile/notes_new.jpg" alt="새 기록 작성" loading="lazy" onerror="this.style.display='none'">
+      <div class="info">
+        <strong>새 기록 작성</strong><br>
+        <code>/notes/new</code> | 2842ms | <span style="color:#16a34a">pass</span>
+      </div>
+    </div>
+    <div class="screenshot-card">
+      <img src="screenshots/mobile/sample.jpg" alt="샘플 데이터" loading="lazy" onerror="this.style.display='none'">
+      <div class="info">
+        <strong>샘플 데이터</strong><br>
+        <code>/sample</code> | 2723ms | <span style="color:#16a34a">pass</span>
+      </div>
+    </div>
+    <div class="screenshot-card">
+      <img src="screenshots/mobile/search.jpg" alt="전체 검색" loading="lazy" onerror="this.style.display='none'">
+      <div class="info">
+        <strong>전체 검색</strong><br>
+        <code>/search</code> | 2993ms | <span style="color:#16a34a">pass</span>
+      </div>
+    </div>
+    <div class="screenshot-card">
+      <img src="screenshots/mobile/about.jpg" alt="소개" loading="lazy" onerror="this.style.display='none'">
+      <div class="info">
+        <strong>소개</strong><br>
+        <code>/about</code> | 2366ms | <span style="color:#16a34a">pass</span>
+      </div>
+    </div>
+    <div class="screenshot-card">
+      <img src="screenshots/mobile/chat.jpg" alt="AI 도우미" loading="lazy" onerror="this.style.display='none'">
+      <div class="info">
+        <strong>AI 도우미</strong><br>
+        <code>/chat</code> | 2520ms | <span style="color:#16a34a">pass</span>
+      </div>
+    </div>
+    <div class="screenshot-card">
+      <img src="screenshots/mobile/feature-requests.jpg" alt="기능 요청" loading="lazy" onerror="this.style.display='none'">
+      <div class="info">
+        <strong>기능 요청</strong><br>
+        <code>/feature-requests</code> | 2704ms | <span style="color:#16a34a">pass</span>
+      </div>
+    </div>
+    <div class="screenshot-card">
+      <img src="screenshots/mobile/feature-requests_new.jpg" alt="새 기능 요청" loading="lazy" onerror="this.style.display='none'">
+      <div class="info">
+        <strong>새 기능 요청</strong><br>
+        <code>/feature-requests/new</code> | 2408ms | <span style="color:#16a34a">pass</span>
+      </div>
+    </div>
+    <div class="screenshot-card">
+      <img src="screenshots/mobile/groups.jpg" alt="독서모임" loading="lazy" onerror="this.style.display='none'">
+      <div class="info">
+        <strong>독서모임</strong><br>
+        <code>/groups</code> | 2815ms | <span style="color:#16a34a">pass</span>
+      </div>
+    </div>
+    <div class="screenshot-card">
+      <img src="screenshots/mobile/groups_new.jpg" alt="새 모임 생성" loading="lazy" onerror="this.style.display='none'">
+      <div class="info">
+        <strong>새 모임 생성</strong><br>
+        <code>/groups/new</code> | 2653ms | <span style="color:#16a34a">pass</span>
+      </div>
+    </div>
+    <div class="screenshot-card">
+      <img src="screenshots/mobile/points.jpg" alt="포인트" loading="lazy" onerror="this.style.display='none'">
+      <div class="info">
+        <strong>포인트</strong><br>
+        <code>/points</code> | 2319ms | <span style="color:#16a34a">pass</span>
+      </div>
+    </div>
+    <div class="screenshot-card">
+      <img src="screenshots/mobile/pricing.jpg" alt="가격 정책" loading="lazy" onerror="this.style.display='none'">
+      <div class="info">
+        <strong>가격 정책</strong><br>
+        <code>/pricing</code> | 2535ms | <span style="color:#16a34a">pass</span>
+      </div>
+    </div>
+    <div class="screenshot-card">
+      <img src="screenshots/mobile/profile.jpg" alt="내 프로필" loading="lazy" onerror="this.style.display='none'">
+      <div class="info">
+        <strong>내 프로필</strong><br>
+        <code>/profile</code> | 2452ms | <span style="color:#16a34a">pass</span>
+      </div>
+    </div>
+    <div class="screenshot-card">
+      <img src="screenshots/mobile/stats.jpg" alt="통계/페르소나" loading="lazy" onerror="this.style.display='none'">
+      <div class="info">
+        <strong>통계/페르소나</strong><br>
+        <code>/stats</code> | 2638ms | <span style="color:#16a34a">pass</span>
+      </div>
+    </div>
+    <div class="screenshot-card">
+      <img src="screenshots/mobile/timeline.jpg" alt="타임라인" loading="lazy" onerror="this.style.display='none'">
+      <div class="info">
+        <strong>타임라인</strong><br>
+        <code>/timeline</code> | 2422ms | <span style="color:#16a34a">pass</span>
+      </div>
+    </div>
+    <div class="screenshot-card">
+      <img src="screenshots/mobile/payment_fail.jpg" alt="결제 실패" loading="lazy" onerror="this.style.display='none'">
+      <div class="info">
+        <strong>결제 실패</strong><br>
+        <code>/payment/fail</code> | 2408ms | <span style="color:#16a34a">pass</span>
+      </div>
+    </div>
+    <div class="screenshot-card">
+      <img src="screenshots/mobile/payment_success.jpg" alt="결제 성공" loading="lazy" onerror="this.style.display='none'">
+      <div class="info">
+        <strong>결제 성공</strong><br>
+        <code>/payment/success</code> | 2433ms | <span style="color:#16a34a">pass</span>
+      </div>
+    </div>
+    <div class="screenshot-card">
+      <img src="screenshots/mobile/share_bookshelves_test-id.jpg" alt="공유 서재 (404)" loading="lazy" onerror="this.style.display='none'">
+      <div class="info">
+        <strong>공유 서재 (404)</strong><br>
+        <code>/share/bookshelves/test-id</code> | 2410ms | <span style="color:#16a34a">pass</span>
+      </div>
+    </div>
+    <div class="screenshot-card">
+      <img src="screenshots/mobile/share_notes_test-id.jpg" alt="공유 기록 (404)" loading="lazy" onerror="this.style.display='none'">
+      <div class="info">
+        <strong>공유 기록 (404)</strong><br>
+        <code>/share/notes/test-id</code> | 2467ms | <span style="color:#16a34a">pass</span>
+      </div>
+    </div>
+    <div class="screenshot-card">
+      <img src="screenshots/mobile/privacy.jpg" alt="개인정보 처리방침" loading="lazy" onerror="this.style.display='none'">
+      <div class="info">
+        <strong>개인정보 처리방침</strong><br>
+        <code>/privacy</code> | 2354ms | <span style="color:#16a34a">pass</span>
+      </div>
+    </div>
+    <div class="screenshot-card">
+      <img src="screenshots/mobile/terms.jpg" alt="이용약관" loading="lazy" onerror="this.style.display='none'">
+      <div class="info">
+        <strong>이용약관</strong><br>
+        <code>/terms</code> | 2415ms | <span style="color:#16a34a">pass</span>
+      </div>
+    </div>
+  </div>
+
+  <footer style="margin-top:48px;padding:16px 0;border-top:1px solid #e2e8f0;color:#94a3b8;font-size:0.8rem;text-align:center">
+    ReadingTree QA 자동 점검 보고서 | Generated by Playwright + Claude Code | 2026. 3. 30. PM 3:48:32
+  </footer>
+</div>
+</body>
+</html>
