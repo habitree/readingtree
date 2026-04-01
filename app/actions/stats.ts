@@ -5,6 +5,7 @@ import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import type { NoteWithBook } from "@/types/note";
 import type { User } from "@supabase/supabase-js";
 import { getSampleUserId as getSampleUserIdFromSample } from "./sample";
+import { getCurrentUser } from "./auth";
 
 export type TimelineSortBy = "latest" | "oldest" | "book";
 
@@ -1109,15 +1110,17 @@ export async function getMonthlyBookActivities(
   year: number,
   month: number
 ): Promise<Record<string, DailyBookActivity>> {
-  if (!user) {
+  // user가 null이면 서버에서 현재 사용자 조회
+  const resolvedUser = user ?? await getCurrentUser();
+  if (!resolvedUser) {
     return {};
   }
 
   const supabase = await createServerSupabaseClient();
 
-  // 해당 월의 시작일과 종료일 계산
-  const startDate = new Date(year, month - 1, 1);
-  const endDate = new Date(year, month, 0, 23, 59, 59, 999);
+  // 해당 월의 시작일과 종료일 계산 (KST 기준)
+  const startDate = new Date(Date.UTC(year, month - 1, 1) - 9 * 60 * 60 * 1000);
+  const endDate = new Date(Date.UTC(year, month, 0, 23, 59, 59, 999) - 9 * 60 * 60 * 1000);
 
   // 해당 월의 기록 조회 (책 정보 + 기록 타입 포함)
   const { data: notes, error } = await supabase
@@ -1133,7 +1136,7 @@ export async function getMonthlyBookActivities(
         cover_image_url
       )
     `)
-    .eq("user_id", user.id)
+    .eq("user_id", resolvedUser.id)
     .gte("created_at", startDate.toISOString())
     .lte("created_at", endDate.toISOString())
     .order("created_at", { ascending: true });
@@ -1148,7 +1151,7 @@ export async function getMonthlyBookActivities(
   const { data: userBooksData } = await supabase
     .from("user_books")
     .select("id, book_id")
-    .eq("user_id", user.id)
+    .eq("user_id", resolvedUser.id)
     .in("book_id", bookIds);
 
   const userBookIdMap = new Map<string, string>();
