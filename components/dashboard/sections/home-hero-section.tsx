@@ -19,6 +19,7 @@ import {
   Flame,
   Target,
   Sparkles,
+  Timer,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { UserPersona } from "@/types/persona";
@@ -96,6 +97,8 @@ interface HomeHeroSectionProps {
   freeNoteStats?: { totalCount: number; todayCount: number };
   /** 첫 사용자 데모 모드 (주간 통계가 데모 데이터) */
   isFirstUserDemo?: boolean;
+  /** 오늘 독서 시간 (초) */
+  todayReadingSeconds?: number;
 }
 
 /**
@@ -121,6 +124,7 @@ export const HomeHeroSection = memo(function HomeHeroSection({
   hasFirstNote = true,
   freeNoteStats = { totalCount: 0, todayCount: 0 },
   isFirstUserDemo = false,
+  todayReadingSeconds = 0,
 }: HomeHeroSectionProps) {
   const [mounted, setMounted] = useState(false);
   const { greeting, getStreakMessage, getMotivationalMessage } = useStyle();
@@ -399,8 +403,8 @@ export const HomeHeroSection = memo(function HomeHeroSection({
             </span>
           </div>
         )}
-        {/* 통계 카드 2개: 연속 기록 + 오늘의 기록 */}
-        <div className={cn("grid grid-cols-2 gap-2 sm:gap-3", isFirstUserDemo && "opacity-60")}>
+        {/* 통계 카드: 연속 기록 + 오늘의 기록 + 독서 시간 */}
+        <div className={cn("grid grid-cols-3 gap-2 sm:gap-3", isFirstUserDemo && "opacity-60")}>
 
           {/* 연속 기록 */}
           <Card className="p-3 sm:p-4 border-slate-200/60 dark:border-slate-800/60 bg-white dark:bg-slate-900">
@@ -466,6 +470,24 @@ export const HomeHeroSection = memo(function HomeHeroSection({
               )}
             </Card>
           </Link>
+
+          {/* 오늘 독서 시간 */}
+          <Card className="p-3 sm:p-4 border-slate-200/60 dark:border-slate-800/60 bg-white dark:bg-slate-900">
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <Timer className="h-4 w-4 text-cyan-500" />
+              <span className="text-[10px] sm:text-xs font-semibold text-slate-500 dark:text-slate-400">{t("dashboard.todayReadingTime")}</span>
+            </div>
+            <div className="flex items-baseline gap-1 mb-2">
+              <span className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">
+                {todayReadingSeconds >= 3600
+                  ? Math.floor(todayReadingSeconds / 3600)
+                  : Math.floor(todayReadingSeconds / 60)}
+              </span>
+              <span className="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400">
+                {todayReadingSeconds >= 3600 ? "시간" : "분"}
+              </span>
+            </div>
+          </Card>
         </div>
 
         {/* 주간 진행 (나뭇잎 버전) */}

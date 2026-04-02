@@ -12,6 +12,7 @@ import {
   TrendingUp,
   CheckCircle2,
   Calendar,
+  Timer,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
@@ -47,6 +48,7 @@ interface StatsContentProps {
   };
   topTags: Array<{ tag: string; count: number }>;
   dailyRecords: Record<string, number>;
+  readingTimeStats?: { totalSeconds: number; sessionCount: number };
 }
 
 export function StatsContent({
@@ -56,6 +58,7 @@ export function StatsContent({
   goalProgress,
   topTags,
   dailyRecords,
+  readingTimeStats,
 }: StatsContentProps) {
   const { t } = useTranslation();
 
@@ -104,6 +107,21 @@ export function StatsContent({
           }
           href="/profile"
         />
+        {readingTimeStats && readingTimeStats.totalSeconds > 0 && (
+          <StatCard
+            icon={Timer}
+            label={t("stats.totalReadingTime")}
+            value={
+              readingTimeStats.totalSeconds >= 3600
+                ? Math.round((readingTimeStats.totalSeconds / 3600) * 10) / 10
+                : Math.round(readingTimeStats.totalSeconds / 60)
+            }
+            unit={readingTimeStats.totalSeconds >= 3600 ? "시간" : "분"}
+            color="text-cyan-600 dark:text-cyan-400"
+            bgColor="bg-cyan-50 dark:bg-cyan-950/30"
+            subtitle={t("stats.sessionCount", { count: readingTimeStats.sessionCount })}
+          />
+        )}
       </div>
 
       {/* 이번 주 진행 현황 */}

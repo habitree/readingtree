@@ -12,6 +12,6 @@ export const MUSIC_THEME_GROUPS: MusicThemeGroup[] = [
     id: "genre",
     name: "재즈",
     emoji: "🎷",
-    playlists: ["jazz-reading"],
+    playlists: ["jazz-comfortable", "jazz-night", "jazz-swing", "jazz-focus"],
   },
 ];

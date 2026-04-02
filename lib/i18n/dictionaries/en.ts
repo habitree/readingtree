@@ -944,6 +944,7 @@ export const en: Dictionary = {
     weeklyStatus: "This Week's Reading",
     weeklyAchievement: 'This Week',
     todayNotes: "Today's Notes",
+    todayReadingTime: "Reading Time",
     noteStyle: 'Note Style',
     secretGarden: 'Secret Garden',
     monthlySummary: 'Read {count} books in {month}',
@@ -2667,6 +2668,8 @@ export const en: Dictionary = {
     noTags: "No tags yet",
     setGoal: "Set goal",
     viewAllBooks: "View all",
+    totalReadingTime: "Reading Time",
+    sessionCount: "{count} sessions",
   },
 
   bookshelves: {

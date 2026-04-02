@@ -944,6 +944,7 @@ export const ko = {
     weeklyStatus: '이번 주 독서 현황',
     weeklyAchievement: '이번 주 달성',
     todayNotes: '오늘의 기록',
+    todayReadingTime: '독서 시간',
     noteStyle: '기록의 결',
     secretGarden: '비밀 정원',
     monthlySummary: '{month}월에 {count}권 읽었어요',
@@ -2671,6 +2672,8 @@ export const ko = {
     noTags: "아직 태그가 없어요",
     setGoal: "목표 설정하기",
     viewAllBooks: "전체 보기",
+    totalReadingTime: "독서 시간",
+    sessionCount: "{count}회 세션",
   },
 
   bookshelves: {

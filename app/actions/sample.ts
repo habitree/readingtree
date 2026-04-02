@@ -1423,3 +1423,13 @@ export async function getSampleUserTagsWithCount(): Promise<{ tag: string; count
     return [];
   }
 }
+
+export async function getSampleReadingTimeStats() {
+  return {
+    totalSeconds: 18720,
+    sessionCount: 14,
+    averageSeconds: 1337,
+    todaySeconds: 1800,
+    thisWeekSeconds: 5400,
+  };
+}

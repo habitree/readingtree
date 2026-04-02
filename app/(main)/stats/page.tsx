@@ -5,9 +5,10 @@ import {
   getMonthlyStats,
   getWeeklyProgress,
   getGoalProgress,
+  getDailyRecordsForCalendar,
 } from "@/app/actions/stats";
 import { getUserTagsWithCount } from "@/app/actions/notes";
-import { getDailyRecordsForCalendar } from "@/app/actions/stats";
+import { getUserReadingTimeStats } from "@/app/actions/progress";
 import {
   getSamplePersonaDashboardData,
   getSampleReadingStats,
@@ -16,6 +17,7 @@ import {
   getSampleGoalProgress,
   getSampleDailyRecordsForCalendar,
   getSampleUserTagsWithCount,
+  getSampleReadingTimeStats,
 } from "@/app/actions/sample";
 import { PageHeader } from "@/components/layout/page-header";
 import { StatsContent } from "@/components/stats/stats-content";
@@ -38,7 +40,7 @@ export default async function StatsPage() {
   startDate.setDate(startDate.getDate() - 84); // 12주
 
   // 게스트: 샘플 데이터, 로그인 사용자: 실제 데이터
-  const [readingStats, monthlyStats, weeklyProgress, goalProgress, topTags, dailyRecords, personaData] =
+  const [readingStats, monthlyStats, weeklyProgress, goalProgress, topTags, dailyRecords, personaData, readingTimeStats] =
     isGuest
       ? await Promise.all([
           getSampleReadingStats(),
@@ -48,6 +50,7 @@ export default async function StatsPage() {
           getSampleUserTagsWithCount(),
           getSampleDailyRecordsForCalendar(startDate, endDate),
           getSamplePersonaDashboardData(),
+          getSampleReadingTimeStats(),
         ])
       : await Promise.all([
           getReadingStats(user),
@@ -57,6 +60,7 @@ export default async function StatsPage() {
           getUserTagsWithCount(user),
           getDailyRecordsForCalendar(user, startDate, endDate),
           getCachedPersonaDashboardData(),
+          getUserReadingTimeStats(),
         ]);
 
   return (
@@ -86,6 +90,7 @@ export default async function StatsPage() {
         goalProgress={goalProgress}
         topTags={topTags.slice(0, 10)}
         dailyRecords={dailyRecords}
+        readingTimeStats={readingTimeStats}
       />
     </div>
   );

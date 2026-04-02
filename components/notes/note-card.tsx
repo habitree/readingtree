@@ -24,7 +24,7 @@ import { NoteContentViewer } from "./note-content-viewer";
 import { OCRStatusBadge } from "./ocr-status-badge";
 import { useOCRStatus } from "@/hooks/use-ocr-status";
 import type { NoteWithBook } from "@/types/note";
-import { FileText, StickyNote, PenTool, Camera, Trash2, Loader2, BookOpen, TrendingUp, PenLine, Clock } from "lucide-react";
+import { FileText, StickyNote, PenTool, Camera, Trash2, Loader2, BookOpen, TrendingUp, PenLine } from "lucide-react";
 import { BookLinkRenderer } from "./book-link-renderer";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/lib/i18n";
@@ -231,14 +231,6 @@ export function NoteCard({ note, showDeleteButton = false, onDelete }: NoteCardP
                   </Badge>
                 )}
                 <OCRStatusBadge status={ocrStatus} className="shrink-0" />
-                {note.reading_duration_seconds != null && note.reading_duration_seconds > 0 && (
-                  <Badge variant="outline" className="text-[10px] h-5 px-1.5 text-muted-foreground gap-0.5">
-                    <Clock className="w-2.5 h-2.5" />
-                    {note.reading_duration_seconds >= 3600
-                      ? `${Math.floor(note.reading_duration_seconds / 3600)}h${Math.floor((note.reading_duration_seconds % 3600) / 60)}m`
-                      : `${Math.floor(note.reading_duration_seconds / 60)}분`}
-                  </Badge>
-                )}
               </div>
 
               {/* 제목 (있는 경우) */}

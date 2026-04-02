@@ -1,6 +1,6 @@
 import type { MusicPlaylist } from "@/types/music";
 
-/** 큐레이션 플레이리스트 (5개 카테고리, 검증된 54곡) */
+/** 큐레이션 플레이리스트 (8개 카테고리: 클래식 4 + 재즈 4, 검증된 69곡) */
 export const MUSIC_PLAYLISTS: MusicPlaylist[] = [
   {
     id: "comfortable",
@@ -43,15 +43,43 @@ export const MUSIC_PLAYLISTS: MusicPlaylist[] = [
     ],
   },
   {
-    id: "jazz-reading",
-    name: "재즈 독서",
-    description: "부드러운 재즈와 보사노바로 여유로운 독서",
-    emoji: "🎷",
+    id: "jazz-comfortable",
+    name: "편안한 재즈",
+    description: "따뜻하고 부드러운 재즈로 여유롭게",
+    emoji: "🌿",
     trackIds: [
-      "track-147", "track-148", "track-149", "track-150", "track-151",
-      "track-152", "track-153", "track-154", "track-155", "track-156",
-      "track-157", "track-158", "track-159", "track-160", "track-161",
-      "track-162", "track-163", "track-164", "track-165", "track-166",
+      "track-147", "track-148", "track-149", "track-150", "track-152",
+      "track-163", "track-165", "track-169", "track-175", "track-178",
+    ],
+  },
+  {
+    id: "jazz-night",
+    name: "밤 재즈",
+    description: "고요한 밤, 감성적인 재즈와 함께",
+    emoji: "🌙",
+    trackIds: [
+      "track-153", "track-155", "track-156", "track-158", "track-162",
+      "track-171", "track-172", "track-173", "track-176", "track-177",
+    ],
+  },
+  {
+    id: "jazz-swing",
+    name: "스윙 재즈",
+    description: "신나고 활기찬 스윙과 펑키 재즈",
+    emoji: "🔥",
+    trackIds: [
+      "track-160", "track-164", "track-166", "track-167",
+      "track-170", "track-174", "track-179", "track-180",
+    ],
+  },
+  {
+    id: "jazz-focus",
+    name: "집중 재즈",
+    description: "일정한 리듬의 스무스 재즈로 집중",
+    emoji: "🎯",
+    trackIds: [
+      "track-151", "track-154", "track-157", "track-159", "track-161",
+      "track-168", "track-176", "track-165", "track-181",
     ],
   },
 ];

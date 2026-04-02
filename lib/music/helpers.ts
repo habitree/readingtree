@@ -14,7 +14,7 @@ let _loaded = false;
 let _loading: Promise<void> | null = null;
 
 // ── localStorage 캐시 ──
-const CACHE_KEY = "music-cache-v7";
+const CACHE_KEY = "music-cache-v8";
 const CACHE_TTL = 24 * 60 * 60 * 1000; // 24시간
 
 interface MusicCache {
