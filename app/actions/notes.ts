@@ -81,9 +81,10 @@ export async function createNote(data: CreateNoteInput, user?: User | null) {
   const hasImage = data.image_url && data.image_url.trim().length > 0;
   const isProgressType = data.type === "progress";
   const hasPageNumber = data.page_number !== null && data.page_number !== undefined;
+  const hasReadingDuration = data.reading_duration_seconds && data.reading_duration_seconds > 0;
 
-  // progress 타입은 page_number만 있어도 OK
-  if (!hasQuote && !hasMemo && !hasContent && !hasImage && !(isProgressType && hasPageNumber)) {
+  // 독서 시간 기록이 있으면 텍스트 없이도 저장 허용 (나중에 보완 가능)
+  if (!hasQuote && !hasMemo && !hasContent && !hasImage && !(isProgressType && hasPageNumber) && !hasReadingDuration) {
     throw new Error("인상깊은 구절, 내 생각, 내용, 또는 이미지 중 최소 하나는 입력해주세요.");
   }
 
@@ -294,17 +295,15 @@ export async function createQuickNote(
     uploadType?: "photo" | "transcription";
   },
 ) {
-  if (!content || content.trim().length === 0) {
-    throw new Error("내용을 입력해주세요.");
-  }
-
-  if (!isValidLength(content, 1, 10000)) {
+  if (content && !isValidLength(content, 0, 10000)) {
     throw new Error("내용은 10,000자 이하여야 합니다.");
   }
 
+  const trimmedContent = content?.trim() || "";
+
   return createNote({
     book_id: bookId,
-    memo_content: content.trim(),
+    memo_content: trimmedContent || undefined,
     quote_content: options?.quoteContent?.trim() || undefined,
     page_number: options?.pageNumber || undefined,
     image_url: options?.imageUrl || undefined,

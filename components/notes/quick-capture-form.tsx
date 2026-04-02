@@ -197,7 +197,7 @@ export function QuickCaptureForm({
         value={content}
         onChange={(e) => setContent(e.target.value)}
         onKeyDown={handleKeyDown}
-        placeholder="이 책에서 떠오른 생각을 적어보세요"
+        placeholder={readingDurationSeconds ? "메모를 남겨보세요 (선택사항)" : "이 책에서 떠오른 생각을 적어보세요"}
         className="min-h-[80px] max-h-[200px] resize-none text-sm border-muted-foreground/20 focus-visible:ring-primary/30"
         maxLength={10000}
       />
@@ -287,7 +287,7 @@ export function QuickCaptureForm({
         <Button
           size="sm"
           onClick={handleSubmit}
-          disabled={!content.trim() || isSubmitting}
+          disabled={(!content.trim() && !readingDurationSeconds) || isSubmitting}
           className="gap-1.5"
         >
           <Send className="w-3.5 h-3.5" />

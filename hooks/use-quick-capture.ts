@@ -77,7 +77,9 @@ export function useQuickCapture() {
 
   const submitQuickNote = useCallback(
     async (content: string) => {
-      if (!content.trim() || isSubmitting) return;
+      // 텍스트 없어도 독서 시간이 있으면 저장 허용
+      if (!content.trim() && !store.readingDurationSeconds && isSubmitting) return;
+      if (isSubmitting) return;
 
       setIsSubmitting(true);
       try {
