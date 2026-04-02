@@ -1,6 +1,6 @@
 import type { MusicPlaylist } from "@/types/music";
 
-/** 큐레이션 플레이리스트 (4개 카테고리, 검증된 34곡) */
+/** 큐레이션 플레이리스트 (5개 카테고리, 검증된 54곡) */
 export const MUSIC_PLAYLISTS: MusicPlaylist[] = [
   {
     id: "comfortable",
@@ -40,6 +40,18 @@ export const MUSIC_PLAYLISTS: MusicPlaylist[] = [
     trackIds: [
       "track-001", "track-003", "track-004", "track-009", "track-015",
       "track-026", "track-047", "track-056", "track-058",
+    ],
+  },
+  {
+    id: "jazz-reading",
+    name: "재즈 독서",
+    description: "부드러운 재즈와 보사노바로 여유로운 독서",
+    emoji: "🎷",
+    trackIds: [
+      "track-147", "track-148", "track-149", "track-150", "track-151",
+      "track-152", "track-153", "track-154", "track-155", "track-156",
+      "track-157", "track-158", "track-159", "track-160", "track-161",
+      "track-162", "track-163", "track-164", "track-165", "track-166",
     ],
   },
 ];

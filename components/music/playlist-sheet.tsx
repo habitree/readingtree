@@ -156,7 +156,7 @@ export function TimerSheet() {
           </SheetTitle>
           <SheetDescription className="sr-only">독서 타이머 시간 및 플레이리스트 설정</SheetDescription>
           <p className="text-xs text-muted-foreground text-center mt-1">
-            시간을 설정하면 클래식 음악과 함께 독서가 시작됩니다
+            시간을 설정하면 음악과 함께 독서가 시작됩니다
           </p>
         </SheetHeader>
 

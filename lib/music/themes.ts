@@ -8,4 +8,10 @@ export const MUSIC_THEME_GROUPS: MusicThemeGroup[] = [
     emoji: "📖",
     playlists: ["comfortable", "night", "energetic", "calm"],
   },
+  {
+    id: "genre",
+    name: "장르별",
+    emoji: "🎵",
+    playlists: ["jazz-reading"],
+  },
 ];

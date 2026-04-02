@@ -9,7 +9,7 @@ export type MusicMoodTag =
   | "energetic";
 
 /** 시대 태그 */
-export type MusicEraTag = "baroque" | "classical" | "romantic" | "impressionist";
+export type MusicEraTag = "baroque" | "classical" | "romantic" | "impressionist" | "jazz";
 
 /** 악기 태그 */
 export type MusicInstrumentTag =
@@ -18,7 +18,12 @@ export type MusicInstrumentTag =
   | "string_quartet"
   | "orchestra"
   | "woodwind"
-  | "cello";
+  | "cello"
+  | "saxophone"
+  | "trumpet"
+  | "upright_bass"
+  | "drums"
+  | "guitar";
 
 /** 음악 트랙 */
 export interface MusicTrack {

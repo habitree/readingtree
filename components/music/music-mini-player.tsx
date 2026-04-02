@@ -58,7 +58,7 @@ function CircleTimer({
   );
 }
 
-/** 헤더 클래식 음악 + 타이머 버튼 */
+/** 헤더 배경 음악 + 타이머 버튼 */
 export function MusicToggleButton() {
   const { isVisible, timerStatus, remainingSeconds, elapsedSeconds, isUnlimited, openTimerSheet, pauseTimer, resumeTimer } =
     useMusicPlayer();
@@ -86,7 +86,7 @@ export function MusicToggleButton() {
             ? "bg-gradient-to-r from-orange-500/12 to-amber-500/12 text-orange-500 shadow-sm ring-1 ring-orange-400/20"
             : "text-muted-foreground hover:bg-amber-500/8 hover:text-amber-700 dark:hover:text-amber-400 hover:shadow-sm"
       )}
-      title={isActive ? "독서 일시정지" : isPaused ? "독서 계속하기" : "클래식 음악 + 독서 타이머"}
+      title={isActive ? "독서 일시정지" : isPaused ? "독서 계속하기" : "배경 음악 + 독서 타이머"}
     >
       {isActive ? (
         <>
@@ -120,7 +120,7 @@ export function MusicToggleButton() {
           </span>
         </>
       ) : (
-        /* idle — 클래식 음악 음표 메인 + 작은 시계 뱃지 */
+        /* idle — 배경 음악 음표 메인 + 작은 시계 뱃지 */
         <span className="relative flex items-center justify-center w-full h-full">
           <Music2 className="w-[18px] h-[18px] sm:w-5 sm:h-5 transition-transform duration-200 group-hover:scale-110 group-hover:text-amber-600 dark:group-hover:text-amber-400" />
           <span className="absolute -top-0.5 -right-0.5 sm:top-0 sm:right-0 flex items-center justify-center w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-full bg-background shadow-sm ring-1 ring-border/60">

@@ -90,7 +90,7 @@ export function TrackListSheet() {
             <Music2 className="w-4 h-4" />
             음악 목록
           </SheetTitle>
-          <SheetDescription className="sr-only">클래식 음악 재생 목록</SheetDescription>
+          <SheetDescription className="sr-only">음악 재생 목록</SheetDescription>
         </SheetHeader>
 
         {/* 탭 전환 */}
