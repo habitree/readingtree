@@ -72,6 +72,26 @@ export interface ReadingLogFilter {
 }
 
 /**
+ * 음악 타이머 독서 세션 저장 입력 (텍스트 불필요, 시간만 저장)
+ */
+export interface SaveReadingSessionInput {
+  durationSeconds: number;
+  startedAt: string;
+  userBookId?: string;
+}
+
+/**
+ * 사용자 전체 독서 시간 통계
+ */
+export interface UserReadingTimeStats {
+  totalSeconds: number;
+  sessionCount: number;
+  averageSeconds: number;
+  todaySeconds: number;
+  thisWeekSeconds: number;
+}
+
+/**
  * 진행 로그 통계
  */
 export interface ReadingLogStats {

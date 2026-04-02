@@ -4,7 +4,8 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { isValidUUID, sanitizeErrorMessage } from "@/lib/utils/validation";
 import type { User } from "@supabase/supabase-js";
-import type { ReadingLog, CreateReadingLogInput } from "@/types/progress";
+import type { ReadingLog, CreateReadingLogInput, SaveReadingSessionInput, UserReadingTimeStats } from "@/types/progress";
+import { READTREE_BOOK_ID } from "@/lib/constants/readtree";
 
 /**
  * 진행 로그 생성
@@ -268,6 +269,133 @@ export async function updateProgressLog(
   revalidatePath("/");
 
   return { success: true };
+}
+
+/** 자동 저장 최소 임계값 (초) */
+const MIN_SESSION_SECONDS = 30;
+
+/**
+ * 음악 타이머 독서 세션 저장 (텍스트 불필요, 시간만 저장)
+ * 책 미선택 시 READTREE_BOOK_ID 폴백
+ */
+export async function saveReadingSession(
+  data: SaveReadingSessionInput,
+): Promise<{ success: boolean; logId: string }> {
+  const supabase = await createServerSupabaseClient();
+
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+  if (authError || !user) throw new Error("로그인이 필요합니다.");
+
+  if (data.durationSeconds < MIN_SESSION_SECONDS) {
+    throw new Error("30초 이상의 독서 시간만 저장할 수 있습니다.");
+  }
+
+  // user_book_id 결정: 전달된 값 또는 READTREE 시스템 책 폴백
+  let userBookId = data.userBookId;
+
+  if (userBookId && !isValidUUID(userBookId)) {
+    throw new Error("유효하지 않은 책 ID입니다.");
+  }
+
+  if (!userBookId) {
+    const { data: existingUB } = await supabase
+      .from("user_books")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("book_id", READTREE_BOOK_ID)
+      .maybeSingle();
+
+    if (existingUB) {
+      userBookId = existingUB.id;
+    } else {
+      const { data: newUB, error: upsertError } = await supabase
+        .from("user_books")
+        .upsert(
+          { user_id: user.id, book_id: READTREE_BOOK_ID, status: "reading" },
+          { onConflict: "user_id,book_id" },
+        )
+        .select("id")
+        .single();
+
+      if (upsertError || !newUB) {
+        throw new Error("시스템 책 등록에 실패했습니다.");
+      }
+      userBookId = newUB.id;
+    }
+  }
+
+  const { data: log, error } = await supabase
+    .from("reading_logs")
+    .insert({
+      user_id: user.id,
+      user_book_id: userBookId,
+      page_number: 0,
+      memo: null,
+      is_public: true,
+      started_at: data.startedAt,
+      ended_at: new Date().toISOString(),
+      reading_duration_seconds: data.durationSeconds,
+    })
+    .select()
+    .single();
+
+  if (error || !log) {
+    throw new Error(sanitizeErrorMessage(error || new Error("독서 세션 저장에 실패했습니다.")));
+  }
+
+  revalidatePath("/notes");
+  revalidatePath("/");
+
+  return { success: true, logId: log.id };
+}
+
+/**
+ * 사용자 전체 독서 시간 통계 (책별이 아닌 전체)
+ */
+export async function getUserReadingTimeStats(): Promise<UserReadingTimeStats> {
+  const supabase = await createServerSupabaseClient();
+
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+  if (authError || !user) throw new Error("로그인이 필요합니다.");
+
+  const { data, error } = await supabase
+    .from("reading_logs")
+    .select("reading_duration_seconds, started_at")
+    .eq("user_id", user.id)
+    .gt("reading_duration_seconds", 0);
+
+  if (error) throw new Error(sanitizeErrorMessage(error));
+
+  const logs = data || [];
+  const now = new Date();
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+  const weekStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay()).toISOString();
+
+  let totalSeconds = 0;
+  let todaySeconds = 0;
+  let thisWeekSeconds = 0;
+
+  for (const log of logs) {
+    const dur = log.reading_duration_seconds || 0;
+    totalSeconds += dur;
+    const startedAt = log.started_at || "";
+    if (startedAt >= todayStart) todaySeconds += dur;
+    if (startedAt >= weekStart) thisWeekSeconds += dur;
+  }
+
+  return {
+    totalSeconds,
+    sessionCount: logs.length,
+    averageSeconds: logs.length > 0 ? Math.round(totalSeconds / logs.length) : 0,
+    todaySeconds,
+    thisWeekSeconds,
+  };
 }
 
 /**
