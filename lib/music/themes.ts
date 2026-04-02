@@ -4,14 +4,14 @@ import type { MusicThemeGroup } from "@/types/music";
 export const MUSIC_THEME_GROUPS: MusicThemeGroup[] = [
   {
     id: "reading-mood",
-    name: "독서 분위기",
-    emoji: "📖",
+    name: "클래식",
+    emoji: "🎻",
     playlists: ["comfortable", "night", "energetic", "calm"],
   },
   {
     id: "genre",
-    name: "장르별",
-    emoji: "🎵",
+    name: "재즈",
+    emoji: "🎷",
     playlists: ["jazz-reading"],
   },
 ];

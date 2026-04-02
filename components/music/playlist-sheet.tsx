@@ -9,7 +9,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { useMusicPlayer } from "@/hooks/use-music-player";
-import { Star, Plus, X, Clock, Infinity as InfinityIcon, Music2, ChevronRight } from "lucide-react";
+import { Star, Plus, X, Clock, Infinity as InfinityIcon, Music2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getPlaylists, getThemeGroups, getPlaylistTracks } from "@/lib/music";
 import { getGlobalAudio } from "./music-mini-player";
@@ -46,10 +46,20 @@ export function TimerSheet() {
   const [favorites, setFavorites] = useState<number[]>([]);
   const [isEditingFavorites, setIsEditingFavorites] = useState(false);
   const [selectedPlaylistId, setSelectedPlaylistId] = useState("comfortable");
-  const [showAllPlaylists, setShowAllPlaylists] = useState(false);
 
   const playlists = getPlaylists();
   const themeGroups = getThemeGroups();
+
+  // 현재 선택된 플레이리스트가 속한 장르 감지
+  const getGenreForPlaylist = (pid: string) =>
+    themeGroups.find((g) => g.playlists.includes(pid))?.id ?? themeGroups[0]?.id ?? "";
+  const [selectedGenre, setSelectedGenre] = useState(() => getGenreForPlaylist("comfortable"));
+
+  // 선택된 장르의 플레이리스트 필터링
+  const genreGroup = themeGroups.find((g) => g.id === selectedGenre);
+  const genrePlaylists = genreGroup
+    ? playlists.filter((pl) => genreGroup.playlists.includes(pl.id))
+    : playlists;
 
   // 즐겨찾기 로드
   useEffect(() => {
@@ -136,7 +146,6 @@ export function TimerSheet() {
           setIsEditingFavorites(false);
           setIsCustom(false);
           setIsUnlimited(false);
-          setShowAllPlaylists(false);
         }
       }}
     >
@@ -348,83 +357,68 @@ export function TimerSheet() {
         {/* ── 배경음악 선택 ── */}
         {!isEditingFavorites && (
           <div className="mb-3">
-            <div className="flex items-center justify-between mb-2 px-0.5">
-              <span className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-                <Music2 className="w-3 h-3" />
-                배경음악
-              </span>
-              <button
-                onClick={() => setShowAllPlaylists(!showAllPlaylists)}
-                className="flex items-center gap-0.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
-              >
-                {showAllPlaylists ? "접기" : "더 보기"}
-                <ChevronRight className={cn("w-3 h-3 transition-transform", showAllPlaylists && "rotate-90")} />
-              </button>
+            <span className="text-xs font-medium text-muted-foreground flex items-center gap-1 mb-2 px-0.5">
+              <Music2 className="w-3 h-3" />
+              배경음악
+            </span>
+
+            {/* 장르 탭 */}
+            <div className="flex gap-1.5 mb-2.5">
+              {themeGroups.map((group) => {
+                const isActive = selectedGenre === group.id;
+                const groupTrackCount = group.playlists.reduce((sum, pid) => {
+                  const pl = playlists.find((p) => p.id === pid);
+                  return sum + (pl?.trackIds.length ?? 0);
+                }, 0);
+                return (
+                  <button
+                    key={group.id}
+                    onClick={() => {
+                      setSelectedGenre(group.id);
+                      if (!group.playlists.includes(selectedPlaylistId)) {
+                        setSelectedPlaylistId(group.playlists[0]);
+                      }
+                    }}
+                    className={cn(
+                      "flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all",
+                      isActive
+                        ? "bg-primary/10 text-primary ring-1 ring-primary/30"
+                        : "bg-muted/50 text-muted-foreground hover:bg-muted"
+                    )}
+                  >
+                    <span>{group.emoji}</span>
+                    <span>{group.name}</span>
+                    <span className="text-[9px] opacity-50 font-normal">{groupTrackCount}곡</span>
+                  </button>
+                );
+              })}
             </div>
 
-            {!showAllPlaylists ? (
-              /* 퀵 선택 (인기 4개) */
-              <div className="grid grid-cols-4 gap-1.5">
-                {["comfortable", "night", "energetic", "calm"].map((pid) => {
-                  const pl = playlists.find((p) => p.id === pid);
-                  if (!pl) return null;
-                  const isSelected = selectedPlaylistId === pid;
-                  const trackCount = pl.trackIds.length;
-                  return (
-                    <button
-                      key={pid}
-                      onClick={() => setSelectedPlaylistId(pid)}
-                      className={cn(
-                        "flex flex-col items-center gap-0.5 py-2 px-1 rounded-xl text-center transition-all",
-                        isSelected
-                          ? "bg-primary/10 ring-1 ring-primary/30 text-primary"
-                          : "bg-muted/50 text-muted-foreground hover:bg-muted"
-                      )}
-                    >
-                      <span className="text-base">{pl.emoji}</span>
-                      <span className="text-[10px] font-semibold leading-tight">{pl.name}</span>
-                      <span className="text-[9px] opacity-60">{trackCount}곡</span>
-                    </button>
-                  );
-                })}
-              </div>
-            ) : (
-              /* 전체 테마 브라우저 */
-              <div className="space-y-3 max-h-48 overflow-y-auto">
-                {themeGroups.map((group) => (
-                  <div key={group.id}>
-                    <p className="text-[10px] font-semibold text-muted-foreground mb-1">
-                      {group.emoji} {group.name}
-                    </p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {group.playlists.map((pid) => {
-                        const pl = playlists.find((p) => p.id === pid);
-                        if (!pl) return null;
-                        const isSelected = selectedPlaylistId === pid;
-                        const tracks = getPlaylistTracks(pid);
-                        const totalMin = Math.floor(tracks.reduce((s, t) => s + t.durationSeconds, 0) / 60);
-                        return (
-                          <button
-                            key={pid}
-                            onClick={() => setSelectedPlaylistId(pid)}
-                            className={cn(
-                              "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs transition-all",
-                              isSelected
-                                ? "bg-primary/10 ring-1 ring-primary/30 text-primary font-semibold"
-                                : "bg-muted/50 text-muted-foreground hover:bg-muted"
-                            )}
-                          >
-                            <span>{pl.emoji}</span>
-                            <span>{pl.name}</span>
-                            <span className="text-[9px] opacity-50">{pl.trackIds.length}곡·{totalMin}분</span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+            {/* 플레이리스트 그리드 (선택된 장르) */}
+            <div className={cn(
+              "grid gap-1.5",
+              genrePlaylists.length >= 4 ? "grid-cols-4" : genrePlaylists.length >= 2 ? "grid-cols-2" : "grid-cols-1"
+            )}>
+              {genrePlaylists.map((pl) => {
+                const isSelected = selectedPlaylistId === pl.id;
+                return (
+                  <button
+                    key={pl.id}
+                    onClick={() => setSelectedPlaylistId(pl.id)}
+                    className={cn(
+                      "flex flex-col items-center gap-0.5 py-2.5 px-1.5 rounded-xl text-center transition-all",
+                      isSelected
+                        ? "bg-primary/10 ring-1 ring-primary/30 text-primary"
+                        : "bg-muted/50 text-muted-foreground hover:bg-muted"
+                    )}
+                  >
+                    <span className="text-lg">{pl.emoji}</span>
+                    <span className="text-[10px] font-semibold leading-tight">{pl.name}</span>
+                    <span className="text-[9px] opacity-60">{pl.trackIds.length}곡</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         )}
 

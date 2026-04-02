@@ -9,8 +9,8 @@ import {
   SheetDescription,
 } from "@/components/ui/sheet";
 import { useMusicPlayer } from "@/hooks/use-music-player";
-import { getTrackMoodLabel, getAllTracks, getPlaylists } from "@/lib/music";
-import { Music2, Check, ListMusic, Library, Play } from "lucide-react";
+import { getTrackMoodLabel, getAllTracks, getPlaylists, getThemeGroups } from "@/lib/music";
+import { Music2, Check, ListMusic, Library } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { MusicTrack } from "@/types/music";
 
@@ -34,7 +34,19 @@ export function TrackListSheet() {
   } = useMusicPlayer();
 
   const [tab, setTab] = useState<TabMode>("current");
+  const [filterGenre, setFilterGenre] = useState<string | null>(null);
   const [filterPlaylistId, setFilterPlaylistId] = useState<string | null>(null);
+
+  const allPlaylists = getPlaylists();
+  const themeGroups = getThemeGroups();
+
+  // 장르 필터에 따른 플레이리스트 목록
+  const visiblePlaylists = filterGenre
+    ? allPlaylists.filter((pl) => {
+        const group = themeGroups.find((g) => g.id === filterGenre);
+        return group?.playlists.includes(pl.id);
+      })
+    : allPlaylists;
 
   function handleSelectCurrent(index: number) {
     selectTrack(index);
@@ -42,29 +54,44 @@ export function TrackListSheet() {
   }
 
   function handleSelectFromAll(track: MusicTrack) {
-    // 전체 목록에서 선택 → 해당 곡을 포함하는 새 플레이리스트로 로드
-    const allTracks = filterPlaylistId
-      ? getFilteredTracks()
-      : getAllTracks();
-    const idx = allTracks.findIndex((t) => t.id === track.id);
-    loadPlaylist(allTracks, idx >= 0 ? idx : 0);
-    // 선택 후 재생 시작
+    const tracks = getFilteredTracks();
+    const idx = tracks.findIndex((t) => t.id === track.id);
+    loadPlaylist(tracks, idx >= 0 ? idx : 0);
     setTimeout(() => useMusicPlayer.getState().play(), 100);
     closeTrackList();
   }
 
   function getFilteredTracks(): MusicTrack[] {
-    if (!filterPlaylistId) return getAllTracks();
-    const pl = getPlaylists().find((p) => p.id === filterPlaylistId);
-    if (!pl) return getAllTracks();
     const allTracks = getAllTracks();
-    return pl.trackIds
-      .map((id) => allTracks.find((t) => t.id === id))
-      .filter((t): t is MusicTrack => t !== undefined);
+
+    // 플레이리스트 필터 우선
+    if (filterPlaylistId) {
+      const pl = allPlaylists.find((p) => p.id === filterPlaylistId);
+      if (pl) {
+        return pl.trackIds
+          .map((id) => allTracks.find((t) => t.id === id))
+          .filter((t): t is MusicTrack => t !== undefined);
+      }
+    }
+
+    // 장르 필터
+    if (filterGenre) {
+      const group = themeGroups.find((g) => g.id === filterGenre);
+      if (group) {
+        const genreTrackIds = new Set(
+          group.playlists.flatMap((pid) => {
+            const pl = allPlaylists.find((p) => p.id === pid);
+            return pl?.trackIds ?? [];
+          })
+        );
+        return allTracks.filter((t) => genreTrackIds.has(t.id));
+      }
+    }
+
+    return allTracks;
   }
 
   const filteredTracks = tab === "all" ? getFilteredTracks() : playlist;
-  const playlists = getPlaylists();
 
   return (
     <Sheet
@@ -73,6 +100,7 @@ export function TrackListSheet() {
         if (!open) {
           closeTrackList();
           setTab("current");
+          setFilterGenre(null);
           setFilterPlaylistId(null);
         }
       }}
@@ -96,7 +124,7 @@ export function TrackListSheet() {
         {/* 탭 전환 */}
         <div className="flex gap-1 mb-3 bg-muted/50 rounded-lg p-0.5">
           <button
-            onClick={() => { setTab("current"); setFilterPlaylistId(null); }}
+            onClick={() => { setTab("current"); setFilterGenre(null); setFilterPlaylistId(null); }}
             className={cn(
               "flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-xs font-medium transition-colors",
               tab === "current"
@@ -121,34 +149,67 @@ export function TrackListSheet() {
           </button>
         </div>
 
-        {/* 전체곡 탭: 카테고리 필터 */}
+        {/* 전체곡 탭: 장르 → 플레이리스트 2단 필터 */}
         {tab === "all" && (
-          <div className="flex gap-1.5 mb-3 overflow-x-auto pb-1">
-            <button
-              onClick={() => setFilterPlaylistId(null)}
-              className={cn(
-                "px-2.5 py-1 rounded-full text-[11px] font-medium whitespace-nowrap transition-colors",
-                !filterPlaylistId
-                  ? "bg-primary/10 text-primary ring-1 ring-primary/30"
-                  : "bg-muted/50 text-muted-foreground hover:bg-muted"
-              )}
-            >
-              전체 {getAllTracks().length}곡
-            </button>
-            {playlists.map((pl) => (
+          <div className="space-y-2 mb-3">
+            {/* 장르 필터 */}
+            <div className="flex gap-1.5 overflow-x-auto pb-0.5">
               <button
-                key={pl.id}
-                onClick={() => setFilterPlaylistId(pl.id)}
+                onClick={() => { setFilterGenre(null); setFilterPlaylistId(null); }}
                 className={cn(
-                  "px-2.5 py-1 rounded-full text-[11px] font-medium whitespace-nowrap transition-colors",
-                  filterPlaylistId === pl.id
+                  "px-3 py-1 rounded-full text-[11px] font-semibold whitespace-nowrap transition-colors",
+                  !filterGenre
                     ? "bg-primary/10 text-primary ring-1 ring-primary/30"
                     : "bg-muted/50 text-muted-foreground hover:bg-muted"
                 )}
               >
-                {pl.emoji} {pl.name}
+                전체
               </button>
-            ))}
+              {themeGroups.map((group) => (
+                <button
+                  key={group.id}
+                  onClick={() => { setFilterGenre(group.id); setFilterPlaylistId(null); }}
+                  className={cn(
+                    "flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-semibold whitespace-nowrap transition-colors",
+                    filterGenre === group.id
+                      ? "bg-primary/10 text-primary ring-1 ring-primary/30"
+                      : "bg-muted/50 text-muted-foreground hover:bg-muted"
+                  )}
+                >
+                  <span>{group.emoji}</span>
+                  {group.name}
+                </button>
+              ))}
+            </div>
+
+            {/* 플레이리스트 필터 */}
+            <div className="flex gap-1.5 overflow-x-auto pb-0.5">
+              <button
+                onClick={() => setFilterPlaylistId(null)}
+                className={cn(
+                  "px-2.5 py-1 rounded-full text-[11px] font-medium whitespace-nowrap transition-colors",
+                  !filterPlaylistId
+                    ? "bg-foreground/8 text-foreground ring-1 ring-foreground/10"
+                    : "bg-muted/30 text-muted-foreground hover:bg-muted/50"
+                )}
+              >
+                전체 {getFilteredTracks().length}곡
+              </button>
+              {visiblePlaylists.map((pl) => (
+                <button
+                  key={pl.id}
+                  onClick={() => setFilterPlaylistId(pl.id)}
+                  className={cn(
+                    "px-2.5 py-1 rounded-full text-[11px] font-medium whitespace-nowrap transition-colors",
+                    filterPlaylistId === pl.id
+                      ? "bg-foreground/8 text-foreground ring-1 ring-foreground/10"
+                      : "bg-muted/30 text-muted-foreground hover:bg-muted/50"
+                  )}
+                >
+                  {pl.emoji} {pl.name}
+                </button>
+              ))}
+            </div>
           </div>
         )}
 
@@ -197,6 +258,14 @@ export function TrackListSheet() {
                     {track.title}
                   </p>
                   <div className="flex items-center gap-1.5 mt-0.5">
+                    <span className={cn(
+                      "text-[9px] px-1.5 py-0.5 rounded font-medium shrink-0",
+                      track.era === "jazz"
+                        ? "bg-amber-500/10 text-amber-600 dark:text-amber-400"
+                        : "bg-blue-500/10 text-blue-600 dark:text-blue-400"
+                    )}>
+                      {track.era === "jazz" ? "🎷" : "🎻"}
+                    </span>
                     <span className="text-xs text-muted-foreground truncate">
                       {track.composer}
                     </span>
