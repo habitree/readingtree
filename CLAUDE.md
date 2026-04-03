@@ -50,11 +50,21 @@ components/ → hooks/ → app/actions/ → Supabase
 
 ---
 
+## 프롬프트 로그
+
+- 위치: `doc/log/` (README.md, milestone.md, 월별 로그)
+- 의미 있는 작업 완료 시 해당 월 로그(`doc/log/YYYY-MM.md`)에 엔트리 추가
+- P0 엔트리는 `doc/log/milestone.md`에도 반영
+- 단순 타이포/커밋 메시지로 충분한 작업은 기록하지 않음
+
+---
+
 ## 참고 문서
 
 - 상세 규칙: `doc/claude/RULES.md`
 - 데이터 모델: `doc/database/DATA_MODEL.md`
 - 타입 정의: `types/database.ts`
+- 프롬프트 로그 가이드: `doc/log/README.md`
 
 ---
 
