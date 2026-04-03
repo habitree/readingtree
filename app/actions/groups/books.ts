@@ -2,6 +2,8 @@
 
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { createBookshelf, getMainBookshelf } from "@/app/actions/bookshelves";
+import type { ReadingStatus } from "@/types/book";
 
 /**
  * 모임에 지정도서 추가 (리더만 가능)
@@ -570,4 +572,156 @@ export async function unshareUserBookFromGroup(
 
   revalidatePath(`/groups/${groupId}`);
   return { success: true };
+}
+
+/**
+ * 모임 지정도서를 내 서재에 일괄 등록
+ */
+export async function addAllGroupBooksToMyLibrary(
+  groupId: string,
+  options: {
+    bookshelfId?: string;
+    createNewBookshelf?: boolean;
+    bookshelfName?: string;
+    status?: ReadingStatus;
+  }
+): Promise<{
+  added: number;
+  skipped: number;
+  bookshelfId: string;
+  bookshelfName: string;
+}> {
+  const supabase = await createServerSupabaseClient();
+
+  // 현재 사용자 확인
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    throw new Error("로그인이 필요합니다.");
+  }
+
+  // 모임 멤버 확인
+  const { data: membership } = await supabase
+    .from("group_members")
+    .select("id")
+    .eq("group_id", groupId)
+    .eq("user_id", user.id)
+    .eq("status", "approved")
+    .single();
+
+  if (!membership) {
+    throw new Error("모임 멤버만 지정도서를 추가할 수 있습니다.");
+  }
+
+  // 모임 지정도서 전체 조회
+  const { data: groupBooks, error: gbError } = await supabase
+    .from("group_books")
+    .select("book_id")
+    .eq("group_id", groupId);
+
+  if (gbError) {
+    throw new Error(`지정도서 조회 실패: ${gbError.message}`);
+  }
+
+  if (!groupBooks || groupBooks.length === 0) {
+    throw new Error("등록할 지정도서가 없습니다.");
+  }
+
+  const allBookIds = groupBooks.map((gb) => gb.book_id);
+
+  // 이미 내 서재에 있는 책 확인
+  const { data: existingBooks } = await supabase
+    .from("user_books")
+    .select("book_id")
+    .eq("user_id", user.id)
+    .in("book_id", allBookIds);
+
+  const existingBookIds = new Set((existingBooks || []).map((eb) => eb.book_id));
+  const newBookIds = allBookIds.filter((id) => !existingBookIds.has(id));
+
+  // 서재 결정
+  let targetBookshelfId: string;
+  let targetBookshelfName: string;
+
+  if (options.createNewBookshelf) {
+    // 모임 이름 조회
+    const { data: group } = await supabase
+      .from("groups")
+      .select("name")
+      .eq("id", groupId)
+      .single();
+
+    const shelfName = options.bookshelfName || `${group?.name || "독서모임"} 서재`;
+
+    const newShelf = await createBookshelf({
+      name: shelfName,
+      description: `독서모임 지정도서`,
+    });
+    targetBookshelfId = newShelf.id;
+    targetBookshelfName = newShelf.name;
+  } else if (options.bookshelfId) {
+    // 기존 서재 소유권 확인
+    const { data: shelf, error: shelfError } = await supabase
+      .from("bookshelves")
+      .select("id, name")
+      .eq("id", options.bookshelfId)
+      .eq("user_id", user.id)
+      .single();
+
+    if (shelfError || !shelf) {
+      throw new Error("서재를 찾을 수 없습니다.");
+    }
+    targetBookshelfId = shelf.id;
+    targetBookshelfName = shelf.name;
+  } else {
+    // 메인 서재 fallback
+    const mainShelf = await getMainBookshelf();
+    if (!mainShelf) {
+      throw new Error("메인 서재를 찾을 수 없습니다.");
+    }
+    targetBookshelfId = mainShelf.id;
+    targetBookshelfName = mainShelf.name;
+  }
+
+  // 추가할 책이 없으면 바로 반환
+  if (newBookIds.length === 0) {
+    return {
+      added: 0,
+      skipped: allBookIds.length,
+      bookshelfId: targetBookshelfId,
+      bookshelfName: targetBookshelfName,
+    };
+  }
+
+  // 일괄 insert
+  const now = new Date().toISOString();
+  const insertData = newBookIds.map((bookId) => ({
+    user_id: user.id,
+    book_id: bookId,
+    bookshelf_id: targetBookshelfId,
+    status: options.status || ("reading" as ReadingStatus),
+    started_at: now,
+  }));
+
+  const { error: insertError } = await supabase
+    .from("user_books")
+    .insert(insertData);
+
+  if (insertError) {
+    throw new Error(`일괄 등록 실패: ${insertError.message}`);
+  }
+
+  revalidatePath(`/groups/${groupId}`);
+  revalidatePath("/books");
+  revalidatePath("/bookshelves");
+
+  return {
+    added: newBookIds.length,
+    skipped: existingBookIds.size,
+    bookshelfId: targetBookshelfId,
+    bookshelfName: targetBookshelfName,
+  };
 }

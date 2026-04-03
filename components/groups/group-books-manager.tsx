@@ -16,7 +16,8 @@ import {
 } from "@/app/actions/groups";
 import { getUserBooksWithNotes } from "@/app/actions/books";
 import { toast } from "sonner";
-import { BookOpen, Plus, Trash2, CheckCircle2, X } from "lucide-react";
+import { BookOpen, Plus, Trash2, CheckCircle2, X, Library } from "lucide-react";
+import { BatchAddBooksDialog } from "./batch-add-books-dialog";
 import Image from "next/image";
 import { getImageUrl, isValidImageUrl } from "@/lib/utils/image";
 import { BookStatusBadge } from "@/components/books/book-status-badge";
@@ -36,10 +37,11 @@ import { typography, spacing, grids } from "@/lib/design-tokens";
 
 interface GroupBooksManagerProps {
   groupId: string;
+  groupName: string;
   isLeader: boolean;
 }
 
-export function GroupBooksManager({ groupId, isLeader }: GroupBooksManagerProps) {
+export function GroupBooksManager({ groupId, groupName, isLeader }: GroupBooksManagerProps) {
   const router = useRouter();
   const { t } = useTranslation();
   const [isAdding, setIsAdding] = useState(false);
@@ -48,6 +50,7 @@ export function GroupBooksManager({ groupId, isLeader }: GroupBooksManagerProps)
   const [deletingBookId, setDeletingBookId] = useState<string | null>(null);
   const [myBookIds, setMyBookIds] = useState<Set<string>>(new Set());
   const [noteCounts, setNoteCounts] = useState<Record<string, number>>({});
+  const [showBatchDialog, setShowBatchDialog] = useState(false);
 
   useEffect(() => {
     loadGroupBooks();
@@ -149,12 +152,25 @@ export function GroupBooksManager({ groupId, isLeader }: GroupBooksManagerProps)
             {t("groups.searchAndAddBook")}
           </p>
         </div>
-        {isLeader && (
-          <Button onClick={() => setIsAdding(true)} className="shrink-0">
-            <Plus className="mr-2 h-4 w-4" />
-            {t("groups.addBook")}
-          </Button>
-        )}
+        <div className="flex items-center gap-2 flex-wrap">
+          {groupBooks.length > 0 &&
+            groupBooks.some((gb) => !gb.isInMyLibrary) && (
+              <Button
+                variant="outline"
+                onClick={() => setShowBatchDialog(true)}
+                className="shrink-0"
+              >
+                <Library className="mr-2 h-4 w-4" />
+                {t("groups.batchAddToLibrary")}
+              </Button>
+            )}
+          {isLeader && (
+            <Button onClick={() => setIsAdding(true)} className="shrink-0">
+              <Plus className="mr-2 h-4 w-4" />
+              {t("groups.addBook")}
+            </Button>
+          )}
+        </div>
       </div>
 
       {isAdding && (
@@ -244,6 +260,19 @@ export function GroupBooksManager({ groupId, isLeader }: GroupBooksManagerProps)
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <BatchAddBooksDialog
+        open={showBatchDialog}
+        onOpenChange={setShowBatchDialog}
+        groupId={groupId}
+        groupName={groupName}
+        totalBooks={groupBooks.length}
+        booksNotInLibrary={groupBooks.filter((gb) => !gb.isInMyLibrary).length}
+        onComplete={() => {
+          loadGroupBooks();
+          router.refresh();
+        }}
+      />
     </div>
   );
 }

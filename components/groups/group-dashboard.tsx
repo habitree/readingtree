@@ -580,7 +580,7 @@ export function GroupDashboard({ groupData, currentUserId }: GroupDashboardProps
           </TabsContent>
 
           <TabsContent value="books" className={spacing.pageSection}>
-            <GroupBooksManager groupId={group.id} isLeader={isLeader} />
+            <GroupBooksManager groupId={group.id} groupName={group.name} isLeader={isLeader} />
           </TabsContent>
 
           <TabsContent value="shared-library" className={spacing.pageSection}>
