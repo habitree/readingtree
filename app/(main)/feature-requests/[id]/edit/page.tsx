@@ -55,6 +55,7 @@ export default async function EditFeatureRequestPage({ params }: PageProps) {
           id: request.id,
           title: request.title,
           description: request.description,
+          feature_area: request.feature_area,
         }}
       />
     </div>

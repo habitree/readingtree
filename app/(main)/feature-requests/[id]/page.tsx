@@ -23,6 +23,7 @@ import { ArrowLeft, Pin, Pencil, Trash2, MessageCircle } from "lucide-react";
 import { formatDistanceToNow, format } from "date-fns";
 import { ko } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+import { getFeatureAreaBreadcrumb } from "@/lib/constants/feature-area-tree";
 
 interface PageProps {
   params: Promise<{
@@ -119,6 +120,11 @@ export default async function FeatureRequestDetailPage({ params }: PageProps) {
                   </Badge>
                 )}
                 <FeatureRequestStatusBadge status={request.status} size="md" />
+                {request.feature_area && (
+                  <Badge variant="outline" className="text-xs font-normal">
+                    {getFeatureAreaBreadcrumb(request.feature_area, "ko")}
+                  </Badge>
+                )}
               </div>
 
               <CardTitle className="text-xl mb-3">{request.title}</CardTitle>

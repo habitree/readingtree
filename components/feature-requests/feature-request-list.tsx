@@ -20,6 +20,7 @@ import type {
   FeatureRequestStatus,
 } from "@/types/feature-request";
 import { FEATURE_REQUEST_STATUS_CONFIG } from "@/types/feature-request";
+import { getTopLevelAreas } from "@/lib/constants/feature-area-tree";
 import { useTranslation } from "@/lib/i18n";
 
 interface FeatureRequestListProps {
@@ -29,6 +30,7 @@ interface FeatureRequestListProps {
   currentPage: number;
   pageSize: number;
   initialStatus?: FeatureRequestStatus | "";
+  initialFeatureArea?: string;
   initialSortBy?: "vote_count" | "created_at";
   initialSearch?: string;
 }
@@ -43,6 +45,7 @@ export function FeatureRequestList({
   currentPage,
   pageSize,
   initialStatus = "",
+  initialFeatureArea = "",
   initialSortBy = "vote_count",
   initialSearch = "",
 }: FeatureRequestListProps) {
@@ -114,6 +117,24 @@ export function FeatureRequestList({
           </SelectContent>
         </Select>
 
+        {/* 기능 영역 필터 */}
+        <Select
+          value={initialFeatureArea || "all"}
+          onValueChange={(value) => updateFilters({ featureArea: value === "all" ? "" : value })}
+        >
+          <SelectTrigger className="w-full sm:w-[140px]">
+            <SelectValue placeholder={t("featureRequests.featureAreaAll")} />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{t("featureRequests.featureAreaAll")}</SelectItem>
+            {getTopLevelAreas().map((area) => (
+              <SelectItem key={area.id} value={area.id}>
+                {area.labelKo}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
         {/* 정렬 */}
         <Select
           value={initialSortBy}
@@ -165,7 +186,7 @@ export function FeatureRequestList({
       {!isPending && requests.length === 0 && (
         <div className="text-center py-12">
           <p className="text-muted-foreground mb-4">
-            {initialSearch || initialStatus
+            {initialSearch || initialStatus || initialFeatureArea
               ? t("featureRequests.noResults")
               : t("featureRequests.noRequests")}
           </p>

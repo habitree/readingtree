@@ -74,6 +74,7 @@ export interface FeatureRequest {
   status: FeatureRequestStatus;
   vote_count: number;
   admin_response: string | null;
+  feature_area: string | null;
   is_pinned: boolean;
   created_at: string;
   updated_at: string;
@@ -138,6 +139,7 @@ export interface FeatureRequestCommentWithUser extends FeatureRequestComment {
  */
 export interface GetFeatureRequestsOptions {
   status?: FeatureRequestStatus;
+  featureArea?: string;
   sortBy?: "vote_count" | "created_at" | "updated_at";
   sortOrder?: "asc" | "desc";
   limit?: number;
@@ -151,6 +153,7 @@ export interface GetFeatureRequestsOptions {
 export interface CreateFeatureRequestData {
   title: string;
   description: string;
+  feature_area?: string;
 }
 
 /**
@@ -159,6 +162,7 @@ export interface CreateFeatureRequestData {
 export interface UpdateFeatureRequestData {
   title?: string;
   description?: string;
+  feature_area?: string;
   status?: FeatureRequestStatus;
   admin_response?: string;
   is_pinned?: boolean;

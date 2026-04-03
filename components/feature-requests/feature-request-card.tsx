@@ -5,10 +5,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { FeatureRequestStatusBadge } from "./feature-request-status-badge";
 import { FeatureRequestVoteButton } from "./feature-request-vote-button";
+import { Badge } from "@/components/ui/badge";
 import { Pin, MessageCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import { ko } from "date-fns/locale";
+import { getFeatureAreaBreadcrumb } from "@/lib/constants/feature-area-tree";
 import type { FeatureRequestWithUser } from "@/types/feature-request";
 import { useTranslation } from "@/lib/i18n";
 
@@ -93,7 +95,12 @@ export function FeatureRequestCard({
             )}
 
             {/* 메타 정보 */}
-            <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
+            <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400 flex-wrap">
+              {request.feature_area && (
+                <Badge variant="outline" className="text-xs px-1.5 py-0 h-5 font-normal">
+                  {getFeatureAreaBreadcrumb(request.feature_area, "ko")}
+                </Badge>
+              )}
               <div className="flex items-center gap-1.5">
                 <Avatar className="h-4 w-4">
                   <AvatarImage

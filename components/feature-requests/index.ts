@@ -5,6 +5,7 @@ export { FeatureRequestCard } from "./feature-request-card";
 export { FeatureRequestList } from "./feature-request-list";
 export { FeatureRequestForm } from "./feature-request-form";
 export { FeatureRequestComments } from "./feature-request-comments";
+export { FeatureAreaPicker } from "./feature-area-picker";
 export {
   FeatureRequestPreviewSection,
   FeatureRequestPreviewSkeleton,

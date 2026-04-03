@@ -16,6 +16,7 @@ export const metadata: Metadata = {
 interface PageProps {
   searchParams: Promise<{
     status?: FeatureRequestStatus;
+    featureArea?: string;
     sortBy?: "vote_count" | "created_at";
     search?: string;
     page?: string;
@@ -34,6 +35,7 @@ async function FeatureRequestListContent({
   const [{ data: requests, total }, votedRequestIds] = await Promise.all([
     getFeatureRequests({
       status: searchParams.status || undefined,
+      featureArea: searchParams.featureArea || undefined,
       sortBy: searchParams.sortBy || "vote_count",
       search: searchParams.search,
       limit: pageSize,
@@ -50,6 +52,7 @@ async function FeatureRequestListContent({
       currentPage={currentPage}
       pageSize={pageSize}
       initialStatus={searchParams.status || ""}
+      initialFeatureArea={searchParams.featureArea || ""}
       initialSortBy={searchParams.sortBy || "vote_count"}
       initialSearch={searchParams.search || ""}
     />

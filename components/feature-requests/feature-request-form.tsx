@@ -10,12 +10,13 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, Lightbulb } from "lucide-react";
 import { createFeatureRequest, updateFeatureRequest } from "@/app/actions/feature-requests";
+import { FeatureAreaPicker } from "./feature-area-picker";
 import { toast } from "sonner";
 import type { FeatureRequest } from "@/types/feature-request";
 
 interface FeatureRequestFormProps {
   mode: "create" | "edit";
-  initialData?: Pick<FeatureRequest, "id" | "title" | "description">;
+  initialData?: Pick<FeatureRequest, "id" | "title" | "description" | "feature_area">;
 }
 
 /**
@@ -30,6 +31,7 @@ export function FeatureRequestForm({
   const [isPending, startTransition] = useTransition();
   const [title, setTitle] = useState(initialData?.title || "");
   const [description, setDescription] = useState(initialData?.description || "");
+  const [featureArea, setFeatureArea] = useState<string | null>(initialData?.feature_area || null);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,7 +39,11 @@ export function FeatureRequestForm({
     startTransition(async () => {
       try {
         if (mode === "create") {
-          const result = await createFeatureRequest({ title, description });
+          const result = await createFeatureRequest({
+            title,
+            description,
+            feature_area: featureArea || undefined,
+          });
 
           if (result.success && result.id) {
             toast.success(t("featureRequests.submitSuccess"));
@@ -49,6 +55,7 @@ export function FeatureRequestForm({
           const result = await updateFeatureRequest(initialData.id, {
             title,
             description,
+            feature_area: featureArea || undefined,
           });
 
           if (result.success) {
@@ -87,6 +94,14 @@ export function FeatureRequestForm({
             <p className="text-xs text-muted-foreground text-right">
               {title.length}/200
             </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label>{t("featureRequests.featureAreaLabel")}</Label>
+            <FeatureAreaPicker
+              value={featureArea}
+              onChange={setFeatureArea}
+            />
           </div>
 
           <div className="space-y-2">

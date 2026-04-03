@@ -4,6 +4,7 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { earnPoints } from "@/app/actions/points";
 import { sanitizeSearchQuery } from "@/lib/utils/validation";
+import { getFeatureAreaById } from "@/lib/constants/feature-area-tree";
 import type {
   FeatureRequest,
   FeatureRequestWithUser,
@@ -33,6 +34,7 @@ export async function getFeatureRequests(
   const supabase = await createServerSupabaseClient();
   const {
     status,
+    featureArea,
     sortBy = "vote_count",
     sortOrder = "desc",
     limit = 20,
@@ -58,6 +60,12 @@ export async function getFeatureRequests(
   // 상태 필터
   if (status) {
     query = query.eq("status", status);
+  }
+
+  // 기능 영역 필터
+  if (featureArea) {
+    // 상위 카테고리 선택 시 하위 항목도 포함
+    query = query.or(`feature_area.eq.${featureArea},feature_area.like.${featureArea}.%`);
   }
 
   // 검색
@@ -241,14 +249,24 @@ export async function createFeatureRequest(
     return { success: false, error: "Title must be 200 characters or less." };
   }
 
+  // 기능 영역 유효성 검증
+  if (data.feature_area && !getFeatureAreaById(data.feature_area)) {
+    return { success: false, error: "Invalid feature area." };
+  }
+
   // 기능 요청 생성
+  const insertData: Record<string, unknown> = {
+    user_id: user.id,
+    title: data.title.trim(),
+    description: data.description.trim(),
+  };
+  if (data.feature_area) {
+    insertData.feature_area = data.feature_area;
+  }
+
   const { data: request, error } = await supabase
     .from("feature_requests")
-    .insert({
-      user_id: user.id,
-      title: data.title.trim(),
-      description: data.description.trim(),
-    })
+    .insert(insertData)
     .select("id")
     .single();
 
@@ -314,7 +332,7 @@ export async function updateFeatureRequest(
     return { success: false, error: "You don't have permission to edit." };
   }
 
-  // 일반 사용자는 제목/설명만 수정 가능
+  // 일반 사용자는 제목/설명/기능영역만 수정 가능
   const updateData: Record<string, unknown> = {};
 
   if (data.title !== undefined) {
@@ -329,6 +347,13 @@ export async function updateFeatureRequest(
       return { success: false, error: "Description must be at least 20 characters." };
     }
     updateData.description = data.description.trim();
+  }
+
+  if (data.feature_area !== undefined) {
+    if (data.feature_area && !getFeatureAreaById(data.feature_area)) {
+      return { success: false, error: "Invalid feature area." };
+    }
+    updateData.feature_area = data.feature_area || null;
   }
 
   // 관리자만 상태, 응답, 고정 수정 가능
