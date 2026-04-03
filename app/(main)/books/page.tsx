@@ -2,13 +2,13 @@ import { Suspense } from "react";
 import { Metadata } from "next";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Plus } from "lucide-react";
+import { Plus, ListPlus } from "lucide-react";
 import Link from "next/link";
 import { getUserBooksWithNotes } from "@/app/actions/books";
 import { getCachedCurrentUser } from "@/lib/cached";
 import { BookshelfPageContent } from "@/components/books/bookshelf-page-content";
 import { MobileBookshelfSelector } from "@/components/books/mobile-bookshelf-selector";
-import { BooksPageTitle, BooksManageLabel, BooksAddLabel, BooksPageErrorHeading, BooksUnknownError } from "@/components/books/books-page-header";
+import { BooksPageTitle, BooksManageLabel, BooksAddLabel, BooksBulkAddLabel, BooksPageErrorHeading, BooksUnknownError } from "@/components/books/books-page-header";
 import type { ReadingStatus } from "@/types/book";
 
 export const dynamic = "force-dynamic";
@@ -63,6 +63,12 @@ export default async function BooksPage({ searchParams }: BooksPageProps) {
           <div className="flex items-center gap-1 sm:gap-2 shrink-0">
             <Button variant="outline" size="sm" asChild className="hidden sm:inline-flex">
               <Link href="/bookshelves"><BooksManageLabel /></Link>
+            </Button>
+            <Button variant="outline" size="sm" asChild className="hidden sm:inline-flex">
+              <Link href="/books/bulk">
+                <ListPlus className="h-4 w-4 mr-1" />
+                <BooksBulkAddLabel />
+              </Link>
             </Button>
             <Button asChild size="icon" className="h-9 w-9 sm:h-10 sm:w-auto sm:px-4">
               <Link href="/books/search">

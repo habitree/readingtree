@@ -12,6 +12,38 @@ export interface AddBookInput {
   cover_image_url?: string | null;
 }
 
+/** 일괄 등록: 사용자 입력 행 */
+export interface BulkBookRow {
+  rowIndex: number;
+  title: string;
+  isbn?: string;
+  author?: string;
+  publisher?: string;
+}
+
+/** 일괄 등록: 매칭 상태 */
+export type BulkMatchStatus = "pending" | "searching" | "matched" | "no_match" | "error" | "skipped";
+
+/** 일괄 등록: 매칭 결과가 포함된 행 */
+export interface BulkBookMatchedRow {
+  input: BulkBookRow;
+  status: BulkMatchStatus;
+  matchedBook: AddBookInput | null;
+  alternatives: AddBookInput[];
+  selected: AddBookInput | null;
+  error?: string;
+}
+
+/** 일괄 등록: 개별 추가 결과 */
+export interface BulkAddResult {
+  rowIndex: number;
+  title: string;
+  success: boolean;
+  bookId?: string;
+  userBookId?: string;
+  error?: string;
+}
+
 /**
  * 날짜 문자열을 유효한 date 형식으로 정규화
  * "2014" -> "2014-01-01", "2014-05" -> "2014-05-01", "2014-05-20" -> "2014-05-20"

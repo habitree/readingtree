@@ -1,4 +1,4 @@
-export type { AddBookInput } from "./_shared";
+export type { AddBookInput, BulkBookRow, BulkMatchStatus, BulkBookMatchedRow, BulkAddResult } from "./_shared";
 
 export * from "./core";
 export * from "./reading";

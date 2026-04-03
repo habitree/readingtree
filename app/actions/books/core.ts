@@ -395,6 +395,236 @@ export async function ensureBook(bookData: AddBookInput): Promise<{ bookId: stri
 }
 
 /**
+ * 일괄 책 추가
+ * 여러 책을 한번에 서재에 추가. 개별 실패를 허용하며 결과를 반환.
+ */
+export async function addBooks(
+  books: AddBookInput[],
+  status: ReadingStatus = "reading",
+  bookshelfId?: string | null
+): Promise<{
+  results: import("./_shared").BulkAddResult[];
+  summary: { total: number; added: number; skipped: number; failed: number };
+}> {
+  const supabase = await createServerSupabaseClient();
+
+  const currentUser = await getCurrentUser();
+  if (!currentUser) {
+    return {
+      results: books.map((b, i) => ({ rowIndex: i, title: b.title, success: false, error: "로그인이 필요합니다." })),
+      summary: { total: books.length, added: 0, skipped: 0, failed: books.length },
+    };
+  }
+
+  // 사용자 프로필 확인/생성
+  const { data: userProfile } = await supabase
+    .from("users")
+    .select("id")
+    .eq("id", currentUser.id)
+    .maybeSingle();
+
+  if (!userProfile) {
+    const rawAvatar = currentUser.user_metadata?.avatar_url || null;
+    const safeAvatar = rawAvatar?.startsWith("http://") ? rawAvatar.replace("http://", "https://") : rawAvatar;
+    await supabase.from("users").insert({
+      id: currentUser.id,
+      email: currentUser.email,
+      name: currentUser.user_metadata?.name || currentUser.email?.split("@")[0] || "사용자",
+      avatar_url: safeAvatar,
+      reading_goal: 12,
+    });
+  }
+
+  // 메인 서재 한 번만 조회/생성
+  let targetBookshelfId = bookshelfId || null;
+  if (!targetBookshelfId) {
+    const { data: mainBookshelf } = await supabase
+      .from("bookshelves")
+      .select("id")
+      .eq("user_id", currentUser.id)
+      .eq("is_main", true)
+      .maybeSingle();
+
+    if (mainBookshelf) {
+      targetBookshelfId = mainBookshelf.id;
+    } else {
+      const { data: newBookshelf, error: bsError } = await supabase
+        .from("bookshelves")
+        .insert({ user_id: currentUser.id, name: "내 서재", is_main: true, order: 0 })
+        .select("id")
+        .single();
+
+      if (!newBookshelf) {
+        // admin 클라이언트 폴백
+        try {
+          const adminClient = createAdminSupabaseClient();
+          const { data: adminResult } = await adminClient
+            .from("bookshelves")
+            .insert({ user_id: currentUser.id, name: "내 서재", is_main: true, order: 0 })
+            .select("id")
+            .single();
+          targetBookshelfId = adminResult?.id || null;
+        } catch {
+          return {
+            results: books.map((b, i) => ({ rowIndex: i, title: b.title, success: false, error: "서재 생성 실패" })),
+            summary: { total: books.length, added: 0, skipped: 0, failed: books.length },
+          };
+        }
+      } else {
+        targetBookshelfId = newBookshelf.id;
+      }
+    }
+  }
+
+  if (!targetBookshelfId) {
+    return {
+      results: books.map((b, i) => ({ rowIndex: i, title: b.title, success: false, error: "서재를 찾을 수 없습니다." })),
+      summary: { total: books.length, added: 0, skipped: 0, failed: books.length },
+    };
+  }
+
+  // 기존 ISBN 책 일괄 조회
+  const isbns = books.map((b) => b.isbn).filter((isbn): isbn is string => !!isbn);
+  const existingBooksMap = new Map<string, string>();
+  if (isbns.length > 0) {
+    const { data: existingBooks } = await supabase
+      .from("books")
+      .select("id, isbn")
+      .in("isbn", isbns);
+    if (existingBooks) {
+      for (const eb of existingBooks) {
+        if (eb.isbn) existingBooksMap.set(eb.isbn, eb.id);
+      }
+    }
+  }
+
+  // 사용자의 기존 user_books 일괄 조회
+  const { data: existingUserBooks } = await supabase
+    .from("user_books")
+    .select("book_id")
+    .eq("user_id", currentUser.id);
+  const existingBookIds = new Set(existingUserBooks?.map((ub) => ub.book_id) || []);
+
+  const results: import("./_shared").BulkAddResult[] = [];
+  let added = 0;
+  let skipped = 0;
+  let failed = 0;
+
+  for (let i = 0; i < books.length; i++) {
+    const bookData = books[i];
+    try {
+      let bookId: string;
+
+      // ISBN으로 기존 책 재사용
+      if (bookData.isbn && existingBooksMap.has(bookData.isbn)) {
+        bookId = existingBooksMap.get(bookData.isbn)!;
+      } else {
+        // 새 책 생성
+        let totalPages: number | null = null;
+        if (bookData.isbn) {
+          try {
+            const pageResult = await Promise.race([
+              fetchBookPageCount(bookData.isbn),
+              new Promise<{ pageCount: null; source: null; error: string }>((resolve) =>
+                setTimeout(() => resolve({ pageCount: null, source: null, error: "timeout" }), 5000)
+              ),
+            ]);
+            if (pageResult.pageCount) totalPages = pageResult.pageCount;
+          } catch {
+            // 무시
+          }
+        }
+
+        const { data: newBook, error: insertError } = await supabase
+          .from("books")
+          .insert({
+            isbn: bookData.isbn || null,
+            title: bookData.title,
+            author: bookData.author || null,
+            publisher: bookData.publisher || null,
+            published_date: normalizePublishedDate(bookData.published_date),
+            cover_image_url: bookData.cover_image_url || null,
+            total_pages: totalPages,
+          })
+          .select("id")
+          .single();
+
+        if (insertError || !newBook) {
+          results.push({ rowIndex: i, title: bookData.title, success: false, error: `책 생성 실패: ${insertError?.message}` });
+          failed++;
+          continue;
+        }
+
+        bookId = newBook.id;
+        if (bookData.isbn) existingBooksMap.set(bookData.isbn, bookId);
+      }
+
+      // 이미 추가된 책 체크
+      if (existingBookIds.has(bookId)) {
+        results.push({ rowIndex: i, title: bookData.title, success: false, error: "이미 추가된 책입니다." });
+        skipped++;
+        continue;
+      }
+
+      // user_books에 추가
+      const { data: newUserBook, error: ubError } = await supabase
+        .from("user_books")
+        .insert({
+          user_id: currentUser.id,
+          book_id: bookId,
+          bookshelf_id: targetBookshelfId,
+          status,
+          started_at: new Date().toISOString(),
+        })
+        .select("id")
+        .single();
+
+      if (ubError || !newUserBook) {
+        results.push({ rowIndex: i, title: bookData.title, success: false, error: `추가 실패: ${ubError?.message}` });
+        failed++;
+        continue;
+      }
+
+      existingBookIds.add(bookId);
+      results.push({ rowIndex: i, title: bookData.title, success: true, bookId, userBookId: newUserBook.id });
+      added++;
+
+      // 포인트 적립
+      try {
+        await earnPoints("book_add", {
+          user: currentUser,
+          referenceId: newUserBook.id,
+          referenceType: "user_book",
+          description: `${bookData.title} 추가`,
+        });
+      } catch {
+        // 포인트 실패 무시
+      }
+    } catch (error) {
+      results.push({
+        rowIndex: i,
+        title: bookData.title,
+        success: false,
+        error: error instanceof Error ? error.message : "알 수 없는 오류",
+      });
+      failed++;
+    }
+  }
+
+  // 스트릭 업데이트 1회
+  try {
+    if (added > 0) await updateStreak(currentUser);
+  } catch {
+    // 무시
+  }
+
+  revalidatePath("/books");
+  revalidatePath("/");
+
+  return { results, summary: { total: books.length, added, skipped, failed } };
+}
+
+/**
  * 책 정보 업데이트 (읽는 이유, 시작일, 완독일자)
  * @param userBookId UserBooks 테이블의 ID
  * @param readingReason 읽는 이유 (선택)

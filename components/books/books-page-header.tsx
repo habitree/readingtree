@@ -26,6 +26,11 @@ export function BooksAddLabel() {
   return <span className="hidden sm:inline">{t("books.addButtonLabel")}</span>;
 }
 
+export function BooksBulkAddLabel() {
+  const { t } = useTranslation();
+  return <>{t("books.bulkAddLabel")}</>;
+}
+
 export function BooksPageErrorHeading() {
   const { t } = useTranslation();
   return (
