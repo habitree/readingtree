@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 /**
@@ -97,6 +98,7 @@ export async function addComment(
     throw new Error(`댓글 작성 실패: ${insertError.message}`);
   }
 
+  revalidatePath(`/groups/${groupNote.group_id}`);
   return comment;
 }
 
@@ -138,8 +140,9 @@ export async function getComments(groupNoteId: string) {
   }
 
   // 트리 구조로 변환 (1depth만)
-  const rootComments: any[] = [];
-  const repliesMap = new Map<string, any[]>();
+  type CommentRow = NonNullable<typeof comments>[number];
+  const rootComments: CommentRow[] = [];
+  const repliesMap = new Map<string, CommentRow[]>();
 
   for (const comment of comments || []) {
     if (comment.parent_id) {
@@ -158,7 +161,7 @@ export async function getComments(groupNoteId: string) {
 }
 
 /**
- * 댓글 수정
+ * 댓글 수정 (본인만 가능)
  */
 export async function updateComment(commentId: string, content: string) {
   const supabase = await createServerSupabaseClient();
@@ -176,6 +179,21 @@ export async function updateComment(commentId: string, content: string) {
     throw new Error("댓글은 1~1000자 사이여야 합니다.");
   }
 
+  // 댓글 소유자 및 그룹 정보 확인
+  const { data: comment } = await supabase
+    .from("group_note_comments")
+    .select("user_id, group_note_id")
+    .eq("id", commentId)
+    .single();
+
+  if (!comment) {
+    throw new Error("댓글을 찾을 수 없습니다.");
+  }
+
+  if (comment.user_id !== user.id) {
+    throw new Error("본인 댓글만 수정할 수 있습니다.");
+  }
+
   const { error: updateError } = await supabase
     .from("group_note_comments")
     .update({ content: content.trim(), updated_at: new Date().toISOString() })
@@ -186,11 +204,22 @@ export async function updateComment(commentId: string, content: string) {
     throw new Error(`댓글 수정 실패: ${updateError.message}`);
   }
 
+  // revalidate를 위해 group_id 조회
+  const { data: groupNote } = await supabase
+    .from("group_notes")
+    .select("group_id")
+    .eq("id", comment.group_note_id)
+    .single();
+
+  if (groupNote) {
+    revalidatePath(`/groups/${groupNote.group_id}`);
+  }
+
   return { success: true };
 }
 
 /**
- * 댓글 삭제
+ * 댓글 삭제 (본인 또는 모임 리더만 가능)
  */
 export async function deleteComment(commentId: string) {
   const supabase = await createServerSupabaseClient();
@@ -204,6 +233,40 @@ export async function deleteComment(commentId: string) {
     throw new Error("로그인이 필요합니다.");
   }
 
+  // 댓글 소유자 및 그룹 정보 확인
+  const { data: comment } = await supabase
+    .from("group_note_comments")
+    .select("user_id, group_note_id")
+    .eq("id", commentId)
+    .single();
+
+  if (!comment) {
+    throw new Error("댓글을 찾을 수 없습니다.");
+  }
+
+  // 본인이 아닌 경우 리더 확인
+  if (comment.user_id !== user.id) {
+    const { data: groupNote } = await supabase
+      .from("group_notes")
+      .select("group_id")
+      .eq("id", comment.group_note_id)
+      .single();
+
+    if (!groupNote) {
+      throw new Error("공유 기록을 찾을 수 없습니다.");
+    }
+
+    const { data: group } = await supabase
+      .from("groups")
+      .select("leader_id")
+      .eq("id", groupNote.group_id)
+      .single();
+
+    if (group?.leader_id !== user.id) {
+      throw new Error("본인 댓글 또는 리더만 삭제할 수 있습니다.");
+    }
+  }
+
   const { error: deleteError } = await supabase
     .from("group_note_comments")
     .delete()
@@ -211,6 +274,17 @@ export async function deleteComment(commentId: string) {
 
   if (deleteError) {
     throw new Error(`댓글 삭제 실패: ${deleteError.message}`);
+  }
+
+  // revalidate를 위해 group_id 조회
+  const { data: groupNote } = await supabase
+    .from("group_notes")
+    .select("group_id")
+    .eq("id", comment.group_note_id)
+    .single();
+
+  if (groupNote) {
+    revalidatePath(`/groups/${groupNote.group_id}`);
   }
 
   return { success: true };

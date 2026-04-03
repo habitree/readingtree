@@ -59,7 +59,7 @@ export function NoteComments({ groupNoteId, currentUserId }: NoteCommentsProps) 
     try {
       setIsLoading(true);
       const data = await getComments(groupNoteId);
-      setComments(data);
+      setComments(data as unknown as CommentData[]);
     } catch {
       // 조용히 처리
     } finally {

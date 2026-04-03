@@ -307,6 +307,11 @@ export async function removeMember(groupId: string, userId: string) {
     await unlinkGroupBookshelf(groupId, userId);
   } catch (err) {
     console.error("[removeMember] 서재 연결 해제 실패:", err);
+    revalidatePath(`/groups/${groupId}`);
+    return {
+      success: true,
+      warning: "멤버 내보내기는 완료되었으나, 서재 연결 해제에 실패했습니다.",
+    };
   }
 
   revalidatePath(`/groups/${groupId}`);
@@ -360,6 +365,12 @@ export async function leaveGroup(groupId: string) {
     await unlinkGroupBookshelf(groupId, user.id);
   } catch (err) {
     console.error("[leaveGroup] 서재 연결 해제 실패:", err);
+    revalidatePath(`/groups/${groupId}`);
+    revalidatePath("/groups");
+    return {
+      success: true,
+      warning: "모임 탈퇴는 완료되었으나, 서재 연결 해제에 실패했습니다. 내서재에서 수동으로 해제해주세요.",
+    };
   }
 
   revalidatePath(`/groups/${groupId}`);

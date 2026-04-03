@@ -3,6 +3,7 @@
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { syncGroupBooksToMember } from "./books";
+import { checkGroupAccess } from "./_shared";
 
 /**
  * 초대 토큰 생성
@@ -167,12 +168,24 @@ export async function joinByToken(token: string) {
 }
 
 /**
- * 초대 토큰 비활성화
+ * 초대 토큰 비활성화 (리더/부리더만 가능)
  */
 export async function revokeInviteToken(tokenId: string) {
   const supabase = await createServerSupabaseClient();
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
-  if (authError || !user) throw new Error("로그인이 필요합니다.");
+
+  // 토큰의 그룹 정보 조회
+  const { data: token } = await supabase
+    .from("group_invite_tokens")
+    .select("group_id")
+    .eq("id", tokenId)
+    .single();
+
+  if (!token) {
+    throw new Error("토큰을 찾을 수 없습니다.");
+  }
+
+  // 리더/부리더 권한 확인
+  await checkGroupAccess(supabase, token.group_id, "moderator");
 
   const { error } = await supabase
     .from("group_invite_tokens")
@@ -183,14 +196,18 @@ export async function revokeInviteToken(tokenId: string) {
     throw new Error("초대 링크 비활성화에 실패했습니다.");
   }
 
+  revalidatePath(`/groups/${token.group_id}/settings`);
   return { success: true };
 }
 
 /**
- * 그룹의 활성 초대 토큰 목록 조회
+ * 그룹의 활성 초대 토큰 목록 조회 (리더/부리더만 가능)
  */
 export async function getInviteTokens(groupId: string) {
   const supabase = await createServerSupabaseClient();
+
+  // 리더/부리더 권한 확인
+  await checkGroupAccess(supabase, groupId, "moderator");
 
   const { data: tokens, error } = await supabase
     .from("group_invite_tokens")

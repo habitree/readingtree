@@ -41,7 +41,7 @@ export function InviteLinkDialog({ groupId }: InviteLinkDialogProps) {
       const data = await getInviteTokens(groupId);
       setTokens(data as InviteToken[]);
     } catch {
-      // 조회 실패 시 빈 배열
+      toast.error("초대 링크 목록을 불러올 수 없습니다.");
     }
     setIsLoading(false);
   };

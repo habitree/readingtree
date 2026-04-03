@@ -620,11 +620,16 @@ CREATE POLICY "Leaders can manage members"
     ));
 
 DROP POLICY IF EXISTS "Leaders can remove members" ON group_members;
-CREATE POLICY "Leaders can remove members"
+DROP POLICY IF EXISTS "Leaders or self can remove members" ON group_members;
+CREATE POLICY "Leaders or self can remove members"
     ON group_members FOR DELETE
-    USING (auth.uid() IN (
-        SELECT leader_id FROM groups WHERE id = group_members.group_id
-    ));
+    USING (
+        auth.uid() = user_id
+        OR
+        auth.uid() IN (
+            SELECT leader_id FROM groups WHERE id = group_members.group_id
+        )
+    );
 
 -- ============================================
 -- 3.6.1 Groups 테이블 RLS 정책 업데이트

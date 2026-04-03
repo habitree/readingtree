@@ -178,8 +178,12 @@ export function GroupDashboard({ groupData, currentUserId }: GroupDashboardProps
   const handleLeave = async () => {
     setIsLeaving(true);
     try {
-      await leaveGroup(group.id);
-      toast.success(t("groups.leftGroup"));
+      const result = await leaveGroup(group.id);
+      if (result.warning) {
+        toast.warning(result.warning);
+      } else {
+        toast.success(t("groups.leftGroup"));
+      }
       router.push("/groups");
     } catch (error) {
       toast.error(

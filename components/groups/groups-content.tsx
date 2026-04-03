@@ -6,6 +6,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { GroupCard } from "./group-card";
 import { getGroups, getPublicGroups } from "@/app/actions/groups";
 import { Loader2, Search, Users, Globe } from "lucide-react";
+
+type MyGroupItem = Awaited<ReturnType<typeof getGroups>>[number];
+type PublicGroupItem = Awaited<ReturnType<typeof getPublicGroups>>[number];
 import { toast } from "sonner";
 import { useTranslation } from "@/lib/i18n";
 import { useAuth } from "@/contexts/auth-context";
@@ -20,10 +23,8 @@ export function GroupsContent() {
   const { t } = useTranslation();
   const { user } = useAuth();
   const isGuest = !user;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [myGroups, setMyGroups] = useState<any[]>([]);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [publicGroups, setPublicGroups] = useState<any[]>([]);
+  const [myGroups, setMyGroups] = useState<MyGroupItem[]>([]);
+  const [publicGroups, setPublicGroups] = useState<PublicGroupItem[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState(isGuest ? "public" : "my");
@@ -46,7 +47,7 @@ export function GroupsContent() {
   const loadMyGroups = async () => {
     try {
       const data = await getGroups();
-      setMyGroups(data as any);
+      setMyGroups(data as MyGroupItem[]);
     } catch (error) {
       console.error("내 모임 로드 오류:", error);
       toast.error(t("errors.loadError"));
@@ -59,7 +60,7 @@ export function GroupsContent() {
     setIsLoading(true);
     try {
       const data = await getPublicGroups(searchQuery || undefined);
-      setPublicGroups(data as any);
+      setPublicGroups(data as PublicGroupItem[]);
     } catch (error) {
       console.error("공개 모임 로드 오류:", error);
       toast.error(t("errors.loadError"));
