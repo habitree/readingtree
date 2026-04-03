@@ -191,6 +191,7 @@ export type Database = {
         Row: {
           created_at: string | null
           description: string | null
+          group_id: string | null
           id: string
           is_main: boolean | null
           is_public: boolean | null
@@ -202,6 +203,7 @@ export type Database = {
         Insert: {
           created_at?: string | null
           description?: string | null
+          group_id?: string | null
           id?: string
           is_main?: boolean | null
           is_public?: boolean | null
@@ -213,6 +215,7 @@ export type Database = {
         Update: {
           created_at?: string | null
           description?: string | null
+          group_id?: string | null
           id?: string
           is_main?: boolean | null
           is_public?: boolean | null
@@ -221,7 +224,15 @@ export type Database = {
           updated_at?: string | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "bookshelves_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       chat_messages: {
         Row: {

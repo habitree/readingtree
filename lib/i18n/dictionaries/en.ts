@@ -2782,6 +2782,9 @@ export const en: Dictionary = {
     settingsButton: "Settings",
     addButton: "Add",
     defaultDesc: "Manage the books you are reading",
+    groupSync: "Auto sync",
+    groupBookshelf: "Group shelf",
+    linkedTo: "Linked to {name}",
   },
 
   footer: {

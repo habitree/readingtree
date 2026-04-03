@@ -2,6 +2,7 @@
 
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { syncGroupBooksToMember } from "./books";
 
 /**
  * 초대 토큰 생성
@@ -149,6 +150,15 @@ export async function joinByToken(token: string) {
     .from("group_invite_tokens")
     .update({ use_count: inviteToken.use_count + 1 })
     .eq("id", inviteToken.id);
+
+  // 모임서재 동기화 (새로 가입 또는 pending→approved)
+  if (!existing || existing.status !== "approved") {
+    try {
+      await syncGroupBooksToMember(inviteToken.group_id, user.id);
+    } catch (err) {
+      console.error("[joinByToken] 동기화 실패:", err);
+    }
+  }
 
   revalidatePath("/groups");
   revalidatePath(`/groups/${inviteToken.group_id}`);

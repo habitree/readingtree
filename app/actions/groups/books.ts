@@ -2,7 +2,8 @@
 
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
-import { createBookshelf, getMainBookshelf } from "@/app/actions/bookshelves";
+import { createBookshelf, getMainBookshelf, getOrCreateGroupBookshelf } from "@/app/actions/bookshelves";
+import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import type { ReadingStatus } from "@/types/book";
 
 /**
@@ -78,7 +79,15 @@ export async function addGroupBook(
     throw new Error(`지정도서 추가 실패: ${insertError.message}`);
   }
 
+  // 모든 멤버의 모임서재에 자동 동기화 (best-effort)
+  try {
+    await syncGroupBookToAllMembers(groupId, bookId);
+  } catch (err) {
+    console.error("[addGroupBook] 멤버 동기화 실패:", err);
+  }
+
   revalidatePath(`/groups/${groupId}`);
+  revalidatePath("/bookshelves");
   return { success: true };
 }
 
@@ -724,4 +733,143 @@ export async function addAllGroupBooksToMyLibrary(
     bookshelfId: targetBookshelfId,
     bookshelfName: targetBookshelfName,
   };
+}
+
+/**
+ * 지정도서 1권을 모든 승인된 멤버의 모임서재에 동기화
+ * addGroupBook 후 호출 (best-effort, 실패해도 메인 작업 영향 없음)
+ */
+export async function syncGroupBookToAllMembers(
+  groupId: string,
+  bookId: string
+): Promise<void> {
+  const adminSupabase = createAdminSupabaseClient();
+
+  // 모임 정보 조회
+  const { data: group } = await adminSupabase
+    .from("groups")
+    .select("name")
+    .eq("id", groupId)
+    .single();
+
+  if (!group) return;
+
+  // 모든 승인된 멤버 조회
+  const { data: members } = await adminSupabase
+    .from("group_members")
+    .select("user_id")
+    .eq("group_id", groupId)
+    .eq("status", "approved");
+
+  if (!members || members.length === 0) return;
+
+  const now = new Date().toISOString();
+
+  for (const member of members) {
+    try {
+      // 모임서재 확보
+      const shelf = await getOrCreateGroupBookshelf(groupId, member.user_id, group.name);
+
+      // 이미 등록된 책인지 확인 (어떤 서재든)
+      const { data: existing } = await adminSupabase
+        .from("user_books")
+        .select("id")
+        .eq("user_id", member.user_id)
+        .eq("book_id", bookId)
+        .maybeSingle();
+
+      if (existing) continue;
+
+      // 모임서재에 추가
+      await adminSupabase.from("user_books").insert({
+        user_id: member.user_id,
+        book_id: bookId,
+        bookshelf_id: shelf.id,
+        status: "not_started",
+        started_at: now,
+      });
+    } catch (err) {
+      console.error(`[syncGroupBook] 멤버 ${member.user_id} 동기화 실패:`, err);
+    }
+  }
+}
+
+/**
+ * 새 멤버 승인 시 기존 지정도서 전체를 모임서재에 동기화
+ */
+export async function syncGroupBooksToMember(
+  groupId: string,
+  userId: string
+): Promise<void> {
+  const adminSupabase = createAdminSupabaseClient();
+
+  // 모임 정보
+  const { data: group } = await adminSupabase
+    .from("groups")
+    .select("name")
+    .eq("id", groupId)
+    .single();
+
+  if (!group) return;
+
+  // 지정도서 목록
+  const { data: groupBooks } = await adminSupabase
+    .from("group_books")
+    .select("book_id")
+    .eq("group_id", groupId);
+
+  if (!groupBooks || groupBooks.length === 0) return;
+
+  const bookIds = groupBooks.map((gb) => gb.book_id);
+
+  // 이미 사용자가 가진 책 확인
+  const { data: existingBooks } = await adminSupabase
+    .from("user_books")
+    .select("book_id")
+    .eq("user_id", userId)
+    .in("book_id", bookIds);
+
+  const existingSet = new Set((existingBooks || []).map((eb) => eb.book_id));
+  const newBookIds = bookIds.filter((id) => !existingSet.has(id));
+
+  if (newBookIds.length === 0) return;
+
+  // 모임서재 확보
+  const shelf = await getOrCreateGroupBookshelf(groupId, userId, group.name);
+
+  // 일괄 추가
+  const now = new Date().toISOString();
+  const insertData = newBookIds.map((bookId) => ({
+    user_id: userId,
+    book_id: bookId,
+    bookshelf_id: shelf.id,
+    status: "not_started" as const,
+    started_at: now,
+  }));
+
+  const { error } = await adminSupabase.from("user_books").insert(insertData);
+
+  if (error) {
+    console.error(`[syncGroupBooksToMember] 일괄 동기화 실패:`, error);
+  }
+}
+
+/**
+ * 멤버 탈퇴/강퇴 시 모임서재 연결 해제 (일반 서재로 전환, 데이터 보존)
+ */
+export async function unlinkGroupBookshelf(
+  groupId: string,
+  userId: string
+): Promise<void> {
+  const adminSupabase = createAdminSupabaseClient();
+
+  const { error } = await adminSupabase
+    .from("bookshelves")
+    .update({ group_id: null })
+    .eq("user_id", userId)
+    .eq("group_id", groupId);
+
+  if (error) {
+    console.error(`[unlinkGroupBookshelf] 연결 해제 실패:`, error);
+  }
 }

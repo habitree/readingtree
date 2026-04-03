@@ -9,7 +9,8 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { BookshelfShareButton } from "@/components/bookshelves/bookshelf-share-button";
 import { BookshelfDefaultDesc, BookshelfSettingsLabel, BookshelfAddLabel } from "@/components/bookshelves/bookshelf-page-strings";
-import { ArrowLeft, Settings, Plus } from "lucide-react";
+import { ArrowLeft, Settings, Plus, Users, RefreshCcw } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import type { ReadingStatus } from "@/types/book";
 
 interface BookshelfDetailPageProps {
@@ -105,9 +106,20 @@ export default async function BookshelfDetailPage({
               </Link>
             </Button>
             <div className="min-w-0">
-              <h1 className="text-lg sm:text-xl lg:text-2xl font-bold tracking-tight truncate">
-                {bookshelf.name}
-              </h1>
+              <div className="flex items-center gap-2">
+                {bookshelf.group_id && (
+                  <Users className="h-5 w-5 text-emerald-600 shrink-0" />
+                )}
+                <h1 className="text-lg sm:text-xl lg:text-2xl font-bold tracking-tight truncate">
+                  {bookshelf.name}
+                </h1>
+                {bookshelf.group_id && (
+                  <Badge variant="outline" className="text-xs border-emerald-200 text-emerald-700 bg-emerald-50 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800 shrink-0">
+                    <RefreshCcw className="h-3 w-3 mr-1" />
+                    자동 동기화
+                  </Badge>
+                )}
+              </div>
               <p className="text-xs sm:text-sm text-muted-foreground hidden sm:block truncate">
                 {bookshelf.description || <BookshelfDefaultDesc />}
               </p>

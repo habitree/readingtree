@@ -44,7 +44,7 @@ export function MobileBookshelfSelector({
         if (isGuest) {
           const data = await getSampleBookshelves();
           setBookshelves(data.map(({ id, user_id, name, description, is_main, order, is_public, created_at, updated_at }) => ({
-            id, user_id, name, description, is_main, order, is_public, created_at, updated_at,
+            id, user_id, name, description, is_main, order, is_public, created_at, updated_at, group_id: null,
           })));
         } else {
           const data = await getBookshelves();

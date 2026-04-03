@@ -77,7 +77,8 @@ async function getTableCount(
         .from("bookshelves")
         .select("id", { count: "exact", head: true })
         .eq("user_id", userId)
-        .eq("is_main", false);
+        .eq("is_main", false)
+        .is("group_id", null);
       return count || 0;
     }
     case "groups_create": {

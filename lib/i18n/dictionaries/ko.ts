@@ -2786,6 +2786,9 @@ export const ko = {
     settingsButton: "설정",
     addButton: "추가",
     defaultDesc: "내가 읽고 있는 책들을 관리하세요",
+    groupSync: "자동 동기화",
+    groupBookshelf: "모임 서재",
+    linkedTo: "{name} 모임 연결",
   },
 
   footer: {

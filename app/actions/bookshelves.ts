@@ -25,7 +25,7 @@ export async function getBookshelves(): Promise<Bookshelf[]> {
 
   const { data, error } = await supabase
     .from("bookshelves")
-    .select("*")
+    .select("*, groups(name)")
     .eq("user_id", user.id)
     .order("is_main", { ascending: false })
     .order("order", { ascending: true });
@@ -34,7 +34,11 @@ export async function getBookshelves(): Promise<Bookshelf[]> {
     throw new Error(`서재 목록 조회 실패: ${error.message}`);
   }
 
-  return (data || []) as unknown as Bookshelf[];
+  return (data || []).map((shelf: Record<string, unknown>) => ({
+    ...shelf,
+    group_name: (shelf.groups as Record<string, unknown> | null)?.name || undefined,
+    groups: undefined,
+  })) as unknown as Bookshelf[];
 }
 
 /**
@@ -75,13 +79,19 @@ export async function getBookshelfWithStats(
 
   const supabase = await createServerSupabaseClient();
 
-  // 서재 정보 조회
-  const { data: bookshelf, error: bookshelfError } = await supabase
+  // 서재 정보 조회 (모임 이름 포함)
+  const { data: rawBookshelf, error: bookshelfError } = await supabase
     .from("bookshelves")
-    .select("*")
+    .select("*, groups(name)")
     .eq("id", bookshelfId)
     .eq("user_id", user.id)
     .maybeSingle();
+
+  const bookshelf = rawBookshelf ? {
+    ...rawBookshelf,
+    group_name: (rawBookshelf.groups as Record<string, unknown> | null)?.name || undefined,
+    groups: undefined,
+  } : null;
 
   if (bookshelfError) {
     throw new Error(`서재 조회 실패: ${bookshelfError.message}`);
@@ -503,4 +513,59 @@ export async function getPublicBookshelfWithBooks(bookshelfId: string): Promise<
     books,
     owner,
   };
+}
+
+/**
+ * 모임서재 조회 또는 생성 (adminClient 사용 — 동기화 시 다른 사용자의 서재 생성)
+ */
+export async function getOrCreateGroupBookshelf(
+  groupId: string,
+  userId: string,
+  groupName: string
+): Promise<Bookshelf> {
+  const adminSupabase = createAdminSupabaseClient();
+
+  // 기존 모임서재 조회
+  const { data: existing } = await adminSupabase
+    .from("bookshelves")
+    .select("*")
+    .eq("user_id", userId)
+    .eq("group_id", groupId)
+    .maybeSingle();
+
+  if (existing) {
+    return existing as unknown as Bookshelf;
+  }
+
+  // 사용자의 최대 order 값 조회
+  const { data: maxOrderData } = await adminSupabase
+    .from("bookshelves")
+    .select("order")
+    .eq("user_id", userId)
+    .order("order", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const nextOrder = maxOrderData?.order !== undefined ? maxOrderData.order + 1 : 0;
+
+  // 모임서재 생성
+  const { data, error } = await adminSupabase
+    .from("bookshelves")
+    .insert({
+      user_id: userId,
+      name: `${groupName} 서재`,
+      description: `독서모임 지정도서`,
+      order: nextOrder,
+      is_public: false,
+      is_main: false,
+      group_id: groupId,
+    })
+    .select()
+    .single();
+
+  if (error) {
+    throw new Error(`모임서재 생성 실패: ${error.message}`);
+  }
+
+  return data as unknown as Bookshelf;
 }

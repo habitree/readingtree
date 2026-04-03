@@ -4,6 +4,7 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import type { MemberStatus } from "./_shared";
 import { checkFeatureAccess } from "../subscription";
+import { syncGroupBooksToMember, unlinkGroupBookshelf } from "./books";
 
 /**
  * 모임 참여 신청
@@ -85,6 +86,15 @@ export async function joinGroup(groupId: string, joinMessage?: string) {
     throw new Error(`참여 신청 실패: ${memberError.message}`);
   }
 
+  // 자동 승인 시 모임서재 동기화
+  if (status === "approved") {
+    try {
+      await syncGroupBooksToMember(groupId, user.id);
+    } catch (err) {
+      console.error("[joinGroup] 동기화 실패:", err);
+    }
+  }
+
   revalidatePath(`/groups/${groupId}`);
   revalidatePath("/groups");
   return { success: true, autoApproved: group.join_type === "open" };
@@ -143,6 +153,13 @@ export async function approveMember(groupId: string, userId: string) {
 
   if (updateError) {
     throw new Error(`승인 실패: ${updateError.message}`);
+  }
+
+  // 승인 후 모임서재 동기화
+  try {
+    await syncGroupBooksToMember(groupId, userId);
+  } catch (err) {
+    console.error("[approveMember] 동기화 실패:", err);
   }
 
   revalidatePath(`/groups/${groupId}`);
@@ -285,6 +302,13 @@ export async function removeMember(groupId: string, userId: string) {
     throw new Error(`멤버 내보내기 실패: ${error.message}`);
   }
 
+  // 모임서재 연결 해제
+  try {
+    await unlinkGroupBookshelf(groupId, userId);
+  } catch (err) {
+    console.error("[removeMember] 서재 연결 해제 실패:", err);
+  }
+
   revalidatePath(`/groups/${groupId}`);
   return { success: true };
 }
@@ -329,6 +353,13 @@ export async function leaveGroup(groupId: string) {
 
   if (error) {
     throw new Error(`모임 나가기 실패: ${error.message}`);
+  }
+
+  // 모임서재 연결 해제
+  try {
+    await unlinkGroupBookshelf(groupId, user.id);
+  } catch (err) {
+    console.error("[leaveGroup] 서재 연결 해제 실패:", err);
   }
 
   revalidatePath(`/groups/${groupId}`);
@@ -632,6 +663,17 @@ export async function approveAllPendingMembers(groupId: string) {
 
   if (error) {
     throw new Error(`일괄 승인 실패: ${error.message}`);
+  }
+
+  // 승인된 멤버들의 모임서재 동기화
+  if (data && data.length > 0) {
+    for (const member of data) {
+      try {
+        await syncGroupBooksToMember(groupId, member.user_id);
+      } catch (err) {
+        console.error(`[approveAll] ${member.user_id} 동기화 실패:`, err);
+      }
+    }
   }
 
   revalidatePath(`/groups/${groupId}`);

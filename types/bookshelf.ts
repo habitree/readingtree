@@ -10,6 +10,7 @@ export interface Bookshelf {
   is_main: boolean;
   order: number;
   is_public: boolean;
+  group_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -21,6 +22,7 @@ export interface BookshelfWithStats extends Bookshelf {
   paused_count: number;
   not_started_count: number;
   rereading_count: number;
+  group_name?: string;
 }
 
 export interface CreateBookshelfInput {

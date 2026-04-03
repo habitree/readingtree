@@ -4,8 +4,9 @@ import Link from "next/link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { BookshelfWithStats } from "@/types/bookshelf";
-import { BookOpen, Library } from "lucide-react";
+import { BookOpen, Library, Users, RefreshCcw } from "lucide-react";
 import { useTranslation } from "@/lib/i18n";
+import { cn } from "@/lib/utils";
 
 interface BookshelfCardProps {
   bookshelf: BookshelfWithStats;
@@ -15,15 +16,21 @@ interface BookshelfCardProps {
 export function BookshelfCard({ bookshelf, isGuest = false }: BookshelfCardProps) {
   const { t } = useTranslation();
   const isMain = bookshelf.is_main;
+  const isGroupBookshelf = !!bookshelf.group_id;
 
   return (
     <Link href={isMain ? "/books" : `/bookshelves/${bookshelf.id}`}>
-      <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full">
+      <Card className={cn(
+        "hover:shadow-lg transition-shadow cursor-pointer h-full",
+        isGroupBookshelf && "border-l-4 border-l-emerald-500"
+      )}>
         <CardHeader>
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-2">
               {isMain ? (
                 <Library className="h-5 w-5 text-primary" />
+              ) : isGroupBookshelf ? (
+                <Users className="h-5 w-5 text-emerald-600" />
               ) : (
                 <BookOpen className="h-5 w-5 text-muted-foreground" />
               )}
@@ -32,6 +39,12 @@ export function BookshelfCard({ bookshelf, isGuest = false }: BookshelfCardProps
             {isMain && (
               <Badge variant="secondary" className="text-xs">
                 {t("books.integrated")}
+              </Badge>
+            )}
+            {isGroupBookshelf && (
+              <Badge variant="outline" className="text-xs border-emerald-200 text-emerald-700 bg-emerald-50 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800">
+                <RefreshCcw className="h-3 w-3 mr-1" />
+                {t("bookshelves.groupSync")}
               </Badge>
             )}
           </div>

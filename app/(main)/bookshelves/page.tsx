@@ -47,10 +47,12 @@ export default async function BookshelvesPage() {
         })
       );
 
-      // 메인 서재를 맨 앞으로 정렬
+      // 메인 서재 → 모임 서재 → 일반 서재 순 정렬
       sortedBookshelves = bookshelvesWithStats.sort((a, b) => {
         if (a.is_main) return -1;
         if (b.is_main) return 1;
+        if (a.group_id && !b.group_id) return -1;
+        if (!a.group_id && b.group_id) return 1;
         return a.order - b.order;
       });
     }
