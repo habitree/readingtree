@@ -97,6 +97,7 @@ export async function joinGroup(groupId: string, joinMessage?: string) {
 
   revalidatePath(`/groups/${groupId}`);
   revalidatePath("/groups");
+  revalidatePath("/bookshelves");
   return { success: true, autoApproved: group.join_type === "open" };
 }
 
@@ -163,6 +164,7 @@ export async function approveMember(groupId: string, userId: string) {
   }
 
   revalidatePath(`/groups/${groupId}`);
+  revalidatePath("/bookshelves");
   return { success: true };
 }
 
@@ -688,5 +690,6 @@ export async function approveAllPendingMembers(groupId: string) {
   }
 
   revalidatePath(`/groups/${groupId}`);
+  revalidatePath("/bookshelves");
   return { success: true, count: data?.length || 0 };
 }

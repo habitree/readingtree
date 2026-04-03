@@ -273,10 +273,10 @@ export async function deleteBookshelf(bookshelfId: string): Promise<void> {
 
   const supabase = await createServerSupabaseClient();
 
-  // 서재 소유권 및 메인 서재 여부 확인
+  // 서재 소유권 및 메인 서재/모임서재 여부 확인
   const { data: existing } = await supabase
     .from("bookshelves")
-    .select("id, is_main")
+    .select("id, is_main, group_id")
     .eq("id", bookshelfId)
     .eq("user_id", user.id)
     .maybeSingle();
@@ -287,6 +287,10 @@ export async function deleteBookshelf(bookshelfId: string): Promise<void> {
 
   if (existing.is_main) {
     throw new Error("메인 서재는 삭제할 수 없습니다.");
+  }
+
+  if (existing.group_id) {
+    throw new Error("모임서재는 직접 삭제할 수 없습니다. 모임 탈퇴 시 자동으로 일반 서재로 전환됩니다.");
   }
 
   // 메인 서재 조회
@@ -568,4 +572,47 @@ export async function getOrCreateGroupBookshelf(
   }
 
   return data as unknown as Bookshelf;
+}
+
+/**
+ * 서재의 모임 연결 해제 (사용자 본인이 직접 해제)
+ * 모임 멤버십에는 영향 없음 — 서재 자동동기화만 해제
+ */
+export async function unlinkBookshelfFromGroup(
+  bookshelfId: string
+): Promise<void> {
+  const user = await getCurrentUser();
+  if (!user) {
+    throw new Error("로그인이 필요합니다.");
+  }
+
+  const supabase = await createServerSupabaseClient();
+
+  const { data: existing } = await supabase
+    .from("bookshelves")
+    .select("id, group_id")
+    .eq("id", bookshelfId)
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (!existing) {
+    throw new Error("서재를 찾을 수 없거나 권한이 없습니다.");
+  }
+
+  if (!existing.group_id) {
+    throw new Error("모임에 연결되지 않은 서재입니다.");
+  }
+
+  const { error: unlinkError } = await supabase
+    .from("bookshelves")
+    .update({ group_id: null })
+    .eq("id", bookshelfId)
+    .eq("user_id", user.id);
+
+  if (unlinkError) {
+    throw new Error(`연결 해제 실패: ${unlinkError.message}`);
+  }
+
+  revalidatePath("/bookshelves");
+  revalidatePath(`/bookshelves/${bookshelfId}`);
 }

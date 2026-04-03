@@ -377,6 +377,7 @@ export async function removeGroupBook(groupId: string, bookId: string) {
   }
 
   revalidatePath(`/groups/${groupId}`);
+  revalidatePath("/bookshelves");
   return { success: true };
 }
 
@@ -792,6 +793,8 @@ export async function syncGroupBookToAllMembers(
       console.error(`[syncGroupBook] 멤버 ${member.user_id} 동기화 실패:`, err);
     }
   }
+
+  revalidatePath("/bookshelves");
 }
 
 /**
@@ -852,6 +855,8 @@ export async function syncGroupBooksToMember(
   if (error) {
     console.error(`[syncGroupBooksToMember] 일괄 동기화 실패:`, error);
   }
+
+  revalidatePath("/bookshelves");
 }
 
 /**
@@ -872,4 +877,6 @@ export async function unlinkGroupBookshelf(
   if (error) {
     console.error(`[unlinkGroupBookshelf] 연결 해제 실패:`, error);
   }
+
+  revalidatePath("/bookshelves");
 }

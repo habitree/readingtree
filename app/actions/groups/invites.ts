@@ -163,6 +163,7 @@ export async function joinByToken(token: string) {
 
   revalidatePath("/groups");
   revalidatePath(`/groups/${inviteToken.group_id}`);
+  revalidatePath("/bookshelves");
 
   return { success: true, groupId: inviteToken.group_id, alreadyMember: false };
 }

@@ -16,12 +16,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { updateBookshelf, deleteBookshelf } from "@/app/actions/bookshelves";
+import { updateBookshelf, deleteBookshelf, unlinkBookshelfFromGroup } from "@/app/actions/bookshelves";
 import { BookshelfWithStats } from "@/types/bookshelf";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Switch } from "@/components/ui/switch";
-import { Trash2, Save } from "lucide-react";
+import { Trash2, Save, Users, LinkIcon, Unlink } from "lucide-react";
 import { useTranslation } from "@/lib/i18n";
+import Link from "next/link";
 
 interface BookshelfEditFormProps {
   bookshelf: BookshelfWithStats;
@@ -36,6 +38,10 @@ export function BookshelfEditForm({ bookshelf }: BookshelfEditFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [unlinkDialogOpen, setUnlinkDialogOpen] = useState(false);
+  const [isUnlinking, setIsUnlinking] = useState(false);
+
+  const isGroupBookshelf = !!bookshelf.group_id;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -82,8 +88,90 @@ export function BookshelfEditForm({ bookshelf }: BookshelfEditFormProps) {
     }
   };
 
+  const handleUnlink = async () => {
+    setIsUnlinking(true);
+    try {
+      await unlinkBookshelfFromGroup(bookshelf.id);
+      toast.success("모임 연결이 해제되었습니다.");
+      router.push(`/bookshelves/${bookshelf.id}`);
+      router.refresh();
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "연결 해제에 실패했습니다."
+      );
+    } finally {
+      setIsUnlinking(false);
+      setUnlinkDialogOpen(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
+      {isGroupBookshelf && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5 text-emerald-600" />
+              연결된 모임
+            </CardTitle>
+            <CardDescription>
+              모임 지정도서가 이 서재에 자동 동기화됩니다.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <LinkIcon className="h-4 w-4 text-muted-foreground" />
+                <span className="font-medium">{bookshelf.group_name || "독서모임"}</span>
+                <Badge variant="outline" className="text-emerald-600 border-emerald-200">
+                  자동 동기화
+                </Badge>
+              </div>
+              <Link href={`/groups/${bookshelf.group_id}`}>
+                <Button variant="outline" size="sm">
+                  모임 보기
+                </Button>
+              </Link>
+            </div>
+            <div className="border-t pt-4">
+              <Dialog open={unlinkDialogOpen} onOpenChange={setUnlinkDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm" className="text-destructive hover:text-destructive">
+                    <Unlink className="mr-2 h-4 w-4" />
+                    모임 연결 해제
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>모임 연결을 해제하시겠습니까?</DialogTitle>
+                    <DialogDescription>
+                      연결을 해제하면 모임 지정도서가 더 이상 자동 동기화되지 않습니다.
+                      기존 책은 그대로 유지됩니다. 모임 멤버십에는 영향이 없습니다.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <DialogFooter>
+                    <Button
+                      variant="outline"
+                      onClick={() => setUnlinkDialogOpen(false)}
+                      disabled={isUnlinking}
+                    >
+                      {t("common.cancel")}
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      onClick={handleUnlink}
+                      disabled={isUnlinking}
+                    >
+                      {isUnlinking ? t("common.loading") : "연결 해제"}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <Card>
         <CardHeader>
           <CardTitle>{t("bookshelves.bookshelfInfo")}</CardTitle>
@@ -126,48 +214,54 @@ export function BookshelfEditForm({ bookshelf }: BookshelfEditFormProps) {
               />
             </div>
             <div className="flex items-center justify-between pt-4">
-              <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    disabled={isSubmitting || isDeleting}
-                  >
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    {t("bookshelves.deleteBookshelf")}
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>{t("bookshelves.deleteBookshelfConfirm")}</DialogTitle>
-                    <DialogDescription>
-                      {t("bookshelves.deleteBookshelfDesc")}
-                      <br />
-                      <strong className="text-destructive">
-                        {t("bookshelves.deleteIrreversible")}
-                      </strong>
-                    </DialogDescription>
-                  </DialogHeader>
-                  <DialogFooter>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => setDeleteDialogOpen(false)}
-                      disabled={isDeleting}
-                    >
-                      {t("common.cancel")}
-                    </Button>
+              {isGroupBookshelf ? (
+                <p className="text-sm text-muted-foreground">
+                  모임서재는 직접 삭제할 수 없습니다.
+                </p>
+              ) : (
+                <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+                  <DialogTrigger asChild>
                     <Button
                       type="button"
                       variant="destructive"
-                      onClick={handleDelete}
-                      disabled={isDeleting}
+                      disabled={isSubmitting || isDeleting}
                     >
-                      {isDeleting ? t("common.loading") : t("common.delete")}
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      {t("bookshelves.deleteBookshelf")}
                     </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>{t("bookshelves.deleteBookshelfConfirm")}</DialogTitle>
+                      <DialogDescription>
+                        {t("bookshelves.deleteBookshelfDesc")}
+                        <br />
+                        <strong className="text-destructive">
+                          {t("bookshelves.deleteIrreversible")}
+                        </strong>
+                      </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setDeleteDialogOpen(false)}
+                        disabled={isDeleting}
+                      >
+                        {t("common.cancel")}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        onClick={handleDelete}
+                        disabled={isDeleting}
+                      >
+                        {isDeleting ? t("common.loading") : t("common.delete")}
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              )}
 
               <Button type="submit" disabled={isSubmitting}>
                 <Save className="mr-2 h-4 w-4" />
