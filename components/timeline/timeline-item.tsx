@@ -5,7 +5,7 @@ import Image from "next/image";
 import { Card, CardContent } from "@/components/ui/card";
 import { getImageUrl, isValidImageUrl } from "@/lib/utils/image";
 import { formatSmartDate } from "@/lib/utils/date";
-import { parsePageNumber } from "@/lib/utils/note";
+import { getNoteTypeLabel, parsePageNumber } from "@/lib/utils/note";
 import { NoteContentViewer } from "@/components/notes/note-content-viewer";
 import type { NoteWithBook } from "@/types/note";
 import { FileText, PenTool, Camera, StickyNote, BookOpen } from "lucide-react";
@@ -30,6 +30,7 @@ export function TimelineItem({ note }: TimelineItemProps) {
   const Icon = typeIcons[note.type];
   const pageNumber = parsePageNumber(note.page_number);
   const isProgressType = note.type === "progress";
+  const typeLabel = getNoteTypeLabel(note.type, !!note.image_url);
 
   const bookData = (note as unknown as Record<string, unknown>).books || note.book;
   const book = Array.isArray(bookData) ? bookData[0] : bookData;
@@ -79,6 +80,7 @@ export function TimelineItem({ note }: TimelineItemProps) {
               <div className="flex items-center justify-between gap-1.5 mb-1">
                 <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground min-w-0">
                   <Icon className="h-3 w-3 shrink-0" />
+                  <span className="font-medium">{typeLabel}</span>
                   {pageNumber && (
                     <>
                       <span className="text-muted-foreground/40">&middot;</span>

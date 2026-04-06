@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { getImageUrl } from "@/lib/utils/image";
 import { formatSmartDate } from "@/lib/utils/date";
-import { parsePageNumber } from "@/lib/utils/note";
+import { getNoteTypeLabel, parsePageNumber } from "@/lib/utils/note";
 import { NoteContentViewer } from "./note-content-viewer";
 import type { NoteWithBook } from "@/types/note";
 import { FileText, PenTool, Camera, Trash2, Loader2, BookOpen, StickyNote } from "lucide-react";
@@ -54,6 +54,7 @@ export function NoteCard({ note, showDeleteButton = false, onDelete }: NoteCardP
   const Icon = typeIcons[note.type];
   const pageNumber = parsePageNumber(note.page_number);
   const isProgressType = note.type === "progress";
+  const typeLabel = getNoteTypeLabel(note.type, !!note.image_url);
 
   // 표시할 제목: progress는 책 제목, 일반은 노트 제목
   const displayTitle = isProgressType ? note.book?.title : note.title;
@@ -117,6 +118,7 @@ export function NoteCard({ note, showDeleteButton = false, onDelete }: NoteCardP
               <div className="flex items-center justify-between gap-1.5 mb-1">
                 <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground min-w-0">
                   <Icon className="h-3 w-3 shrink-0" />
+                  <span className="font-medium">{typeLabel}</span>
                   {pageNumber && (
                     <>
                       <span className="text-muted-foreground/40">&middot;</span>
