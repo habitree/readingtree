@@ -118,7 +118,7 @@ export function NotesGroupedView({ notes }: NotesGroupedViewProps) {
           </div>
 
           {/* 기록 카드 목록 */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
             {group.notes.map((note) => (
               <NoteCard key={note.id} note={note} showDeleteButton />
             ))}

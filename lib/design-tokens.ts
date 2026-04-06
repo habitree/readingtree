@@ -73,7 +73,7 @@ export const grids = {
   /** 책 목록 그리드 (모바일 4열, PC 8열) */
   bookList: "grid grid-cols-4 gap-1.5 sm:gap-2 md:grid-cols-6 lg:grid-cols-8",
   /** 노트 목록 그리드 */
-  noteList: "grid gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-3",
+  noteList: "grid gap-4 sm:gap-5 sm:grid-cols-2 lg:grid-cols-3",
   /** 검색 결과 그리드 */
   searchResults: "grid gap-4 md:grid-cols-2 lg:grid-cols-3",
   /** 2열 그리드 (반응형) */
@@ -106,6 +106,10 @@ export const cardStyles = {
   hover: "hover:shadow-md transition-shadow duration-200",
   /** 선택 가능한 카드 */
   selectable: "hover:shadow-md transition-shadow duration-200 cursor-pointer",
+  /** 심플 카드 (기록 목록용) */
+  simple: "border-border/40 hover:shadow-md transition-shadow",
+  /** 심플 카드 draft */
+  simpleDraft: "border-dashed border-amber-300/40 dark:border-amber-700/30 hover:shadow-md transition-shadow",
   /** 강조 카드 (게스트 안내 등) */
   highlight: "border-primary/20 bg-primary/5",
   /** 에러 카드 */

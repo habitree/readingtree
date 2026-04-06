@@ -4,7 +4,6 @@ import { useState, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
@@ -19,12 +18,10 @@ import {
 } from "@/components/ui/alert-dialog";
 import { getImageUrl } from "@/lib/utils/image";
 import { formatSmartDate } from "@/lib/utils/date";
-import { getNoteTypeLabel, parsePageNumber } from "@/lib/utils/note";
+import { parsePageNumber } from "@/lib/utils/note";
 import { NoteContentViewer } from "./note-content-viewer";
-import { OCRStatusBadge } from "./ocr-status-badge";
-import { useOCRStatus } from "@/hooks/use-ocr-status";
 import type { NoteWithBook } from "@/types/note";
-import { FileText, StickyNote, PenTool, Camera, Trash2, Loader2, BookOpen, TrendingUp, PenLine } from "lucide-react";
+import { FileText, PenTool, Camera, Trash2, Loader2, BookOpen, StickyNote } from "lucide-react";
 import { BookLinkRenderer } from "./book-link-renderer";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/lib/i18n";
@@ -35,39 +32,27 @@ interface NoteCardProps {
   onDelete?: () => void;
 }
 
+const typeIcons = {
+  quote: FileText,
+  transcription: PenTool,
+  photo: Camera,
+  memo: StickyNote,
+  progress: BookOpen,
+} as const;
+
 /**
  * 기록 카드 컴포넌트
- * 심리적/디자인적/기능적 관점에서 최적화된 레이아웃
+ * 심플하고 인지 부하를 최소화한 레이아웃
  */
 export function NoteCard({ note, showDeleteButton = false, onDelete }: NoteCardProps) {
   const { t } = useTranslation();
   const [imgError, setImgError] = useState(false);
   const handleImgError = useCallback(() => setImgError(true), []);
 
-  const typeIcons = {
-    quote: FileText,
-    transcription: PenTool,
-    photo: Camera,
-    memo: StickyNote,
-    progress: TrendingUp,
-  };
-
   const isDraft = note.status === "draft";
   const noteHref = isDraft ? `/notes/${note.id}/edit` : `/notes/${note.id}`;
-
-  const hasImage = !!note.image_url;
-  const typeLabel = getNoteTypeLabel(note.type, hasImage);
   const Icon = typeIcons[note.type];
   const pageNumber = parsePageNumber(note.page_number);
-
-  // OCR 상태 확인: transcription 타입이고 이미지가 있는 경우
-  // initialStatus를 전달하여 이미 completed/failed면 폴링하지 않음
-  const { status: ocrStatus } = useOCRStatus({
-    noteId: note.id,
-    enabled: note.type === "transcription" && hasImage,
-    initialStatus: (note as any).transcription?.status ?? null,
-    pollInterval: 3000,
-  });
 
   const handleDelete = async () => {
     if (onDelete) {
@@ -75,49 +60,61 @@ export function NoteCard({ note, showDeleteButton = false, onDelete }: NoteCardP
     }
   };
 
-  // progress 타입은 컴팩트 가로 레이아웃으로 표시
   const isProgressType = note.type === "progress";
 
-  // progress 타입용 컴팩트 카드
+  // ─── Progress 카드: 표지 + 책제목 + 페이지·날짜 ───
   if (isProgressType) {
     return (
       <Link href={noteHref} className="block">
-        <Card className={cn("hover:shadow-md active:scale-[0.99] transition-shadow cursor-pointer relative group border-teal-200/50 dark:border-teal-800/50 bg-gradient-to-r from-teal-50/50 to-transparent dark:from-teal-950/30", isDraft && "border-dashed border-amber-300/60 dark:border-amber-700/40")}>
-          <CardContent className="p-3 sm:p-4">
+        <Card className={cn(
+          "hover:shadow-md active:scale-[0.99] transition-shadow cursor-pointer relative group border-border/40",
+          isDraft && "border-dashed border-amber-300/40 dark:border-amber-700/30"
+        )}>
+          <CardContent className="p-3">
             <div className="flex items-center gap-3">
-              {/* 아이콘 */}
-              <div className="shrink-0 w-10 h-10 rounded-full bg-teal-100 dark:bg-teal-900/50 flex items-center justify-center">
-                <TrendingUp className="h-5 w-5 text-teal-600 dark:text-teal-400" />
-              </div>
-
-              {/* 내용 */}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-0.5">
-                  {note.status === "draft" && (
-                    <Badge variant="outline" className="text-[10px] h-5 px-1.5 font-semibold border-amber-300 bg-amber-50 text-amber-600 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-700">
-                      draft
-                    </Badge>
-                  )}
-                  <Badge variant="secondary" className="text-[10px] h-5 px-1.5 bg-teal-100 dark:bg-teal-900/50 text-teal-700 dark:text-teal-300">
-                    {t("notes.progressRecord")}
-                  </Badge>
-                  {pageNumber && (
-                    <span className="text-sm font-semibold text-teal-600 dark:text-teal-400">
-                      p.{pageNumber}
-                    </span>
-                  )}
+              {/* 책 표지 미니 썸네일 */}
+              {note.book?.cover_image_url ? (
+                <div className="shrink-0 w-9 h-12 rounded overflow-hidden bg-muted">
+                  <Image
+                    src={getImageUrl(note.book.cover_image_url)}
+                    alt={note.book.title || ""}
+                    width={36}
+                    height={48}
+                    className="object-cover w-full h-full"
+                  />
                 </div>
+              ) : (
+                <div className="shrink-0 w-9 h-12 rounded bg-muted/60 flex items-center justify-center">
+                  <BookOpen className="h-4 w-4 text-muted-foreground/40" />
+                </div>
+              )}
+
+              {/* 중앙: 책 제목 + 콘텐츠 */}
+              <div className="flex-1 min-w-0">
+                {note.book?.title && (
+                  <p className="text-sm font-medium text-foreground/90 line-clamp-1">
+                    {note.book.title}
+                  </p>
+                )}
                 {note.content && (
-                  <div className="text-xs text-muted-foreground line-clamp-1 mt-1">
-                    <NoteContentViewer content={note.content} pageNumber={null} maxLength={60} compact />
+                  <div className="mt-0.5">
+                    <NoteContentViewer content={note.content} pageNumber={null} maxLength={50} compact />
                   </div>
                 )}
               </div>
 
-              {/* 날짜 */}
-              <time className="text-[10px] sm:text-xs text-muted-foreground shrink-0" suppressHydrationWarning>
-                {formatSmartDate(note.created_at)}
-              </time>
+              {/* 우측: 페이지 + 날짜 */}
+              <div className="shrink-0 text-right">
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  {pageNumber && (
+                    <span className="font-medium text-foreground/70">p.{pageNumber}</span>
+                  )}
+                  {pageNumber && <span className="text-muted-foreground/40">&middot;</span>}
+                  <time suppressHydrationWarning>
+                    {formatSmartDate(note.created_at)}
+                  </time>
+                </div>
+              </div>
             </div>
           </CardContent>
 
@@ -126,10 +123,7 @@ export function NoteCard({ note, showDeleteButton = false, onDelete }: NoteCardP
             <div
               data-delete-button
               className="absolute top-2 right-2 opacity-60 sm:opacity-0 group-hover:opacity-100 transition-opacity z-20"
-              onClick={(e) => {
-                e.stopPropagation();
-                e.preventDefault();
-              }}
+              onClick={(e) => { e.stopPropagation(); e.preventDefault(); }}
             >
               <NoteDeleteButtonWithCallback noteId={note.id} onDelete={handleDelete} />
             </div>
@@ -139,160 +133,101 @@ export function NoteCard({ note, showDeleteButton = false, onDelete }: NoteCardP
     );
   }
 
-  // 기존 카드 레이아웃 (progress 외 타입)
-  const cardContent = (
+  // ─── 일반 카드: 표지 + 아이콘·페이지 + 제목 + 내용 2줄 + 날짜 ───
+  return (
     <Link
       href={noteHref}
       className="block h-full"
       onClick={(e) => {
-        // 삭제 버튼 영역 클릭 시 링크 이동 방지
         const target = e.target as HTMLElement;
-        if (target.closest('button') || target.closest('[role="button"]') || target.closest('[data-delete-button]')) {
+        if (target.closest("button") || target.closest('[role="button"]') || target.closest("[data-delete-button]")) {
           e.preventDefault();
           e.stopPropagation();
         }
       }}
     >
-      <Card className={cn("hover:shadow-lg active:shadow-md active:scale-[0.99] transition-shadow cursor-pointer h-full relative group overflow-hidden", isDraft && "border-dashed border-amber-300/60 dark:border-amber-700/40 bg-amber-50/20 dark:bg-amber-950/10")}>
+      <Card className={cn(
+        "hover:shadow-md active:scale-[0.99] transition-shadow cursor-pointer h-full relative group overflow-hidden border-border/40",
+        isDraft && "border-dashed border-amber-300/40 dark:border-amber-700/30"
+      )}>
         <CardContent className="p-0">
           <div className="flex">
-            {/* 좌측: 이미지/표지 + 책 정보 통합 영역 */}
-            <div className="shrink-0 w-20 sm:w-24 bg-muted/30">
-              {/* 이미지 또는 책 표지 */}
-              <div className="relative w-full aspect-[3/4] overflow-hidden">
+            {/* 좌측: 표지만 */}
+            <div className="shrink-0 w-16 sm:w-20">
+              <div className="relative w-full aspect-[3/4] overflow-hidden rounded-l-lg">
                 {note.image_url && !imgError ? (
                   <Image
                     src={getImageUrl(note.image_url)}
                     alt={note.type}
                     fill
                     className="object-cover"
-                    sizes="(max-width: 640px) 80px, 96px"
+                    sizes="(max-width: 640px) 64px, 80px"
                     onError={handleImgError}
                   />
                 ) : note.book?.cover_image_url ? (
                   <Image
                     src={getImageUrl(note.book.cover_image_url)}
-                    alt={note.book.title || "책 표지"}
+                    alt={note.book.title || ""}
                     fill
                     className="object-cover"
-                    sizes="(max-width: 640px) 80px, 96px"
+                    sizes="(max-width: 640px) 64px, 80px"
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-muted">
-                    <Icon className="h-6 w-6 sm:h-8 sm:w-8 text-muted-foreground/50" />
+                  <div className="w-full h-full flex items-center justify-center bg-muted/40">
+                    <Icon className="h-5 w-5 text-muted-foreground/30" />
                   </div>
                 )}
               </div>
-
-              {/* 책 정보 또는 출처 - 이미지 아래에 심플하게 */}
-              {note.book ? (
-                <div
-                  className="block p-1.5 sm:p-2 bg-background/80 backdrop-blur-sm border-t hover:bg-muted/50 transition-colors cursor-pointer"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    e.preventDefault();
-                    window.location.href = `/books/${note.book!.id}`;
-                  }}
-                >
-                  <div className="flex items-center gap-1">
-                    <BookOpen className="h-3 w-3 text-muted-foreground shrink-0" />
-                    <span className="text-[9px] sm:text-[10px] font-medium text-foreground/80 line-clamp-2 leading-tight">
-                      {note.book.title}
-                    </span>
-                  </div>
-                </div>
-              ) : (note as any).source_label ? (
-                <div className="p-1.5 sm:p-2 bg-background/80 backdrop-blur-sm border-t">
-                  <div className="flex items-center gap-1">
-                    <BookOpen className="h-3 w-3 text-muted-foreground shrink-0" />
-                    <p className="text-[9px] sm:text-[10px] font-medium text-muted-foreground line-clamp-2 leading-tight">
-                      {(note as any).source_label}
-                    </p>
-                  </div>
-                </div>
-              ) : null}
             </div>
 
-            {/* 우측: 내용 영역 */}
-            <div className="flex-1 min-w-0 p-3 sm:p-4 flex flex-col">
-              {/* 상단: 타입 + 페이지 + OCR 상태 */}
-              <div className="flex items-center gap-1.5 mb-2">
-                {note.status === "draft" && (
-                  <Badge variant="outline" className="text-[10px] h-5 px-1.5 font-semibold border-amber-300 bg-amber-50 text-amber-600 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-700">
-                    draft
-                  </Badge>
-                )}
-                <Badge variant="secondary" className="text-[10px] sm:text-xs h-5 px-1.5 font-medium">
-                  {typeLabel}
-                </Badge>
+            {/* 우측: 내용 */}
+            <div className="flex-1 min-w-0 p-3 sm:p-4 flex flex-col gap-1.5">
+              {/* 상단: 타입 아이콘 + 페이지 + draft 텍스트 */}
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <Icon className="h-3.5 w-3.5" />
                 {pageNumber && (
-                  <Badge variant="outline" className="text-[10px] h-5 px-1.5 text-muted-foreground">
-                    p.{pageNumber}
-                  </Badge>
+                  <>
+                    <span className="text-muted-foreground/40">&middot;</span>
+                    <span>p.{pageNumber}</span>
+                  </>
                 )}
-                <OCRStatusBadge status={ocrStatus} className="shrink-0" />
+                {isDraft && (
+                  <>
+                    <span className="text-muted-foreground/40">&middot;</span>
+                    <span className="text-amber-600 dark:text-amber-400 font-medium">draft</span>
+                  </>
+                )}
               </div>
 
-              {/* 제목 (있는 경우) */}
+              {/* 제목 */}
               {note.title && (
-                <h3 className="text-sm sm:text-base font-semibold line-clamp-1 mb-1.5">
+                <h3 className="text-sm font-medium line-clamp-1 text-foreground/90">
                   <BookLinkRenderer text={note.title} />
                 </h3>
               )}
 
-              {/* 내용 미리보기 - 핵심 영역 */}
+              {/* 내용 미리보기 2줄 */}
               <div className="flex-1 min-h-0">
                 {note.content ? (
                   <NoteContentViewer
                     content={note.content}
                     pageNumber={null}
-                    maxLength={100}
+                    maxLength={80}
                     compact
                   />
                 ) : note.type === "transcription" && note.transcription?.extracted_text ? (
-                  <div className="pl-2.5 border-l-2 border-amber-400/60">
-                    <p className="text-xs sm:text-sm text-foreground/80 line-clamp-3 leading-relaxed">
-                      {note.transcription.extracted_text.length > 100
-                        ? note.transcription.extracted_text.substring(0, 100) + "..."
-                        : note.transcription.extracted_text}
-                    </p>
-                  </div>
+                  <p className="text-xs text-foreground/70 line-clamp-2 leading-relaxed">
+                    {note.transcription.extracted_text.length > 80
+                      ? note.transcription.extracted_text.substring(0, 80) + "..."
+                      : note.transcription.extracted_text}
+                  </p>
                 ) : null}
               </div>
 
-              {/* 하단: 태그 + 날짜 */}
-              <div className="flex items-center justify-between gap-2 mt-2 pt-2 border-t border-border/50">
-                {note.tags && note.tags.length > 0 ? (
-                  <div className="flex items-center gap-1 flex-1 min-w-0 overflow-hidden">
-                    {note.tags.slice(0, 2).map((tag, index) => (
-                      <Badge
-                        key={index}
-                        variant="outline"
-                        className="text-[10px] h-5 px-1.5 bg-muted/50 border-0"
-                      >
-                        #{tag}
-                      </Badge>
-                    ))}
-                    {note.tags.length > 2 && (
-                      <span className="text-[10px] text-muted-foreground">
-                        +{note.tags.length - 2}
-                      </span>
-                    )}
-                  </div>
-                ) : (
-                  <div className="flex-1" />
-                )}
-                {isDraft ? (
-                  <span className="inline-flex items-center gap-1 text-xs font-semibold text-amber-600 dark:text-amber-400 shrink-0">
-                    <PenLine className="w-3 h-3" />
-                    {t("notes.editDraft")}
-                  </span>
-                ) : (
-                  <time className="text-[10px] sm:text-xs text-muted-foreground shrink-0" suppressHydrationWarning>
-                    {formatSmartDate(note.created_at)}
-                  </time>
-                )}
-              </div>
+              {/* 하단: 날짜만 */}
+              <time className="text-[10px] text-muted-foreground/60 mt-auto" suppressHydrationWarning>
+                {formatSmartDate(note.created_at)}
+              </time>
             </div>
           </div>
         </CardContent>
@@ -302,10 +237,7 @@ export function NoteCard({ note, showDeleteButton = false, onDelete }: NoteCardP
           <div
             data-delete-button
             className="absolute top-2 right-2 opacity-60 sm:opacity-0 group-hover:opacity-100 transition-opacity z-20"
-            onClick={(e) => {
-              e.stopPropagation();
-              e.preventDefault();
-            }}
+            onClick={(e) => { e.stopPropagation(); e.preventDefault(); }}
           >
             <NoteDeleteButtonWithCallback noteId={note.id} onDelete={handleDelete} />
           </div>
@@ -313,8 +245,6 @@ export function NoteCard({ note, showDeleteButton = false, onDelete }: NoteCardP
       </Card>
     </Link>
   );
-
-  return cardContent;
 }
 
 /**

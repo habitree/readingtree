@@ -27,10 +27,10 @@ export function TimelineGroup({ month, notes }: TimelineGroupProps) {
 
   return (
     <div className="space-y-4">
-      <div className="sticky top-20 bg-background py-2 z-10">
-        <h2 className="text-lg font-semibold">{formattedMonth}</h2>
+      <div className="sticky top-20 bg-background/95 backdrop-blur-sm py-3 z-10 border-b border-border/30">
+        <h2 className="text-base font-semibold text-foreground/80">{formattedMonth}</h2>
       </div>
-      <div className="space-y-3">
+      <div className="space-y-4">
         {notes.map((note) => (
           <TimelineItem key={note.id} note={note} />
         ))}
