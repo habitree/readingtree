@@ -1610,44 +1610,48 @@ export async function getAdjacentNoteIds(
   currentNoteId: string,
   bookId: string
 ): Promise<{ prevId: string | null; nextId: string | null }> {
-  const supabase = await createServerSupabaseClient();
-  const currentUser = await getCurrentUser();
-  if (!currentUser) return { prevId: null, nextId: null };
+  try {
+    const supabase = await createServerSupabaseClient();
+    const currentUser = await getCurrentUser();
+    if (!currentUser) return { prevId: null, nextId: null };
 
-  const { data: current } = await supabase
-    .from("notes")
-    .select("created_at")
-    .eq("id", currentNoteId)
-    .single();
-
-  if (!current) return { prevId: null, nextId: null };
-
-  const [{ data: prev }, { data: next }] = await Promise.all([
-    supabase
+    const { data: current } = await supabase
       .from("notes")
-      .select("id")
-      .eq("book_id", bookId)
-      .eq("user_id", currentUser.id)
-      .eq("status", "published")
-      .lt("created_at", current.created_at)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle(),
-    supabase
-      .from("notes")
-      .select("id")
-      .eq("book_id", bookId)
-      .eq("user_id", currentUser.id)
-      .eq("status", "published")
-      .gt("created_at", current.created_at)
-      .order("created_at", { ascending: true })
-      .limit(1)
-      .maybeSingle(),
-  ]);
+      .select("created_at")
+      .eq("id", currentNoteId)
+      .maybeSingle();
 
-  return {
-    prevId: prev?.id ?? null,
-    nextId: next?.id ?? null,
-  };
+    if (!current) return { prevId: null, nextId: null };
+
+    const [prevResult, nextResult] = await Promise.all([
+      supabase
+        .from("notes")
+        .select("id")
+        .eq("book_id", bookId)
+        .eq("user_id", currentUser.id)
+        .eq("status", "published")
+        .lt("created_at", current.created_at)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+      supabase
+        .from("notes")
+        .select("id")
+        .eq("book_id", bookId)
+        .eq("user_id", currentUser.id)
+        .eq("status", "published")
+        .gt("created_at", current.created_at)
+        .order("created_at", { ascending: true })
+        .limit(1)
+        .maybeSingle(),
+    ]);
+
+    return {
+      prevId: prevResult.data?.id ?? null,
+      nextId: nextResult.data?.id ?? null,
+    };
+  } catch {
+    return { prevId: null, nextId: null };
+  }
 }
 

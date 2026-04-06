@@ -42,20 +42,24 @@ export function NoteDetailNavBar({ note, backUrl, isGuest, initialOcrStatus, pre
         <div className="flex items-center gap-1.5 sm:gap-2">
           {(prevNoteId || nextNoteId) && (
             <div className="flex items-center gap-0.5 mr-1">
-              <Button variant="ghost" size="sm" asChild disabled={!prevNoteId} className="h-8 w-8 p-0">
-                {prevNoteId ? (
+              {prevNoteId ? (
+                <Button variant="ghost" size="sm" asChild className="h-8 w-8 p-0">
                   <Link href={`/notes/${prevNoteId}`}><ChevronLeft className="h-4 w-4" /></Link>
-                ) : (
-                  <span><ChevronLeft className="h-4 w-4 opacity-30" /></span>
-                )}
-              </Button>
-              <Button variant="ghost" size="sm" asChild disabled={!nextNoteId} className="h-8 w-8 p-0">
-                {nextNoteId ? (
+                </Button>
+              ) : (
+                <Button variant="ghost" size="sm" disabled className="h-8 w-8 p-0">
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+              )}
+              {nextNoteId ? (
+                <Button variant="ghost" size="sm" asChild className="h-8 w-8 p-0">
                   <Link href={`/notes/${nextNoteId}`}><ChevronRight className="h-4 w-4" /></Link>
-                ) : (
-                  <span><ChevronRight className="h-4 w-4 opacity-30" /></span>
-                )}
-              </Button>
+                </Button>
+              ) : (
+                <Button variant="ghost" size="sm" disabled className="h-8 w-8 p-0">
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              )}
             </div>
           )}
           <Badge
