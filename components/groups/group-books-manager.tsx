@@ -16,8 +16,9 @@ import {
 } from "@/app/actions/groups";
 import { getUserBooksWithNotes } from "@/app/actions/books";
 import { toast } from "sonner";
-import { BookOpen, Plus, Trash2, CheckCircle2, X, Library } from "lucide-react";
+import { BookOpen, Plus, Trash2, CheckCircle2, X, Library, ListPlus } from "lucide-react";
 import { BatchAddBooksDialog } from "./batch-add-books-dialog";
+import { BulkGroupBookRegister } from "./bulk-group-book-register";
 import Image from "next/image";
 import { getImageUrl, isValidImageUrl } from "@/lib/utils/image";
 import { BookStatusBadge } from "@/components/books/book-status-badge";
@@ -51,6 +52,7 @@ export function GroupBooksManager({ groupId, groupName, isLeader }: GroupBooksMa
   const [myBookIds, setMyBookIds] = useState<Set<string>>(new Set());
   const [noteCounts, setNoteCounts] = useState<Record<string, number>>({});
   const [showBatchDialog, setShowBatchDialog] = useState(false);
+  const [showBulkRegister, setShowBulkRegister] = useState(false);
 
   useEffect(() => {
     loadGroupBooks();
@@ -165,10 +167,20 @@ export function GroupBooksManager({ groupId, groupName, isLeader }: GroupBooksMa
               </Button>
             )}
           {isLeader && (
-            <Button onClick={() => setIsAdding(true)} className="shrink-0">
-              <Plus className="mr-2 h-4 w-4" />
-              {t("groups.addBook")}
-            </Button>
+            <>
+              <Button
+                variant="outline"
+                onClick={() => setShowBulkRegister(true)}
+                className="shrink-0"
+              >
+                <ListPlus className="mr-2 h-4 w-4" />
+                {t("groups.bulkDesignatedAdd")}
+              </Button>
+              <Button onClick={() => setIsAdding(true)} className="shrink-0">
+                <Plus className="mr-2 h-4 w-4" />
+                {t("groups.addBook")}
+              </Button>
+            </>
           )}
         </div>
       </div>
@@ -191,6 +203,31 @@ export function GroupBooksManager({ groupId, groupName, isLeader }: GroupBooksMa
               variant="ghost"
               className="mt-4 w-full"
               onClick={() => setIsAdding(false)}
+            >
+              {t("common.cancel")}
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {showBulkRegister && (
+        <Card>
+          <CardHeader>
+            <CardTitle>{t("groups.bulkDesignatedAdd")}</CardTitle>
+            <CardDescription>{t("groups.bulkDesignatedDesc")}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <BulkGroupBookRegister
+              groupId={groupId}
+              onComplete={() => {
+                loadGroupBooks();
+              }}
+              onCancel={() => setShowBulkRegister(false)}
+            />
+            <Button
+              variant="ghost"
+              className="mt-4 w-full"
+              onClick={() => setShowBulkRegister(false)}
             >
               {t("common.cancel")}
             </Button>

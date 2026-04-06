@@ -860,6 +860,122 @@ export async function syncGroupBooksToMember(
 }
 
 /**
+ * 모임에 지정도서 일괄 추가 (리더만 가능)
+ * 여러 책을 한번에 검색 매칭 후 지정도서로 등록
+ */
+export async function addGroupBooks(
+  groupId: string,
+  books: import("@/app/actions/books/_shared").AddBookInput[]
+): Promise<{
+  results: import("@/app/actions/books/_shared").BulkAddResult[];
+  summary: { total: number; added: number; skipped: number; failed: number };
+}> {
+  const { ensureBook } = await import("@/app/actions/books/core");
+  const supabase = await createServerSupabaseClient();
+
+  // 현재 사용자 확인
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    return {
+      results: books.map((b, i) => ({ rowIndex: i, title: b.title, success: false, error: "로그인이 필요합니다." })),
+      summary: { total: books.length, added: 0, skipped: 0, failed: books.length },
+    };
+  }
+
+  // 리더 권한 확인
+  const { data: group, error: groupError } = await supabase
+    .from("groups")
+    .select("leader_id")
+    .eq("id", groupId)
+    .single();
+
+  if (groupError || !group) {
+    return {
+      results: books.map((b, i) => ({ rowIndex: i, title: b.title, success: false, error: "모임을 찾을 수 없습니다." })),
+      summary: { total: books.length, added: 0, skipped: 0, failed: books.length },
+    };
+  }
+
+  if (group.leader_id !== user.id) {
+    return {
+      results: books.map((b, i) => ({ rowIndex: i, title: b.title, success: false, error: "리더만 지정도서를 추가할 수 있습니다." })),
+      summary: { total: books.length, added: 0, skipped: 0, failed: books.length },
+    };
+  }
+
+  // 이미 등록된 지정도서 ISBN/제목 조회 (중복 방지)
+  const { data: existingGroupBooks } = await supabase
+    .from("group_books")
+    .select("book_id, books(isbn, title)")
+    .eq("group_id", groupId);
+
+  const existingBookIds = new Set((existingGroupBooks || []).map((gb) => gb.book_id));
+
+  const results: import("@/app/actions/books/_shared").BulkAddResult[] = [];
+  let added = 0;
+  let skipped = 0;
+  let failed = 0;
+
+  for (let i = 0; i < books.length; i++) {
+    const bookData = books[i];
+    try {
+      // books 테이블에 등록 (없으면 생성)
+      const { bookId } = await ensureBook(bookData);
+
+      // 이미 지정도서로 등록됐는지 확인
+      if (existingBookIds.has(bookId)) {
+        results.push({ rowIndex: i, title: bookData.title, success: false, error: "이미 추가된 지정도서입니다." });
+        skipped++;
+        continue;
+      }
+
+      // group_books에 추가
+      const { error: insertError } = await supabase.from("group_books").insert({
+        group_id: groupId,
+        book_id: bookId,
+      });
+
+      if (insertError) {
+        results.push({ rowIndex: i, title: bookData.title, success: false, error: insertError.message });
+        failed++;
+        continue;
+      }
+
+      // 멤버 동기화 (best-effort)
+      try {
+        await syncGroupBookToAllMembers(groupId, bookId);
+      } catch (err) {
+        // 동기화 실패해도 지정도서 추가는 성공으로 처리
+      }
+
+      existingBookIds.add(bookId);
+      results.push({ rowIndex: i, title: bookData.title, success: true, bookId });
+      added++;
+    } catch (error) {
+      results.push({
+        rowIndex: i,
+        title: bookData.title,
+        success: false,
+        error: error instanceof Error ? error.message : "알 수 없는 오류",
+      });
+      failed++;
+    }
+  }
+
+  revalidatePath(`/groups/${groupId}`);
+  revalidatePath("/bookshelves");
+
+  return {
+    results,
+    summary: { total: books.length, added, skipped, failed },
+  };
+}
+
+/**
  * 멤버 탈퇴/강퇴 시 모임서재 연결 해제 (일반 서재로 전환, 데이터 보존)
  */
 export async function unlinkGroupBookshelf(
