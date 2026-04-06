@@ -5,3 +5,4 @@ export * from './settings';
 export * from './providers';
 export * from './ocr-settings';
 export * from './report';
+export * from './report-template';

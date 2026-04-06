@@ -5,6 +5,12 @@
  */
 
 import type { NoteWithBook } from "@/types/note";
+import type {
+  ReportTemplate,
+  MultiReadingContext,
+  TemplateTone,
+  TargetLength,
+} from "@/types/ai/report-template";
 
 interface BookInfo {
   title: string;
@@ -15,6 +21,15 @@ interface BookInfo {
   readingReason: string | null;
   currentPage: number | null;
   totalPages: number | null;
+  completedDates?: string[];
+}
+
+/** 프롬프트 생성 옵션 */
+export interface ReportPromptOptions {
+  customSystemPrompt?: string;
+  template?: ReportTemplate;
+  multiReadingContext?: MultiReadingContext;
+  maxNotes?: number;
 }
 
 /** 노트 유형 한국어 레이블 */
@@ -94,8 +109,14 @@ function collectTags(notes: NoteWithBook[]): string[] {
   return Array.from(tagSet);
 }
 
-/** 독서 상태 한국어 */
-function statusLabel(status: string): string {
+/** 독서 상태 한국어 (다회독 번호 포함) */
+function statusLabel(status: string, multiReadContext?: MultiReadingContext): string {
+  if (status === "rereading" && multiReadContext) {
+    return `${multiReadContext.currentReadNumber}회독 중`;
+  }
+  if (status === "completed" && multiReadContext && multiReadContext.totalReads > 1) {
+    return `${multiReadContext.totalReads}회독 완독`;
+  }
   const map: Record<string, string> = {
     reading: "읽는 중",
     completed: "완독",
@@ -106,37 +127,100 @@ function statusLabel(status: string): string {
   return map[status] || status;
 }
 
+/** 톤별 지시문 */
+function toneInstruction(tone: TemplateTone): string {
+  const map: Record<TemplateTone, string> = {
+    formal: "격식 있고 정중한 어조로 작성하세요.",
+    casual: "친근하고 가벼운 말투로 작성하세요. 이모지 사용 가능.",
+    academic: "학술 분석 형식으로 근거를 들어 체계적으로 작성하세요.",
+    friendly: "따뜻하고 공감가는 어투로 작성하세요.",
+  };
+  return map[tone] || "";
+}
+
+/** 길이별 지시문 */
+function lengthInstruction(length: TargetLength): string {
+  const map: Record<TargetLength, string> = {
+    short: "각 섹션을 간결하게 3~5문장 이내로 작성하세요.",
+    medium: "",
+    long: "각 섹션을 풍부하고 상세하게 작성하세요.",
+  };
+  return map[length] || "";
+}
+
+/** 다회독 노트를 회독별로 포맷팅 */
+function formatNotesByReading(
+  notesByReading: Map<number, NoteWithBook[]>
+): string {
+  const sections: string[] = [];
+
+  for (const [readingNum, notes] of notesByReading) {
+    if (notes.length === 0) continue;
+    sections.push(`### ${readingNum}회독 기록 (${notes.length}개)`);
+    sections.push(formatNotesByType(notes));
+  }
+
+  return sections.join("\n\n");
+}
+
+/** 다회독 메타데이터 블록 생성 */
+function formatMultiReadingInfo(context: MultiReadingContext): string {
+  const lines = [
+    `## 다회독 정보`,
+    `- **총 회독 수**: ${context.totalReads}회`,
+    `- **현재**: ${context.currentReadNumber}회독`,
+  ];
+
+  for (const cycle of context.readingCycles) {
+    const start = cycle.startDate || "미기록";
+    const end = cycle.endDate || "진행 중";
+    lines.push(`- **${cycle.readingNumber}회독**: ${start} ~ ${end} (기록 ${cycle.noteCount}개)`);
+  }
+
+  return lines.join("\n");
+}
+
 /**
- * 리포트 생성 프롬프트 조합
+ * 리포트 생성 프롬프트 조합 (레거시 호환)
  * @param book 책 정보
- * @param notes 노트 목록 (최대 50개로 제한)
- * @param customSystemPrompt 사용자 정의 시스템 프롬프트 (있을 경우)
+ * @param notes 노트 목록
+ * @param options 시스템 프롬프트 문자열 또는 옵션 객체
  */
 export function generateReportPrompt(
   book: BookInfo,
   notes: NoteWithBook[],
-  customSystemPrompt?: string
+  options?: string | ReportPromptOptions
 ): string {
-  // 토큰 절약: 최근 50개 노트로 제한
-  const limitedNotes = notes.length > 50
-    ? notes.slice(-50)
-    : notes;
+  // 레거시 호환: string이면 customSystemPrompt로 처리
+  const opts: ReportPromptOptions =
+    typeof options === "string" ? { customSystemPrompt: options } : options || {};
 
-  const tags = collectTags(limitedNotes);
-
-  // 진행률 계산 (완독 시 100% 표시)
-  let progressStr: string;
-  if (book.status === "completed") {
-    progressStr = book.totalPages
-      ? `${book.totalPages}/${book.totalPages}쪽 (100% 완독)`
-      : "100% 완독";
-  } else if (book.totalPages && book.currentPage) {
-    progressStr = `${book.currentPage}/${book.totalPages}쪽 (${Math.round((book.currentPage / book.totalPages) * 100)}%)`;
-  } else {
-    progressStr = "정보 없음";
+  // 템플릿이 있으면 템플릿 기반 생성
+  if (opts.template) {
+    return generateReportPromptFromTemplate(book, notes, opts);
   }
 
-  const systemPart = customSystemPrompt || "";
+  const maxNotes = opts.maxNotes || 50;
+  const limitedNotes = notes.length > maxNotes ? notes.slice(-maxNotes) : notes;
+  const tags = collectTags(limitedNotes);
+  const progressStr = formatProgress(book);
+  const systemPart = opts.customSystemPrompt || "";
+  const multiCtx = opts.multiReadingContext;
+
+  // 다회독 추가 섹션
+  const multiReadingSections = multiCtx && multiCtx.totalReads > 1 ? `
+
+### 7. 독서 성장 분석
+- 1회독과 최근 회독을 비교하여 독서 관점의 변화 분석
+- 주목하는 주제, 감정적 반응, 이해 깊이의 변화 관찰
+- 재독을 통해 얻은 새로운 인사이트
+
+### 8. 회독별 비교
+- 각 회독에서 주로 기록한 노트 유형과 주제 비교
+- 시간 경과에 따른 독자의 성장 포인트
+- 동일 구절에 대한 다른 반응이 있다면 강조` : "";
+
+  const sectionCount = multiCtx && multiCtx.totalReads > 1 ? 8 : 6;
 
   return `${systemPart}
 
@@ -147,13 +231,15 @@ export function generateReportPrompt(
 ## 책 정보
 - **제목**: ${book.title}
 - **저자**: ${book.author || "미상"}
-- **독서 상태**: ${statusLabel(book.status)}
+- **독서 상태**: ${statusLabel(book.status, multiCtx)}
 - **시작일**: ${book.startedAt || "미기록"}
 - **완독일**: ${book.completedAt || "미완독"}
 - **진행률**: ${progressStr}
 ${book.readingReason ? `- **읽는 이유**: ${book.readingReason}` : ""}
 
-## 독서 노트 (총 ${notes.length}개${notes.length > 50 ? `, 최근 50개 분석` : ""})
+${multiCtx && multiCtx.totalReads > 1 ? formatMultiReadingInfo(multiCtx) : ""}
+
+## 독서 노트 (총 ${notes.length}개${notes.length > maxNotes ? `, 최근 ${maxNotes}개 분석` : ""})
 
 ${formatNotesByType(limitedNotes)}
 
@@ -163,7 +249,7 @@ ${tags.length > 0 ? `## 사용된 태그\n${tags.join(", ")}` : ""}
 
 ## 리포트 작성 지침
 
-다음 6개 섹션으로 구성된 리포트를 작성해주세요:
+다음 ${sectionCount}개 섹션으로 구성된 리포트를 작성해주세요:
 
 ### 1. 책 개요
 - 책의 기본 정보와 독서 기간을 정리
@@ -190,6 +276,92 @@ ${tags.length > 0 ? `## 사용된 태그\n${tags.join(", ")}` : ""}
 
 ### 6. 종합 요약
 - 이 책이 독자에게 준 핵심 가치를 2~3문장으로 정리
+${multiReadingSections}
+
+각 섹션은 ## 헤딩으로 시작하세요. 마크다운 형식을 활용하되 읽기 쉽게 작성하세요.`;
+}
+
+/** 진행률 문자열 생성 */
+function formatProgress(book: BookInfo): string {
+  if (book.status === "completed") {
+    return book.totalPages
+      ? `${book.totalPages}/${book.totalPages}쪽 (100% 완독)`
+      : "100% 완독";
+  }
+  if (book.totalPages && book.currentPage) {
+    return `${book.currentPage}/${book.totalPages}쪽 (${Math.round((book.currentPage / book.totalPages) * 100)}%)`;
+  }
+  return "정보 없음";
+}
+
+/**
+ * 템플릿 기반 리포트 프롬프트 생성
+ */
+export function generateReportPromptFromTemplate(
+  book: BookInfo,
+  notes: NoteWithBook[],
+  opts: ReportPromptOptions
+): string {
+  const template = opts.template!;
+  const multiCtx = opts.multiReadingContext;
+  const maxNotes = opts.maxNotes || 50;
+
+  const limitedNotes = notes.length > maxNotes ? notes.slice(-maxNotes) : notes;
+  const tags = collectTags(limitedNotes);
+  const progressStr = formatProgress(book);
+  const systemPart = opts.customSystemPrompt || "";
+
+  // 활성 섹션만 정렬
+  const activeSections = template.sections
+    .filter((s) => s.required || true) // 모든 섹션 포함, AI가 판단
+    .sort((a, b) => a.sortOrder - b.sortOrder);
+
+  // 섹션 지시문 생성
+  const sectionInstructions = activeSections
+    .map((s, i) => {
+      const lengthHint = s.maxLength ? ` (${s.maxLength}자 이내)` : "";
+      const requiredHint = s.required ? "" : "\n- 노트 내용에 따라 포함 여부를 판단하세요";
+      return `### ${i + 1}. ${s.title}${lengthHint}
+- ${s.promptInstruction}${requiredHint}`;
+    })
+    .join("\n\n");
+
+  // 톤/길이 지시문
+  const toneStr = toneInstruction(template.tone);
+  const lengthStr = lengthInstruction(template.targetLength);
+  const styleInstructions = [toneStr, lengthStr].filter(Boolean).join("\n");
+
+  return `${systemPart}
+
+아래 독서 데이터를 분석하여 마크다운 형식의 독서 리포트를 작성해주세요.
+${styleInstructions ? `\n**작성 스타일**: ${styleInstructions}` : ""}
+
+---
+
+## 책 정보
+- **제목**: ${book.title}
+- **저자**: ${book.author || "미상"}
+- **독서 상태**: ${statusLabel(book.status, multiCtx)}
+- **시작일**: ${book.startedAt || "미기록"}
+- **완독일**: ${book.completedAt || "미완독"}
+- **진행률**: ${progressStr}
+${book.readingReason ? `- **읽는 이유**: ${book.readingReason}` : ""}
+
+${multiCtx && multiCtx.totalReads > 1 ? formatMultiReadingInfo(multiCtx) : ""}
+
+## 독서 노트 (총 ${notes.length}개${notes.length > maxNotes ? `, 최근 ${maxNotes}개 분석` : ""})
+
+${formatNotesByType(limitedNotes)}
+
+${tags.length > 0 ? `## 사용된 태그\n${tags.join(", ")}` : ""}
+
+---
+
+## 리포트 작성 지침
+
+다음 ${activeSections.length}개 섹션으로 구성된 리포트를 작성해주세요:
+
+${sectionInstructions}
 
 각 섹션은 ## 헤딩으로 시작하세요. 마크다운 형식을 활용하되 읽기 쉽게 작성하세요.`;
 }

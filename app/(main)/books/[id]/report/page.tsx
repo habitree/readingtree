@@ -4,6 +4,7 @@ import { getBookDetail } from "@/app/actions/books";
 import { getNotes } from "@/app/actions/notes";
 import { getSavedReport } from "@/app/actions/ai/report";
 import { ReadingReportContent } from "@/components/books/reading-report-content";
+import { parseCompletedDates } from "@/lib/utils/multi-reading";
 import type { Metadata } from "next";
 import type { BookInfoForReport, NoteSummary } from "@/types/ai/report";
 
@@ -78,6 +79,12 @@ export default async function ReportPage({ params, searchParams }: ReportPagePro
         }
       : undefined;
 
+  // 다회독 횟수
+  const completedDates = parseCompletedDates(
+    (bookDetail as Record<string, unknown>).completed_dates
+  );
+  const completedCount = completedDates.length;
+
   return (
     <ReadingReportContent
       userBookId={userBookId}
@@ -86,6 +93,7 @@ export default async function ReportPage({ params, searchParams }: ReportPagePro
       bookInfo={bookInfo}
       noteSummaries={noteSummaries}
       initialSavedReport={initialSavedReport}
+      completedCount={completedCount}
     />
   );
 }

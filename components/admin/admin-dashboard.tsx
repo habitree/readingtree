@@ -3,7 +3,7 @@
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { AdminStatsCard } from "./admin-stats-card";
 import { BatchOCRButton } from "./batch-ocr-button";
-import { Users, BookOpen, FileText, LayoutGrid, Clock, UserPlus, Settings, Zap, TrendingUp, ScanLine, CheckCircle2, XCircle, Bot, ScanText, BarChart3, Globe } from "lucide-react";
+import { Users, BookOpen, FileText, LayoutGrid, Clock, UserPlus, Settings, Zap, TrendingUp, ScanLine, CheckCircle2, XCircle, Bot, ScanText, BarChart3, Globe, ScrollText } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { formatDistanceToNow } from "date-fns";
@@ -58,6 +58,13 @@ export function AdminDashboard({ stats, growth, activity, ocrMonthlyUsage, ocrTo
                     >
                         <ScanText className="h-4 w-4" />
                         {t("admin.dashboard.ocrCorrection")}
+                    </Link>
+                    <Link
+                        href="/admin/report-settings"
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors font-medium text-sm"
+                    >
+                        <ScrollText className="h-4 w-4" />
+                        리포트 설정
                     </Link>
                     <Link
                         href="/admin/ai-usage"

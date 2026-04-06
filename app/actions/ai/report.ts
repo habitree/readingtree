@@ -7,23 +7,37 @@
 import { getCurrentUser } from "../auth";
 import { getBookDetail } from "../books";
 import { getNotes } from "../notes";
-import { getReportSettingsForGeneration } from "./report-settings";
+import { getReportSettingsForGeneration, getReportSettingsExtended } from "./report-settings";
+import { getReportTemplate, getDefaultTemplate } from "./report-templates";
 import { generateReportPrompt } from "@/lib/ai/prompts/report-prompts";
+import type { ReportPromptOptions } from "@/lib/ai/prompts/report-prompts";
 import { generateText } from "@/lib/ai/providers";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import type { ReadingReportResult, SavedReport, BookInfoForReport, PublicNoteSummary } from "@/types/ai";
+import type { MultiReadingContext } from "@/types/ai/report-template";
 import { checkFeatureAccess } from "../subscription";
+import {
+  parseCompletedDates,
+  getReadingCycles,
+  isMultiReading,
+  assignNotesToReadings,
+  limitNotesByReading,
+} from "@/lib/utils/multi-reading";
 
-const MIN_NOTES_FOR_REPORT = 3;
+const DEFAULT_MIN_NOTES = 3;
 
 /**
  * AI 독서 리포트 생성
  * @param userBookId user_books.id
+ * @param templateId 선택적 템플릿 ID
  */
 export async function generateReadingReport(
-  userBookId: string
+  userBookId: string,
+  templateId?: string
 ): Promise<ReadingReportResult> {
+  const startTime = Date.now();
+
   try {
     // 1. 인증 확인
     const user = await getCurrentUser();
@@ -48,46 +62,109 @@ export async function generateReadingReport(
 
     const book = bookDetail.books as Record<string, unknown>;
 
-    // 3. 노트 조회
+    // 3. 확장 설정 조회
+    const extSettings = await getReportSettingsExtended();
+    const settings = await getReportSettingsForGeneration();
+    const minNotes = extSettings?.minNotesThreshold ?? DEFAULT_MIN_NOTES;
+    const maxNotes = extSettings?.maxNotesForAnalysis ?? 50;
+
+    // 4. 노트 조회
     const notes = await getNotes(userBookId, undefined, user, false);
-    if (notes.length < MIN_NOTES_FOR_REPORT) {
+    if (notes.length < minNotes) {
       return {
         success: false,
-        error: `리포트를 생성하려면 최소 ${MIN_NOTES_FOR_REPORT}개의 기록이 필요합니다. (현재 ${notes.length}개)`,
+        error: `리포트를 생성하려면 최소 ${minNotes}개의 기록이 필요합니다. (현재 ${notes.length}개)`,
       };
     }
 
-    // 4. AI 설정 조회
-    const settings = await getReportSettingsForGeneration();
+    // 5. 템플릿 로드
+    let template = templateId ? await getReportTemplate(templateId) : null;
+    if (!template && extSettings?.defaultTemplateId) {
+      template = await getReportTemplate(extSettings.defaultTemplateId);
+    }
+    if (!template) {
+      template = await getDefaultTemplate();
+    }
 
-    // 5. 프롬프트 생성
+    // 6. 다회독 컨텍스트 구성
+    const completedDates = parseCompletedDates(
+      (bookDetail as Record<string, unknown>).completed_dates
+    );
+    const status = bookDetail.status as string;
+    const enableMultiReading = extSettings?.enableMultiReading ?? false;
+
+    let multiReadingContext: MultiReadingContext | undefined;
+    if (enableMultiReading && isMultiReading(completedDates, status)) {
+      const cycles = getReadingCycles(completedDates, bookDetail.started_at);
+
+      // 현재 진행 중인 회독 추가 (rereading 상태)
+      const allCycles = [...cycles];
+      if (status === "rereading") {
+        const lastEnd = cycles.length > 0 ? cycles[cycles.length - 1].endDate : null;
+        allCycles.push({
+          readingNumber: cycles.length + 1,
+          startDate: lastEnd,
+          endDate: null,
+        });
+      }
+
+      const notesByReading = assignNotesToReadings(notes, allCycles);
+      const limited = limitNotesByReading(notesByReading, maxNotes);
+
+      multiReadingContext = {
+        totalReads: allCycles.length,
+        currentReadNumber: allCycles.length,
+        readingCycles: allCycles.map((c) => ({
+          ...c,
+          noteCount: limited.get(c.readingNumber)?.length ?? 0,
+        })),
+      };
+    }
+
+    // 7. 프롬프트 생성
+    const promptOptions: ReportPromptOptions = {
+      customSystemPrompt: settings.systemPrompt || undefined,
+      template: template || undefined,
+      multiReadingContext,
+      maxNotes,
+    };
+
     const prompt = generateReportPrompt(
       {
         title: book.title as string,
         author: (book.author as string | null) ?? null,
-        status: bookDetail.status as string,
+        status,
         startedAt: bookDetail.started_at,
         completedAt: bookDetail.completed_at ?? null,
         readingReason: bookDetail.reading_reason,
         currentPage: (bookDetail as Record<string, unknown>).current_page as number | null,
         totalPages: (book.total_pages as number | null) ?? null,
+        completedDates,
       },
       notes,
-      settings.systemPrompt || undefined
+      promptOptions
     );
 
-    // 6. AI 호출
+    // 8. AI 호출
+    const maxTokens = multiReadingContext
+      ? Math.max(settings.maxOutputTokens, 5000)
+      : settings.maxOutputTokens;
+
     const reportMarkdown = await generateText(settings.provider, prompt, {
       model: settings.modelId,
       temperature: settings.temperature,
-      maxTokens: settings.maxOutputTokens,
+      maxTokens,
     });
+
+    const generationTimeMs = Date.now() - startTime;
 
     return {
       success: true,
       report: reportMarkdown,
       noteCount: notes.length,
       generatedAt: new Date().toISOString(),
+      templateId: template?.id,
+      generationTimeMs,
     };
   } catch (error) {
     console.error("리포트 생성 실패:", error);
@@ -107,7 +184,8 @@ export async function saveReadingReport(
   reportMarkdown: string,
   bookInfo: BookInfoForReport,
   noteCount: number,
-  noteIds: string[]
+  noteIds: string[],
+  extra?: { templateId?: string; generationTimeMs?: number }
 ): Promise<{ success: boolean; shareId?: string; error?: string }> {
   try {
     const user = await getCurrentUser();
@@ -127,42 +205,50 @@ export async function saveReadingReport(
 
     if (existing) {
       // UPDATE: share_id 유지하면서 내용 갱신
+      const updateData: Record<string, unknown> = {
+        report_markdown: reportMarkdown,
+        note_count: noteCount,
+        note_ids: noteIds,
+        book_title: bookInfo.title,
+        book_author: bookInfo.author,
+        cover_image_url: bookInfo.coverImageUrl,
+        started_at: bookInfo.startedAt,
+        completed_at: bookInfo.completedAt,
+        current_page: bookInfo.currentPage,
+        total_pages: bookInfo.totalPages,
+      };
+      if (extra?.templateId) updateData.template_id = extra.templateId;
+      if (extra?.generationTimeMs) updateData.generation_time_ms = extra.generationTimeMs;
+
       const { error } = await supabase
         .from("ai_generated_reports")
-        .update({
-          report_markdown: reportMarkdown,
-          note_count: noteCount,
-          note_ids: noteIds,
-          book_title: bookInfo.title,
-          book_author: bookInfo.author,
-          cover_image_url: bookInfo.coverImageUrl,
-          started_at: bookInfo.startedAt,
-          completed_at: bookInfo.completedAt,
-          current_page: bookInfo.currentPage,
-          total_pages: bookInfo.totalPages,
-        })
+        .update(updateData)
         .eq("id", existing.id);
 
       if (error) throw error;
       return { success: true, shareId: existing.share_id };
     } else {
       // INSERT
+      const insertData: Record<string, unknown> = {
+        user_id: user.id,
+        user_book_id: userBookId,
+        report_markdown: reportMarkdown,
+        note_count: noteCount,
+        note_ids: noteIds,
+        book_title: bookInfo.title,
+        book_author: bookInfo.author,
+        cover_image_url: bookInfo.coverImageUrl,
+        started_at: bookInfo.startedAt,
+        completed_at: bookInfo.completedAt,
+        current_page: bookInfo.currentPage,
+        total_pages: bookInfo.totalPages,
+      };
+      if (extra?.templateId) insertData.template_id = extra.templateId;
+      if (extra?.generationTimeMs) insertData.generation_time_ms = extra.generationTimeMs;
+
       const { data, error } = await supabase
         .from("ai_generated_reports")
-        .insert({
-          user_id: user.id,
-          user_book_id: userBookId,
-          report_markdown: reportMarkdown,
-          note_count: noteCount,
-          note_ids: noteIds,
-          book_title: bookInfo.title,
-          book_author: bookInfo.author,
-          cover_image_url: bookInfo.coverImageUrl,
-          started_at: bookInfo.startedAt,
-          completed_at: bookInfo.completedAt,
-          current_page: bookInfo.currentPage,
-          total_pages: bookInfo.totalPages,
-        })
+        .insert(insertData)
         .select("share_id")
         .single();
 

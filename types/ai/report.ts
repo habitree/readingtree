@@ -37,6 +37,8 @@ export interface ReadingReportResult {
   noteCount?: number;
   generatedAt?: string;
   error?: string;
+  templateId?: string;
+  generationTimeMs?: number;
 }
 
 /** 리포트 설정 폼 데이터 */

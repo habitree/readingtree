@@ -16,6 +16,13 @@ import {
   Clock,
   StickyNote,
   CheckCircle2,
+  MessageSquare,
+  CheckSquare,
+  GitCompare,
+  TrendingUp,
+  Share2,
+  Network,
+  BookMarked,
 } from "lucide-react";
 import Link from "next/link";
 import ReactMarkdown from "react-markdown";
@@ -44,6 +51,12 @@ const ICON_MAP: Record<string, ComponentType<{ className?: string }>> = {
   Route,
   Sparkles,
   FileText,
+  MessageSquare,
+  CheckSquare,
+  GitCompare,
+  TrendingUp,
+  Share2,
+  Network,
 };
 
 /** 노트 타입별 한글 라벨 */
@@ -79,6 +92,7 @@ interface ReadingReportContentProps {
   bookInfo?: BookInfoForReport;
   noteSummaries?: NoteSummary[];
   initialSavedReport?: InitialSavedReport;
+  completedCount?: number;
 }
 
 export function ReadingReportContent({
@@ -88,6 +102,7 @@ export function ReadingReportContent({
   bookInfo,
   noteSummaries,
   initialSavedReport,
+  completedCount = 0,
 }: ReadingReportContentProps) {
   const { t } = useTranslation();
   const { showUpgradeModal } = useUpgradeModal();
@@ -200,6 +215,12 @@ export function ReadingReportContent({
                     <StickyNote className="h-3 w-3" />
                     {t("books.aiReportBasedOn", { count: result.noteCount ?? noteCount })}
                   </span>
+                  {completedCount > 1 && (
+                    <span className="flex items-center gap-1 bg-indigo-100/80 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 px-2 py-0.5 rounded-full">
+                      <BookMarked className="h-3 w-3" />
+                      {completedCount}회독
+                    </span>
+                  )}
                   {initialSavedReport && (
                     <span className="flex items-center gap-1 bg-amber-100/80 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 px-2 py-0.5 rounded-full">
                       <CheckCircle2 className="h-3 w-3" />

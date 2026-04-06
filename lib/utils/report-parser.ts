@@ -4,6 +4,8 @@
  */
 
 import type { ReportSection } from "@/types/ai/report";
+import type { ReportTemplateSectionConfig } from "@/types/ai/report-template";
+import { SECTION_TYPE_REGISTRY, inferSectionType } from "@/lib/ai/report-section-registry";
 
 /** 어스 톤 컬러 정의 */
 export const EARTH_TONE_COLORS: Record<
@@ -45,6 +47,42 @@ export const EARTH_TONE_COLORS: Record<
     border: "border-green-200/60 dark:border-green-700/40",
     iconBg: "bg-green-100 dark:bg-green-800",
     iconColor: "text-green-600 dark:text-green-300",
+  },
+  violet: {
+    bg: "bg-violet-50/80 dark:bg-violet-900/20",
+    border: "border-violet-200/60 dark:border-violet-700/40",
+    iconBg: "bg-violet-100 dark:bg-violet-800",
+    iconColor: "text-violet-600 dark:text-violet-300",
+  },
+  blue: {
+    bg: "bg-blue-50/80 dark:bg-blue-900/20",
+    border: "border-blue-200/60 dark:border-blue-700/40",
+    iconBg: "bg-blue-100 dark:bg-blue-800",
+    iconColor: "text-blue-600 dark:text-blue-300",
+  },
+  indigo: {
+    bg: "bg-indigo-50/80 dark:bg-indigo-900/20",
+    border: "border-indigo-200/60 dark:border-indigo-700/40",
+    iconBg: "bg-indigo-100 dark:bg-indigo-800",
+    iconColor: "text-indigo-600 dark:text-indigo-300",
+  },
+  teal: {
+    bg: "bg-teal-50/80 dark:bg-teal-900/20",
+    border: "border-teal-200/60 dark:border-teal-700/40",
+    iconBg: "bg-teal-100 dark:bg-teal-800",
+    iconColor: "text-teal-600 dark:text-teal-300",
+  },
+  pink: {
+    bg: "bg-pink-50/80 dark:bg-pink-900/20",
+    border: "border-pink-200/60 dark:border-pink-700/40",
+    iconBg: "bg-pink-100 dark:bg-pink-800",
+    iconColor: "text-pink-600 dark:text-pink-300",
+  },
+  cyan: {
+    bg: "bg-cyan-50/80 dark:bg-cyan-900/20",
+    border: "border-cyan-200/60 dark:border-cyan-700/40",
+    iconBg: "bg-cyan-100 dark:bg-cyan-800",
+    iconColor: "text-cyan-600 dark:text-cyan-300",
   },
 };
 
@@ -97,6 +135,48 @@ const SECTION_MATCHERS: {
     icon: "Sparkles",
     colorTheme: "green",
     gridClass: "",
+  },
+  {
+    keywords: ["토론", "질문", "discussion", "debate"],
+    id: "discussion",
+    icon: "MessageSquare",
+    colorTheme: "violet",
+    gridClass: "sm:col-span-2",
+  },
+  {
+    keywords: ["실천", "action", "항목", "계획"],
+    id: "action-items",
+    icon: "CheckSquare",
+    colorTheme: "blue",
+    gridClass: "",
+  },
+  {
+    keywords: ["비교", "comparison", "회독", "차이"],
+    id: "per-read-comparison",
+    icon: "GitCompare",
+    colorTheme: "indigo",
+    gridClass: "sm:col-span-2",
+  },
+  {
+    keywords: ["성장", "growth", "변화", "발전"],
+    id: "reading-growth",
+    icon: "TrendingUp",
+    colorTheme: "teal",
+    gridClass: "",
+  },
+  {
+    keywords: ["SNS", "한줄", "공유", "서평"],
+    id: "social-snippet",
+    icon: "Share2",
+    colorTheme: "pink",
+    gridClass: "",
+  },
+  {
+    keywords: ["개념", "concept", "관계", "구조"],
+    id: "concept-map",
+    icon: "Network",
+    colorTheme: "cyan",
+    gridClass: "sm:col-span-2",
   },
 ];
 
@@ -167,5 +247,84 @@ export function parseReportSections(markdown: string): ReportSection[] {
   // 마지막 섹션 flush
   flushSection();
 
+  return sections;
+}
+
+/**
+ * 템플릿 기반 마크다운 파싱
+ * 템플릿의 섹션 정보를 활용하여 더 정확한 매칭
+ */
+export function parseReportSectionsWithTemplate(
+  markdown: string,
+  templateSections: ReportTemplateSectionConfig[]
+): ReportSection[] {
+  const lines = markdown.split("\n");
+  const sections: ReportSection[] = [];
+  let currentTitle = "";
+  let currentContent: string[] = [];
+  const usedKeys = new Set<string>();
+
+  const flushSection = () => {
+    if (!currentTitle) return;
+    const content = currentContent.join("\n").trim();
+    if (!content) return;
+
+    const titleLower = currentTitle.toLowerCase();
+
+    // 1차: 템플릿 섹션 타이틀 매칭
+    let matchedConfig: ReportTemplateSectionConfig | undefined;
+    for (const sec of templateSections) {
+      if (!usedKeys.has(sec.key) && titleLower.includes(sec.title.toLowerCase())) {
+        matchedConfig = sec;
+        break;
+      }
+    }
+
+    // 2차: 레지스트리 키워드로 추론
+    if (!matchedConfig) {
+      const inferred = inferSectionType(currentTitle);
+      if (inferred && !usedKeys.has(inferred)) {
+        matchedConfig = templateSections.find((s) => s.key === inferred && !usedKeys.has(s.key));
+      }
+    }
+
+    // 3차: 순서 기반 fallback
+    if (!matchedConfig) {
+      matchedConfig = templateSections.find((s) => !usedKeys.has(s.key));
+    }
+
+    if (matchedConfig) {
+      usedKeys.add(matchedConfig.key);
+      const display = SECTION_TYPE_REGISTRY[matchedConfig.key];
+      sections.push({
+        id: matchedConfig.key,
+        title: currentTitle,
+        content,
+        icon: display?.icon || "FileText",
+        colorTheme: display?.colorTheme || "stone",
+      });
+    } else {
+      sections.push({
+        id: `section-${sections.length}`,
+        title: currentTitle,
+        content,
+        icon: "FileText",
+        colorTheme: "stone",
+      });
+    }
+  };
+
+  for (const line of lines) {
+    const headingMatch = line.match(/^##\s+(.+)$/);
+    if (headingMatch) {
+      flushSection();
+      currentTitle = headingMatch[1].trim();
+      currentContent = [];
+    } else {
+      currentContent.push(line);
+    }
+  }
+
+  flushSection();
   return sections;
 }
