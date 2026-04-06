@@ -24,52 +24,61 @@ const typeIcons = {
 
 /**
  * 타임라인 아이템 컴포넌트
- * 심플한 표지 + 내용 레이아웃
+ * NoteCard와 동일한 고정 높이 레이아웃
  */
 export function TimelineItem({ note }: TimelineItemProps) {
   const Icon = typeIcons[note.type];
   const pageNumber = parsePageNumber(note.page_number);
+  const isProgressType = note.type === "progress";
 
   const bookData = (note as unknown as Record<string, unknown>).books || note.book;
   const book = Array.isArray(bookData) ? bookData[0] : bookData;
   const bookCoverImage = (book as Record<string, unknown> | null)?.cover_image_url as string | undefined;
   const hasBookCover = bookCoverImage && isValidImageUrl(bookCoverImage);
+  const bookTitle = book && typeof (book as Record<string, unknown>).title === "string"
+    ? String((book as Record<string, unknown>).title)
+    : null;
+
+  const displayTitle = isProgressType ? bookTitle : (note.title || bookTitle);
 
   return (
     <Link href={`/notes/${note.id}`} className="block">
       <Card className="hover:shadow-md transition-shadow cursor-pointer overflow-hidden border-border/40">
-        <CardContent className="p-3 sm:p-4">
-          <div className="flex gap-3">
-            {/* 표지 */}
-            <div className="shrink-0 w-14 sm:w-16 aspect-[3/4] rounded-lg overflow-hidden bg-muted/40">
-              {hasBookCover ? (
-                <Image
-                  src={getImageUrl(bookCoverImage!)}
-                  alt={(book as Record<string, unknown>)?.title as string || ""}
-                  width={64}
-                  height={88}
-                  className="object-cover w-full h-full"
-                />
-              ) : note.image_url ? (
-                <Image
-                  src={getImageUrl(note.image_url)}
-                  alt={note.type}
-                  width={64}
-                  height={88}
-                  className="object-cover w-full h-full"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center">
-                  <BookOpen className="h-5 w-5 text-muted-foreground/30" />
-                </div>
-              )}
+        <CardContent className="p-0">
+          <div className="flex h-[104px] sm:h-[112px]">
+            {/* 좌측: 표지 (고정 비율) */}
+            <div className="shrink-0 w-[78px] sm:w-[84px]">
+              <div className="relative w-full h-full overflow-hidden rounded-l-lg">
+                {hasBookCover ? (
+                  <Image
+                    src={getImageUrl(bookCoverImage!)}
+                    alt={bookTitle || ""}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 640px) 78px, 84px"
+                  />
+                ) : note.image_url ? (
+                  <Image
+                    src={getImageUrl(note.image_url)}
+                    alt={note.type}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 640px) 78px, 84px"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-muted/40">
+                    <BookOpen className="h-5 w-5 text-muted-foreground/30" />
+                  </div>
+                )}
+              </div>
             </div>
 
-            {/* 내용 */}
-            <div className="flex-1 min-w-0 flex flex-col gap-1">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                  <Icon className="h-3.5 w-3.5" />
+            {/* 우측: 내용 */}
+            <div className="flex-1 min-w-0 p-2.5 sm:p-3 flex flex-col">
+              {/* 상단: 타입 아이콘 + 메타 */}
+              <div className="flex items-center justify-between gap-1.5 mb-1">
+                <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground min-w-0">
+                  <Icon className="h-3 w-3 shrink-0" />
                   {pageNumber && (
                     <>
                       <span className="text-muted-foreground/40">&middot;</span>
@@ -77,19 +86,21 @@ export function TimelineItem({ note }: TimelineItemProps) {
                     </>
                   )}
                 </div>
-                <time className="text-[10px] text-muted-foreground/60" suppressHydrationWarning>
+                <time className="text-[10px] text-muted-foreground/50 shrink-0" suppressHydrationWarning>
                   {formatSmartDate(note.created_at)}
                 </time>
               </div>
 
-              {book && typeof (book as Record<string, unknown>).title === "string" && (
-                <p className="text-sm font-medium line-clamp-1 text-foreground/90">
-                  {String((book as Record<string, unknown>).title)}
+              {/* 제목 (1줄) */}
+              {displayTitle && (
+                <p className="text-[13px] sm:text-sm font-medium line-clamp-1 text-foreground/90 mb-0.5">
+                  {displayTitle}
                 </p>
               )}
 
-              <div className="flex-1">
-                <NoteContentViewer content={note.content} pageNumber={null} maxLength={80} compact />
+              {/* 내용 미리보기 */}
+              <div className="flex-1 min-h-0 overflow-hidden">
+                <NoteContentViewer content={note.content} pageNumber={null} maxLength={70} compact />
               </div>
             </div>
           </div>
