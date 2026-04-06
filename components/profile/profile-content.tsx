@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { formatSmartDate } from "@/lib/utils/date";
 import { useTranslation } from "@/lib/i18n";
+import { Progress } from "@/components/ui/progress";
 import { User, AlertCircle, RefreshCw, BookHeart, Quote, Eye, EyeOff } from "lucide-react";
 
 interface ProfileContentProps {
@@ -45,8 +46,36 @@ export function ProfileContent({ initialProfile }: ProfileContentProps) {
     );
   }
 
+  // 프로필 완성도 계산
+  const profileFields = [
+    { filled: !!initialProfile.name, label: t("profile.nameLabel") },
+    { filled: !!initialProfile.bio, label: t("profile.bioLabel") },
+    { filled: !!initialProfile.avatar_url, label: "프로필 사진" },
+    { filled: !!initialProfile.favorite_book, label: t("profile.favoriteBookLabel") },
+    { filled: !!initialProfile.favorite_quote, label: t("profile.favoriteQuoteLabel") },
+  ];
+  const filledCount = profileFields.filter(f => f.filled).length;
+  const completionPercent = Math.round((filledCount / profileFields.length) * 100);
+  const unfilledFields = profileFields.filter(f => !f.filled);
+
   return (
     <div className="space-y-6">
+      {/* 프로필 완성도 (100% 미만일 때만 표시) */}
+      {completionPercent < 100 && (
+        <Card className="border-primary/20 bg-primary/5">
+          <CardContent className="pt-5 pb-4">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-sm font-medium">프로필 완성도</p>
+              <span className="text-sm font-bold text-primary">{completionPercent}%</span>
+            </div>
+            <Progress value={completionPercent} className="h-2 mb-2" />
+            <p className="text-xs text-muted-foreground">
+              {unfilledFields.map(f => f.label).join(", ")} 항목을 채워보세요
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
       {/* 프로필 요약 */}
       <Card>
         <CardHeader>

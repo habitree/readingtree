@@ -290,6 +290,7 @@ export function useNoteForm(options: UseNoteFormOptions): UseNoteFormReturn {
         : undefined;
 
       let createdCount = 0;
+      let lastPointsEarned = 0;
 
       // 공통 노트 데이터
       const commonNoteData = {
@@ -316,6 +317,7 @@ export function useNoteForm(options: UseNoteFormOptions): UseNoteFormReturn {
           });
 
           createdCount++;
+          lastPointsEarned = result.pointsEarned ?? 0;
 
           // transcription 타입이면 OCR 처리 요청
           if (noteType === "transcription" && result.noteId) {
@@ -324,18 +326,20 @@ export function useNoteForm(options: UseNoteFormOptions): UseNoteFormReturn {
         }
       } else {
         // 이미지가 없는 경우: 텍스트 기록만 생성
-        await createNote({
+        const result = await createNote({
           ...commonNoteData,
           upload_type: currentUploadType || undefined,
         });
         createdCount++;
+        lastPointsEarned = result.pointsEarned ?? 0;
       }
 
-      // 성공 메시지
+      // 성공 메시지 (포인트 적립 표시)
+      const pointsMsg = lastPointsEarned > 0 ? ` +${lastPointsEarned}P` : "";
       if (createdCount > 1) {
-        toast.success(t("noteForm.savedMultiple").replace("{count}", String(createdCount)));
+        toast.success(t("noteForm.savedMultiple").replace("{count}", String(createdCount)) + pointsMsg);
       } else {
-        toast.success(t("noteForm.saved"));
+        toast.success(t("noteForm.saved") + pointsMsg);
       }
 
       // 성공 콜백 호출

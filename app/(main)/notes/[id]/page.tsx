@@ -77,6 +77,20 @@ export default async function NoteDetailPage({ params }: NoteDetailPageProps) {
   // 필사 데이터는 getNoteDetail()의 transcriptions JOIN으로 이미 포함됨
   const transcription = noteWithBook.transcription || null;
 
+  // 같은 책의 이전/다음 기록 ID 조회
+  let prevNoteId: string | null = null;
+  let nextNoteId: string | null = null;
+  if (!isGuest && noteWithBook.book_id) {
+    try {
+      const { getAdjacentNoteIds } = await import("@/app/actions/notes");
+      const adjacent = await getAdjacentNoteIds(noteWithBook.id, noteWithBook.book_id);
+      prevNoteId = adjacent.prevId;
+      nextNoteId = adjacent.nextId;
+    } catch {
+      // 조회 실패 시 무시
+    }
+  }
+
   // 연결된 책 정보 로드 (카드 내부 표시용)
   let relatedBooksForCard: RelatedBookInfo[] = [];
   let relatedBooksRaw: any[] = [];
@@ -108,6 +122,8 @@ export default async function NoteDetailPage({ params }: NoteDetailPageProps) {
         backUrl={backUrl}
         isGuest={isGuest}
         initialOcrStatus={transcription?.status ?? null}
+        prevNoteId={prevNoteId}
+        nextNoteId={nextNoteId}
       />
 
       {/* 2. 메인 리딩 카드 (통합 디자인) - 개선된 장식 */}

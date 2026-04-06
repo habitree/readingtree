@@ -11,6 +11,7 @@ import { BookOpen, ChevronRight, Loader2, Check, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useHapticFeedback } from "@/components/ui/touch-feedback";
 import { useTranslation } from "@/lib/i18n";
+import { formatSmartDate } from "@/lib/utils/date";
 import { updateBookProgress } from "@/app/actions/books";
 import { toast } from "sonner";
 import { BookCompletionDialog } from "@/components/books/book-completion-dialog";
@@ -23,6 +24,7 @@ interface ContinueReadingCardProps {
   currentPage: number;
   totalPages: number | null;
   progressPercent: number;
+  lastRecordedAt?: string | null;
   compact?: boolean;
   priority?: boolean;
 }
@@ -39,6 +41,7 @@ export const ContinueReadingCard = memo(function ContinueReadingCard({
   currentPage,
   totalPages,
   progressPercent,
+  lastRecordedAt,
   compact = false,
   priority = false,
 }: ContinueReadingCardProps) {
@@ -190,6 +193,11 @@ export const ContinueReadingCard = memo(function ContinueReadingCard({
                       {author}
                     </p>
                   )}
+                  {lastRecordedAt && (
+                    <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5" suppressHydrationWarning>
+                      {formatSmartDate(lastRecordedAt)}에 읽음
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -296,6 +304,11 @@ export const ContinueReadingCard = memo(function ContinueReadingCard({
               {author && (
                 <p className="text-sm text-slate-500 dark:text-slate-400 truncate">
                   {author}
+                </p>
+              )}
+              {lastRecordedAt && (
+                <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5" suppressHydrationWarning>
+                  {formatSmartDate(lastRecordedAt)}에 읽음
                 </p>
               )}
 

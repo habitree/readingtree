@@ -1603,3 +1603,51 @@ export async function getFreeNotesForBook(
   }) as NoteWithBook[];
 }
 
+/**
+ * 같은 책의 이전/다음 기록 ID 조회 (기록 상세 네비게이션용)
+ */
+export async function getAdjacentNoteIds(
+  currentNoteId: string,
+  bookId: string
+): Promise<{ prevId: string | null; nextId: string | null }> {
+  const supabase = await createServerSupabaseClient();
+  const currentUser = await getCurrentUser();
+  if (!currentUser) return { prevId: null, nextId: null };
+
+  const { data: current } = await supabase
+    .from("notes")
+    .select("created_at")
+    .eq("id", currentNoteId)
+    .single();
+
+  if (!current) return { prevId: null, nextId: null };
+
+  const [{ data: prev }, { data: next }] = await Promise.all([
+    supabase
+      .from("notes")
+      .select("id")
+      .eq("book_id", bookId)
+      .eq("user_id", currentUser.id)
+      .eq("status", "published")
+      .lt("created_at", current.created_at)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    supabase
+      .from("notes")
+      .select("id")
+      .eq("book_id", bookId)
+      .eq("user_id", currentUser.id)
+      .eq("status", "published")
+      .gt("created_at", current.created_at)
+      .order("created_at", { ascending: true })
+      .limit(1)
+      .maybeSingle(),
+  ]);
+
+  return {
+    prevId: prev?.id ?? null,
+    nextId: next?.id ?? null,
+  };
+}
+

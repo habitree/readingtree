@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Habitree 기능 로드맵 — P2/P3</title>
+<style>
+  :root { --bg: #fafaf9; --card: #fff; --border: #e7e5e4; --text: #1c1917; --muted: #78716c; --primary: #16a34a; --primary-bg: #f0fdf4; --warn: #ea580c; --warn-bg: #fff7ed; --info: #2563eb; --info-bg: #eff6ff; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; padding: 24px; max-width: 960px; margin: 0 auto; }
+  h1 { font-size: 28px; font-weight: 800; margin-bottom: 8px; }
+  .subtitle { color: var(--muted); font-size: 14px; margin-bottom: 32px; }
+  h2 { font-size: 20px; font-weight: 700; margin: 32px 0 16px; padding-bottom: 8px; border-bottom: 2px solid var(--border); }
+  h3 { font-size: 15px; font-weight: 600; margin: 20px 0 8px; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 16px; transition: box-shadow 0.2s; }
+  .card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
+  .badge { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 99px; margin-right: 6px; }
+  .badge-p2 { background: var(--info-bg); color: var(--info); }
+  .badge-p3 { background: var(--warn-bg); color: var(--warn); }
+  .badge-impact { background: #faf5ff; color: #7c3aed; }
+  .badge-effort { background: #f0f9ff; color: #0369a1; }
+  .tag { display: inline-block; font-size: 11px; color: var(--muted); background: #f5f5f4; padding: 2px 8px; border-radius: 4px; margin: 2px 4px 2px 0; }
+  .desc { color: var(--muted); font-size: 13px; margin: 8px 0; }
+  .detail { font-size: 13px; margin: 12px 0 0; padding: 12px; background: #fafaf9; border-radius: 8px; border-left: 3px solid var(--primary); }
+  .grid { display: grid; gap: 16px; }
+  @media (min-width: 640px) { .grid-2 { grid-template-columns: 1fr 1fr; } }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 12px 0; }
+  th { text-align: left; font-weight: 600; padding: 8px 12px; background: #f5f5f4; border-bottom: 1px solid var(--border); }
+  td { padding: 8px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  .status-bar { display: flex; gap: 4px; margin: 24px 0; }
+  .status-segment { height: 8px; border-radius: 4px; }
+  .legend { display: flex; gap: 16px; font-size: 12px; color: var(--muted); margin-bottom: 24px; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 4px; vertical-align: middle; }
+  .section-icon { font-size: 20px; margin-right: 8px; vertical-align: middle; }
+  .impact-high { color: #dc2626; font-weight: 600; }
+  .impact-mid { color: #ea580c; font-weight: 600; }
+  .impact-low { color: #65a30d; font-weight: 600; }
+  footer { margin-top: 48px; padding-top: 24px; border-top: 1px solid var(--border); text-align: center; color: var(--muted); font-size: 12px; }
+</style>
+</head>
+<body>
+
+<h1>Habitree 기능 로드맵</h1>
+<p class="subtitle">P2 (2~4주) / P3 (장기) 개선 항목 — 2026-04-06 기준</p>
+
+<!-- 전체 진행 상태 바 -->
+<div class="status-bar">
+  <div class="status-segment" style="flex:4; background:#22c55e;" title="P0 완료"></div>
+  <div class="status-segment" style="flex:7; background:#3b82f6;" title="P1 완료"></div>
+  <div class="status-segment" style="flex:8; background:#f59e0b;" title="P2 대기"></div>
+  <div class="status-segment" style="flex:4; background:#ef4444;" title="P3 장기"></div>
+</div>
+<div class="legend">
+  <span><span class="legend-dot" style="background:#22c55e"></span>P0 완료 (4건)</span>
+  <span><span class="legend-dot" style="background:#3b82f6"></span>P1 완료 (7건)</span>
+  <span><span class="legend-dot" style="background:#f59e0b"></span>P2 대기 (8건)</span>
+  <span><span class="legend-dot" style="background:#ef4444"></span>P3 장기 (4건)</span>
+</div>
+
+<!-- ===== P2 섹션 ===== -->
+<h2><span class="section-icon">&#9997;&#65039;</span>P2 — 중기 개선 (2~4주)</h2>
+
+<div class="card">
+  <span class="badge badge-p2">P2</span>
+  <span class="badge badge-impact">영향도 높음</span>
+  <span class="badge badge-effort">난이도 높음</span>
+  <h3>[X-5] 인앱 알림 시스템</h3>
+  <p class="desc">모임 활동, 스트릭 위험, 완독 축하, AI 리포트 완성 등에 대한 인앱 알림. 현재 알림 시스템 0% 구현.</p>
+  <div class="detail">
+    <strong>구현 범위:</strong><br>
+    - <code>notifications</code> 테이블 생성 (user_id, type, title, body, read, created_at)<br>
+    - 헤더에 알림 벨 아이콘 + 읽지 않은 개수 뱃지<br>
+    - 알림 드롭다운/페이지 (마크 올 리드)<br>
+    - 트리거: 모임 새 공유/댓글, 스트릭 2일 남음, 완독 축하, AI 리포트 완성<br>
+    <br>
+    <strong>관련 파일:</strong> <code>app/actions/notifications.ts</code> (신규), <code>components/layout/header.tsx</code>, DB 마이그레이션
+  </div>
+</div>
+
+<div class="card">
+  <span class="badge badge-p2">P2</span>
+  <span class="badge badge-impact">영향도 중간</span>
+  <span class="badge badge-effort">난이도 중간</span>
+  <h3>[G-1] 모임 발견/추천 개선</h3>
+  <p class="desc">공개 모임 목록에 "추천 모임", "인기 모임", "최근 활발한 모임" 정렬 추가. 현재 단순 나열.</p>
+  <div class="detail">
+    <strong>구현 방향:</strong><br>
+    - 모임 목록 정렬 옵션: 최신순, 멤버 수 순, 최근 활동 순<br>
+    - "추천" 로직: 사용자가 읽는 책 장르와 모임 지정도서 매칭<br>
+    <br>
+    <strong>관련 파일:</strong> <code>components/groups/groups-content.tsx</code>, <code>app/actions/groups/core.ts</code>
+  </div>
+</div>
+
+<div class="card">
+  <span class="badge badge-p2">P2</span>
+  <span class="badge badge-impact">영향도 중간</span>
+  <span class="badge badge-effort">난이도 높음</span>
+  <h3>[G-2] 모임 내 독서 챌린지</h3>
+  <p class="desc">"이번 달 OO책 함께 읽기" 같은 기한 있는 공동 목표 기능. 현재 지정도서만 있고 기한/목표 설정 없음.</p>
+  <div class="detail">
+    <strong>구현 범위:</strong><br>
+    - <code>group_challenges</code> 테이블: group_id, title, book_id, start_date, end_date, goal_type (pages/complete)<br>
+    - 모임 대시보드에 챌린지 카드 (진행률 바, 참여 멤버 아바타)<br>
+    - 챌린지 완료 시 포인트 보너스<br>
+    <br>
+    <strong>관련 파일:</strong> <code>app/actions/groups/</code> (신규 challenges.ts), <code>components/groups/group-dashboard.tsx</code>
+  </div>
+</div>
+
+<div class="card">
+  <span class="badge badge-p2">P2</span>
+  <span class="badge badge-impact">영향도 중간</span>
+  <span class="badge badge-effort">난이도 낮음</span>
+  <h3>[AI-1] AI 채팅 진입점 다양화</h3>
+  <p class="desc">책 상세 페이지에서 "이 책에 대해 물어보기" 버튼 추가. 현재 <code>/chat</code>으로만 접근 가능.</p>
+  <div class="detail">
+    <strong>구현:</strong><br>
+    - 책 상세 액션 바에 AI 아이콘 버튼 추가<br>
+    - 클릭 시 <code>/chat?bookId={id}</code>로 이동, 채팅 세션에 책 컨텍스트 자동 설정<br>
+    <br>
+    <strong>관련 파일:</strong> 책 상세 페이지 액션 바, <code>app/(main)/chat/page.tsx</code>
+  </div>
+</div>
+
+<div class="card">
+  <span class="badge badge-p2">P2</span>
+  <span class="badge badge-impact">영향도 중간</span>
+  <span class="badge badge-effort">난이도 중간</span>
+  <h3>[P-2] 주간 미션 추가</h3>
+  <p class="desc">일일 미션만 있고 주간 챌린지 없음. "이번 주 3권 기록" 같은 중기 목표로 재방문 유도.</p>
+  <div class="detail">
+    <strong>구현 범위:</strong><br>
+    - <code>weekly_missions</code> 또는 기존 daily_missions 확장 (period: daily/weekly)<br>
+    - 주간 미션 3개: 기록 5개 작성, 새 책 1권 추가, 3일 연속 활동<br>
+    - 포인트 대시보드에 주간 미션 섹션 추가<br>
+    <br>
+    <strong>관련 파일:</strong> <code>app/actions/points.ts</code>, <code>components/points/points-page-content.tsx</code>
+  </div>
+</div>
+
+<div class="card">
+  <span class="badge badge-p2">P2</span>
+  <span class="badge badge-impact">영향도 중간</span>
+  <span class="badge badge-effort">난이도 높음</span>
+  <h3>[X-4] 통합 검색 (책+기록+모임)</h3>
+  <p class="desc">현재 검색은 <code>/notes?q=</code> 리다이렉트만. 책/기록/모임을 동시에 검색하는 통합 검색 결과 페이지.</p>
+  <div class="detail">
+    <strong>구현 방향:</strong><br>
+    - <code>/search?q=</code> 페이지에서 탭별 결과: 기록(N) / 책(N) / 모임(N)<br>
+    - 각 탭은 기존 검색 로직 재사용 (getNotes, getUserBooks, searchGroups)<br>
+    - 커맨드 팔레트(Cmd+K) 연동 고려<br>
+    <br>
+    <strong>관련 파일:</strong> <code>app/(main)/search/page.tsx</code> (현재 리다이렉트만), 신규 SearchResultsPage 컴포넌트
+  </div>
+</div>
+
+<div class="grid grid-2">
+  <div class="card">
+    <span class="badge badge-p2">P2</span>
+    <h3>[S-1] 통계 공유 카드</h3>
+    <p class="desc">월간 독서 통계를 이미지 카드로 캡처하여 SNS 공유. "이번 달 N권 읽었어요"</p>
+    <div class="tag">html2canvas</div><div class="tag">stats/page</div>
+  </div>
+  <div class="card">
+    <span class="badge badge-p2">P2</span>
+    <h3>[BD-2] 진행률 히스토리 그래프</h3>
+    <p class="desc">독서 여정 탭에 날짜별 페이지 변화 선 그래프 추가.</p>
+    <div class="tag">recharts</div><div class="tag">book-notes-tabs</div>
+  </div>
+</div>
+
+<!-- ===== P3 섹션 ===== -->
+<h2><span class="section-icon">&#128301;</span>P3 — 장기 검토</h2>
+
+<div class="grid grid-2">
+  <div class="card">
+    <span class="badge badge-p3">P3</span>
+    <h3>[NF-2] 음성 입력 지원</h3>
+    <p class="desc">Web Speech API로 음성 → 텍스트 변환. 이동 중이나 손이 불편할 때 유용.</p>
+    <div class="detail">
+      <strong>검토 사항:</strong> 브라우저 호환성 (Chrome/Safari OK, Firefox 제한), 한국어 인식 정확도, 모바일 UX
+    </div>
+  </div>
+  <div class="card">
+    <span class="badge badge-p3">P3</span>
+    <h3>[AI-2] AI 기록 초안 생성</h3>
+    <p class="desc">진행률 업데이트 시 AI가 질문 → 기록 초안 자동 생성. "오늘 읽은 부분에서 인상적이었던 건?"</p>
+    <div class="detail">
+      <strong>검토 사항:</strong> AI 비용 증가, 사용자가 원하지 않는 AI 개입 가능, opt-in 설계 필요
+    </div>
+  </div>
+  <div class="card">
+    <span class="badge badge-p3">P3</span>
+    <h3>[X-6] 이메일 알림</h3>
+    <p class="desc">3일 이상 미접속 시 "다시 읽어볼까요?" 리마인더. 주간 독서 요약 이메일.</p>
+    <div class="detail">
+      <strong>검토 사항:</strong> 이메일 서비스 인프라 (Resend/SendGrid), 수신 동의, 스팸 방지, 구독 해지 링크
+    </div>
+  </div>
+  <div class="card">
+    <span class="badge badge-p3">P3</span>
+    <h3>[X-7] 가이드 투어 고도화</h3>
+    <p class="desc">온보딩 후 첫 책 추가 → 첫 기록 작성까지 인터랙티브 가이드 투어.</p>
+    <div class="detail">
+      <strong>검토 사항:</strong> React Joyride 또는 커스텀 투어 라이브러리, 단계별 하이라이트, 스킵 가능
+    </div>
+  </div>
+</div>
+
+<!-- ===== 완료된 P0/P1 요약 ===== -->
+<h2><span class="section-icon">&#9989;</span>완료된 항목 (P0 + P1)</h2>
+
+<table>
+  <thead>
+    <tr><th>등급</th><th>코드</th><th>내용</th><th>상태</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>P0</td><td>[P-1]</td><td>포인트 소비처 비용 확정 (40P/25P/100P)</td><td style="color:#16a34a">기정의</td></tr>
+    <tr><td>P0</td><td>[X-1]</td><td>기록 저장 후 원래 페이지 복귀</td><td style="color:#16a34a">기구현</td></tr>
+    <tr><td>P0</td><td>[X-3]</td><td>포인트 적립 상세 피드백 (+NP 토스트)</td><td style="color:#16a34a">완료</td></tr>
+    <tr><td>P0</td><td>[BD-1]</td><td>책 상세 기록 빈 상태 가이드</td><td style="color:#16a34a">기구현</td></tr>
+    <tr><td>P1</td><td>[H-1]</td><td>계속 읽기 카드에 마지막 기록 시간</td><td style="color:#16a34a">완료</td></tr>
+    <tr><td>P1</td><td>[B-2]</td><td>서재 정렬 옵션 확대 (5가지)</td><td style="color:#16a34a">완료</td></tr>
+    <tr><td>P1</td><td>[N-1]</td><td>기록 통계 요약 (총 N개 뱃지)</td><td style="color:#16a34a">완료</td></tr>
+    <tr><td>P1</td><td>[NF-1]</td><td>기록 작성 진입 간소화 (FAB 자동 선택)</td><td style="color:#16a34a">기구현</td></tr>
+    <tr><td>P1</td><td>[ND-1]</td><td>기록 이전/다음 네비게이션</td><td style="color:#16a34a">완료</td></tr>
+    <tr><td>P1</td><td>[BD-3]</td><td>읽는 이유 입력 유도</td><td style="color:#16a34a">기구현</td></tr>
+    <tr><td>P1</td><td>[PR-1]</td><td>프로필 완성도 표시</td><td style="color:#16a34a">완료</td></tr>
+  </tbody>
+</table>
+
+<footer>
+  Habitree Reading Hub &mdash; Feature Roadmap &mdash; Generated 2026-04-06
+</footer>
+
+</body>
+</html>

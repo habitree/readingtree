@@ -5,6 +5,7 @@ import { BookStatsCards } from "@/components/books/book-stats-cards";
 import { BookSearchInput } from "@/components/books/book-search-input";
 import { ViewModeToggle } from "@/components/books/view-mode-toggle";
 import { StatusFilter } from "@/components/books/status-filter";
+import { SortSelect } from "@/components/books/sort-select";
 import { getUserBooksWithNotes, type BookStats } from "@/app/actions/books";
 import { getSampleBooksWithNotes, getSampleBookshelfBooks } from "@/app/actions/sample";
 import type { ReadingStatus } from "@/types/book";
@@ -56,6 +57,7 @@ export async function BookshelfPageContent({
           </div>
           {/* 필터 및 뷰 토글 */}
           <div className="flex items-center gap-1 shrink-0">
+            <SortSelect />
             <StatusFilter currentStatus={status} />
             {!isGuest && <ViewModeToggle />}
           </div>

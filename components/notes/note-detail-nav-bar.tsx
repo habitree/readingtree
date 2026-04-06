@@ -7,7 +7,7 @@ import { SimpleShareDialog } from "@/components/share/simple-share-dialog";
 import { NoteDeleteButton } from "@/components/notes/note-delete-button";
 import { RelatedBooksManager } from "@/components/notes/related-books-manager";
 import { OCRStatusChecker } from "@/components/notes/ocr-status-checker";
-import { Edit, ChevronLeft, ShieldCheck, ShieldAlert, BookOpen } from "lucide-react";
+import { Edit, ChevronLeft, ChevronRight, ShieldCheck, ShieldAlert, BookOpen } from "lucide-react";
 import { useTranslation } from "@/lib/i18n";
 import type { NoteWithBook } from "@/types/note";
 
@@ -17,9 +17,13 @@ interface NoteDetailNavBarProps {
   isGuest: boolean;
   /** 서버에서 이미 로드된 OCR 상태 */
   initialOcrStatus?: "processing" | "completed" | "failed" | null;
+  /** 같은 책의 이전 기록 ID */
+  prevNoteId?: string | null;
+  /** 같은 책의 다음 기록 ID */
+  nextNoteId?: string | null;
 }
 
-export function NoteDetailNavBar({ note, backUrl, isGuest, initialOcrStatus }: NoteDetailNavBarProps) {
+export function NoteDetailNavBar({ note, backUrl, isGuest, initialOcrStatus, prevNoteId, nextNoteId }: NoteDetailNavBarProps) {
   const { t } = useTranslation();
 
   return (
@@ -34,8 +38,26 @@ export function NoteDetailNavBar({ note, backUrl, isGuest, initialOcrStatus }: N
           </Link>
         </Button>
 
-        {/* 상태 배지 + OCR 상태 */}
+        {/* 이전/다음 기록 네비게이션 + 상태 배지 */}
         <div className="flex items-center gap-1.5 sm:gap-2">
+          {(prevNoteId || nextNoteId) && (
+            <div className="flex items-center gap-0.5 mr-1">
+              <Button variant="ghost" size="sm" asChild disabled={!prevNoteId} className="h-8 w-8 p-0">
+                {prevNoteId ? (
+                  <Link href={`/notes/${prevNoteId}`}><ChevronLeft className="h-4 w-4" /></Link>
+                ) : (
+                  <span><ChevronLeft className="h-4 w-4 opacity-30" /></span>
+                )}
+              </Button>
+              <Button variant="ghost" size="sm" asChild disabled={!nextNoteId} className="h-8 w-8 p-0">
+                {nextNoteId ? (
+                  <Link href={`/notes/${nextNoteId}`}><ChevronRight className="h-4 w-4" /></Link>
+                ) : (
+                  <span><ChevronRight className="h-4 w-4 opacity-30" /></span>
+                )}
+              </Button>
+            </div>
+          )}
           <Badge
             variant={note.is_public ? "default" : "secondary"}
             className={`gap-1 py-1 px-2.5 text-xs h-7 ${
