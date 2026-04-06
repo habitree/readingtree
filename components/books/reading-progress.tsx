@@ -138,23 +138,34 @@ export function ReadingProgress({
     setInlineMemo("");
   }, [totalPages, currentPage]);
 
-  // 인라인 메모 없이 진행률만 저장
+  // 인라인 메모 없이 진행률만 저장 (진행 기록도 함께 생성)
   const handleSaveProgressOnly = useCallback(async () => {
     if (pendingPageUpdate === null) return;
 
     setIsInlineSaving(true);
     try {
       const result = await updateBookProgress(userBookId, pendingPageUpdate);
+
+      // 메모 없이도 진행 기록 생성 (내 기록에 표시되도록)
+      const { createNote } = await import("@/app/actions/notes");
+      await createNote({
+        book_id: userBookId,
+        type: "progress",
+        page_number: String(pendingPageUpdate),
+        is_public: true,
+      });
+
       setCurrentPage(pendingPageUpdate);
       setInputValue(String(pendingPageUpdate));
       setDragValue(pendingPageUpdate);
       onUpdate?.(pendingPageUpdate);
+      onRecordCreated?.();
 
       if (result.reachedEnd) {
         // 완독 확인 다이얼로그 표시
         setShowCompletionDialog(true);
       } else {
-        toast.success(t("books.progressUpdatedTo", { page: pendingPageUpdate }));
+        toast.success(t("books.progressRecordSaved"));
       }
 
       setShowInlineMemo(false);
@@ -164,7 +175,7 @@ export function ReadingProgress({
     } finally {
       setIsInlineSaving(false);
     }
-  }, [pendingPageUpdate, userBookId, onUpdate, t]);
+  }, [pendingPageUpdate, userBookId, onUpdate, onRecordCreated, t]);
 
   // 인라인 메모와 함께 진행률 저장
   const handleSaveWithMemo = useCallback(async () => {
