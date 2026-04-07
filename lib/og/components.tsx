@@ -1,20 +1,30 @@
 import { OG_COLORS, OG_BRAND, FONT_FAMILY } from "./constants";
+import type { OgConfig } from "@/types/og-settings";
+
+type OgColors = OgConfig["colors"];
+type OgBrand = OgConfig["brand"];
 
 /** 상단 포레스트 악센트 바 */
-export function OgAccentBar() {
+export function OgAccentBar({ colors }: { colors?: OgColors } = {}) {
+  const c = colors ?? OG_COLORS;
   return (
     <div
       style={{
         width: "100%",
         height: 5,
-        background: `linear-gradient(90deg, ${OG_COLORS.forest}, ${OG_COLORS.forestLight}, ${OG_COLORS.forestLighter}, ${OG_COLORS.forestLight}, ${OG_COLORS.forest})`,
+        background: `linear-gradient(90deg, ${c.forest}, ${c.forestLight}, ${c.forestLighter}, ${c.forestLight}, ${c.forest})`,
       }}
     />
   );
 }
 
 /** 하단 도메인 푸터 */
-export function OgDomainFooter() {
+export function OgDomainFooter({
+  brand,
+  colors,
+}: { brand?: OgBrand; colors?: OgColors } = {}) {
+  const b = brand ?? OG_BRAND;
+  const c = colors ?? OG_COLORS;
   return (
     <div
       style={{
@@ -26,12 +36,12 @@ export function OgDomainFooter() {
       <div
         style={{
           fontSize: 18,
-          color: OG_COLORS.textMuted,
+          color: c.textMuted,
           fontWeight: 500,
           fontFamily: FONT_FAMILY,
         }}
       >
-        {OG_BRAND.domain}
+        {b.domain}
       </div>
     </div>
   );
@@ -41,10 +51,16 @@ export function OgDomainFooter() {
 export function OgBrandMark({
   iconSrc,
   size = "sm",
+  brand,
+  colors,
 }: {
   iconSrc: string | null;
   size?: "sm" | "md";
+  brand?: OgBrand;
+  colors?: OgColors;
 }) {
+  const b = brand ?? OG_BRAND;
+  const c = colors ?? OG_COLORS;
   const iconSize = size === "md" ? 28 : 24;
   const fontSize = size === "md" ? 15 : 14;
   const borderRadius = size === "md" ? 7 : 6;
@@ -71,7 +87,7 @@ export function OgBrandMark({
             width: iconSize,
             height: iconSize,
             borderRadius,
-            background: `linear-gradient(135deg, ${OG_COLORS.forest}, ${OG_COLORS.forestLight})`,
+            background: `linear-gradient(135deg, ${c.forest}, ${c.forestLight})`,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -95,11 +111,11 @@ export function OgBrandMark({
         style={{
           fontSize,
           fontWeight: 800,
-          color: OG_COLORS.textPrimary,
+          color: c.textPrimary,
           fontFamily: FONT_FAMILY,
         }}
       >
-        {OG_BRAND.name}
+        {b.name}
       </span>
     </div>
   );
@@ -109,10 +125,16 @@ export function OgBrandMark({
 export function OgFallbackContent({
   message,
   iconSrc,
+  brand,
+  colors,
 }: {
   message: string;
   iconSrc?: string | null;
+  brand?: OgBrand;
+  colors?: OgColors;
 }) {
+  const b = brand ?? OG_BRAND;
+  const c = colors ?? OG_COLORS;
   return (
     <div
       style={{
@@ -122,14 +144,14 @@ export function OgFallbackContent({
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        backgroundColor: OG_COLORS.background,
+        backgroundColor: c.background,
         fontFamily: FONT_FAMILY,
       }}
     >
       <div
         style={{
           padding: 48,
-          backgroundColor: OG_COLORS.cardBackground,
+          backgroundColor: c.cardBackground,
           borderRadius: 24,
           boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.1)",
           display: "flex",
@@ -151,7 +173,7 @@ export function OgFallbackContent({
               width: 80,
               height: 80,
               borderRadius: 20,
-              backgroundColor: OG_COLORS.forest,
+              backgroundColor: c.forest,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -174,16 +196,16 @@ export function OgFallbackContent({
           style={{
             fontSize: 28,
             fontWeight: 700,
-            color: OG_COLORS.textPrimary,
+            color: c.textPrimary,
             fontFamily: FONT_FAMILY,
           }}
         >
-          {OG_BRAND.name}
+          {b.name}
         </div>
         <div
           style={{
             fontSize: 16,
-            color: OG_COLORS.textSecondary,
+            color: c.textSecondary,
             marginTop: 8,
             fontFamily: FONT_FAMILY,
           }}

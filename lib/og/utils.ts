@@ -95,6 +95,26 @@ export function createOgAnonSupabaseClient() {
   );
 }
 
+/** 원격 URL에서 브랜드 아이콘을 base64 data URI로 로드 (Supabase Storage용) */
+export async function loadBrandIconFromUrl(
+  url: string
+): Promise<string | null> {
+  try {
+    const res = await fetch(url, {
+      signal: AbortSignal.timeout(5000),
+      headers: { "User-Agent": "Mozilla/5.0 (compatible; Habitree/1.0)" },
+    });
+    if (!res.ok) return null;
+    const buffer = await res.arrayBuffer();
+    if (buffer.byteLength > 2 * 1024 * 1024) return null; // 2MB 제한
+    const contentType = res.headers.get("content-type") || "image/png";
+    const base64 = Buffer.from(buffer).toString("base64");
+    return `data:${contentType};base64,${base64}`;
+  } catch {
+    return null;
+  }
+}
+
 /** RLS 우회 Supabase 클라이언트 (user 정보 조회용) */
 export function createOgServiceSupabaseClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;

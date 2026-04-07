@@ -2,8 +2,6 @@ import { ImageResponse } from "next/og";
 import { isValidUUID } from "@/lib/utils/validation";
 import { isValidImageUrl } from "@/lib/utils/image";
 import {
-  OG_BRAND,
-  OG_COLORS,
   OG_SIZE,
   OG_TEXT_LIMITS,
   FONT_FAMILY,
@@ -11,6 +9,7 @@ import {
 import {
   loadKoreanFont,
   loadBrandIcon,
+  loadBrandIconFromUrl,
   prefetchImageAsDataUri,
   truncateText,
   buildFontOptions,
@@ -21,8 +20,9 @@ import {
   OgBrandMark,
   OgFallbackContent,
 } from "@/lib/og/components";
+import { getOgConfig } from "@/lib/og/settings";
 
-export const alt = `${OG_BRAND.name} 서재 공유`;
+export const alt = "Habitree 서재 공유";
 export const size = OG_SIZE;
 export const contentType = "image/png";
 
@@ -31,24 +31,29 @@ export default async function OgImage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const [fontData, brandIconSrc] = await Promise.all([
+  const [fontData, config] = await Promise.all([
     loadKoreanFont(
       new URL("../../../../public/fonts/NotoSansKR-SemiBold.otf", import.meta.url)
     ),
-    loadBrandIcon(new URL("../../../icon.png", import.meta.url)),
+    getOgConfig(),
   ]);
   const fontOptions = buildFontOptions(fontData);
+  const { brand, colors } = config;
+
+  const brandIconSrc = config.brandIconUrl
+    ? await loadBrandIconFromUrl(config.brandIconUrl)
+    : await loadBrandIcon(new URL("../../../icon.png", import.meta.url));
 
   try {
     const { id: bookshelfId } = await params;
 
     if (!bookshelfId || typeof bookshelfId !== "string" || !isValidUUID(bookshelfId)) {
-      return fallbackImageResponse(fontOptions, brandIconSrc);
+      return fallbackImageResponse(fontOptions, brandIconSrc, brand, colors);
     }
 
     const serviceClient = createOgServiceSupabaseClient();
     if (!serviceClient) {
-      return fallbackImageResponse(fontOptions, brandIconSrc);
+      return fallbackImageResponse(fontOptions, brandIconSrc, brand, colors);
     }
 
     const { data: bookshelf, error: bsError } = await serviceClient
@@ -59,10 +64,10 @@ export default async function OgImage({
       .maybeSingle();
 
     if (bsError || !bookshelf) {
-      return fallbackImageResponse(fontOptions, brandIconSrc);
+      return fallbackImageResponse(fontOptions, brandIconSrc, brand, colors);
     }
 
-    let ownerName = `${OG_BRAND.name} 사용자`;
+    let ownerName = `${brand.name} 사용자`;
     try {
       const { data: owner } = await serviceClient
         .from("users")
@@ -116,12 +121,12 @@ export default async function OgImage({
             display: "flex",
             flexDirection: "column",
             fontFamily: FONT_FAMILY,
-            backgroundColor: OG_COLORS.background,
+            backgroundColor: colors.background,
             backgroundImage:
               "radial-gradient(circle at 10% 20%, rgba(29, 107, 77, 0.06) 0%, transparent 40%), radial-gradient(circle at 90% 80%, rgba(29, 107, 77, 0.04) 0%, transparent 40%)",
           }}
         >
-          <OgAccentBar />
+          <OgAccentBar colors={colors} />
 
           <div
             style={{
@@ -138,7 +143,7 @@ export default async function OgImage({
                 flexDirection: "row",
                 width: "100%",
                 height: 490,
-                backgroundColor: OG_COLORS.cardBackground,
+                backgroundColor: colors.cardBackground,
                 borderRadius: 24,
                 boxShadow:
                   "0 25px 60px -15px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.06)",
@@ -163,7 +168,7 @@ export default async function OgImage({
                     width: 52,
                     height: 52,
                     borderRadius: 14,
-                    background: `linear-gradient(135deg, ${OG_COLORS.forest}, ${OG_COLORS.forestLight})`,
+                    background: `linear-gradient(135deg, ${colors.forest}, ${colors.forestLight})`,
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
@@ -187,12 +192,12 @@ export default async function OgImage({
                   style={{
                     fontSize: 12,
                     fontWeight: 700,
-                    color: OG_COLORS.forest,
+                    color: colors.forest,
                     fontFamily: FONT_FAMILY,
                     padding: "3px 12px",
                     backgroundColor: "#f0fdf4",
                     borderRadius: 20,
-                    border: `1px solid ${OG_COLORS.border}`,
+                    border: `1px solid ${colors.border}`,
                     letterSpacing: "0.05em",
                     alignSelf: "flex-start",
                   }}
@@ -238,7 +243,7 @@ export default async function OgImage({
                       borderRadius: 20,
                       fontSize: 14,
                       fontWeight: 700,
-                      color: OG_COLORS.forest,
+                      color: colors.forest,
                       fontFamily: FONT_FAMILY,
                     }}
                   >
@@ -247,7 +252,7 @@ export default async function OgImage({
                 </div>
 
                 <div style={{ marginTop: "auto" }}>
-                  <OgBrandMark iconSrc={brandIconSrc} />
+                  <OgBrandMark iconSrc={brandIconSrc} brand={brand} colors={colors} />
                 </div>
               </div>
 
@@ -315,7 +320,7 @@ export default async function OgImage({
                   <div
                     style={{
                       fontSize: 18,
-                      color: OG_COLORS.textMuted,
+                      color: colors.textMuted,
                       fontWeight: 600,
                       fontFamily: FONT_FAMILY,
                     }}
@@ -338,13 +343,13 @@ export default async function OgImage({
             <span
               style={{
                 fontSize: 13,
-                color: OG_COLORS.textMuted,
+                color: colors.textMuted,
                 fontWeight: 600,
                 fontFamily: FONT_FAMILY,
                 letterSpacing: "0.05em",
               }}
             >
-              {OG_BRAND.domain}
+              {brand.domain}
             </span>
           </div>
         </div>
@@ -353,18 +358,22 @@ export default async function OgImage({
     );
   } catch (e) {
     console.error("[OG Image - Bookshelf] Unexpected error:", e);
-    return fallbackImageResponse(fontOptions, brandIconSrc);
+    return fallbackImageResponse(fontOptions, brandIconSrc, brand, colors);
   }
 }
 
 function fallbackImageResponse(
   fontOptions: Record<string, unknown> = {},
-  iconSrc?: string | null
+  iconSrc?: string | null,
+  brand?: { name: string; tagline: string; keywords: string; domain: string; description: string },
+  colors?: Record<string, string>
 ) {
   return new ImageResponse(
     <OgFallbackContent
       message="이 서재를 찾을 수 없거나 비공개입니다."
       iconSrc={iconSrc}
+      brand={brand}
+      colors={colors as never}
     />,
     { ...size, ...fontOptions }
   );
