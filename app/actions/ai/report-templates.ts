@@ -41,19 +41,25 @@ function transformRow(row: Record<string, unknown>): ReportTemplate {
  * 모든 템플릿 조회 (인증된 사용자)
  */
 export async function getReportTemplates(): Promise<ReportTemplate[]> {
-  const supabase = await createServerSupabaseClient();
+  try {
+    const supabase = await createServerSupabaseClient();
 
-  const { data, error } = await supabase
-    .from("report_templates")
-    .select("*")
-    .order("sort_order", { ascending: true });
+    const { data, error } = await supabase
+      .from("report_templates")
+      .select("*")
+      .order("sort_order", { ascending: true });
 
-  if (error) {
-    console.error("템플릿 조회 실패:", error);
+    if (error) {
+      console.error("템플릿 조회 실패:", error);
+      return [];
+    }
+
+    return (data || []).map(transformRow);
+  } catch (error) {
+    // report_templates 테이블이 아직 없을 수 있음
+    console.error("템플릿 테이블 접근 실패:", error);
     return [];
   }
-
-  return (data || []).map(transformRow);
 }
 
 /**

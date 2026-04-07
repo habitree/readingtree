@@ -169,16 +169,22 @@ export async function getReportSettingsForGeneration(): Promise<Omit<AIReportSet
  * 확장 리포트 설정 조회 (생성용 - 템플릿/다회독 포함)
  */
 export async function getReportSettingsExtended(): Promise<AIReportSettingsExtended | null> {
-  const supabase = await createServerSupabaseClient();
+  try {
+    const supabase = await createServerSupabaseClient();
 
-  const { data, error } = await supabase
-    .from("ai_report_settings")
-    .select("*")
-    .limit(1)
-    .single();
+    const { data, error } = await supabase
+      .from("ai_report_settings")
+      .select("*")
+      .limit(1)
+      .single();
 
-  if (error || !data) return null;
-  return transformRowExtended(data);
+    if (error || !data) return null;
+    return transformRowExtended(data);
+  } catch (error) {
+    // 새 컬럼이 아직 없을 수 있음
+    console.error("확장 리포트 설정 조회 실패:", error);
+    return null;
+  }
 }
 
 /**
