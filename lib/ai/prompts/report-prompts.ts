@@ -10,7 +10,9 @@ import type {
   MultiReadingContext,
   TemplateTone,
   TargetLength,
+  SectionAIConfig,
 } from "@/types/ai/report-template";
+import { getSectionAIConfig } from "@/types/ai/report-template";
 
 interface BookInfo {
   title: string;
@@ -316,13 +318,39 @@ export function generateReportPromptFromTemplate(
     .filter((s) => s.required || true) // 모든 섹션 포함, AI가 판단
     .sort((a, b) => a.sortOrder - b.sortOrder);
 
-  // 섹션 지시문 생성
+  // 섹션 지시문 생성 (섹션별 AI 설정 반영)
   const sectionInstructions = activeSections
     .map((s, i) => {
+      const aiConfig = getSectionAIConfig(s.config);
       const lengthHint = s.maxLength ? ` (${s.maxLength}자 이내)` : "";
       const requiredHint = s.required ? "" : "\n- 노트 내용에 따라 포함 여부를 판단하세요";
+
+      // 섹션별 톤 오버라이드
+      const sectionTone =
+        aiConfig.toneOverride !== "inherit"
+          ? `\n- 이 섹션은 ${toneInstruction(aiConfig.toneOverride)}`
+          : "";
+
+      // 섹션별 길이 오버라이드
+      const sectionLength =
+        aiConfig.lengthControl !== "inherit"
+          ? `\n- 이 섹션은 ${lengthInstruction(aiConfig.lengthControl)}`
+          : "";
+
+      // 단어 수 범위
+      const wordRange =
+        aiConfig.minWordCount || aiConfig.maxWordCount
+          ? `\n- 분량: ${aiConfig.minWordCount ? `최소 ${aiConfig.minWordCount}단어` : ""}${aiConfig.minWordCount && aiConfig.maxWordCount ? " ~ " : ""}${aiConfig.maxWordCount ? `최대 ${aiConfig.maxWordCount}단어` : ""}`
+          : "";
+
+      // 예시 출력 참고
+      const exampleHint =
+        aiConfig.exampleOutput
+          ? `\n- 다음 예시를 참고하되 그대로 복사하지 마세요:\n  "${aiConfig.exampleOutput.slice(0, 200)}${aiConfig.exampleOutput.length > 200 ? "..." : ""}"`
+          : "";
+
       return `### ${i + 1}. ${s.title}${lengthHint}
-- ${s.promptInstruction}${requiredHint}`;
+- ${s.promptInstruction}${requiredHint}${sectionTone}${sectionLength}${wordRange}${exampleHint}`;
     })
     .join("\n\n");
 
