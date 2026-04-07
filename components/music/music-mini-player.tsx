@@ -23,6 +23,17 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+/** Network Information API 타입 (실험적, Chrome/Android 지원) */
+interface NetworkInformation extends EventTarget {
+  type?: string;
+  effectiveType?: string;
+  addEventListener(type: string, listener: EventListener): void;
+  removeEventListener(type: string, listener: EventListener): void;
+}
+interface NavigatorWithConnection extends Navigator {
+  connection?: NetworkInformation;
+}
+
 function formatTime(sec: number): string {
   const m = Math.floor(sec / 60);
   const s = Math.floor(sec % 60);
@@ -152,6 +163,9 @@ export function MusicMiniPlayer() {
   const retryTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const MAX_RETRIES = 3;
 
+  /** 오디오 버퍼링(네트워크 끊김) 감지 플래그 */
+  const isBuffering = useRef(false);
+
   const {
     isVisible,
     isPlaying,
@@ -191,10 +205,13 @@ export function MusicMiniPlayer() {
     return () => { globalAudioRef = null; };
   }, []);
 
-  // ── 타이머 setInterval ──
+  // ── 타이머 setInterval (오디오 실제 재생 여부 확인) ──
   useEffect(() => {
     if (timerStatus === "running") {
       timerRef.current = setInterval(() => {
+        // 오디오가 버퍼링 중이면 타이머도 일시 중단
+        const audio = audioRef.current;
+        if (audio && isBuffering.current) return;
         useMusicPlayer.getState().tickTimer();
       }, 1000);
     } else {
@@ -340,18 +357,48 @@ export function MusicMiniPlayer() {
     }
   }, [safePlay]);
 
-  // ── 네트워크 복구 시 재생 재개 ──
+  // ── 오디오 버퍼링 감지 (waiting/playing 이벤트) ──
   useEffect(() => {
-    function handleOnline() {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    function handleWaiting() {
+      // 버퍼 부족으로 재생 멈춤 → 버퍼링 플래그 설정
+      isBuffering.current = true;
+    }
+
+    function handlePlaying() {
+      // 다시 재생 시작 → 버퍼링 해제
+      isBuffering.current = false;
+      retryCount.current = 0;
+    }
+
+    audio.addEventListener("waiting", handleWaiting);
+    audio.addEventListener("playing", handlePlaying);
+
+    return () => {
+      audio.removeEventListener("waiting", handleWaiting);
+      audio.removeEventListener("playing", handlePlaying);
+    };
+  }, []);
+
+  // ── 네트워크 복구 + 전환 감지 ──
+  useEffect(() => {
+    /** 오디오 소스를 현재 위치에서 다시 로드 */
+    function recoverPlayback() {
       const audio = audioRef.current;
       const state = useMusicPlayer.getState();
       if (!audio || !state.isPlaying || !state.currentTrack) return;
-      // 네트워크 복구 → 현재 트랙 다시 로드
-      if (audio.paused && state.isPlaying) {
+      // audio가 멈춰있거나 버퍼링 중이면 복구 시도
+      if (audio.paused || isBuffering.current) {
+        const savedTime = audio.currentTime;
         retryCount.current = 0;
+        isBuffering.current = false;
         audio.load();
         audio.addEventListener("canplay", function onRecover() {
           audio.removeEventListener("canplay", onRecover);
+          // 이전 재생 위치로 복원
+          if (savedTime > 0) audio.currentTime = savedTime;
           if (useMusicPlayer.getState().isPlaying) {
             safePlay(audio);
           }
@@ -359,26 +406,44 @@ export function MusicMiniPlayer() {
       }
     }
 
+    function handleOnline() {
+      recoverPlayback();
+    }
+
     function handleStalled() {
       // stalled 이벤트: 데이터 다운로드가 멈춤
       const audio = audioRef.current;
       const state = useMusicPlayer.getState();
       if (!audio || !state.isPlaying) return;
-      // 짧은 지연 후 재시도
+      isBuffering.current = true;
+      // 짧은 지연 후 복구 시도
       retryTimer.current = setTimeout(() => {
-        if (audio.paused && useMusicPlayer.getState().isPlaying) {
-          safePlay(audio);
-        }
+        recoverPlayback();
       }, 2000);
+    }
+
+    // Network Information API — WiFi ↔ 모바일 데이터 전환 감지
+    function handleConnectionChange() {
+      const state = useMusicPlayer.getState();
+      if (!state.isPlaying) return;
+      // 네트워크 타입 변경 시 약간의 지연 후 복구 (새 연결 안정화 대기)
+      retryTimer.current = setTimeout(() => {
+        recoverPlayback();
+      }, 1000);
     }
 
     const audio = audioRef.current;
     window.addEventListener("online", handleOnline);
     audio?.addEventListener("stalled", handleStalled);
 
+    // navigator.connection은 실험적 API (Chrome/Android 지원)
+    const connection = (navigator as NavigatorWithConnection).connection;
+    connection?.addEventListener("change", handleConnectionChange);
+
     return () => {
       window.removeEventListener("online", handleOnline);
       audio?.removeEventListener("stalled", handleStalled);
+      connection?.removeEventListener("change", handleConnectionChange);
       if (retryTimer.current) {
         clearTimeout(retryTimer.current);
         retryTimer.current = null;
@@ -394,9 +459,21 @@ export function MusicMiniPlayer() {
       const state = useMusicPlayer.getState();
       if (!audio || !state.isPlaying || !state.currentTrack) return;
       // 백그라운드에서 돌아왔는데 audio가 멈춰있으면 복구
-      if (audio.paused) {
+      if (audio.paused || isBuffering.current) {
+        const savedTime = audio.currentTime;
         retryCount.current = 0;
-        safePlay(audio);
+        isBuffering.current = false;
+        // 단순 play 시도 → 실패 시 소스 리로드
+        audio.play().catch(() => {
+          audio.load();
+          audio.addEventListener("canplay", function onRecover() {
+            audio.removeEventListener("canplay", onRecover);
+            if (savedTime > 0) audio.currentTime = savedTime;
+            if (useMusicPlayer.getState().isPlaying) {
+              safePlay(audio);
+            }
+          });
+        });
       }
     }
 
