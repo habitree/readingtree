@@ -23,6 +23,55 @@ export type TemplateTone = "formal" | "casual" | "academic" | "friendly";
 /** 템플릿 길이 */
 export type TargetLength = "short" | "medium" | "long";
 
+/** 템플릿 스타일 (레이아웃/서술 방식) */
+export type TemplateStyle = "editorial" | "timeline" | "conversational" | "card-summary" | "immersive";
+
+/** 스타일 레이블 */
+export const STYLE_LABELS: Record<TemplateStyle, string> = {
+  editorial: "에디토리얼",
+  timeline: "타임라인",
+  conversational: "대화형",
+  "card-summary": "카드 요약",
+  immersive: "몰입형",
+};
+
+/** 스타일 설명 */
+export const STYLE_DESCRIPTIONS: Record<TemplateStyle, string> = {
+  editorial: "매거진 서평 스타일. 기록 원문 중심, 넉넉한 여백, 질문으로 마무리",
+  timeline: "독서 여정을 시간축으로 풀어냄. 기록을 날짜 노드로 시각화",
+  conversational: "친구에게 추천하듯 Q&A 형식. 자연스러운 대화 톤",
+  "card-summary": "핵심만 카드로 정리. 숫자 데이터 강조, 독립적 카드 구성",
+  immersive: "책의 분위기를 시각적으로 전달. 큰 타이포, 여운 중심",
+};
+
+/** 스타일별 프롬프트 가이드 (AI에 전달) */
+export const STYLE_PROMPT_GUIDES: Record<TemplateStyle, string> = {
+  editorial: `매거진 서평 스타일로 작성하세요.
+- 독자의 기록 원문을 그대로 인용하고, 그 기록이 왜 의미 있는지 맥락을 짧게 설명
+- 과도한 분석보다 관찰과 질문 중심
+- 마지막은 답이 아닌 질문으로 마무리
+- Bold 사용 최소화, 리스트 나열 지양`,
+  timeline: `독서 여정을 시간 순서대로 풀어쓰세요.
+- 각 기록의 날짜와 맥락을 연결
+- 기록 사이의 공백 기간도 의미 있게 해석
+- 시작 → 중간 → 완독 → 현재 순서로 서술
+- 감정의 변화 흐름이 드러나도록`,
+  conversational: `친구에게 책을 소개하듯 대화체로 작성하세요.
+- "이 책 뭔데?" "읽어볼 만해?" 같은 자연스러운 질문-답변 구조
+- 존댓말과 반말이 섞이지 않게 일관된 톤 유지
+- 독자의 기록을 자연스럽게 대화 속에 녹여서 인용`,
+  "card-summary": `핵심 정보를 짧고 명확한 단위로 정리하세요.
+- 각 항목이 독립적으로 이해 가능하도록 작성
+- 숫자 데이터 (독서 기간, 기록 수, 페이지 등) 활용
+- 첫 기록과 마지막 기록의 변화를 대비
+- 한 항목당 2~3문장 이내`,
+  immersive: `책의 분위기와 독자의 감정을 시각적 글로 전달하세요.
+- 독자의 기록 원문을 큰 비중으로 배치
+- 설명은 최소화하고 원문이 스스로 말하게
+- 섹션 사이에 충분한 호흡
+- 마지막은 여운이 남는 문장으로 마무리`,
+};
+
 /** 템플릿 섹션 설정 */
 export interface ReportTemplateSectionConfig {
   key: SectionType;
@@ -40,6 +89,7 @@ export interface ReportTemplate {
   name: string;
   description: string | null;
   slug: string;
+  style: TemplateStyle;
   tone: TemplateTone;
   targetLength: TargetLength;
   includeStats: boolean;
@@ -57,6 +107,7 @@ export interface ReportTemplateFormData {
   name: string;
   description: string | null;
   slug: string;
+  style: TemplateStyle;
   sections: ReportTemplateSectionConfig[];
   tone: TemplateTone;
   targetLength: TargetLength;

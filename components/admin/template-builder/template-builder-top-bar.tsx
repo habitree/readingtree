@@ -18,14 +18,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Save, X, Eye, Loader2 } from "lucide-react";
-import type { TemplateTone, TargetLength } from "@/types/ai/report-template";
-import { TONE_LABELS, LENGTH_LABELS } from "@/types/ai/report-template";
+import type { TemplateTone, TargetLength, TemplateStyle } from "@/types/ai/report-template";
+import { TONE_LABELS, LENGTH_LABELS, STYLE_LABELS } from "@/types/ai/report-template";
 import type { BuilderState } from "./use-template-builder";
 
 interface TemplateBuilderTopBarProps {
   state: BuilderState;
   saving: boolean;
   onSetMeta: (field: "name" | "description" | "slug", value: string) => void;
+  onSetStyle: (value: TemplateStyle) => void;
   onSetTone: (value: TemplateTone) => void;
   onSetLength: (value: TargetLength) => void;
   onSetToggle: (field: "includeStats" | "multiReadAware", value: boolean) => void;
@@ -38,6 +39,7 @@ export function TemplateBuilderTopBar({
   state,
   saving,
   onSetMeta,
+  onSetStyle,
   onSetTone,
   onSetLength,
   onSetToggle,
@@ -99,6 +101,22 @@ export function TemplateBuilderTopBar({
 
       {/* 둘째 줄: 글로벌 설정 */}
       <div className="flex items-center gap-4 text-xs">
+        <div className="flex items-center gap-1.5">
+          <Label className="text-xs text-muted-foreground">스타일</Label>
+          <Select value={state.style} onValueChange={(v) => onSetStyle(v as TemplateStyle)}>
+            <SelectTrigger className="h-6 w-24 text-xs border-dashed">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {(Object.entries(STYLE_LABELS) as [TemplateStyle, string][]).map(([k, label]) => (
+                <SelectItem key={k} value={k} className="text-xs">
+                  {label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
         <div className="flex items-center gap-1.5">
           <Label className="text-xs text-muted-foreground">톤</Label>
           <Select value={state.tone} onValueChange={(v) => onSetTone(v as TemplateTone)}>

@@ -123,6 +123,7 @@ export function TemplateBuilder({ template, onSave, onClose }: TemplateBuilderPr
         state={state}
         saving={saving}
         onSetMeta={(field, value) => dispatch({ type: "SET_META", field, value })}
+        onSetStyle={(value) => dispatch({ type: "SET_STYLE", value })}
         onSetTone={(value) => dispatch({ type: "SET_TONE", value })}
         onSetLength={(value) => dispatch({ type: "SET_LENGTH", value })}
         onSetToggle={(field, value) => dispatch({ type: "SET_TOGGLE", field, value })}

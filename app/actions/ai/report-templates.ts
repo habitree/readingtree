@@ -25,6 +25,7 @@ function transformRow(row: Record<string, unknown>): ReportTemplate {
     description: (row.description as string) ?? null,
     slug: row.slug as string,
     tone: row.tone as ReportTemplate["tone"],
+    style: (row.style as ReportTemplate["style"]) || "editorial",
     targetLength: row.target_length as ReportTemplate["targetLength"],
     includeStats: row.include_stats as boolean,
     multiReadAware: row.multi_read_aware as boolean,
@@ -124,6 +125,7 @@ export async function createReportTemplate(
       name: formData.name,
       description: formData.description,
       slug: formData.slug,
+      style: formData.style,
       sections: formData.sections,
       tone: formData.tone,
       target_length: formData.targetLength,
@@ -153,6 +155,7 @@ export async function updateReportTemplate(
   if (formData.name !== undefined) dbData.name = formData.name;
   if (formData.description !== undefined) dbData.description = formData.description;
   if (formData.slug !== undefined) dbData.slug = formData.slug;
+  if (formData.style !== undefined) dbData.style = formData.style;
   if (formData.sections !== undefined) dbData.sections = formData.sections;
   if (formData.tone !== undefined) dbData.tone = formData.tone;
   if (formData.targetLength !== undefined) dbData.target_length = formData.targetLength;

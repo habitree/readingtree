@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>독서 리포트 템플릿 — 5 Styles</title>
+<style>
+  @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700;900&display=swap');
+
+  :root { --bg:#f7f6f3; --card:#fff; --border:#e5e3df; --t1:#1a1a1a; --t2:#5a5751; --t3:#9b9690; --accent:#c4601d; --accent-bg:#fdf5f0; }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'Pretendard',sans-serif;background:var(--bg);color:var(--t1);line-height:1.8;-webkit-font-smoothing:antialiased;}
+  .serif{font-family:'Noto Serif KR',serif;}
+
+  /* Nav */
+  .nav{position:sticky;top:0;z-index:20;background:rgba(247,246,243,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--border);padding:14px 0;}
+  .nav-inner{max-width:860px;margin:0 auto;display:flex;gap:6px;padding:0 20px;overflow-x:auto;}
+  .nav-btn{padding:8px 18px;border-radius:24px;border:1.5px solid var(--border);font-size:13px;font-weight:600;color:var(--t2);cursor:pointer;background:none;white-space:nowrap;transition:all .15s;}
+  .nav-btn:hover{border-color:#aaa;}
+  .nav-btn.on{background:var(--t1);color:#fff;border-color:var(--t1);}
+
+  /* Sections */
+  .tmpl{display:none;max-width:720px;margin:0 auto;padding:48px 20px 80px;}
+  .tmpl.on{display:block;}
+
+  /* Common */
+  .cover{width:72px;height:104px;object-fit:cover;border-radius:6px;box-shadow:0 2px 10px rgba(0,0,0,.1);}
+  .tag{display:inline-block;font-size:11px;color:var(--t3);border:1px solid var(--border);padding:2px 10px;border-radius:14px;}
+  .divider{height:1px;background:var(--border);margin:36px 0;}
+  blockquote{border-left:2px solid var(--accent);padding:12px 18px;margin:16px 0;color:var(--t2);font-size:15px;line-height:2;background:var(--accent-bg);border-radius:0 8px 8px 0;}
+
+  /* ═══ 1. Editorial ═══ */
+  #ed .head{text-align:center;margin-bottom:48px;}
+  #ed .head .label{font-size:11px;color:var(--accent);letter-spacing:2px;text-transform:uppercase;font-weight:700;}
+  #ed .head h1{font-size:28px;font-weight:900;margin:16px 0 8px;line-height:1.4;}
+  #ed .head .sub{color:var(--t3);font-size:14px;}
+  #ed .intro{display:flex;gap:20px;margin-bottom:32px;}
+  #ed .intro-text p{font-size:15px;color:var(--t2);margin-bottom:10px;}
+  #ed .section-title{font-size:12px;color:var(--t3);letter-spacing:1.5px;text-transform:uppercase;font-weight:700;margin-bottom:12px;}
+  #ed .body p{font-size:15px;color:var(--t2);margin-bottom:12px;}
+  #ed .pull{font-size:20px;font-weight:700;text-align:center;padding:32px 0;line-height:1.7;color:var(--t1);}
+
+  /* ═══ 2. Timeline ═══ */
+  #tl .tl-head{text-align:center;margin-bottom:40px;}
+  #tl .tl-head h1{font-size:22px;font-weight:800;}
+  #tl .tl-head p{color:var(--t3);font-size:13px;margin-top:4px;}
+  .timeline{position:relative;padding-left:28px;}
+  .timeline::before{content:'';position:absolute;left:8px;top:0;bottom:0;width:1.5px;background:var(--border);}
+  .tl-node{position:relative;margin-bottom:32px;}
+  .tl-node::before{content:'';position:absolute;left:-24px;top:6px;width:10px;height:10px;border-radius:50%;border:2px solid var(--accent);background:var(--bg);}
+  .tl-node.empty::before{border-color:var(--border);background:var(--border);}
+  .tl-node.active::before{background:var(--accent);border-color:var(--accent);}
+  .tl-date{font-size:12px;color:var(--t3);font-weight:600;margin-bottom:4px;}
+  .tl-content{font-size:14px;color:var(--t2);}
+  .tl-content p{margin-bottom:6px;}
+
+  /* ═══ 3. Conversational ═══ */
+  #cv .cv-head{margin-bottom:36px;}
+  #cv .cv-head h1{font-size:20px;font-weight:700;}
+  .chat{margin-bottom:20px;}
+  .chat-q{font-size:14px;font-weight:700;color:var(--accent);margin-bottom:8px;}
+  .chat-a{font-size:15px;color:var(--t2);padding-left:16px;border-left:2px solid var(--border);}
+  .chat-a p{margin-bottom:8px;}
+
+  /* ═══ 4. Card Summary ═══ */
+  #cs .cs-head{text-align:center;margin-bottom:32px;}
+  #cs .cs-head h1{font-size:20px;font-weight:800;}
+  .cards{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .scard{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px;}
+  .scard .sl{font-size:10px;color:var(--t3);font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;}
+  .scard h3{font-size:15px;font-weight:700;margin-bottom:6px;}
+  .scard p{font-size:13px;color:var(--t2);}
+  .scard.wide{grid-column:1/-1;}
+  .scard .num{font-size:28px;font-weight:900;color:var(--accent);line-height:1;}
+
+  /* ═══ 5. Immersive ═══ */
+  #im .im-hero{text-align:center;padding:60px 0 40px;}
+  #im .im-hero h1{font-size:26px;font-weight:900;line-height:1.6;}
+  #im .im-section{padding:40px 0;}
+  #im .im-section h2{font-size:13px;color:var(--t3);letter-spacing:1.5px;text-transform:uppercase;font-weight:700;margin-bottom:16px;}
+  #im .im-section p{font-size:15px;color:var(--t2);margin-bottom:12px;}
+  #im .im-big{font-size:20px;color:var(--t1);text-align:center;padding:40px 20px;line-height:1.8;font-weight:600;}
+  #im .im-end{text-align:center;padding:40px 0;color:var(--t3);font-size:14px;}
+
+  @media(max-width:640px){.cards{grid-template-columns:1fr;} #ed .intro{flex-direction:column;align-items:center;text-align:center;}}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <button class="nav-btn on" onclick="show('ed',this)">에디토리얼</button>
+    <button class="nav-btn" onclick="show('tl',this)">타임라인</button>
+    <button class="nav-btn" onclick="show('cv',this)">대화형</button>
+    <button class="nav-btn" onclick="show('cs',this)">카드 요약</button>
+    <button class="nav-btn" onclick="show('im',this)">몰입형</button>
+  </div>
+</nav>
+
+<!-- ═══════════════════════════════════════════
+     1. 에디토리얼 (Editorial)
+     ═══════════════════════════════════════════ -->
+<div id="ed" class="tmpl on">
+  <div class="head">
+    <div class="label">Reading Report</div>
+    <h1 class="serif">죽음의 수용소에서</h1>
+    <div class="sub">빅터 프랭클 · 224쪽 · 2025년 1월–11월 · 재독 중</div>
+  </div>
+
+  <div class="intro">
+    <img class="cover" src="https://shopping-phinf.pstatic.net/main_3248560/32485602637.20230912083634.jpg" alt="">
+    <div class="intro-text">
+      <p>나치 강제 수용소를 경험한 정신과 의사의 기록이다. 수용소에서의 참혹한 일상을 담담하게 서술하면서, 그 안에서도 인간이 선택할 수 있는 것이 무엇인지 묻는다.</p>
+      <p>이 독자는 열 달에 걸쳐 이 책을 읽었고, 지금 다시 읽고 있다.</p>
+      <span class="tag">기록 3건</span> <span class="tag">필사</span> <span class="tag">재독</span>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="section-title">독자의 기록에서</div>
+  <blockquote>삶의 많은 고난에서<br>역경을 온전히 바라보고<br>태도만은 스스로 선택이기에<br>어둠이 아닌 빛을 바라본다</blockquote>
+  <div class="body">
+    <p>독서를 시작한 날 남긴 첫 기록이다. 프랭클의 메시지를 자신의 언어로 옮겼다. "태도만은 스스로 선택"이라는 표현에서 이 문장이 단순한 인용이 아니라 개인적인 다짐에 가깝다는 걸 알 수 있다.</p>
+  </div>
+
+  <div class="divider"></div>
+
+  <blockquote>나태함을 깨기위해선<br>내안의 반감을 긍정적으로 돌리고<br>거창한 비젼보다는<br>하루하루 작은 행동을 해나가면<br>점차 성장하고 자신감이 생겨난다</blockquote>
+  <div class="body">
+    <p>열 달 뒤, 완독하면서 남긴 마지막 기록. 1월의 기록이 '결심'이었다면, 이건 '방법'이다. 수용소의 이야기를 읽고 "작은 행동"을 이야기하게 된 것은, 그 사이에 뭔가를 시도해본 사람의 말처럼 들린다.</p>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="section-title">이 책이 건드리는 질문</div>
+  <div class="body">
+    <p>모든 것을 빼앗긴 사람에게 남는 것이 있다면, 그건 무엇인가. 프랭클은 "태도를 선택할 자유"라고 답했다. 이 답이 수용소에서만 유효한 것인지, 출근길 지하철에서도 유효한 것인지는 읽는 사람이 판단할 문제다.</p>
+  </div>
+
+  <div class="pull serif">"거창한 비전보다 하루하루 작은 행동"<br><span style="font-size:14px;font-weight:400;color:var(--t3);">— 이 독자가 224쪽에서 가져간 한 문장</span></div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     2. 타임라인 (Timeline)
+     ═══════════════════════════════════════════ -->
+<div id="tl" class="tmpl">
+  <div class="tl-head">
+    <h1>열 달의 독서 기록</h1>
+    <p>「죽음의 수용소에서」 빅터 프랭클</p>
+  </div>
+
+  <div style="display:flex;gap:16px;align-items:center;margin-bottom:32px;">
+    <img class="cover" src="https://shopping-phinf.pstatic.net/main_3248560/32485602637.20230912083634.jpg" alt="">
+    <div>
+      <p style="font-size:14px;color:var(--t2);">224쪽 · 기록 3건 · 재독 중</p>
+      <p style="font-size:13px;color:var(--t3);margin-top:4px;">완독까지 276일. 보통 이 두께면 2주면 충분한데, 이 책은 달랐던 모양이다.</p>
+    </div>
+  </div>
+
+  <div class="timeline">
+    <div class="tl-node active">
+      <div class="tl-date">2025년 1월 31일 — 시작</div>
+      <div class="tl-content">
+        <p>책을 펴든 날, 바로 기록을 남겼다.</p>
+        <blockquote>삶의 많은 고난에서 역경을 온전히 바라보고 태도만은 스스로 선택이기에 어둠이 아닌 빛을 바라본다</blockquote>
+        <p>프랭클의 핵심 메시지에 즉각 반응한 기록. 확신에 찬 톤이다.</p>
+      </div>
+    </div>
+
+    <div class="tl-node empty">
+      <div class="tl-date">2025년 7월 6일 — 공백</div>
+      <div class="tl-content">
+        <p style="color:var(--t3);font-style:italic;">기록을 열었지만 아무것도 쓰지 않았다.</p>
+        <p>다섯 달의 침묵. 1월의 다짐을 실천하는 일이 쉽지 않았을 수 있다. 혹은 이 책이 요구하는 무게를 소화하는 시간이었을 수도 있다.</p>
+      </div>
+    </div>
+
+    <div class="tl-node active">
+      <div class="tl-date">2025년 11월 3일 — 완독</div>
+      <div class="tl-content">
+        <blockquote>나태함을 깨기위해선 내안의 반감을 긍정적으로 돌리고 거창한 비젼보다는 하루하루 작은 행동을 해나가면 점차 성장하고 자신감이 생겨난다</blockquote>
+        <p>톤이 달라졌다. 1월에는 "빛을 바라본다"는 선언이었는데, 이제는 "작은 행동"이라는 방법론이 됐다. 감동이 실천으로 바뀌는 데 열 달이 걸린 셈이다.</p>
+      </div>
+    </div>
+
+    <div class="tl-node">
+      <div class="tl-date">현재 — 재독 중</div>
+      <div class="tl-content">
+        <p>완독 후 다시 첫 장을 열었다. 처음 읽었을 때와 지금, 같은 문장이 다르게 읽힐 것이다.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     3. 대화형 (Conversational)
+     ═══════════════════════════════════════════ -->
+<div id="cv" class="tmpl">
+  <div class="cv-head">
+    <h1>누군가 이 책에 대해 물어본다면</h1>
+    <p style="color:var(--t3);font-size:14px;margin-top:4px;">「죽음의 수용소에서」 빅터 프랭클</p>
+    <div style="margin-top:12px;">
+      <img class="cover" src="https://shopping-phinf.pstatic.net/main_3248560/32485602637.20230912083634.jpg" alt="" style="width:56px;height:80px;">
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="chat">
+    <div class="chat-q">이 책 뭔데?</div>
+    <div class="chat-a">
+      <p>나치 수용소에서 살아남은 정신과 의사가 쓴 책이야. 수용소 생활을 기록한 건데, 어둡기만 한 건 아니고 — 그 안에서 사람이 뭘 선택할 수 있는가에 대한 이야기야. 224쪽이라 길진 않아.</p>
+    </div>
+  </div>
+
+  <div class="chat">
+    <div class="chat-q">무거운 책 아니야?</div>
+    <div class="chat-a">
+      <p>무겁지. 근데 읽고 나면 무거움보다는 다른 감정이 남아. 이 책을 읽은 한 사람은 이렇게 적었어:</p>
+      <blockquote>태도만은 스스로 선택이기에 어둠이 아닌 빛을 바라본다</blockquote>
+      <p>수용소 이야기를 읽으면서 이런 문장이 나올 수 있다는 게, 이 책의 성격을 보여주는 것 같아.</p>
+    </div>
+  </div>
+
+  <div class="chat">
+    <div class="chat-q">읽고 나서 뭐가 달라져?</div>
+    <div class="chat-a">
+      <p>그 사람은 처음엔 "빛을 바라보겠다"는 식의 큰 다짐을 했어. 그런데 열 달 뒤에는 이렇게 바뀌었더라고:</p>
+      <blockquote>거창한 비젼보다는 하루하루 작은 행동을 해나가면 점차 성장하고 자신감이 생겨난다</blockquote>
+      <p>감동이 실제 생활로 내려온 거지. 이 변화가 꽤 인상적이었어.</p>
+    </div>
+  </div>
+
+  <div class="chat">
+    <div class="chat-q">어떤 사람한테 추천해?</div>
+    <div class="chat-a">
+      <p>요즘 뭔가 의미 없이 반복되는 느낌이 드는 사람. 혹은 "왜 이걸 하고 있지?" 같은 생각이 자꾸 드는 사람. 답을 주는 책은 아닌데, 질문을 바꿔주는 책이야. "왜 이렇게 힘들지?"가 "그래서 나는 뭘 선택할 건데?"로 바뀌거든.</p>
+    </div>
+  </div>
+
+  <div class="chat">
+    <div class="chat-q">다시 읽을 만한 책이야?</div>
+    <div class="chat-a">
+      <p>이 사람은 실제로 다시 읽고 있어. 완독하자마자 재독에 들어갔으니까, 한 번으로는 안 끝나는 책인 것 같아.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     4. 카드 요약 (Card Summary)
+     ═══════════════════════════════════════════ -->
+<div id="cs" class="tmpl">
+  <div class="cs-head">
+    <h1>한눈에 보는 독서 리포트</h1>
+    <p style="color:var(--t3);font-size:13px;margin-top:4px;">「죽음의 수용소에서」 빅터 프랭클</p>
+  </div>
+
+  <div class="cards">
+    <!-- 책 정보 -->
+    <div class="scard">
+      <div class="sl">Book</div>
+      <div style="display:flex;gap:12px;align-items:center;">
+        <img src="https://shopping-phinf.pstatic.net/main_3248560/32485602637.20230912083634.jpg" alt="" style="width:48px;height:68px;object-fit:cover;border-radius:4px;">
+        <div>
+          <h3>죽음의 수용소에서</h3>
+          <p>빅터 프랭클 · 224쪽</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 독서 데이터 -->
+    <div class="scard">
+      <div class="sl">Data</div>
+      <div style="display:flex;gap:16px;">
+        <div><div class="num">276</div><p>일간 독서</p></div>
+        <div><div class="num">3</div><p>건의 기록</p></div>
+        <div><div class="num">2</div><p>회독</p></div>
+      </div>
+    </div>
+
+    <!-- 핵심 기록 -->
+    <div class="scard wide">
+      <div class="sl">Key Records</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div>
+          <p style="font-size:11px;color:var(--t3);margin-bottom:4px;">첫 기록 · 2025.01</p>
+          <p style="font-size:14px;line-height:1.8;">역경을 온전히 바라보고 태도만은 스스로 선택이기에 어둠이 아닌 빛을 바라본다</p>
+        </div>
+        <div>
+          <p style="font-size:11px;color:var(--t3);margin-bottom:4px;">마지막 기록 · 2025.11</p>
+          <p style="font-size:14px;line-height:1.8;">거창한 비젼보다는 하루하루 작은 행동을 해나가면 점차 성장하고 자신감이 생겨난다</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 변화 -->
+    <div class="scard">
+      <div class="sl">Change</div>
+      <h3 style="font-size:14px;">선언 → 실천</h3>
+      <p>처음엔 "빛을 바라보겠다"는 다짐. 열 달 뒤엔 "작은 행동 하나"라는 방법으로 바뀌었다. 감동과 실행 사이의 간극을 이 독서가 메운 셈이다.</p>
+    </div>
+
+    <!-- 추천 -->
+    <div class="scard" style="background:var(--accent-bg);border-color:rgba(196,96,29,.15);">
+      <div class="sl" style="color:var(--accent);">For You?</div>
+      <p>의미 없이 반복되는 하루가 지겨운 사람에게. 답을 주진 않지만 질문을 바꿔주는 책.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     5. 몰입형 (Immersive)
+     ═══════════════════════════════════════════ -->
+<div id="im" class="tmpl">
+  <div class="im-hero">
+    <img class="cover" src="https://shopping-phinf.pstatic.net/main_3248560/32485602637.20230912083634.jpg" alt="" style="margin-bottom:20px;">
+    <h1 class="serif">태도만은<br>스스로 선택이기에</h1>
+    <p style="color:var(--t3);font-size:14px;margin-top:12px;">「죽음의 수용소에서」 빅터 프랭클</p>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="im-section">
+    <h2>이 책에 대해</h2>
+    <p>빅터 프랭클은 나치 강제 수용소를 살아남은 정신과 의사다. 이 책은 그가 수용소에서 목격하고 경험한 것들을 기록하면서, 인간이 극한의 상황에서도 무엇을 선택할 수 있는지 묻는다.</p>
+    <p>224쪽. 얇은 책인데 가볍지는 않다.</p>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="im-big serif">
+    삶의 많은 고난에서<br>
+    역경을 온전히 바라보고<br>
+    태도만은 스스로 선택이기에<br>
+    어둠이 아닌 빛을 바라본다
+  </div>
+  <p style="text-align:center;font-size:13px;color:var(--t3);">독서를 시작한 날 남긴 기록</p>
+
+  <div class="divider"></div>
+
+  <div class="im-section">
+    <h2>열 달 뒤</h2>
+    <p>1월에 시작해서 11월에 완독했다. 그 사이 기록을 열었다가 아무것도 쓰지 못한 날이 있었다. 7월의 일이다.</p>
+    <p>그리고 완독하면서 남긴 마지막 기록은 첫 기록과 느낌이 많이 달랐다.</p>
+  </div>
+
+  <div class="im-big serif" style="font-size:18px;">
+    거창한 비젼보다는<br>
+    하루하루 작은 행동을 해나가면<br>
+    점차 성장하고 자신감이 생겨난다
+  </div>
+  <p style="text-align:center;font-size:13px;color:var(--t3);">완독하며 남긴 기록</p>
+
+  <div class="divider"></div>
+
+  <div class="im-section">
+    <h2>그리고</h2>
+    <p>이 사람은 지금 이 책을 다시 읽고 있다.</p>
+    <p>처음 읽었을 때 "빛을 바라보겠다"고 했고, 두 번째는 "작은 행동 하나 하겠다"고 했다. 세 번째에는 어떤 문장을 남기게 될까.</p>
+  </div>
+
+  <div class="im-end">
+    <p>모든 것을 빼앗겨도 남는 것이 있다면</p>
+    <p>그것은 이 상황에서 어떤 태도를 취할지</p>
+    <p>스스로 선택하는 것이다.</p>
+    <p style="margin-top:16px;font-size:12px;">— 빅터 프랭클</p>
+  </div>
+</div>
+
+<div style="text-align:center;padding:32px 20px 48px;font-size:11px;color:var(--t3);">Habitree Reading Report · 5 Template Styles</div>
+
+<script>
+function show(id,btn){
+  document.querySelectorAll('.tmpl').forEach(t=>t.classList.remove('on'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('on'));
+  document.getElementById(id).classList.add('on');
+  btn.classList.add('on');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+</script>
+</body>
+</html>

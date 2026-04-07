@@ -9,6 +9,7 @@ import type {
   SectionType,
   TemplateTone,
   TargetLength,
+  TemplateStyle,
   SectionAIConfig,
 } from "@/types/ai/report-template";
 import {
@@ -24,6 +25,7 @@ export interface BuilderState {
   name: string;
   description: string;
   slug: string;
+  style: TemplateStyle;
   tone: TemplateTone;
   targetLength: TargetLength;
   includeStats: boolean;
@@ -44,6 +46,7 @@ export interface BuilderState {
 // ── Actions ─────────────────────────────────────────────
 type BuilderAction =
   | { type: "SET_META"; field: keyof Pick<BuilderState, "name" | "description" | "slug">; value: string }
+  | { type: "SET_STYLE"; value: TemplateStyle }
   | { type: "SET_TONE"; value: TemplateTone }
   | { type: "SET_LENGTH"; value: TargetLength }
   | { type: "SET_TOGGLE"; field: "includeStats" | "multiReadAware"; value: boolean }
@@ -62,6 +65,9 @@ function builderReducer(state: BuilderState, action: BuilderAction): BuilderStat
   switch (action.type) {
     case "SET_META":
       return { ...state, [action.field]: action.value, isDirty: true };
+
+    case "SET_STYLE":
+      return { ...state, style: action.value, isDirty: true };
 
     case "SET_TONE":
       return { ...state, tone: action.value, isDirty: true };
@@ -171,6 +177,7 @@ export function initializeState(template: ReportTemplate | null): BuilderState {
       name: template.name,
       description: template.description || "",
       slug: template.slug,
+      style: template.style || "editorial",
       tone: template.tone,
       targetLength: template.targetLength,
       includeStats: template.includeStats,
@@ -192,6 +199,7 @@ export function initializeState(template: ReportTemplate | null): BuilderState {
     name: "",
     description: "",
     slug: "",
+    style: "editorial",
     tone: "friendly",
     targetLength: "medium",
     includeStats: true,
@@ -224,6 +232,7 @@ export function useTemplateBuilder(template: ReportTemplate | null) {
       name: state.name,
       description: state.description || null,
       slug: state.slug,
+      style: state.style,
       tone: state.tone,
       targetLength: state.targetLength,
       includeStats: state.includeStats,

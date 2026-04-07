@@ -12,7 +12,7 @@ import type {
   TargetLength,
   SectionAIConfig,
 } from "@/types/ai/report-template";
-import { getSectionAIConfig } from "@/types/ai/report-template";
+import { getSectionAIConfig, STYLE_PROMPT_GUIDES } from "@/types/ai/report-template";
 
 interface BookInfo {
   title: string;
@@ -354,15 +354,17 @@ export function generateReportPromptFromTemplate(
     })
     .join("\n\n");
 
-  // 톤/길이 지시문
+  // 톤/길이/스타일 지시문
   const toneStr = toneInstruction(template.tone);
   const lengthStr = lengthInstruction(template.targetLength);
+  const styleGuide = template.style ? STYLE_PROMPT_GUIDES[template.style] : "";
   const styleInstructions = [toneStr, lengthStr].filter(Boolean).join("\n");
 
   return `${systemPart}
 
 아래 독서 데이터를 분석하여 마크다운 형식의 독서 리포트를 작성해주세요.
 ${styleInstructions ? `\n**작성 스타일**: ${styleInstructions}` : ""}
+${styleGuide ? `\n**서술 방식 가이드**:\n${styleGuide}` : ""}
 
 ---
 
