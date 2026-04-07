@@ -18,7 +18,7 @@ export const AUTH_PAGES: PageInfo[] = [
 export const MAIN_CORE_PAGES: PageInfo[] = [
   { route: "/", name: "홈 대시보드", group: "main-core", requiresAuth: false },
   { route: "/books", name: "내 서재", group: "main-core", requiresAuth: false },
-  { route: "/books/search", name: "도서 검색", group: "main-core", requiresAuth: false },
+  { route: "/books/search", name: "도서 검색", group: "main-core", requiresAuth: true },
   { route: "/notes", name: "내 기록", group: "main-core", requiresAuth: false },
   { route: "/notes/new", name: "새 기록 작성", group: "main-core", requiresAuth: true },
   { route: "/notes/free", name: "자유 기록", group: "main-core", requiresAuth: true },
@@ -49,6 +49,7 @@ export const ADMIN_PAGES: PageInfo[] = [
   { route: "/admin/ai-settings", name: "AI 설정", group: "admin", requiresAuth: true },
   { route: "/admin/api-info", name: "API 정보", group: "admin", requiresAuth: true },
   { route: "/admin/ocr-settings", name: "OCR 설정", group: "admin", requiresAuth: true },
+  { route: "/admin/report-settings", name: "리포트 설정", group: "admin", requiresAuth: true },
 ];
 
 export const STATIC_MISC_PAGES: PageInfo[] = [
@@ -58,6 +59,7 @@ export const STATIC_MISC_PAGES: PageInfo[] = [
   { route: "/payment/fail", name: "결제 실패", group: "payment", requiresAuth: false },
   { route: "/share/notes/test-id", name: "공유 기록 (404)", group: "share", requiresAuth: false },
   { route: "/share/bookshelves/test-id", name: "공유 서재 (404)", group: "share", requiresAuth: false },
+  { route: "/share/reports/test-id", name: "공유 리포트 (404)", group: "share", requiresAuth: false },
 ];
 
 export const ALL_PAGES: PageInfo[] = [
