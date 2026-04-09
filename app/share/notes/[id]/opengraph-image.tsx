@@ -25,6 +25,8 @@ import {
   OgAuroraBackground,
   OgGrainTexture,
   OgLeafDecoration,
+  OgDotPattern,
+  OgBookCoverFrame,
 } from "@/lib/og/components";
 import { getOgConfig } from "@/lib/og/settings";
 
@@ -191,39 +193,7 @@ export default async function OgImage({
                   gap: 16,
                 }}
               >
-                {coverDataUri ? (
-                  <img
-                    src={coverDataUri}
-                    alt=""
-                    width={150}
-                    height={220}
-                    style={{
-                      objectFit: "cover",
-                      borderRadius: 10,
-                      boxShadow:
-                        "0 16px 32px -8px rgba(0, 0, 0, 0.3), 0 4px 12px -4px rgba(0, 0, 0, 0.12)",
-                    }}
-                  />
-                ) : (
-                  <div
-                    style={{
-                      width: 150,
-                      height: 220,
-                      backgroundColor: "#e2e8f0",
-                      borderRadius: 10,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontSize: 15,
-                      color: "#64748b",
-                      fontWeight: 600,
-                      fontFamily: FONT_FAMILY,
-                      boxShadow: "0 8px 20px -6px rgba(0, 0, 0, 0.15)",
-                    }}
-                  >
-                    No Cover
-                  </div>
-                )}
+                <OgBookCoverFrame coverSrc={coverDataUri} width={150} height={220} accentColor={colors.forest} />
 
                 <div
                   style={{
@@ -278,8 +248,10 @@ export default async function OgImage({
                   position: "relative",
                 }}
               >
+                <OgDotPattern color="rgba(26,117,85,0.08)" opacity={0.02} />
+
                 {/* 장식 나뭇잎 (카드 내부) */}
-                <OgLeafDecoration color={colors.forestLighter} position="top-right" opacity={0.06} />
+                <OgLeafDecoration color={colors.forestLighter} position="top-right" opacity={0.08} leafSize="sm" />
 
                 {/* 노트 유형 뱃지 (그래디언트) */}
                 <div
@@ -318,16 +290,33 @@ export default async function OgImage({
                   {isQuoteType && (
                     <div
                       style={{
-                        fontSize: 96,
-                        fontWeight: 800,
-                        color: colors.forestLighter,
-                        lineHeight: 0.5,
+                        position: "relative",
+                        display: "flex",
                         marginBottom: 12,
-                        fontFamily: "Georgia, serif",
-                        opacity: 0.3,
                       }}
                     >
-                      {"\u201C"}
+                      <div
+                        style={{
+                          position: "absolute",
+                          width: 80,
+                          height: 80,
+                          borderRadius: 40,
+                          backgroundColor: colors.forestLighter,
+                          opacity: 0.04,
+                        }}
+                      />
+                      <div
+                        style={{
+                          fontSize: 96,
+                          fontWeight: 800,
+                          color: colors.forestLighter,
+                          lineHeight: 0.5,
+                          fontFamily: "Georgia, serif",
+                          opacity: 0.3,
+                        }}
+                      >
+                        {"\u201C"}
+                      </div>
                     </div>
                   )}
 

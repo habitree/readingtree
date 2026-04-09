@@ -6,7 +6,9 @@ import {
   OgDomainFooter,
   OgAuroraBackground,
   OgGrainTexture,
+  OgDotPattern,
   OgLeafDecoration,
+  OgWaveDecoration,
 } from "@/lib/og/components";
 import { getOgConfig } from "@/lib/og/settings";
 
@@ -16,9 +18,7 @@ export const contentType = "image/png";
 
 export default async function Image() {
   const [fontData, config] = await Promise.all([
-    loadKoreanFont(
-      new URL("../public/fonts/NotoSansKR-SemiBold.otf", import.meta.url)
-    ),
+    loadKoreanFont(new URL("../public/fonts/NotoSansKR-SemiBold.otf", import.meta.url)),
     getOgConfig(),
   ]);
 
@@ -43,9 +43,10 @@ export default async function Image() {
         <OgAccentBar colors={colors} />
         <OgAuroraBackground colors={colors} variant="home" />
         <OgGrainTexture />
-        <OgLeafDecoration color={colors.forest} position="bottom-right" opacity={0.07} />
+        <OgDotPattern opacity={0.02} />
+        <OgLeafDecoration color={colors.forest} position="bottom-right" opacity={0.08} leafSize="lg" />
+        <OgWaveDecoration color={colors.forest} opacity={0.04} />
 
-        {/* 메인 콘텐츠 */}
         <div
           style={{
             display: "flex",
@@ -53,126 +54,69 @@ export default async function Image() {
             flexDirection: "column",
             alignItems: "center",
             justifyContent: "center",
-            gap: 20,
+            gap: 16,
             padding: "0 80px",
           }}
         >
-          {iconSrc ? (
-            <img
-              src={iconSrc}
-              alt=""
-              width={120}
-              height={120}
-              style={{
-                borderRadius: 28,
-                boxShadow:
-                  "0 16px 32px -8px rgba(26, 117, 85, 0.2), 0 0 60px rgba(26, 117, 85, 0.12), 0 0 0 1px rgba(26, 117, 85, 0.08)",
-              }}
-            />
-          ) : (
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", position: "relative" }}>
             <div
               style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                width: 120,
-                height: 120,
-                borderRadius: 28,
-                backgroundColor: colors.forest,
-                boxShadow:
-                  "0 16px 32px -8px rgba(26, 117, 85, 0.3), 0 0 60px rgba(26, 117, 85, 0.15)",
+                position: "absolute",
+                top: -12, left: -12, width: 144, height: 144,
+                borderRadius: 40,
+                border: `2px solid rgba(125, 217, 168, 0.15)`,
+                boxShadow: `0 0 40px rgba(26, 117, 85, 0.06)`,
               }}
-            >
-              <svg
-                width="64"
-                height="64"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="white"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
+            />
+            {iconSrc ? (
+              <img
+                src={iconSrc}
+                alt=""
+                width={120}
+                height={120}
+                style={{
+                  borderRadius: 28,
+                  boxShadow: "0 20px 40px -10px rgba(26, 117, 85, 0.22), 0 0 60px rgba(26, 117, 85, 0.12), 0 0 0 1px rgba(26, 117, 85, 0.08)",
+                }}
+              />
+            ) : (
+              <div
+                style={{
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  width: 120, height: 120, borderRadius: 28, backgroundColor: colors.forest,
+                  boxShadow: "0 20px 40px -10px rgba(26, 117, 85, 0.3), 0 0 60px rgba(26, 117, 85, 0.15)",
+                }}
               >
-                <path d="M12 22v-7M9 22h6" />
-                <path d="M17 7A5 5 0 0 0 7 7" />
-                <path d="M12 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z" />
-                <path d="M12 5V2" />
-              </svg>
-            </div>
-          )}
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 22v-7M9 22h6" /><path d="M17 7A5 5 0 0 0 7 7" /><path d="M12 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z" /><path d="M12 5V2" />
+                </svg>
+              </div>
+            )}
+          </div>
 
-          <div
-            style={{
-              fontSize: 84,
-              fontWeight: 800,
-              color: colors.textPrimary,
-              letterSpacing: "-0.03em",
-              lineHeight: 1,
-              fontFamily: FONT_FAMILY,
-              marginTop: 4,
-            }}
-          >
+          <div style={{ fontSize: 84, fontWeight: 800, color: colors.textPrimary, letterSpacing: "-0.03em", lineHeight: 1, fontFamily: FONT_FAMILY, marginTop: 8 }}>
             {brand.name}
           </div>
-
-          <div
-            style={{
-              fontSize: 24,
-              fontWeight: 600,
-              color: colors.forest,
-              fontFamily: FONT_FAMILY,
-              textAlign: "center",
-              letterSpacing: "0.05em",
-            }}
-          >
+          <div style={{ fontSize: 24, fontWeight: 600, color: colors.forest, fontFamily: FONT_FAMILY, textAlign: "center", letterSpacing: "0.05em" }}>
             {brand.tagline}
           </div>
-
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 16,
-              marginTop: 4,
-            }}
-          >
-            <div
-              style={{
-                width: 40,
-                height: 2,
-                backgroundColor: colors.border,
-                borderRadius: 1,
-              }}
-            />
-            <div
-              style={{
-                fontSize: 14,
-                fontWeight: 600,
-                color: colors.textSecondary,
-                fontFamily: FONT_FAMILY,
-                letterSpacing: "0.02em",
-                opacity: 0.6,
-              }}
-            >
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 2 }}>
+            <div style={{ width: 5, height: 5, borderRadius: 3, backgroundColor: colors.forestLighter, opacity: 0.5 }} />
+            <div style={{ width: 5, height: 5, borderRadius: 3, backgroundColor: colors.forestLight, opacity: 0.7 }} />
+            <div style={{ width: 5, height: 5, borderRadius: 3, backgroundColor: colors.forestLighter, opacity: 0.5 }} />
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 16, marginTop: 2 }}>
+            <div style={{ width: 40, height: 2, backgroundColor: colors.border, borderRadius: 1 }} />
+            <div style={{ fontSize: 14, fontWeight: 600, color: colors.textSecondary, fontFamily: FONT_FAMILY, letterSpacing: "0.02em", opacity: 0.6 }}>
               {brand.keywords}
             </div>
-            <div
-              style={{
-                width: 40,
-                height: 2,
-                backgroundColor: colors.border,
-                borderRadius: 1,
-              }}
-            />
+            <div style={{ width: 40, height: 2, backgroundColor: colors.border, borderRadius: 1 }} />
           </div>
         </div>
 
         <OgDomainFooter brand={brand} colors={colors} />
       </div>
     ),
-    {
-      ...size,
-      ...buildFontOptions(fontData),
-    }
+    { ...size, ...buildFontOptions(fontData) },
   );
 }

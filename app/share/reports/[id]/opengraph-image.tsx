@@ -22,6 +22,9 @@ import {
   OgGrainTexture,
   OgSparkleIcon,
   OgLeafDecoration,
+  OgDotPattern,
+  OgBookCoverFrame,
+  OgSparkleScatter,
 } from "@/lib/og/components";
 import { getOgConfig } from "@/lib/og/settings";
 
@@ -110,7 +113,7 @@ export default async function OgImage({
           <OgGrainTexture />
 
           {/* 장식 나뭇잎 */}
-          <OgLeafDecoration color={colors.earthLight} position="bottom-right" opacity={0.05} />
+          <OgLeafDecoration color={colors.earthLight} position="bottom-right" opacity={0.07} leafSize="md" />
 
           {/* 메인 영역 */}
           <div
@@ -148,39 +151,7 @@ export default async function OgImage({
                   gap: 20,
                 }}
               >
-                {coverDataUri ? (
-                  <img
-                    src={coverDataUri}
-                    alt=""
-                    width={160}
-                    height={240}
-                    style={{
-                      objectFit: "cover",
-                      borderRadius: 8,
-                      boxShadow:
-                        "0 12px 28px -8px rgba(0, 0, 0, 0.25), 0 4px 8px -2px rgba(0, 0, 0, 0.1), 0 0 40px rgba(196, 147, 90, 0.12)",
-                    }}
-                  />
-                ) : (
-                  <div
-                    style={{
-                      width: 160,
-                      height: 240,
-                      backgroundColor: "#e2e0dc",
-                      borderRadius: 8,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontSize: 15,
-                      color: "#8c7e6e",
-                      fontWeight: 600,
-                      fontFamily: FONT_FAMILY,
-                      boxShadow: "0 8px 20px -6px rgba(0, 0, 0, 0.15)",
-                    }}
-                  >
-                    표지 없음
-                  </div>
-                )}
+                <OgBookCoverFrame coverSrc={coverDataUri} width={160} height={240} accentColor={colors.earth} />
                 <div
                   style={{
                     fontSize: 20,
@@ -214,8 +185,10 @@ export default async function OgImage({
                   flexDirection: "column",
                   padding: "40px 44px",
                   justifyContent: "space-between",
+                  position: "relative",
                 }}
               >
+                <OgDotPattern color="rgba(196,147,90,0.08)" opacity={0.02} />
                 <div
                   style={{
                     display: "flex",
@@ -233,17 +206,27 @@ export default async function OgImage({
                   >
                     <div
                       style={{
-                        width: 36,
-                        height: 36,
-                        borderRadius: 10,
-                        background: `linear-gradient(135deg, ${colors.earth}, ${colors.earthLight})`,
+                        position: "relative",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
-                        boxShadow: `0 4px 12px rgba(196, 147, 90, 0.2)`,
                       }}
                     >
-                      <OgSparkleIcon size={18} color="white" />
+                      <div
+                        style={{
+                          width: 36,
+                          height: 36,
+                          borderRadius: 10,
+                          background: `linear-gradient(135deg, ${colors.earth}, ${colors.earthLight})`,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          boxShadow: `0 4px 12px rgba(196, 147, 90, 0.2)`,
+                        }}
+                      >
+                        <OgSparkleIcon size={18} color="white" />
+                      </div>
+                      <OgSparkleScatter color={colors.earthLight} opacity={0.2} />
                     </div>
                     <span
                       style={{

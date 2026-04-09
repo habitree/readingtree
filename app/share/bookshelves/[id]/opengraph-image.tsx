@@ -22,6 +22,8 @@ import {
   OgAuroraBackground,
   OgGrainTexture,
   OgBookDecoration,
+  OgDotPattern,
+  OgLeafDecoration,
 } from "@/lib/og/components";
 import { getOgConfig } from "@/lib/og/settings";
 
@@ -176,8 +178,9 @@ export default async function OgImage({
                   position: "relative",
                 }}
               >
-                {/* 장식 책 */}
+                {/* 장식 */}
                 <OgBookDecoration color={colors.forest} position="bottom-left" opacity={0.05} />
+                <OgLeafDecoration color={colors.forestLighter} position="top-left" opacity={0.05} leafSize="sm" />
 
                 {/* 서재 아이콘 (64x64 + 글로우) */}
                 <div
@@ -189,7 +192,7 @@ export default async function OgImage({
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    boxShadow: `0 8px 24px -4px rgba(26, 117, 85, 0.25)`,
+                    boxShadow: `0 12px 28px -6px rgba(26, 117, 85, 0.30), 0 0 20px rgba(26, 117, 85, 0.10)`,
                   }}
                 >
                   <svg
@@ -284,8 +287,10 @@ export default async function OgImage({
                   justifyContent: "center",
                   padding: "20px 28px",
                   gap: 14,
+                  position: "relative",
                 }}
               >
+                <OgDotPattern color="rgba(26,117,85,0.06)" opacity={0.02} />
                 {prefetchedBooks.map((book, i) => (
                   <div
                     key={i}
@@ -305,7 +310,7 @@ export default async function OgImage({
                         style={{
                           objectFit: "cover",
                           borderRadius: 8,
-                          boxShadow: `0 6px 16px -4px ${bookShadowColors[i % bookShadowColors.length]}`,
+                          boxShadow: `0 12px 24px -6px ${bookShadowColors[i % bookShadowColors.length]}, 0 4px 8px -2px rgba(0,0,0,0.08), 0 0 0 1px rgba(0,0,0,0.03)`,
                         }}
                       />
                     ) : (

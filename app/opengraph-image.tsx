@@ -6,7 +6,9 @@ import {
   OgDomainFooter,
   OgAuroraBackground,
   OgGrainTexture,
+  OgDotPattern,
   OgLeafDecoration,
+  OgWaveDecoration,
 } from "@/lib/og/components";
 import { getOgConfig } from "@/lib/og/settings";
 
@@ -16,9 +18,7 @@ export const contentType = "image/png";
 
 export default async function Image() {
   const [fontData, config] = await Promise.all([
-    loadKoreanFont(
-      new URL("../public/fonts/NotoSansKR-SemiBold.otf", import.meta.url)
-    ),
+    loadKoreanFont(new URL("../public/fonts/NotoSansKR-SemiBold.otf", import.meta.url)),
     getOgConfig(),
   ]);
 
@@ -40,18 +40,17 @@ export default async function Image() {
           fontFamily: FONT_FAMILY,
         }}
       >
-        {/* 상단 악센트 바 (8px + 글로우) */}
         <OgAccentBar colors={colors} />
-
-        {/* 오로라 배경 */}
         <OgAuroraBackground colors={colors} variant="home" />
-
-        {/* 필름 그레인 텍스처 */}
         <OgGrainTexture />
+        <OgDotPattern opacity={0.02} />
 
-        {/* 장식용 나뭇잎 */}
-        <OgLeafDecoration color={colors.forest} position="bottom-right" opacity={0.07} />
-        <OgLeafDecoration color={colors.forestLight} position="top-left" opacity={0.05} />
+        {/* 장식 나뭇잎 (다양한 크기) */}
+        <OgLeafDecoration color={colors.forest} position="bottom-right" opacity={0.08} leafSize="lg" />
+        <OgLeafDecoration color={colors.forestLight} position="top-left" opacity={0.05} leafSize="sm" />
+
+        {/* 하단 물결 장식 */}
+        <OgWaveDecoration color={colors.forest} opacity={0.04} />
 
         {/* 메인 콘텐츠 */}
         <div
@@ -61,56 +60,69 @@ export default async function Image() {
             flexDirection: "column",
             alignItems: "center",
             justifyContent: "center",
-            gap: 20,
+            gap: 16,
             padding: "0 80px",
           }}
         >
-          {/* 로고 이미지 (bloom shadow) */}
-          {iconSrc ? (
-            <img
-              src={iconSrc}
-              alt=""
-              width={120}
-              height={120}
-              style={{
-                borderRadius: 28,
-                boxShadow:
-                  "0 16px 32px -8px rgba(26, 117, 85, 0.2), 0 0 60px rgba(26, 117, 85, 0.12), 0 0 0 1px rgba(26, 117, 85, 0.08)",
-              }}
-            />
-          ) : (
+          {/* 로고 + 글로우 링 */}
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              position: "relative",
+            }}
+          >
+            {/* 아이콘 뒤 미세 링 */}
             <div
               style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                width: 120,
-                height: 120,
-                borderRadius: 28,
-                backgroundColor: colors.forest,
-                boxShadow:
-                  "0 16px 32px -8px rgba(26, 117, 85, 0.3), 0 0 60px rgba(26, 117, 85, 0.15)",
+                position: "absolute",
+                top: -12,
+                left: -12,
+                width: 144,
+                height: 144,
+                borderRadius: 40,
+                border: `2px solid rgba(125, 217, 168, 0.15)`,
+                boxShadow: `0 0 40px rgba(26, 117, 85, 0.06)`,
               }}
-            >
-              <svg
-                width="64"
-                height="64"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="white"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
+            />
+            {iconSrc ? (
+              <img
+                src={iconSrc}
+                alt=""
+                width={120}
+                height={120}
+                style={{
+                  borderRadius: 28,
+                  boxShadow:
+                    "0 20px 40px -10px rgba(26, 117, 85, 0.22), 0 0 60px rgba(26, 117, 85, 0.12), 0 0 0 1px rgba(26, 117, 85, 0.08)",
+                }}
+              />
+            ) : (
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: 120,
+                  height: 120,
+                  borderRadius: 28,
+                  backgroundColor: colors.forest,
+                  boxShadow:
+                    "0 20px 40px -10px rgba(26, 117, 85, 0.3), 0 0 60px rgba(26, 117, 85, 0.15)",
+                }}
               >
-                <path d="M12 22v-7M9 22h6" />
-                <path d="M17 7A5 5 0 0 0 7 7" />
-                <path d="M12 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z" />
-                <path d="M12 5V2" />
-              </svg>
-            </div>
-          )}
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 22v-7M9 22h6" />
+                  <path d="M17 7A5 5 0 0 0 7 7" />
+                  <path d="M12 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z" />
+                  <path d="M12 5V2" />
+                </svg>
+              </div>
+            )}
+          </div>
 
-          {/* 브랜드명 (오버사이즈 84px) */}
+          {/* 브랜드명 (84px) */}
           <div
             style={{
               fontSize: 84,
@@ -119,13 +131,13 @@ export default async function Image() {
               letterSpacing: "-0.03em",
               lineHeight: 1,
               fontFamily: FONT_FAMILY,
-              marginTop: 4,
+              marginTop: 8,
             }}
           >
             {brand.name}
           </div>
 
-          {/* 태그라인 (에어리한 스타일) */}
+          {/* 태그라인 */}
           <div
             style={{
               fontSize: 24,
@@ -139,23 +151,30 @@ export default async function Image() {
             {brand.tagline}
           </div>
 
-          {/* 구분선 + 키워드 (미묘하게) */}
+          {/* 도트 구분자 */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              marginTop: 2,
+            }}
+          >
+            <div style={{ width: 5, height: 5, borderRadius: 3, backgroundColor: colors.forestLighter, opacity: 0.5 }} />
+            <div style={{ width: 5, height: 5, borderRadius: 3, backgroundColor: colors.forestLight, opacity: 0.7 }} />
+            <div style={{ width: 5, height: 5, borderRadius: 3, backgroundColor: colors.forestLighter, opacity: 0.5 }} />
+          </div>
+
+          {/* 키워드 (구분선 + 미묘하게) */}
           <div
             style={{
               display: "flex",
               alignItems: "center",
               gap: 16,
-              marginTop: 4,
+              marginTop: 2,
             }}
           >
-            <div
-              style={{
-                width: 40,
-                height: 2,
-                backgroundColor: colors.border,
-                borderRadius: 1,
-              }}
-            />
+            <div style={{ width: 40, height: 2, backgroundColor: colors.border, borderRadius: 1 }} />
             <div
               style={{
                 fontSize: 14,
@@ -168,24 +187,13 @@ export default async function Image() {
             >
               {brand.keywords}
             </div>
-            <div
-              style={{
-                width: 40,
-                height: 2,
-                backgroundColor: colors.border,
-                borderRadius: 1,
-              }}
-            />
+            <div style={{ width: 40, height: 2, backgroundColor: colors.border, borderRadius: 1 }} />
           </div>
         </div>
 
-        {/* 하단 도메인 */}
         <OgDomainFooter brand={brand} colors={colors} />
       </div>
     ),
-    {
-      ...size,
-      ...buildFontOptions(fontData),
-    }
+    { ...size, ...buildFontOptions(fontData) },
   );
 }

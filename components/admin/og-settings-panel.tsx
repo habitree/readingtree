@@ -508,10 +508,10 @@ function OgPreviewCard({
   const accentColor = isReport ? form.color_earth : form.color_forest;
   const accentLight = isReport ? form.color_earth_light : form.color_forest_light;
 
-  // 오로라 배경 그래디언트 (variant별)
+  // 오로라 배경 그래디언트 (variant별, 강화)
   const auroraGradient = isReport
-    ? `radial-gradient(ellipse 100% 80% at 5% 10%, ${form.color_earth}12 0%, transparent 55%), radial-gradient(ellipse 90% 70% at 95% 85%, ${form.color_forest}0d 0%, transparent 50%)`
-    : `radial-gradient(ellipse 120% 80% at 15% 20%, ${form.color_forest}16 0%, transparent 60%), radial-gradient(ellipse 100% 90% at 85% 75%, ${form.color_forest_light}12 0%, transparent 55%)`;
+    ? `radial-gradient(ellipse 100% 80% at 5% 10%, ${form.color_earth}22 0%, transparent 55%), radial-gradient(ellipse 90% 70% at 95% 85%, ${form.color_forest}18 0%, transparent 50%), radial-gradient(ellipse 60% 50% at 50% 50%, ${form.color_earth_light}10 0%, transparent 45%)`
+    : `radial-gradient(ellipse 120% 80% at 15% 20%, ${form.color_forest}22 0%, transparent 60%), radial-gradient(ellipse 100% 90% at 85% 75%, ${form.color_forest_light}1a 0%, transparent 55%), radial-gradient(ellipse 80% 60% at 50% 10%, ${form.color_forest_lighter}12 0%, transparent 50%)`;
 
   return (
     <div className="space-y-2">
@@ -545,12 +545,21 @@ function OgPreviewCard({
           style={{ backgroundImage: auroraGradient }}
         />
 
-        {/* 그레인 텍스처 */}
+        {/* 그레인 텍스처 (강화) */}
         <div
-          className="absolute inset-0 opacity-[0.03]"
+          className="absolute inset-0 opacity-[0.06]"
           style={{
-            backgroundImage: "radial-gradient(rgba(0,0,0,0.08) 0.3px, transparent 0.3px)",
+            backgroundImage: "radial-gradient(rgba(0,0,0,0.08) 0.4px, transparent 0.4px)",
             backgroundSize: "4px 4px",
+          }}
+        />
+
+        {/* 도트 패턴 */}
+        <div
+          className="absolute inset-0 opacity-[0.02]"
+          style={{
+            backgroundImage: "radial-gradient(rgba(0,0,0,0.12) 0.8px, transparent 0.8px)",
+            backgroundSize: "16px 16px",
           }}
         />
 
@@ -559,35 +568,39 @@ function OgPreviewCard({
           className="absolute top-0 left-0 right-0 h-1.5"
           style={{
             background: isReport
-              ? `linear-gradient(90deg, ${form.color_earth}, ${accentLight}, ${form.color_forest})`
-              : `linear-gradient(90deg, ${form.color_forest}, ${form.color_forest_light}, ${form.color_forest_lighter}, ${form.color_forest_light}, ${form.color_forest})`,
+              ? `linear-gradient(90deg, #8B6B3D, ${form.color_earth}, ${accentLight}, ${form.color_forest}, ${accentLight}, ${form.color_earth}, #8B6B3D)`
+              : `linear-gradient(90deg, #0D5A3E, ${form.color_forest}, ${form.color_forest_light}, ${form.color_forest_lighter}, ${form.color_forest_light}, ${form.color_forest}, #0D5A3E)`,
             boxShadow: isReport
-              ? `0 1px 6px ${form.color_earth}30`
-              : `0 1px 6px ${form.color_forest}30`,
+              ? `0 1px 8px ${form.color_earth}35, 0 0px 3px ${form.color_earth}18`
+              : `0 1px 8px ${form.color_forest}35, 0 0px 3px ${form.color_forest}18`,
           }}
         />
 
         {variant === "home" ? (
           /* 홈페이지 레이아웃 (오버사이즈 타이포) */
-          <div className="flex flex-col items-center justify-center h-full gap-2 px-8">
-            <div
-              className="w-12 h-12 rounded-lg flex items-center justify-center overflow-hidden"
-              style={{
-                backgroundColor: iconUrl ? "transparent" : accentColor,
-                boxShadow: `0 4px 16px ${accentColor}30, 0 0 24px ${accentColor}15`,
-              }}
-            >
-              {iconUrl ? (
-                <img
-                  src={iconUrl}
-                  alt=""
-                  className="w-full h-full object-cover rounded-lg"
-                />
-              ) : (
-                <span className="text-white text-lg font-bold">
-                  {form.brand_name.charAt(0)}
-                </span>
-              )}
+          <div className="flex flex-col items-center justify-center h-full gap-1.5 px-8">
+            {/* 아이콘 + 글로우 링 */}
+            <div className="relative flex items-center justify-center">
+              <div
+                className="absolute w-[60px] h-[60px] rounded-xl"
+                style={{
+                  border: `1.5px solid ${form.color_forest_lighter}25`,
+                  boxShadow: `0 0 16px ${accentColor}0a`,
+                }}
+              />
+              <div
+                className="w-12 h-12 rounded-lg flex items-center justify-center overflow-hidden"
+                style={{
+                  backgroundColor: iconUrl ? "transparent" : accentColor,
+                  boxShadow: `0 4px 16px ${accentColor}30, 0 0 24px ${accentColor}15`,
+                }}
+              >
+                {iconUrl ? (
+                  <img src={iconUrl} alt="" className="w-full h-full object-cover rounded-lg" />
+                ) : (
+                  <span className="text-white text-lg font-bold">{form.brand_name.charAt(0)}</span>
+                )}
+              </div>
             </div>
             <div
               className="text-[28px] font-extrabold tracking-tight"
@@ -601,21 +614,18 @@ function OgPreviewCard({
             >
               {form.tagline}
             </div>
-            <div className="flex items-center gap-2 mt-0.5">
-              <div
-                className="w-5 h-0.5 rounded"
-                style={{ backgroundColor: form.color_border }}
-              />
-              <div
-                className="text-[9px] font-medium opacity-60"
-                style={{ color: form.color_text_secondary }}
-              >
+            {/* 도트 구분자 */}
+            <div className="flex items-center gap-1">
+              <div className="w-1 h-1 rounded-full" style={{ backgroundColor: form.color_forest_lighter, opacity: 0.5 }} />
+              <div className="w-1 h-1 rounded-full" style={{ backgroundColor: form.color_forest_light, opacity: 0.7 }} />
+              <div className="w-1 h-1 rounded-full" style={{ backgroundColor: form.color_forest_lighter, opacity: 0.5 }} />
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-5 h-0.5 rounded" style={{ backgroundColor: form.color_border }} />
+              <div className="text-[9px] font-medium opacity-60" style={{ color: form.color_text_secondary }}>
                 {form.keywords}
               </div>
-              <div
-                className="w-5 h-0.5 rounded"
-                style={{ backgroundColor: form.color_border }}
-              />
+              <div className="w-5 h-0.5 rounded" style={{ backgroundColor: form.color_border }} />
             </div>
             <div className="flex items-center gap-1 mt-auto pb-3">
               <svg className="w-2 h-2 opacity-50" viewBox="0 0 24 24" fill="none">
