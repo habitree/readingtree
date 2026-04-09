@@ -508,6 +508,11 @@ function OgPreviewCard({
   const accentColor = isReport ? form.color_earth : form.color_forest;
   const accentLight = isReport ? form.color_earth_light : form.color_forest_light;
 
+  // 오로라 배경 그래디언트 (variant별)
+  const auroraGradient = isReport
+    ? `radial-gradient(ellipse 100% 80% at 5% 10%, ${form.color_earth}12 0%, transparent 55%), radial-gradient(ellipse 90% 70% at 95% 85%, ${form.color_forest}0d 0%, transparent 50%)`
+    : `radial-gradient(ellipse 120% 80% at 15% 20%, ${form.color_forest}16 0%, transparent 60%), radial-gradient(ellipse 100% 90% at 85% 75%, ${form.color_forest_light}12 0%, transparent 55%)`;
+
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
@@ -534,22 +539,43 @@ function OgPreviewCard({
           backgroundColor: form.color_background,
         }}
       >
-        {/* 상단 악센트 바 */}
+        {/* 오로라 배경 오버레이 */}
         <div
-          className="absolute top-0 left-0 right-0 h-1"
+          className="absolute inset-0"
+          style={{ backgroundImage: auroraGradient }}
+        />
+
+        {/* 그레인 텍스처 */}
+        <div
+          className="absolute inset-0 opacity-[0.03]"
+          style={{
+            backgroundImage: "radial-gradient(rgba(0,0,0,0.08) 0.3px, transparent 0.3px)",
+            backgroundSize: "4px 4px",
+          }}
+        />
+
+        {/* 상단 악센트 바 (8px + 글로우) */}
+        <div
+          className="absolute top-0 left-0 right-0 h-1.5"
           style={{
             background: isReport
               ? `linear-gradient(90deg, ${form.color_earth}, ${accentLight}, ${form.color_forest})`
               : `linear-gradient(90deg, ${form.color_forest}, ${form.color_forest_light}, ${form.color_forest_lighter}, ${form.color_forest_light}, ${form.color_forest})`,
+            boxShadow: isReport
+              ? `0 1px 6px ${form.color_earth}30`
+              : `0 1px 6px ${form.color_forest}30`,
           }}
         />
 
         {variant === "home" ? (
-          /* 홈페이지 레이아웃 */
+          /* 홈페이지 레이아웃 (오버사이즈 타이포) */
           <div className="flex flex-col items-center justify-center h-full gap-2 px-8">
             <div
               className="w-12 h-12 rounded-lg flex items-center justify-center overflow-hidden"
-              style={{ backgroundColor: iconUrl ? "transparent" : accentColor }}
+              style={{
+                backgroundColor: iconUrl ? "transparent" : accentColor,
+                boxShadow: `0 4px 16px ${accentColor}30, 0 0 24px ${accentColor}15`,
+              }}
             >
               {iconUrl ? (
                 <img
@@ -564,48 +590,58 @@ function OgPreviewCard({
               )}
             </div>
             <div
-              className="text-2xl font-extrabold"
+              className="text-[28px] font-extrabold tracking-tight"
               style={{ color: form.color_text_primary }}
             >
               {form.brand_name}
             </div>
             <div
-              className="text-sm font-semibold"
+              className="text-xs font-semibold tracking-wider"
               style={{ color: form.color_forest }}
             >
               {form.tagline}
             </div>
-            <div className="flex items-center gap-2 mt-1">
+            <div className="flex items-center gap-2 mt-0.5">
               <div
-                className="w-6 h-0.5 rounded"
+                className="w-5 h-0.5 rounded"
                 style={{ backgroundColor: form.color_border }}
               />
               <div
-                className="text-[10px] font-medium"
+                className="text-[9px] font-medium opacity-60"
                 style={{ color: form.color_text_secondary }}
               >
                 {form.keywords}
               </div>
               <div
-                className="w-6 h-0.5 rounded"
+                className="w-5 h-0.5 rounded"
                 style={{ backgroundColor: form.color_border }}
               />
             </div>
-            <div
-              className="text-[9px] mt-auto pb-3"
-              style={{ color: form.color_text_muted }}
-            >
-              {form.domain}
+            <div className="flex items-center gap-1 mt-auto pb-3">
+              <svg className="w-2 h-2 opacity-50" viewBox="0 0 24 24" fill="none">
+                <path
+                  d="M12 3C16 3, 20 7, 18 13C16 18, 12 20, 12 20C12 20, 8 18, 6 13C4 7, 8 3, 12 3Z"
+                  fill={form.color_forest_light}
+                />
+              </svg>
+              <span
+                className="text-[8px] tracking-widest"
+                style={{ color: form.color_text_muted }}
+              >
+                {form.domain}
+              </span>
             </div>
           </div>
         ) : (
           /* 카드 레이아웃 (노트, 서재, 리포트) */
           <div className="flex h-full pt-2 px-4 pb-2">
-            {/* 좌측 */}
+            {/* 좌측 (오로라 그래디언트) */}
             <div
-              className="w-[42%] flex flex-col items-center justify-center gap-1.5 rounded-l-lg p-3"
+              className="w-[42%] flex flex-col items-center justify-center gap-1.5 rounded-l-lg p-3 relative overflow-hidden"
               style={{
-                backgroundColor: isReport ? "#faf5ee" : "#f0fdf4",
+                background: isReport
+                  ? `linear-gradient(160deg, ${form.color_earth}12, ${form.color_earth_light}0a, #faf5eed9)`
+                  : `linear-gradient(160deg, ${form.color_forest}0f, ${form.color_forest_light}0a, #f0fdf4d9)`,
               }}
             >
               <div className="w-12 h-16 bg-gray-200 rounded-sm" />
@@ -618,15 +654,15 @@ function OgPreviewCard({
               <div className="text-[8px] text-gray-400">저자명</div>
             </div>
             {/* 우측 */}
-            <div className="flex-1 flex flex-col justify-between p-3">
+            <div className="flex-1 flex flex-col justify-between p-3 relative">
               <div>
                 <div
                   className="inline-block text-[8px] font-bold px-1.5 py-0.5 rounded-full mb-1.5"
                   style={{
                     color: accentColor,
-                    backgroundColor: isReport
-                      ? "#faf5ee"
-                      : "#f0fdf4",
+                    background: isReport
+                      ? `linear-gradient(135deg, #faf5ee, #f5ead8)`
+                      : `linear-gradient(135deg, #f0fdf4, #dcfce7)`,
                     border: `1px solid ${isReport ? accentLight : form.color_border}`,
                   }}
                 >
@@ -638,7 +674,7 @@ function OgPreviewCard({
                 </div>
                 <div className="flex gap-1.5">
                   <div
-                    className="w-0.5 rounded-full shrink-0"
+                    className="w-[3px] rounded-full shrink-0"
                     style={{ backgroundColor: accentLight }}
                   />
                   <div

@@ -1,19 +1,32 @@
 import { ImageResponse } from "next/og";
-import { OG_BRAND, OG_COLORS, OG_SIZE, FONT_FAMILY } from "@/lib/og/constants";
-import { loadKoreanFont, loadBrandIcon, buildFontOptions } from "@/lib/og/utils";
-import { OgAccentBar, OgDomainFooter } from "@/lib/og/components";
+import { OG_SIZE, FONT_FAMILY } from "@/lib/og/constants";
+import { loadKoreanFont, loadBrandIcon, loadBrandIconFromUrl, buildFontOptions } from "@/lib/og/utils";
+import {
+  OgAccentBar,
+  OgDomainFooter,
+  OgAuroraBackground,
+  OgGrainTexture,
+  OgLeafDecoration,
+} from "@/lib/og/components";
+import { getOgConfig } from "@/lib/og/settings";
 
-export const alt = `${OG_BRAND.name} - ${OG_BRAND.tagline}`;
+export const alt = "Habitree - 읽는 습관이 자라는 곳";
 export const size = OG_SIZE;
 export const contentType = "image/png";
 
 export default async function Image() {
-  const [fontData, iconSrc] = await Promise.all([
+  const [fontData, config] = await Promise.all([
     loadKoreanFont(
       new URL("../public/fonts/NotoSansKR-SemiBold.otf", import.meta.url)
     ),
-    loadBrandIcon(new URL("./icon.png", import.meta.url)),
+    getOgConfig(),
   ]);
+
+  const { brand, colors } = config;
+
+  const iconSrc = config.brandIconUrl
+    ? await loadBrandIconFromUrl(config.brandIconUrl)
+    : await loadBrandIcon(new URL("./icon.png", import.meta.url));
 
   return new ImageResponse(
     (
@@ -23,38 +36,14 @@ export default async function Image() {
           width: "100%",
           display: "flex",
           flexDirection: "column",
-          backgroundColor: OG_COLORS.background,
+          backgroundColor: colors.background,
           fontFamily: FONT_FAMILY,
         }}
       >
-        {/* 상단 포레스트 악센트 바 */}
-        <OgAccentBar />
-
-        {/* 미묘한 텍스처 패턴 */}
-        <div
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundImage: `radial-gradient(${OG_COLORS.forest} 0.6px, transparent 0.6px)`,
-            backgroundSize: "32px 32px",
-            opacity: 0.025,
-          }}
-        />
-
-        {/* 따뜻한 그라데이션 오버레이 */}
-        <div
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundImage: `radial-gradient(ellipse at 20% 50%, rgba(29, 107, 77, 0.04) 0%, transparent 60%), radial-gradient(ellipse at 80% 50%, rgba(94, 196, 150, 0.03) 0%, transparent 60%)`,
-          }}
-        />
+        <OgAccentBar colors={colors} />
+        <OgAuroraBackground colors={colors} variant="home" />
+        <OgGrainTexture />
+        <OgLeafDecoration color={colors.forest} position="bottom-right" opacity={0.07} />
 
         {/* 메인 콘텐츠 */}
         <div
@@ -64,11 +53,10 @@ export default async function Image() {
             flexDirection: "column",
             alignItems: "center",
             justifyContent: "center",
-            gap: 24,
+            gap: 20,
             padding: "0 80px",
           }}
         >
-          {/* 로고 이미지 */}
           {iconSrc ? (
             <img
               src={iconSrc}
@@ -78,7 +66,7 @@ export default async function Image() {
               style={{
                 borderRadius: 28,
                 boxShadow:
-                  "0 16px 32px -8px rgba(29, 107, 77, 0.2), 0 0 0 1px rgba(29, 107, 77, 0.08)",
+                  "0 16px 32px -8px rgba(26, 117, 85, 0.2), 0 0 60px rgba(26, 117, 85, 0.12), 0 0 0 1px rgba(26, 117, 85, 0.08)",
               }}
             />
           ) : (
@@ -90,8 +78,9 @@ export default async function Image() {
                 width: 120,
                 height: 120,
                 borderRadius: 28,
-                backgroundColor: OG_COLORS.forest,
-                boxShadow: "0 16px 32px -8px rgba(29, 107, 77, 0.3)",
+                backgroundColor: colors.forest,
+                boxShadow:
+                  "0 16px 32px -8px rgba(26, 117, 85, 0.3), 0 0 60px rgba(26, 117, 85, 0.15)",
               }}
             >
               <svg
@@ -112,75 +101,73 @@ export default async function Image() {
             </div>
           )}
 
-          {/* 브랜드명 */}
           <div
             style={{
-              fontSize: 72,
+              fontSize: 84,
               fontWeight: 800,
-              color: OG_COLORS.textPrimary,
+              color: colors.textPrimary,
               letterSpacing: "-0.03em",
               lineHeight: 1,
               fontFamily: FONT_FAMILY,
               marginTop: 4,
             }}
           >
-            {OG_BRAND.name}
+            {brand.name}
           </div>
 
-          {/* 태그라인 */}
           <div
             style={{
-              fontSize: 28,
+              fontSize: 24,
               fontWeight: 600,
-              color: OG_COLORS.forest,
+              color: colors.forest,
               fontFamily: FONT_FAMILY,
               textAlign: "center",
+              letterSpacing: "0.05em",
             }}
           >
-            {OG_BRAND.tagline}
+            {brand.tagline}
           </div>
 
-          {/* 구분선 + 키워드 */}
           <div
             style={{
               display: "flex",
               alignItems: "center",
-              gap: 20,
-              marginTop: 8,
+              gap: 16,
+              marginTop: 4,
             }}
           >
             <div
               style={{
-                width: 56,
+                width: 40,
                 height: 2,
-                backgroundColor: OG_COLORS.border,
+                backgroundColor: colors.border,
                 borderRadius: 1,
               }}
             />
             <div
               style={{
-                fontSize: 18,
+                fontSize: 14,
                 fontWeight: 600,
-                color: OG_COLORS.textSecondary,
+                color: colors.textSecondary,
                 fontFamily: FONT_FAMILY,
-                letterSpacing: "0.01em",
+                letterSpacing: "0.02em",
+                opacity: 0.6,
               }}
             >
-              {OG_BRAND.keywords}
+              {brand.keywords}
             </div>
             <div
               style={{
-                width: 56,
+                width: 40,
                 height: 2,
-                backgroundColor: OG_COLORS.border,
+                backgroundColor: colors.border,
                 borderRadius: 1,
               }}
             />
           </div>
         </div>
 
-        {/* 하단 도메인 */}
-        <OgDomainFooter />
+        <OgDomainFooter brand={brand} colors={colors} />
       </div>
     ),
     {

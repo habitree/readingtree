@@ -22,6 +22,9 @@ import {
   OgAccentBar,
   OgBrandMark,
   OgFallbackContent,
+  OgAuroraBackground,
+  OgGrainTexture,
+  OgLeafDecoration,
 } from "@/lib/og/components";
 import { getOgConfig } from "@/lib/og/settings";
 
@@ -146,11 +149,11 @@ export default async function OgImage({
             flexDirection: "column",
             fontFamily: FONT_FAMILY,
             backgroundColor: colors.background,
-            backgroundImage:
-              "radial-gradient(circle at 10% 20%, rgba(29, 107, 77, 0.06) 0%, transparent 40%), radial-gradient(circle at 90% 80%, rgba(29, 107, 77, 0.04) 0%, transparent 40%)",
           }}
         >
           <OgAccentBar colors={colors} />
+          <OgAuroraBackground colors={colors} variant="note" />
+          <OgGrainTexture />
 
           {/* 메인 콘텐츠 영역 */}
           <div
@@ -175,7 +178,7 @@ export default async function OgImage({
                 overflow: "hidden",
               }}
             >
-              {/* 좌측: 책 정보 */}
+              {/* 좌측: 책 정보 (오로라 그래디언트) */}
               <div
                 style={{
                   display: "flex",
@@ -183,7 +186,7 @@ export default async function OgImage({
                   alignItems: "center",
                   justifyContent: "center",
                   padding: "32px 28px",
-                  background: "linear-gradient(180deg, #f0fdf4 0%, #f8faf9 100%)",
+                  background: `linear-gradient(160deg, rgba(26, 117, 85, 0.06) 0%, rgba(61, 184, 127, 0.04) 50%, rgba(247, 245, 240, 0.8) 100%), linear-gradient(180deg, #f0fdf4 0%, #f8faf9 100%)`,
                   width: 320,
                   gap: 16,
                 }}
@@ -272,9 +275,13 @@ export default async function OgImage({
                   flexDirection: "column",
                   padding: "36px 40px",
                   justifyContent: "space-between",
+                  position: "relative",
                 }}
               >
-                {/* 노트 유형 뱃지 */}
+                {/* 장식 나뭇잎 (카드 내부) */}
+                <OgLeafDecoration color={colors.forestLighter} position="top-right" opacity={0.06} />
+
+                {/* 노트 유형 뱃지 (그래디언트) */}
                 <div
                   style={{
                     display: "flex",
@@ -289,8 +296,8 @@ export default async function OgImage({
                       fontWeight: 700,
                       color: colors.forest,
                       fontFamily: FONT_FAMILY,
-                      padding: "4px 14px",
-                      backgroundColor: "#f0fdf4",
+                      padding: "5px 16px",
+                      background: "linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)",
                       borderRadius: 20,
                       border: `1px solid ${colors.border}`,
                       letterSpacing: "0.02em",
@@ -311,13 +318,13 @@ export default async function OgImage({
                   {isQuoteType && (
                     <div
                       style={{
-                        fontSize: 72,
+                        fontSize: 96,
                         fontWeight: 800,
-                        color: colors.forestLight,
+                        color: colors.forestLighter,
                         lineHeight: 0.5,
                         marginBottom: 12,
                         fontFamily: "Georgia, serif",
-                        opacity: 0.5,
+                        opacity: 0.3,
                       }}
                     >
                       {"\u201C"}
@@ -332,8 +339,8 @@ export default async function OgImage({
                   >
                     <div
                       style={{
-                        width: 4,
-                        borderRadius: 2,
+                        width: 5,
+                        borderRadius: 3,
                         backgroundColor: isQuoteType ? colors.forestLight : "#cbd5e1",
                         marginRight: 20,
                         flexShrink: 0,
@@ -443,7 +450,7 @@ export default async function OgImage({
                 color: colors.textMuted,
                 fontWeight: 600,
                 fontFamily: FONT_FAMILY,
-                letterSpacing: "0.05em",
+                letterSpacing: "0.08em",
               }}
             >
               {brand.domain}

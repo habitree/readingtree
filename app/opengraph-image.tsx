@@ -1,7 +1,13 @@
 import { ImageResponse } from "next/og";
 import { OG_SIZE, FONT_FAMILY } from "@/lib/og/constants";
 import { loadKoreanFont, loadBrandIcon, loadBrandIconFromUrl, buildFontOptions } from "@/lib/og/utils";
-import { OgAccentBar, OgDomainFooter } from "@/lib/og/components";
+import {
+  OgAccentBar,
+  OgDomainFooter,
+  OgAuroraBackground,
+  OgGrainTexture,
+  OgLeafDecoration,
+} from "@/lib/og/components";
 import { getOgConfig } from "@/lib/og/settings";
 
 export const alt = "Habitree - 읽는 습관이 자라는 곳";
@@ -34,34 +40,18 @@ export default async function Image() {
           fontFamily: FONT_FAMILY,
         }}
       >
-        {/* 상단 포레스트 악센트 바 */}
+        {/* 상단 악센트 바 (8px + 글로우) */}
         <OgAccentBar colors={colors} />
 
-        {/* 미묘한 텍스처 패턴 */}
-        <div
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundImage: `radial-gradient(${colors.forest} 0.6px, transparent 0.6px)`,
-            backgroundSize: "32px 32px",
-            opacity: 0.025,
-          }}
-        />
+        {/* 오로라 배경 */}
+        <OgAuroraBackground colors={colors} variant="home" />
 
-        {/* 따뜻한 그라데이션 오버레이 */}
-        <div
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundImage: `radial-gradient(ellipse at 20% 50%, rgba(29, 107, 77, 0.04) 0%, transparent 60%), radial-gradient(ellipse at 80% 50%, rgba(94, 196, 150, 0.03) 0%, transparent 60%)`,
-          }}
-        />
+        {/* 필름 그레인 텍스처 */}
+        <OgGrainTexture />
+
+        {/* 장식용 나뭇잎 */}
+        <OgLeafDecoration color={colors.forest} position="bottom-right" opacity={0.07} />
+        <OgLeafDecoration color={colors.forestLight} position="top-left" opacity={0.05} />
 
         {/* 메인 콘텐츠 */}
         <div
@@ -71,11 +61,11 @@ export default async function Image() {
             flexDirection: "column",
             alignItems: "center",
             justifyContent: "center",
-            gap: 24,
+            gap: 20,
             padding: "0 80px",
           }}
         >
-          {/* 로고 이미지 */}
+          {/* 로고 이미지 (bloom shadow) */}
           {iconSrc ? (
             <img
               src={iconSrc}
@@ -85,7 +75,7 @@ export default async function Image() {
               style={{
                 borderRadius: 28,
                 boxShadow:
-                  "0 16px 32px -8px rgba(29, 107, 77, 0.2), 0 0 0 1px rgba(29, 107, 77, 0.08)",
+                  "0 16px 32px -8px rgba(26, 117, 85, 0.2), 0 0 60px rgba(26, 117, 85, 0.12), 0 0 0 1px rgba(26, 117, 85, 0.08)",
               }}
             />
           ) : (
@@ -98,7 +88,8 @@ export default async function Image() {
                 height: 120,
                 borderRadius: 28,
                 backgroundColor: colors.forest,
-                boxShadow: "0 16px 32px -8px rgba(29, 107, 77, 0.3)",
+                boxShadow:
+                  "0 16px 32px -8px rgba(26, 117, 85, 0.3), 0 0 60px rgba(26, 117, 85, 0.15)",
               }}
             >
               <svg
@@ -119,10 +110,10 @@ export default async function Image() {
             </div>
           )}
 
-          {/* 브랜드명 */}
+          {/* 브랜드명 (오버사이즈 84px) */}
           <div
             style={{
-              fontSize: 72,
+              fontSize: 84,
               fontWeight: 800,
               color: colors.textPrimary,
               letterSpacing: "-0.03em",
@@ -134,31 +125,32 @@ export default async function Image() {
             {brand.name}
           </div>
 
-          {/* 태그라인 */}
+          {/* 태그라인 (에어리한 스타일) */}
           <div
             style={{
-              fontSize: 28,
+              fontSize: 24,
               fontWeight: 600,
               color: colors.forest,
               fontFamily: FONT_FAMILY,
               textAlign: "center",
+              letterSpacing: "0.05em",
             }}
           >
             {brand.tagline}
           </div>
 
-          {/* 구분선 + 키워드 */}
+          {/* 구분선 + 키워드 (미묘하게) */}
           <div
             style={{
               display: "flex",
               alignItems: "center",
-              gap: 20,
-              marginTop: 8,
+              gap: 16,
+              marginTop: 4,
             }}
           >
             <div
               style={{
-                width: 56,
+                width: 40,
                 height: 2,
                 backgroundColor: colors.border,
                 borderRadius: 1,
@@ -166,18 +158,19 @@ export default async function Image() {
             />
             <div
               style={{
-                fontSize: 18,
+                fontSize: 14,
                 fontWeight: 600,
                 color: colors.textSecondary,
                 fontFamily: FONT_FAMILY,
-                letterSpacing: "0.01em",
+                letterSpacing: "0.02em",
+                opacity: 0.6,
               }}
             >
               {brand.keywords}
             </div>
             <div
               style={{
-                width: 56,
+                width: 40,
                 height: 2,
                 backgroundColor: colors.border,
                 borderRadius: 1,

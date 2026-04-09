@@ -9,23 +9,23 @@ export const OG_BRAND = {
 } as const;
 
 export const OG_COLORS = {
-  /** 라이트 크림 배경 */
-  background: "#F5F2ED",
-  /** 포레스트 그린 (악센트 바, 태그라인) */
-  forest: "#1d6b4d",
-  forestLight: "#36a678",
-  forestLighter: "#5ec496",
+  /** 따뜻한 아이보리 배경 */
+  background: "#F7F5F0",
+  /** 생동감 있는 에메랄드 (악센트 바, 태그라인) */
+  forest: "#1A7555",
+  forestLight: "#3DB87F",
+  forestLighter: "#7DD9A8",
   /** 텍스트 */
-  textPrimary: "#1F2933",
-  textSecondary: "#7B8794",
+  textPrimary: "#1A1F25",
+  textSecondary: "#6B7A85",
   textMuted: "#9AA5B1",
   /** 카드 배경 */
   cardBackground: "#FFFFFF",
-  /** 서브 보더 */
-  border: "#c3eed4",
+  /** 세련된 뮤트 보더 */
+  border: "#B8E8CB",
   /** 어스 톤 (리포트용) */
-  earth: "#b48c50",
-  earthLight: "#d4a574",
+  earth: "#C4935A",
+  earthLight: "#E0B47A",
 } as const;
 
 /** 텍스트 잘림 방지: 최대 길이 제한 */

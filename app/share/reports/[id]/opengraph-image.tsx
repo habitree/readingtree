@@ -14,7 +14,15 @@ import {
   buildFontOptions,
   createOgAnonSupabaseClient,
 } from "@/lib/og/utils";
-import { OgBrandMark, OgFallbackContent } from "@/lib/og/components";
+import {
+  OgBrandMark,
+  OgFallbackContent,
+  OgEarthAccentBar,
+  OgAuroraBackground,
+  OgGrainTexture,
+  OgSparkleIcon,
+  OgLeafDecoration,
+} from "@/lib/og/components";
 import { getOgConfig } from "@/lib/og/settings";
 
 export const alt = "Habitree AI 독서 리포트";
@@ -92,18 +100,17 @@ export default async function OgImage({
             flexDirection: "column",
             fontFamily: FONT_FAMILY,
             backgroundColor: colors.background,
-            backgroundImage:
-              "radial-gradient(circle at 0% 0%, rgba(180, 140, 80, 0.08) 0%, transparent 50%), radial-gradient(circle at 100% 100%, rgba(29, 107, 77, 0.06) 0%, transparent 50%)",
           }}
         >
-          {/* 상단 어스 톤 바 */}
-          <div
-            style={{
-              width: "100%",
-              height: 4,
-              background: `linear-gradient(90deg, ${colors.earth}, ${colors.earthLight}, ${colors.forest})`,
-            }}
-          />
+          {/* 상단 어스 톤 바 (8px + 글로우) */}
+          <OgEarthAccentBar colors={colors} />
+
+          {/* 오로라 배경 (earth+forest 혼합) */}
+          <OgAuroraBackground colors={colors} variant="report" />
+          <OgGrainTexture />
+
+          {/* 장식 나뭇잎 */}
+          <OgLeafDecoration color={colors.earthLight} position="bottom-right" opacity={0.05} />
 
           {/* 메인 영역 */}
           <div
@@ -128,7 +135,7 @@ export default async function OgImage({
                 overflow: "hidden",
               }}
             >
-              {/* 좌측: 책 표지 + 제목 */}
+              {/* 좌측: 책 표지 + 제목 (warm 오로라) */}
               <div
                 style={{
                   display: "flex",
@@ -136,7 +143,7 @@ export default async function OgImage({
                   alignItems: "center",
                   justifyContent: "center",
                   padding: "36px 32px",
-                  backgroundColor: "#faf5ee",
+                  background: `linear-gradient(160deg, rgba(196, 147, 90, 0.08) 0%, rgba(224, 180, 122, 0.05) 50%, rgba(250, 245, 238, 0.9) 100%), linear-gradient(180deg, #faf5ee 0%, #fdf9f3 100%)`,
                   width: 320,
                   gap: 20,
                 }}
@@ -151,7 +158,7 @@ export default async function OgImage({
                       objectFit: "cover",
                       borderRadius: 8,
                       boxShadow:
-                        "0 12px 28px -8px rgba(0, 0, 0, 0.25), 0 4px 8px -2px rgba(0, 0, 0, 0.1)",
+                        "0 12px 28px -8px rgba(0, 0, 0, 0.25), 0 4px 8px -2px rgba(0, 0, 0, 0.1), 0 0 40px rgba(196, 147, 90, 0.12)",
                     }}
                   />
                 ) : (
@@ -216,39 +223,31 @@ export default async function OgImage({
                     gap: 16,
                   }}
                 >
-                  {/* AI 리포트 라벨 */}
+                  {/* AI 리포트 라벨 (스파클 아이콘) */}
                   <div
                     style={{
                       display: "flex",
                       alignItems: "center",
-                      gap: 8,
+                      gap: 10,
                     }}
                   >
                     <div
                       style={{
-                        width: 32,
-                        height: 32,
-                        borderRadius: 8,
+                        width: 36,
+                        height: 36,
+                        borderRadius: 10,
                         background: `linear-gradient(135deg, ${colors.earth}, ${colors.earthLight})`,
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
+                        boxShadow: `0 4px 12px rgba(196, 147, 90, 0.2)`,
                       }}
                     >
-                      <svg
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="white"
-                        strokeWidth="2.5"
-                      >
-                        <path d="M12 3l1.5 4.5H18l-3.5 2.5L16 14.5 12 12l-4 2.5 1.5-4.5L6 7.5h4.5z" />
-                      </svg>
+                      <OgSparkleIcon size={18} color="white" />
                     </div>
                     <span
                       style={{
-                        fontSize: 22,
+                        fontSize: 26,
                         fontWeight: 800,
                         color: "#44403c",
                         fontFamily: FONT_FAMILY,
@@ -282,8 +281,8 @@ export default async function OgImage({
                   >
                     <div
                       style={{
-                        width: 4,
-                        borderRadius: 2,
+                        width: 5,
+                        borderRadius: 3,
                         backgroundColor: colors.earthLight,
                         marginRight: 20,
                         flexShrink: 0,
@@ -342,6 +341,7 @@ export default async function OgImage({
                 color: colors.textMuted,
                 fontWeight: 500,
                 fontFamily: FONT_FAMILY,
+                letterSpacing: "0.08em",
               }}
             >
               {brand.domain}

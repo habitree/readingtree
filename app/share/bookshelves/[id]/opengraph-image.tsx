@@ -19,6 +19,9 @@ import {
   OgAccentBar,
   OgBrandMark,
   OgFallbackContent,
+  OgAuroraBackground,
+  OgGrainTexture,
+  OgBookDecoration,
 } from "@/lib/og/components";
 import { getOgConfig } from "@/lib/og/settings";
 
@@ -112,6 +115,16 @@ export default async function OgImage({
       }))
     );
 
+    // 교차 색상 box-shadow
+    const bookShadowColors = [
+      "rgba(26, 117, 85, 0.20)",
+      "rgba(196, 147, 90, 0.18)",
+      "rgba(61, 184, 127, 0.16)",
+      "rgba(224, 180, 122, 0.15)",
+      "rgba(26, 117, 85, 0.18)",
+      "rgba(196, 147, 90, 0.16)",
+    ];
+
     return new ImageResponse(
       (
         <div
@@ -122,11 +135,11 @@ export default async function OgImage({
             flexDirection: "column",
             fontFamily: FONT_FAMILY,
             backgroundColor: colors.background,
-            backgroundImage:
-              "radial-gradient(circle at 10% 20%, rgba(29, 107, 77, 0.06) 0%, transparent 40%), radial-gradient(circle at 90% 80%, rgba(29, 107, 77, 0.04) 0%, transparent 40%)",
           }}
         >
           <OgAccentBar colors={colors} />
+          <OgAuroraBackground colors={colors} variant="bookshelf" />
+          <OgGrainTexture />
 
           <div
             style={{
@@ -150,33 +163,38 @@ export default async function OgImage({
                 overflow: "hidden",
               }}
             >
-              {/* 좌측: 서재 정보 */}
+              {/* 좌측: 서재 정보 (오로라 그래디언트) */}
               <div
                 style={{
                   display: "flex",
                   flexDirection: "column",
                   justifyContent: "center",
                   padding: "36px 32px",
-                  background: "linear-gradient(180deg, #f0fdf4 0%, #f8faf9 100%)",
+                  background: `linear-gradient(160deg, rgba(26, 117, 85, 0.07) 0%, rgba(61, 184, 127, 0.04) 50%, rgba(248, 250, 249, 0.9) 100%), linear-gradient(180deg, #f0fdf4 0%, #f8faf9 100%)`,
                   width: 380,
                   gap: 14,
+                  position: "relative",
                 }}
               >
-                {/* 서재 아이콘 */}
+                {/* 장식 책 */}
+                <OgBookDecoration color={colors.forest} position="bottom-left" opacity={0.05} />
+
+                {/* 서재 아이콘 (64x64 + 글로우) */}
                 <div
                   style={{
-                    width: 52,
-                    height: 52,
-                    borderRadius: 14,
+                    width: 64,
+                    height: 64,
+                    borderRadius: 16,
                     background: `linear-gradient(135deg, ${colors.forest}, ${colors.forestLight})`,
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
+                    boxShadow: `0 8px 24px -4px rgba(26, 117, 85, 0.25)`,
                   }}
                 >
                   <svg
-                    width="26"
-                    height="26"
+                    width="30"
+                    height="30"
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="white"
@@ -195,7 +213,7 @@ export default async function OgImage({
                     color: colors.forest,
                     fontFamily: FONT_FAMILY,
                     padding: "3px 12px",
-                    backgroundColor: "#f0fdf4",
+                    background: "linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)",
                     borderRadius: 20,
                     border: `1px solid ${colors.border}`,
                     letterSpacing: "0.05em",
@@ -239,7 +257,7 @@ export default async function OgImage({
                   <div
                     style={{
                       padding: "5px 14px",
-                      backgroundColor: "#dcfce7",
+                      background: "linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%)",
                       borderRadius: 20,
                       fontSize: 14,
                       fontWeight: 700,
@@ -256,7 +274,7 @@ export default async function OgImage({
                 </div>
               </div>
 
-              {/* 우측: 책 표지 그리드 */}
+              {/* 우측: 책 표지 그리드 (color-tinted shadows) */}
               <div
                 style={{
                   flex: 1,
@@ -287,7 +305,7 @@ export default async function OgImage({
                         style={{
                           objectFit: "cover",
                           borderRadius: 8,
-                          boxShadow: "0 6px 16px -4px rgba(0,0,0,0.22)",
+                          boxShadow: `0 6px 16px -4px ${bookShadowColors[i % bookShadowColors.length]}`,
                         }}
                       />
                     ) : (
@@ -346,7 +364,7 @@ export default async function OgImage({
                 color: colors.textMuted,
                 fontWeight: 600,
                 fontFamily: FONT_FAMILY,
-                letterSpacing: "0.05em",
+                letterSpacing: "0.08em",
               }}
             >
               {brand.domain}
