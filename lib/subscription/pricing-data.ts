@@ -10,7 +10,7 @@ export interface PointPackageInfo {
   points: number;
   bonusPoints: number;
   firstPurchaseBonusPoints: number;
-  /** KRW 가격 (토스페이먼츠용) */
+  /** KRW 가격 (UI 표시 및 결제용) */
   price: number;
   /** USD 가격 (Polar용, 센트 단위 아님) */
   priceUsd: number;

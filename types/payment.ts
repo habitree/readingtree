@@ -1,6 +1,7 @@
 /**
  * 결제 시스템 타입 정의
- * 토스페이먼츠 연동
+ * 공통 타입 (PaymentOrder, PaymentHistory 등)은 Polar에서도 사용
+ * 토스 전용 타입 (TossPaymentResponse, TossWebhookPayload)은 @deprecated 표시
  */
 
 /** 결제 주문 상태 */
@@ -79,7 +80,7 @@ export interface ConfirmPaymentResult {
   error?: string;
 }
 
-/** 토스 결제 승인 API 응답 */
+/** @deprecated 토스페이먼츠 비활성화 상태. 재활성화 시 사용. */
 export interface TossPaymentResponse {
   paymentKey: string;
   orderId: string;
@@ -107,7 +108,7 @@ export interface TossPaymentResponse {
   };
 }
 
-/** 토스 웹훅 페이로드 */
+/** @deprecated 토스페이먼츠 비활성화 상태. 재활성화 시 사용. */
 export interface TossWebhookPayload {
   eventType: string;
   data: TossPaymentResponse;

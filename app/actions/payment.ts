@@ -2,6 +2,7 @@
 
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { POINT_PACKAGES } from "@/lib/subscription/pricing-data";
+import { IS_TOSS_ENABLED } from "@/lib/payment/config";
 import type {
   CreatePaymentOrderResult,
   PaymentOrder,
@@ -28,10 +29,16 @@ function generateOrderId(): string {
 
 /**
  * 결제 주문 생성 (pending 상태)
+ * @deprecated 토스페이먼츠 비활성화 상태. Polar 결제를 사용하세요.
+ * IS_TOSS_ENABLED = true로 전환 시 재활성화됩니다.
  */
 export async function createPaymentOrder(
   packageId: string
 ): Promise<CreatePaymentOrderResult> {
+  if (!IS_TOSS_ENABLED) {
+    return { success: false, error: "토스페이먼츠 결제가 비활성화되었습니다." };
+  }
+
   const supabase = await createServerSupabaseClient();
 
   const {

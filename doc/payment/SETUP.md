@@ -1,6 +1,25 @@
-# 토스페이먼츠 결제 설정 가이드
+# 결제 시스템 설정 가이드
 
-## 사전 준비
+> **2026-04-09**: 토스페이먼츠 비활성화. Polar가 현재 활성 결제 수단.
+> 토스 재활성화: `lib/payment/config.ts`의 `IS_TOSS_ENABLED = true`로 변경
+
+---
+
+## Polar 결제 (현재 활성)
+
+Polar를 통한 국제/한국 결제. 환경변수:
+- `POLAR_ACCESS_TOKEN` — Polar 대시보드에서 발급
+- `POLAR_WEBHOOK_SECRET` — 웹훅 서명 검증용
+- `POLAR_ENVIRONMENT` — `sandbox` 또는 `production`
+- `NEXT_PUBLIC_POLAR_PRODUCT_LIGHT` — 라이트 패키지 Product ID
+- `NEXT_PUBLIC_POLAR_PRODUCT_STANDARD` — 스탠다드 패키지 Product ID
+- `NEXT_PUBLIC_POLAR_PRODUCT_PREMIUM` — 프리미엄 패키지 Product ID
+
+---
+
+## 토스페이먼츠 결제 (비활성 — 사업자 등록 후 재활성화)
+
+### 사전 준비
 
 1. [토스페이먼츠 개발자센터](https://developers.tosspayments.com/) 가입
 2. 상점 등록 (사업자등록증 필요 — 테스트 모드는 없이도 가능)

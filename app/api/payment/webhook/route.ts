@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdminSupabaseClient } from "@/lib/supabase/server";
 import { POINT_PACKAGES } from "@/lib/subscription/pricing-data";
+import { IS_TOSS_ENABLED } from "@/lib/payment/config";
 import type { TossWebhookPayload } from "@/types/payment";
 import { createHmac, timingSafeEqual } from "crypto";
 
@@ -34,12 +35,20 @@ function verifyWebhookSignature(
 
 /**
  * 토스페이먼츠 웹훅 수신
+ * @deprecated IS_TOSS_ENABLED = false 동안 503 반환
  * - HMAC-SHA256 서명 검증 필수
  * - 가상계좌 입금 확인 (DEPOSIT_CALLBACK)
  * - 결제 취소 시 포인트 회수
  * - 항상 200 반환 (토스 재시도 방지)
  */
 export async function POST(request: Request) {
+  // 토스페이먼츠 비활성화 가드
+  if (!IS_TOSS_ENABLED) {
+    return NextResponse.json(
+      { error: "토스페이먼츠 웹훅이 비활성화되었습니다." },
+      { status: 503 }
+    );
+  }
   // 1. 원본 body 텍스트와 서명 헤더 추출
   const rawBody = await request.text();
   const signature = request.headers.get("x-toss-signature");

@@ -1,8 +1,11 @@
+> **DEPRECATED** — 이 문서는 구독 모델(free/premium) 시절의 전략 문서입니다.
+> 현재는 포인트 소비 모델로 전환됨. 최신 수치: [`COST_AND_POINT_MASTER.md`](./COST_AND_POINT_MASTER.md)
+
 # Habitree 수익화 전략 & 시장 마케팅 기획안
 
 > **버전**: v1.0 (2026-03-01)
-> **목적**: 현재 무료 서비스 분석 → 합리적 가격 책정 → 수익 극대화 마케팅 전략 수립
-> **관련 문서**: [`AI_PRICING_PLAN.md`](./AI_PRICING_PLAN.md) (API 비용 분석)
+> **상태**: DEPRECATED (2026-04-09) — 구독 모델 → 포인트 소비 모델 전환으로 대체됨
+> **관련 문서**: [`COST_AND_POINT_MASTER.md`](./COST_AND_POINT_MASTER.md) (현행 마스터 문서)
 
 ---
 

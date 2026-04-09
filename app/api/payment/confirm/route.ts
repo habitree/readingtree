@@ -2,12 +2,25 @@ import { NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { checkRateLimit } from "@/lib/middleware/rate-limit";
 import { POINT_PACKAGES } from "@/lib/subscription/pricing-data";
+import { IS_TOSS_ENABLED } from "@/lib/payment/config";
 import type {
   ConfirmPaymentRequest,
   TossPaymentResponse,
 } from "@/types/payment";
 
+/**
+ * 토스페이먼츠 결제 승인 API
+ * @deprecated IS_TOSS_ENABLED = false 동안 503 반환
+ */
 export async function POST(request: Request) {
+  // 토스페이먼츠 비활성화 가드
+  if (!IS_TOSS_ENABLED) {
+    return NextResponse.json(
+      { error: "토스페이먼츠 결제가 비활성화되었습니다." },
+      { status: 503 }
+    );
+  }
+
   // 1. Rate limit (분당 10회)
   const rateLimitResult = await checkRateLimit(request, 10);
   if (!rateLimitResult.success) {

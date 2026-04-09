@@ -3,6 +3,7 @@
 import { useState, useCallback } from "react";
 import { loadTossPayments, ANONYMOUS } from "@tosspayments/tosspayments-sdk";
 import { createPaymentOrder } from "@/app/actions/payment";
+import { IS_TOSS_ENABLED } from "@/lib/payment/config";
 
 interface UseTossPaymentReturn {
   requestPayment: (packageId: string) => Promise<void>;
@@ -10,11 +11,20 @@ interface UseTossPaymentReturn {
   error: string | null;
 }
 
+/**
+ * @deprecated 토스페이먼츠 비활성화 상태. IS_TOSS_ENABLED = true로 전환 시 재활성화.
+ * Polar 결제를 대신 사용하세요.
+ */
 export function useTossPayment(): UseTossPaymentReturn {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const requestPayment = useCallback(async (packageId: string) => {
+    if (!IS_TOSS_ENABLED) {
+      setError("토스페이먼츠 결제가 비활성화되었습니다. Polar 결제를 이용해주세요.");
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
 

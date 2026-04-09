@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ReadTree 포인트 경제 구조 — Overview</title>
+<style>
+  :root {
+    --bg: #0f172a;
+    --card: #1e293b;
+    --accent: #22c55e;
+    --accent2: #3b82f6;
+    --accent3: #f59e0b;
+    --accent4: #ef4444;
+    --purple: #a855f7;
+    --text: #f1f5f9;
+    --muted: #94a3b8;
+    --border: #334155;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif; background: var(--bg); color: var(--text); padding: 24px; }
+  .header { text-align: center; margin-bottom: 32px; }
+  .header h1 { font-size: 28px; font-weight: 700; }
+  .header .sub { color: var(--muted); font-size: 14px; margin-top: 4px; }
+  .card { background: var(--card); border-radius: 12px; padding: 20px; border: 1px solid var(--border); margin-bottom: 24px; }
+  .card:hover { border-color: var(--accent2); transition: 0.2s; }
+  .section-title { font-size: 18px; font-weight: 700; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+  .grid { display: grid; gap: 16px; }
+  .grid-2 { grid-template-columns: repeat(2, 1fr); }
+  .grid-3 { grid-template-columns: repeat(3, 1fr); }
+  table { width: 100%; border-collapse: collapse; }
+  th { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--border); }
+  td { padding: 10px 12px; border-bottom: 1px solid var(--border); font-size: 14px; }
+  .flow-container { display: flex; align-items: center; justify-content: center; gap: 0; flex-wrap: wrap; padding: 20px 0; }
+  .flow-box { background: rgba(59,130,246,0.15); border: 1px solid var(--accent2); border-radius: 10px; padding: 16px 20px; text-align: center; min-width: 160px; }
+  .flow-box.earn { background: rgba(34,197,94,0.15); border-color: var(--accent); }
+  .flow-box.hold { background: rgba(168,85,247,0.15); border-color: var(--purple); }
+  .flow-box.spend { background: rgba(245,158,11,0.15); border-color: var(--accent3); }
+  .flow-box .title { font-weight: 700; font-size: 14px; margin-bottom: 6px; }
+  .flow-box .items { font-size: 12px; color: var(--muted); line-height: 1.6; }
+  .flow-arrow { font-size: 24px; color: var(--muted); padding: 0 12px; }
+  .scenario { padding: 16px; background: rgba(0,0,0,0.2); border-radius: 8px; }
+  .scenario-label { font-weight: 600; font-size: 14px; margin-bottom: 8px; }
+  .scenario-bar { height: 28px; border-radius: 6px; margin-bottom: 4px; display: flex; align-items: center; padding-left: 10px; font-size: 12px; font-weight: 600; color: #fff; }
+  .level-track { display: flex; gap: 4px; align-items: flex-end; margin-top: 16px; padding: 16px 0; }
+  .level-item { flex: 1; text-align: center; }
+  .level-bar { margin: 0 auto 4px; width: 32px; border-radius: 4px 4px 0 0; transition: height 0.5s; }
+  .level-name { font-size: 10px; color: var(--muted); }
+  .level-pts { font-size: 9px; color: var(--border); }
+  .matrix-cell { text-align: center; padding: 8px !important; }
+  .matrix-cell.good { background: rgba(34,197,94,0.1); color: var(--accent); }
+  .matrix-cell.great { background: rgba(34,197,94,0.2); color: var(--accent); font-weight: 700; }
+  .balance-meter { display: flex; height: 8px; border-radius: 4px; overflow: hidden; margin-top: 8px; }
+  .footer { text-align: center; color: var(--muted); font-size: 11px; margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); }
+  @media (max-width: 768px) {
+    .grid-2, .grid-3 { grid-template-columns: 1fr; }
+    .flow-container { flex-direction: column; }
+    .flow-arrow { transform: rotate(90deg); }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>ReadTree Point Economy Overview</h1>
+  <div class="sub">포인트 흐름 | 적립 시나리오 | 레벨 진행 | 패키지 활용도 | 한도 균형</div>
+</div>
+
+<!-- 포인트 흐름도 -->
+<div class="card">
+  <div class="section-title">포인트 흐름도</div>
+  <div class="flow-container">
+    <div class="flow-box earn">
+      <div class="title" style="color: var(--accent);">적립 (Earn)</div>
+      <div class="items">
+        노트 작성 10P<br>
+        인용구 15P<br>
+        완독 60P<br>
+        스트릭 50~500P<br>
+        일일 미션 12~40P<br>
+        웰컴 200P
+      </div>
+    </div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-box hold">
+      <div class="title" style="color: var(--purple);">보유 (Hold)</div>
+      <div class="items">
+        total_points (잔액)<br>
+        lifetime_points (누적)<br>
+        레벨 1~10<br>
+        씨앗 → 황금숲
+      </div>
+    </div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-box spend">
+      <div class="title" style="color: var(--accent3);">소비 (Spend)</div>
+      <div class="items">
+        AI 채팅 40P<br>
+        OCR 필사 25P<br>
+        AI 리포트 100P<br>
+        (무료 한도 초과 시)
+      </div>
+    </div>
+  </div>
+  <div style="text-align: center; margin-top: 12px;">
+    <div class="flow-arrow" style="display: inline-block; transform: rotate(180deg);">&rarr;</div>
+    <div style="display: inline-block; background: rgba(239,68,68,0.15); border: 1px solid var(--accent4); border-radius: 10px; padding: 10px 20px;">
+      <div style="font-weight: 700; font-size: 13px; color: var(--accent4);">유료 충전</div>
+      <div style="font-size: 11px; color: var(--muted);">라이트 1,900원 | 스탠다드 3,900원 | 프리미엄 6,900원</div>
+    </div>
+  </div>
+</div>
+
+<!-- 일일 적립 시나리오 -->
+<div class="card">
+  <div class="section-title">일일 적립 시나리오 비교</div>
+  <div class="grid grid-3">
+    <div class="scenario">
+      <div class="scenario-label" style="color: var(--muted);">캐주얼 사용자</div>
+      <div class="scenario-bar" style="width: 30%; background: linear-gradient(90deg, #16a34a, #22c55e);">43P/일</div>
+      <div style="font-size: 12px; color: var(--muted); margin-top: 8px;">
+        노트 2개 (20P)<br>
+        인용구 1개 (15P)<br>
+        첫 활동 보너스 (8P)<br>
+        <strong style="color: var(--text);">월 ~1,290P</strong> | AI 채팅 32회분
+      </div>
+    </div>
+    <div class="scenario">
+      <div class="scenario-label" style="color: var(--accent2);">일반 사용자</div>
+      <div class="scenario-bar" style="width: 55%; background: linear-gradient(90deg, #2563eb, #3b82f6);">80P/일</div>
+      <div style="font-size: 12px; color: var(--muted); margin-top: 8px;">
+        노트 3개 (30P)<br>
+        인용구 2개 (30P)<br>
+        미션 완료 (12P)<br>
+        첫 활동 (8P)<br>
+        <strong style="color: var(--text);">월 ~2,400P</strong> | AI 채팅 60회분
+      </div>
+    </div>
+    <div class="scenario">
+      <div class="scenario-label" style="color: var(--accent3);">활발 사용자</div>
+      <div class="scenario-bar" style="width: 100%; background: linear-gradient(90deg, #d97706, #f59e0b);">147P/일</div>
+      <div style="font-size: 12px; color: var(--muted); margin-top: 8px;">
+        노트 5개 (50P)<br>
+        인용구 3개 (45P)<br>
+        메모 2개 (20P)<br>
+        전체 미션 (12+40P)<br>
+        <strong style="color: var(--text);">월 ~4,410P</strong> | AI 채팅 110회분
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 레벨 진행 시뮬레이션 -->
+<div class="card">
+  <div class="section-title">레벨 진행 시뮬레이션 (활동일 기준)</div>
+  <div class="level-track">
+    <div class="level-item">
+      <div class="level-bar" style="height: 15px; background: #64748b;"></div>
+      <div class="level-name">씨앗</div>
+      <div class="level-pts">0P</div>
+      <div style="font-size: 9px; color: var(--accent);">Day 0</div>
+    </div>
+    <div class="level-item">
+      <div class="level-bar" style="height: 22px; background: #84cc16;"></div>
+      <div class="level-name">새싹</div>
+      <div class="level-pts">50P</div>
+      <div style="font-size: 9px; color: var(--accent);">Day 1</div>
+    </div>
+    <div class="level-item">
+      <div class="level-bar" style="height: 32px; background: #22c55e;"></div>
+      <div class="level-name">떡잎</div>
+      <div class="level-pts">150P</div>
+      <div style="font-size: 9px; color: var(--accent);">Day 2~4</div>
+    </div>
+    <div class="level-item">
+      <div class="level-bar" style="height: 45px; background: #14b8a6;"></div>
+      <div class="level-name">어린나무</div>
+      <div class="level-pts">350P</div>
+      <div style="font-size: 9px; color: var(--accent2);">Day 4~8</div>
+    </div>
+    <div class="level-item">
+      <div class="level-bar" style="height: 60px; background: #06b6d4;"></div>
+      <div class="level-name">나무</div>
+      <div class="level-pts">650P</div>
+      <div style="font-size: 9px; color: var(--accent2);">Day 8~15</div>
+    </div>
+    <div class="level-item">
+      <div class="level-bar" style="height: 78px; background: #3b82f6;"></div>
+      <div class="level-name">큰나무</div>
+      <div class="level-pts">1,100P</div>
+      <div style="font-size: 9px; color: var(--accent2);">Day 14~26</div>
+    </div>
+    <div class="level-item">
+      <div class="level-bar" style="height: 98px; background: #6366f1;"></div>
+      <div class="level-name">꽃나무</div>
+      <div class="level-pts">1,800P</div>
+      <div style="font-size: 9px; color: var(--accent3);">Day 23~42</div>
+    </div>
+    <div class="level-item">
+      <div class="level-bar" style="height: 120px; background: #8b5cf6;"></div>
+      <div class="level-name">열매나무</div>
+      <div class="level-pts">2,800P</div>
+      <div style="font-size: 9px; color: var(--accent3);">Day 35~65</div>
+    </div>
+    <div class="level-item">
+      <div class="level-bar" style="height: 145px; background: #a855f7;"></div>
+      <div class="level-name">세계수</div>
+      <div class="level-pts">4,200P</div>
+      <div style="font-size: 9px; color: var(--accent3);">Day 53~98</div>
+    </div>
+    <div class="level-item">
+      <div class="level-bar" style="height: 170px; background: linear-gradient(180deg, #f59e0b, #fbbf24);"></div>
+      <div class="level-name" style="color: var(--accent3); font-weight: 700;">황금숲</div>
+      <div class="level-pts">6,500P</div>
+      <div style="font-size: 9px; color: var(--accent4);">Day 82~151</div>
+    </div>
+  </div>
+  <div style="font-size: 12px; color: var(--muted); text-align: center; margin-top: 8px;">
+    * 범위: 캐주얼(43P/일) ~ 활발(147P/일) 기준 | lifetime_points 기준 (소비해도 레벨 유지)
+  </div>
+</div>
+
+<!-- 충전 패키지별 사용 가능 횟수 -->
+<div class="card">
+  <div class="section-title">충전 패키지별 AI 사용 가능 횟수</div>
+  <table>
+    <thead>
+      <tr>
+        <th>패키지</th>
+        <th>총 포인트</th>
+        <th>AI 채팅 (40P)</th>
+        <th>OCR (25P)</th>
+        <th>AI 리포트 (100P)</th>
+        <th>채팅+리포트 혼합</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>라이트 (500P)</td>
+        <td>500P</td>
+        <td class="matrix-cell">12회</td>
+        <td class="matrix-cell good">20회</td>
+        <td class="matrix-cell">5회</td>
+        <td class="matrix-cell" style="font-size: 12px;">채팅 7 + 리포트 2</td>
+      </tr>
+      <tr>
+        <td><strong>스탠다드 (1,400P)</strong></td>
+        <td>1,400P</td>
+        <td class="matrix-cell good">35회</td>
+        <td class="matrix-cell great">56회</td>
+        <td class="matrix-cell good">14회</td>
+        <td class="matrix-cell good" style="font-size: 12px;">채팅 20 + 리포트 5</td>
+      </tr>
+      <tr>
+        <td>프리미엄 (3,800P)</td>
+        <td>3,800P</td>
+        <td class="matrix-cell great">95회</td>
+        <td class="matrix-cell great">152회</td>
+        <td class="matrix-cell great">38회</td>
+        <td class="matrix-cell great" style="font-size: 12px;">채팅 55 + 리포트 13</td>
+      </tr>
+      <tr style="background: rgba(245,158,11,0.08);">
+        <td>첫충전 라이트 (1,000P)</td>
+        <td>1,000P</td>
+        <td class="matrix-cell good">25회</td>
+        <td class="matrix-cell good">40회</td>
+        <td class="matrix-cell">10회</td>
+        <td class="matrix-cell good" style="font-size: 12px;">채팅 15 + 리포트 3</td>
+      </tr>
+      <tr style="background: rgba(245,158,11,0.08);">
+        <td>첫충전 스탠다드 (2,600P)</td>
+        <td>2,600P</td>
+        <td class="matrix-cell great">65회</td>
+        <td class="matrix-cell great">104회</td>
+        <td class="matrix-cell great">26회</td>
+        <td class="matrix-cell great" style="font-size: 12px;">채팅 40 + 리포트 9</td>
+      </tr>
+      <tr style="background: rgba(245,158,11,0.08);">
+        <td>첫충전 프리미엄 (6,800P)</td>
+        <td>6,800P</td>
+        <td class="matrix-cell great">170회</td>
+        <td class="matrix-cell great">272회</td>
+        <td class="matrix-cell great">68회</td>
+        <td class="matrix-cell great" style="font-size: 12px;">채팅 100 + 리포트 25</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- 무료 한도 vs 포인트 소비 균형 -->
+<div class="card">
+  <div class="section-title">무료 한도 vs 포인트 소비 균형 분석</div>
+  <div class="grid grid-2">
+    <div>
+      <h3 style="font-size: 15px; margin-bottom: 12px;">월간 무료 한도 가치</h3>
+      <table>
+        <thead>
+          <tr><th>기능</th><th>무료 한도</th><th>포인트 환산</th><th>원가</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>AI 채팅</td>
+            <td>10회/월</td>
+            <td style="color: var(--accent);">400P</td>
+            <td>5원</td>
+          </tr>
+          <tr>
+            <td>OCR 필사</td>
+            <td>3회/월</td>
+            <td style="color: var(--accent);">75P</td>
+            <td>8.1원</td>
+          </tr>
+          <tr>
+            <td>AI 리포트</td>
+            <td>1회/월</td>
+            <td style="color: var(--accent);">100P</td>
+            <td>1.5원</td>
+          </tr>
+          <tr style="font-weight: 700;">
+            <td>합계</td>
+            <td>14회</td>
+            <td style="color: var(--accent);">575P</td>
+            <td>14.6원</td>
+          </tr>
+        </tbody>
+      </table>
+      <div style="font-size: 12px; color: var(--muted); margin-top: 8px;">
+        무료 한도만으로 575P 상당의 AI 서비스 이용 가능<br>
+        이는 라이트 패키지(500P)보다 높은 가치
+      </div>
+    </div>
+    <div>
+      <h3 style="font-size: 15px; margin-bottom: 12px;">전환 트리거 분석</h3>
+      <div style="margin-bottom: 16px;">
+        <div style="font-size: 13px; margin-bottom: 6px;">AI 채팅 10회 소진까지</div>
+        <div style="background: var(--border); border-radius: 4px; height: 24px; position: relative;">
+          <div style="background: var(--accent2); height: 100%; width: 70%; border-radius: 4px; display: flex; align-items: center; padding-left: 8px; font-size: 11px;">
+            평균 ~2주 (주 5회 사용 시)
+          </div>
+        </div>
+      </div>
+      <div style="margin-bottom: 16px;">
+        <div style="font-size: 13px; margin-bottom: 6px;">OCR 3회 소진까지</div>
+        <div style="background: var(--border); border-radius: 4px; height: 24px; position: relative;">
+          <div style="background: var(--accent3); height: 100%; width: 30%; border-radius: 4px; display: flex; align-items: center; padding-left: 8px; font-size: 11px;">
+            ~1주
+          </div>
+        </div>
+      </div>
+      <div style="margin-bottom: 16px;">
+        <div style="font-size: 13px; margin-bottom: 6px;">웰컴 200P 소진까지</div>
+        <div style="background: var(--border); border-radius: 4px; height: 24px; position: relative;">
+          <div style="background: var(--accent); height: 100%; width: 50%; border-radius: 4px; display: flex; align-items: center; padding-left: 8px; font-size: 11px;">
+            채팅 5회분 (~10일)
+          </div>
+        </div>
+      </div>
+      <div style="font-size: 12px; color: var(--muted);">
+        OCR이 가장 빠른 전환 트리거 (3회/월)<br>
+        충전 유도 타이밍: 한도 80% 소진 시
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 포인트 인플레이션 게이지 -->
+<div class="card">
+  <div class="section-title">포인트 인플레이션 위험도</div>
+  <div style="text-align: center; padding: 20px;">
+    <div style="font-size: 48px; font-weight: 800; color: var(--accent);">LOW</div>
+    <div style="margin: 16px auto; max-width: 400px; height: 12px; background: linear-gradient(90deg, #22c55e 0%, #22c55e 33%, #f59e0b 33%, #f59e0b 66%, #ef4444 66%, #ef4444 100%); border-radius: 6px; position: relative;">
+      <div style="position: absolute; left: 15%; top: -6px; width: 24px; height: 24px; background: #fff; border-radius: 50%; border: 3px solid var(--accent); transform: translateX(-50%);"></div>
+    </div>
+    <div style="display: flex; justify-content: space-between; max-width: 400px; margin: 0 auto; font-size: 11px; color: var(--muted);">
+      <span>낮음</span><span>보통</span><span>높음</span>
+    </div>
+  </div>
+  <div class="grid grid-3" style="margin-top: 16px;">
+    <div style="text-align: center; padding: 12px;">
+      <div style="font-size: 24px; font-weight: 700; color: var(--accent);">14.6원</div>
+      <div style="font-size: 12px; color: var(--muted);">무료 사용자 월 비용</div>
+    </div>
+    <div style="text-align: center; padding: 12px;">
+      <div style="font-size: 24px; font-weight: 700; color: var(--accent2);">4,410P</div>
+      <div style="font-size: 12px; color: var(--muted);">활발 유저 월 최대 적립</div>
+    </div>
+    <div style="text-align: center; padding: 12px;">
+      <div style="font-size: 24px; font-weight: 700; color: var(--accent3);">~60원</div>
+      <div style="font-size: 12px; color: var(--muted);">활발 유저 AI 사용 원가/월</div>
+    </div>
+  </div>
+  <div style="font-size: 13px; color: var(--muted); text-align: center; margin-top: 12px;">
+    적립 포인트로 AI를 추가 사용해도 원가 부담 극히 미미 (최대 60원/월)<br>
+    AI 소비가 자연적 드레인 역할 → 포인트 순환 건강한 상태
+  </div>
+</div>
+
+<div class="footer">
+  ReadTree Point Economy Overview v1.0 | 코드 SSoT 기준 | 2026-04-09<br>
+  SSoT: types/points.ts (POINT_ACTION_DEFAULTS, POINT_SPEND_COSTS, LEVEL_DEFAULTS)
+</div>
+
+</body>
+</html>
