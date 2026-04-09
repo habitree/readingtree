@@ -362,6 +362,7 @@ export const HomeHeroSection = memo(function HomeHeroSection({
                 <ContinueReadingCard
                   key={book.userBookId}
                   userBookId={book.userBookId}
+                  bookId={book.bookId}
                   title={book.title}
                   author={book.author}
                   coverImageUrl={book.coverImageUrl}

@@ -9,7 +9,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useMusicPlayer } from "@/hooks/use-music-player";
-import { useQuickCaptureStore } from "@/hooks/use-quick-capture";
 import { useAuth } from "@/hooks/use-auth";
 import { useLoginPrompt } from "@/hooks/use-login-prompt";
 import { LoginPromptModal } from "@/components/ui/login-prompt-modal";
@@ -47,9 +46,9 @@ export function ReadingCompleteDialog() {
     timerStartedAt,
     continueReading,
     close,
+    activeBook,
   } = useMusicPlayer();
 
-  const quickCapture = useQuickCaptureStore();
   const { user } = useAuth();
   const {
     isOpen: isLoginOpen,
@@ -60,6 +59,8 @@ export function ReadingCompleteDialog() {
   } = useLoginPrompt();
   const [showContinueOptions, setShowContinueOptions] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [showMemo, setShowMemo] = useState(false);
+  const [memo, setMemo] = useState("");
 
   /** 시간만 즉시 저장 (원탭) */
   async function handleQuickSave() {
@@ -76,35 +77,18 @@ export function ReadingCompleteDialog() {
       await saveReadingSession({
         durationSeconds: elapsedSeconds,
         startedAt: timerStartedAt || new Date().toISOString(),
+        userBookId: activeBook?.userBookId,
+        memo: memo.trim() || undefined,
       });
-      toast.success(`${formatDuration(elapsedSeconds)} 독서 시간이 저장되었습니다`);
+      toast.success(
+        activeBook
+          ? `${formatDuration(elapsedSeconds)} 독서 시간이 「${activeBook.title}」에 저장되었습니다`
+          : `${formatDuration(elapsedSeconds)} 독서 시간이 저장되었습니다`
+      );
+      setMemo("");
+      setShowMemo(false);
       closeCompleteDialog();
       close();
-    } catch {
-      toast.error("시간 저장에 실패했습니다.");
-    } finally {
-      setIsSaving(false);
-    }
-  }
-
-  /** 시간 저장 + 상세 기록 추가 (QuickCaptureSheet 열기) */
-  async function handleDetailRecord() {
-    if (
-      requireLogin({
-        title: "독서 기록을 남기려면",
-        description: "로그인 후 독서 기록을 저장할 수 있어요.",
-      })
-    )
-      return;
-
-    setIsSaving(true);
-    try {
-      await saveReadingSession({
-        durationSeconds: elapsedSeconds,
-        startedAt: timerStartedAt || new Date().toISOString(),
-      });
-      closeCompleteDialog();
-      quickCapture.openWithTimer(null, elapsedSeconds);
     } catch {
       toast.error("시간 저장에 실패했습니다.");
     } finally {
@@ -126,6 +110,7 @@ export function ReadingCompleteDialog() {
         await saveReadingSession({
           durationSeconds: elapsedSeconds,
           startedAt: timerStartedAt,
+          userBookId: activeBook?.userBookId,
         });
         toast.success(`${formatDuration(elapsedSeconds)} 독서 시간이 자동 저장되었습니다`);
       } catch {
@@ -144,6 +129,8 @@ export function ReadingCompleteDialog() {
         onOpenChange={(open) => {
           if (!open) {
             setShowContinueOptions(false);
+            setShowMemo(false);
+            setMemo("");
             closeCompleteDialog();
           }
         }}
@@ -169,6 +156,11 @@ export function ReadingCompleteDialog() {
               <p className="text-sm text-muted-foreground">
                 동안 독서에 집중했습니다
               </p>
+              {activeBook && (
+                <p className="text-xs text-muted-foreground/80 mt-1">
+                  📖 {activeBook.title}
+                </p>
+              )}
               {timerStartedAt && (
                 <p className="text-[10px] text-muted-foreground/60 tabular-nums">
                   {new Date(timerStartedAt).toLocaleTimeString("ko-KR", {
@@ -201,15 +193,38 @@ export function ReadingCompleteDialog() {
               시간 기록 저장
             </button>
 
-            {/* 상세 기록 추가 (보조 — 시간 저장 + QuickCapture) */}
-            <button
-              onClick={handleDetailRecord}
-              disabled={isSaving}
-              className="w-full py-3 rounded-xl bg-muted font-medium text-sm hover:bg-muted/80 transition-colors flex items-center justify-center gap-2"
-            >
-              <PenLine className="w-3.5 h-3.5" />
-              상세 기록 추가
-            </button>
+            {/* 메모 남기기 (인라인 토글) */}
+            {!showMemo ? (
+              <button
+                onClick={() => setShowMemo(true)}
+                disabled={isSaving}
+                className="w-full py-3 rounded-xl bg-muted font-medium text-sm hover:bg-muted/80 transition-colors flex items-center justify-center gap-2"
+              >
+                <PenLine className="w-3.5 h-3.5" />
+                메모 남기기
+              </button>
+            ) : (
+              <div className="space-y-2">
+                <textarea
+                  value={memo}
+                  onChange={(e) => setMemo(e.target.value)}
+                  placeholder="오늘 독서에서 인상적이었던 것..."
+                  maxLength={200}
+                  rows={2}
+                  className="w-full px-3 py-2.5 rounded-xl border bg-background text-sm resize-none focus:ring-2 focus:ring-primary focus:border-primary outline-none"
+                  autoFocus
+                />
+                <div className="flex items-center justify-between px-0.5">
+                  <span className="text-[10px] text-muted-foreground">{memo.length}/200</span>
+                  <button
+                    onClick={() => { setShowMemo(false); setMemo(""); }}
+                    className="text-[10px] text-muted-foreground hover:text-foreground"
+                  >
+                    취소
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* 계속 읽기 */}
             {!showContinueOptions ? (

@@ -2,6 +2,7 @@
 
 import { useRef, useEffect, useCallback } from "react";
 import { useMusicPlayer } from "@/hooks/use-music-player";
+import { useRouter } from "next/navigation";
 import { getTrackMoodLabel, initMusicData } from "@/lib/music";
 import { TimerSheet } from "./playlist-sheet";
 import { ReadingCompleteDialog } from "./reading-complete-dialog";
@@ -12,7 +13,6 @@ import {
   SkipBack,
   SkipForward,
   Square,
-  Timer,
   Volume2,
   VolumeX,
   Music2,
@@ -190,8 +190,10 @@ export function MusicMiniPlayer() {
     stopTimer,
     openTrackList,
     toggleVolume,
+    activeBook,
   } = useMusicPlayer();
 
+  const router = useRouter();
   const isTimerActive = timerStatus === "running" || timerStatus === "paused";
 
   // ── Music Supabase 데이터 초기화 ──
@@ -620,6 +622,14 @@ export function MusicMiniPlayer() {
 
           {/* 곡 정보 (탭하면 트랙리스트) */}
           <button onClick={openTrackList} className="min-w-0 flex-1 text-left">
+            {isTimerActive && activeBook && (
+              <p
+                className="text-[10px] text-primary/70 truncate leading-tight mb-0.5 hover:underline cursor-pointer"
+                onClick={(e) => { e.stopPropagation(); router.push(`/books/${activeBook.userBookId}`); }}
+              >
+                📖 {activeBook.title}
+              </p>
+            )}
             <p className="text-[13px] font-medium truncate leading-tight">
               {currentTrack.composer} — {currentTrack.title}
             </p>

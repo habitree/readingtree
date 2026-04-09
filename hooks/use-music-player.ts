@@ -6,6 +6,13 @@ import { getDefaultPlaylistTracks, getPlaylistTracks } from "@/lib/music";
 
 export type TimerStatus = "idle" | "running" | "paused" | "completed";
 
+export interface ActiveBook {
+  userBookId: string;
+  bookId: string;
+  title: string;
+  coverUrl: string | null;
+}
+
 interface MusicPlayerState {
   // ── 음악 상태 ──
   isVisible: boolean;
@@ -28,6 +35,9 @@ interface MusicPlayerState {
   isCompleteDialogOpen: boolean;
   isTrackListOpen: boolean;
   isVolumeOpen: boolean;
+
+  // ── 독서 연결 ──
+  activeBook: ActiveBook | null;
 
   // ── 음악 액션 ──
   loadPlaylist: (tracks: MusicTrack[], startIndex?: number) => void;
@@ -58,6 +68,9 @@ interface MusicPlayerState {
   closeTrackList: () => void;
   toggleVolume: () => void;
 
+  // ── 독서 연결 액션 ──
+  setActiveBook: (book: ActiveBook | null) => void;
+
   // ── 공통 ──
   close: () => void;
 }
@@ -73,6 +86,7 @@ const INITIAL_TIMER = {
   elapsedSeconds: 0,
   isTimerSheetOpen: false,
   isCompleteDialogOpen: false,
+  activeBook: null as ActiveBook | null,
 };
 
 export const useMusicPlayer = create<MusicPlayerState>((set, get) => ({
@@ -265,6 +279,9 @@ export const useMusicPlayer = create<MusicPlayerState>((set, get) => ({
   openTrackList: () => set({ isTrackListOpen: true }),
   closeTrackList: () => set({ isTrackListOpen: false }),
   toggleVolume: () => set((s) => ({ isVolumeOpen: !s.isVolumeOpen })),
+
+  // ── 독서 연결 ──
+  setActiveBook: (book) => set({ activeBook: book }),
 
   // ── 전체 종료 ──
   close: () =>

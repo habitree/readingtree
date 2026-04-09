@@ -9,10 +9,12 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { useMusicPlayer } from "@/hooks/use-music-player";
-import { Star, Plus, X, Clock, Infinity as InfinityIcon, Music2 } from "lucide-react";
+import { Star, Plus, X, Clock, Infinity as InfinityIcon, Music2, BookOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getPlaylists, getThemeGroups, getPlaylistTracks } from "@/lib/music";
 import { getGlobalAudio } from "./music-mini-player";
+import { getContinueReadingBooks } from "@/app/actions/books/reading";
+import Image from "next/image";
 
 // ── 즐겨찾기 localStorage 관리 ──
 const FAVORITES_KEY = "readingtree-timer-favorites";
@@ -37,15 +39,39 @@ function saveFavorites(favorites: number[]) {
 // ── 기본 프리셋 ──
 const DEFAULT_PRESETS = [15, 30, 45, 60, 90];
 
+// ── 플레이리스트 선택 기억 ──
+const LAST_PLAYLIST_KEY = "readingtree-last-playlist";
+
+function loadLastPlaylist(): string {
+  if (typeof window === "undefined") return "comfortable";
+  return localStorage.getItem(LAST_PLAYLIST_KEY) || "comfortable";
+}
+
+function saveLastPlaylist(id: string) {
+  localStorage.setItem(LAST_PLAYLIST_KEY, id);
+}
+
+// ── 책 선택 타입 ──
+interface RecentBook {
+  userBookId: string;
+  bookId: string;
+  title: string;
+  coverImageUrl: string | null;
+}
+
 export function TimerSheet() {
-  const { isTimerSheetOpen, closeTimerSheet, startTimer, startUnlimitedTimer } = useMusicPlayer();
+  const { isTimerSheetOpen, closeTimerSheet, startTimer, startUnlimitedTimer, setActiveBook, activeBook } = useMusicPlayer();
   const [selectedMinutes, setSelectedMinutes] = useState(30);
   const [isUnlimited, setIsUnlimited] = useState(false);
   const [isCustom, setIsCustom] = useState(false);
   const [customInput, setCustomInput] = useState("");
-  const [favorites, setFavorites] = useState<number[]>([]);
+  const [favorites, setFavorites] = useState<number[]>(loadFavorites);
   const [isEditingFavorites, setIsEditingFavorites] = useState(false);
-  const [selectedPlaylistId, setSelectedPlaylistId] = useState("comfortable");
+  const [selectedPlaylistId, setSelectedPlaylistId] = useState(loadLastPlaylist);
+
+  // ── 읽을 책 선택 ──
+  const [recentBooks, setRecentBooks] = useState<RecentBook[]>([]);
+  const [selectedBookId, setSelectedBookId] = useState<string | null>(null);
 
   const playlists = getPlaylists();
   const themeGroups = getThemeGroups();
@@ -61,10 +87,30 @@ export function TimerSheet() {
     ? playlists.filter((pl) => genreGroup.playlists.includes(pl.id))
     : playlists;
 
-  // 즐겨찾기 로드
+  // 시트 열릴 때 최근 읽던 책 로드
   useEffect(() => {
-    setFavorites(loadFavorites());
-  }, []);
+    if (!isTimerSheetOpen) return;
+    let cancelled = false;
+    getContinueReadingBooks(undefined, 3).then((books) => {
+      if (cancelled) return;
+      const mapped = books.map((b) => ({
+        userBookId: b.userBookId,
+        bookId: b.bookId,
+        title: b.title,
+        coverImageUrl: b.coverImageUrl,
+      }));
+      setRecentBooks(mapped);
+      // 외부에서 activeBook이 미리 설정된 경우 (대시보드 원탭) 유지
+      if (activeBook) {
+        setSelectedBookId(activeBook.userBookId);
+      } else if (mapped.length > 0) {
+        setSelectedBookId(mapped[0].userBookId);
+      } else {
+        setSelectedBookId(null);
+      }
+    });
+    return () => { cancelled = true; };
+  }, [isTimerSheetOpen, activeBook]);
 
   // 모든 프리셋 (기본 + 즐겨찾기 합산, 중복 제거, 정렬)
   const allPresets = [...new Set([...DEFAULT_PRESETS, ...favorites])].sort(
@@ -88,6 +134,17 @@ export function TimerSheet() {
       const minutes = isCustom ? parseInt(customInput, 10) : selectedMinutes;
       if (!minutes || minutes < 1) return;
     }
+
+    // 0. 선택한 책을 activeBook에 설정
+    const selectedBook = recentBooks.find((b) => b.userBookId === selectedBookId);
+    setActiveBook(
+      selectedBook
+        ? { userBookId: selectedBook.userBookId, bookId: selectedBook.bookId, title: selectedBook.title, coverUrl: selectedBook.coverImageUrl }
+        : null
+    );
+
+    // 플레이리스트 선택 기억
+    saveLastPlaylist(selectedPlaylistId);
 
     // 1. 사용자 클릭 동기 컨텍스트에서 audio.play() 호출
     //    (useEffect 경유 시 브라우저 autoplay 정책에 의해 차단됨)
@@ -168,6 +225,58 @@ export function TimerSheet() {
             시간을 설정하면 음악과 함께 독서가 시작됩니다
           </p>
         </SheetHeader>
+
+        {/* ── 읽을 책 선택 ── */}
+        {!isEditingFavorites && recentBooks.length > 0 && (
+          <div className="mb-4">
+            <span className="text-xs font-medium text-muted-foreground flex items-center gap-1 mb-2 px-0.5">
+              <BookOpen className="w-3 h-3" />
+              읽을 책
+            </span>
+            <div className="flex gap-2 overflow-x-auto pb-1">
+              {recentBooks.map((book) => {
+                const isSelected = selectedBookId === book.userBookId;
+                return (
+                  <button
+                    key={book.userBookId}
+                    onClick={() => setSelectedBookId(isSelected ? null : book.userBookId)}
+                    className={cn(
+                      "flex items-center gap-2 px-3 py-2 rounded-xl text-left transition-all shrink-0 max-w-[200px]",
+                      isSelected
+                        ? "bg-primary/10 ring-1 ring-primary/30"
+                        : "bg-muted/50 hover:bg-muted"
+                    )}
+                  >
+                    {book.coverImageUrl ? (
+                      <Image
+                        src={book.coverImageUrl}
+                        alt=""
+                        width={24}
+                        height={34}
+                        className="rounded-sm object-cover shrink-0"
+                      />
+                    ) : (
+                      <div className="w-6 h-[34px] rounded-sm bg-muted-foreground/20 shrink-0 flex items-center justify-center">
+                        <BookOpen className="w-3 h-3 text-muted-foreground/50" />
+                      </div>
+                    )}
+                    <span className={cn(
+                      "text-xs font-medium truncate",
+                      isSelected ? "text-primary" : "text-foreground"
+                    )}>
+                      {book.title}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+            {!selectedBookId && (
+              <p className="text-[10px] text-muted-foreground/60 mt-1 px-0.5">
+                책 없이 시작하면 독서 시간만 기록됩니다
+              </p>
+            )}
+          </div>
+        )}
 
         {/* ── 시각적 시간 표시 ── */}
         <div className="flex justify-center mb-5">

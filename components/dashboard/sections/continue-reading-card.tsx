@@ -7,17 +7,19 @@ import Image from "next/image";
 import { motion } from "framer-motion";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { BookOpen, ChevronRight, Loader2, Check, Search } from "lucide-react";
+import { BookOpen, ChevronRight, Loader2, Check, Search, Timer } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useHapticFeedback } from "@/components/ui/touch-feedback";
 import { useTranslation } from "@/lib/i18n";
 import { formatSmartDate } from "@/lib/utils/date";
 import { updateBookProgress } from "@/app/actions/books";
+import { useMusicPlayer } from "@/hooks/use-music-player";
 import { toast } from "sonner";
 import { BookCompletionDialog } from "@/components/books/book-completion-dialog";
 
 interface ContinueReadingCardProps {
   userBookId: string;
+  bookId?: string;
   title: string;
   author: string | null;
   coverImageUrl: string | null;
@@ -35,6 +37,7 @@ interface ContinueReadingCardProps {
  */
 export const ContinueReadingCard = memo(function ContinueReadingCard({
   userBookId,
+  bookId,
   title,
   author,
   coverImageUrl,
@@ -57,6 +60,19 @@ export const ContinueReadingCard = memo(function ContinueReadingCard({
   const { lightTap } = useHapticFeedback();
   const { t } = useTranslation();
   const [showCompletionDialog, setShowCompletionDialog] = useState(false);
+
+  const handleStartReading = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    const { setActiveBook, openTimerSheet } = useMusicPlayer.getState();
+    setActiveBook({
+      userBookId,
+      bookId: bookId || userBookId,
+      title,
+      coverUrl: coverImageUrl,
+    });
+    openTimerSheet();
+  }, [userBookId, bookId, title, coverImageUrl]);
 
   // 뒤로가기 등으로 경로가 변경되면 네비게이션 상태 리셋
   useEffect(() => {
@@ -182,12 +198,23 @@ export const ContinueReadingCard = memo(function ContinueReadingCard({
 
                 {/* 책 정보 */}
                 <div className="flex-1 min-w-0">
-                  <p className="text-[9px] font-medium text-forest-600 dark:text-forest-400 mb-0.5">
-                    {t("dashboard.continueLabel")}
-                  </p>
-                  <h3 className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-white line-clamp-2 group-hover:text-forest-700 dark:group-hover:text-forest-300 transition-colors leading-tight">
-                    {title}
-                  </h3>
+                  <div className="flex items-start justify-between gap-1">
+                    <div className="min-w-0">
+                      <p className="text-[9px] font-medium text-forest-600 dark:text-forest-400 mb-0.5">
+                        {t("dashboard.continueLabel")}
+                      </p>
+                      <h3 className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-white line-clamp-2 group-hover:text-forest-700 dark:group-hover:text-forest-300 transition-colors leading-tight">
+                        {title}
+                      </h3>
+                    </div>
+                    <button
+                      onClick={handleStartReading}
+                      className="shrink-0 p-1.5 rounded-lg bg-forest-50 dark:bg-forest-900/30 hover:bg-forest-100 dark:hover:bg-forest-800/50 text-forest-600 dark:text-forest-400 transition-colors"
+                      aria-label="독서 타이머 시작"
+                    >
+                      <Timer className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                   {author && (
                     <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate mt-0.5">
                       {author}

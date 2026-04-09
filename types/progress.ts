@@ -78,6 +78,7 @@ export interface SaveReadingSessionInput {
   durationSeconds: number;
   startedAt: string;
   userBookId?: string;
+  memo?: string;
 }
 
 /**

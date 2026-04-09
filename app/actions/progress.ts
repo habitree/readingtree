@@ -333,7 +333,7 @@ export async function saveReadingSession(
       user_id: user.id,
       user_book_id: userBookId,
       page_number: 0,
-      memo: null,
+      memo: data.memo?.trim() || null,
       is_public: true,
       started_at: data.startedAt,
       ended_at: new Date().toISOString(),

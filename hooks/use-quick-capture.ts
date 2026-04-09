@@ -83,10 +83,10 @@ export function useQuickCapture() {
 
       setIsSubmitting(true);
       try {
+        // readingDurationSeconds는 UI 표시용으로만 유지 — 시간은 reading_logs에 이미 저장됨
         const result = await createQuickNote(
           content,
           store.selectedBook?.id,
-          store.readingDurationSeconds ?? undefined,
         );
 
         if (result.success) {
@@ -126,10 +126,11 @@ export function useQuickCapture() {
 
       setIsSubmitting(true);
       try {
+        // readingDurationSeconds는 UI 표시용으로만 유지 — 시간은 reading_logs에 이미 저장됨
         const result = await createQuickNote(
           content,
           store.selectedBook?.id,
-          store.readingDurationSeconds ?? undefined,
+          undefined,
           {
             status: expandedData.publishDirectly ? "published" : "draft",
             quoteContent: expandedData.quoteContent,
