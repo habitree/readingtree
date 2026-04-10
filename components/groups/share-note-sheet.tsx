@@ -37,7 +37,7 @@ interface ShareNoteSheetProps {
   onSuccess?: () => void;
 }
 
-const noteTypeIcons = {
+const noteTypeIcons: Record<string, typeof Quote> = {
   quote: Quote,
   photo: Camera,
   memo: FileText,
@@ -189,7 +189,7 @@ export function ShareNoteSheet({
               <ScrollArea className="flex-1 -mx-6 px-6">
                 <div className="space-y-2 py-3">
                   {notes.map((note) => {
-                    const Icon = noteTypeIcons[note.type as NoteType];
+                    const Icon = noteTypeIcons[note.type] || FileText;
                     return (
                       <label
                         key={note.id}

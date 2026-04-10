@@ -28,7 +28,7 @@ interface ShareNoteDialogProps {
   onSuccess?: () => void;
 }
 
-const noteTypeIcons = {
+const noteTypeIcons: Record<string, typeof Quote> = {
   quote: Quote,
   photo: Camera,
   memo: FileText,
@@ -165,7 +165,7 @@ export function ShareNoteDialog({
               </div>
 
               {notes.map((note) => {
-                const Icon = noteTypeIcons[note.type as NoteType];
+                const Icon = noteTypeIcons[note.type] || FileText;
                 return (
                   <label
                     key={note.id}

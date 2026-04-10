@@ -324,6 +324,7 @@ export async function getShareableNotes(groupId: string, bookId: string) {
     )
     .eq("user_id", user.id)
     .eq("book_id", bookId)
+    .neq("type", "progress")
     .order("created_at", { ascending: false });
 
   if (sharedNoteIds.length > 0) {
