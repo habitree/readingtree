@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ReadTree 재무 대시보드 — 2026 Q2</title>
+<title>ReadTree 재무 대시보드 — 2026 Q2 (구독 모델 v2.0)</title>
 <style>
   :root {
     --bg: #0f172a;
@@ -91,8 +91,8 @@
   </div>
   <div class="card kpi-card kpi-yellow">
     <div class="label">손익분기 MAU</div>
-    <div class="value">280명</div>
-    <div class="note">충전율 12% 가정 (유료 34명)</div>
+    <div class="value">~100명</div>
+    <div class="note">구독 도입 후 (기존 280명 → 64% 개선)</div>
   </div>
   <div class="card kpi-card kpi-green">
     <div class="label">무료 사용자 원가</div>
@@ -101,52 +101,72 @@
   </div>
 </div>
 
-<!-- 충전 패키지 비교 -->
+<!-- 상품 라인업 (구독 중심 + 탑업 보조) -->
 <div class="card" style="margin-bottom: 24px;">
-  <div class="section-title">충전 패키지 비교</div>
+  <div class="section-title">상품 라인업 — 구독 중심 + 탑업 보조 <span style="background: #a855f7; color: #fff; padding: 2px 8px; border-radius: 8px; font-size: 11px; font-weight: 600; margin-left: 8px;">v2.0 기획</span></div>
   <table>
     <thead>
       <tr>
-        <th>패키지</th>
+        <th>상품</th>
+        <th>유형</th>
         <th>가격</th>
-        <th>기본P</th>
+        <th>AI 채팅</th>
+        <th>OCR</th>
+        <th>리포트</th>
         <th>보너스P</th>
-        <th>합계P</th>
-        <th>P당 원가</th>
-        <th>첫충전 보너스</th>
-        <th>첫충전 합계</th>
+        <th>비고</th>
       </tr>
     </thead>
     <tbody>
-      <tr>
-        <td>라이트</td>
-        <td>₩1,900</td>
-        <td>500</td>
-        <td>0</td>
-        <td>500P</td>
-        <td>3.80원</td>
-        <td>+500P</td>
-        <td>1,000P</td>
+      <tr style="background: rgba(168,85,247,0.08);">
+        <td><strong>독서마스터</strong></td>
+        <td style="color: #a855f7; font-weight: 600;">구독</td>
+        <td><strong>₩9,900/월</strong></td>
+        <td style="color: #a855f7; font-weight: 700;">무제한</td>
+        <td style="color: #a855f7; font-weight: 700;">무제한</td>
+        <td style="color: #a855f7; font-weight: 700;">무제한</td>
+        <td>500P/월</td>
+        <td>연 ₩99,000 (17%↓)</td>
       </tr>
       <tr class="highlight-row">
-        <td><strong>스탠다드</strong></td>
-        <td><strong>₩3,900</strong></td>
-        <td>1,200</td>
-        <td>200</td>
-        <td>1,400P</td>
-        <td>2.79원</td>
-        <td>+1,200P</td>
-        <td>2,600P</td>
+        <td><strong>독서가</strong></td>
+        <td style="color: var(--accent2); font-weight: 600;">구독</td>
+        <td><strong>₩4,900/월</strong></td>
+        <td>50회/월</td>
+        <td>20회/월</td>
+        <td>3회/월</td>
+        <td>200P/월</td>
+        <td>연 ₩49,000 (17%↓)</td>
       </tr>
       <tr>
-        <td>프리미엄</td>
-        <td>₩6,900</td>
-        <td>3,000</td>
-        <td>800</td>
-        <td>3,800P</td>
-        <td>1.82원</td>
-        <td>+3,000P</td>
-        <td>6,800P</td>
+        <td>라이트</td>
+        <td style="color: #14b8a6;">탑업</td>
+        <td>₩1,900</td>
+        <td colspan="3" style="color: var(--muted);">500P (일회성)</td>
+        <td>-</td>
+        <td>비구독자 일반 충전</td>
+      </tr>
+      <tr>
+        <td>미니</td>
+        <td style="color: #14b8a6;">탑업</td>
+        <td>₩990</td>
+        <td colspan="3" style="color: var(--muted);">200P (일회성)</td>
+        <td>-</td>
+        <td>첫결제 장벽 최소화</td>
+      </tr>
+      <tr>
+        <td style="text-decoration: line-through; color: var(--muted);">스탠다드</td>
+        <td style="color: var(--accent4);">레거시</td>
+        <td style="text-decoration: line-through; color: var(--muted);">₩3,900</td>
+        <td colspan="4" style="color: var(--accent4); font-size: 12px;">Phase 2에서 제거 (독서가와 카니발리제이션)</td>
+        <td></td>
+      </tr>
+      <tr>
+        <td style="text-decoration: line-through; color: var(--muted);">프리미엄</td>
+        <td style="color: var(--accent4);">레거시</td>
+        <td style="text-decoration: line-through; color: var(--muted);">₩6,900</td>
+        <td colspan="4" style="color: var(--accent4); font-size: 12px;">Phase 2에서 제거 (독서가보다 비싸면서 혜택 열위)</td>
+        <td></td>
       </tr>
     </tbody>
   </table>
@@ -283,13 +303,22 @@
         <td><div class="bar bar-green" style="width: 150px; display: inline-block;">&nbsp;</div></td>
       </tr>
       <tr>
-        <td>헤비 충전</td>
-        <td>1%</td>
-        <td>6,900원</td>
-        <td>82,800원</td>
-        <td>6,000원</td>
-        <td style="color: var(--accent);">76,800원</td>
-        <td><div class="bar bar-green" style="width: 220px; display: inline-block;">&nbsp;</div></td>
+        <td style="color: #3b82f6;">독서가 구독</td>
+        <td>7%</td>
+        <td>4,900원</td>
+        <td>58,800원</td>
+        <td>5,688원</td>
+        <td style="color: var(--accent);">53,112원</td>
+        <td><div class="bar bar-blue" style="width: 180px; display: inline-block;">&nbsp;</div></td>
+      </tr>
+      <tr>
+        <td style="color: #a855f7;">독서마스터 구독</td>
+        <td>4%</td>
+        <td>9,900원</td>
+        <td>118,800원</td>
+        <td>15,912원</td>
+        <td style="color: var(--accent);">102,888원</td>
+        <td><div class="bar bar-green" style="width: 280px; display: inline-block;">&nbsp;</div></td>
       </tr>
     </tbody>
   </table>
@@ -297,7 +326,7 @@
 
 <!-- 손익분기점 -->
 <div class="card" style="margin-top: 24px;">
-  <div class="section-title">손익분기점 시각화 (충전율 12%)</div>
+  <div class="section-title">손익분기점 시각화 (구독 모델 기준)</div>
   <div style="display: flex; gap: 16px; flex-wrap: wrap;">
     <table style="flex: 1; min-width: 300px;">
       <thead>
@@ -309,41 +338,35 @@
         </tr>
       </thead>
       <tbody>
-        <tr>
-          <td>50</td>
-          <td>18,175원</td>
-          <td>50,000원</td>
-          <td style="color: var(--accent4);">-31,825원</td>
-        </tr>
-        <tr>
-          <td>100</td>
-          <td>36,350원</td>
-          <td>86,000원</td>
-          <td style="color: var(--accent4);">-49,650원</td>
+        <tr class="highlight-row">
+          <td><strong>100 (BEP)</strong></td>
+          <td><strong>100,010원</strong></td>
+          <td><strong>86,000원</strong></td>
+          <td style="color: var(--accent);"><strong>+14,010원</strong></td>
         </tr>
         <tr>
           <td>200</td>
-          <td>87,240원</td>
+          <td>200,020원</td>
           <td>100,000원</td>
-          <td style="color: var(--accent4);">-12,760원</td>
+          <td style="color: var(--accent);">+100,020원</td>
         </tr>
-        <tr class="highlight-row">
-          <td><strong>280 (BEP)</strong></td>
-          <td><strong>127,680원</strong></td>
-          <td><strong>127,000원</strong></td>
-          <td style="color: var(--accent);"><strong>+680원</strong></td>
+        <tr>
+          <td>300</td>
+          <td>300,030원</td>
+          <td>120,000원</td>
+          <td style="color: var(--accent);">+180,030원</td>
         </tr>
         <tr>
           <td>500</td>
-          <td>272,625원</td>
+          <td>500,050원</td>
           <td>181,000원</td>
-          <td style="color: var(--accent);">+91,625원</td>
+          <td style="color: var(--accent);">+319,050원</td>
         </tr>
         <tr>
           <td>1,000</td>
-          <td>545,250원</td>
+          <td>962,500원</td>
           <td>320,000원</td>
-          <td style="color: var(--accent);">+225,250원</td>
+          <td style="color: var(--accent);">+642,500원</td>
         </tr>
       </tbody>
     </table>
@@ -356,25 +379,25 @@
           <line x1="40" y1="160" x2="390" y2="160" stroke="#334155" stroke-width="1"/>
           <line x1="40" y1="80" x2="390" y2="80" stroke="#334155" stroke-width="0.5" stroke-dasharray="4"/>
 
-          <!-- Revenue line (green) -->
-          <polyline points="55,155 110,145 180,125 230,108 290,70 380,20" fill="none" stroke="#22c55e" stroke-width="2.5"/>
+          <!-- Revenue line (green) - subscription model -->
+          <polyline points="55,148 130,128 200,105 290,58 380,10" fill="none" stroke="#22c55e" stroke-width="2.5"/>
 
           <!-- Cost line (red) -->
-          <polyline points="55,152 110,143 180,135 230,130 290,120 380,100" fill="none" stroke="#ef4444" stroke-width="2.5"/>
+          <polyline points="55,150 130,143 200,135 290,120 380,100" fill="none" stroke="#ef4444" stroke-width="2.5"/>
 
           <!-- BEP point -->
-          <circle cx="230" cy="108" r="5" fill="#f59e0b" stroke="#0f172a" stroke-width="2"/>
-          <text x="235" y="100" fill="#f59e0b" font-size="10" font-weight="bold">BEP 280명</text>
+          <circle cx="55" cy="148" r="5" fill="#f59e0b" stroke="#0f172a" stroke-width="2"/>
+          <text x="60" y="140" fill="#f59e0b" font-size="10" font-weight="bold">BEP ~100명</text>
 
           <!-- Labels -->
-          <text x="55" y="175" fill="#94a3b8" font-size="9">50</text>
-          <text x="110" y="175" fill="#94a3b8" font-size="9">100</text>
-          <text x="180" y="175" fill="#94a3b8" font-size="9">200</text>
+          <text x="55" y="175" fill="#94a3b8" font-size="9">100</text>
+          <text x="130" y="175" fill="#94a3b8" font-size="9">200</text>
+          <text x="200" y="175" fill="#94a3b8" font-size="9">300</text>
           <text x="290" y="175" fill="#94a3b8" font-size="9">500</text>
           <text x="370" y="175" fill="#94a3b8" font-size="9">1K</text>
           <text x="5" y="163" fill="#94a3b8" font-size="9">0</text>
-          <text x="5" y="83" fill="#94a3b8" font-size="9">300K</text>
-          <text x="5" y="13" fill="#94a3b8" font-size="9">600K</text>
+          <text x="5" y="83" fill="#94a3b8" font-size="9">500K</text>
+          <text x="5" y="13" fill="#94a3b8" font-size="9">1M</text>
         </svg>
       </div>
       <div class="legend" style="justify-content: center; margin-top: 8px;">
@@ -433,18 +456,19 @@
     <div style="background: rgba(34,197,94,0.1); border-radius: 8px; padding: 16px; border-left: 3px solid var(--accent);">
       <div style="font-weight: 700; margin-bottom: 8px; color: var(--accent);">단기 (0~3개월)</div>
       <ul style="font-size: 13px; color: var(--muted); list-style: none; padding: 0;">
+        <li style="margin-bottom: 6px;">구독 2종 출시 (₩4,900/₩9,900)</li>
+        <li style="margin-bottom: 6px;">미니 탑업 추가 (₩990)</li>
+        <li style="margin-bottom: 6px;">스탠다드/프리미엄 레거시화</li>
         <li style="margin-bottom: 6px;">OCR Gemini 전환 (-48% 원가)</li>
-        <li style="margin-bottom: 6px;">4번째 패키지 (앵커 효과)</li>
-        <li style="margin-bottom: 6px;">에스컬레이팅 일일 보상</li>
-        <li style="margin-bottom: 6px;">첫 충전 팝업 최적화</li>
+        <li style="margin-bottom: 6px;">전환 Nudge 팝업 구현</li>
       </ul>
     </div>
     <div style="background: rgba(59,130,246,0.1); border-radius: 8px; padding: 16px; border-left: 3px solid var(--accent2);">
       <div style="font-weight: 700; margin-bottom: 8px; color: var(--accent2);">중기 (3~6개월)</div>
       <ul style="font-size: 13px; color: var(--muted); list-style: none; padding: 0;">
-        <li style="margin-bottom: 6px;">구독+포인트 하이브리드</li>
+        <li style="margin-bottom: 6px;">스탠다드/프리미엄 완전 제거</li>
+        <li style="margin-bottom: 6px;">연간 구독 옵션 추가</li>
         <li style="margin-bottom: 6px;">B2B 독서모임 패키지</li>
-        <li style="margin-bottom: 6px;">AI 리포트 프리미엄 (200P)</li>
         <li style="margin-bottom: 6px;">기프트 포인트</li>
       </ul>
     </div>
@@ -452,7 +476,7 @@
       <div style="font-weight: 700; margin-bottom: 8px; color: var(--accent3);">장기 (6~12개월)</div>
       <ul style="font-size: 13px; color: var(--muted); list-style: none; padding: 0;">
         <li style="margin-bottom: 6px;">토스페이먼츠 재활성화</li>
-        <li style="margin-bottom: 6px;">연간 구독 (₩49,000)</li>
+        <li style="margin-bottom: 6px;">AI 리포트 프리미엄</li>
         <li style="margin-bottom: 6px;">네이티브 광고 (MAU 5K+)</li>
         <li style="margin-bottom: 6px;">출판사/서점 제휴</li>
       </ul>
@@ -461,8 +485,9 @@
 </div>
 
 <div class="footer">
-  ReadTree Financial Dashboard v1.0 | 코드 SSoT 기준 자동 추출 | 2026-04-09 생성<br>
-  SSoT: types/points.ts, lib/subscription/gates.ts, lib/subscription/pricing-data.ts
+  ReadTree Financial Dashboard v2.0 | 구독 중심 수익 모델 반영 | 2026-04-10 갱신<br>
+  SSoT: types/points.ts, lib/subscription/gates.ts, lib/subscription/pricing-data.ts<br>
+  상세 분석: <a href="unlimited-plan-cost-analysis.html" style="color: #a855f7;">구독 모델 종합 비용 분석</a>
 </div>
 
 </body>
