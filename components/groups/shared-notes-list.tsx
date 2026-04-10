@@ -8,8 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { formatSmartDate } from "@/lib/utils/date";
-import { parsePageNumber } from "@/lib/utils/note";
-import { NoteContentViewer } from "@/components/notes/note-content-viewer";
+import { parseNoteContentFields, parsePageNumber } from "@/lib/utils/note";
 import { getImageUrl, isValidImageUrl } from "@/lib/utils/image";
 import {
   BookOpen,
@@ -17,9 +16,12 @@ import {
   ChevronDown,
   ChevronUp,
   MessageSquare,
+  FileText,
+  Camera,
+  ScanText,
+  Quote,
+  StickyNote,
 } from "lucide-react";
-import { NOTE_TYPE_STYLES } from "@/lib/constants/note-type-styles";
-import type { NoteStyleType } from "@/lib/constants/note-type-styles";
 import type { NoteWithBook } from "@/types/note";
 import { useTranslation } from "@/lib/i18n";
 import { spacing } from "@/lib/design-tokens";
@@ -75,7 +77,6 @@ function groupNotesByBook(notes: SharedNotesListProps["notes"]): BookGroup[] {
       });
     }
     groupMap.get(bookId)!.notes.push(item);
-    // 최신 shared_at 갱신
     if (item.shared_at > groupMap.get(bookId)!.latestSharedAt) {
       groupMap.get(bookId)!.latestSharedAt = item.shared_at;
     }
@@ -88,12 +89,27 @@ function groupNotesByBook(notes: SharedNotesListProps["notes"]): BookGroup[] {
   );
 }
 
-// --- 접기/펼치기 임계값 ---
-const COLLAPSE_THRESHOLD = 3;
+// 타입별 아이콘 매핑
+const TYPE_ICONS: Record<string, typeof FileText> = {
+  quote: Quote,
+  memo: StickyNote,
+  photo: Camera,
+  transcription: ScanText,
+};
+
+// 타입별 라벨
+const TYPE_LABELS: Record<string, string> = {
+  quote: "인용구",
+  memo: "메모",
+  photo: "사진",
+  transcription: "필사",
+};
+
+const COLLAPSE_THRESHOLD = 4;
 
 /**
  * 공유 기록 목록 컴포넌트
- * 모임에 공유된 기록을 책별로 그룹화하여 표시
+ * 모임에 공유된 기록을 책별로 그룹화 → 컴팩트 카드로 표시
  */
 export function SharedNotesList({ notes, groupId }: SharedNotesListProps) {
   const { t } = useTranslation();
@@ -141,17 +157,12 @@ export function SharedNotesList({ notes, groupId }: SharedNotesListProps) {
 
   return (
     <div className={spacing.pageSection}>
-      {/* 상단 안내 */}
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
-          {t("groups.sharedNotesCount").replace(
-            "{count}",
-            String(notes.length)
-          )}
+          {t("groups.sharedNotesCount").replace("{count}", String(notes.length))}
         </p>
       </div>
 
-      {/* 책별 그룹 목록 */}
       <div className="space-y-4">
         {bookGroups.map((group, groupIndex) => {
           const isExpanded = expandedGroups.has(group.bookId);
@@ -168,7 +179,6 @@ export function SharedNotesList({ notes, groupId }: SharedNotesListProps) {
             >
               {/* 책 그룹 헤더 */}
               <div className="flex items-center gap-3 p-3 sm:p-4 border-b bg-muted/30">
-                {/* 책 표지 (작게) */}
                 <Link
                   href={
                     group.book && groupId
@@ -193,7 +203,6 @@ export function SharedNotesList({ notes, groupId }: SharedNotesListProps) {
                   )}
                 </Link>
 
-                {/* 책 정보 */}
                 <div className="flex-1 min-w-0">
                   <Link
                     href={
@@ -214,7 +223,6 @@ export function SharedNotesList({ notes, groupId }: SharedNotesListProps) {
                   )}
                 </div>
 
-                {/* 기록 수 배지 */}
                 <Badge variant="secondary" className="shrink-0 text-xs">
                   <MessageSquare className="mr-1 h-3 w-3" />
                   {t("groups.bookGroupCount").replace(
@@ -224,14 +232,10 @@ export function SharedNotesList({ notes, groupId }: SharedNotesListProps) {
                 </Badge>
               </div>
 
-              {/* 기록 아이템 목록 */}
-              <div className="divide-y">
+              {/* 기록 카드 그리드 */}
+              <div className="p-2 sm:p-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {visibleNotes.map((item) => (
-                  <SharedNoteItem
-                    key={item.id}
-                    item={item}
-                    groupId={groupId}
-                  />
+                  <SharedNoteCard key={item.id} item={item} />
                 ))}
               </div>
 
@@ -269,84 +273,98 @@ export function SharedNotesList({ notes, groupId }: SharedNotesListProps) {
   );
 }
 
-// --- 개별 기록 아이템 ---
+// --- 컴팩트 카드형 기록 아이템 ---
 
-function SharedNoteItem({
+function SharedNoteCard({
   item,
-  groupId,
 }: {
   item: SharedNotesListProps["notes"][number];
-  groupId?: string;
 }) {
-  const { t } = useTranslation();
   const note = item.notes;
   const user = note.users;
-  const styleType = (note.type in NOTE_TYPE_STYLES
-    ? note.type
-    : "memo") as NoteStyleType;
-  const config = NOTE_TYPE_STYLES[styleType];
-  const TypeIcon = config.icon;
+  const hasImage = note.image_url && isValidImageUrl(note.image_url);
+  const Icon = TYPE_ICONS[note.type] || FileText;
+  const typeLabel = TYPE_LABELS[note.type] || "기록";
+  const pageNumber = parsePageNumber(note.page_number);
+
+  // content 파싱
+  const { quote, memo } = parseNoteContentFields(note.content);
+  const displayText = quote || memo || "";
+  const trimmed = displayText.length > 60
+    ? displayText.substring(0, 57) + "..."
+    : displayText;
+
+  // OCR 텍스트 (필사/사진에서 content가 없을 때)
+  const ocrText = !displayText && note.transcription?.extracted_text
+    ? (note.transcription.extracted_text.length > 60
+        ? note.transcription.extracted_text.substring(0, 57) + "..."
+        : note.transcription.extracted_text)
+    : null;
 
   return (
-    <Link href={`/notes/${note.id}`} className="block">
-      <div className="p-3 sm:p-4 hover:bg-muted/30 transition-colors">
-        {/* 타입 아이콘 + 콘텐츠 */}
-        <div className="flex gap-2.5">
-          {/* 타입 아이콘 */}
-          <div
-            className={`mt-0.5 p-1.5 rounded-full shrink-0 h-fit ${config.bgColor}`}
-          >
-            <TypeIcon className={`h-3.5 w-3.5 ${config.color}`} />
-          </div>
-
-          {/* 콘텐츠 영역 */}
-          <div className="flex-1 min-w-0">
-            {/* 기록 내용 (타입별 스타일) */}
-            <div className={config.wrapperClass}>
-              {note.image_url && isValidImageUrl(note.image_url) && (
-                <div className="relative w-12 h-12 rounded-md overflow-hidden bg-muted mb-2 float-right ml-2">
-                  <Image
-                    src={getImageUrl(note.image_url)}
-                    alt=""
-                    fill
-                    className="object-cover"
-                    sizes="48px"
-                  />
-                </div>
-              )}
-              <NoteContentViewer
-                content={note.content}
-                pageNumber={parsePageNumber(note.page_number)}
-                maxLength={120}
-                compact
+    <Link href={`/notes/${note.id}`} className="block group">
+      <div className="flex h-[88px] rounded-lg border border-border/40 overflow-hidden hover:shadow-sm hover:border-border/80 transition-all bg-card">
+        {/* 좌측: 이미지 or 아이콘 */}
+        <div className="shrink-0 w-[68px]">
+          {hasImage ? (
+            <div className="relative w-full h-full">
+              <Image
+                src={getImageUrl(note.image_url!)}
+                alt={typeLabel}
+                fill
+                className="object-cover"
+                sizes="68px"
               />
             </div>
+          ) : (
+            <div className="w-full h-full flex items-center justify-center bg-muted/40">
+              <Icon className="h-5 w-5 text-muted-foreground/40" />
+            </div>
+          )}
+        </div>
 
-            {/* 푸터: 작성자 + 페이지 + 날짜 */}
-            <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
-              {user && (
+        {/* 우측: 메타 + 내용 + 작성자 */}
+        <div className="flex-1 min-w-0 p-2 flex flex-col justify-between">
+          {/* 상단: 타입 + 페이지 + 날짜 */}
+          <div className="flex items-center justify-between gap-1">
+            <div className="flex items-center gap-1 text-[11px] text-muted-foreground min-w-0">
+              <Icon className="h-3 w-3 shrink-0" />
+              <span className="font-medium">{typeLabel}</span>
+              {pageNumber && (
                 <>
-                  <Avatar className="h-4 w-4">
-                    <AvatarImage src={user.avatar_url || undefined} />
-                    <AvatarFallback className="text-[8px]">
-                      {user.name?.[0] || "?"}
-                    </AvatarFallback>
-                  </Avatar>
-                  <span className="truncate max-w-[80px]">{user.name}</span>
+                  <span className="text-muted-foreground/40">&middot;</span>
+                  <span>p.{pageNumber}</span>
                 </>
               )}
-              {note.page_number && (
-                <>
-                  <span className="text-muted-foreground/40">·</span>
-                  <span>p.{note.page_number}</span>
-                </>
-              )}
-              <span className="text-muted-foreground/40">·</span>
-              <span className="shrink-0" suppressHydrationWarning>
-                {formatSmartDate(item.shared_at)}
+            </div>
+            <time className="text-[10px] text-muted-foreground/50 shrink-0" suppressHydrationWarning>
+              {formatSmartDate(item.shared_at)}
+            </time>
+          </div>
+
+          {/* 중간: 내용 미리보기 */}
+          <div className="flex-1 min-h-0 overflow-hidden mt-0.5">
+            {(trimmed || ocrText) && (
+              <p className="text-xs text-foreground/80 line-clamp-2 leading-relaxed">
+                {trimmed || ocrText}
+              </p>
+            )}
+          </div>
+
+          {/* 하단: 작성자 */}
+          {user && (
+            <div className="flex items-center gap-1.5 mt-0.5">
+              <Avatar className="h-4 w-4">
+                <AvatarImage src={user.avatar_url || undefined} />
+                <AvatarFallback className="text-[8px]">
+                  {user.name?.[0] || "?"}
+                </AvatarFallback>
+              </Avatar>
+              <span className="text-[11px] text-muted-foreground truncate">
+                {user.name}
               </span>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </Link>

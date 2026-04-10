@@ -27,7 +27,6 @@ import {
 import { MemberList } from "./member-list";
 import { SharedNotesList } from "./shared-notes-list";
 import { GroupBooksManager } from "./group-books-manager";
-import { SharedBooksManager } from "./shared-books-manager";
 import { WeeklyActivitySummary } from "./weekly-activity-summary";
 import {
   joinGroup,
@@ -52,7 +51,6 @@ import {
   Crown,
   BookOpen,
   PenLine,
-  Library,
 } from "lucide-react";
 import { formatSmartDate } from "@/lib/utils/date";
 import { parseNoteContentFields } from "@/lib/utils/note";
@@ -357,13 +355,12 @@ export function GroupDashboard({ groupData, currentUserId }: GroupDashboardProps
               )}
             </TabsTrigger>
             <TabsTrigger value="books">{t("groups.booksTab")}</TabsTrigger>
-            <TabsTrigger value="shared-library">{t("groups.sharedLibraryTab")}</TabsTrigger>
             <TabsTrigger value="notes">{t("groups.notesTab")}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className={spacing.pageSection}>
             {/* 컴팩트 통계 요약 */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            <div className="grid grid-cols-3 gap-3 sm:gap-4">
               <Card className="hover:bg-muted/50 transition-colors cursor-pointer" onClick={() => setActiveTab("members")}>
                 <CardContent className="pt-4 pb-3 px-4">
                   <div className="flex items-center gap-2 mb-2">
@@ -404,21 +401,6 @@ export function GroupDashboard({ groupData, currentUserId }: GroupDashboardProps
                   </div>
                   <div className="flex items-baseline gap-1">
                     <span className="text-2xl font-bold">{groupData.groupBooks?.length || 0}</span>
-                    <span className="text-sm text-muted-foreground">{t("stats.unitBooks")}</span>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="hover:bg-muted/50 transition-colors cursor-pointer" onClick={() => setActiveTab("shared-library")}>
-                <CardContent className="pt-4 pb-3 px-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="p-1.5 rounded-lg bg-purple-50 dark:bg-purple-950/30">
-                      <Library className="h-4 w-4 text-purple-600 dark:text-purple-400" />
-                    </div>
-                    <span className="text-xs text-muted-foreground">{t("groups.sharedLibraryCardTitle")}</span>
-                  </div>
-                  <div className="flex items-baseline gap-1">
-                    <span className="text-2xl font-bold">{groupData.sharedBooks?.length || 0}</span>
                     <span className="text-sm text-muted-foreground">{t("stats.unitBooks")}</span>
                   </div>
                 </CardContent>
@@ -587,10 +569,6 @@ export function GroupDashboard({ groupData, currentUserId }: GroupDashboardProps
             <GroupBooksManager groupId={group.id} groupName={group.name} isLeader={isLeader} />
           </TabsContent>
 
-          <TabsContent value="shared-library" className={spacing.pageSection}>
-            <SharedBooksManager groupId={group.id} />
-          </TabsContent>
-
           <TabsContent value="notes" className={spacing.pageSection}>
             <SharedNotesList notes={sharedNotes} groupId={group.id} />
           </TabsContent>
@@ -715,7 +693,6 @@ export function GroupDashboard({ groupData, currentUserId }: GroupDashboardProps
                 <ul className="list-disc list-inside text-sm space-y-1 text-muted-foreground">
                   <li>{t("groups.deleteConfirmNotes").replace("{count}", String(sharedNotes?.length || 0))}</li>
                   <li>{t("groups.deleteConfirmBooks").replace("{count}", String(groupData.groupBooks?.length || 0))}</li>
-                  <li>{t("groups.deleteConfirmSharedLib").replace("{count}", String(groupData.sharedBooks?.length || 0))}</li>
                   <li>{t("groups.deleteConfirmMembers").replace("{count}", String(members.length))}</li>
                   <li>{t("groups.deleteConfirmStats")}</li>
                 </ul>
