@@ -41,7 +41,7 @@ import type {
   MissionWithDetails,
 } from "@/types/points";
 import { LEVEL_STYLES, LEVEL_DEFAULTS, POINT_ACTION_DEFAULTS } from "@/types/points";
-import { POINT_PACKAGES, FEATURE_INFO_ROWS } from "@/lib/subscription/pricing-data";
+import { ACTIVE_POINT_PACKAGES, FEATURE_INFO_ROWS } from "@/lib/subscription/pricing-data";
 import { LoginPromptModal } from "@/components/ui/login-prompt-modal";
 
 interface PointsPageContentProps {
@@ -733,7 +733,7 @@ function GuestPointsGuide() {
           </p>
         </div>
         <div className="grid grid-cols-3 gap-3 p-4">
-          {POINT_PACKAGES.map((pkg) => (
+          {ACTIVE_POINT_PACKAGES.map((pkg) => (
             <div
               key={pkg.id}
               className={cn(

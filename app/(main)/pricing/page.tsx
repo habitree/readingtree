@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Sparkles, Zap, BookOpen, ScanText, FileBarChart, Gift, Flame, Trophy, Pen, UserPlus, Coins } from "lucide-react";
 import { IS_BETA_MODE, BETA_MESSAGE } from "@/lib/subscription/beta";
-import { POINT_PACKAGES } from "@/lib/subscription/pricing-data";
+import { ACTIVE_POINT_PACKAGES, PAID_SUBSCRIPTION_PLANS, formatPrice } from "@/lib/subscription/pricing-data";
 import { PricingPackageCard } from "@/components/subscription/pricing-package-card";
 import { PricingComparisonTable } from "@/components/subscription/pricing-comparison-table";
 import { PricingFaq } from "@/components/subscription/pricing-faq";
@@ -92,11 +92,53 @@ export default function PricingPage() {
             </p>
           </div>
 
-          {/* 포인트 충전 패키지 카드 */}
+          {/* 구독 플랜 */}
+          <section className="space-y-4">
+            <h2 className="text-xl font-semibold">구독 플랜</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {PAID_SUBSCRIPTION_PLANS.map((plan) => (
+                <div
+                  key={plan.name}
+                  className={`rounded-xl border p-6 space-y-3 ${
+                    plan.highlighted
+                      ? "border-primary bg-primary/5 ring-2 ring-primary/20"
+                      : "bg-card"
+                  }`}
+                >
+                  {plan.highlighted && (
+                    <span className="inline-block rounded-full bg-primary px-3 py-0.5 text-xs font-bold text-primary-foreground">
+                      BEST
+                    </span>
+                  )}
+                  <div>
+                    <h3 className="text-lg font-bold">{plan.displayName}</h3>
+                    <p className="text-2xl font-extrabold mt-1">
+                      {formatPrice(plan.priceMonthly)}
+                      <span className="text-sm font-normal text-muted-foreground">/월</span>
+                    </p>
+                    {plan.priceYearly > 0 && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        연간 {formatPrice(plan.priceYearly)} ({formatPrice(Math.round(plan.priceYearly / 12))}/월, 17% 할인)
+                      </p>
+                    )}
+                  </div>
+                  <ul className="text-sm space-y-1.5 text-muted-foreground">
+                    <li>AI 채팅 {plan.features.aiChatMonthly === -1 ? "무제한" : `${plan.features.aiChatMonthly}회/월`}</li>
+                    <li>OCR {plan.features.ocrMonthly === -1 ? "무제한" : `${plan.features.ocrMonthly}회/월`}</li>
+                    <li>AI 리포트 {plan.features.aiReportMonthly === -1 ? "무제한" : `${plan.features.aiReportMonthly}회/월`}</li>
+                    <li>월 보너스 +{plan.bonusPointsMonthly}P</li>
+                  </ul>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* 포인트 탑업 */}
           <section className="space-y-4">
             <h2 className="text-xl font-semibold">포인트 충전</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {POINT_PACKAGES.map((pkg) => (
+            <p className="text-sm text-muted-foreground">구독 없이 필요할 때만 포인트로 AI 추가 사용</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {ACTIVE_POINT_PACKAGES.map((pkg) => (
                 <PricingPackageCard key={pkg.id} pkg={pkg} />
               ))}
             </div>

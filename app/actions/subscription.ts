@@ -2,7 +2,8 @@
 
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import type { User } from "@supabase/supabase-js";
-import { EFFECTIVE_FEATURE_GATES, type FeatureKey } from "@/lib/subscription/gates";
+import { getGatesForTier, EFFECTIVE_FEATURE_GATES, type FeatureKey } from "@/lib/subscription/gates";
+import type { SubscriptionTierName } from "@/lib/subscription/pricing-data";
 
 /**
  * KST 기준 오늘 날짜 반환 (YYYY-MM-DD)
@@ -107,7 +108,69 @@ async function getMembershipCount(userId: string): Promise<number> {
 }
 
 /**
- * 기능 접근 확인 (일일/월간 사용량 기반)
+ * 사용자의 활성 구독 티어 조회
+ */
+export async function getUserSubscriptionTier(
+  userId: string
+): Promise<SubscriptionTierName> {
+  const supabase = await createServerSupabaseClient();
+
+  const { data } = await supabase
+    .from("user_subscriptions")
+    .select("tier_id, status, expires_at, subscription_tiers(name)")
+    .eq("user_id", userId)
+    .eq("status", "active")
+    .single();
+
+  if (!data) return "free";
+
+  // 만료 확인
+  if (data.expires_at && new Date(data.expires_at) < new Date()) {
+    return "free";
+  }
+
+  const tierData = data.subscription_tiers as unknown as { name: string } | null;
+  const tierName = tierData?.name;
+
+  if (tierName === "reader_v2" || tierName === "master_v2") {
+    return tierName;
+  }
+
+  return "free";
+}
+
+/**
+ * 사용자의 구독 상세 정보 조회
+ */
+export async function getUserSubscription(userId: string) {
+  const supabase = await createServerSupabaseClient();
+
+  const { data } = await supabase
+    .from("user_subscriptions")
+    .select(`
+      id,
+      status,
+      billing_cycle,
+      started_at,
+      expires_at,
+      cancelled_at,
+      subscription_tiers (
+        name,
+        display_name,
+        price_monthly,
+        price_yearly,
+        bonus_points_monthly
+      )
+    `)
+    .eq("user_id", userId)
+    .eq("status", "active")
+    .single();
+
+  return data;
+}
+
+/**
+ * 기능 접근 확인 (구독 티어 + 사용량 기반)
  */
 export async function checkFeatureAccess(
   feature: FeatureKey,
@@ -118,6 +181,7 @@ export async function checkFeatureAccess(
   used: number;
   canUseWithPoints: boolean;
   pointCost: number;
+  tier: SubscriptionTierName;
   upgradeMessage?: string;
 }> {
   const supabase = await createServerSupabaseClient();
@@ -126,17 +190,20 @@ export async function checkFeatureAccess(
   if (!currentUser) {
     const { data: { user: fetchedUser } } = await supabase.auth.getUser();
     if (!fetchedUser) {
-      return { allowed: false, limit: 0, used: 0, canUseWithPoints: false, pointCost: 0 };
+      return { allowed: false, limit: 0, used: 0, canUseWithPoints: false, pointCost: 0, tier: "free" };
     }
     currentUser = fetchedUser;
   }
 
-  const gate = EFFECTIVE_FEATURE_GATES[feature];
+  // 구독 티어 조회
+  const tier = await getUserSubscriptionTier(currentUser.id);
+  const gates = getGatesForTier(tier);
+  const gate = gates[feature];
   const limit = gate.limit;
 
   // 무제한이면 즉시 허용
   if (limit === -1) {
-    return { allowed: true, limit: -1, used: 0, canUseWithPoints: false, pointCost: 0 };
+    return { allowed: true, limit: -1, used: 0, canUseWithPoints: false, pointCost: 0, tier };
   }
 
   // 사용 불가 (0)이면 즉시 차단
@@ -147,6 +214,7 @@ export async function checkFeatureAccess(
       used: 0,
       canUseWithPoints: gate.pointCost > 0,
       pointCost: gate.pointCost,
+      tier,
     };
   }
 
@@ -198,11 +266,20 @@ export async function checkFeatureAccess(
         used: 0,
         canUseWithPoints: false,
         pointCost: 0,
+        tier,
       };
     }
   }
 
   const allowed = used < limit;
+
+  // 업그레이드 메시지 생성
+  let upgradeMessage: string | undefined;
+  if (!allowed && tier === "free") {
+    upgradeMessage = "독서가 플랜으로 업그레이드하면 더 많이 사용할 수 있어요!";
+  } else if (!allowed && tier === "reader_v2") {
+    upgradeMessage = "독서마스터로 업그레이드하면 무제한으로 사용할 수 있어요!";
+  }
 
   return {
     allowed,
@@ -210,5 +287,7 @@ export async function checkFeatureAccess(
     used,
     canUseWithPoints: !allowed && gate.pointCost > 0,
     pointCost: gate.pointCost,
+    tier,
+    upgradeMessage,
   };
 }

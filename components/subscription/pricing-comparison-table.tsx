@@ -18,11 +18,17 @@ export function PricingComparisonTable() {
             <TableHead className="sticky left-0 bg-background z-10 min-w-[120px]">
               기능
             </TableHead>
-            <TableHead className="text-center min-w-[100px]">
-              {IS_BETA_MODE ? "베타 기간" : "무료 한도"}
+            <TableHead className="text-center min-w-[80px]">
+              {IS_BETA_MODE ? "베타 기간" : "무료"}
             </TableHead>
-            <TableHead className="text-center min-w-[100px]">
-              {IS_BETA_MODE ? "베타 기간" : "포인트 비용"}
+            <TableHead className="text-center min-w-[80px]">
+              독서가
+            </TableHead>
+            <TableHead className="text-center min-w-[80px] text-primary font-bold">
+              독서마스터
+            </TableHead>
+            <TableHead className="text-center min-w-[80px]">
+              초과 시 포인트
             </TableHead>
           </TableRow>
         </TableHeader>
@@ -32,8 +38,14 @@ export function PricingComparisonTable() {
               <TableCell className="sticky left-0 bg-background z-10 font-medium">
                 {feat.label}
               </TableCell>
-              <TableCell className="text-center">
+              <TableCell className="text-center text-muted-foreground">
                 {feat.freeLimit}
+              </TableCell>
+              <TableCell className="text-center">
+                {feat.readerLimit}
+              </TableCell>
+              <TableCell className="text-center font-semibold">
+                {feat.masterLimit}
               </TableCell>
               <TableCell
                 className={`text-center ${
