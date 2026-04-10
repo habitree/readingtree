@@ -123,7 +123,7 @@ export function GroupBookNotesPage({
           <div className="flex gap-4 md:gap-6">
             {/* 책 표지 */}
             <Link
-              href={`/books/${book.id}`}
+              href={`/groups/${groupId}/books/${book.id}`}
               className="relative w-20 h-28 md:w-24 md:h-36 flex-shrink-0 bg-muted rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow"
             >
               {isValidImageUrl(book.cover_image_url) ? (
@@ -154,7 +154,7 @@ export function GroupBookNotesPage({
                   </Badge>
                 )}
               </div>
-              <Link href={`/books/${book.id}`} className="hover:underline">
+              <Link href={`/groups/${groupId}/books/${book.id}`} className="hover:underline">
                 <h2 className="text-lg md:text-xl font-semibold line-clamp-2">
                   {book.title}
                 </h2>

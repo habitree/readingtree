@@ -171,7 +171,9 @@ export function SharedNotesList({ notes, groupId }: SharedNotesListProps) {
                 {/* 책 표지 (작게) */}
                 <Link
                   href={
-                    group.book ? `/books/${group.book.id}` : "#"
+                    group.book && groupId
+                      ? `/groups/${groupId}/books/${group.book.id}`
+                      : "#"
                   }
                   className="relative w-10 h-14 shrink-0 rounded-md overflow-hidden bg-muted shadow-sm hover:shadow-md transition-shadow"
                 >
@@ -195,7 +197,9 @@ export function SharedNotesList({ notes, groupId }: SharedNotesListProps) {
                 <div className="flex-1 min-w-0">
                   <Link
                     href={
-                      group.book ? `/books/${group.book.id}` : "#"
+                      group.book && groupId
+                        ? `/groups/${groupId}/books/${group.book.id}`
+                        : "#"
                     }
                     className="hover:underline"
                   >

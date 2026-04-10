@@ -782,24 +782,44 @@ export async function getBookDetail(userBookId: string, user?: User | null) {
     .eq("user_id", currentUser.id)
     .single();
 
-  if (error) {
-    console.error("getBookDetail: Supabase 쿼리 오류", {
-      userBookId,
-      userId: currentUser.id,
-      error: error.message,
-      errorCode: error.code,
-      errorDetails: error.details,
-      errorHint: error.hint,
-    });
-    throw new Error(`책 상세 조회 실패: ${error.message || "책을 찾을 수 없습니다."}`);
-  }
+  if (error || !data) {
+    // user_books.id로 찾지 못한 경우, books.id(book_id)로 fallback 조회
+    const { data: fallbackData, error: fallbackError } = await supabase
+      .from("user_books")
+      .select(
+        `
+        *,
+        completed_dates,
+        current_page,
+        books (
+          id,
+          isbn,
+          title,
+          author,
+          publisher,
+          published_date,
+          cover_image_url,
+          total_pages
+        )
+      `
+      )
+      .eq("book_id", userBookId)
+      .eq("user_id", currentUser.id)
+      .single();
 
-  if (!data) {
-    console.error("getBookDetail: 데이터가 없습니다", {
-      userBookId,
-      userId: currentUser.id,
-    });
-    throw new Error("책을 찾을 수 없습니다.");
+    if (fallbackError || !fallbackData) {
+      console.error("getBookDetail: 조회 실패 (id/book_id 모두)", {
+        userBookId,
+        userId: currentUser.id,
+        primaryError: error?.message,
+        fallbackError: fallbackError?.message,
+      });
+      throw new Error("책을 찾을 수 없습니다.");
+    }
+
+    // fallback 성공 시 올바른 URL로 리다이렉트하기 위해 데이터에 힌트 추가
+    (fallbackData as any)._resolvedFromBookId = true;
+    return fallbackData;
   }
 
   // 표지가 없고 ISBN이 있으면 Open Library Covers 폴백을 비동기(논블로킹)로 실행

@@ -107,6 +107,11 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
 
   const book = bookDetail.books as any;
 
+  // books.id로 fallback 조회된 경우, 올바른 user_books.id URL로 리다이렉트
+  if ((bookDetail as any)._resolvedFromBookId) {
+    redirect(`/books/${bookDetail.id}`);
+  }
+
   // 자유 기록(READTREE_BOOK_ID) 접근 시 전용 페이지로 리다이렉트
   if (book?.id === READTREE_BOOK_ID) {
     redirect("/notes/free");
