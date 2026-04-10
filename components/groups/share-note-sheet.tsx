@@ -24,6 +24,7 @@ import {
 import { getShareableNotes, shareNotesToGroup } from "@/app/actions/groups";
 import { toast } from "sonner";
 import { formatSmartDate } from "@/lib/utils/date";
+import { parseNoteContentFields } from "@/lib/utils/note";
 import { useRouter } from "next/navigation";
 import type { NoteType } from "@/types/group";
 import { useTranslation } from "@/lib/i18n";
@@ -221,11 +222,15 @@ export function ShareNoteSheet({
                               {note.title}
                             </p>
                           )}
-                          {note.content && (
-                            <p className="text-sm text-muted-foreground line-clamp-2">
-                              {note.content}
-                            </p>
-                          )}
+                          {note.content && (() => {
+                            const { quote, memo } = parseNoteContentFields(note.content);
+                            const display = [quote, memo].filter(Boolean).join(" — ") || note.content;
+                            return (
+                              <p className="text-sm text-muted-foreground line-clamp-2">
+                                {display}
+                              </p>
+                            );
+                          })()}
                           <p className="text-xs text-muted-foreground mt-1" suppressHydrationWarning>
                             {formatSmartDate(note.created_at)}
                           </p>
