@@ -11,6 +11,7 @@ import { X, Search, BookOpen, RotateCcw } from "lucide-react";
 import Image from "next/image";
 import { getImageUrl, isValidImageUrl } from "@/lib/utils/image";
 import { cn } from "@/lib/utils";
+import { formatAuthor } from "@/lib/utils/book";
 import { useTranslation } from "@/lib/i18n";
 import { getUserBooks } from "@/app/actions/books";
 import { getUserTags } from "@/app/actions/notes";
@@ -279,7 +280,7 @@ export function SearchFilters({ onBooksLoaded }: SearchFiltersProps) {
                       </div>
                       {book?.author && (
                         <div className="text-xs text-muted-foreground truncate">
-                          {book.author}
+                          {formatAuthor(book.author)}
                         </div>
                       )}
                     </div>

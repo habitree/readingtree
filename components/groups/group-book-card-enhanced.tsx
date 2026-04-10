@@ -13,6 +13,7 @@ import {
   Plus,
   Trash2,
 } from "lucide-react";
+import { formatAuthor } from "@/lib/utils/book";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getImageUrl, isValidImageUrl } from "@/lib/utils/image";
 import { BookStatusBadge } from "@/components/books/book-status-badge";
@@ -107,7 +108,7 @@ export function GroupBookCardEnhanced({
           </Link>
           {book.author && (
             <p className="text-[10px] sm:text-xs text-muted-foreground line-clamp-1 mt-0.5">
-              {book.author}
+              {formatAuthor(book.author)}
             </p>
           )}
 

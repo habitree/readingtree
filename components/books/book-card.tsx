@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { BookStatusBadge } from "./book-status-badge";
 import { BookTitle } from "./book-title";
+import { formatAuthor } from "@/lib/utils/book";
 import { BookDeleteButton } from "./book-delete-button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -120,7 +121,7 @@ function BookCardComponent({ book, userBookId, status, groupBooks, relatedBooks,
               </div>
               {book.author && (
                 <p className="text-[9px] sm:text-[10px] text-muted-foreground line-clamp-1">
-                  {book.author}
+                  {formatAuthor(book.author)}
                 </p>
               )}
               {book.publisher && (

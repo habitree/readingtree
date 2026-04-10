@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { formatAuthor } from "@/lib/utils/book";
 import { BookOpen, ChevronRight } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
@@ -153,7 +154,7 @@ export function BookListView({ books, isLoading }: BookListViewProps) {
                 </h3>
                 {book.author && (
                   <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">
-                    {book.author.replace(/\^/g, ", ")}
+                    {formatAuthor(book.author)}
                   </p>
                 )}
                 {/* 그룹 뱃지 (있는 경우) */}

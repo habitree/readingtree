@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { formatAuthor } from "@/lib/utils/book";
 import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
@@ -601,7 +602,7 @@ export const BookTable = memo(function BookTable({ books }: BookTableProps) {
                       {book.author && (
                         <div className="flex gap-2.5 items-start">
                           <span className="text-[11px] text-muted-foreground min-w-[3.5rem] shrink-0">{t("books.authorLabel")}</span>
-                          <span className="text-xs text-foreground leading-relaxed break-words">{book.author.replace(/\^/g, ' / ')}</span>
+                          <span className="text-xs text-foreground leading-relaxed break-words">{formatAuthor(book.author)}</span>
                         </div>
                       )}
                       {book.publisher && (

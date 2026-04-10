@@ -25,6 +25,7 @@ import { sanitizeErrorForLogging } from "@/lib/utils/validation";
 import { READTREE_BOOK_ID } from "@/lib/constants/readtree";
 import { BookScrollHandler } from "@/components/books/book-scroll-handler";
 import { BookTitle } from "@/components/books/book-title";
+import { formatAuthor } from "@/lib/utils/book";
 import { RelatedBooksList } from "@/components/books/related-books-list";
 import { BookLinkedFreeNotes } from "@/components/books/book-linked-free-notes";
 import { RelatedBooksEditor } from "@/components/books/related-books-editor";
@@ -262,7 +263,7 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
               {/* 저자 */}
               {book.author && (
                 <p className="text-sm sm:text-base text-muted-foreground mt-1 sm:mt-1.5 line-clamp-1">
-                  {book.author}
+                  {formatAuthor(book.author)}
                 </p>
               )}
 
@@ -495,7 +496,7 @@ export async function generateMetadata({
 
     return {
       title: `${book.title} | ReadTree`,
-      description: `${book.author ? `${book.author} 저` : ""} ${book.title}`,
+      description: `${book.author ? `${formatAuthor(book.author)} 저` : ""} ${book.title}`,
     };
   } catch {
     return { title: "책 상세 | ReadTree" };

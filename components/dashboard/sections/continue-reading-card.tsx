@@ -9,6 +9,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { BookOpen, ChevronRight, Loader2, Check, Search, Timer } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { formatAuthor } from "@/lib/utils/book";
 import { useHapticFeedback } from "@/components/ui/touch-feedback";
 import { useTranslation } from "@/lib/i18n";
 import { formatSmartDate } from "@/lib/utils/date";
@@ -414,7 +415,7 @@ export function NoReadingBookCard() {
                     <div className="flex-1 min-w-0">
                       <p className="text-[10px] text-forest-600 dark:text-forest-400 font-medium">{t("dashboard.continueLabel")}</p>
                       <p className="text-xs font-semibold text-slate-900 dark:text-white truncate">{book.title}</p>
-                      <p className="text-[10px] text-slate-400 truncate">{book.author}</p>
+                      <p className="text-[10px] text-slate-400 truncate">{formatAuthor(book.author)}</p>
                     </div>
                   </div>
                   <div className="mt-2">

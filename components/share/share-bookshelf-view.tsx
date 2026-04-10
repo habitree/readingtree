@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslation } from "@/lib/i18n";
+import { formatAuthor } from "@/lib/utils/book";
 import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -134,7 +135,7 @@ export function ShareBookshelfView({ bookshelf, books, ownerName }: ShareBookshe
                   </h3>
                   {book.author && (
                     <p className="mt-1 text-xs text-slate-500 dark:text-slate-400 truncate">
-                      {book.author}
+                      {formatAuthor(book.author)}
                     </p>
                   )}
                   <div className="mt-2">

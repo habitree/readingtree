@@ -13,6 +13,7 @@ import { BookStatusBadge } from "@/components/books/book-status-badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { UserBookSelectDialog } from "@/components/books/user-book-select-dialog";
 import { useTranslation } from "@/lib/i18n";
+import { formatAuthor } from "@/lib/utils/book";
 import { typography, spacing, grids } from "@/lib/design-tokens";
 import {
   AlertDialog,
@@ -180,7 +181,7 @@ export function SharedBooksManager({ groupId }: SharedBooksManagerProps) {
                     <h4 className="font-semibold text-xs sm:text-sm line-clamp-2 leading-tight">{book.title}</h4>
                     {book.author && (
                       <p className="text-[10px] sm:text-xs text-muted-foreground line-clamp-1 mt-0.5">
-                        {book.author}
+                        {formatAuthor(book.author)}
                       </p>
                     )}
                     <div className="flex items-center gap-1 mt-1">

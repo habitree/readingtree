@@ -9,6 +9,7 @@ import { getNoteTypeLabel, parsePageNumber } from "@/lib/utils/note";
 import { NoteContentViewer } from "@/components/notes/note-content-viewer";
 import { getImageUrl, isValidImageUrl } from "@/lib/utils/image";
 import { cn } from "@/lib/utils";
+import { formatAuthor } from "@/lib/utils/book";
 import { BookOpen } from "lucide-react";
 import type { NoteWithBook } from "@/types/note";
 import { useTranslation } from "@/lib/i18n";
@@ -118,7 +119,7 @@ export function RecentNotes({ notes }: RecentNotesProps) {
                         </p>
                         {!isReadtreeNote && book.author && (
                           <p className="text-sm text-muted-foreground line-clamp-1">
-                            {book.author}
+                            {formatAuthor(book.author)}
                           </p>
                         )}
                       </div>

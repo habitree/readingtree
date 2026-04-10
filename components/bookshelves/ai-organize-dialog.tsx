@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { formatAuthor } from "@/lib/utils/book";
 import {
   Dialog,
   DialogContent,
@@ -307,7 +308,7 @@ function ShelfPreviewCard({ shelf, index }: { shelf: ShelfSuggestion; index: num
                 <span className="truncate">{book.title}</span>
                 {book.author && (
                   <span className="text-muted-foreground shrink-0 ml-auto">
-                    {book.author}
+                    {formatAuthor(book.author)}
                   </span>
                 )}
               </div>

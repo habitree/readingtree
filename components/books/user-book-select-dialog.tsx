@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "@/lib/i18n";
+import { formatAuthor } from "@/lib/utils/book";
 import {
   Dialog,
   DialogContent,
@@ -276,7 +277,7 @@ export function UserBookSelectDialog({
                       </h4>
                       {book.author && (
                         <p className="text-xs text-muted-foreground line-clamp-1">
-                          {book.author}
+                          {formatAuthor(book.author)}
                         </p>
                       )}
                     </CardContent>

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { formatAuthor } from "@/lib/utils/book";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -512,7 +513,7 @@ export function GroupDashboard({ groupData, currentUserId }: GroupDashboardProps
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium truncate">{book.title}</p>
                           {book.author && (
-                            <p className="text-xs text-muted-foreground truncate">{book.author}</p>
+                            <p className="text-xs text-muted-foreground truncate">{formatAuthor(book.author)}</p>
                           )}
                         </div>
                         <Badge variant="secondary" className="shrink-0 text-xs">

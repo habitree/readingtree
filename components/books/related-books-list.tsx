@@ -7,6 +7,7 @@ import { BookOpen, Loader2 } from "lucide-react";
 import { getRelatedBooks, type RelatedBook } from "@/app/actions/book-relations";
 import { getImageUrl } from "@/lib/utils/image";
 import { useTranslation } from "@/lib/i18n";
+import { formatAuthor } from "@/lib/utils/book";
 
 interface RelatedBooksListProps {
   userBookId: string;
@@ -102,7 +103,7 @@ export function RelatedBooksList({ userBookId, initialBooks }: RelatedBooksListP
           {/* 저자 */}
           {book.author && (
             <span className="text-[10px] text-muted-foreground mt-0.5 line-clamp-1 text-center">
-              {book.author}
+              {formatAuthor(book.author)}
             </span>
           )}
         </Link>

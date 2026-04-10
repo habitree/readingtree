@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import Image from "next/image";
+import { formatAuthor } from "@/lib/utils/book";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -195,7 +196,7 @@ export function RelatedBooksEditor({ userBookId }: RelatedBooksEditorProps) {
                           </p>
                           {book.author && (
                             <p className="text-xs text-muted-foreground truncate">
-                              {book.author}
+                              {formatAuthor(book.author)}
                             </p>
                           )}
                         </div>

@@ -11,6 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { GroupNoteFeed } from "./group-note-feed";
 import { ShareNoteDialog } from "./share-note-dialog";
 import { ShareNoteSheet } from "./share-note-sheet";
+import { formatAuthor } from "@/lib/utils/book";
 import {
   ArrowLeft,
   BookOpen,
@@ -161,7 +162,7 @@ export function GroupBookNotesPage({
               </Link>
               {book.author && (
                 <p className="text-sm text-muted-foreground mt-1 truncate">
-                  {book.author}
+                  {formatAuthor(book.author)}
                 </p>
               )}
               {book.publisher && (

@@ -42,6 +42,15 @@ export function parseBookTitle(title: string): {
 }
 
 /**
+ * 저자명의 ^ 구분자를 & 로 변환
+ * DB에 "신영준^고영성" 형태로 저장된 저자명을 "신영준 & 고영성"으로 표시
+ */
+export function formatAuthor(author: string | null | undefined): string {
+  if (!author) return "";
+  return author.replace(/\^/g, " & ");
+}
+
+/**
  * 책 제목에 괄호가 포함되어 있는지 확인
  * 
  * @param title 제목

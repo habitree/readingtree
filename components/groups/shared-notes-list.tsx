@@ -10,6 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { formatSmartDate } from "@/lib/utils/date";
 import { parseNoteContentFields, parsePageNumber } from "@/lib/utils/note";
 import { getImageUrl, isValidImageUrl } from "@/lib/utils/image";
+import { formatAuthor } from "@/lib/utils/book";
 import {
   BookOpen,
   PenLine,
@@ -218,7 +219,7 @@ export function SharedNotesList({ notes, groupId }: SharedNotesListProps) {
                   </Link>
                   {group.book?.author && (
                     <p className="text-xs text-muted-foreground truncate">
-                      {group.book.author}
+                      {formatAuthor(group.book.author)}
                     </p>
                   )}
                 </div>

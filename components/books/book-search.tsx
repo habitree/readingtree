@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { useTranslation } from "@/lib/i18n";
+import { formatAuthor } from "@/lib/utils/book";
 import { cn } from "@/lib/utils";
 
 interface SearchResult {
@@ -301,7 +302,7 @@ export function BookSearch({ onBookAdded, onSelectBook, excludeBookIds, showAlre
                     <h4 className="font-semibold line-clamp-2">{book.title}</h4>
                     {book.author && (
                       <p className="text-sm text-muted-foreground line-clamp-1">
-                        {book.author}
+                        {formatAuthor(book.author)}
                       </p>
                     )}
                     {book.publisher && (
@@ -419,7 +420,7 @@ export function BookSearch({ onBookAdded, onSelectBook, excludeBookIds, showAlre
                     </p>
                     {book.author && (
                       <p className="text-[10px] text-muted-foreground line-clamp-1 mb-1">
-                        {book.author}
+                        {formatAuthor(book.author)}
                       </p>
                     )}
                     <div className="flex items-center gap-0.5 text-[10px] text-muted-foreground mb-1.5">
