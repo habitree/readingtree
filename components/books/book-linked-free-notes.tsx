@@ -5,6 +5,7 @@ import { Quote, PenLine, ImageIcon, Mic, FileText, Lightbulb } from "lucide-reac
 import { Badge } from "@/components/ui/badge";
 import type { NoteWithBook } from "@/types/note";
 import type { NoteType } from "@/types/note";
+import { parseNoteContentFields } from "@/lib/utils/note";
 
 interface BookLinkedFreeNotesProps {
   linkedNotes: NoteWithBook[];
@@ -43,11 +44,15 @@ export function BookLinkedFreeNotes({ linkedNotes }: BookLinkedFreeNotesProps) {
               {NOTE_TYPE_ICON[note.type] ?? <PenLine className="w-3.5 h-3.5" />}
             </div>
             <div className="flex-1 min-w-0">
-              {note.content && (
-                <p className="text-sm leading-relaxed line-clamp-2 text-foreground/80">
-                  {note.content}
-                </p>
-              )}
+              {note.content && (() => {
+                const { quote, memo } = parseNoteContentFields(note.content);
+                const display = [quote, memo].filter(Boolean).join(" — ") || note.content;
+                return (
+                  <p className="text-sm leading-relaxed line-clamp-2 text-foreground/80">
+                    {display}
+                  </p>
+                );
+              })()}
               <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                 {(note.tags ?? []).slice(0, 3).map((tag) => (
                   <Badge key={tag} variant="secondary" className="text-[10px] h-4 px-1.5 bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 border-0">

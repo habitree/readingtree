@@ -39,6 +39,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
 import type { User as UserType } from "@/types/user";
 import type { NoteWithBook } from "@/types/note";
+import { parseNoteContentFields } from "@/lib/utils/note";
 
 interface ProfileFormProps {
   user: UserType;
@@ -695,7 +696,11 @@ function QuotePickerDialog({
                     )}
                   </div>
                   <p className="text-sm line-clamp-3 text-foreground/80">
-                    {note.type === "quote" ? `"${note.content}"` : note.content}
+                    {(() => {
+                      const { quote, memo } = parseNoteContentFields(note.content);
+                      if (note.type === "quote" && quote) return `"${quote}"`;
+                      return [quote, memo].filter(Boolean).join(" — ") || note.content;
+                    })()}
                   </p>
                 </button>
               ))}
