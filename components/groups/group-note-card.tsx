@@ -66,7 +66,7 @@ interface GroupNoteCardProps {
       id: string;
       name: string;
       avatar_url: string | null;
-    };
+    } | null;
   };
   groupNoteId?: string;
   sharedAt: string;
@@ -167,20 +167,20 @@ export function GroupNoteCard({
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between gap-2">
             <div className="flex items-center gap-3 min-w-0">
-              <Link href={`/profile/${note.users.id}`}>
+              <Link href={note.users ? `/profile/${note.users.id}` : "#"}>
                 <Avatar className="h-10 w-10 shrink-0 ring-2 ring-background hover:ring-primary/20 transition-all">
-                  <AvatarImage src={note.users.avatar_url || undefined} />
+                  <AvatarImage src={note.users?.avatar_url || undefined} />
                   <AvatarFallback className="text-sm">
-                    {note.users.name?.[0] || "?"}
+                    {note.users?.name?.[0] || "?"}
                   </AvatarFallback>
                 </Avatar>
               </Link>
               <div className="min-w-0">
                 <Link
-                  href={`/profile/${note.users.id}`}
+                  href={note.users ? `/profile/${note.users.id}` : "#"}
                   className="font-medium hover:underline truncate block"
                 >
-                  {note.users.name}
+                  {note.users?.name || t("groups.unknownUser")}
                 </Link>
                 <p className="text-xs text-muted-foreground" suppressHydrationWarning>
                   {t("groups.sharedAt").replace("{date}", formatSmartDate(sharedAt))}

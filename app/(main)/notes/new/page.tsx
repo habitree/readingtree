@@ -65,16 +65,29 @@ export default async function NewNotePage({ searchParams }: NewNotePageProps) {
   // Supabase 클라이언트 생성
   const supabase = await createServerSupabaseClient();
 
-  // 책 소유 확인
-  const { data: userBookResult, error: userBookError } = await supabase
+  // 1차: user_books.id로 직접 조회
+  const { data: userBookDirect } = await supabase
     .from("user_books")
     .select("id, user_id")
     .eq("id", bookId)
+    .eq("user_id", user.id)
     .maybeSingle();
 
-  // 책 소유 확인
-  const userBook = userBookResult;
-  if (!userBook || userBookError || userBook.user_id !== user.id) {
+  let resolvedUserBookId = userBookDirect?.id;
+
+  // 2차: 못 찾으면 books.id → user_books.book_id로 조회 (그룹 지정도서 등)
+  if (!resolvedUserBookId) {
+    const { data: userBookByBook } = await supabase
+      .from("user_books")
+      .select("id, user_id")
+      .eq("book_id", bookId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    resolvedUserBookId = userBookByBook?.id;
+  }
+
+  if (!resolvedUserBookId) {
     redirect("/books");
   }
 
@@ -84,7 +97,7 @@ export default async function NewNotePage({ searchParams }: NewNotePageProps) {
         titleKey="notes.writeNotePageTitle"
         descriptionKey="notes.writeNotePageDesc"
       />
-      <NoteFormNew bookId={bookId} />
+      <NoteFormNew bookId={resolvedUserBookId} />
     </div>
   );
 }

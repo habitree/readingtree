@@ -220,7 +220,7 @@ export function GroupNoteFeed({
       ) : (
         /* 기록 목록 */
         <div className="space-y-4">
-          {notes.map((sharedNote, index) => (
+          {notes.filter((sn: any) => sn.notes).map((sharedNote, index) => (
             <div
               key={sharedNote.id}
               className="animate-in fade-in slide-in-from-bottom-2"
