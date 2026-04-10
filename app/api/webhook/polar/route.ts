@@ -198,6 +198,155 @@ export async function POST(request: Request) {
     return NextResponse.json({ received: true }, { status: 202 });
   }
 
+  // ─── 구독 이벤트 처리 ─────────────────────────────────
+
+  if (eventData.type === "subscription.created" || eventData.type === "subscription.updated") {
+    const sub = eventData.data;
+    const metadata = sub.metadata || {};
+    const userId = metadata.user_id as string | undefined;
+    const planName = metadata.plan_name as string | undefined;
+    const billingCycle = (metadata.billing_cycle as string) || "monthly";
+
+    if (!userId) {
+      console.error("[webhook/polar] subscription event missing user_id", metadata);
+      return NextResponse.json({ received: true }, { status: 202 });
+    }
+
+    // tier 조회
+    const tierName = planName || (sub.product?.name?.includes("master") ? "master_v2" : "reader_v2");
+    const { data: tier } = await supabase
+      .from("subscription_tiers")
+      .select("id")
+      .eq("name", tierName)
+      .eq("is_active", true)
+      .single();
+
+    if (!tier) {
+      console.error("[webhook/polar] tier not found:", tierName);
+      return NextResponse.json({ received: true }, { status: 202 });
+    }
+
+    // 만료일 계산
+    const now = new Date();
+    const expiresAt = sub.current_period_end
+      ? new Date(sub.current_period_end)
+      : billingCycle === "yearly"
+        ? new Date(now.setFullYear(now.getFullYear() + 1))
+        : new Date(now.setMonth(now.getMonth() + 1));
+
+    // upsert: 기존 활성 구독 업데이트 or 신규 생성
+    const { data: existingSub } = await supabase
+      .from("user_subscriptions")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("status", "active")
+      .maybeSingle();
+
+    if (existingSub) {
+      await supabase
+        .from("user_subscriptions")
+        .update({
+          tier_id: tier.id,
+          billing_cycle: billingCycle,
+          provider_subscription_id: sub.id,
+          expires_at: expiresAt.toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", existingSub.id);
+    } else {
+      await supabase.from("user_subscriptions").insert({
+        user_id: userId,
+        tier_id: tier.id,
+        status: "active",
+        billing_cycle: billingCycle,
+        payment_provider: "polar",
+        provider_subscription_id: sub.id,
+        started_at: new Date().toISOString(),
+        expires_at: expiresAt.toISOString(),
+      });
+    }
+
+    // 보너스 포인트 지급 (구독 생성 시에만)
+    if (eventData.type === "subscription.created") {
+      const { data: tierInfo } = await supabase
+        .from("subscription_tiers")
+        .select("bonus_points_monthly, name")
+        .eq("id", tier.id)
+        .single();
+
+      if (tierInfo && tierInfo.bonus_points_monthly > 0) {
+        await supabase.rpc("earn_points_atomic", {
+          p_user_id: userId,
+          p_action_type: "subscription_bonus",
+          p_points: tierInfo.bonus_points_monthly,
+          p_description: `${tierInfo.name === "master_v2" ? "독서마스터" : "독서가"} 구독 보너스 포인트`,
+          p_metadata: { plan: tierInfo.name, billing_cycle: billingCycle },
+        });
+      }
+
+      // 독서마스터 연간: 가입 보너스 2,000P
+      if (tierInfo?.name === "master_v2" && billingCycle === "yearly") {
+        await supabase.rpc("earn_points_atomic", {
+          p_user_id: userId,
+          p_action_type: "subscription_bonus",
+          p_points: 2000,
+          p_description: "독서마스터 연간 가입 보너스",
+          p_metadata: { plan: "master_v2", billing_cycle: "yearly", type: "yearly_signup_bonus" },
+        });
+      }
+    }
+
+    await supabase.from("payment_history").insert({
+      order_id: `SUB_${sub.id}`,
+      user_id: userId,
+      event_type: eventData.type === "subscription.created" ? "subscription_activated" : "subscription_updated",
+      payload: {
+        polar_subscription_id: sub.id,
+        plan_name: tierName,
+        billing_cycle: billingCycle,
+        expires_at: expiresAt.toISOString(),
+        provider: "polar",
+      },
+    });
+
+    return NextResponse.json({ received: true }, { status: 202 });
+  }
+
+  if (eventData.type === "subscription.canceled" || eventData.type === "subscription.revoked") {
+    const sub = eventData.data;
+    const metadata = sub.metadata || {};
+    const userId = metadata.user_id as string | undefined;
+
+    if (userId) {
+      const isImmediate = eventData.type === "subscription.revoked";
+
+      await supabase
+        .from("user_subscriptions")
+        .update({
+          status: isImmediate ? "cancelled" : "active", // canceled = 만료일까지 유지
+          cancelled_at: new Date().toISOString(),
+          cancel_reason: sub.cancel_reason || "user_requested",
+          updated_at: new Date().toISOString(),
+        })
+        .eq("user_id", userId)
+        .eq("status", "active");
+
+      await supabase.from("payment_history").insert({
+        order_id: `SUB_${sub.id}`,
+        user_id: userId,
+        event_type: isImmediate ? "subscription_revoked" : "subscription_cancelled",
+        payload: {
+          polar_subscription_id: sub.id,
+          cancel_reason: sub.cancel_reason,
+          immediate: isImmediate,
+          provider: "polar",
+        },
+      });
+    }
+
+    return NextResponse.json({ received: true }, { status: 202 });
+  }
+
   // 기타 이벤트는 무시
   return NextResponse.json({ received: true }, { status: 202 });
 }

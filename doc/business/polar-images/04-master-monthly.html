@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{width:1280px;height:720px;overflow:hidden;font-family:'Pretendard',-apple-system,BlinkMacSystemFont,sans-serif}
+.card{width:1280px;height:720px;background:linear-gradient(135deg,#581c87 0%,#7c3aed 40%,#a855f7 100%);display:flex;align-items:center;justify-content:center;position:relative}
+.card::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 30% 70%,rgba(250,204,21,0.08) 0%,transparent 40%),radial-gradient(circle at 80% 20%,rgba(255,255,255,0.1) 0%,transparent 50%)}
+.content{text-align:center;color:#fff;z-index:1}
+.icon{font-size:80px;margin-bottom:16px;filter:drop-shadow(0 4px 16px rgba(0,0,0,0.3))}
+.badges{display:flex;gap:8px;justify-content:center;margin-bottom:20px}
+.badge{display:inline-block;background:rgba(255,255,255,0.2);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,0.3);padding:6px 20px;border-radius:24px;font-size:16px;font-weight:600;letter-spacing:1px}
+.badge-best{background:linear-gradient(135deg,#f59e0b,#f97316);border:none;color:#fff;font-weight:800}
+h1{font-size:56px;font-weight:800;margin-bottom:4px;text-shadow:0 2px 12px rgba(0,0,0,0.3)}
+.tier{font-size:26px;opacity:0.85;font-weight:500;margin-bottom:24px}
+.unlimited{display:flex;gap:40px;justify-content:center;margin:24px 0}
+.ul-item{text-align:center}
+.ul-val{font-size:32px;font-weight:800;color:#fbbf24}
+.ul-label{font-size:14px;opacity:0.8;margin-top:4px}
+.price{display:inline-block;margin-top:16px;background:rgba(0,0,0,0.2);padding:10px 32px;border-radius:16px;font-size:32px;font-weight:800}
+.bonus{margin-top:12px;font-size:18px;opacity:0.85}
+.deco{position:absolute;border-radius:50%}
+.d1{width:400px;height:400px;top:-120px;right:-80px;background:rgba(250,204,21,0.06)}
+.d2{width:300px;height:300px;bottom:-80px;left:-60px;background:rgba(255,255,255,0.04)}
+.d3{width:120px;height:120px;top:40%;left:8%;background:rgba(250,204,21,0.05)}
+.logo{position:absolute;bottom:24px;right:32px;font-size:16px;opacity:0.6;font-weight:600}
+</style></head>
+<body>
+<div class="card">
+  <div class="deco d1"></div><div class="deco d2"></div><div class="deco d3"></div>
+  <div class="content">
+    <div class="icon">&#127795;</div>
+    <div class="badges">
+      <div class="badge">SUBSCRIPTION</div>
+      <div class="badge badge-best">&#11088; BEST</div>
+    </div>
+    <h1>&#46021;&#49436;&#47560;&#49828;&#53552;</h1>
+    <div class="tier">Master Plan &#183; Monthly</div>
+    <div class="unlimited">
+      <div class="ul-item"><div class="ul-val">&#8734;</div><div class="ul-label">AI &#52292;&#54021;</div></div>
+      <div class="ul-item"><div class="ul-val">&#8734;</div><div class="ul-label">OCR &#54596;&#49324;</div></div>
+      <div class="ul-item"><div class="ul-val">&#8734;</div><div class="ul-label">AI &#47532;&#54252;&#53944;</div></div>
+    </div>
+    <div class="price">&#8361;9,900/&#50900;</div>
+    <div class="bonus">&#47588;&#50900; +500P &#48372;&#45320;&#49828; &#51648;&#44553;</div>
+  </div>
+  <div class="logo">ReadTree</div>
+</div>
+</body></html>
