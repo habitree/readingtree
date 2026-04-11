@@ -68,13 +68,15 @@ export function SubscriptionPlanCard({ plan }: SubscriptionPlanCardProps) {
           {isMaster && <Sparkles className="h-4 w-4 text-primary" />}
           {plan.displayName}
         </h3>
-        <p className="text-2xl font-extrabold mt-1">
-          {formatPriceUsd(plan.priceMonthlyUsd)}
-          <span className="text-sm font-normal text-muted-foreground">/월</span>
-          <span className="text-sm font-normal text-muted-foreground ml-1">
-            ({formatPrice(plan.priceMonthly)})
-          </span>
-        </p>
+        <div className="mt-1 space-y-0.5">
+          <p className="text-2xl font-extrabold">
+            {formatPrice(plan.priceMonthly)}
+            <span className="text-sm font-normal text-muted-foreground">/월</span>
+          </p>
+          <p className="text-sm text-muted-foreground">
+            {formatPriceUsd(plan.priceMonthlyUsd)}/mo
+          </p>
+        </div>
       </div>
 
       <ul className="text-sm space-y-1.5 text-muted-foreground">
@@ -126,7 +128,7 @@ export function SubscriptionPlanCard({ plan }: SubscriptionPlanCardProps) {
             {loading === "yearly" ? (
               <Loader2 className="h-4 w-4 animate-spin mr-2" />
             ) : null}
-            연간 {formatPriceUsd(plan.priceYearlyUsd)} ({formatPrice(plan.priceYearly)}, 17% 할인)
+            연간 {formatPrice(plan.priceYearly)} ({formatPriceUsd(plan.priceYearlyUsd)}, 17% 할인)
           </Button>
         )}
       </div>

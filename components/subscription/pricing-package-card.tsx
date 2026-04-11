@@ -54,13 +54,15 @@ export function PricingPackageCard({ pkg }: PricingPackageCardProps) {
 
       <CardHeader className="text-center pt-8">
         <CardTitle className="text-lg">{pkg.displayName}</CardTitle>
-        <div className="mt-2">
-          <span className="text-3xl font-bold">
+        <div className="mt-2 space-y-0.5">
+          <div>
+            <span className="text-3xl font-bold">
+              {formatPrice(pkg.price)}
+            </span>
+          </div>
+          <div className="text-sm text-muted-foreground">
             {formatPriceUsd(pkg.priceUsd)}
-          </span>
-          <span className="text-sm text-muted-foreground ml-1">
-            ({formatPrice(pkg.price)})
-          </span>
+          </div>
         </div>
         <CardDescription>
           {pkg.bonusPoints > 0
