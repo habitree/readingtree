@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -22,10 +23,12 @@ import {
   ScanText,
   Quote,
   StickyNote,
+  Plus,
 } from "lucide-react";
 import type { NoteWithBook } from "@/types/note";
 import { useTranslation } from "@/lib/i18n";
 import { spacing } from "@/lib/design-tokens";
+import { RegisterSharedNotesDialog } from "./register-shared-notes-dialog";
 
 interface SharedNotesListProps {
   notes: Array<{
@@ -114,31 +117,51 @@ const COLLAPSE_THRESHOLD = 4;
  */
 export function SharedNotesList({ notes, groupId }: SharedNotesListProps) {
   const { t } = useTranslation();
+  const router = useRouter();
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+  const [showRegisterDialog, setShowRegisterDialog] = useState(false);
 
   if (notes.length === 0) {
     return (
-      <Card className="border-dashed">
-        <CardContent className="py-12">
-          <div className="flex flex-col items-center text-center">
-            <div className="w-16 h-16 rounded-full bg-emerald-50 dark:bg-emerald-950/30 flex items-center justify-center mb-4">
-              <PenLine className="h-8 w-8 text-emerald-600 dark:text-emerald-400" />
+      <>
+        <Card className="border-dashed">
+          <CardContent className="py-12">
+            <div className="flex flex-col items-center text-center">
+              <div className="w-16 h-16 rounded-full bg-emerald-50 dark:bg-emerald-950/30 flex items-center justify-center mb-4">
+                <PenLine className="h-8 w-8 text-emerald-600 dark:text-emerald-400" />
+              </div>
+              <h4 className="font-semibold mb-2">
+                {t("groups.noSharedNotesEmpty")}
+              </h4>
+              <p className="text-sm text-muted-foreground mb-6 max-w-sm">
+                {t("groups.noSharedNotesEmptyDesc")}
+              </p>
+              <div className="flex gap-2">
+                <Button variant="outline" asChild>
+                  <Link href={groupId ? `/groups/${groupId}?tab=books` : "#"}>
+                    <BookOpen className="mr-2 h-4 w-4" />
+                    {t("groups.viewDesignatedBooks")}
+                  </Link>
+                </Button>
+                {groupId && (
+                  <Button onClick={() => setShowRegisterDialog(true)}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    {t("groups.registerSharedNotes")}
+                  </Button>
+                )}
+              </div>
             </div>
-            <h4 className="font-semibold mb-2">
-              {t("groups.noSharedNotesEmpty")}
-            </h4>
-            <p className="text-sm text-muted-foreground mb-6 max-w-sm">
-              {t("groups.noSharedNotesEmptyDesc")}
-            </p>
-            <Button variant="outline" asChild>
-              <Link href={groupId ? `/groups/${groupId}?tab=books` : "#"}>
-                <BookOpen className="mr-2 h-4 w-4" />
-                {t("groups.viewDesignatedBooks")}
-              </Link>
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+        {groupId && (
+          <RegisterSharedNotesDialog
+            open={showRegisterDialog}
+            onOpenChange={setShowRegisterDialog}
+            groupId={groupId}
+            onSuccess={() => router.refresh()}
+          />
+        )}
+      </>
     );
   }
 
@@ -162,6 +185,15 @@ export function SharedNotesList({ notes, groupId }: SharedNotesListProps) {
         <p className="text-sm text-muted-foreground">
           {t("groups.sharedNotesCount").replace("{count}", String(notes.length))}
         </p>
+        {groupId && (
+          <Button
+            size="sm"
+            onClick={() => setShowRegisterDialog(true)}
+          >
+            <Plus className="mr-1.5 h-4 w-4" />
+            {t("groups.registerSharedNotes")}
+          </Button>
+        )}
       </div>
 
       <div className="space-y-4">
@@ -270,6 +302,15 @@ export function SharedNotesList({ notes, groupId }: SharedNotesListProps) {
           );
         })}
       </div>
+
+      {groupId && (
+        <RegisterSharedNotesDialog
+          open={showRegisterDialog}
+          onOpenChange={setShowRegisterDialog}
+          groupId={groupId}
+          onSuccess={() => router.refresh()}
+        />
+      )}
     </div>
   );
 }

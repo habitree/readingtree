@@ -341,6 +341,98 @@ export async function getShareableNotes(groupId: string, bookId: string) {
 }
 
 /**
+ * 모든 지정도서에 대해 공유 가능한 내 기록 일괄 조회
+ * 다이얼로그에서 한번에 모든 책의 공유 가능 기록을 보여주기 위해 사용
+ */
+export async function getShareableNotesForAllBooks(groupId: string) {
+  const supabase = await createServerSupabaseClient();
+
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    throw new Error("로그인이 필요합니다.");
+  }
+
+  // 멤버십 확인
+  const { data: membership } = await supabase
+    .from("group_members")
+    .select("id")
+    .eq("group_id", groupId)
+    .eq("user_id", user.id)
+    .eq("status", "approved")
+    .single();
+
+  if (!membership) {
+    throw new Error("모임 멤버만 기록을 공유할 수 있습니다.");
+  }
+
+  // 지정도서 목록 조회
+  const { data: groupBooks, error: gbError } = await supabase
+    .from("group_books")
+    .select(`
+      book_id,
+      books (
+        id,
+        title,
+        author,
+        cover_image_url
+      )
+    `)
+    .eq("group_id", groupId)
+    .order("created_at", { ascending: false });
+
+  if (gbError || !groupBooks || groupBooks.length === 0) {
+    return [];
+  }
+
+  const bookIds = groupBooks.map((gb) => gb.book_id);
+
+  // 이미 공유된 기록 ID 조회
+  const { data: sharedNotes } = await supabase
+    .from("group_notes")
+    .select("note_id")
+    .eq("group_id", groupId);
+
+  const sharedNoteIds = new Set((sharedNotes || []).map((sn) => sn.note_id));
+
+  // 내 기록 중 지정도서에 해당하고 아직 공유하지 않은 것들
+  const { data: myNotes, error: notesError } = await supabase
+    .from("notes")
+    .select(`
+      id,
+      book_id,
+      title,
+      type,
+      content,
+      image_url,
+      page_number,
+      tags,
+      created_at
+    `)
+    .eq("user_id", user.id)
+    .in("book_id", bookIds)
+    .neq("type", "progress")
+    .order("created_at", { ascending: false });
+
+  if (notesError) {
+    throw new Error(`기록 조회 실패: ${notesError.message}`);
+  }
+
+  // 공유되지 않은 기록만 필터링
+  const unsharedNotes = (myNotes || []).filter((n) => !sharedNoteIds.has(n.id));
+
+  // 책별로 그룹화하여 반환
+  return groupBooks.map((gb) => ({
+    bookId: gb.book_id,
+    book: (gb.books as unknown) as { id: string; title: string; author: string | null; cover_image_url: string | null },
+    notes: unsharedNotes.filter((n) => n.book_id === gb.book_id),
+  }));
+}
+
+/**
  * 기록 일괄 공유
  * 여러 기록을 한 번에 그룹에 공유
  */
