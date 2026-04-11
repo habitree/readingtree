@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -76,9 +76,7 @@ interface GroupNoteCardProps {
   onUnshare?: (noteId: string) => void;
 }
 
-// noteTypeConfig는 lib/constants/note-type-styles.ts에서 공통 관리
-
-const CONTENT_PREVIEW_LENGTH = 200;
+const CONTENT_PREVIEW_LENGTH = 150;
 
 const REACTION_CONFIG: {
   type: ReactionType;
@@ -119,7 +117,6 @@ export function GroupNoteCard({
   const TypeIcon = config.icon;
   const isOwner = currentUserId === note.user_id;
 
-  // JSON content를 파싱하여 실제 표시 텍스트 추출
   const { quote: parsedQuote, memo: parsedMemo } = parseNoteContentFields(note.content);
   const readableContent = [parsedQuote, parsedMemo].filter(Boolean).join("\n\n") || note.content;
   const shouldTruncate =
@@ -128,6 +125,8 @@ export function GroupNoteCard({
     shouldTruncate && !isExpanded
       ? readableContent?.slice(0, CONTENT_PREVIEW_LENGTH) + "..."
       : readableContent;
+
+  const hasImage = note.image_url && isValidImageUrl(note.image_url);
 
   const handleUnshare = () => {
     onUnshare?.(note.id);
@@ -138,7 +137,6 @@ export function GroupNoteCard({
     if (!groupNoteId || isReacting) return;
     setIsReacting(true);
 
-    // 낙관적 업데이트
     const prev = reactions[reactionType];
     setReactions((r) => ({
       ...r,
@@ -151,7 +149,6 @@ export function GroupNoteCard({
     try {
       await toggleNoteReaction(groupNoteId, reactionType);
     } catch {
-      // 롤백
       setReactions((r) => ({
         ...r,
         [reactionType]: prev,
@@ -161,49 +158,44 @@ export function GroupNoteCard({
     }
   };
 
+  const totalReactions = REACTION_CONFIG.reduce((sum, rc) => sum + reactions[rc.type].count, 0);
+
   return (
     <>
-      <Card className="overflow-hidden hover:shadow-md transition-shadow">
-        <CardHeader className="pb-3">
-          <div className="flex items-start justify-between gap-2">
-            <div className="flex items-center gap-3 min-w-0">
-              <Link href={note.users ? `/profile/${note.users.id}` : "#"}>
-                <Avatar className="h-10 w-10 shrink-0 ring-2 ring-background hover:ring-primary/20 transition-all">
-                  <AvatarImage src={note.users?.avatar_url || undefined} />
-                  <AvatarFallback className="text-sm">
-                    {note.users?.name?.[0] || "?"}
-                  </AvatarFallback>
-                </Avatar>
-              </Link>
-              <div className="min-w-0">
-                <Link
-                  href={note.users ? `/profile/${note.users.id}` : "#"}
-                  className="font-medium hover:underline truncate block"
-                >
-                  {note.users?.name || t("groups.unknownUser")}
-                </Link>
-                <p className="text-xs text-muted-foreground" suppressHydrationWarning>
-                  {t("groups.sharedAt").replace("{date}", formatSmartDate(sharedAt))}
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2 shrink-0">
+      <Card className="overflow-hidden hover:shadow-sm transition-shadow">
+        <CardContent className="p-3 sm:p-4">
+          {/* 상단: 아바타 + 이름 + 타입 + 메뉴 */}
+          <div className="flex items-center gap-2 mb-2">
+            <Link href={note.users ? `/profile/${note.users.id}` : "#"}>
+              <Avatar className="h-7 w-7 shrink-0">
+                <AvatarImage src={note.users?.avatar_url || undefined} />
+                <AvatarFallback className="text-[10px]">
+                  {note.users?.name?.[0] || "?"}
+                </AvatarFallback>
+              </Avatar>
+            </Link>
+            <Link
+              href={note.users ? `/profile/${note.users.id}` : "#"}
+              className="text-sm font-medium hover:underline truncate"
+            >
+              {note.users?.name || t("groups.unknownUser")}
+            </Link>
+            <span className="text-[10px] text-muted-foreground shrink-0" suppressHydrationWarning>
+              {formatSmartDate(sharedAt)}
+            </span>
+            <div className="ml-auto flex items-center gap-1 shrink-0">
               <Badge
                 variant="secondary"
-                className={`${config.bgColor} ${config.color} border-0`}
+                className={`${config.bgColor} ${config.color} border-0 text-[10px] px-1.5 py-0`}
               >
-                <TypeIcon className="mr-1 h-3 w-3" />
+                <TypeIcon className="mr-0.5 h-2.5 w-2.5" />
                 <span className="hidden sm:inline">{t(config.labelKey as Parameters<typeof t>[0])}</span>
               </Badge>
               {isOwner && onUnshare && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 shrink-0"
-                    >
-                      <MoreVertical className="h-4 w-4" />
+                    <Button variant="ghost" size="icon" className="h-6 w-6">
+                      <MoreVertical className="h-3.5 w-3.5" />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
@@ -225,130 +217,117 @@ export function GroupNoteCard({
               )}
             </div>
           </div>
-        </CardHeader>
 
-        <CardContent className="space-y-3 pt-0">
-          {note.title && (
-            <h4 className="font-semibold text-base">{note.title}</h4>
-          )}
+          {/* 본문: 텍스트 + 이미지 썸네일 */}
+          <div className="flex gap-3">
+            <div className="flex-1 min-w-0">
+              {note.title && (
+                <p className="font-semibold text-sm mb-1 line-clamp-1">{note.title}</p>
+              )}
 
-          {note.image_url && isValidImageUrl(note.image_url) && (
-            <div className="relative aspect-video w-full rounded-lg overflow-hidden bg-muted">
-              <Image
-                src={getImageUrl(note.image_url)}
-                alt={t("notes.noteContent")}
-                fill
-                className="object-cover"
-                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 600px"
-              />
-            </div>
-          )}
-
-          {note.content && (
-            <div
-              className={`${
-                note.type === "quote"
-                  ? `border-l-4 ${config.borderColor} pl-4 italic ${config.bgColor} py-3 pr-3 rounded-r-lg`
-                  : ""
-              }`}
-            >
-              <p className="whitespace-pre-wrap text-sm leading-relaxed">
-                {displayContent}
-              </p>
-              {shouldTruncate && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setIsExpanded(!isExpanded)}
-                  className="mt-2 h-auto py-1 px-2 text-xs"
+              {note.content && (
+                <div
+                  className={`${
+                    note.type === "quote"
+                      ? `border-l-2 ${config.borderColor} pl-3 italic ${config.bgColor} py-2 pr-2 rounded-r-md`
+                      : ""
+                  }`}
                 >
-                  {isExpanded ? (
-                    <>
-                      <ChevronUp className="mr-1 h-3 w-3" />
-                      {t("common.showLess")}
-                    </>
-                  ) : (
-                    <>
-                      <ChevronDown className="mr-1 h-3 w-3" />
-                      {t("common.seeMore")}
-                    </>
+                  <p className="whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground line-clamp-3">
+                    {displayContent}
+                  </p>
+                  {shouldTruncate && (
+                    <button
+                      onClick={() => setIsExpanded(!isExpanded)}
+                      className="text-xs text-primary hover:underline mt-1"
+                    >
+                      {isExpanded ? t("common.showLess") : t("common.seeMore")}
+                    </button>
                   )}
-                </Button>
+                </div>
               )}
             </div>
-          )}
 
-          {/* 리액션 버튼 */}
-          {groupNoteId && (
-            <div className="flex items-center gap-1 pt-1">
-              {REACTION_CONFIG.map((rc) => {
-                const data = reactions[rc.type];
-                const Icon = rc.icon;
-                return (
-                  <button
-                    key={rc.type}
-                    onClick={() => handleReaction(rc.type)}
-                    disabled={isReacting}
-                    className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs transition-colors ${
-                      data.hasReacted
-                        ? `${rc.activeBg} ${rc.activeColor} font-medium`
-                        : "hover:bg-muted text-muted-foreground"
-                    }`}
-                    title={t(rc.labelKey as Parameters<typeof t>[0])}
-                  >
-                    <Icon className={`h-3.5 w-3.5 ${data.hasReacted ? "fill-current" : ""}`} />
-                    {data.count > 0 && <span>{data.count}</span>}
-                  </button>
-                );
-              })}
-              {/* 댓글 토글 */}
-              <button
-                onClick={() => setShowComments(!showComments)}
-                className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs transition-colors ${
-                  showComments
-                    ? "bg-primary/10 text-primary font-medium"
-                    : "hover:bg-muted text-muted-foreground"
-                }`}
-              >
-                <MessageCircle className="h-3.5 w-3.5" />
-                {initialCommentCount > 0 && <span>{initialCommentCount}</span>}
-              </button>
-            </div>
-          )}
-
-          <div className="flex items-center gap-2 flex-wrap text-xs text-muted-foreground pt-2 border-t">
-            {note.page_number && (
-              <Badge variant="outline" className="text-xs font-normal">
-                p.{note.page_number}
-              </Badge>
-            )}
-            {note.tags && note.tags.length > 0 && (
-              <div className="flex gap-1 flex-wrap">
-                {note.tags.slice(0, 3).map((tag) => (
-                  <Badge
-                    key={tag}
-                    variant="outline"
-                    className="text-xs font-normal"
-                  >
-                    #{tag}
-                  </Badge>
-                ))}
-                {note.tags.length > 3 && (
-                  <span className="text-xs">+{note.tags.length - 3}</span>
-                )}
+            {/* 이미지 썸네일 (우측 작게) */}
+            {hasImage && (
+              <div className="relative w-16 h-16 sm:w-20 sm:h-20 shrink-0 rounded-lg overflow-hidden bg-muted">
+                <Image
+                  src={getImageUrl(note.image_url)}
+                  alt=""
+                  fill
+                  className="object-cover"
+                  sizes="80px"
+                />
               </div>
             )}
-            <span className="ml-auto" suppressHydrationWarning>
-              {t("groups.writtenAtDate").replace("{date}", formatSmartDate(note.created_at))}
-            </span>
+          </div>
+
+          {/* 하단: 페이지 + 태그 + 리액션 */}
+          <div className="flex items-center gap-1 mt-2 pt-2 border-t border-border/50">
+            {note.page_number && (
+              <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                p.{note.page_number}
+              </span>
+            )}
+            {note.tags && note.tags.length > 0 && (
+              <>
+                {note.tags.slice(0, 2).map((tag) => (
+                  <span key={tag} className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                    #{tag}
+                  </span>
+                ))}
+                {note.tags.length > 2 && (
+                  <span className="text-[10px] text-muted-foreground">+{note.tags.length - 2}</span>
+                )}
+              </>
+            )}
+
+            {/* 리액션 + 댓글 (우측 정렬) */}
+            {groupNoteId && (
+              <div className="ml-auto flex items-center gap-0.5">
+                {REACTION_CONFIG.map((rc) => {
+                  const data = reactions[rc.type];
+                  const Icon = rc.icon;
+                  return (
+                    <button
+                      key={rc.type}
+                      onClick={() => handleReaction(rc.type)}
+                      disabled={isReacting}
+                      className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] transition-colors ${
+                        data.hasReacted
+                          ? `${rc.activeBg} ${rc.activeColor} font-medium`
+                          : "hover:bg-muted text-muted-foreground"
+                      }`}
+                      title={t(rc.labelKey as Parameters<typeof t>[0])}
+                    >
+                      <Icon className={`h-3 w-3 ${data.hasReacted ? "fill-current" : ""}`} />
+                      {data.count > 0 && <span>{data.count}</span>}
+                    </button>
+                  );
+                })}
+                <button
+                  onClick={() => setShowComments(!showComments)}
+                  className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] transition-colors ${
+                    showComments
+                      ? "bg-primary/10 text-primary font-medium"
+                      : "hover:bg-muted text-muted-foreground"
+                  }`}
+                >
+                  <MessageCircle className="h-3 w-3" />
+                  {initialCommentCount > 0 && <span>{initialCommentCount}</span>}
+                </button>
+              </div>
+            )}
           </div>
 
           {/* 댓글 영역 */}
           {showComments && groupNoteId && (
-            <NoteComments
-              groupNoteId={groupNoteId}
-              currentUserId={currentUserId}
-            />
+            <div className="mt-2">
+              <NoteComments
+                groupNoteId={groupNoteId}
+                currentUserId={currentUserId}
+              />
+            </div>
           )}
         </CardContent>
       </Card>
