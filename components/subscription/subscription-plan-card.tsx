@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Loader2, Crown, Sparkles } from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
-import { formatPrice, type SubscriptionPlanInfo } from "@/lib/subscription/pricing-data";
+import { formatPrice, formatPriceUsd, type SubscriptionPlanInfo } from "@/lib/subscription/pricing-data";
 import { useRouter } from "next/navigation";
 
 interface SubscriptionPlanCardProps {
@@ -69,8 +69,11 @@ export function SubscriptionPlanCard({ plan }: SubscriptionPlanCardProps) {
           {plan.displayName}
         </h3>
         <p className="text-2xl font-extrabold mt-1">
-          {formatPrice(plan.priceMonthly)}
+          {formatPriceUsd(plan.priceMonthlyUsd)}
           <span className="text-sm font-normal text-muted-foreground">/월</span>
+          <span className="text-sm font-normal text-muted-foreground ml-1">
+            ({formatPrice(plan.priceMonthly)})
+          </span>
         </p>
       </div>
 
@@ -123,7 +126,7 @@ export function SubscriptionPlanCard({ plan }: SubscriptionPlanCardProps) {
             {loading === "yearly" ? (
               <Loader2 className="h-4 w-4 animate-spin mr-2" />
             ) : null}
-            연간 {formatPrice(plan.priceYearly)} (17% 할인)
+            연간 {formatPriceUsd(plan.priceYearlyUsd)} ({formatPrice(plan.priceYearly)}, 17% 할인)
           </Button>
         )}
       </div>
