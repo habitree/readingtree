@@ -186,10 +186,11 @@ export const useMusicPlayer = create<MusicPlayerState>((set, get) => ({
       ? getPlaylistTracks(playlistId)
       : getDefaultPlaylistTracks();
     if (tracks.length === 0) return;
+    const randomIdx = Math.floor(Math.random() * tracks.length);
     set({
       playlist: tracks,
-      currentIndex: 0,
-      currentTrack: tracks[0] ?? null,
+      currentIndex: randomIdx,
+      currentTrack: tracks[randomIdx] ?? null,
       isVisible: true,
       isPlaying: true,
       currentTime: 0,
@@ -210,10 +211,11 @@ export const useMusicPlayer = create<MusicPlayerState>((set, get) => ({
       ? getPlaylistTracks(playlistId)
       : getDefaultPlaylistTracks();
     if (tracks.length === 0) return;
+    const randomIdx = Math.floor(Math.random() * tracks.length);
     set({
       playlist: tracks,
-      currentIndex: 0,
-      currentTrack: tracks[0] ?? null,
+      currentIndex: randomIdx,
+      currentTrack: tracks[randomIdx] ?? null,
       isVisible: true,
       isPlaying: true,
       currentTime: 0,
@@ -266,6 +268,8 @@ export const useMusicPlayer = create<MusicPlayerState>((set, get) => ({
       isUnlimited: unlimited,
       isPlaying: true,
       isCompleteDialogOpen: false,
+      elapsedSeconds: 0,
+      timerStartedAt: new Date().toISOString(),
     });
   },
 
