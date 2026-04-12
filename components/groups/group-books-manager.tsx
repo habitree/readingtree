@@ -12,13 +12,24 @@ import {
   getGroupBooksWithUserStatus,
   addGroupBookToMyLibrary,
   removeGroupBook,
-  getGroupBookNoteCounts
+  getGroupBookNoteCounts,
+  getGroupBookBundles,
+  deleteGroupBookBundle,
 } from "@/app/actions/groups";
 import { getUserBooksWithNotes } from "@/app/actions/books";
 import { toast } from "sonner";
-import { BookOpen, Plus, Trash2, CheckCircle2, X, Library, ListPlus } from "lucide-react";
+import { BookOpen, Plus, Trash2, CheckCircle2, X, Library, ListPlus, FolderPlus, ChevronDown, ChevronRight, MoreHorizontal, Pencil } from "lucide-react";
 import { BatchAddBooksDialog } from "./batch-add-books-dialog";
 import { BulkGroupBookRegister } from "./bulk-group-book-register";
+import { GroupBookEditDialog } from "./group-book-edit-dialog";
+import { BundleManageDialog } from "./bundle-manage-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import type { GroupBookBundle, GroupBookLink } from "@/types/group";
 import Image from "next/image";
 import { getImageUrl, isValidImageUrl } from "@/lib/utils/image";
 import { BookStatusBadge } from "@/components/books/book-status-badge";
@@ -53,11 +64,23 @@ export function GroupBooksManager({ groupId, groupName, isLeader }: GroupBooksMa
   const [noteCounts, setNoteCounts] = useState<Record<string, number>>({});
   const [showBatchDialog, setShowBatchDialog] = useState(false);
   const [showBulkRegister, setShowBulkRegister] = useState(false);
+  const [bundles, setBundles] = useState<GroupBookBundle[]>([]);
+  const [collapsedBundles, setCollapsedBundles] = useState<Set<string>>(new Set());
+  const [showBundleDialog, setShowBundleDialog] = useState(false);
+  const [editingBundle, setEditingBundle] = useState<GroupBookBundle | null>(null);
+  const [editingBook, setEditingBook] = useState<{
+    bookId: string;
+    bookTitle: string;
+    description: string | null;
+    links: GroupBookLink[];
+    bundleId: string | null;
+  } | null>(null);
 
   useEffect(() => {
     loadGroupBooks();
     loadMyBooks();
     loadNoteCounts();
+    loadBundles();
   }, [groupId]);
 
   const loadMyBooks = async () => {
@@ -77,6 +100,41 @@ export function GroupBooksManager({ groupId, groupName, isLeader }: GroupBooksMa
     } catch (error) {
       console.error("기록 수 조회 오류:", error);
     }
+  };
+
+  const loadBundles = async () => {
+    try {
+      const data = await getGroupBookBundles(groupId);
+      setBundles(data);
+    } catch (error) {
+      console.error("묶음 조회 오류:", error);
+    }
+  };
+
+  const toggleBundleCollapse = (bundleId: string) => {
+    setCollapsedBundles((prev) => {
+      const next = new Set(prev);
+      if (next.has(bundleId)) next.delete(bundleId);
+      else next.add(bundleId);
+      return next;
+    });
+  };
+
+  const handleDeleteBundle = async (bundleId: string) => {
+    try {
+      await deleteGroupBookBundle(bundleId);
+      toast.success(t("groups.bundleDeleted"));
+      loadBundles();
+      loadGroupBooks();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "삭제 실패");
+    }
+  };
+
+  const reloadAll = () => {
+    loadGroupBooks();
+    loadBundles();
+    loadNoteCounts();
   };
 
   const loadGroupBooks = async () => {
@@ -170,6 +228,17 @@ export function GroupBooksManager({ groupId, groupName, isLeader }: GroupBooksMa
             <>
               <Button
                 variant="outline"
+                onClick={() => {
+                  setEditingBundle(null);
+                  setShowBundleDialog(true);
+                }}
+                className="shrink-0"
+              >
+                <FolderPlus className="mr-2 h-4 w-4" />
+                {t("groups.createBundle")}
+              </Button>
+              <Button
+                variant="outline"
                 onClick={() => setShowBulkRegister(true)}
                 className="shrink-0"
               >
@@ -256,23 +325,34 @@ export function GroupBooksManager({ groupId, groupName, isLeader }: GroupBooksMa
           </CardContent>
         </Card>
       ) : (
-        <div className={grids.groupBookGrid}>
-          {groupBooks.map((groupBook) => {
-            const book = groupBook.books;
-            if (!book) return null;
-
-            return (
-              <GroupBookCardEnhanced
-                key={groupBook.id}
-                groupId={groupId}
-                groupBook={groupBook}
-                noteCount={noteCounts[book.id] || 0}
-                onAddToLibrary={!groupBook.isInMyLibrary ? handleAddToMyLibrary : undefined}
-                onDelete={isLeader ? () => setDeletingBookId(book.id) : undefined}
-              />
-            );
-          })}
-        </div>
+        <BundledBookGrid
+          groupBooks={groupBooks}
+          bundles={bundles}
+          collapsedBundles={collapsedBundles}
+          noteCounts={noteCounts}
+          groupId={groupId}
+          isLeader={isLeader}
+          onToggleCollapse={toggleBundleCollapse}
+          onAddToLibrary={handleAddToMyLibrary}
+          onDelete={(bookId) => setDeletingBookId(bookId)}
+          onEditBook={(gb) => {
+            const book = gb.books;
+            if (!book) return;
+            setEditingBook({
+              bookId: book.id,
+              bookTitle: book.title,
+              description: gb.description || null,
+              links: Array.isArray(gb.links) ? gb.links : [],
+              bundleId: gb.bundle_id || null,
+            });
+          }}
+          onEditBundle={(bundle) => {
+            setEditingBundle(bundle);
+            setShowBundleDialog(true);
+          }}
+          onDeleteBundle={handleDeleteBundle}
+          t={t}
+        />
       )}
 
       <AlertDialog
@@ -310,6 +390,213 @@ export function GroupBooksManager({ groupId, groupName, isLeader }: GroupBooksMa
           router.refresh();
         }}
       />
+
+      {/* 묶음 생성/수정 다이얼로그 */}
+      <BundleManageDialog
+        open={showBundleDialog}
+        onOpenChange={setShowBundleDialog}
+        groupId={groupId}
+        bundle={editingBundle}
+        onSuccess={reloadAll}
+      />
+
+      {/* 도서 편집 다이얼로그 */}
+      {editingBook && (
+        <GroupBookEditDialog
+          open={!!editingBook}
+          onOpenChange={(open) => !open && setEditingBook(null)}
+          groupId={groupId}
+          bookId={editingBook.bookId}
+          bookTitle={editingBook.bookTitle}
+          currentDescription={editingBook.description}
+          currentLinks={editingBook.links}
+          currentBundleId={editingBook.bundleId}
+          bundles={bundles}
+          onSuccess={reloadAll}
+        />
+      )}
+    </div>
+  );
+}
+
+// --- 묶음별 책 그리드 ---
+
+interface BundledBookGridProps {
+  groupBooks: any[];
+  bundles: GroupBookBundle[];
+  collapsedBundles: Set<string>;
+  noteCounts: Record<string, number>;
+  groupId: string;
+  isLeader: boolean;
+  onToggleCollapse: (id: string) => void;
+  onAddToLibrary: (bookId: string) => void;
+  onDelete: (bookId: string) => void;
+  onEditBook: (gb: any) => void;
+  onEditBundle: (bundle: GroupBookBundle) => void;
+  onDeleteBundle: (bundleId: string) => void;
+  t: ReturnType<typeof useTranslation>["t"];
+}
+
+function BundledBookGrid({
+  groupBooks,
+  bundles,
+  collapsedBundles,
+  noteCounts,
+  groupId,
+  isLeader,
+  onToggleCollapse,
+  onAddToLibrary,
+  onDelete,
+  onEditBook,
+  onEditBundle,
+  onDeleteBundle,
+  t,
+}: BundledBookGridProps) {
+  // 묶음이 없으면 기존 그리드 그대로
+  if (bundles.length === 0) {
+    return (
+      <div className={grids.groupBookGrid}>
+        {groupBooks.map((gb) => {
+          const book = gb.books;
+          if (!book) return null;
+          return (
+            <GroupBookCardEnhanced
+              key={gb.id}
+              groupId={groupId}
+              groupBook={gb}
+              noteCount={noteCounts[book.id] || 0}
+              onAddToLibrary={!gb.isInMyLibrary ? () => onAddToLibrary(book.id) : undefined}
+              onDelete={isLeader ? () => onDelete(book.id) : undefined}
+              onEdit={isLeader ? () => onEditBook(gb) : undefined}
+              isLeader={isLeader}
+            />
+          );
+        })}
+      </div>
+    );
+  }
+
+  // 묶음별 그룹화
+  const bundledBooks = new Map<string | null, any[]>();
+  for (const gb of groupBooks) {
+    const key = gb.bundle_id || null;
+    if (!bundledBooks.has(key)) bundledBooks.set(key, []);
+    bundledBooks.get(key)!.push(gb);
+  }
+
+  // 묶음 순서대로 + 미분류 마지막
+  const sections: { bundle: GroupBookBundle | null; books: any[] }[] = [];
+  for (const bundle of bundles) {
+    sections.push({ bundle, books: bundledBooks.get(bundle.id) || [] });
+  }
+  const unbundled = bundledBooks.get(null) || [];
+  if (unbundled.length > 0) {
+    sections.push({ bundle: null, books: unbundled });
+  }
+
+  return (
+    <div className="space-y-4">
+      {sections.map((section) => {
+        const sectionId = section.bundle?.id || "_unbundled";
+        const isCollapsed = collapsedBundles.has(sectionId);
+        const bookCount = section.books.length;
+
+        return (
+          <Card key={sectionId} className="overflow-hidden">
+            {/* 묶음 헤더 */}
+            <div
+              className="flex items-center gap-2 p-3 border-b bg-muted/30 cursor-pointer hover:bg-muted/50 transition-colors"
+              onClick={() => onToggleCollapse(sectionId)}
+            >
+              {isCollapsed ? (
+                <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+              ) : (
+                <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
+              )}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <h4 className="text-sm font-semibold truncate">
+                    {section.bundle?.name || t("groups.unbundled")}
+                  </h4>
+                  <Badge variant="secondary" className="text-xs shrink-0">
+                    {bookCount}
+                  </Badge>
+                </div>
+                {section.bundle?.description && (
+                  <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">
+                    {section.bundle.description}
+                  </p>
+                )}
+              </div>
+
+              {/* 묶음 관리 메뉴 (리더만) */}
+              {isLeader && section.bundle && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 shrink-0"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <MoreHorizontal className="h-3.5 w-3.5" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onEditBundle(section.bundle!);
+                      }}
+                    >
+                      <Pencil className="mr-2 h-3.5 w-3.5" />
+                      {t("groups.editBundle")}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDeleteBundle(section.bundle!.id);
+                      }}
+                      className="text-destructive focus:text-destructive"
+                    >
+                      <Trash2 className="mr-2 h-3.5 w-3.5" />
+                      {t("groups.deleteBundle")}
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
+            </div>
+
+            {/* 책 그리드 */}
+            {!isCollapsed && bookCount > 0 && (
+              <div className={`p-3 ${grids.groupBookGrid}`}>
+                {section.books.map((gb: any) => {
+                  const book = gb.books;
+                  if (!book) return null;
+                  return (
+                    <GroupBookCardEnhanced
+                      key={gb.id}
+                      groupId={groupId}
+                      groupBook={gb}
+                      noteCount={noteCounts[book.id] || 0}
+                      onAddToLibrary={!gb.isInMyLibrary ? () => onAddToLibrary(book.id) : undefined}
+                      onDelete={isLeader ? () => onDelete(book.id) : undefined}
+                      onEdit={isLeader ? () => onEditBook(gb) : undefined}
+                      isLeader={isLeader}
+                    />
+                  );
+                })}
+              </div>
+            )}
+
+            {!isCollapsed && bookCount === 0 && (
+              <div className="p-6 text-center text-sm text-muted-foreground">
+                이 묶음에 도서가 없습니다.
+              </div>
+            )}
+          </Card>
+        );
+      })}
     </div>
   );
 }

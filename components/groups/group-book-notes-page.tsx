@@ -20,6 +20,8 @@ import {
   PenLine,
   MessageSquare,
   ChevronRight,
+  ExternalLink,
+  Quote,
 } from "lucide-react";
 import { getImageUrl, isValidImageUrl } from "@/lib/utils/image";
 import { getGroupBookNoteCounts } from "@/app/actions/groups";
@@ -35,10 +37,15 @@ interface GroupBookNotesPageProps {
     author: string | null;
     publisher: string | null;
     cover_image_url: string | null;
+    summary?: string | null;
+    description_summary?: string | null;
+    external_link?: string | null;
   };
   currentUserId?: string;
   isGroupBook: boolean;
   hasMyNotes?: boolean;
+  leaderDescription?: string | null;
+  leaderLinks?: { title: string; url: string }[];
 }
 
 export function GroupBookNotesPage({
@@ -48,6 +55,8 @@ export function GroupBookNotesPage({
   currentUserId,
   isGroupBook,
   hasMyNotes = false,
+  leaderDescription,
+  leaderLinks,
 }: GroupBookNotesPageProps) {
   const router = useRouter();
   const { t } = useTranslation();
@@ -193,6 +202,58 @@ export function GroupBookNotesPage({
           </div>
         </CardContent>
       </Card>
+
+      {/* 리더 소개글 + 참고 링크 */}
+      {(leaderDescription || (leaderLinks && leaderLinks.length > 0) || book.summary) && (
+        <Card>
+          <CardContent className="p-4 space-y-3">
+            {leaderDescription && (
+              <div>
+                <div className="flex items-center gap-1.5 mb-1.5">
+                  <Quote className="h-3.5 w-3.5 text-primary" />
+                  <span className="text-xs font-semibold text-primary">
+                    {t("groups.whyThisBook")}
+                  </span>
+                </div>
+                <p className="text-sm text-foreground/90 leading-relaxed whitespace-pre-wrap">
+                  {leaderDescription}
+                </p>
+              </div>
+            )}
+            {book.summary && (
+              <div>
+                <span className="text-xs font-semibold text-muted-foreground">
+                  {t("groups.bookSummary")}
+                </span>
+                <p className="text-sm text-muted-foreground mt-1 line-clamp-3">
+                  {book.summary}
+                </p>
+              </div>
+            )}
+            {leaderLinks && leaderLinks.length > 0 && (
+              <div>
+                <span className="text-xs font-semibold text-muted-foreground">
+                  {t("groups.relatedLinks")}
+                </span>
+                <div className="flex flex-wrap gap-2 mt-1.5">
+                  {leaderLinks.map((link, i) => (
+                    <a
+                      key={i}
+                      href={link.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
+                    >
+                      <ExternalLink className="h-3 w-3" />
+                      {link.title}
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* 공유 기록 피드 */}
       <section>

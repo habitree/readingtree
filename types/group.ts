@@ -26,6 +26,21 @@ export interface GroupMember {
   joined_at: string;
 }
 
+export interface GroupBookLink {
+  title: string;
+  url: string;
+}
+
+export interface GroupBookBundle {
+  id: string;
+  group_id: string;
+  name: string;
+  description: string | null;
+  sort_order: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
 export interface GroupBook {
   id: string;
   group_id: string;
@@ -33,6 +48,10 @@ export interface GroupBook {
   started_at: string;
   target_completed_at: string | null;
   created_at: string;
+  description: string | null;
+  links: GroupBookLink[];
+  bundle_id: string | null;
+  sort_order: number;
 }
 
 export interface GroupWithDetails extends Group {
@@ -61,7 +80,11 @@ export interface GroupBookWithNoteCount extends GroupBook {
     author: string | null;
     publisher: string | null;
     cover_image_url: string | null;
+    summary?: string | null;
+    description_summary?: string | null;
+    external_link?: string | null;
   };
+  group_book_bundles?: GroupBookBundle | null;
   note_count: number;
 }
 

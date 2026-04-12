@@ -12,6 +12,8 @@ import {
   CheckCircle2,
   Plus,
   Trash2,
+  PenLine,
+  ExternalLink,
 } from "lucide-react";
 import { formatAuthor } from "@/lib/utils/book";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -20,16 +22,21 @@ import { BookStatusBadge } from "@/components/books/book-status-badge";
 import type { ReadingStatus } from "@/types/book";
 import { useTranslation } from "@/lib/i18n";
 
+import type { GroupBookLink, GroupBookBundle } from "@/types/group";
+
 interface GroupBookCardEnhancedProps {
   groupId: string;
   groupBook: {
     id: string;
     book_id: string;
+    description?: string | null;
+    links?: GroupBookLink[] | null;
     books: {
       id: string;
       title: string;
       author: string | null;
       cover_image_url: string | null;
+      description_summary?: string | null;
     };
     isInMyLibrary?: boolean;
     myStatus?: string | null;
@@ -38,6 +45,8 @@ interface GroupBookCardEnhancedProps {
   noteCount: number;
   onAddToLibrary?: (bookId: string) => void;
   onDelete?: () => void;
+  onEdit?: () => void;
+  isLeader?: boolean;
 }
 
 export function GroupBookCardEnhanced({
@@ -46,6 +55,8 @@ export function GroupBookCardEnhanced({
   noteCount,
   onAddToLibrary,
   onDelete,
+  onEdit,
+  isLeader,
 }: GroupBookCardEnhancedProps) {
   const { t } = useTranslation();
   const book = groupBook.books;
@@ -112,6 +123,23 @@ export function GroupBookCardEnhanced({
             </p>
           )}
 
+          {/* 리더 소개글 (truncated) */}
+          {groupBook.description && (
+            <p className="text-[10px] text-muted-foreground/80 line-clamp-1 mt-0.5 italic">
+              {groupBook.description}
+            </p>
+          )}
+
+          {/* 링크 표시 */}
+          {groupBook.links && groupBook.links.length > 0 && (
+            <div className="flex items-center gap-0.5 mt-0.5">
+              <ExternalLink className="h-2.5 w-2.5 text-muted-foreground/60" />
+              <span className="text-[9px] text-muted-foreground/60">
+                {groupBook.links.length}
+              </span>
+            </div>
+          )}
+
           {/* 내 서재 상태 */}
           <div className="flex items-center gap-1 mt-1.5">
             {groupBook.isInMyLibrary ? (
@@ -142,8 +170,39 @@ export function GroupBookCardEnhanced({
         </div>
       </Card>
 
-      {/* 삭제 버튼 (리더만, 호버 시 표시) */}
-      {onDelete && (
+      {/* 리더 액션 버튼 (호버 시 표시) */}
+      {isLeader && (
+        <div className="absolute top-0.5 left-0.5 z-10 flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+          {onEdit && (
+            <button
+              className="p-1 rounded-full bg-primary/80 text-primary-foreground shadow-sm"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onEdit();
+              }}
+              title={t("groups.editBookInfo")}
+            >
+              <PenLine className="h-3 w-3" />
+            </button>
+          )}
+          {onDelete && (
+            <button
+              className="p-1 rounded-full bg-destructive/80 text-destructive-foreground shadow-sm"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onDelete();
+              }}
+              title={t("groups.deleteDesignatedBook")}
+            >
+              <Trash2 className="h-3 w-3" />
+            </button>
+          )}
+        </div>
+      )}
+      {/* 비리더: 기존 삭제 버튼 (호버) */}
+      {!isLeader && onDelete && (
         <button
           className="absolute top-0.5 left-0.5 z-10 p-1 rounded-full bg-destructive/80 text-destructive-foreground opacity-0 group-hover:opacity-100 transition-opacity"
           onClick={(e) => {

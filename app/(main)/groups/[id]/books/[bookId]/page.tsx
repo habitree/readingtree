@@ -52,11 +52,11 @@ export default async function GroupBookDetailPage({
     notFound();
   }
 
-  const isGroupBook = groupData.groupBooks?.some(
+  const groupBookEntry = groupData.groupBooks?.find(
     (gb: any) => gb.book_id === resolvedParams.bookId
   );
 
-  if (!isGroupBook) {
+  if (!groupBookEntry) {
     notFound();
   }
 
@@ -74,7 +74,9 @@ export default async function GroupBookDetailPage({
         groupName={groupData.group.name}
         book={book}
         currentUserId={currentUser?.id}
-        isGroupBook={isGroupBook}
+        isGroupBook={!!groupBookEntry}
+        leaderDescription={groupBookEntry.description || null}
+        leaderLinks={Array.isArray(groupBookEntry.links) ? groupBookEntry.links : []}
       />
     </Suspense>
   );

@@ -12,7 +12,10 @@ export { createGroup, getGroups, getPublicGroups, getGroupDetail, updateGroup, d
 export { joinGroup, approveMember, rejectMember, removeMember, leaveGroup, getPendingMembers, transferLeadership, updateMemberRole, getGroupMembershipStats, approveAllPendingMembers } from "./members";
 
 // Book management
-export { addGroupBook, addGroupBooks, getGroupBooks, getGroupBooksWithUserStatus, addGroupBookToMyLibrary, addAllGroupBooksToMyLibrary, removeGroupBook, shareUserBookToGroup, getSharedBooks, unshareUserBookFromGroup, syncGroupBookToAllMembers, syncGroupBooksToMember, unlinkGroupBookshelf } from "./books";
+export { addGroupBook, addGroupBooks, getGroupBooks, getGroupBooksWithUserStatus, addGroupBookToMyLibrary, addAllGroupBooksToMyLibrary, removeGroupBook, updateGroupBook, shareUserBookToGroup, getSharedBooks, unshareUserBookFromGroup, syncGroupBookToAllMembers, syncGroupBooksToMember, unlinkGroupBookshelf } from "./books";
+
+// Book bundles
+export { createGroupBookBundle, updateGroupBookBundle, deleteGroupBookBundle, getGroupBookBundles } from "./bundles";
 
 // Note sharing
 export { shareNoteToGroup, getGroupBookNotes, getGroupBookNoteCounts, getShareableNotes, getShareableNotesForAllBooks, shareNotesToGroup, unshareNoteFromGroup, toggleNoteReaction, getNoteReactions } from "./notes";

@@ -4,6 +4,7 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { createBookshelf, getMainBookshelf, getOrCreateGroupBookshelf } from "@/app/actions/bookshelves";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
+import { checkGroupAccess } from "./_shared";
 import type { ReadingStatus } from "@/types/book";
 
 /**
@@ -136,7 +137,7 @@ export async function getGroupBooks(groupId: string) {
     throw new Error("모임 멤버만 지정도서를 조회할 수 있습니다.");
   }
 
-  // 지정도서 목록 조회
+  // 지정도서 목록 조회 (묶음 정보 + 책 메타데이터 포함)
   const { data: groupBooks, error: groupBooksError } = await supabase
     .from("group_books")
     .select(
@@ -148,11 +149,21 @@ export async function getGroupBooks(groupId: string) {
         author,
         publisher,
         cover_image_url,
-        published_date
+        published_date,
+        summary,
+        description_summary,
+        external_link
+      ),
+      group_book_bundles (
+        id,
+        name,
+        description,
+        sort_order
       )
     `
     )
     .eq("group_id", groupId)
+    .order("sort_order", { ascending: true })
     .order("created_at", { ascending: false });
 
   if (groupBooksError) {
@@ -331,6 +342,47 @@ export async function addGroupBookToMyLibrary(
 
   revalidatePath(`/groups/${groupId}`);
   revalidatePath("/books");
+  return { success: true };
+}
+
+/**
+ * 지정도서 정보 수정 (리더만 가능)
+ * 소개글, 참고 링크, 묶음 배정, 정렬 순서 변경
+ */
+export async function updateGroupBook(
+  groupId: string,
+  bookId: string,
+  data: {
+    description?: string | null;
+    links?: { title: string; url: string }[] | null;
+    bundleId?: string | null;
+    sortOrder?: number;
+  }
+) {
+  const supabase = await createServerSupabaseClient();
+  await checkGroupAccess(supabase, groupId, "leader");
+
+  const updateData: Record<string, unknown> = {};
+  if (data.description !== undefined) updateData.description = data.description;
+  if (data.links !== undefined) updateData.links = data.links || [];
+  if (data.bundleId !== undefined) updateData.bundle_id = data.bundleId;
+  if (data.sortOrder !== undefined) updateData.sort_order = data.sortOrder;
+
+  if (Object.keys(updateData).length === 0) {
+    return { success: true };
+  }
+
+  const { error } = await supabase
+    .from("group_books")
+    .update(updateData)
+    .eq("group_id", groupId)
+    .eq("book_id", bookId);
+
+  if (error) {
+    throw new Error(`지정도서 수정 실패: ${error.message}`);
+  }
+
+  revalidatePath(`/groups/${groupId}`);
   return { success: true };
 }
 
