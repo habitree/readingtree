@@ -30,6 +30,7 @@ import { RelatedBooksList } from "@/components/books/related-books-list";
 import { BookLinkedFreeNotes } from "@/components/books/book-linked-free-notes";
 import { RelatedBooksEditor } from "@/components/books/related-books-editor";
 import { ReadingReportButton } from "@/components/books/reading-report-button";
+import { BookTimerButton } from "@/components/books/book-timer-button";
 import { getSavedReport } from "@/app/actions/ai/report";
 import {
   GuestCtaText,
@@ -349,13 +350,23 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
                 startedAt={userBook.started_at}
                 completedDates={completedDates}
               />
-              {/* 기록 작성 버튼 */}
-              <Button asChild size="sm" className="w-full shadow-sm bg-primary hover:bg-primary/90 h-9">
-                <Link href={`/notes/new?bookId=${userBook.id}`}>
-                  <PenTool className="mr-2 h-4 w-4" />
-                  <WriteNoteLabel />
-                </Link>
-              </Button>
+              {/* 기록 작성 + 타이머 버튼 */}
+              <div className="flex gap-2">
+                <Button asChild size="sm" className="flex-1 shadow-sm bg-primary hover:bg-primary/90 h-9">
+                  <Link href={`/notes/new?bookId=${userBook.id}`}>
+                    <PenTool className="mr-2 h-4 w-4" />
+                    <WriteNoteLabel />
+                  </Link>
+                </Button>
+                <BookTimerButton
+                  userBookId={userBook.id}
+                  bookId={book.id}
+                  title={book.title}
+                  coverUrl={book.cover_image_url}
+                  size="sm"
+                  className="h-9"
+                />
+              </div>
             </div>
           </div>
 
@@ -375,14 +386,22 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
                 startedAt={userBook.started_at}
                 completedDates={completedDates}
               />
-              {/* 기록 작성 버튼 */}
-              <div className="pt-1 border-t border-border/30">
+              {/* 기록 작성 + 타이머 버튼 */}
+              <div className="pt-1 border-t border-border/30 space-y-2">
                 <Button asChild size="default" className="w-full shadow-sm bg-primary hover:bg-primary/90 h-10">
                   <Link href={`/notes/new?bookId=${userBook.id}`}>
                     <PenTool className="mr-2 h-4 w-4" />
                     <WriteNoteLabel />
                   </Link>
                 </Button>
+                <BookTimerButton
+                  userBookId={userBook.id}
+                  bookId={book.id}
+                  title={book.title}
+                  coverUrl={book.cover_image_url}
+                  size="default"
+                  className="w-full h-10"
+                />
               </div>
             </div>
           </div>
