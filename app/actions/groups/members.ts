@@ -4,6 +4,7 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import type { MemberStatus } from "./_shared";
 import { checkFeatureAccess } from "../subscription";
+import { spendPoints } from "../points";
 import { syncGroupBooksToMember, unlinkGroupBookshelf } from "./books";
 
 /**
@@ -26,11 +27,25 @@ export async function joinGroup(groupId: string, joinMessage?: string) {
   // 모임 참여 한도 체크
   const access = await checkFeatureAccess("groups_join", user);
   if (!access.allowed) {
-    throw new Error(
-      access.upgradeMessage
-        ? `모임 참여 한도(${access.limit}개)에 도달했습니다. ${access.upgradeMessage}`
-        : `모임 참여 한도(${access.limit}개)에 도달했습니다.`
-    );
+    if (access.canUseWithPoints) {
+      // 포인트로 추가 참여 시도
+      const spendResult = await spendPoints("group_join", {
+        user,
+        description: "모임 추가 참여",
+      });
+      if (!spendResult.success) {
+        throw new Error(
+          `모임 참여 한도(${access.limit}개)에 도달했습니다. 추가 참여에 ${access.pointCost}P가 필요하지만 포인트가 부족합니다.`
+        );
+      }
+      // 포인트 차감 성공 → 계속 진행
+    } else {
+      throw new Error(
+        access.upgradeMessage
+          ? `모임 참여 한도(${access.limit}개)에 도달했습니다. ${access.upgradeMessage}`
+          : `모임 참여 한도(${access.limit}개)에 도달했습니다.`
+      );
+    }
   }
 
   // 모임 정보 조회
