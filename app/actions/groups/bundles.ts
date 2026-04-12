@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { checkGroupAccess } from "./_shared";
 
 /**
- * 지정도서 묶음 생성 (리더만)
+ * 지정도서 서재 생성 (리더만)
  */
 export async function createGroupBookBundle(
   groupId: string,
@@ -38,7 +38,7 @@ export async function createGroupBookBundle(
     .single();
 
   if (error) {
-    throw new Error(`묶음 생성 실패: ${error.message}`);
+    throw new Error(`서재 생성 실패: ${error.message}`);
   }
 
   revalidatePath(`/groups/${groupId}`);
@@ -46,7 +46,7 @@ export async function createGroupBookBundle(
 }
 
 /**
- * 지정도서 묶음 수정 (리더만)
+ * 지정도서 서재 수정 (리더만)
  */
 export async function updateGroupBookBundle(
   bundleId: string,
@@ -66,7 +66,7 @@ export async function updateGroupBookBundle(
     .single();
 
   if (bundleError || !bundle) {
-    throw new Error("묶음을 찾을 수 없습니다.");
+    throw new Error("서재을 찾을 수 없습니다.");
   }
 
   await checkGroupAccess(supabase, bundle.group_id, "leader");
@@ -84,7 +84,7 @@ export async function updateGroupBookBundle(
     .eq("id", bundleId);
 
   if (error) {
-    throw new Error(`묶음 수정 실패: ${error.message}`);
+    throw new Error(`서재 수정 실패: ${error.message}`);
   }
 
   revalidatePath(`/groups/${bundle.group_id}`);
@@ -92,8 +92,8 @@ export async function updateGroupBookBundle(
 }
 
 /**
- * 지정도서 묶음 삭제 (리더만)
- * 묶음만 삭제 — 소속 책들은 bundle_id = NULL로 변경 (DB ON DELETE SET NULL)
+ * 지정도서 서재 삭제 (리더만)
+ * 서재만 삭제 — 소속 책들은 bundle_id = NULL로 변경 (DB ON DELETE SET NULL)
  */
 export async function deleteGroupBookBundle(bundleId: string) {
   const supabase = await createServerSupabaseClient();
@@ -105,7 +105,7 @@ export async function deleteGroupBookBundle(bundleId: string) {
     .single();
 
   if (bundleError || !bundle) {
-    throw new Error("묶음을 찾을 수 없습니다.");
+    throw new Error("서재을 찾을 수 없습니다.");
   }
 
   await checkGroupAccess(supabase, bundle.group_id, "leader");
@@ -116,7 +116,7 @@ export async function deleteGroupBookBundle(bundleId: string) {
     .eq("id", bundleId);
 
   if (error) {
-    throw new Error(`묶음 삭제 실패: ${error.message}`);
+    throw new Error(`서재 삭제 실패: ${error.message}`);
   }
 
   revalidatePath(`/groups/${bundle.group_id}`);
@@ -124,7 +124,7 @@ export async function deleteGroupBookBundle(bundleId: string) {
 }
 
 /**
- * 모임의 묶음 목록 조회 (멤버/공개)
+ * 모임의 서재 목록 조회 (멤버/공개)
  */
 export async function getGroupBookBundles(groupId: string) {
   const supabase = await createServerSupabaseClient();
@@ -145,7 +145,7 @@ export async function getGroupBookBundles(groupId: string) {
     .order("sort_order", { ascending: true });
 
   if (error) {
-    throw new Error(`묶음 조회 실패: ${error.message}`);
+    throw new Error(`서재 조회 실패: ${error.message}`);
   }
 
   return bundles || [];

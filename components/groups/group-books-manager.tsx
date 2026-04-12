@@ -591,7 +591,7 @@ function BundledBookGrid({
 
             {!isCollapsed && bookCount === 0 && (
               <div className="p-6 text-center text-sm text-muted-foreground">
-                이 묶음에 도서가 없습니다.
+                이 서재에 도서가 없습니다.
               </div>
             )}
           </Card>
