@@ -362,68 +362,18 @@ export function GroupBooksManager({ groupId, groupName, isLeader }: GroupBooksMa
             onPhaseClick={(phase) => setStatusFilter(statusFilter === phase ? null : phase)}
           />
 
-          {/* 컬렉션 탭 */}
+          {/* 컬렉션 선택기 */}
           {bundles.length > 0 && (
-            <div className="flex items-center gap-2 overflow-x-auto pb-1 -mx-1 px-1">
-              <Button
-                variant={activeBundleId === null ? "default" : "outline"}
-                size="sm"
-                onClick={() => setActiveBundleId(null)}
-                className="shrink-0 h-8 text-xs"
-              >
-                전체 ({groupBooks.length})
-              </Button>
-              {bundles.map((bundle) => {
-                const count = groupBooks.filter((gb) => gb.bundle_id === bundle.id).length;
-                return (
-                  <Button
-                    key={bundle.id}
-                    variant={activeBundleId === bundle.id ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setActiveBundleId(activeBundleId === bundle.id ? null : bundle.id)}
-                    className="shrink-0 h-8 text-xs"
-                  >
-                    {bundle.name} ({count})
-                  </Button>
-                );
-              })}
-              {/* 미분류 */}
-              {groupBooks.some((gb) => !gb.bundle_id) && (
-                <Button
-                  variant={activeBundleId === "_none" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setActiveBundleId(activeBundleId === "_none" ? null : "_none")}
-                  className="shrink-0 h-8 text-xs"
-                >
-                  {t("groups.unbundled")} ({groupBooks.filter((gb) => !gb.bundle_id).length})
-                </Button>
-              )}
-
-              {/* 서재 관리 메뉴 (리더) */}
-              {isLeader && activeBundleId && activeBundleId !== "_none" && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
-                      <MoreHorizontal className="h-3.5 w-3.5" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => {
-                      const bundle = bundles.find((b) => b.id === activeBundleId);
-                      if (bundle) { setEditingBundle(bundle); setShowBundleDialog(true); }
-                    }}>
-                      <Pencil className="mr-2 h-3.5 w-3.5" />{t("groups.editBundle")}
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => activeBundleId && handleDeleteBundle(activeBundleId)}
-                      className="text-destructive focus:text-destructive"
-                    >
-                      <Trash2 className="mr-2 h-3.5 w-3.5" />{t("groups.deleteBundle")}
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              )}
-            </div>
+            <CollectionSelector
+              bundles={bundles}
+              groupBooks={groupBooks}
+              activeBundleId={activeBundleId}
+              onSelect={setActiveBundleId}
+              isLeader={isLeader}
+              onEditBundle={(bundle) => { setEditingBundle(bundle); setShowBundleDialog(true); }}
+              onDeleteBundle={handleDeleteBundle}
+              t={t}
+            />
           )}
 
           {/* 검색 + 뷰 토글 */}
@@ -665,6 +615,152 @@ function GroupPhaseBadge({ phase }: { phase: GroupReadingPhase }) {
       <config.icon className="h-2.5 w-2.5" />
       {labels[phase]}
     </Badge>
+  );
+}
+
+// --- 컬렉션 선택기 ---
+
+const COLLECTION_COLORS = [
+  { border: "border-l-blue-500", bg: "bg-blue-500/5", dot: "bg-blue-500" },
+  { border: "border-l-emerald-500", bg: "bg-emerald-500/5", dot: "bg-emerald-500" },
+  { border: "border-l-violet-500", bg: "bg-violet-500/5", dot: "bg-violet-500" },
+  { border: "border-l-amber-500", bg: "bg-amber-500/5", dot: "bg-amber-500" },
+  { border: "border-l-rose-500", bg: "bg-rose-500/5", dot: "bg-rose-500" },
+  { border: "border-l-cyan-500", bg: "bg-cyan-500/5", dot: "bg-cyan-500" },
+  { border: "border-l-orange-500", bg: "bg-orange-500/5", dot: "bg-orange-500" },
+  { border: "border-l-pink-500", bg: "bg-pink-500/5", dot: "bg-pink-500" },
+];
+
+interface CollectionSelectorProps {
+  bundles: GroupBookBundle[];
+  groupBooks: any[];
+  activeBundleId: string | null;
+  onSelect: (id: string | null) => void;
+  isLeader: boolean;
+  onEditBundle: (bundle: GroupBookBundle) => void;
+  onDeleteBundle: (id: string) => void;
+  t: ReturnType<typeof useTranslation>["t"];
+}
+
+function CollectionSelector({
+  bundles,
+  groupBooks,
+  activeBundleId,
+  onSelect,
+  isLeader,
+  onEditBundle,
+  onDeleteBundle,
+  t,
+}: CollectionSelectorProps) {
+  const unbundledCount = groupBooks.filter((gb) => !gb.bundle_id).length;
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between">
+        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">컬렉션</h4>
+      </div>
+
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+        {/* 전체 */}
+        <button
+          onClick={() => onSelect(null)}
+          className={cn(
+            "text-left p-3 rounded-lg border transition-all duration-150",
+            "hover:shadow-sm active:scale-[0.98]",
+            activeBundleId === null
+              ? "ring-2 ring-primary ring-offset-1 border-transparent bg-primary/5"
+              : "border-border/50 hover:border-border bg-background"
+          )}
+        >
+          <div className="flex items-center gap-2 mb-1">
+            <div className="w-2 h-2 rounded-full bg-primary shrink-0" />
+            <span className="text-sm font-semibold truncate">{t("groups.groupStatAll")}</span>
+          </div>
+          <span className="text-2xl font-bold">{groupBooks.length}</span>
+          <span className="text-xs text-muted-foreground ml-1">권</span>
+        </button>
+
+        {/* 각 컬렉션 */}
+        {bundles.map((bundle, index) => {
+          const colorSet = COLLECTION_COLORS[index % COLLECTION_COLORS.length];
+          const count = groupBooks.filter((gb) => gb.bundle_id === bundle.id).length;
+          const isActive = activeBundleId === bundle.id;
+
+          return (
+            <div key={bundle.id} className="relative group/col">
+              <button
+                onClick={() => onSelect(isActive ? null : bundle.id)}
+                className={cn(
+                  "w-full text-left p-3 rounded-lg border-l-4 border transition-all duration-150",
+                  "hover:shadow-sm active:scale-[0.98]",
+                  colorSet.border,
+                  isActive
+                    ? "ring-2 ring-primary ring-offset-1 border-r-transparent border-t-transparent border-b-transparent " + colorSet.bg
+                    : "border-r-border/50 border-t-border/50 border-b-border/50 hover:border-r-border bg-background"
+                )}
+              >
+                <div className="flex items-center gap-2 mb-0.5">
+                  <div className={cn("w-2 h-2 rounded-full shrink-0", colorSet.dot)} />
+                  <span className="text-sm font-semibold truncate">{bundle.name}</span>
+                </div>
+                {bundle.description && (
+                  <p className="text-[11px] text-muted-foreground line-clamp-2 mb-1 leading-snug">
+                    {bundle.description}
+                  </p>
+                )}
+                <span className="text-2xl font-bold">{count}</span>
+                <span className="text-xs text-muted-foreground ml-1">권</span>
+              </button>
+
+              {/* 리더 관리 메뉴 */}
+              {isLeader && (
+                <div className="absolute top-1 right-1 opacity-0 group-hover/col:opacity-100 transition-opacity">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-6 w-6">
+                        <MoreHorizontal className="h-3 w-3" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => onEditBundle(bundle)}>
+                        <Pencil className="mr-2 h-3.5 w-3.5" />{t("groups.editBundle")}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => onDeleteBundle(bundle.id)}
+                        className="text-destructive focus:text-destructive"
+                      >
+                        <Trash2 className="mr-2 h-3.5 w-3.5" />{t("groups.deleteBundle")}
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              )}
+            </div>
+          );
+        })}
+
+        {/* 미분류 */}
+        {unbundledCount > 0 && (
+          <button
+            onClick={() => onSelect(activeBundleId === "_none" ? null : "_none")}
+            className={cn(
+              "text-left p-3 rounded-lg border border-dashed transition-all duration-150",
+              "hover:shadow-sm active:scale-[0.98]",
+              activeBundleId === "_none"
+                ? "ring-2 ring-primary ring-offset-1 border-transparent bg-muted/50"
+                : "border-border/50 hover:border-border bg-background"
+            )}
+          >
+            <div className="flex items-center gap-2 mb-1">
+              <div className="w-2 h-2 rounded-full bg-muted-foreground/30 shrink-0" />
+              <span className="text-sm font-semibold truncate text-muted-foreground">{t("groups.unbundled")}</span>
+            </div>
+            <span className="text-2xl font-bold text-muted-foreground">{unbundledCount}</span>
+            <span className="text-xs text-muted-foreground ml-1">권</span>
+          </button>
+        )}
+      </div>
+    </div>
   );
 }
 
