@@ -74,6 +74,14 @@ import { typography, spacing, grids } from "@/lib/design-tokens";
 import { cn } from "@/lib/utils";
 
 type ViewMode = "grid" | "list";
+type GroupReadingPhase = "before" | "reading" | "completed";
+
+/** 개인 ReadingStatus → 독서모임 3단계 매핑 */
+function toGroupPhase(myStatus: string | null, isInMyLibrary: boolean): GroupReadingPhase {
+  if (!isInMyLibrary || !myStatus || myStatus === "not_started") return "before";
+  if (myStatus === "completed") return "completed";
+  return "reading"; // reading, rereading, paused 모두 "읽는 중"
+}
 
 interface GroupBooksManagerProps {
   groupId: string;
@@ -106,7 +114,7 @@ export function GroupBooksManager({ groupId, groupName, isLeader }: GroupBooksMa
   // 뷰 모드 & 필터
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<ReadingStatus | null>(null);
+  const [statusFilter, setStatusFilter] = useState<GroupReadingPhase | null>(null);
   const [activeBundleId, setActiveBundleId] = useState<string | null>(null); // null = 전체
 
   useEffect(() => {
@@ -205,26 +213,12 @@ export function GroupBooksManager({ groupId, groupName, isLeader }: GroupBooksMa
     }
   };
 
-  // --- 통계 계산 ---
+  // --- 독서모임 3단계 통계 ---
   const stats = useMemo(() => {
-    const result = {
-      total: groupBooks.length,
-      reading: 0,
-      completed: 0,
-      paused: 0,
-      not_started: 0,
-      rereading: 0,
-      not_in_library: 0,
-    };
+    const result = { total: groupBooks.length, before: 0, reading: 0, completed: 0 };
     for (const gb of groupBooks) {
-      if (!gb.isInMyLibrary) {
-        result.not_in_library++;
-        continue;
-      }
-      const status = gb.myStatus as ReadingStatus | null;
-      if (status && status in result) {
-        result[status as keyof typeof result]++;
-      }
+      const phase = toGroupPhase(gb.myStatus, gb.isInMyLibrary);
+      result[phase]++;
     }
     return result;
   }, [groupBooks]);
@@ -238,9 +232,9 @@ export function GroupBooksManager({ groupId, groupName, isLeader }: GroupBooksMa
       filtered = filtered.filter((gb) => (gb.bundle_id || null) === (activeBundleId || null));
     }
 
-    // 상태 필터
+    // 상태 필터 (독서모임 3단계)
     if (statusFilter) {
-      filtered = filtered.filter((gb) => gb.myStatus === statusFilter);
+      filtered = filtered.filter((gb) => toGroupPhase(gb.myStatus, gb.isInMyLibrary) === statusFilter);
     }
 
     // 검색
@@ -360,14 +354,14 @@ export function GroupBooksManager({ groupId, groupName, isLeader }: GroupBooksMa
         </Card>
       ) : (
         <>
-          {/* 통계 카드 */}
-          <GroupBookStatsCards
+          {/* 독서모임 진행 현황 */}
+          <GroupReadingProgress
             stats={stats}
-            activeStatus={statusFilter}
-            onStatusClick={(status) => setStatusFilter(statusFilter === status ? null : status)}
+            activePhase={statusFilter}
+            onPhaseClick={(phase) => setStatusFilter(statusFilter === phase ? null : phase)}
           />
 
-          {/* 서재(번들) 탭 */}
+          {/* 컬렉션 탭 */}
           {bundles.length > 0 && (
             <div className="flex items-center gap-2 overflow-x-auto pb-1 -mx-1 px-1">
               <Button
@@ -568,86 +562,108 @@ export function GroupBooksManager({ groupId, groupName, isLeader }: GroupBooksMa
   );
 }
 
-// --- 통계 카드 ---
+// --- 독서모임 진행 현황 (3단계: 읽기 전 / 읽는 중 / 완독) ---
 
-interface GroupBookStatsCardsProps {
-  stats: {
-    total: number;
-    reading: number;
-    completed: number;
-    paused: number;
-    not_started: number;
-    rereading: number;
-    not_in_library: number;
-  };
-  activeStatus: ReadingStatus | null;
-  onStatusClick: (status: ReadingStatus | null) => void;
+const PHASE_CONFIG = {
+  before: {
+    icon: BookX,
+    color: "text-slate-500",
+    bg: "bg-slate-500/10",
+    barColor: "bg-slate-400",
+    ring: "ring-slate-400",
+  },
+  reading: {
+    icon: BookMarked,
+    color: "text-emerald-500",
+    bg: "bg-emerald-500/10",
+    barColor: "bg-emerald-500",
+    ring: "ring-emerald-500",
+  },
+  completed: {
+    icon: CheckCircle2,
+    color: "text-violet-500",
+    bg: "bg-violet-500/10",
+    barColor: "bg-violet-500",
+    ring: "ring-violet-500",
+  },
+} as const;
+
+interface GroupReadingProgressProps {
+  stats: { total: number; before: number; reading: number; completed: number };
+  activePhase: GroupReadingPhase | null;
+  onPhaseClick: (phase: GroupReadingPhase | null) => void;
 }
 
-function GroupBookStatsCards({ stats, activeStatus, onStatusClick }: GroupBookStatsCardsProps) {
+function GroupReadingProgress({ stats, activePhase, onPhaseClick }: GroupReadingProgressProps) {
   const { t } = useTranslation();
 
-  const items = [
-    { label: t("books.statTotal"), value: stats.total, icon: BookOpen, color: "blue" as const, status: null },
-    { label: t("books.statNotStarted"), value: stats.not_started + stats.not_in_library, icon: BookX, color: "gray" as const, status: "not_started" as const },
-    { label: t("books.statReading"), value: stats.reading, icon: BookMarked, color: "green" as const, status: "reading" as const },
-    { label: t("books.statCompleted"), value: stats.completed, icon: CheckCircle2, color: "purple" as const, status: "completed" as const },
-    { label: t("books.statRereading"), value: stats.rereading, icon: RotateCcw, color: "cyan" as const, status: "rereading" as const },
-    { label: t("books.statPaused"), value: stats.paused, icon: Pause, color: "orange" as const, status: "paused" as const },
+  const phases: { key: GroupReadingPhase | null; label: string; value: number; config: { icon: typeof BookOpen; color: string; bg: string; barColor: string; ring: string } }[] = [
+    { key: null, label: t("groups.groupStatAll"), value: stats.total, config: { icon: BookOpen, color: "text-blue-500", bg: "bg-blue-500/10", barColor: "bg-blue-500", ring: "ring-blue-500" } },
+    { key: "before", label: t("groups.groupStatBeforeRead"), value: stats.before, config: PHASE_CONFIG.before },
+    { key: "reading", label: t("groups.groupStatReading"), value: stats.reading, config: PHASE_CONFIG.reading },
+    { key: "completed", label: t("groups.groupStatCompleted"), value: stats.completed, config: PHASE_CONFIG.completed },
   ];
 
-  const colorClasses = {
-    blue: "border-l-blue-500 bg-blue-500/5",
-    green: "border-l-green-500 bg-green-500/5",
-    purple: "border-l-purple-500 bg-purple-500/5",
-    orange: "border-l-orange-500 bg-orange-500/5",
-    gray: "border-l-gray-500 bg-gray-500/5",
-    cyan: "border-l-cyan-500 bg-cyan-500/5",
-  };
+  // 진행률 바 계산
+  const total = stats.total || 1;
+  const completedPct = (stats.completed / total) * 100;
+  const readingPct = (stats.reading / total) * 100;
 
-  const iconColorClasses = {
-    blue: "text-blue-600", green: "text-green-600", purple: "text-purple-600",
-    orange: "text-orange-600", gray: "text-gray-600", cyan: "text-cyan-600",
-  };
+  return (
+    <div className="space-y-3">
+      {/* 진행률 바 */}
+      <div className="relative h-2 rounded-full bg-muted overflow-hidden">
+        <div className="absolute inset-y-0 left-0 bg-violet-500 rounded-full transition-all duration-500" style={{ width: `${completedPct}%` }} />
+        <div className="absolute inset-y-0 bg-emerald-500 rounded-full transition-all duration-500" style={{ left: `${completedPct}%`, width: `${readingPct}%` }} />
+      </div>
 
-  const iconBgClasses = {
-    blue: "bg-blue-500/10", green: "bg-green-500/10", purple: "bg-purple-500/10",
-    orange: "bg-orange-500/10", gray: "bg-gray-500/10", cyan: "bg-cyan-500/10",
+      {/* 4칸 통계 */}
+      <div className="grid grid-cols-4 gap-2">
+        {phases.map((phase) => {
+          const Icon = phase.config.icon;
+          const isActive = activePhase === phase.key;
+
+          return (
+            <button
+              key={phase.label}
+              onClick={() => onPhaseClick(phase.key)}
+              className={cn(
+                "flex flex-col items-center gap-1.5 p-3 rounded-xl border transition-all duration-150",
+                "hover:shadow-sm active:scale-[0.97] cursor-pointer",
+                isActive
+                  ? `ring-2 ${phase.config.ring} ring-offset-2 shadow-md border-transparent`
+                  : "border-border/50 hover:border-border"
+              )}
+            >
+              <div className={cn("rounded-full p-2", phase.config.bg)}>
+                <Icon className={cn("h-4 w-4", phase.config.color)} />
+              </div>
+              <span className="text-2xl sm:text-3xl font-bold tracking-tight">{phase.value}</span>
+              <span className="text-[10px] sm:text-xs text-muted-foreground font-medium">{phase.label}</span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// --- 독서모임 진행 상태 배지 ---
+
+function GroupPhaseBadge({ phase }: { phase: GroupReadingPhase }) {
+  const { t } = useTranslation();
+  const config = PHASE_CONFIG[phase];
+  const labels: Record<GroupReadingPhase, string> = {
+    before: t("groups.groupStatBeforeRead"),
+    reading: t("groups.groupStatReading"),
+    completed: t("groups.groupStatCompleted"),
   };
 
   return (
-    <div className="grid grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3">
-      {items.map((item) => {
-        const Icon = item.icon;
-        const isActive = activeStatus === item.status;
-
-        return (
-          <button
-            key={item.label}
-            onClick={() => onStatusClick(item.status)}
-            className="w-full text-left cursor-pointer hover:shadow-md transition-[box-shadow,transform] duration-150 active:scale-[0.98]"
-          >
-            <Card className={cn(
-              "border-l-4 h-full transition-colors duration-150",
-              colorClasses[item.color],
-              isActive && "ring-2 ring-primary ring-offset-2 shadow-md"
-            )}>
-              <CardHeader className="pb-2 sm:pb-3">
-                <div className="flex items-center gap-2 sm:gap-3 mb-1 sm:mb-2">
-                  <div className={cn("rounded-lg p-1.5 sm:p-2", iconBgClasses[item.color])}>
-                    <Icon className={cn("h-3 w-3 sm:h-4 sm:w-4", iconColorClasses[item.color])} />
-                  </div>
-                  <CardDescription className="text-xs sm:text-sm font-medium">{item.label}</CardDescription>
-                </div>
-                <CardTitle className="text-2xl sm:text-3xl font-bold tracking-tight">
-                  {t("books.statValue", { value: item.value })}
-                </CardTitle>
-              </CardHeader>
-            </Card>
-          </button>
-        );
-      })}
-    </div>
+    <Badge variant="outline" className={cn("text-[10px] px-2 py-0.5 gap-1 border-0", config.bg, config.color)}>
+      <config.icon className="h-2.5 w-2.5" />
+      {labels[phase]}
+    </Badge>
   );
 }
 
@@ -705,13 +721,9 @@ function GroupBookListView({
                 </Badge>
               )}
 
-              {/* 읽기 상태 */}
+              {/* 독서 진행 상태 */}
               <div className="flex items-center gap-1.5 shrink-0">
-                {gb.isInMyLibrary && gb.myStatus ? (
-                  <BookStatusBadge status={gb.myStatus as ReadingStatus} size="sm" />
-                ) : (
-                  <Badge variant="outline" className="text-[10px] px-2 py-0.5">미등록</Badge>
-                )}
+                <GroupPhaseBadge phase={toGroupPhase(gb.myStatus, gb.isInMyLibrary)} />
                 <ChevronRight className="w-4 h-4 text-muted-foreground" />
               </div>
             </div>

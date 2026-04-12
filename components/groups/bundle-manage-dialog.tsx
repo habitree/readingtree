@@ -51,7 +51,7 @@ export function BundleManageDialog({
 
   const handleSave = async () => {
     if (!name.trim()) {
-      toast.error("서재 이름을 입력해주세요.");
+      toast.error("컬렉션 이름을 입력해주세요.");
       return;
     }
 
