@@ -13,7 +13,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Loader2,
   Quote,
@@ -260,8 +259,7 @@ export function RegisterSharedNotesDialog({
               </div>
 
               {/* 책별 기록 목록 */}
-              <ScrollArea className="flex-1">
-                <div className="space-y-1 pr-3">
+              <div className="flex-1 overflow-y-auto max-h-[calc(85vh-220px)] -mr-2 pr-2 space-y-1">
                   {booksWithNotes.map((bookGroup) => {
                     const isExpanded = expandedBooks.has(bookGroup.bookId);
                     const hasNotes = bookGroup.notes.length > 0;
@@ -452,8 +450,7 @@ export function RegisterSharedNotesDialog({
                       </div>
                     );
                   })}
-                </div>
-              </ScrollArea>
+              </div>
             </>
           )}
         </div>
