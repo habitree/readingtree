@@ -65,13 +65,15 @@ export default function NewGroupPage() {
         joinType: formData.joinType,
       });
 
+      if (!result.success) {
+        toast.error(result.error);
+        return;
+      }
+
       toast.success(t("groups.groupCreatedSuccess"));
       router.push(`/groups/${result.groupId}`);
-    } catch (error) {
-      console.error("모임 생성 오류:", error);
-      toast.error(
-        error instanceof Error ? error.message : t("groups.groupCreateFailed")
-      );
+    } catch {
+      toast.error(t("groups.groupCreateFailed"));
     } finally {
       setIsSubmitting(false);
     }

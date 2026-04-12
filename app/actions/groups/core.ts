@@ -15,7 +15,7 @@ export async function createGroup(data: {
   description?: string;
   isPublic?: boolean; // deprecated — use joinType
   joinType?: "open" | "approval" | "private";
-}) {
+}): Promise<{ success: true; groupId: string } | { success: false; error: string }> {
   const supabase = await createServerSupabaseClient();
 
   // 현재 사용자 확인
@@ -25,17 +25,18 @@ export async function createGroup(data: {
   } = await supabase.auth.getUser();
 
   if (authError || !user) {
-    throw new Error("로그인이 필요합니다.");
+    return { success: false, error: "로그인이 필요합니다." };
   }
 
   // 모임 생성 한도 체크
   const access = await checkFeatureAccess("groups_create", user);
   if (!access.allowed) {
-    throw new Error(
-      access.upgradeMessage
+    return {
+      success: false,
+      error: access.upgradeMessage
         ? `모임 생성 한도(${access.limit}개)에 도달했습니다. ${access.upgradeMessage}`
-        : `모임 생성 한도(${access.limit}개)에 도달했습니다.`
-    );
+        : `모임 생성 한도(${access.limit}개)에 도달했습니다.`,
+    };
   }
 
   // joinType 결정 (joinType 우선, 없으면 isPublic에서 변환)
@@ -54,7 +55,7 @@ export async function createGroup(data: {
     .single();
 
   if (groupError || !insertResult) {
-    throw new Error(`모임 생성 실패: ${groupError?.message || "알 수 없는 오류"}`);
+    return { success: false, error: `모임 생성 실패: ${groupError?.message || "알 수 없는 오류"}` };
   }
 
   const groupId = insertResult.id;
@@ -70,7 +71,7 @@ export async function createGroup(data: {
   if (memberError) {
     // 모임은 생성되었지만 멤버 추가 실패 시 모임 삭제
     await supabase.from("groups").delete().eq("id", groupId);
-    throw new Error(`멤버 추가 실패: ${memberError.message}`);
+    return { success: false, error: `멤버 추가 실패: ${memberError.message}` };
   }
 
   revalidatePath("/groups");
