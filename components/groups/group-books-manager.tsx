@@ -1,10 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
+import Image from "next/image";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { BookSearch } from "@/components/books/book-search";
 import { GroupBookCardEnhanced } from "./group-book-card-enhanced";
 import {
@@ -18,7 +21,28 @@ import {
 } from "@/app/actions/groups";
 import { getUserBooksWithNotes } from "@/app/actions/books";
 import { toast } from "sonner";
-import { BookOpen, Plus, Trash2, CheckCircle2, X, Library, ListPlus, FolderPlus, ChevronDown, ChevronRight, MoreHorizontal, Pencil } from "lucide-react";
+import {
+  BookOpen,
+  Plus,
+  Trash2,
+  Library,
+  ListPlus,
+  FolderPlus,
+  ChevronDown,
+  ChevronRight,
+  MoreHorizontal,
+  Pencil,
+  Grid3x3,
+  List,
+  Search,
+  BookMarked,
+  CheckCircle2,
+  Pause,
+  BookX,
+  RotateCcw,
+  MessageSquare,
+  ExternalLink,
+} from "lucide-react";
 import { BatchAddBooksDialog } from "./batch-add-books-dialog";
 import { BulkGroupBookRegister } from "./bulk-group-book-register";
 import { GroupBookEditDialog } from "./group-book-edit-dialog";
@@ -30,9 +54,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import type { GroupBookBundle, GroupBookLink } from "@/types/group";
-import Image from "next/image";
 import { getImageUrl, isValidImageUrl } from "@/lib/utils/image";
+import { formatAuthor } from "@/lib/utils/book";
 import { BookStatusBadge } from "@/components/books/book-status-badge";
+import type { ReadingStatus } from "@/types/book";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -46,6 +71,9 @@ import {
 import { Loader2 } from "lucide-react";
 import { useTranslation } from "@/lib/i18n";
 import { typography, spacing, grids } from "@/lib/design-tokens";
+import { cn } from "@/lib/utils";
+
+type ViewMode = "grid" | "list";
 
 interface GroupBooksManagerProps {
   groupId: string;
@@ -60,7 +88,6 @@ export function GroupBooksManager({ groupId, groupName, isLeader }: GroupBooksMa
   const [groupBooks, setGroupBooks] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [deletingBookId, setDeletingBookId] = useState<string | null>(null);
-  const [myBookIds, setMyBookIds] = useState<Set<string>>(new Set());
   const [noteCounts, setNoteCounts] = useState<Record<string, number>>({});
   const [showBatchDialog, setShowBatchDialog] = useState(false);
   const [showBulkRegister, setShowBulkRegister] = useState(false);
@@ -76,22 +103,17 @@ export function GroupBooksManager({ groupId, groupName, isLeader }: GroupBooksMa
     bundleId: string | null;
   } | null>(null);
 
+  // 뷰 모드 & 필터
+  const [viewMode, setViewMode] = useState<ViewMode>("grid");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<ReadingStatus | null>(null);
+  const [activeBundleId, setActiveBundleId] = useState<string | null>(null); // null = 전체
+
   useEffect(() => {
     loadGroupBooks();
-    loadMyBooks();
     loadNoteCounts();
     loadBundles();
   }, [groupId]);
-
-  const loadMyBooks = async () => {
-    try {
-      const { books } = await getUserBooksWithNotes();
-      const bookIds = new Set(books.map((b) => b.books?.id).filter(Boolean));
-      setMyBookIds(bookIds);
-    } catch (error) {
-      console.error("내 서재 조회 오류:", error);
-    }
-  };
 
   const loadNoteCounts = async () => {
     try {
@@ -107,7 +129,7 @@ export function GroupBooksManager({ groupId, groupName, isLeader }: GroupBooksMa
       const data = await getGroupBookBundles(groupId);
       setBundles(data);
     } catch (error) {
-      console.error("묶음 조회 오류:", error);
+      console.error("서재 조회 오류:", error);
     }
   };
 
@@ -144,9 +166,7 @@ export function GroupBooksManager({ groupId, groupName, isLeader }: GroupBooksMa
       setGroupBooks(books);
     } catch (error) {
       console.error("지정도서 조회 오류:", error);
-      toast.error(
-        error instanceof Error ? error.message : t("errors.loadError")
-      );
+      toast.error(error instanceof Error ? error.message : t("errors.loadError"));
     } finally {
       setIsLoading(false);
     }
@@ -159,9 +179,7 @@ export function GroupBooksManager({ groupId, groupName, isLeader }: GroupBooksMa
       setIsAdding(false);
       loadGroupBooks();
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : t("errors.saveError")
-      );
+      toast.error(error instanceof Error ? error.message : t("errors.saveError"));
     }
   };
 
@@ -172,9 +190,7 @@ export function GroupBooksManager({ groupId, groupName, isLeader }: GroupBooksMa
       loadGroupBooks();
       router.refresh();
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : t("errors.saveError")
-      );
+      toast.error(error instanceof Error ? error.message : t("errors.saveError"));
     }
   };
 
@@ -185,11 +201,63 @@ export function GroupBooksManager({ groupId, groupName, isLeader }: GroupBooksMa
       setDeletingBookId(null);
       loadGroupBooks();
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : t("errors.saveError")
-      );
+      toast.error(error instanceof Error ? error.message : t("errors.saveError"));
     }
   };
+
+  // --- 통계 계산 ---
+  const stats = useMemo(() => {
+    const result = {
+      total: groupBooks.length,
+      reading: 0,
+      completed: 0,
+      paused: 0,
+      not_started: 0,
+      rereading: 0,
+      not_in_library: 0,
+    };
+    for (const gb of groupBooks) {
+      if (!gb.isInMyLibrary) {
+        result.not_in_library++;
+        continue;
+      }
+      const status = gb.myStatus as ReadingStatus | null;
+      if (status && status in result) {
+        result[status as keyof typeof result]++;
+      }
+    }
+    return result;
+  }, [groupBooks]);
+
+  // --- 필터링 ---
+  const filteredBooks = useMemo(() => {
+    let filtered = groupBooks;
+
+    // 서재(번들) 필터
+    if (activeBundleId !== null) {
+      filtered = filtered.filter((gb) => (gb.bundle_id || null) === (activeBundleId || null));
+    }
+
+    // 상태 필터
+    if (statusFilter) {
+      filtered = filtered.filter((gb) => gb.myStatus === statusFilter);
+    }
+
+    // 검색
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      filtered = filtered.filter((gb) => {
+        const book = gb.books;
+        if (!book) return false;
+        return (
+          book.title?.toLowerCase().includes(q) ||
+          book.author?.toLowerCase().includes(q)
+        );
+      });
+    }
+
+    return filtered;
+  }, [groupBooks, activeBundleId, statusFilter, searchQuery]);
 
   if (isLoading) {
     return (
@@ -205,6 +273,7 @@ export function GroupBooksManager({ groupId, groupName, isLeader }: GroupBooksMa
 
   return (
     <div className={spacing.pageSection}>
+      {/* 헤더 + 액션 버튼 */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h3 className={typography.sectionTitle}>{t("groups.designatedBook")}</h3>
@@ -213,35 +282,23 @@ export function GroupBooksManager({ groupId, groupName, isLeader }: GroupBooksMa
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          {groupBooks.length > 0 &&
-            groupBooks.some((gb) => !gb.isInMyLibrary) && (
-              <Button
-                variant="outline"
-                onClick={() => setShowBatchDialog(true)}
-                className="shrink-0"
-              >
-                <Library className="mr-2 h-4 w-4" />
-                {t("groups.batchAddToLibrary")}
-              </Button>
-            )}
+          {groupBooks.length > 0 && groupBooks.some((gb) => !gb.isInMyLibrary) && (
+            <Button variant="outline" onClick={() => setShowBatchDialog(true)} className="shrink-0">
+              <Library className="mr-2 h-4 w-4" />
+              {t("groups.batchAddToLibrary")}
+            </Button>
+          )}
           {isLeader && (
             <>
               <Button
                 variant="outline"
-                onClick={() => {
-                  setEditingBundle(null);
-                  setShowBundleDialog(true);
-                }}
+                onClick={() => { setEditingBundle(null); setShowBundleDialog(true); }}
                 className="shrink-0"
               >
                 <FolderPlus className="mr-2 h-4 w-4" />
                 {t("groups.createBundle")}
               </Button>
-              <Button
-                variant="outline"
-                onClick={() => setShowBulkRegister(true)}
-                className="shrink-0"
-              >
+              <Button variant="outline" onClick={() => setShowBulkRegister(true)} className="shrink-0">
                 <ListPlus className="mr-2 h-4 w-4" />
                 {t("groups.bulkDesignatedAdd")}
               </Button>
@@ -254,6 +311,7 @@ export function GroupBooksManager({ groupId, groupName, isLeader }: GroupBooksMa
         </div>
       </div>
 
+      {/* 도서 추가 / 일괄 등록 영역 */}
       {isAdding && (
         <Card>
           <CardHeader>
@@ -261,24 +319,13 @@ export function GroupBooksManager({ groupId, groupName, isLeader }: GroupBooksMa
             <CardDescription>{t("groups.searchAndAddBook")}</CardDescription>
           </CardHeader>
           <CardContent>
-            <BookSearch
-              onSelectBook={(result) => {
-                if (result.bookId) {
-                  handleAddBook(result.bookId);
-                }
-              }}
-            />
-            <Button
-              variant="ghost"
-              className="mt-4 w-full"
-              onClick={() => setIsAdding(false)}
-            >
+            <BookSearch onSelectBook={(result) => { if (result.bookId) handleAddBook(result.bookId); }} />
+            <Button variant="ghost" className="mt-4 w-full" onClick={() => setIsAdding(false)}>
               {t("common.cancel")}
             </Button>
           </CardContent>
         </Card>
       )}
-
       {showBulkRegister && (
         <Card>
           <CardHeader>
@@ -286,20 +333,8 @@ export function GroupBooksManager({ groupId, groupName, isLeader }: GroupBooksMa
             <CardDescription>{t("groups.bulkDesignatedDesc")}</CardDescription>
           </CardHeader>
           <CardContent>
-            <BulkGroupBookRegister
-              groupId={groupId}
-              onComplete={() => {
-                loadGroupBooks();
-              }}
-              onCancel={() => setShowBulkRegister(false)}
-            />
-            <Button
-              variant="ghost"
-              className="mt-4 w-full"
-              onClick={() => setShowBulkRegister(false)}
-            >
-              {t("common.cancel")}
-            </Button>
+            <BulkGroupBookRegister groupId={groupId} onComplete={() => loadGroupBooks()} onCancel={() => setShowBulkRegister(false)} />
+            <Button variant="ghost" className="mt-4 w-full" onClick={() => setShowBulkRegister(false)}>{t("common.cancel")}</Button>
           </CardContent>
         </Card>
       )}
@@ -317,61 +352,180 @@ export function GroupBooksManager({ groupId, groupName, isLeader }: GroupBooksMa
               </p>
               {isLeader && (
                 <Button onClick={() => setIsAdding(true)} className="mt-6">
-                  <Plus className="mr-2 h-4 w-4" />
-                  {t("groups.addBook")}
+                  <Plus className="mr-2 h-4 w-4" />{t("groups.addBook")}
                 </Button>
               )}
             </div>
           </CardContent>
         </Card>
       ) : (
-        <BundledBookGrid
-          groupBooks={groupBooks}
-          bundles={bundles}
-          collapsedBundles={collapsedBundles}
-          noteCounts={noteCounts}
-          groupId={groupId}
-          isLeader={isLeader}
-          onToggleCollapse={toggleBundleCollapse}
-          onAddToLibrary={handleAddToMyLibrary}
-          onDelete={(bookId) => setDeletingBookId(bookId)}
-          onEditBook={(gb) => {
-            const book = gb.books;
-            if (!book) return;
-            setEditingBook({
-              bookId: book.id,
-              bookTitle: book.title,
-              description: gb.description || null,
-              links: Array.isArray(gb.links) ? gb.links : [],
-              bundleId: gb.bundle_id || null,
-            });
-          }}
-          onEditBundle={(bundle) => {
-            setEditingBundle(bundle);
-            setShowBundleDialog(true);
-          }}
-          onDeleteBundle={handleDeleteBundle}
-          t={t}
-        />
+        <>
+          {/* 통계 카드 */}
+          <GroupBookStatsCards
+            stats={stats}
+            activeStatus={statusFilter}
+            onStatusClick={(status) => setStatusFilter(statusFilter === status ? null : status)}
+          />
+
+          {/* 서재(번들) 탭 */}
+          {bundles.length > 0 && (
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 -mx-1 px-1">
+              <Button
+                variant={activeBundleId === null ? "default" : "outline"}
+                size="sm"
+                onClick={() => setActiveBundleId(null)}
+                className="shrink-0 h-8 text-xs"
+              >
+                전체 ({groupBooks.length})
+              </Button>
+              {bundles.map((bundle) => {
+                const count = groupBooks.filter((gb) => gb.bundle_id === bundle.id).length;
+                return (
+                  <Button
+                    key={bundle.id}
+                    variant={activeBundleId === bundle.id ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setActiveBundleId(activeBundleId === bundle.id ? null : bundle.id)}
+                    className="shrink-0 h-8 text-xs"
+                  >
+                    {bundle.name} ({count})
+                  </Button>
+                );
+              })}
+              {/* 미분류 */}
+              {groupBooks.some((gb) => !gb.bundle_id) && (
+                <Button
+                  variant={activeBundleId === "_none" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setActiveBundleId(activeBundleId === "_none" ? null : "_none")}
+                  className="shrink-0 h-8 text-xs"
+                >
+                  {t("groups.unbundled")} ({groupBooks.filter((gb) => !gb.bundle_id).length})
+                </Button>
+              )}
+
+              {/* 서재 관리 메뉴 (리더) */}
+              {isLeader && activeBundleId && activeBundleId !== "_none" && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
+                      <MoreHorizontal className="h-3.5 w-3.5" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => {
+                      const bundle = bundles.find((b) => b.id === activeBundleId);
+                      if (bundle) { setEditingBundle(bundle); setShowBundleDialog(true); }
+                    }}>
+                      <Pencil className="mr-2 h-3.5 w-3.5" />{t("groups.editBundle")}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => activeBundleId && handleDeleteBundle(activeBundleId)}
+                      className="text-destructive focus:text-destructive"
+                    >
+                      <Trash2 className="mr-2 h-3.5 w-3.5" />{t("groups.deleteBundle")}
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
+            </div>
+          )}
+
+          {/* 검색 + 뷰 토글 */}
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="제목이나 저자로 검색"
+                className="pl-9 h-9"
+              />
+            </div>
+            <div className="inline-flex items-center rounded-full bg-muted p-0.5">
+              <button
+                type="button"
+                onClick={() => setViewMode("grid")}
+                className={cn(
+                  "inline-flex items-center justify-center rounded-full h-7 w-7 transition-all",
+                  viewMode === "grid" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <Grid3x3 className="h-3.5 w-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode("list")}
+                className={cn(
+                  "inline-flex items-center justify-center rounded-full h-7 w-7 transition-all",
+                  viewMode === "list" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <List className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          </div>
+
+          {/* 필터 결과 카운트 */}
+          <p className="text-xs text-muted-foreground">
+            {filteredBooks.length === groupBooks.length
+              ? `전체 ${groupBooks.length}권`
+              : `${filteredBooks.length}/${groupBooks.length}권`}
+          </p>
+
+          {/* 책 목록 */}
+          {filteredBooks.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground">
+              <BookOpen className="h-10 w-10 mx-auto mb-3 opacity-40" />
+              <p>검색 결과가 없습니다.</p>
+            </div>
+          ) : viewMode === "grid" ? (
+            <div className={grids.groupBookGrid}>
+              {filteredBooks.map((gb) => {
+                const book = gb.books;
+                if (!book) return null;
+                return (
+                  <GroupBookCardEnhanced
+                    key={gb.id}
+                    groupId={groupId}
+                    groupBook={gb}
+                    noteCount={noteCounts[book.id] || 0}
+                    onAddToLibrary={!gb.isInMyLibrary ? () => handleAddToMyLibrary(book.id) : undefined}
+                    onDelete={isLeader ? () => setDeletingBookId(book.id) : undefined}
+                    onEdit={isLeader ? () => {
+                      setEditingBook({
+                        bookId: book.id,
+                        bookTitle: book.title,
+                        description: gb.description || null,
+                        links: Array.isArray(gb.links) ? gb.links : [],
+                        bundleId: gb.bundle_id || null,
+                      });
+                    } : undefined}
+                    isLeader={isLeader}
+                  />
+                );
+              })}
+            </div>
+          ) : (
+            <GroupBookListView
+              books={filteredBooks}
+              noteCounts={noteCounts}
+              groupId={groupId}
+            />
+          )}
+        </>
       )}
 
-      <AlertDialog
-        open={deletingBookId !== null}
-        onOpenChange={(open) => !open && setDeletingBookId(null)}
-      >
+      {/* 다이얼로그들 */}
+      <AlertDialog open={deletingBookId !== null} onOpenChange={(open) => !open && setDeletingBookId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>{t("groups.deleteDesignatedBookConfirmTitle")}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {t("groups.deleteDesignatedBookConfirmDesc")}
-            </AlertDialogDescription>
+            <AlertDialogDescription>{t("groups.deleteDesignatedBookConfirmDesc")}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => deletingBookId && handleRemoveBook(deletingBookId)}
-              variant="destructive"
-            >
+            <AlertDialogAction onClick={() => deletingBookId && handleRemoveBook(deletingBookId)} variant="destructive">
               {t("common.delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -385,13 +539,9 @@ export function GroupBooksManager({ groupId, groupName, isLeader }: GroupBooksMa
         groupName={groupName}
         totalBooks={groupBooks.length}
         booksNotInLibrary={groupBooks.filter((gb) => !gb.isInMyLibrary).length}
-        onComplete={() => {
-          loadGroupBooks();
-          router.refresh();
-        }}
+        onComplete={() => { loadGroupBooks(); router.refresh(); }}
       />
 
-      {/* 묶음 생성/수정 다이얼로그 */}
       <BundleManageDialog
         open={showBundleDialog}
         onOpenChange={setShowBundleDialog}
@@ -400,7 +550,6 @@ export function GroupBooksManager({ groupId, groupName, isLeader }: GroupBooksMa
         onSuccess={reloadAll}
       />
 
-      {/* 도서 편집 다이얼로그 */}
       {editingBook && (
         <GroupBookEditDialog
           open={!!editingBook}
@@ -419,185 +568,156 @@ export function GroupBooksManager({ groupId, groupName, isLeader }: GroupBooksMa
   );
 }
 
-// --- 묶음별 책 그리드 ---
+// --- 통계 카드 ---
 
-interface BundledBookGridProps {
-  groupBooks: any[];
-  bundles: GroupBookBundle[];
-  collapsedBundles: Set<string>;
-  noteCounts: Record<string, number>;
-  groupId: string;
-  isLeader: boolean;
-  onToggleCollapse: (id: string) => void;
-  onAddToLibrary: (bookId: string) => void;
-  onDelete: (bookId: string) => void;
-  onEditBook: (gb: any) => void;
-  onEditBundle: (bundle: GroupBookBundle) => void;
-  onDeleteBundle: (bundleId: string) => void;
-  t: ReturnType<typeof useTranslation>["t"];
+interface GroupBookStatsCardsProps {
+  stats: {
+    total: number;
+    reading: number;
+    completed: number;
+    paused: number;
+    not_started: number;
+    rereading: number;
+    not_in_library: number;
+  };
+  activeStatus: ReadingStatus | null;
+  onStatusClick: (status: ReadingStatus | null) => void;
 }
 
-function BundledBookGrid({
-  groupBooks,
-  bundles,
-  collapsedBundles,
-  noteCounts,
-  groupId,
-  isLeader,
-  onToggleCollapse,
-  onAddToLibrary,
-  onDelete,
-  onEditBook,
-  onEditBundle,
-  onDeleteBundle,
-  t,
-}: BundledBookGridProps) {
-  // 묶음이 없으면 기존 그리드 그대로
-  if (bundles.length === 0) {
-    return (
-      <div className={grids.groupBookGrid}>
-        {groupBooks.map((gb) => {
-          const book = gb.books;
-          if (!book) return null;
-          return (
-            <GroupBookCardEnhanced
-              key={gb.id}
-              groupId={groupId}
-              groupBook={gb}
-              noteCount={noteCounts[book.id] || 0}
-              onAddToLibrary={!gb.isInMyLibrary ? () => onAddToLibrary(book.id) : undefined}
-              onDelete={isLeader ? () => onDelete(book.id) : undefined}
-              onEdit={isLeader ? () => onEditBook(gb) : undefined}
-              isLeader={isLeader}
-            />
-          );
-        })}
-      </div>
-    );
-  }
+function GroupBookStatsCards({ stats, activeStatus, onStatusClick }: GroupBookStatsCardsProps) {
+  const { t } = useTranslation();
 
-  // 묶음별 그룹화
-  const bundledBooks = new Map<string | null, any[]>();
-  for (const gb of groupBooks) {
-    const key = gb.bundle_id || null;
-    if (!bundledBooks.has(key)) bundledBooks.set(key, []);
-    bundledBooks.get(key)!.push(gb);
-  }
+  const items = [
+    { label: t("books.statTotal"), value: stats.total, icon: BookOpen, color: "blue" as const, status: null },
+    { label: t("books.statNotStarted"), value: stats.not_started + stats.not_in_library, icon: BookX, color: "gray" as const, status: "not_started" as const },
+    { label: t("books.statReading"), value: stats.reading, icon: BookMarked, color: "green" as const, status: "reading" as const },
+    { label: t("books.statCompleted"), value: stats.completed, icon: CheckCircle2, color: "purple" as const, status: "completed" as const },
+    { label: t("books.statRereading"), value: stats.rereading, icon: RotateCcw, color: "cyan" as const, status: "rereading" as const },
+    { label: t("books.statPaused"), value: stats.paused, icon: Pause, color: "orange" as const, status: "paused" as const },
+  ];
 
-  // 묶음 순서대로 + 미분류 마지막
-  const sections: { bundle: GroupBookBundle | null; books: any[] }[] = [];
-  for (const bundle of bundles) {
-    sections.push({ bundle, books: bundledBooks.get(bundle.id) || [] });
-  }
-  const unbundled = bundledBooks.get(null) || [];
-  if (unbundled.length > 0) {
-    sections.push({ bundle: null, books: unbundled });
-  }
+  const colorClasses = {
+    blue: "border-l-blue-500 bg-blue-500/5",
+    green: "border-l-green-500 bg-green-500/5",
+    purple: "border-l-purple-500 bg-purple-500/5",
+    orange: "border-l-orange-500 bg-orange-500/5",
+    gray: "border-l-gray-500 bg-gray-500/5",
+    cyan: "border-l-cyan-500 bg-cyan-500/5",
+  };
+
+  const iconColorClasses = {
+    blue: "text-blue-600", green: "text-green-600", purple: "text-purple-600",
+    orange: "text-orange-600", gray: "text-gray-600", cyan: "text-cyan-600",
+  };
+
+  const iconBgClasses = {
+    blue: "bg-blue-500/10", green: "bg-green-500/10", purple: "bg-purple-500/10",
+    orange: "bg-orange-500/10", gray: "bg-gray-500/10", cyan: "bg-cyan-500/10",
+  };
 
   return (
-    <div className="space-y-4">
-      {sections.map((section) => {
-        const sectionId = section.bundle?.id || "_unbundled";
-        const isCollapsed = collapsedBundles.has(sectionId);
-        const bookCount = section.books.length;
+    <div className="grid grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3">
+      {items.map((item) => {
+        const Icon = item.icon;
+        const isActive = activeStatus === item.status;
 
         return (
-          <Card key={sectionId} className="overflow-hidden">
-            {/* 묶음 헤더 */}
-            <div
-              className="flex items-center gap-2 p-3 border-b bg-muted/30 cursor-pointer hover:bg-muted/50 transition-colors"
-              onClick={() => onToggleCollapse(sectionId)}
-            >
-              {isCollapsed ? (
-                <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
-              ) : (
-                <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
-              )}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <h4 className="text-sm font-semibold truncate">
-                    {section.bundle?.name || t("groups.unbundled")}
-                  </h4>
-                  <Badge variant="secondary" className="text-xs shrink-0">
-                    {bookCount}
-                  </Badge>
+          <button
+            key={item.label}
+            onClick={() => onStatusClick(item.status)}
+            className="w-full text-left cursor-pointer hover:shadow-md transition-[box-shadow,transform] duration-150 active:scale-[0.98]"
+          >
+            <Card className={cn(
+              "border-l-4 h-full transition-colors duration-150",
+              colorClasses[item.color],
+              isActive && "ring-2 ring-primary ring-offset-2 shadow-md"
+            )}>
+              <CardHeader className="pb-2 sm:pb-3">
+                <div className="flex items-center gap-2 sm:gap-3 mb-1 sm:mb-2">
+                  <div className={cn("rounded-lg p-1.5 sm:p-2", iconBgClasses[item.color])}>
+                    <Icon className={cn("h-3 w-3 sm:h-4 sm:w-4", iconColorClasses[item.color])} />
+                  </div>
+                  <CardDescription className="text-xs sm:text-sm font-medium">{item.label}</CardDescription>
                 </div>
-                {section.bundle?.description && (
-                  <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">
-                    {section.bundle.description}
-                  </p>
-                )}
-              </div>
-
-              {/* 묶음 관리 메뉴 (리더만) */}
-              {isLeader && section.bundle && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7 shrink-0"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <MoreHorizontal className="h-3.5 w-3.5" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onEditBundle(section.bundle!);
-                      }}
-                    >
-                      <Pencil className="mr-2 h-3.5 w-3.5" />
-                      {t("groups.editBundle")}
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onDeleteBundle(section.bundle!.id);
-                      }}
-                      className="text-destructive focus:text-destructive"
-                    >
-                      <Trash2 className="mr-2 h-3.5 w-3.5" />
-                      {t("groups.deleteBundle")}
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              )}
-            </div>
-
-            {/* 책 그리드 */}
-            {!isCollapsed && bookCount > 0 && (
-              <div className={`p-3 ${grids.groupBookGrid}`}>
-                {section.books.map((gb: any) => {
-                  const book = gb.books;
-                  if (!book) return null;
-                  return (
-                    <GroupBookCardEnhanced
-                      key={gb.id}
-                      groupId={groupId}
-                      groupBook={gb}
-                      noteCount={noteCounts[book.id] || 0}
-                      onAddToLibrary={!gb.isInMyLibrary ? () => onAddToLibrary(book.id) : undefined}
-                      onDelete={isLeader ? () => onDelete(book.id) : undefined}
-                      onEdit={isLeader ? () => onEditBook(gb) : undefined}
-                      isLeader={isLeader}
-                    />
-                  );
-                })}
-              </div>
-            )}
-
-            {!isCollapsed && bookCount === 0 && (
-              <div className="p-6 text-center text-sm text-muted-foreground">
-                이 서재에 도서가 없습니다.
-              </div>
-            )}
-          </Card>
+                <CardTitle className="text-2xl sm:text-3xl font-bold tracking-tight">
+                  {t("books.statValue", { value: item.value })}
+                </CardTitle>
+              </CardHeader>
+            </Card>
+          </button>
         );
       })}
     </div>
   );
 }
 
+// --- 리스트 뷰 ---
+
+function GroupBookListView({
+  books,
+  noteCounts,
+  groupId,
+}: {
+  books: any[];
+  noteCounts: Record<string, number>;
+  groupId: string;
+}) {
+  return (
+    <div className="space-y-2">
+      {books.map((gb) => {
+        const book = gb.books;
+        if (!book) return null;
+        const hasValidImage = isValidImageUrl(book.cover_image_url);
+        const noteCount = noteCounts[book.id] || 0;
+
+        return (
+          <Link key={gb.id} href={`/groups/${groupId}/books/${book.id}`} className="block">
+            <div className={cn(
+              "flex items-center gap-3 p-3 border rounded-lg",
+              "bg-background hover:bg-muted/50 transition-colors active:bg-muted/70"
+            )}>
+              {/* 표지 */}
+              <div className="relative w-12 h-16 flex-shrink-0 rounded overflow-hidden bg-muted">
+                {hasValidImage ? (
+                  <Image src={getImageUrl(book.cover_image_url)} alt={book.title} fill className="object-cover" sizes="48px" />
+                ) : (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <BookOpen className="w-5 h-5 text-muted-foreground/50" />
+                  </div>
+                )}
+              </div>
+
+              {/* 제목 + 저자 */}
+              <div className="flex-1 min-w-0">
+                <h3 className="font-medium text-sm line-clamp-1">{book.title}</h3>
+                {book.author && (
+                  <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">{formatAuthor(book.author)}</p>
+                )}
+                {gb.description && (
+                  <p className="text-[10px] text-muted-foreground/70 line-clamp-1 mt-0.5 italic">{gb.description}</p>
+                )}
+              </div>
+
+              {/* 기록 수 */}
+              {noteCount > 0 && (
+                <Badge variant="secondary" className="text-[10px] px-1.5 shrink-0">
+                  <MessageSquare className="mr-0.5 h-2.5 w-2.5" />{noteCount}
+                </Badge>
+              )}
+
+              {/* 읽기 상태 */}
+              <div className="flex items-center gap-1.5 shrink-0">
+                {gb.isInMyLibrary && gb.myStatus ? (
+                  <BookStatusBadge status={gb.myStatus as ReadingStatus} size="sm" />
+                ) : (
+                  <Badge variant="outline" className="text-[10px] px-2 py-0.5">미등록</Badge>
+                )}
+                <ChevronRight className="w-4 h-4 text-muted-foreground" />
+              </div>
+            </div>
+          </Link>
+        );
+      })}
+    </div>
+  );
+}
