@@ -28,12 +28,12 @@ import {
 import { MemberList } from "./member-list";
 import { SharedNotesList } from "./shared-notes-list";
 import { GroupBooksManager } from "./group-books-manager";
-import { WeeklyActivitySummary } from "./weekly-activity-summary";
 import {
   joinGroup,
   leaveGroup,
   deleteGroup,
   getGroupMembershipStats,
+  getNoteReactions,
 } from "@/app/actions/groups";
 import { toast } from "sonner";
 import {
@@ -52,6 +52,8 @@ import {
   Crown,
   BookOpen,
   PenLine,
+  Heart,
+  Flame,
 } from "lucide-react";
 import { formatSmartDate } from "@/lib/utils/date";
 import { parseNoteContentFields } from "@/lib/utils/note";
@@ -101,6 +103,7 @@ export function GroupDashboard({ groupData, currentUserId }: GroupDashboardProps
   const [joinMessage, setJoinMessage] = useState("");
   const [pendingCount, setPendingCount] = useState(0);
   const [activeTab, setActiveTab] = useState("overview");
+  const [reactionData, setReactionData] = useState<Record<string, { like: { count: number }; insightful: { count: number }; empathy: { count: number } }>>({});
 
   const isModerator = myMembership?.role === "moderator";
 
@@ -110,6 +113,14 @@ export function GroupDashboard({ groupData, currentUserId }: GroupDashboardProps
       loadPendingCount();
     }
   }, [isLeader, isModerator, group.id]);
+
+  // 활동 기록 리액션 로드
+  useEffect(() => {
+    if (sharedNotes.length > 0) {
+      const noteIds = sharedNotes.map((sn: any) => sn.id);
+      getNoteReactions(noteIds).then(setReactionData).catch(() => {});
+    }
+  }, [sharedNotes]);
 
   const loadPendingCount = async () => {
     try {
@@ -408,70 +419,105 @@ export function GroupDashboard({ groupData, currentUserId }: GroupDashboardProps
               </Card>
             </div>
 
-            {/* 이번 주 활동 요약 */}
-            <WeeklyActivitySummary groupId={group.id} />
-
-            {/* 최근 공유 기록 미리보기 */}
-            {sharedNotes.length > 0 && (
-              <Card>
-                <CardHeader className="pb-2">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-base">{t("groups.sharedNotesCardTitle")}</CardTitle>
+            {/* 활동 기록 (좋아요 많은 순 → 최신 순) */}
+            <Card>
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Flame className="h-4 w-4 text-orange-500" />
+                    <CardTitle className="text-base">활동 기록</CardTitle>
+                  </div>
+                  {sharedNotes.length > 5 && (
                     <button
                       className="text-xs text-muted-foreground hover:text-foreground transition-colors"
                       onClick={() => setActiveTab("notes")}
                     >
                       {t("groups.viewAll")} →
                     </button>
+                  )}
+                </div>
+              </CardHeader>
+              <CardContent>
+                {sharedNotes.length === 0 ? (
+                  <div className="text-center py-6">
+                    <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mx-auto mb-3">
+                      <PenLine className="h-5 w-5 text-muted-foreground" />
+                    </div>
+                    <p className="text-sm font-medium text-muted-foreground">아직 활동이 없어요</p>
+                    <p className="text-xs text-muted-foreground mt-1">첫 번째 기록을 공유해보세요!</p>
                   </div>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  {sharedNotes.slice(0, 3).map((item: any) => {
-                    const note = item.notes;
-                    const noteUser = note?.users;
-                    const noteBook = note?.books || note?.book;
-                    const styleType = (note?.type && note.type in NOTE_TYPE_STYLES ? note.type : "memo") as NoteStyleType;
-                    const config = NOTE_TYPE_STYLES[styleType];
-                    const TypeIcon = config.icon;
-                    return (
-                      <div key={item.id} className="flex items-center gap-3 py-1.5 px-2 -mx-2 rounded-lg hover:bg-muted/50 transition-colors">
-                        <div className={`p-1.5 rounded-full shrink-0 ${config.bgColor}`}>
-                          <TypeIcon className={`h-3.5 w-3.5 ${config.color}`} />
-                        </div>
-                        {noteUser && (
-                          <Avatar className="h-6 w-6 shrink-0">
-                            <AvatarImage src={noteUser.avatar_url || undefined} />
-                            <AvatarFallback className="text-[10px]">{noteUser.name?.[0] || "?"}</AvatarFallback>
-                          </Avatar>
-                        )}
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm truncate">
-                            <span className="font-medium">{noteUser?.name}</span>
-                            {noteBook && (
-                              <span className="text-muted-foreground"> · {noteBook.title}</span>
+                ) : (
+                  <div className="space-y-2">
+                    {(() => {
+                      // 좋아요 총합 기준 정렬, 동일하면 최신 순
+                      const sorted = [...sharedNotes].sort((a: any, b: any) => {
+                        const aReactions = reactionData[a.id];
+                        const bReactions = reactionData[b.id];
+                        const aTotal = aReactions ? (aReactions.like.count + aReactions.insightful.count + aReactions.empathy.count) : 0;
+                        const bTotal = bReactions ? (bReactions.like.count + bReactions.insightful.count + bReactions.empathy.count) : 0;
+                        if (bTotal !== aTotal) return bTotal - aTotal;
+                        return new Date(b.shared_at).getTime() - new Date(a.shared_at).getTime();
+                      });
+
+                      return sorted.slice(0, 5).map((item: any) => {
+                        const note = item.notes;
+                        const noteUser = note?.users;
+                        const noteBook = note?.books || note?.book;
+                        const styleType = (note?.type && note.type in NOTE_TYPE_STYLES ? note.type : "memo") as NoteStyleType;
+                        const config = NOTE_TYPE_STYLES[styleType];
+                        const TypeIcon = config.icon;
+                        const reactions = reactionData[item.id];
+                        const totalReactions = reactions ? (reactions.like.count + reactions.insightful.count + reactions.empathy.count) : 0;
+
+                        return (
+                          <div key={item.id} className="flex items-center gap-3 py-2 px-2 -mx-2 rounded-lg hover:bg-muted/50 transition-colors">
+                            <div className={`p-1.5 rounded-full shrink-0 ${config.bgColor}`}>
+                              <TypeIcon className={`h-3.5 w-3.5 ${config.color}`} />
+                            </div>
+                            {noteUser && (
+                              <Avatar className="h-6 w-6 shrink-0">
+                                <AvatarImage src={noteUser.avatar_url || undefined} />
+                                <AvatarFallback className="text-[10px]">{noteUser.name?.[0] || "?"}</AvatarFallback>
+                              </Avatar>
                             )}
-                          </p>
-                          <p className="text-xs text-muted-foreground truncate">
-                            {(() => {
-                              const { quote, memo } = parseNoteContentFields(note?.content);
-                              return (quote || memo || "")?.slice(0, 80);
-                            })()}
-                          </p>
-                        </div>
-                        {note?.image_url && isValidImageUrl(note.image_url) && (
-                          <div className="relative w-10 h-10 rounded-md overflow-hidden bg-muted shrink-0">
-                            <Image src={getImageUrl(note.image_url)} alt="" fill className="object-cover" sizes="40px" />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm truncate">
+                                <span className="font-medium">{noteUser?.name}</span>
+                                {noteBook && (
+                                  <span className="text-muted-foreground"> · {noteBook.title}</span>
+                                )}
+                              </p>
+                              <p className="text-xs text-muted-foreground truncate">
+                                {(() => {
+                                  const { quote, memo } = parseNoteContentFields(note?.content);
+                                  return (quote || memo || "")?.slice(0, 80);
+                                })()}
+                              </p>
+                            </div>
+                            {note?.image_url && isValidImageUrl(note.image_url) && (
+                              <div className="relative w-10 h-10 rounded-md overflow-hidden bg-muted shrink-0">
+                                <Image src={getImageUrl(note.image_url)} alt="" fill className="object-cover" sizes="40px" />
+                              </div>
+                            )}
+                            <div className="flex flex-col items-end gap-0.5 shrink-0">
+                              {totalReactions > 0 && (
+                                <div className="flex items-center gap-0.5 text-rose-500">
+                                  <Heart className="h-3 w-3 fill-current" />
+                                  <span className="text-[10px] font-medium">{totalReactions}</span>
+                                </div>
+                              )}
+                              <span className="text-[10px] text-muted-foreground" suppressHydrationWarning>
+                                {formatSmartDate(item.shared_at)}
+                              </span>
+                            </div>
                           </div>
-                        )}
-                        <span className="text-[10px] text-muted-foreground shrink-0" suppressHydrationWarning>
-                          {formatSmartDate(item.shared_at)}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </CardContent>
-              </Card>
-            )}
+                        );
+                      });
+                    })()}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
 
             {/* 지정도서 현황 미리보기 */}
             {groupData.groupBooks && groupData.groupBooks.length > 0 && (
