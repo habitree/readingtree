@@ -103,16 +103,19 @@ export const useMusicPlayer = create<MusicPlayerState>((set, get) => ({
   ...INITIAL_TIMER,
 
   // ── 음악 액션 ──
-  loadPlaylist: (tracks, startIndex = 0) =>
+  loadPlaylist: (tracks, startIndex) => {
+    // 기본 랜덤 재생: startIndex 미지정 시 랜덤 트랙부터 시작
+    const idx = startIndex ?? (tracks.length > 0 ? Math.floor(Math.random() * tracks.length) : 0);
     set({
       playlist: tracks,
-      currentIndex: startIndex,
-      currentTrack: tracks[startIndex] ?? null,
+      currentIndex: idx,
+      currentTrack: tracks[idx] ?? null,
       isVisible: true,
       isPlaying: false,
       currentTime: 0,
-      duration: tracks[startIndex]?.durationSeconds ?? 0,
-    }),
+      duration: tracks[idx]?.durationSeconds ?? 0,
+    });
+  },
 
   selectTrack: (index) => {
     const { playlist } = get();
@@ -134,7 +137,15 @@ export const useMusicPlayer = create<MusicPlayerState>((set, get) => ({
   next: () => {
     const { playlist, currentIndex } = get();
     if (playlist.length === 0) return;
-    const nextIndex = (currentIndex + 1) % playlist.length;
+    // 랜덤 재생: 현재 트랙을 제외한 랜덤 인덱스 선택
+    let nextIndex: number;
+    if (playlist.length === 1) {
+      nextIndex = 0;
+    } else {
+      do {
+        nextIndex = Math.floor(Math.random() * playlist.length);
+      } while (nextIndex === currentIndex);
+    }
     const track = playlist[nextIndex];
     if (!track) return;
     set({
