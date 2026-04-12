@@ -687,28 +687,15 @@ function CollectionSelector({
                 <span className="text-xs text-muted-foreground ml-1">권</span>
               </button>
 
-              {/* 리더 관리 메뉴 */}
+              {/* 리더 편집 버튼 (항상 표시) */}
               {isLeader && (
-                <div className="absolute top-1 right-1 opacity-0 group-hover/col:opacity-100 transition-opacity">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-6 w-6">
-                        <MoreHorizontal className="h-3 w-3" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => onEditBundle(bundle)}>
-                        <Pencil className="mr-2 h-3.5 w-3.5" />{t("groups.editBundle")}
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => onDeleteBundle(bundle.id)}
-                        className="text-destructive focus:text-destructive"
-                      >
-                        <Trash2 className="mr-2 h-3.5 w-3.5" />{t("groups.deleteBundle")}
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
+                <button
+                  className="absolute top-1.5 right-1.5 p-1 rounded-md bg-muted/80 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                  onClick={(e) => { e.stopPropagation(); onEditBundle(bundle); }}
+                  title={t("groups.editBundle")}
+                >
+                  <Pencil className="h-3 w-3" />
+                </button>
               )}
             </div>
           );
@@ -735,6 +722,46 @@ function CollectionSelector({
           </button>
         )}
       </div>
+
+      {/* 선택된 컬렉션 상세 바 */}
+      {activeBundleId && activeBundleId !== "_none" && (() => {
+        const activeBundle = bundles.find((b) => b.id === activeBundleId);
+        if (!activeBundle) return null;
+        const colorIndex = bundles.indexOf(activeBundle);
+        const colorSet = COLLECTION_COLORS[colorIndex % COLLECTION_COLORS.length];
+        return (
+          <div className={cn("flex items-center gap-3 p-3 rounded-lg border-l-4", colorSet.border, colorSet.bg)}>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold">{activeBundle.name}</p>
+              {activeBundle.description && (
+                <p className="text-xs text-muted-foreground mt-0.5">{activeBundle.description}</p>
+              )}
+            </div>
+            {isLeader && (
+              <div className="flex items-center gap-1 shrink-0">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 text-xs"
+                  onClick={() => onEditBundle(activeBundle)}
+                >
+                  <Pencil className="mr-1 h-3 w-3" />
+                  {t("groups.editBundle")}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 text-xs text-destructive hover:text-destructive"
+                  onClick={() => onDeleteBundle(activeBundle.id)}
+                >
+                  <Trash2 className="mr-1 h-3 w-3" />
+                  {t("groups.deleteBundle")}
+                </Button>
+              </div>
+            )}
+          </div>
+        );
+      })()}
     </div>
   );
 }
