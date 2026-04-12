@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { BookSearch } from "@/components/books/book-search";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { GroupBookCardEnhanced } from "./group-book-card-enhanced";
 import {
   addGroupBook,
@@ -685,6 +686,9 @@ function GroupBookListView({
         if (!book) return null;
         const hasValidImage = isValidImageUrl(book.cover_image_url);
         const noteCount = noteCounts[book.id] || 0;
+        const phase = toGroupPhase(gb.myStatus, gb.isInMyLibrary);
+        const phaseConfig = PHASE_CONFIG[phase];
+        const contributors = gb.recentContributors || [];
 
         return (
           <Link key={gb.id} href={`/groups/${groupId}/books/${book.id}`} className="block">
@@ -692,40 +696,51 @@ function GroupBookListView({
               "flex items-center gap-3 p-3 border rounded-lg",
               "bg-background hover:bg-muted/50 transition-colors active:bg-muted/70"
             )}>
-              {/* 표지 */}
-              <div className="relative w-12 h-16 flex-shrink-0 rounded overflow-hidden bg-muted">
+              {/* 표지 + 상태 도트 */}
+              <div className="relative w-11 h-[60px] flex-shrink-0 rounded-md overflow-hidden bg-muted shadow-sm">
                 {hasValidImage ? (
-                  <Image src={getImageUrl(book.cover_image_url)} alt={book.title} fill className="object-cover" sizes="48px" />
+                  <Image src={getImageUrl(book.cover_image_url)} alt={book.title} fill className="object-cover" sizes="44px" />
                 ) : (
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <BookOpen className="w-5 h-5 text-muted-foreground/50" />
+                    <BookOpen className="w-4 h-4 text-muted-foreground/50" />
                   </div>
                 )}
+                <div className={cn("absolute bottom-0.5 right-0.5 w-2 h-2 rounded-full ring-1 ring-background", phaseConfig.barColor)} />
               </div>
 
-              {/* 제목 + 저자 */}
+              {/* 제목 + 저자 + 메타 */}
               <div className="flex-1 min-w-0">
                 <h3 className="font-medium text-sm line-clamp-1">{book.title}</h3>
                 {book.author && (
                   <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">{formatAuthor(book.author)}</p>
                 )}
-                {gb.description && (
-                  <p className="text-[10px] text-muted-foreground/70 line-clamp-1 mt-0.5 italic">{gb.description}</p>
-                )}
+                <div className="flex items-center gap-2 mt-1">
+                  {/* 기록 수 */}
+                  {noteCount > 0 && (
+                    <span className="inline-flex items-center gap-0.5 text-[10px] text-muted-foreground">
+                      <MessageSquare className="h-2.5 w-2.5" />
+                      {noteCount}
+                    </span>
+                  )}
+                  {/* 참여 멤버 */}
+                  {contributors.length > 0 && (
+                    <div className="flex items-center gap-0.5">
+                      <div className="flex -space-x-1">
+                        {contributors.slice(0, 3).map((c: any) => (
+                          <Avatar key={c.id} className="h-4 w-4 ring-1 ring-background">
+                            <AvatarImage src={c.avatar_url || undefined} />
+                            <AvatarFallback className="text-[7px]">{c.name?.[0]}</AvatarFallback>
+                          </Avatar>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
 
-              {/* 기록 수 */}
-              {noteCount > 0 && (
-                <Badge variant="secondary" className="text-[10px] px-1.5 shrink-0">
-                  <MessageSquare className="mr-0.5 h-2.5 w-2.5" />{noteCount}
-                </Badge>
-              )}
-
-              {/* 독서 진행 상태 */}
-              <div className="flex items-center gap-1.5 shrink-0">
-                <GroupPhaseBadge phase={toGroupPhase(gb.myStatus, gb.isInMyLibrary)} />
-                <ChevronRight className="w-4 h-4 text-muted-foreground" />
-              </div>
+              {/* 상태 배지 */}
+              <GroupPhaseBadge phase={phase} />
+              <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
             </div>
           </Link>
         );

@@ -9,20 +9,35 @@ import { Button } from "@/components/ui/button";
 import {
   BookOpen,
   MessageSquare,
-  CheckCircle2,
   Plus,
   Trash2,
   PenLine,
-  ExternalLink,
+  BookMarked,
+  CheckCircle2,
+  BookX,
 } from "lucide-react";
 import { formatAuthor } from "@/lib/utils/book";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getImageUrl, isValidImageUrl } from "@/lib/utils/image";
-import { BookStatusBadge } from "@/components/books/book-status-badge";
-import type { ReadingStatus } from "@/types/book";
 import { useTranslation } from "@/lib/i18n";
+import { cn } from "@/lib/utils";
 
-import type { GroupBookLink, GroupBookBundle } from "@/types/group";
+import type { GroupBookLink } from "@/types/group";
+
+/** 독서모임 3단계 상태 */
+type GroupPhase = "before" | "reading" | "completed";
+
+function toPhase(myStatus: string | null, isInMyLibrary: boolean): GroupPhase {
+  if (!isInMyLibrary || !myStatus || myStatus === "not_started") return "before";
+  if (myStatus === "completed") return "completed";
+  return "reading";
+}
+
+const PHASE_STYLE = {
+  before: { icon: BookX, label: "읽기 전", bg: "bg-slate-500/10", text: "text-slate-500", dot: "bg-slate-400" },
+  reading: { icon: BookMarked, label: "읽는 중", bg: "bg-emerald-500/10", text: "text-emerald-600", dot: "bg-emerald-500" },
+  completed: { icon: CheckCircle2, label: "완독", bg: "bg-violet-500/10", text: "text-violet-600", dot: "bg-violet-500" },
+} as const;
 
 interface GroupBookCardEnhancedProps {
   groupId: string;
@@ -64,6 +79,8 @@ export function GroupBookCardEnhanced({
   if (!book) return null;
 
   const hasValidImage = isValidImageUrl(book.cover_image_url) && !imgError;
+  const phase = toPhase(groupBook.myStatus || null, !!groupBook.isInMyLibrary);
+  const phaseStyle = PHASE_STYLE[phase];
 
   return (
     <div className="relative group">
@@ -76,7 +93,7 @@ export function GroupBookCardEnhanced({
                 alt={book.title}
                 fill
                 className="object-cover group-hover:scale-105 transition-transform duration-300"
-                sizes="(max-width: 640px) 33vw, (max-width: 768px) 25vw, (max-width: 1024px) 25vw, 20vw"
+                sizes="(max-width: 640px) 33vw, (max-width: 768px) 25vw, 20vw"
                 onError={() => setImgError(true)}
               />
             ) : (
@@ -87,15 +104,14 @@ export function GroupBookCardEnhanced({
             )}
 
             {/* 기록 수 배지 */}
-            <div className="absolute top-1 right-1">
-              <Badge
-                variant={noteCount > 0 ? "default" : "secondary"}
-                className="flex items-center gap-0.5 text-[10px] px-1.5 py-0 h-5 shadow-sm"
-              >
-                <MessageSquare className="h-2.5 w-2.5" />
-                {noteCount}
-              </Badge>
-            </div>
+            {noteCount > 0 && (
+              <div className="absolute top-1 right-1">
+                <Badge className="flex items-center gap-0.5 text-[10px] px-1.5 py-0 h-5 shadow-sm">
+                  <MessageSquare className="h-2.5 w-2.5" />
+                  {noteCount}
+                </Badge>
+              </div>
+            )}
 
             {/* 최근 기록자 아바타 */}
             {groupBook.recentContributors && groupBook.recentContributors.length > 0 && (
@@ -108,6 +124,11 @@ export function GroupBookCardEnhanced({
                 ))}
               </div>
             )}
+
+            {/* 상태 도트 (우하단) */}
+            <div className="absolute bottom-1.5 right-1.5">
+              <div className={cn("w-2.5 h-2.5 rounded-full ring-2 ring-background", phaseStyle.dot)} />
+            </div>
           </div>
         </Link>
 
@@ -123,34 +144,22 @@ export function GroupBookCardEnhanced({
             </p>
           )}
 
-          {/* 리더 소개글 (truncated) */}
+          {/* 리더 소개글 */}
           {groupBook.description && (
-            <p className="text-[10px] text-muted-foreground/80 line-clamp-1 mt-0.5 italic">
+            <p className="text-[10px] text-muted-foreground/70 line-clamp-1 mt-0.5 italic">
               {groupBook.description}
             </p>
           )}
 
-          {/* 링크 표시 */}
-          {groupBook.links && groupBook.links.length > 0 && (
-            <div className="flex items-center gap-0.5 mt-0.5">
-              <ExternalLink className="h-2.5 w-2.5 text-muted-foreground/60" />
-              <span className="text-[9px] text-muted-foreground/60">
-                {groupBook.links.length}
-              </span>
-            </div>
-          )}
-
-          {/* 내 서재 상태 */}
-          <div className="flex items-center gap-1 mt-1.5">
+          {/* 상태 영역 */}
+          <div className="mt-1.5">
             {groupBook.isInMyLibrary ? (
-              <>
-                <CheckCircle2 className="h-3 w-3 text-green-600 dark:text-green-400 shrink-0" />
-                {groupBook.myStatus && (
-                  <BookStatusBadge status={groupBook.myStatus as ReadingStatus} className="scale-[0.8] sm:scale-100 origin-left" />
-                )}
-              </>
+              <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0 h-5 gap-1 border-0", phaseStyle.bg, phaseStyle.text)}>
+                <phaseStyle.icon className="h-2.5 w-2.5" />
+                {phaseStyle.label}
+              </Badge>
             ) : (
-              onAddToLibrary && (
+              onAddToLibrary ? (
                 <Button
                   size="sm"
                   variant="outline"
@@ -164,23 +173,24 @@ export function GroupBookCardEnhanced({
                   <Plus className="mr-0.5 h-3 w-3" />
                   {t("groups.addToMyLibrary")}
                 </Button>
+              ) : (
+                <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5 gap-1 border-0 bg-slate-500/10 text-slate-500">
+                  <BookX className="h-2.5 w-2.5" />
+                  읽기 전
+                </Badge>
               )
             )}
           </div>
         </div>
       </Card>
 
-      {/* 리더 액션 버튼 (호버 시 표시) */}
+      {/* 리더 액션 (호버) */}
       {isLeader && (
         <div className="absolute top-0.5 left-0.5 z-10 flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
           {onEdit && (
             <button
               className="p-1 rounded-full bg-primary/80 text-primary-foreground shadow-sm"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                onEdit();
-              }}
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); onEdit(); }}
               title={t("groups.editBookInfo")}
             >
               <PenLine className="h-3 w-3" />
@@ -189,31 +199,13 @@ export function GroupBookCardEnhanced({
           {onDelete && (
             <button
               className="p-1 rounded-full bg-destructive/80 text-destructive-foreground shadow-sm"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                onDelete();
-              }}
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); onDelete(); }}
               title={t("groups.deleteDesignatedBook")}
             >
               <Trash2 className="h-3 w-3" />
             </button>
           )}
         </div>
-      )}
-      {/* 비리더: 기존 삭제 버튼 (호버) */}
-      {!isLeader && onDelete && (
-        <button
-          className="absolute top-0.5 left-0.5 z-10 p-1 rounded-full bg-destructive/80 text-destructive-foreground opacity-0 group-hover:opacity-100 transition-opacity"
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            onDelete();
-          }}
-          title={t("groups.deleteDesignatedBook")}
-        >
-          <Trash2 className="h-3 w-3" />
-        </button>
       )}
     </div>
   );
