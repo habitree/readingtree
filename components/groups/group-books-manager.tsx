@@ -226,9 +226,14 @@ export function GroupBooksManager({ groupId, groupName, isLeader }: GroupBooksMa
   const filteredBooks = useMemo(() => {
     let filtered = groupBooks;
 
-    // 서재(번들) 필터
+    // 컬렉션 필터
     if (activeBundleId !== null) {
-      filtered = filtered.filter((gb) => (gb.bundle_id || null) === (activeBundleId || null));
+      if (activeBundleId === "_none") {
+        // 미분류: bundle_id가 null인 도서만
+        filtered = filtered.filter((gb) => !gb.bundle_id);
+      } else {
+        filtered = filtered.filter((gb) => gb.bundle_id === activeBundleId);
+      }
     }
 
     // 상태 필터 (독서모임 3단계)
