@@ -37,6 +37,7 @@ export interface GroupBookBundle {
   name: string;
   description: string | null;
   sort_order: number;
+  links?: GroupBookLink[];
   created_at?: string;
   updated_at?: string;
 }

@@ -683,8 +683,22 @@ function CollectionSelector({
                     {bundle.description}
                   </p>
                 )}
-                <span className="text-2xl font-bold">{count}</span>
-                <span className="text-xs text-muted-foreground ml-1">권</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl font-bold">{count}</span>
+                  <span className="text-xs text-muted-foreground">권</span>
+                  {bundle.links && bundle.links.length > 0 && (
+                    <a
+                      href={(bundle.links[0] as any).url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className="inline-flex items-center gap-0.5 text-[10px] text-primary hover:underline ml-auto"
+                    >
+                      <ExternalLink className="h-2.5 w-2.5" />
+                      링크
+                    </a>
+                  )}
+                </div>
               </button>
 
               {/* 리더 편집 버튼 (항상 표시) */}
@@ -735,6 +749,22 @@ function CollectionSelector({
               <p className="text-sm font-semibold">{activeBundle.name}</p>
               {activeBundle.description && (
                 <p className="text-xs text-muted-foreground mt-0.5">{activeBundle.description}</p>
+              )}
+              {activeBundle.links && activeBundle.links.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-1.5">
+                  {activeBundle.links.map((link: any, i: number) => (
+                    <a
+                      key={i}
+                      href={link.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                    >
+                      <ExternalLink className="h-3 w-3" />
+                      {link.title}
+                    </a>
+                  ))}
+                </div>
               )}
             </div>
             {isLeader && (

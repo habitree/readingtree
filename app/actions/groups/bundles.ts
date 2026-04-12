@@ -140,7 +140,7 @@ export async function getGroupBookBundles(groupId: string) {
 
   const { data: bundles, error } = await supabase
     .from("group_book_bundles")
-    .select("id, group_id, name, description, sort_order, created_at")
+    .select("id, group_id, name, description, sort_order, links, created_at")
     .eq("group_id", groupId)
     .order("sort_order", { ascending: true });
 
