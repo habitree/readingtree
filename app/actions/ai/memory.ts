@@ -2,6 +2,7 @@
 
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/app/actions/auth";
+import { AI_LIMITS } from "@/lib/constants/limits";
 
 /**
  * 사용자의 AI 장기 기억 조회
@@ -67,7 +68,7 @@ export async function saveMemory(
     .select("*", { count: "exact", head: true })
     .eq("user_id", user.id);
 
-  if (count && count >= 50) {
+  if (count && count >= AI_LIMITS.MAX_MEMORIES_PER_USER) {
     const { data: oldest } = await supabase
       .from("user_ai_memories")
       .select("id")

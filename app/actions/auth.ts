@@ -98,8 +98,8 @@ export async function signInWithEmail(email: string, password: string) {
     throw new Error("유효한 이메일 주소를 입력해주세요.");
   }
 
-  if (!password || password.length < 6) {
-    throw new Error("비밀번호는 최소 6자 이상이어야 합니다.");
+  if (!password || password.length < 8) {
+    throw new Error("비밀번호는 최소 8자 이상이어야 합니다.");
   }
 
   // 이메일/비밀번호로 로그인

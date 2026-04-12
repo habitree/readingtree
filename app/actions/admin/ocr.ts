@@ -368,7 +368,7 @@ export async function batchProcessOCR(batchSize: number = 50) {
 
     // OCR 처리 로직 직접 호출
     const { extractTextFromImage } = await import("@/lib/api/ocr");
-    const { recordOcrSuccess, recordOcrFailure } = await import("@/app/actions/ocr");
+    const { recordOcrSuccess, recordOcrFailure } = await import("@/app/actions/ai/ocr");
 
     // 헬퍼 함수: Transcription 생성 또는 업데이트 (서비스 역할 키 사용, RLS 우회)
     const createOrUpdateTranscriptionAdmin = async (noteId: string, extractedText: string) => {

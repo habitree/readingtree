@@ -1,5 +1,5 @@
 import { isAdmin } from "@/app/actions/auth";
-import { getActiveAISettings, getAPIKeyStatus } from "@/app/actions/ai-settings";
+import { getActiveAISettings, getAPIKeyStatus } from "@/app/actions/ai/settings";
 import { AISettingsPanel } from "@/components/admin/ai-settings-panel";
 import { Metadata } from "next";
 import { redirect } from "next/navigation";

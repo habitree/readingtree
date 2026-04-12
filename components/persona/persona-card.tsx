@@ -15,7 +15,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
-import { analyzeAndSavePersona } from "@/app/actions/persona";
+import { analyzeAndSavePersona } from "@/app/actions/ai/persona";
 import { useTranslation } from "@/lib/i18n";
 import type { UserPersona } from "@/types/persona";
 import {

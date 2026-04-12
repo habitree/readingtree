@@ -150,8 +150,8 @@ export function AdminDashboard({ stats, growth, activity, ocrMonthlyUsage, ocrTo
                         <CardDescription>{t("admin.dashboard.growthTrendDesc")}</CardDescription>
                     </CardHeader>
                     <CardContent className="h-[300px] flex items-end justify-between gap-2 px-6 pb-8">
-                        {growth.map((item: any, i: number) => (
-                            <div key={i} className="flex-1 flex flex-col items-center gap-2 group">
+                        {growth.map((item: any) => (
+                            <div key={item.month} className="flex-1 flex flex-col items-center gap-2 group">
                                 <div
                                     className="w-full bg-primary/20 hover:bg-primary/40 transition-all rounded-t-md relative flex items-end justify-center"
                                     style={{ height: `${Math.max((item.count / (Math.max(...growth.map((g: any) => g.count)) || 1)) * 200, 10)}px` }}

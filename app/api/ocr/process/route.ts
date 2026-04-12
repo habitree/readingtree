@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { extractTextFromImage } from "@/lib/api/ocr";
 import { createOrUpdateTranscription, updateTranscriptionStatus, verifyNoteOwnership } from "@/app/actions/notes";
-import { recordOcrSuccess, recordOcrFailure } from "@/app/actions/ocr";
+import { recordOcrSuccess, recordOcrFailure } from "@/app/actions/ai/ocr";
 import { correctOcrText, isOcrCorrectionAvailable } from "@/lib/ai/ocr-correction";
 import type { User } from "@supabase/supabase-js";
 

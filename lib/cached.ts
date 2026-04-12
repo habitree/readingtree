@@ -1,7 +1,7 @@
 import { cache } from "react";
 import { getCurrentUser } from "@/app/actions/auth";
 import { getCurrentUserProfile } from "@/app/actions/profile";
-import { getPersonaDashboardData } from "@/app/actions/persona";
+import { getPersonaDashboardData } from "@/app/actions/ai/persona";
 import { getReadingStats, getStreakAndTodayData } from "@/app/actions/stats";
 import { getPointsDashboardData } from "@/app/actions/points";
 import { checkHasFirstNote } from "@/app/actions/onboarding";

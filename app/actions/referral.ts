@@ -4,6 +4,7 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { earnPoints } from "@/app/actions/points";
 import type { User } from "@supabase/supabase-js";
+import { REFERRAL_LIMITS } from "@/lib/constants/limits";
 
 /**
  * 가입 시 레퍼럴 기록 저장
@@ -96,7 +97,7 @@ export async function grantReferralRewardOnFirstNote(
     .eq("referrer_points_granted", true)
     .gte("completed_at", `${monthStart}T00:00:00+09:00`);
 
-  if ((count || 0) >= 10) return; // 월 10명 상한
+  if ((count || 0) >= REFERRAL_LIMITS.MONTHLY_REWARD_CAP) return;
 
   // 추천인에게 100P 지급 (admin client로 사용자 조회)
   const adminSupabase = createAdminSupabaseClient();
