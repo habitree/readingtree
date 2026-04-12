@@ -56,7 +56,7 @@ const FREE_GATES: Record<FeatureKey, FeatureGate> = {
     countMethod: "table_count",
   },
   notes_create: {
-    limit: 100,
+    limit: 20,
     pointCost: 10,
     countPeriod: "monthly",
     countMethod: "table_count",
@@ -67,7 +67,7 @@ const FREE_GATES: Record<FeatureKey, FeatureGate> = {
     countMethod: "table_count",
   },
   groups_join: {
-    limit: 5,
+    limit: 3,
     pointCost: 200,
     countMethod: "membership_count",
   },
