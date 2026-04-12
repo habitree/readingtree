@@ -207,6 +207,13 @@ export function MusicMiniPlayer() {
     return () => { globalAudioRef = null; };
   }, []);
 
+  // ── 뮤직 플레이어 높이 CSS 변수 동기화 (모바일 하단 패딩 계산용) ──
+  useEffect(() => {
+    const h = isVisible && currentTrack ? '60px' : '0px';
+    document.documentElement.style.setProperty('--music-player-height', h);
+    return () => { document.documentElement.style.setProperty('--music-player-height', '0px'); };
+  }, [isVisible, currentTrack]);
+
   // ── 타이머 setInterval (오디오 실제 재생 여부 확인) ──
   useEffect(() => {
     if (timerStatus === "running") {

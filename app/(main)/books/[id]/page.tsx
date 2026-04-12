@@ -180,12 +180,12 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
   };
 
   return (
-    <div className="space-y-4 sm:space-y-5 lg:space-y-6 pb-20 lg:pb-8">
+    <div className="space-y-4 sm:space-y-5 lg:space-y-6 pb-[calc(var(--mobile-bottom-offset)_+_2rem)] lg:pb-8">
       <BookScrollHandler />
 
       {/* 게스트: 하단 고정 가입 유도 CTA */}
       {isGuest && (
-        <div className="fixed bottom-14 sm:bottom-16 lg:bottom-0 left-0 right-0 z-30 border-t bg-background/95 backdrop-blur-sm p-3 sm:p-4 lg:ml-64">
+        <div className="fixed bottom-[calc(var(--mobile-bottom-offset))] lg:bottom-0 left-0 right-0 z-30 border-t bg-background/95 backdrop-blur-sm p-3 sm:p-4 lg:ml-64">
           <div className="container max-w-7xl mx-auto flex items-center justify-between gap-3">
             <p className="text-sm text-muted-foreground">
               <GuestCtaText />

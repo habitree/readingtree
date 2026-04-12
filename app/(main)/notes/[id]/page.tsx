@@ -115,7 +115,7 @@ export default async function NoteDetailPage({ params }: NoteDetailPageProps) {
   }
 
   return (
-    <div className="max-w-5xl mx-auto space-y-4 sm:space-y-6 lg:space-y-8 pb-20">
+    <div className="max-w-5xl mx-auto space-y-4 sm:space-y-6 lg:space-y-8 pb-[calc(var(--mobile-bottom-offset)_+_1rem)] lg:pb-8">
       {/* 1. 상단 내비게이션 및 액션 바 */}
       <NoteDetailNavBar
         note={noteWithBook}

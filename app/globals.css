@@ -29,6 +29,9 @@
     --input: 214.3 31.8% 91.4%;
     --ring: 222.2 84% 4.9%;
     --radius: 0.5rem;
+    --music-player-height: 0px;
+    --mobile-nav-height: 3.5rem;
+    --mobile-bottom-offset: calc(var(--mobile-nav-height) + var(--music-player-height));
     --chart-1: 12 76% 61%;
     --chart-2: 173 58% 39%;
     --chart-3: 197 37% 24%;

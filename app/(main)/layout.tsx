@@ -32,7 +32,7 @@ export default function MainLayout({
           <Sidebar />
           <main className="flex-1 lg:pl-64 flex flex-col">
             <div className="flex-1">
-              <div className="container mx-auto px-2 sm:px-4 py-3 sm:py-6 pb-16 lg:pb-6">
+              <div className="container mx-auto px-2 sm:px-4 py-3 sm:py-6 pb-[calc(var(--mobile-bottom-offset)_+_1rem)] lg:pb-6">
                 {children}
               </div>
             </div>
