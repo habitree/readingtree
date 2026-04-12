@@ -5,7 +5,6 @@ import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { revalidatePath } from "next/cache";
 import { sanitizeSearchQuery } from "@/lib/utils/validation";
 import { checkFeatureAccess } from "@/app/actions/subscription";
-import { spendPoints } from "@/app/actions/points";
 
 /**
  * 모임 생성
@@ -32,24 +31,11 @@ export async function createGroup(data: {
   // 모임 생성 한도 체크
   const access = await checkFeatureAccess("groups_create", user);
   if (!access.allowed) {
-    if (access.canUseWithPoints) {
-      // 포인트로 추가 생성 시도
-      const spendResult = await spendPoints("group_create", {
-        user,
-        description: "모임 추가 생성",
-      });
-      if (!spendResult.success) {
-        throw new Error(
-          `모임 생성 한도(${access.limit}개)에 도달했습니다. 추가 생성에 ${access.pointCost}P가 필요하지만 포인트가 부족합니다.`
-        );
-      }
-    } else {
-      throw new Error(
-        access.upgradeMessage
-          ? `모임 생성 한도(${access.limit}개)에 도달했습니다. ${access.upgradeMessage}`
-          : `모임 생성 한도(${access.limit}개)에 도달했습니다.`
-      );
-    }
+    throw new Error(
+      access.upgradeMessage
+        ? `모임 생성 한도(${access.limit}개)에 도달했습니다. ${access.upgradeMessage}`
+        : `모임 생성 한도(${access.limit}개)에 도달했습니다.`
+    );
   }
 
   // joinType 결정 (joinType 우선, 없으면 isPublic에서 변환)
