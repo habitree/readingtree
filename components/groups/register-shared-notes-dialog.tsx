@@ -72,11 +72,11 @@ const noteTypeIcons: Record<string, typeof FileText> = {
   transcription: ScanText,
 };
 
-const noteTypeLabels: Record<string, string> = {
-  quote: "인용구",
-  memo: "메모",
-  photo: "사진",
-  transcription: "필사",
+const noteTypeLabelKeys: Record<string, string> = {
+  quote: "groups.noteTypeQuote",
+  memo: "groups.noteTypeMemo",
+  photo: "groups.noteTypePhoto",
+  transcription: "groups.noteTypeTranscription",
 };
 
 export function RegisterSharedNotesDialog({
@@ -104,7 +104,7 @@ export function RegisterSharedNotesDialog({
       }
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "기록을 불러오지 못했습니다."
+        error instanceof Error ? error.message : t("groups.loadFailed")
       );
     } finally {
       setIsLoading(false);
@@ -185,7 +185,7 @@ export function RegisterSharedNotesDialog({
       onSuccess?.();
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "공유에 실패했습니다."
+        error instanceof Error ? error.message : t("groups.shareFailed")
       );
     } finally {
       setIsSharing(false);
@@ -199,7 +199,7 @@ export function RegisterSharedNotesDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[85vh] overflow-hidden flex flex-col">
+      <DialogContent className="max-w-[95vw] sm:max-w-lg max-h-[85vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Share2 className="h-5 w-5" />
@@ -232,7 +232,7 @@ export function RegisterSharedNotesDialog({
                 {t("groups.allShared")}
               </p>
               <p className="text-sm text-muted-foreground mt-1">
-                모든 기록이 이미 공유되었어요.
+                {t("groups.allNotesShared")}
               </p>
             </div>
           ) : (
@@ -366,7 +366,7 @@ export function RegisterSharedNotesDialog({
                                 }
                               />
                               <span className="text-xs text-muted-foreground">
-                                이 책 전체 선택 ({bookGroup.notes.length}개)
+                                {t("groups.selectAllForBook").replace("{count}", String(bookGroup.notes.length))}
                               </span>
                             </div>
 
@@ -376,7 +376,7 @@ export function RegisterSharedNotesDialog({
                                 const Icon =
                                   noteTypeIcons[note.type] || FileText;
                                 const typeLabel =
-                                  noteTypeLabels[note.type] || "기록";
+                                  t((noteTypeLabelKeys[note.type] || "groups.noteTypeMemo") as Parameters<typeof t>[0]);
                                 const { quote, memo } =
                                   parseNoteContentFields(note.content);
                                 const displayText =
@@ -458,7 +458,7 @@ export function RegisterSharedNotesDialog({
         {totalShareable > 0 && (
           <DialogFooter className="shrink-0">
             <Button variant="outline" onClick={() => onOpenChange(false)}>
-              취소
+              {t("common.cancel")}
             </Button>
             <Button
               onClick={handleShare}

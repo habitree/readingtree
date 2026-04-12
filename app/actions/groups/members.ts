@@ -4,6 +4,7 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import type { MemberStatus } from "./_shared";
 import { checkFeatureAccess } from "../subscription";
+import { spendPoints } from "../points";
 import { syncGroupBooksToMember, unlinkGroupBookshelf } from "./books";
 
 /**
@@ -26,9 +27,21 @@ export async function joinGroup(groupId: string, joinMessage?: string) {
   // 모임 참여 한도 체크
   const access = await checkFeatureAccess("groups_join", user);
   if (!access.allowed) {
-    throw new Error(
-      `모임 참여 한도(${access.limit}개)에 도달했습니다.`
-    );
+    if (access.canUseWithPoints) {
+      const spendResult = await spendPoints("group_join", {
+        user,
+        description: "모임 추가 참여",
+      });
+      if (!spendResult.success) {
+        throw new Error(
+          `모임 참여 한도(${access.limit}개)에 도달했습니다. 추가 참여에 ${access.pointCost}P가 필요하지만 포인트가 부족합니다.`
+        );
+      }
+    } else {
+      throw new Error(
+        `모임 참여 한도(${access.limit}개)에 도달했습니다.`
+      );
+    }
   }
 
   // 모임 정보 조회
@@ -91,7 +104,7 @@ export async function joinGroup(groupId: string, joinMessage?: string) {
     try {
       await syncGroupBooksToMember(groupId, user.id);
     } catch (err) {
-      console.error("[joinGroup] 동기화 실패:", err);
+      // best-effort: 동기화 실패해도 가입은 성공
     }
   }
 
@@ -160,7 +173,7 @@ export async function approveMember(groupId: string, userId: string) {
   try {
     await syncGroupBooksToMember(groupId, userId);
   } catch (err) {
-    console.error("[approveMember] 동기화 실패:", err);
+    // best-effort: 동기화 실패해도 승인은 성공
   }
 
   revalidatePath(`/groups/${groupId}`);
@@ -684,7 +697,7 @@ export async function approveAllPendingMembers(groupId: string) {
       try {
         await syncGroupBooksToMember(groupId, member.user_id);
       } catch (err) {
-        console.error(`[approveAll] ${member.user_id} 동기화 실패:`, err);
+        // best-effort: 동기화 실패해도 승인은 성공
       }
     }
   }

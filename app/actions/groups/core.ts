@@ -4,6 +4,8 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { revalidatePath } from "next/cache";
 import { sanitizeSearchQuery } from "@/lib/utils/validation";
+import { checkFeatureAccess } from "@/app/actions/subscription";
+import { spendPoints } from "@/app/actions/points";
 
 /**
  * 모임 생성
@@ -25,6 +27,29 @@ export async function createGroup(data: {
 
   if (authError || !user) {
     throw new Error("로그인이 필요합니다.");
+  }
+
+  // 모임 생성 한도 체크
+  const access = await checkFeatureAccess("groups_create", user);
+  if (!access.allowed) {
+    if (access.canUseWithPoints) {
+      // 포인트로 추가 생성 시도
+      const spendResult = await spendPoints("group_create", {
+        user,
+        description: "모임 추가 생성",
+      });
+      if (!spendResult.success) {
+        throw new Error(
+          `모임 생성 한도(${access.limit}개)에 도달했습니다. 추가 생성에 ${access.pointCost}P가 필요하지만 포인트가 부족합니다.`
+        );
+      }
+    } else {
+      throw new Error(
+        access.upgradeMessage
+          ? `모임 생성 한도(${access.limit}개)에 도달했습니다. ${access.upgradeMessage}`
+          : `모임 생성 한도(${access.limit}개)에 도달했습니다.`
+      );
+    }
   }
 
   // joinType 결정 (joinType 우선, 없으면 isPublic에서 변환)
@@ -335,8 +360,13 @@ export async function getGroupDetail(groupId: string) {
     };
   }
 
-  // Phase 2: 병렬로 members, myMembership, sharedNotes, groupBooks, sharedBooks 조회
-  const [membersResult, myMembershipResult, sharedNotesResult, groupBooksResult, sharedBooksResult] = await Promise.all([
+  // Phase 2: 병렬로 members, sharedNotes, groupBooks, sharedBooks 조회
+  // myMembership은 Phase1 결과 재사용 (중복 쿼리 제거)
+  const myMembership = membership
+    ? { role: membership.role, status: membership.status }
+    : pendingMembership || null;
+
+  const [membersResult, sharedNotesResult, groupBooksResult, sharedBooksResult] = await Promise.all([
     // 멤버 목록 조회
     supabase
       .from("group_members")
@@ -352,13 +382,6 @@ export async function getGroupDetail(groupId: string) {
       )
       .eq("group_id", groupId)
       .eq("status", "approved"),
-    // 현재 사용자의 멤버십 확인
-    supabase
-      .from("group_members")
-      .select("role, status")
-      .eq("group_id", groupId)
-      .eq("user_id", user.id)
-      .single(),
     // 공유된 기록 목록 조회 (책 정보 + 작성자 정보 포함)
     supabase
       .from("group_notes")
@@ -432,14 +455,12 @@ export async function getGroupDetail(groupId: string) {
     throw new Error(`멤버 목록 조회 실패: ${membersResult.error.message}`);
   }
 
-  if (sharedNotesResult.error) {
-    console.error("공유 기록 조회 오류:", sharedNotesResult.error);
-  }
+  // 공유 기록 조회 실패 시 빈 배열로 폴백 (조용히 처리)
 
   return {
     group,
     members: membersResult.data || [],
-    myMembership: myMembershipResult.data || null,
+    myMembership,
     sharedNotes: sharedNotesResult.data || [],
     groupBooks: groupBooksResult.data || [],
     sharedBooks: sharedBooksResult.data || [],

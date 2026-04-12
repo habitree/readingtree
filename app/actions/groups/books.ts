@@ -84,7 +84,7 @@ export async function addGroupBook(
   try {
     await syncGroupBookToAllMembers(groupId, bookId);
   } catch (err) {
-    console.error("[addGroupBook] 멤버 동기화 실패:", err);
+    // best-effort: 동기화 실패해도 지정도서 추가는 성공
   }
 
   revalidatePath(`/groups/${groupId}`);
@@ -189,11 +189,29 @@ export async function getGroupBooksWithUserStatus(groupId: string) {
     throw new Error("로그인이 필요합니다.");
   }
 
-  // 지정도서 목록 조회
-  const groupBooks = await getGroupBooks(groupId);
+  // 지정도서 목록 직접 조회 (getGroupBooks 내부 호출 제거 — 중복 auth/멤버십 체크 방지)
+  const { data: groupBooks, error: gbError } = await supabase
+    .from("group_books")
+    .select(`
+      *,
+      books (
+        id, title, author, publisher, cover_image_url, published_date,
+        summary, description_summary, external_link
+      ),
+      group_book_bundles (
+        id, name, description, sort_order
+      )
+    `)
+    .eq("group_id", groupId)
+    .order("sort_order", { ascending: true })
+    .order("created_at", { ascending: false });
+
+  if (gbError) {
+    throw new Error(`지정도서 조회 실패: ${gbError.message}`);
+  }
 
   // 사용자가 이미 등록한 책 확인
-  const bookIds = groupBooks.map((gb: any) => gb.book_id);
+  const bookIds = (groupBooks || []).map((gb: any) => gb.book_id);
   let userBooks: any[] = [];
 
   if (bookIds.length > 0) {
@@ -243,7 +261,7 @@ export async function getGroupBooksWithUserStatus(groupId: string) {
   }
 
   // 지정도서에 사용자 상태 + 최근 기록자 추가
-  const groupBooksWithStatus = groupBooks.map((gb: any) => {
+  const groupBooksWithStatus = (groupBooks || []).map((gb: any) => {
     const userBook = userBooks.find((ub) => ub.book_id === gb.book_id);
     return {
       ...gb,

@@ -157,7 +157,7 @@ export async function joinByToken(token: string) {
     try {
       await syncGroupBooksToMember(inviteToken.group_id, user.id);
     } catch (err) {
-      console.error("[joinByToken] 동기화 실패:", err);
+      // best-effort: 동기화 실패해도 가입은 성공
     }
   }
 

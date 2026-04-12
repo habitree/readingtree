@@ -391,13 +391,13 @@ export function GroupDashboard({ groupData, currentUserId }: GroupDashboardProps
                       <Textarea
                         value={editContent}
                         onChange={(e) => setEditContent(e.target.value)}
-                        placeholder="독서모임에 대한 소개를 작성해주세요..."
+                        placeholder={t("groups.groupIntroPlaceholder")}
                         rows={3}
                         maxLength={1000}
                       />
                       {/* 링크 편집 */}
                       <div className="space-y-1.5">
-                        <p className="text-xs font-medium text-muted-foreground">참고 링크</p>
+                        <p className="text-xs font-medium text-muted-foreground">{t("groups.referenceLinks")}</p>
                         {editLinks.map((link, i) => (
                           <div key={i} className="flex items-center gap-2">
                             <Input
@@ -407,7 +407,7 @@ export function GroupDashboard({ groupData, currentUserId }: GroupDashboardProps
                                 next[i] = { ...next[i], title: e.target.value };
                                 setEditLinks(next);
                               }}
-                              placeholder="링크 제목"
+                              placeholder={t("groups.linkTitlePlaceholder")}
                               className="h-7 text-sm flex-1"
                             />
                             <Input
@@ -427,12 +427,12 @@ export function GroupDashboard({ groupData, currentUserId }: GroupDashboardProps
                           </div>
                         ))}
                         <Button variant="outline" size="sm" className="h-7 text-xs w-full" onClick={() => setEditLinks((prev) => [...prev, { title: "", url: "" }])}>
-                          <Plus className="mr-1 h-3 w-3" />링크 추가
+                          <Plus className="mr-1 h-3 w-3" />{t("groups.addLink")}
                         </Button>
                       </div>
                       <div className="flex gap-2 justify-end">
                         <Button variant="ghost" size="sm" className="h-7" onClick={() => setIsEditingContent(false)}>
-                          <X className="mr-1 h-3 w-3" />취소
+                          <X className="mr-1 h-3 w-3" />{t("common.cancel")}
                         </Button>
                         <Button size="sm" className="h-7" disabled={isSavingContent} onClick={async () => {
                           try {
@@ -442,17 +442,17 @@ export function GroupDashboard({ groupData, currentUserId }: GroupDashboardProps
                               content: editContent.trim() || null,
                               links: validLinks.length > 0 ? validLinks : null,
                             });
-                            toast.success("저장되었습니다.");
+                            toast.success(t("groups.saved"));
                             setIsEditingContent(false);
                             router.refresh();
                           } catch (error) {
-                            toast.error(error instanceof Error ? error.message : "저장 실패");
+                            toast.error(error instanceof Error ? error.message : t("groups.saveFailed"));
                           } finally {
                             setIsSavingContent(false);
                           }
                         }}>
                           {isSavingContent ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <Save className="mr-1 h-3 w-3" />}
-                          저장
+                          {t("common.save")}
                         </Button>
                       </div>
                     </div>
@@ -461,7 +461,7 @@ export function GroupDashboard({ groupData, currentUserId }: GroupDashboardProps
                       {group.content ? (
                         <p className="text-sm whitespace-pre-wrap leading-relaxed">{group.content}</p>
                       ) : isLeader ? (
-                        <p className="text-sm text-muted-foreground italic">독서모임에 대한 소개를 작성해보세요.</p>
+                        <p className="text-sm text-muted-foreground italic">{t("groups.groupIntroEmpty")}</p>
                       ) : null}
                       {group.links && group.links.length > 0 && (
                         <div className="flex flex-wrap gap-2 mt-2">
@@ -483,7 +483,7 @@ export function GroupDashboard({ groupData, currentUserId }: GroupDashboardProps
                             setIsEditingContent(true);
                           }}
                         >
-                          <PenLine className="mr-1 h-3 w-3" />편집
+                          <PenLine className="mr-1 h-3 w-3" />{t("common.edit")}
                         </Button>
                       )}
                     </div>
@@ -546,7 +546,7 @@ export function GroupDashboard({ groupData, currentUserId }: GroupDashboardProps
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Flame className="h-4 w-4 text-orange-500" />
-                    <CardTitle className="text-base">활동 기록</CardTitle>
+                    <CardTitle className="text-base">{t("groups.activityFeed")}</CardTitle>
                   </div>
                   {sharedNotes.length > 5 && (
                     <button
@@ -564,8 +564,10 @@ export function GroupDashboard({ groupData, currentUserId }: GroupDashboardProps
                     <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mx-auto mb-3">
                       <PenLine className="h-5 w-5 text-muted-foreground" />
                     </div>
-                    <p className="text-sm font-medium text-muted-foreground">아직 활동이 없어요</p>
-                    <p className="text-xs text-muted-foreground mt-1">첫 번째 기록을 공유해보세요!</p>
+                    <p className="text-sm font-medium text-muted-foreground">{t("groups.noActivity")}</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {isLeader ? t("groups.noActivityLeaderDesc") : t("groups.noActivityDesc")}
+                    </p>
                   </div>
                 ) : (
                   <div className="space-y-2">
@@ -817,9 +819,9 @@ export function GroupDashboard({ groupData, currentUserId }: GroupDashboardProps
                 <>
                   <Users className="h-12 w-12 text-primary/60 mx-auto" />
                   <div>
-                    <h3 className="text-lg font-semibold mb-2">공개 모임 미리보기</h3>
+                    <h3 className="text-lg font-semibold mb-2">{t("groups.publicGroupPreview")}</h3>
                     <p className="text-muted-foreground">
-                      로그인하면 모임에 참여하고 기록을 함께 나눌 수 있어요
+                      {t("groups.publicGroupPreviewDesc")}
                     </p>
                   </div>
                 </>

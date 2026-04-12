@@ -101,12 +101,12 @@ const TYPE_ICONS: Record<string, typeof FileText> = {
   transcription: ScanText,
 };
 
-// 타입별 라벨
-const TYPE_LABELS: Record<string, string> = {
-  quote: "인용구",
-  memo: "메모",
-  photo: "사진",
-  transcription: "필사",
+// 타입별 i18n 키
+const TYPE_LABEL_KEYS: Record<string, string> = {
+  quote: "groups.noteTypeQuote",
+  memo: "groups.noteTypeMemo",
+  photo: "groups.noteTypePhoto",
+  transcription: "groups.noteTypeTranscription",
 };
 
 const COLLAPSE_THRESHOLD = 4;
@@ -322,11 +322,12 @@ function SharedNoteCard({
 }: {
   item: SharedNotesListProps["notes"][number];
 }) {
+  const { t } = useTranslation();
   const note = item.notes;
   const user = note.users;
   const hasImage = note.image_url && isValidImageUrl(note.image_url);
   const Icon = TYPE_ICONS[note.type] || FileText;
-  const typeLabel = TYPE_LABELS[note.type] || "기록";
+  const typeLabel = t((TYPE_LABEL_KEYS[note.type] || "groups.noteTypeMemo") as Parameters<typeof t>[0]);
   const pageNumber = parsePageNumber(note.page_number);
 
   // content 파싱
