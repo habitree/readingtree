@@ -14,7 +14,7 @@ import type {
 import { isValidUUID, isValidLength, isValidTags, sanitizeErrorMessage, sanitizeErrorForLogging } from "@/lib/utils/validation";
 import type { User } from "@supabase/supabase-js";
 import { getCurrentUser } from "./auth";
-import { earnPoints, updateStreak } from "./points";
+import { earnPoints, updateStreak, spendPoints } from "./points";
 import type { PointActionType } from "@/types/points";
 import { getRandomDefaultCoverPath } from "@/lib/constants/default-covers";
 import { READTREE_BOOK_ID } from "@/lib/constants/readtree";
@@ -46,9 +46,21 @@ export async function createNote(data: CreateNoteInput, user?: User | null) {
   // 노트 생성 한도 체크
   const access = await checkFeatureAccess("notes_create", currentUser);
   if (!access.allowed) {
-    throw new Error(
-      `이번 달 기록 한도(${access.limit}개)에 도달했습니다.`
-    );
+    if (access.canUseWithPoints) {
+      const spendResult = await spendPoints("note_create", {
+        user: currentUser,
+        description: "노트 추가 생성",
+      });
+      if (!spendResult.success) {
+        throw new Error(
+          `이번 달 기록 한도(${access.limit}개)에 도달했습니다. 추가 생성에 ${access.pointCost}P가 필요하지만 포인트가 부족합니다.`
+        );
+      }
+    } else {
+      throw new Error(
+        `이번 달 기록 한도(${access.limit}개)에 도달했습니다.`
+      );
+    }
   }
 
   // book_id UUID 검증 (optional — 책 없이 저장 가능)

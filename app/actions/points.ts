@@ -794,6 +794,10 @@ export async function spendPoints(
     ai_chat: "ai_chat_spend",
     ocr_process: "ocr_spend",
     ai_report: "ai_report_spend",
+    group_create: "group_create_spend",
+    group_join: "group_join_spend",
+    bookshelf_create: "bookshelf_create_spend",
+    note_create: "note_create_spend",
   };
   const actionType = actionTypeMap[spendType];
 

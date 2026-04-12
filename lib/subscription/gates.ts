@@ -51,24 +51,24 @@ const FREE_GATES: Record<FeatureKey, FeatureGate> = {
     countMethod: "point_transactions",
   },
   groups_create: {
-    limit: 5,
-    pointCost: 0,
+    limit: 0,
+    pointCost: 300,
     countMethod: "table_count",
   },
   notes_create: {
     limit: 100,
-    pointCost: 0,
+    pointCost: 10,
     countPeriod: "monthly",
     countMethod: "table_count",
   },
   bookshelf_create: {
-    limit: 10,
-    pointCost: 0,
+    limit: 2,
+    pointCost: 150,
     countMethod: "table_count",
   },
   groups_join: {
     limit: 5,
-    pointCost: 0,
+    pointCost: 200,
     countMethod: "membership_count",
   },
   advanced_stats: {
@@ -106,8 +106,8 @@ const READER_GATES: Record<FeatureKey, FeatureGate> = {
     countMethod: "point_transactions",
   },
   groups_create: {
-    limit: 10,
-    pointCost: 0,
+    limit: 5,
+    pointCost: 200,
     countMethod: "table_count",
   },
   notes_create: {

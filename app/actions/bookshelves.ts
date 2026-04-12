@@ -11,6 +11,7 @@ import type {
   UpdateBookshelfInput,
 } from "@/types/bookshelf";
 import { checkFeatureAccess } from "./subscription";
+import { spendPoints } from "./points";
 
 /**
  * 사용자의 모든 서재 목록 조회
@@ -151,9 +152,21 @@ export async function createBookshelf(
   // 서재 생성 한도 체크
   const access = await checkFeatureAccess("bookshelf_create", user);
   if (!access.allowed) {
-    throw new Error(
-      `서재 한도(${access.limit}개)에 도달했습니다.`
-    );
+    if (access.canUseWithPoints) {
+      const spendResult = await spendPoints("bookshelf_create", {
+        user,
+        description: "서재 추가 생성",
+      });
+      if (!spendResult.success) {
+        throw new Error(
+          `서재 한도(${access.limit}개)에 도달했습니다. 추가 생성에 ${access.pointCost}P가 필요하지만 포인트가 부족합니다.`
+        );
+      }
+    } else {
+      throw new Error(
+        `서재 한도(${access.limit}개)에 도달했습니다.`
+      );
+    }
   }
 
   // 사용자의 최대 order 값 조회

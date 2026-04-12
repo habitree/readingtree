@@ -44,6 +44,10 @@ export type PointActionType =
   | "ai_chat_spend"
   | "ocr_spend"
   | "ai_report_spend"
+  | "group_create_spend"
+  | "group_join_spend"
+  | "bookshelf_create_spend"
+  | "note_create_spend"
   | "point_refund"
   // 추천
   | "referral_success"
@@ -273,6 +277,11 @@ export const POINT_ACTION_DEFAULTS: Record<PointActionType, { base_points: numbe
   ai_chat_spend: { base_points: 0, description: "AI 채팅 포인트 소비", category: "system" },
   ocr_spend: { base_points: 0, description: "OCR 포인트 소비", category: "system" },
   ai_report_spend: { base_points: 0, description: "AI 리포트 포인트 소비", category: "system" },
+  // 기능 한도 초과 소비
+  group_create_spend: { base_points: 0, description: "모임 추가 생성 포인트 소비", category: "system" },
+  group_join_spend: { base_points: 0, description: "모임 추가 참여 포인트 소비", category: "system" },
+  bookshelf_create_spend: { base_points: 0, description: "서재 추가 생성 포인트 소비", category: "system" },
+  note_create_spend: { base_points: 0, description: "노트 추가 생성 포인트 소비", category: "system" },
   point_refund: { base_points: 0, description: "포인트 환불", category: "system" },
   // 충전
   point_purchase: { base_points: 0, description: "포인트 충전", category: "system" },
@@ -409,7 +418,14 @@ export function getLevelStyle(level: number): LevelStyle {
 /**
  * 포인트 소비 타입
  */
-export type PointSpendType = "ai_chat" | "ocr_process" | "ai_report";
+export type PointSpendType =
+  | "ai_chat"
+  | "ocr_process"
+  | "ai_report"
+  | "group_create"
+  | "group_join"
+  | "bookshelf_create"
+  | "note_create";
 
 /**
  * 포인트 소비 비용 설정
@@ -423,6 +439,10 @@ export const POINT_SPEND_COSTS: Record<PointSpendType, number> = {
   ai_chat: 40,
   ocr_process: 25,
   ai_report: 100,
+  group_create: 300,
+  group_join: 200,
+  bookshelf_create: 150,
+  note_create: 10,
 };
 
 /**

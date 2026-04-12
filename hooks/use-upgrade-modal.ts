@@ -50,5 +50,9 @@ export function extractFeatureFromError(message: string): string | null {
   if (message.includes("AI 채팅")) return "ai_chat";
   if (message.includes("OCR")) return "ocr";
   if (message.includes("AI 리포트") || message.includes("AI 독서 리포트")) return "ai_report";
+  if (message.includes("모임 생성")) return "groups_create";
+  if (message.includes("모임 참여")) return "groups_join";
+  if (message.includes("서재")) return "bookshelf_create";
+  if (message.includes("기록 한도")) return "notes_create";
   return null;
 }

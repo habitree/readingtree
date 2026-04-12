@@ -48,6 +48,10 @@ function getActionTypeForFeature(feature: FeatureKey): string | null {
     case "ai_chat": return "ai_chat_spend";
     case "ocr": return "ocr_spend";
     case "ai_report": return "ai_report_spend";
+    case "groups_create": return "group_create_spend";
+    case "groups_join": return "group_join_spend";
+    case "bookshelf_create": return "bookshelf_create_spend";
+    case "notes_create": return "note_create_spend";
     default: return null;
   }
 }
