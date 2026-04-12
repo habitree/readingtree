@@ -38,9 +38,7 @@ import {
   Search,
   BookMarked,
   CheckCircle2,
-  Pause,
   BookX,
-  RotateCcw,
   MessageSquare,
   ExternalLink,
 } from "lucide-react";
@@ -355,13 +353,6 @@ export function GroupBooksManager({ groupId, groupName, isLeader }: GroupBooksMa
         </Card>
       ) : (
         <>
-          {/* 독서모임 진행 현황 */}
-          <GroupReadingProgress
-            stats={stats}
-            activePhase={statusFilter}
-            onPhaseClick={(phase) => setStatusFilter(statusFilter === phase ? null : phase)}
-          />
-
           {/* 컬렉션 선택기 */}
           {bundles.length > 0 && (
             <CollectionSelector
@@ -411,12 +402,12 @@ export function GroupBooksManager({ groupId, groupName, isLeader }: GroupBooksMa
             </div>
           </div>
 
-          {/* 필터 결과 카운트 */}
-          <p className="text-xs text-muted-foreground">
-            {filteredBooks.length === groupBooks.length
-              ? `전체 ${groupBooks.length}권`
-              : `${filteredBooks.length}/${groupBooks.length}권`}
-          </p>
+          {/* 상태 필터 칩 */}
+          <ReadingPhaseChips
+            stats={stats}
+            activePhase={statusFilter}
+            onPhaseClick={(phase) => setStatusFilter(statusFilter === phase ? null : phase)}
+          />
 
           {/* 책 목록 */}
           {filteredBooks.length === 0 ? (
@@ -539,62 +530,46 @@ const PHASE_CONFIG = {
   },
 } as const;
 
-interface GroupReadingProgressProps {
+
+// --- 상태 필터 칩 (심플) ---
+
+interface ReadingPhaseChipsProps {
   stats: { total: number; before: number; reading: number; completed: number };
   activePhase: GroupReadingPhase | null;
   onPhaseClick: (phase: GroupReadingPhase | null) => void;
 }
 
-function GroupReadingProgress({ stats, activePhase, onPhaseClick }: GroupReadingProgressProps) {
+function ReadingPhaseChips({ stats, activePhase, onPhaseClick }: ReadingPhaseChipsProps) {
   const { t } = useTranslation();
 
-  const phases: { key: GroupReadingPhase | null; label: string; value: number; config: { icon: typeof BookOpen; color: string; bg: string; barColor: string; ring: string } }[] = [
-    { key: null, label: t("groups.groupStatAll"), value: stats.total, config: { icon: BookOpen, color: "text-blue-500", bg: "bg-blue-500/10", barColor: "bg-blue-500", ring: "ring-blue-500" } },
-    { key: "before", label: t("groups.groupStatBeforeRead"), value: stats.before, config: PHASE_CONFIG.before },
-    { key: "reading", label: t("groups.groupStatReading"), value: stats.reading, config: PHASE_CONFIG.reading },
-    { key: "completed", label: t("groups.groupStatCompleted"), value: stats.completed, config: PHASE_CONFIG.completed },
+  const chips: { key: GroupReadingPhase | null; label: string; value: number; dot: string }[] = [
+    { key: null, label: t("groups.groupStatAll"), value: stats.total, dot: "bg-foreground/40" },
+    { key: "before", label: t("groups.groupStatBeforeRead"), value: stats.before, dot: PHASE_CONFIG.before.barColor },
+    { key: "reading", label: t("groups.groupStatReading"), value: stats.reading, dot: PHASE_CONFIG.reading.barColor },
+    { key: "completed", label: t("groups.groupStatCompleted"), value: stats.completed, dot: PHASE_CONFIG.completed.barColor },
   ];
 
-  // 진행률 바 계산
-  const total = stats.total || 1;
-  const completedPct = (stats.completed / total) * 100;
-  const readingPct = (stats.reading / total) * 100;
-
   return (
-    <div className="space-y-3">
-      {/* 진행률 바 */}
-      <div className="relative h-2 rounded-full bg-muted overflow-hidden">
-        <div className="absolute inset-y-0 left-0 bg-violet-500 rounded-full transition-all duration-500" style={{ width: `${completedPct}%` }} />
-        <div className="absolute inset-y-0 bg-emerald-500 rounded-full transition-all duration-500" style={{ left: `${completedPct}%`, width: `${readingPct}%` }} />
-      </div>
-
-      {/* 4칸 통계 */}
-      <div className="grid grid-cols-4 gap-2">
-        {phases.map((phase) => {
-          const Icon = phase.config.icon;
-          const isActive = activePhase === phase.key;
-
-          return (
-            <button
-              key={phase.label}
-              onClick={() => onPhaseClick(phase.key)}
-              className={cn(
-                "flex flex-col items-center gap-1.5 p-3 rounded-xl border transition-all duration-150",
-                "hover:shadow-sm active:scale-[0.97] cursor-pointer",
-                isActive
-                  ? `ring-2 ${phase.config.ring} ring-offset-2 shadow-md border-transparent`
-                  : "border-border/50 hover:border-border"
-              )}
-            >
-              <div className={cn("rounded-full p-2", phase.config.bg)}>
-                <Icon className={cn("h-4 w-4", phase.config.color)} />
-              </div>
-              <span className="text-2xl sm:text-3xl font-bold tracking-tight">{phase.value}</span>
-              <span className="text-[10px] sm:text-xs text-muted-foreground font-medium">{phase.label}</span>
-            </button>
-          );
-        })}
-      </div>
+    <div className="flex items-center gap-1.5 flex-wrap">
+      {chips.map((chip) => {
+        const isActive = activePhase === chip.key;
+        return (
+          <button
+            key={chip.label}
+            onClick={() => onPhaseClick(chip.key)}
+            className={cn(
+              "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs transition-all",
+              isActive
+                ? "bg-foreground text-background font-semibold"
+                : "bg-muted hover:bg-muted/80 text-muted-foreground"
+            )}
+          >
+            <div className={cn("w-1.5 h-1.5 rounded-full shrink-0", isActive ? "bg-background" : chip.dot)} />
+            {chip.label}
+            <span className={cn("font-semibold", isActive ? "text-background" : "text-foreground")}>{chip.value}</span>
+          </button>
+        );
+      })}
     </div>
   );
 }
