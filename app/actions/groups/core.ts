@@ -384,7 +384,7 @@ export async function getGroupDetail(groupId: string) {
       .eq("group_id", groupId)
       .order("shared_at", { ascending: false })
       .limit(50),
-    // 지정도서 목록 조회
+    // 지정도서 목록 조회 (전체 — 지정도서 상세 페이지 매칭에 사용)
     supabase
       .from("group_books")
       .select(
@@ -399,8 +399,7 @@ export async function getGroupDetail(groupId: string) {
       `
       )
       .eq("group_id", groupId)
-      .order("created_at", { ascending: false })
-      .limit(10),
+      .order("created_at", { ascending: false }),
     // 공유된 서재 목록 조회
     supabase
       .from("group_shared_books")
