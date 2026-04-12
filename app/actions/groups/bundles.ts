@@ -54,6 +54,7 @@ export async function updateGroupBookBundle(
     name?: string;
     description?: string | null;
     sortOrder?: number;
+    links?: { title: string; url: string }[] | null;
   }
 ) {
   const supabase = await createServerSupabaseClient();
@@ -77,6 +78,7 @@ export async function updateGroupBookBundle(
   if (data.name !== undefined) updateData.name = data.name;
   if (data.description !== undefined) updateData.description = data.description;
   if (data.sortOrder !== undefined) updateData.sort_order = data.sortOrder;
+  if (data.links !== undefined) updateData.links = data.links || [];
 
   const { error } = await supabase
     .from("group_book_bundles")

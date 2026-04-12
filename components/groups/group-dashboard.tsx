@@ -32,6 +32,7 @@ import {
   joinGroup,
   leaveGroup,
   deleteGroup,
+  updateGroup,
   getGroupMembershipStats,
   getNoteReactions,
 } from "@/app/actions/groups";
@@ -54,11 +55,17 @@ import {
   PenLine,
   Heart,
   Flame,
+  ExternalLink,
+  Plus,
+  Save,
+  X,
+  Loader2,
 } from "lucide-react";
 import { formatSmartDate } from "@/lib/utils/date";
 import { parseNoteContentFields } from "@/lib/utils/note";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { useTranslation } from "@/lib/i18n";
 import { useUpgradeModal, isUpgradeLimitError } from "@/hooks/use-upgrade-modal";
 import { typography, spacing } from "@/lib/design-tokens";
@@ -104,6 +111,10 @@ export function GroupDashboard({ groupData, currentUserId }: GroupDashboardProps
   const [pendingCount, setPendingCount] = useState(0);
   const [activeTab, setActiveTab] = useState("overview");
   const [reactionData, setReactionData] = useState<Record<string, { like: { count: number }; insightful: { count: number }; empathy: { count: number } }>>({});
+  const [isEditingContent, setIsEditingContent] = useState(false);
+  const [editContent, setEditContent] = useState("");
+  const [editLinks, setEditLinks] = useState<{ title: string; url: string }[]>([]);
+  const [isSavingContent, setIsSavingContent] = useState(false);
 
   const isModerator = myMembership?.role === "moderator";
 
@@ -371,6 +382,116 @@ export function GroupDashboard({ groupData, currentUserId }: GroupDashboardProps
           </TabsList>
 
           <TabsContent value="overview" className={spacing.pageSection}>
+            {/* 독서모임 소개 */}
+            {(group.content || (group.links && group.links.length > 0) || isLeader) && (
+              <Card>
+                <CardContent className="p-4">
+                  {isEditingContent ? (
+                    <div className="space-y-3">
+                      <Textarea
+                        value={editContent}
+                        onChange={(e) => setEditContent(e.target.value)}
+                        placeholder="독서모임에 대한 소개를 작성해주세요..."
+                        rows={3}
+                        maxLength={1000}
+                      />
+                      {/* 링크 편집 */}
+                      <div className="space-y-1.5">
+                        <p className="text-xs font-medium text-muted-foreground">참고 링크</p>
+                        {editLinks.map((link, i) => (
+                          <div key={i} className="flex items-center gap-2">
+                            <Input
+                              value={link.title}
+                              onChange={(e) => {
+                                const next = [...editLinks];
+                                next[i] = { ...next[i], title: e.target.value };
+                                setEditLinks(next);
+                              }}
+                              placeholder="링크 제목"
+                              className="h-7 text-sm flex-1"
+                            />
+                            <Input
+                              value={link.url}
+                              onChange={(e) => {
+                                const next = [...editLinks];
+                                next[i] = { ...next[i], url: e.target.value };
+                                setEditLinks(next);
+                              }}
+                              placeholder="https://..."
+                              className="h-7 text-sm flex-1"
+                              type="url"
+                            />
+                            <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 text-destructive" onClick={() => setEditLinks((prev) => prev.filter((_, idx) => idx !== i))}>
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        ))}
+                        <Button variant="outline" size="sm" className="h-7 text-xs w-full" onClick={() => setEditLinks((prev) => [...prev, { title: "", url: "" }])}>
+                          <Plus className="mr-1 h-3 w-3" />링크 추가
+                        </Button>
+                      </div>
+                      <div className="flex gap-2 justify-end">
+                        <Button variant="ghost" size="sm" className="h-7" onClick={() => setIsEditingContent(false)}>
+                          <X className="mr-1 h-3 w-3" />취소
+                        </Button>
+                        <Button size="sm" className="h-7" disabled={isSavingContent} onClick={async () => {
+                          try {
+                            setIsSavingContent(true);
+                            const validLinks = editLinks.filter((l) => l.title.trim() && l.url.trim());
+                            await updateGroup(group.id, {
+                              content: editContent.trim() || null,
+                              links: validLinks.length > 0 ? validLinks : null,
+                            });
+                            toast.success("저장되었습니다.");
+                            setIsEditingContent(false);
+                            router.refresh();
+                          } catch (error) {
+                            toast.error(error instanceof Error ? error.message : "저장 실패");
+                          } finally {
+                            setIsSavingContent(false);
+                          }
+                        }}>
+                          {isSavingContent ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <Save className="mr-1 h-3 w-3" />}
+                          저장
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div>
+                      {group.content ? (
+                        <p className="text-sm whitespace-pre-wrap leading-relaxed">{group.content}</p>
+                      ) : isLeader ? (
+                        <p className="text-sm text-muted-foreground italic">독서모임에 대한 소개를 작성해보세요.</p>
+                      ) : null}
+                      {group.links && group.links.length > 0 && (
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          {(group.links as { title: string; url: string }[]).map((link, i) => (
+                            <a key={i} href={link.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-primary hover:underline">
+                              <ExternalLink className="h-3 w-3" />{link.title}
+                            </a>
+                          ))}
+                        </div>
+                      )}
+                      {isLeader && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="mt-2 h-7 text-xs text-muted-foreground"
+                          onClick={() => {
+                            setEditContent(group.content || "");
+                            setEditLinks(group.links?.length ? [...(group.links as { title: string; url: string }[])] : []);
+                            setIsEditingContent(true);
+                          }}
+                        >
+                          <PenLine className="mr-1 h-3 w-3" />편집
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
             {/* 컴팩트 통계 요약 */}
             <div className="grid grid-cols-3 gap-3 sm:gap-4">
               <Card className="hover:bg-muted/50 transition-colors cursor-pointer" onClick={() => setActiveTab("members")}>

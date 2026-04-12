@@ -15,7 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, FolderPlus, BookOpen, Search } from "lucide-react";
+import { Loader2, FolderPlus, BookOpen, Search, Plus, Trash2, ExternalLink } from "lucide-react";
 import {
   createGroupBookBundle,
   updateGroupBookBundle,
@@ -49,6 +49,7 @@ export function BundleManageDialog({
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [links, setLinks] = useState<{ title: string; url: string }[]>([]);
 
   // 도서 선택
   const [allBooks, setAllBooks] = useState<any[]>([]);
@@ -60,6 +61,7 @@ export function BundleManageDialog({
     if (open) {
       setName(bundle?.name || "");
       setDescription(bundle?.description || "");
+      setLinks(bundle?.links?.length ? [...bundle.links] : []);
       setBookSearch("");
       loadBooks();
     }
@@ -129,10 +131,13 @@ export function BundleManageDialog({
 
       let bundleId: string;
 
+      const validLinks = links.filter((l) => l.title.trim() && l.url.trim());
+
       if (isEdit && bundle) {
         await updateGroupBookBundle(bundle.id, {
           name: name.trim(),
           description: description.trim() || null,
+          links: validLinks.length > 0 ? validLinks : null,
         });
         bundleId = bundle.id;
       } else {
@@ -205,6 +210,55 @@ export function BundleManageDialog({
               rows={2}
               maxLength={500}
             />
+          </div>
+
+          {/* 참고 링크 */}
+          <div className="space-y-1.5">
+            <Label>{t("groups.customLinks")}</Label>
+            {links.map((link, index) => (
+              <div key={index} className="flex items-start gap-2">
+                <div className="flex-1 space-y-1">
+                  <Input
+                    value={link.title}
+                    onChange={(e) => {
+                      const next = [...links];
+                      next[index] = { ...next[index], title: e.target.value };
+                      setLinks(next);
+                    }}
+                    placeholder={t("groups.linkTitlePlaceholder")}
+                    className="h-7 text-sm"
+                  />
+                  <Input
+                    value={link.url}
+                    onChange={(e) => {
+                      const next = [...links];
+                      next[index] = { ...next[index], url: e.target.value };
+                      setLinks(next);
+                    }}
+                    placeholder={t("groups.linkUrlPlaceholder")}
+                    className="h-7 text-sm"
+                    type="url"
+                  />
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 shrink-0 text-destructive"
+                  onClick={() => setLinks((prev) => prev.filter((_, i) => i !== index))}
+                >
+                  <Trash2 className="h-3 w-3" />
+                </Button>
+              </div>
+            ))}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setLinks((prev) => [...prev, { title: "", url: "" }])}
+              className="w-full h-7 text-xs"
+            >
+              <Plus className="mr-1 h-3 w-3" />
+              {t("groups.addLink")}
+            </Button>
           </div>
 
           {/* 도서 선택 */}

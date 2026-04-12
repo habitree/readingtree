@@ -458,6 +458,8 @@ export async function updateGroup(
     description?: string;
     isPublic?: boolean; // deprecated — use joinType
     joinType?: "open" | "approval" | "private";
+    content?: string | null;
+    links?: { title: string; url: string }[] | null;
   }
 ): Promise<{ success: boolean }> {
   const supabase = await createServerSupabaseClient();
@@ -505,6 +507,14 @@ export async function updateGroup(
   } else if (data.isPublic !== undefined) {
     // 하위 호환: isPublic → join_type 변환
     updateData.join_type = data.isPublic ? "open" : "approval";
+  }
+
+  if (data.content !== undefined) {
+    updateData.content = data.content?.trim() || null;
+  }
+
+  if (data.links !== undefined) {
+    updateData.links = data.links || [];
   }
 
   if (Object.keys(updateData).length === 0) {
