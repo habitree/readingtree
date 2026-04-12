@@ -387,6 +387,33 @@ export async function updateGroupBook(
 }
 
 /**
+ * 지정도서 일괄 컬렉션 배정 (리더만 가능)
+ */
+export async function assignBooksToBundle(
+  groupId: string,
+  bookIds: string[],
+  bundleId: string | null
+) {
+  const supabase = await createServerSupabaseClient();
+  await checkGroupAccess(supabase, groupId, "leader");
+
+  if (bookIds.length === 0) return { success: true, count: 0 };
+
+  const { error } = await supabase
+    .from("group_books")
+    .update({ bundle_id: bundleId })
+    .eq("group_id", groupId)
+    .in("book_id", bookIds);
+
+  if (error) {
+    throw new Error(`컬렉션 배정 실패: ${error.message}`);
+  }
+
+  revalidatePath(`/groups/${groupId}`);
+  return { success: true, count: bookIds.length };
+}
+
+/**
  * 지정도서 삭제 (리더만 가능)
  */
 export async function removeGroupBook(groupId: string, bookId: string) {
