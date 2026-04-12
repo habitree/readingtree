@@ -469,11 +469,21 @@ export function GroupDashboard({ groupData, currentUserId }: GroupDashboardProps
                         const reactions = reactionData[item.id];
                         const totalReactions = reactions ? (reactions.like.count + reactions.insightful.count + reactions.empathy.count) : 0;
 
+                        const bookCover = noteBook?.cover_image_url;
+                        const hasBookCover = bookCover && isValidImageUrl(bookCover);
+
                         return (
                           <div key={item.id} className="flex items-center gap-3 py-2 px-2 -mx-2 rounded-lg hover:bg-muted/50 transition-colors">
-                            <div className={`p-1.5 rounded-full shrink-0 ${config.bgColor}`}>
-                              <TypeIcon className={`h-3.5 w-3.5 ${config.color}`} />
-                            </div>
+                            {/* 책 표지 (없으면 타입 아이콘) */}
+                            {hasBookCover ? (
+                              <div className="relative w-9 h-12 rounded-md overflow-hidden bg-muted shrink-0 shadow-sm">
+                                <Image src={getImageUrl(bookCover)} alt={noteBook?.title || ""} fill className="object-cover" sizes="36px" />
+                              </div>
+                            ) : (
+                              <div className={`p-1.5 rounded-full shrink-0 ${config.bgColor}`}>
+                                <TypeIcon className={`h-3.5 w-3.5 ${config.color}`} />
+                              </div>
+                            )}
                             {noteUser && (
                               <Avatar className="h-6 w-6 shrink-0">
                                 <AvatarImage src={noteUser.avatar_url || undefined} />
