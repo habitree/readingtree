@@ -939,6 +939,99 @@ export async function syncGroupBooksToMember(
 }
 
 /**
+ * 현재 사용자의 모임 서재 수동 동기화
+ * 지정도서 중 내 서재에 없는 책을 추가
+ */
+export async function syncMyGroupBookshelf(
+  groupId: string
+): Promise<{ added: number; total: number }> {
+  const supabase = await createServerSupabaseClient();
+
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    throw new Error("로그인이 필요합니다.");
+  }
+
+  // 멤버십 확인
+  const { data: membership } = await supabase
+    .from("group_members")
+    .select("id")
+    .eq("group_id", groupId)
+    .eq("user_id", user.id)
+    .eq("status", "approved")
+    .single();
+
+  if (!membership) {
+    throw new Error("모임 멤버만 동기화할 수 있습니다.");
+  }
+
+  // 모임 정보
+  const { data: group } = await supabase
+    .from("groups")
+    .select("name")
+    .eq("id", groupId)
+    .single();
+
+  if (!group) {
+    throw new Error("모임을 찾을 수 없습니다.");
+  }
+
+  // 지정도서 목록
+  const { data: groupBooks } = await supabase
+    .from("group_books")
+    .select("book_id")
+    .eq("group_id", groupId);
+
+  if (!groupBooks || groupBooks.length === 0) {
+    return { added: 0, total: 0 };
+  }
+
+  const bookIds = groupBooks.map((gb) => gb.book_id);
+
+  // 이미 내 서재에 있는 책 확인
+  const { data: existingBooks } = await supabase
+    .from("user_books")
+    .select("book_id")
+    .eq("user_id", user.id)
+    .in("book_id", bookIds);
+
+  const existingSet = new Set((existingBooks || []).map((eb) => eb.book_id));
+  const newBookIds = bookIds.filter((id) => !existingSet.has(id));
+
+  if (newBookIds.length === 0) {
+    return { added: 0, total: bookIds.length };
+  }
+
+  // 모임서재 확보 (admin 사용)
+  const adminSupabase = createAdminSupabaseClient();
+  const shelf = await getOrCreateGroupBookshelf(groupId, user.id, group.name);
+
+  // 일괄 추가
+  const now = new Date().toISOString();
+  const insertData = newBookIds.map((bookId) => ({
+    user_id: user.id,
+    book_id: bookId,
+    bookshelf_id: shelf.id,
+    status: "not_started" as const,
+    started_at: now,
+  }));
+
+  const { error } = await adminSupabase.from("user_books").insert(insertData);
+
+  if (error) {
+    throw new Error(`동기화 실패: ${error.message}`);
+  }
+
+  revalidatePath("/bookshelves");
+  revalidatePath(`/bookshelves/${shelf.id}`);
+  return { added: newBookIds.length, total: bookIds.length };
+}
+
+/**
  * 모임에 지정도서 일괄 추가 (리더만 가능)
  * 여러 책을 한번에 검색 매칭 후 지정도서로 등록
  */

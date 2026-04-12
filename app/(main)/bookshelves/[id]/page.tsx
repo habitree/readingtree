@@ -8,6 +8,7 @@ import { MobileBookshelfSelector } from "@/components/books/mobile-bookshelf-sel
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { BookshelfShareButton } from "@/components/bookshelves/bookshelf-share-button";
+import { BookshelfSyncButton } from "@/components/bookshelves/bookshelf-sync-button";
 import { BookshelfDefaultDesc, BookshelfSettingsLabel, BookshelfAddLabel } from "@/components/bookshelves/bookshelf-page-strings";
 import { ArrowLeft, Settings, Plus, Users, RefreshCcw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -129,6 +130,9 @@ export default async function BookshelfDetailPage({
           </div>
           {!isGuest && (
             <div className="flex items-center gap-1 shrink-0">
+              {bookshelf.group_id && (
+                <BookshelfSyncButton groupId={bookshelf.group_id} />
+              )}
               <BookshelfShareButton
                 bookshelfId={bookshelfId}
                 bookshelfName={bookshelf.name}
