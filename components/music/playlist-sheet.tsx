@@ -211,11 +211,11 @@ export function TimerSheet() {
         className="rounded-t-2xl px-5 pt-3 pb-8 flex flex-col max-h-[85vh]"
       >
         {/* 드래그 인디케이터 */}
-        <div className="flex justify-center mb-3">
+        <div className="flex justify-center mb-3 shrink-0">
           <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
         </div>
 
-        <SheetHeader className="mb-4">
+        <SheetHeader className="mb-4 shrink-0">
           <SheetTitle className="text-base text-center flex items-center justify-center gap-2">
             <Clock className="w-4.5 h-4.5" />
             독서 타이머
@@ -225,6 +225,9 @@ export function TimerSheet() {
             시간을 설정하면 음악과 함께 독서가 시작됩니다
           </p>
         </SheetHeader>
+
+        {/* ── 스크롤 가능한 콘텐츠 영역 ── */}
+        <div className="flex-1 overflow-y-auto min-h-0 -mx-5 px-5">
 
         {/* ── 읽을 책 선택 ── */}
         {!isEditingFavorites && recentBooks.length > 0 && (
@@ -531,13 +534,15 @@ export function TimerSheet() {
           </div>
         )}
 
-        {/* ── 독서 시작 버튼 ── */}
+        </div>{/* ── /스크롤 가능한 콘텐츠 영역 ── */}
+
+        {/* ── 독서 시작 버튼 (고정) ── */}
         {!isEditingFavorites && (
           <button
             onClick={handleStart}
             disabled={!canStart}
             className={cn(
-              "w-full py-3.5 rounded-xl text-base font-semibold transition-all flex items-center justify-center gap-2",
+              "w-full py-3.5 rounded-xl text-base font-semibold transition-all flex items-center justify-center gap-2 shrink-0 mt-3",
               canStart
                 ? "bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm"
                 : "bg-muted text-muted-foreground cursor-not-allowed"
