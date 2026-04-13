@@ -13,6 +13,9 @@ import { createFeatureRequest, updateFeatureRequest } from "@/app/actions/featur
 import { FeatureAreaPicker } from "./feature-area-picker";
 import { toast } from "sonner";
 import type { FeatureRequest } from "@/types/feature-request";
+import { useAutoDraft } from "@/hooks/use-auto-draft";
+import { DraftRestoreBanner } from "@/components/ui/draft-restore-banner";
+import { useAuth } from "@/hooks/use-auth";
 
 interface FeatureRequestFormProps {
   mode: "create" | "edit";
@@ -28,16 +31,40 @@ export function FeatureRequestForm({
 }: FeatureRequestFormProps) {
   const router = useRouter();
   const { t } = useTranslation();
+  const { user } = useAuth();
   const [isPending, startTransition] = useTransition();
   const [title, setTitle] = useState(initialData?.title || "");
   const [description, setDescription] = useState(initialData?.description || "");
   const [featureArea, setFeatureArea] = useState<string | null>(initialData?.feature_area || null);
+
+  // 임시저장
+  const draftKey = mode === "edit" && initialData
+    ? `feature-req-edit:${user?.id ?? "anon"}:${initialData.id}`
+    : `feature-req-new:${user?.id ?? "anon"}`;
+  const { hasDraft, savedAt, restoreDraft, discardDraft, clearOnSubmit } = useAutoDraft<{
+    title: string;
+    description: string;
+    featureArea: string | null;
+  }>({
+    key: draftKey,
+    data: { title, description, featureArea },
+    isEmpty: (d) => !d.title.trim() && !d.description.trim(),
+  });
+
+  const handleRestoreDraft = () => {
+    const data = restoreDraft();
+    if (!data) return;
+    setTitle(data.title);
+    setDescription(data.description);
+    setFeatureArea(data.featureArea);
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
     startTransition(async () => {
       try {
+        clearOnSubmit();
         if (mode === "create") {
           const result = await createFeatureRequest({
             title,
@@ -81,6 +108,15 @@ export function FeatureRequestForm({
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* 임시저장 복원 배너 */}
+          {hasDraft && (
+            <DraftRestoreBanner
+              savedAt={savedAt}
+              onRestore={handleRestoreDraft}
+              onDiscard={discardDraft}
+            />
+          )}
+
           <div className="space-y-2">
             <Label htmlFor="title">{t("featureRequests.titleLabel")}</Label>
             <Input

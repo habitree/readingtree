@@ -92,6 +92,14 @@ export const ko = {
     viewButton: "보기",
   },
 
+  autoDraft: {
+    restoreTitle: "이전에 작성 중이던 내용이 있습니다",
+    restoreTime: "{time}",
+    restore: "복원",
+    discard: "삭제",
+    autoSaved: "자동 저장됨",
+  },
+
   nav: {
     home: "홈",
     myLibrary: "내 서재",

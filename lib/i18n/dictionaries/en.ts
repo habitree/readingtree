@@ -94,6 +94,14 @@ export const en: Dictionary = {
     viewButton: "View",
   },
 
+  autoDraft: {
+    restoreTitle: "You have unsaved content from a previous session",
+    restoreTime: "{time}",
+    restore: "Restore",
+    discard: "Discard",
+    autoSaved: "Auto-saved",
+  },
+
   nav: {
     home: "Home",
     myLibrary: "My Library",

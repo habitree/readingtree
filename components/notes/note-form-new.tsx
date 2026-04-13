@@ -29,6 +29,9 @@ import { SourceInput } from "./source-input";
 import { cn } from "@/lib/utils";
 import { useNoteForm } from "@/hooks/use-note-form";
 import { useTranslation } from "@/lib/i18n";
+import { useAutoDraft } from "@/hooks/use-auto-draft";
+import { DraftRestoreBanner } from "@/components/ui/draft-restore-banner";
+import { useAuth } from "@/hooks/use-auth";
 
 // 스키마: 모든 값은 선택이지만 완전히 빈값은 불가
 const noteFormSchema = z.object({
@@ -60,9 +63,21 @@ interface NoteFormNewProps {
  * - 업로드 타입 선택 (사진/필사)
  * - 페이지번호, 태그, 공개여부
  */
+interface NoteNewDraftData {
+  title?: string;
+  quoteContent?: string;
+  memoContent?: string;
+  pageNumbers?: string;
+  tags?: string;
+  isPublic: boolean;
+  sourceType?: string;
+  sourceLabel?: string;
+}
+
 export function NoteFormNew({ bookId }: NoteFormNewProps) {
   const { t } = useTranslation();
   const router = useRouter();
+  const { user } = useAuth();
   const [applyStamp, setApplyStamp] = useState(false);
   const [showOptionalFields, setShowOptionalFields] = useState(false);
   const [sourceType, setSourceType] = useState("");
@@ -109,6 +124,39 @@ export function NoteFormNew({ bookId }: NoteFormNewProps) {
   const isPublic = watch("isPublic");
   const quoteContent = watch("quoteContent") || "";
   const memoContent = watch("memoContent") || "";
+  const watchTitle = watch("title") || "";
+  const watchPageNumbers = watch("pageNumbers") || "";
+  const watchTags = watch("tags") || "";
+
+  // 임시저장
+  const draftKey = `note-new:${user?.id ?? "anon"}${bookId ? `:${bookId}` : ""}`;
+  const { hasDraft, savedAt, restoreDraft, discardDraft, clearOnSubmit } = useAutoDraft<NoteNewDraftData>({
+    key: draftKey,
+    data: {
+      title: watchTitle,
+      quoteContent,
+      memoContent,
+      pageNumbers: watchPageNumbers,
+      tags: watchTags,
+      isPublic,
+      sourceType: sourceType || undefined,
+      sourceLabel: sourceLabel || undefined,
+    },
+    isEmpty: (d) => !d.title?.trim() && !d.quoteContent?.trim() && !d.memoContent?.trim(),
+  });
+
+  const handleRestoreDraft = () => {
+    const data = restoreDraft();
+    if (!data) return;
+    if (data.title) setValue("title", data.title);
+    if (data.quoteContent) setValue("quoteContent", data.quoteContent);
+    if (data.memoContent) setValue("memoContent", data.memoContent);
+    if (data.pageNumbers) setValue("pageNumbers", data.pageNumbers);
+    if (data.tags) setValue("tags", data.tags);
+    if (data.isPublic !== undefined) setValue("isPublic", data.isPublic);
+    if (data.sourceType) setSourceType(data.sourceType);
+    if (data.sourceLabel) setSourceLabel(data.sourceLabel);
+  };
 
   // 이미지 업로드 핸들러 (스탬프 옵션 적용)
   const handleImageUpload = async (files: FileList | null, type: "photo" | "transcription") => {
@@ -122,6 +170,7 @@ export function NoteFormNew({ bookId }: NoteFormNewProps) {
 
   // 폼 제출 핸들러
   const onSubmit = async (data: NoteFormValues) => {
+    clearOnSubmit();
     await submitNote({
       title: data.title,
       quoteContent: data.quoteContent,
@@ -151,6 +200,15 @@ export function NoteFormNew({ bookId }: NoteFormNewProps) {
   return (
     <Form {...form}>
       <form onSubmit={handleFormSubmit} className="space-y-3">
+        {/* 임시저장 복원 배너 */}
+        {hasDraft && (
+          <DraftRestoreBanner
+            savedAt={savedAt}
+            onRestore={handleRestoreDraft}
+            onDiscard={discardDraft}
+          />
+        )}
+
         {/* 책 없이 기록 - 안내 배너 */}
         {!bookId && (
           <div className="flex items-start gap-3 p-3 rounded-lg bg-violet-50/50 dark:bg-violet-950/20 border border-violet-100/60 dark:border-violet-900/30">

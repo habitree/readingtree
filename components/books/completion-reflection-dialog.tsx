@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Dialog,
@@ -24,8 +24,9 @@ import {
   Gift,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-
 import { useTranslation } from "@/lib/i18n";
+import { useAutoDraft } from "@/hooks/use-auto-draft";
+import { useAuth } from "@/hooks/use-auth";
 
 interface CompletionReflectionDialogProps {
   open: boolean;
@@ -49,9 +50,32 @@ export function CompletionReflectionDialog({
   onSkip,
 }: CompletionReflectionDialogProps) {
   const { t } = useTranslation();
+  const { user } = useAuth();
   const [currentStep, setCurrentStep] = useState(0);
   const [reflections, setReflections] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // 임시저장
+  const draftKey = `reflection:${user?.id ?? "anon"}:${bookTitle}`;
+  const { hasDraft, restoreDraft, discardDraft, clearOnSubmit } = useAutoDraft<{ reflections: Record<string, string>; step: number }>({
+    key: draftKey,
+    data: { reflections, step: currentStep },
+    isEmpty: (d) => !Object.values(d.reflections).some((v) => v.trim().length > 0),
+    enabled: open,
+  });
+
+  // 마운트 시 draft 복원
+  const draftRestoredRef = useRef(false);
+  useEffect(() => {
+    if (open && hasDraft && !draftRestoredRef.current) {
+      const data = restoreDraft();
+      if (data) {
+        setReflections(data.reflections);
+        setCurrentStep(data.step);
+      }
+      draftRestoredRef.current = true;
+    }
+  }, [open, hasDraft, restoreDraft]);
 
   /**
    * 성찰 프롬프트 정의
@@ -109,6 +133,7 @@ export function CompletionReflectionDialog({
 
   const handleSubmit = async () => {
     if (!hasAnyReflection) {
+      discardDraft();
       onSkip?.();
       onOpenChange(false);
       return;
@@ -116,6 +141,7 @@ export function CompletionReflectionDialog({
 
     setIsSubmitting(true);
     try {
+      clearOnSubmit();
       await onSubmit(reflections);
 
       // 성찰 완료 축하 효과

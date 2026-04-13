@@ -38,6 +38,9 @@ import { BookMentionTextarea } from "./book-mention-textarea";
 import { RelatedBooksManager } from "./related-books-manager";
 import { RelatedBooksPreview } from "./related-books-preview";
 import { useTranslation } from "@/lib/i18n";
+import { useAutoDraft } from "@/hooks/use-auto-draft";
+import { DraftRestoreBanner } from "@/components/ui/draft-restore-banner";
+import { useAuth } from "@/hooks/use-auth";
 
 // 스키마: 모든 값은 선택이지만 완전히 빈값은 불가
 const noteEditFormSchema = z.object({
@@ -69,9 +72,19 @@ interface NoteEditFormProps {
  * - 업로드 타입 선택 (사진/필사)
  * - 페이지번호, 태그, 공개여부
  */
+interface NoteEditDraftData {
+  title?: string;
+  quoteContent?: string;
+  memoContent?: string;
+  pageNumber?: string;
+  tags?: string;
+  isPublic: boolean;
+}
+
 export function NoteEditForm({ note }: NoteEditFormProps) {
   const { t } = useTranslation();
   const router = useRouter();
+  const { user } = useAuth();
   const [images, setImages] = useState<string[]>(note.image_url ? [note.image_url] : []);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<Record<number, number>>({});
@@ -109,10 +122,39 @@ export function NoteEditForm({ note }: NoteEditFormProps) {
     watch,
   } = form;
 
-
-
   const isPublic = watch("isPublic");
   const uploadType = watch("uploadType");
+  const watchTitle = watch("title") || "";
+  const watchQuote = watch("quoteContent") || "";
+  const watchMemo = watch("memoContent") || "";
+  const watchPage = watch("pageNumber") || "";
+  const watchTags = watch("tags") || "";
+
+  // 임시저장
+  const draftKey = `note-edit:${user?.id ?? "anon"}:${note.id}`;
+  const { hasDraft, savedAt, restoreDraft, discardDraft, clearOnSubmit } = useAutoDraft<NoteEditDraftData>({
+    key: draftKey,
+    data: {
+      title: watchTitle,
+      quoteContent: watchQuote,
+      memoContent: watchMemo,
+      pageNumber: watchPage,
+      tags: watchTags,
+      isPublic,
+    },
+    isEmpty: (d) => !d.title?.trim() && !d.quoteContent?.trim() && !d.memoContent?.trim(),
+  });
+
+  const handleRestoreDraft = () => {
+    const data = restoreDraft();
+    if (!data) return;
+    if (data.title !== undefined) setValue("title", data.title);
+    if (data.quoteContent !== undefined) setValue("quoteContent", data.quoteContent);
+    if (data.memoContent !== undefined) setValue("memoContent", data.memoContent);
+    if (data.pageNumber !== undefined) setValue("pageNumber", data.pageNumber);
+    if (data.tags !== undefined) setValue("tags", data.tags);
+    if (data.isPublic !== undefined) setValue("isPublic", data.isPublic);
+  };
 
   const handleImageUpload = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
@@ -179,6 +221,7 @@ export function NoteEditForm({ note }: NoteEditFormProps) {
 
   const onSubmit = async (data: NoteEditFormValues) => {
     try {
+      clearOnSubmit();
       // 이미지가 있으면 첫 번째 이미지만 사용 (수정 시 단일 이미지)
       const imageUrl = images.length > 0 ? images[0] : null;
 
@@ -213,6 +256,15 @@ export function NoteEditForm({ note }: NoteEditFormProps) {
   return (
     <Form {...form}>
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 sm:space-y-6">
+        {/* 임시저장 복원 배너 */}
+        {hasDraft && (
+          <DraftRestoreBanner
+            savedAt={savedAt}
+            onRestore={handleRestoreDraft}
+            onDiscard={discardDraft}
+          />
+        )}
+
         {/* 제목 입력 */}
         <FormField
           control={form.control}
