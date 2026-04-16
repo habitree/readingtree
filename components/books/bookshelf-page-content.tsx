@@ -50,16 +50,19 @@ export async function BookshelfPageContent({
 
       {/* 필터 및 검색 - 모바일에서 상단 고정 */}
       <div className="sticky top-12 sm:top-14 z-30 -mx-2 sm:-mx-4 px-2 sm:px-4 py-2 bg-background/95 backdrop-blur-sm border-b lg:relative lg:top-0 lg:mx-0 lg:px-0 lg:py-0 lg:bg-transparent lg:backdrop-blur-none lg:border-b-0">
-        <div className="flex items-center gap-2">
-          {/* 검색 입력 */}
-          <div className="flex-1 min-w-0">
-            <BookSearchInput />
-          </div>
-          {/* 필터 및 뷰 토글 */}
-          <div className="flex items-center gap-1 shrink-0">
-            <SortSelect />
-            <StatusFilter currentStatus={status} />
-            {!isGuest && <ViewModeToggle />}
+        <div className="space-y-2 sm:space-y-0">
+          {/* 모바일: 검색 전체 너비 + 필터 아래 행 / 데스크톱: 한 줄 */}
+          <div className="sm:flex sm:items-center sm:gap-2">
+            {/* 검색 입력 */}
+            <div className="sm:flex-1 sm:min-w-0">
+              <BookSearchInput />
+            </div>
+            {/* 필터 및 뷰 토글 */}
+            <div className="flex items-center gap-1 mt-2 sm:mt-0 shrink-0">
+              <SortSelect />
+              <StatusFilter currentStatus={status} />
+              {!isGuest && <ViewModeToggle />}
+            </div>
           </div>
         </div>
       </div>
