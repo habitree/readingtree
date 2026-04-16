@@ -3,8 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence, useSpring, useTransform, useMotionValue } from "framer-motion";
-import { ArrowLeft, Link2, BookOpen, Users, TrendingUp, Sparkles, Network } from "lucide-react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ArrowLeft, Link2, BookOpen, Users, TrendingUp, Sparkles, Network, Activity } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -31,7 +30,7 @@ import type {
 import type { LucideIcon } from "lucide-react";
 
 // ============================================================
-// 카운트업 애니메이션 컴포넌트
+// 카운트업 애니메이션
 // ============================================================
 
 function AnimatedNumber({ value, decimals = 0 }: { value: number; decimals?: number }) {
@@ -57,92 +56,124 @@ function AnimatedNumber({ value, decimals = 0 }: { value: number; decimals?: num
 }
 
 // ============================================================
-// 프리미엄 통계 카드
+// 벤토 스탯 카드
 // ============================================================
 
-interface PremiumStatCardProps {
+interface BentoStatCardProps {
   title: string;
   value: number;
   decimals?: number;
-  description?: string;
+  suffix?: string;
   icon: LucideIcon;
-  accentColor: string;     // e.g. "#6366f1"
-  accentColorTw: string;   // e.g. "indigo"
+  gradient: string;
+  iconBg: string;
   index: number;
   isLoading?: boolean;
 }
 
-function PremiumStatCard({
+function BentoStatCard({
   title,
   value,
   decimals = 0,
-  description,
+  suffix,
   icon: Icon,
-  accentColor,
-  accentColorTw,
+  gradient,
+  iconBg,
   index,
   isLoading,
-}: PremiumStatCardProps) {
+}: BentoStatCardProps) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ type: "spring", damping: 25, stiffness: 300, delay: index * 0.08 }}
-      whileHover={{ y: -2, transition: { duration: 0.2 } }}
+      initial={{ opacity: 0, y: 20, scale: 0.95 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ type: "spring", damping: 20, stiffness: 200, delay: index * 0.07 }}
+      whileHover={{ y: -3, scale: 1.01, transition: { duration: 0.25, ease: "easeOut" } }}
       className="group relative"
     >
-      <div className="relative overflow-hidden rounded-xl border-0 shadow-lg ring-1 ring-black/[0.04] dark:ring-white/[0.04] bg-white dark:bg-[#0e0c1d] transition-shadow duration-300 group-hover:shadow-xl">
-        {/* 상단 그라디언트 보더 */}
-        <div
-          className="h-[2px]"
-          style={{
-            background: `linear-gradient(90deg, ${accentColor}, ${accentColor}88, transparent)`,
-          }}
-        />
+      <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-[#111019] border border-black/[0.06] dark:border-white/[0.06] shadow-sm hover:shadow-xl transition-all duration-500">
+        {/* 메쉬 그라디언트 배경 */}
+        <div className={`absolute inset-0 opacity-[0.04] dark:opacity-[0.06] ${gradient}`} />
+        <div className="absolute -right-6 -top-6 w-24 h-24 rounded-full opacity-[0.06] dark:opacity-[0.08] blur-2xl group-hover:opacity-[0.1] transition-opacity duration-500" style={{ background: `conic-gradient(from 180deg, var(--tw-gradient-stops))` }} />
 
-        <div className="p-4 sm:p-5">
-          <div className="flex items-start justify-between">
-            <div className="space-y-2.5">
-              <p className="text-[13px] font-medium text-muted-foreground/80 tracking-wide uppercase">
-                {title}
-              </p>
-
-              {/* 숫자 */}
-              <div className="relative">
-                {isLoading ? (
-                  <div className="h-9 w-20 rounded-md bg-muted animate-pulse" />
-                ) : (
-                  <p className="text-3xl sm:text-[32px] font-bold tracking-tight tabular-nums text-foreground">
-                    <AnimatedNumber value={value} decimals={decimals} />
-                  </p>
-                )}
-              </div>
-
-              {description && (
-                <p className="text-[11px] text-muted-foreground/60">{description}</p>
-              )}
+        <div className="relative p-5">
+          <div className="flex items-start justify-between mb-4">
+            <div className={`p-2.5 rounded-xl ${iconBg} transition-transform duration-300 group-hover:scale-110`}>
+              <Icon className="h-4 w-4" />
             </div>
-
-            {/* 아이콘 + 글로우 */}
-            <div className="relative">
-              <div
-                className="absolute inset-0 rounded-xl blur-xl opacity-20 group-hover:opacity-30 transition-opacity"
-                style={{ background: accentColor }}
-              />
-              <div
-                className={`relative p-2.5 rounded-xl bg-${accentColorTw}-50 dark:bg-${accentColorTw}-950/40 text-${accentColorTw}-600 dark:text-${accentColorTw}-400`}
-                style={{
-                  backgroundColor: `${accentColor}0D`,
-                  color: accentColor,
-                }}
-              >
-                <Icon className="h-5 w-5" />
-              </div>
+            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+              <Activity className="h-3 w-3 text-muted-foreground/40" />
             </div>
           </div>
+
+          {isLoading ? (
+            <div className="space-y-2">
+              <div className="h-8 w-20 rounded-lg bg-muted/60 animate-pulse" />
+              <div className="h-3 w-16 rounded bg-muted/40 animate-pulse" />
+            </div>
+          ) : (
+            <>
+              <p className="text-[28px] font-semibold tracking-tight tabular-nums text-foreground leading-none mb-1">
+                <AnimatedNumber value={value} decimals={decimals} />
+                {suffix && <span className="text-sm font-normal text-muted-foreground/50 ml-1">{suffix}</span>}
+              </p>
+              <p className="text-[13px] text-muted-foreground/60 font-medium">
+                {title}
+              </p>
+            </>
+          )}
         </div>
       </div>
     </motion.div>
+  );
+}
+
+// ============================================================
+// 세그먼트 컨트롤 탭
+// ============================================================
+
+const TABS = [
+  { key: "graph", label: "네트워크 그래프", icon: Sparkles },
+  { key: "table", label: "연결 목록", icon: Link2 },
+  { key: "stats", label: "통계", icon: TrendingUp },
+] as const;
+
+function SegmentedControl({
+  activeTab,
+  onChange,
+}: {
+  activeTab: string;
+  onChange: (tab: string) => void;
+}) {
+  return (
+    <div className="inline-flex items-center gap-1 p-1 rounded-xl bg-muted/50 dark:bg-white/[0.04] border border-black/[0.04] dark:border-white/[0.04]">
+      {TABS.map((tab) => {
+        const isActive = activeTab === tab.key;
+        const Icon = tab.icon;
+        return (
+          <button
+            key={tab.key}
+            onClick={() => onChange(tab.key)}
+            className={`relative flex items-center gap-1.5 px-4 py-2 rounded-lg text-[13px] font-medium transition-all duration-300 ${
+              isActive
+                ? "text-foreground"
+                : "text-muted-foreground/60 hover:text-muted-foreground"
+            }`}
+          >
+            {isActive && (
+              <motion.div
+                layoutId="activeSegment"
+                className="absolute inset-0 bg-white dark:bg-[#1a1730] rounded-lg shadow-sm border border-black/[0.04] dark:border-white/[0.06]"
+                transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              />
+            )}
+            <span className="relative flex items-center gap-1.5">
+              <Icon className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">{tab.label}</span>
+            </span>
+          </button>
+        );
+      })}
+    </div>
   );
 }
 
@@ -190,29 +221,62 @@ export function BookRelationsDashboard({
       setRelations(newRelations);
       setTopBooks(newTopBooks);
     } catch (error) {
-      console.error("필터링 오류:", error);
+      void error;
     } finally {
       setIsFiltering(false);
     }
   };
 
-  const statCards = [
-    { title: "총 연결", value: stats.totalRelations, icon: Link2, color: "#6366f1", tw: "indigo" },
-    { title: "참여 책", value: stats.uniqueBooks, icon: BookOpen, color: "#3b82f6", tw: "blue" },
-    { title: "참여 사용자", value: stats.usersWithRelations, icon: Users, color: "#10b981", tw: "emerald" },
-    { title: "평균 연결", value: stats.avgConnectionsPerBook, icon: TrendingUp, color: "#f59e0b", tw: "amber", decimals: 1, description: "책당 평균" },
+  const statCards: BentoStatCardProps[] = [
+    {
+      title: "총 연결",
+      value: stats.totalRelations,
+      icon: Link2,
+      gradient: "bg-gradient-to-br from-indigo-500/20 via-purple-500/10 to-transparent",
+      iconBg: "bg-indigo-100 dark:bg-indigo-500/15 text-indigo-600 dark:text-indigo-400",
+      index: 0,
+    },
+    {
+      title: "참여 책",
+      value: stats.uniqueBooks,
+      icon: BookOpen,
+      gradient: "bg-gradient-to-br from-blue-500/20 via-cyan-500/10 to-transparent",
+      iconBg: "bg-blue-100 dark:bg-blue-500/15 text-blue-600 dark:text-blue-400",
+      index: 1,
+    },
+    {
+      title: "참여 사용자",
+      value: stats.usersWithRelations,
+      icon: Users,
+      gradient: "bg-gradient-to-br from-emerald-500/20 via-teal-500/10 to-transparent",
+      iconBg: "bg-emerald-100 dark:bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
+      index: 2,
+    },
+    {
+      title: "평균 연결/책",
+      value: stats.avgConnectionsPerBook,
+      decimals: 1,
+      icon: TrendingUp,
+      gradient: "bg-gradient-to-br from-amber-500/20 via-orange-500/10 to-transparent",
+      iconBg: "bg-amber-100 dark:bg-amber-500/15 text-amber-600 dark:text-amber-400",
+      index: 3,
+    },
   ];
 
   return (
     <div className="relative space-y-8 pb-12">
-      {/* 배경 패턴 */}
-      <div className="fixed inset-0 -z-10 opacity-[0.015] dark:opacity-[0.025]" style={{
-        backgroundImage: "radial-gradient(circle, currentColor 0.5px, transparent 0.5px)",
-        backgroundSize: "24px 24px",
+      {/* 배경: 미세 노이즈 + 도트 */}
+      <div className="fixed inset-0 -z-10 opacity-[0.02] dark:opacity-[0.03]" style={{
+        backgroundImage: `
+          radial-gradient(circle at 25% 25%, rgba(99,102,241,0.15) 0%, transparent 50%),
+          radial-gradient(circle at 75% 75%, rgba(139,92,246,0.1) 0%, transparent 50%),
+          radial-gradient(circle, currentColor 0.5px, transparent 0.5px)
+        `,
+        backgroundSize: "100% 100%, 100% 100%, 24px 24px",
       }} />
 
-      {/* ===== 헤더 ===== */}
-      <div className="space-y-5">
+      {/* ===== 히어로 헤더 ===== */}
+      <div className="space-y-6">
         <motion.div
           initial={{ opacity: 0, x: -8 }}
           animate={{ opacity: 1, x: 0 }}
@@ -220,7 +284,7 @@ export function BookRelationsDashboard({
         >
           <Link
             href="/admin"
-            className="inline-flex items-center gap-2 text-sm text-muted-foreground/70 hover:text-foreground transition-colors group"
+            className="inline-flex items-center gap-2 text-[13px] text-muted-foreground/60 hover:text-foreground transition-colors group"
           >
             <ArrowLeft className="h-3.5 w-3.5 transition-transform group-hover:-translate-x-0.5" />
             관리자 대시보드
@@ -229,22 +293,25 @@ export function BookRelationsDashboard({
 
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-5">
           <motion.div
-            initial={{ opacity: 0, y: 12 }}
+            initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ type: "spring", damping: 25, stiffness: 200, delay: 0.1 }}
+            className="space-y-2"
           >
-            <div className="flex items-center gap-3 mb-1.5">
-              <div className="relative">
-                <Network className="h-6 w-6 text-indigo-500" />
-                <div className="absolute inset-0 bg-indigo-500/25 blur-lg" />
+            <div className="flex items-center gap-3">
+              <div className="relative p-2 rounded-xl bg-indigo-100 dark:bg-indigo-500/15">
+                <Network className="h-5 w-5 text-indigo-600 dark:text-indigo-400 relative z-10" />
+                <div className="absolute inset-0 bg-indigo-500/20 blur-xl rounded-xl" />
               </div>
-              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
-                책 연결 관계
-              </h1>
+              <div>
+                <h1 className="text-2xl sm:text-[28px] font-semibold tracking-tight text-foreground">
+                  책 연결 관계
+                </h1>
+                <p className="text-[13px] text-muted-foreground/50 mt-0.5">
+                  사용자들의 책 연결 네트워크를 시각화하고 분석합니다
+                </p>
+              </div>
             </div>
-            <p className="text-sm text-muted-foreground/70 ml-9">
-              사용자들의 책 연결 관계를 시각화하고 관리합니다
-            </p>
           </motion.div>
 
           {/* 사용자 필터 */}
@@ -252,15 +319,15 @@ export function BookRelationsDashboard({
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="w-full sm:w-64"
+            className="w-full sm:w-60"
           >
             <Select
               value={selectedUserId || "all"}
               onValueChange={handleUserFilter}
             >
-              <SelectTrigger className="h-10 bg-white dark:bg-[#0e0c1d] border-border/50 shadow-sm">
+              <SelectTrigger className="h-10 bg-white dark:bg-[#111019] border-black/[0.08] dark:border-white/[0.08] shadow-sm rounded-xl text-[13px]">
                 <div className="flex items-center gap-2">
-                  <Users className="h-3.5 w-3.5 text-muted-foreground/50" />
+                  <Users className="h-3.5 w-3.5 text-muted-foreground/40" />
                   <SelectValue placeholder="사용자 필터" />
                 </div>
               </SelectTrigger>
@@ -277,82 +344,52 @@ export function BookRelationsDashboard({
         </div>
       </div>
 
-      {/* ===== 통계 카드 ===== */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
-        {statCards.map((card, i) => (
-          <PremiumStatCard
+      {/* ===== 벤토 통계 카드 ===== */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        {statCards.map((card) => (
+          <BentoStatCard
             key={card.title}
-            title={card.title}
-            value={card.value}
-            decimals={card.decimals}
-            description={card.description}
-            icon={card.icon}
-            accentColor={card.color}
-            accentColorTw={card.tw}
-            index={i}
+            {...card}
             isLoading={isFiltering}
           />
         ))}
       </div>
 
-      {/* ===== 탭 영역 ===== */}
+      {/* ===== 세그먼트 컨트롤 + 콘텐츠 ===== */}
       <motion.div
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.4 }}
+        transition={{ delay: 0.35 }}
+        className="space-y-5"
       >
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-5">
-          <TabsList className="inline-flex h-10 bg-muted/50 dark:bg-[#0e0c1d] p-1 rounded-lg border border-border/30 shadow-sm">
-            <TabsTrigger
-              value="graph"
-              className="rounded-md px-4 text-[13px] data-[state=active]:bg-white dark:data-[state=active]:bg-[#1a1730] data-[state=active]:shadow-sm transition-all"
-            >
-              <Sparkles className="h-3.5 w-3.5 mr-1.5 opacity-60" />
-              네트워크 그래프
-            </TabsTrigger>
-            <TabsTrigger
-              value="table"
-              className="rounded-md px-4 text-[13px] data-[state=active]:bg-white dark:data-[state=active]:bg-[#1a1730] data-[state=active]:shadow-sm transition-all"
-            >
-              연결 목록
-            </TabsTrigger>
-            <TabsTrigger
-              value="stats"
-              className="rounded-md px-4 text-[13px] data-[state=active]:bg-white dark:data-[state=active]:bg-[#1a1730] data-[state=active]:shadow-sm transition-all"
-            >
-              통계
-            </TabsTrigger>
-          </TabsList>
+        <SegmentedControl activeTab={activeTab} onChange={setActiveTab} />
 
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={activeTab}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -4 }}
-              transition={{ duration: 0.2, ease: "easeOut" }}
-            >
-              <TabsContent value="graph" className="mt-0">
-                <BookRelationsGraph data={graph} isLoading={isFiltering} />
-              </TabsContent>
-
-              <TabsContent value="table" className="mt-0">
-                <BookRelationsTable
-                  initialData={relations}
-                  selectedUserId={selectedUserId}
-                />
-              </TabsContent>
-
-              <TabsContent value="stats" className="mt-0">
-                <BookRelationsStatsDetail
-                  topBooks={topBooks}
-                  graph={graph}
-                  stats={stats}
-                />
-              </TabsContent>
-            </motion.div>
-          </AnimatePresence>
-        </Tabs>
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeTab}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            transition={{ duration: 0.25, ease: "easeOut" }}
+          >
+            {activeTab === "graph" && (
+              <BookRelationsGraph data={graph} isLoading={isFiltering} />
+            )}
+            {activeTab === "table" && (
+              <BookRelationsTable
+                initialData={relations}
+                selectedUserId={selectedUserId}
+              />
+            )}
+            {activeTab === "stats" && (
+              <BookRelationsStatsDetail
+                topBooks={topBooks}
+                graph={graph}
+                stats={stats}
+              />
+            )}
+          </motion.div>
+        </AnimatePresence>
       </motion.div>
     </div>
   );
