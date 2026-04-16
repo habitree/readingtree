@@ -4,7 +4,7 @@ import { useState, useMemo, useRef, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, ZoomIn, ZoomOut, Maximize2, BookOpen, Sparkles, Map as MapIcon, Grip } from "lucide-react";
+import { Loader2, ZoomIn, ZoomOut, Maximize2, BookOpen, Sparkles, Map as MapIcon, Grip, Focus, Move } from "lucide-react";
 import type { BookRelationsGraphData, GraphNode } from "@/app/actions/admin/book-relations";
 
 interface BookRelationsGraphProps {
@@ -100,8 +100,11 @@ export function BookRelationsGraph({ data, isLoading }: BookRelationsGraphProps)
   const [showMinimap, setShowMinimap] = useState(true);
   const [draggingNodeId, setDraggingNodeId] = useState<string | null>(null);
   const [simRunning, setSimRunning] = useState(true);
+  const [dragStartPos, setDragStartPos] = useState<{ x: number; y: number } | null>(null);
+  const [hasDragged, setHasDragged] = useState(false);
 
   const tickRef = useRef(0);
+  const DRAG_THRESHOLD = 5; // px — 이 거리 이상 움직여야 드래그로 인식
 
   // 컨테이너 크기 감지
   useEffect(() => {
@@ -252,10 +255,43 @@ export function BookRelationsGraph({ data, isLoading }: BookRelationsGraphProps)
   const maxConn = Math.max(...(data.nodes.map((n) => n.connectionCount) || [1]), 1);
   const getNodeRadius = (count: number) => 18 + (count / maxConn) * 22;
 
-  // 이벤트 핸들러
+  // ============================================================
+  // 이벤트 핸들러 (터치 + 마우스 통합)
+  // ============================================================
+
   const handleZoomIn = () => setScale((s) => Math.min(s * 1.3, 3));
   const handleZoomOut = () => setScale((s) => Math.max(s / 1.3, 0.3));
   const handleReset = () => { setScale(1); setTranslate({ x: 0, y: 0 }); setSelectedNode(null); };
+
+  // 전체 보기: 모든 노드를 화면에 맞추기
+  const handleFitView = useCallback(() => {
+    const ns = nodesRef.current;
+    if (ns.length === 0) return;
+    const pad = 80;
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (const n of ns) {
+      const r = getNodeRadius(n.connectionCount);
+      minX = Math.min(minX, n.x - r);
+      minY = Math.min(minY, n.y - r);
+      maxX = Math.max(maxX, n.x + r);
+      maxY = Math.max(maxY, n.y + r);
+    }
+    const contentW = maxX - minX + pad * 2;
+    const contentH = maxY - minY + pad * 2;
+    const newScale = Math.min(
+      dimensions.width / contentW,
+      dimensions.height / contentH,
+      2
+    );
+    const cx = (minX + maxX) / 2;
+    const cy = (minY + maxY) / 2;
+    setScale(newScale);
+    setTranslate({
+      x: dimensions.width / 2 - cx * newScale,
+      y: dimensions.height / 2 - cy * newScale,
+    });
+    setSelectedNode(null);
+  }, [dimensions]);
 
   const screenToSvg = useCallback((clientX: number, clientY: number) => {
     const svg = svgRef.current;
@@ -269,6 +305,7 @@ export function BookRelationsGraph({ data, isLoading }: BookRelationsGraphProps)
     };
   }, [scale, translate, dimensions]);
 
+  // --- 마우스 핸들러 ---
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     if (e.target === svgRef.current || (e.target as SVGElement).tagName === "rect") {
       setIsPanning(true);
@@ -278,6 +315,13 @@ export function BookRelationsGraph({ data, isLoading }: BookRelationsGraphProps)
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
     if (draggingNodeId) {
+      // 드래그 임계값 체크
+      if (dragStartPos && !hasDragged) {
+        const dx = e.clientX - dragStartPos.x;
+        const dy = e.clientY - dragStartPos.y;
+        if (Math.sqrt(dx * dx + dy * dy) < DRAG_THRESHOLD) return;
+        setHasDragged(true);
+      }
       const svgPos = screenToSvg(e.clientX, e.clientY);
       const node = nodesRef.current.find((n) => n.id === draggingNodeId);
       if (node) {
@@ -291,7 +335,7 @@ export function BookRelationsGraph({ data, isLoading }: BookRelationsGraphProps)
     if (isPanning) {
       setTranslate({ x: e.clientX - panStart.x, y: e.clientY - panStart.y });
     }
-  }, [draggingNodeId, isPanning, panStart, screenToSvg]);
+  }, [draggingNodeId, isPanning, panStart, screenToSvg, dragStartPos, hasDragged]);
 
   const handleMouseUp = useCallback(() => {
     if (draggingNodeId) {
@@ -303,15 +347,23 @@ export function BookRelationsGraph({ data, isLoading }: BookRelationsGraphProps)
         node.vy = 0;
       }
       setDraggingNodeId(null);
+      setDragStartPos(null);
+      // 드래그하지 않았으면 클릭 처리 (선택)
+      if (!hasDragged) {
+        setSelectedNode((prev) => prev === draggingNodeId ? null : draggingNodeId);
+      }
+      setHasDragged(false);
       tickRef.current = Math.max(0, tickRef.current - 80);
       setSimRunning(true);
     }
     setIsPanning(false);
-  }, [draggingNodeId]);
+  }, [draggingNodeId, hasDragged]);
 
   const handleNodeMouseDown = useCallback((e: React.MouseEvent, nodeId: string) => {
     e.stopPropagation();
     e.preventDefault();
+    setDragStartPos({ x: e.clientX, y: e.clientY });
+    setHasDragged(false);
     const svgPos = screenToSvg(e.clientX, e.clientY);
     const node = nodesRef.current.find((n) => n.id === nodeId);
     if (node) {
@@ -322,10 +374,92 @@ export function BookRelationsGraph({ data, isLoading }: BookRelationsGraphProps)
     setSimRunning(true);
   }, [screenToSvg]);
 
+  // 커서 위치 기준 줌
   const handleWheel = useCallback((e: React.WheelEvent) => {
     e.preventDefault();
-    setScale((s) => Math.max(0.3, Math.min(3, s * (e.deltaY > 0 ? 0.9 : 1.1))));
+    const svg = svgRef.current;
+    if (!svg) return;
+    const rect = svg.getBoundingClientRect();
+    const mouseX = (e.clientX - rect.left) * (dimensions.width / rect.width);
+    const mouseY = (e.clientY - rect.top) * (dimensions.height / rect.height);
+    const factor = e.deltaY > 0 ? 0.9 : 1.1;
+    const newScale = Math.max(0.3, Math.min(3, scale * factor));
+    // 마우스 커서 위치를 기준으로 줌
+    setTranslate((prev) => ({
+      x: mouseX - (mouseX - prev.x) * (newScale / scale),
+      y: mouseY - (mouseY - prev.y) * (newScale / scale),
+    }));
+    setScale(newScale);
+  }, [scale, dimensions]);
+
+  // --- 터치 핸들러 (모바일 지원) ---
+  const lastTouchRef = useRef<{ x: number; y: number; dist?: number } | null>(null);
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    if (e.touches.length === 1) {
+      const t = e.touches[0];
+      lastTouchRef.current = { x: t.clientX, y: t.clientY };
+      // 노드 위에서 시작했는지는 SVG onMouseDown에서 처리
+      setIsPanning(true);
+      setPanStart({ x: t.clientX - translate.x, y: t.clientY - translate.y });
+    } else if (e.touches.length === 2) {
+      // 핀치줌 시작
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      lastTouchRef.current = {
+        x: (e.touches[0].clientX + e.touches[1].clientX) / 2,
+        y: (e.touches[0].clientY + e.touches[1].clientY) / 2,
+        dist: Math.sqrt(dx * dx + dy * dy),
+      };
+      setIsPanning(false);
+    }
+  }, [translate]);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    e.preventDefault();
+    if (e.touches.length === 1 && isPanning && !draggingNodeId) {
+      const t = e.touches[0];
+      setTranslate({ x: t.clientX - panStart.x, y: t.clientY - panStart.y });
+    } else if (e.touches.length === 2 && lastTouchRef.current?.dist) {
+      // 핀치줌
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      const newDist = Math.sqrt(dx * dx + dy * dy);
+      const factor = newDist / lastTouchRef.current.dist;
+      const newScale = Math.max(0.3, Math.min(3, scale * factor));
+      const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+      const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+      const svg = svgRef.current;
+      if (svg) {
+        const rect = svg.getBoundingClientRect();
+        const svgMidX = (midX - rect.left) * (dimensions.width / rect.width);
+        const svgMidY = (midY - rect.top) * (dimensions.height / rect.height);
+        setTranslate((prev) => ({
+          x: svgMidX - (svgMidX - prev.x) * (newScale / scale),
+          y: svgMidY - (svgMidY - prev.y) * (newScale / scale),
+        }));
+      }
+      setScale(newScale);
+      lastTouchRef.current = { x: midX, y: midY, dist: newDist };
+    }
+  }, [isPanning, panStart, scale, dimensions, draggingNodeId]);
+
+  const handleTouchEnd = useCallback(() => {
+    setIsPanning(false);
+    lastTouchRef.current = null;
   }, []);
+
+  // --- 미니맵 클릭 이동 ---
+  const handleMinimapClick = useCallback((e: React.MouseEvent<SVGSVGElement>) => {
+    const svg = e.currentTarget;
+    const rect = svg.getBoundingClientRect();
+    const clickX = (e.clientX - rect.left) / rect.width * dimensions.width;
+    const clickY = (e.clientY - rect.top) / rect.height * dimensions.height;
+    setTranslate({
+      x: dimensions.width / 2 - clickX * scale,
+      y: dimensions.height / 2 - clickY * scale,
+    });
+  }, [dimensions, scale]);
 
   // 로딩 상태
   if (isLoading) {
@@ -398,7 +532,10 @@ export function BookRelationsGraph({ data, isLoading }: BookRelationsGraphProps)
             <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg text-muted-foreground/60 hover:text-foreground hover:bg-muted/50" onClick={handleZoomOut}>
               <ZoomOut className="h-3.5 w-3.5" />
             </Button>
-            <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg text-muted-foreground/60 hover:text-foreground hover:bg-muted/50" onClick={handleReset}>
+            <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg text-muted-foreground/60 hover:text-foreground hover:bg-muted/50" onClick={handleFitView} title="전체 보기">
+              <Focus className="h-3.5 w-3.5" />
+            </Button>
+            <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg text-muted-foreground/60 hover:text-foreground hover:bg-muted/50" onClick={handleReset} title="초기화">
               <Maximize2 className="h-3.5 w-3.5" />
             </Button>
           </div>
@@ -437,6 +574,9 @@ export function BookRelationsGraph({ data, isLoading }: BookRelationsGraphProps)
           onMouseUp={handleMouseUp}
           onMouseLeave={handleMouseUp}
           onWheel={handleWheel}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
         >
           <defs>
             <filter id="glow-node" x="-60%" y="-60%" width="220%" height="220%">
@@ -540,12 +680,6 @@ export function BookRelationsGraph({ data, isLoading }: BookRelationsGraphProps)
                   onMouseEnter={() => { if (!draggingNodeId) setHoveredNode(node.id); }}
                   onMouseLeave={() => setHoveredNode(null)}
                   onMouseDown={(e) => handleNodeMouseDown(e, node.id)}
-                  onClick={(e) => {
-                    if (!isDragging) {
-                      e.stopPropagation();
-                      setSelectedNode(selectedNode === node.id ? null : node.id);
-                    }
-                  }}
                 >
                   {/* 드래그 글로우 */}
                   {isDragging && (
@@ -675,7 +809,7 @@ export function BookRelationsGraph({ data, isLoading }: BookRelationsGraphProps)
               transition={{ type: "spring", damping: 20, stiffness: 300 }}
               className="absolute bottom-3 right-3 rounded-xl overflow-hidden border border-black/[0.06] dark:border-white/[0.06] shadow-lg backdrop-blur-xl bg-white/70 dark:bg-[#18152e]/70 p-1.5"
             >
-              <svg width={minimapW + 8} height={minimapH + 8} viewBox={`-4 -4 ${dimensions.width + 8} ${dimensions.height + 8}`}>
+              <svg width={minimapW + 8} height={minimapH + 8} viewBox={`-4 -4 ${dimensions.width + 8} ${dimensions.height + 8}`} className="cursor-pointer" onClick={handleMinimapClick}>
                 {data.edges.map((edge, i) => {
                   const s = nodeMap.get(edge.source), t = nodeMap.get(edge.target);
                   if (!s || !t) return null;
@@ -694,15 +828,15 @@ export function BookRelationsGraph({ data, isLoading }: BookRelationsGraphProps)
           )}
         </AnimatePresence>
 
-        {/* 범례 (새 디자인) */}
+        {/* 범례 */}
         <div className="absolute bottom-3 left-3 flex items-center gap-2 text-[10px] text-muted-foreground/50">
           <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white/70 dark:bg-[#18152e]/70 backdrop-blur-lg border border-black/[0.04] dark:border-white/[0.04]">
-            <Grip className="h-3 w-3" />
-            <span>드래그</span>
+            <Move className="h-3 w-3" />
+            <span>노드 드래그 이동</span>
             <span className="opacity-30">|</span>
-            <span>스크롤 확대</span>
+            <span>배경 드래그 패닝</span>
             <span className="opacity-30">|</span>
-            <span>클릭 탐색</span>
+            <span>스크롤/핀치 확대</span>
           </div>
         </div>
       </div>
