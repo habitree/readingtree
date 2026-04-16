@@ -320,7 +320,7 @@ export function ReadingProgress({
           <BookOpen className="h-4 w-4" />
           {t("books.readingProgress")}
           {completedDates && completedDates.length > 0 && (
-            <span className="ml-1 text-[11px] font-semibold bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400 px-1.5 py-0.5 rounded-full">
+            <span className="ml-1 text-xs font-semibold bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400 px-1.5 py-0.5 rounded-full">
               {completedDates.length + 1}회독
             </span>
           )}

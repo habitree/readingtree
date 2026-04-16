@@ -96,7 +96,7 @@ function BookCardComponent({ book, userBookId, status, groupBooks, relatedBooks,
               ) : (
                 <div className="absolute inset-0 flex flex-col items-center justify-center bg-muted/50" aria-label={t("books.noImage")}>
                   <BookOpen className="w-5 h-5 sm:w-8 sm:h-8 text-muted-foreground mb-0.5 sm:mb-1" aria-hidden="true" />
-                  <span className="text-[9px] sm:text-xs text-muted-foreground">{t("books.noImage")}</span>
+                  <span className="text-xs text-muted-foreground">{t("books.noImage")}</span>
                 </div>
               )}
               {/* 모바일: 연결된 책 미니 배지 (좌하단, 심플) */}
@@ -105,22 +105,22 @@ function BookCardComponent({ book, userBookId, status, groupBooks, relatedBooks,
                   className="absolute bottom-2 left-2 lg:hidden"
                   title={t("books.relatedBooksCount", { count: relatedBooks.length })}
                 >
-                  <div className="flex items-center gap-0.5 bg-black/60 backdrop-blur-sm text-white px-1.5 py-0.5 rounded-full text-[10px] font-medium">
+                  <div className="flex items-center gap-0.5 bg-black/60 backdrop-blur-sm text-white px-1.5 py-0.5 rounded-full text-[11px] font-medium">
                     <Link2 className="w-2.5 h-2.5" />
                     <span>{relatedBooks.length}</span>
                   </div>
                 </div>
               )}
             </div>
-            <div className="p-1.5 sm:p-2 space-y-0.5 sm:space-y-1">
+            <div className="p-2 sm:p-2.5 space-y-0.5 sm:space-y-1">
               <div className="flex items-start justify-between gap-0.5 sm:gap-1">
-                <h3 className="font-semibold text-[10px] sm:text-xs line-clamp-2 flex-1 leading-tight">
+                <h3 className="font-semibold text-xs sm:text-sm line-clamp-2 flex-1 leading-tight">
                   <BookTitle title={book.title} />
                 </h3>
-                <BookStatusBadge status={status} className="shrink-0 scale-[0.6] sm:scale-75" />
+                <BookStatusBadge status={status} className="shrink-0 scale-75 sm:scale-[0.85]" />
               </div>
               {book.author && (
-                <p className="text-[9px] sm:text-[10px] text-muted-foreground line-clamp-1">
+                <p className="text-[11px] sm:text-xs text-muted-foreground line-clamp-1">
                   {formatAuthor(book.author)}
                 </p>
               )}

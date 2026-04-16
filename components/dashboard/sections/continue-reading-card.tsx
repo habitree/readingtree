@@ -201,7 +201,7 @@ export const ContinueReadingCard = memo(function ContinueReadingCard({
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-1">
                     <div className="min-w-0">
-                      <p className="text-[9px] font-medium text-forest-600 dark:text-forest-400 mb-0.5">
+                      <p className="text-[11px] font-medium text-forest-600 dark:text-forest-400 mb-0.5">
                         {t("dashboard.continueLabel")}
                       </p>
                       <h3 className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-white line-clamp-2 group-hover:text-forest-700 dark:group-hover:text-forest-300 transition-colors leading-tight">
@@ -222,7 +222,7 @@ export const ContinueReadingCard = memo(function ContinueReadingCard({
                     </p>
                   )}
                   {lastRecordedAt && (
-                    <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5" suppressHydrationWarning>
+                    <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5" suppressHydrationWarning>
                       {formatSmartDate(lastRecordedAt)}에 읽음
                     </p>
                   )}
@@ -246,11 +246,11 @@ export const ContinueReadingCard = memo(function ContinueReadingCard({
                       onChange={(e) => setPageInput(e.target.value)}
                       onBlur={() => handleSavePage()}
                       placeholder={t("dashboard.updatePagePlaceholder")}
-                      className="h-6 text-[10px] px-1.5 w-full"
+                      className="h-6 text-[11px] px-1.5 w-full"
                       disabled={isSaving}
                     />
                     {totalPages && (
-                      <span className="text-[9px] text-slate-400 shrink-0">/{totalPages}</span>
+                      <span className="text-[11px] text-slate-400 shrink-0">/{totalPages}</span>
                     )}
                   </form>
                 ) : (
@@ -260,7 +260,7 @@ export const ContinueReadingCard = memo(function ContinueReadingCard({
                     aria-label={t("dashboard.updatePagePlaceholder")}
                   >
                     <div className="flex items-center justify-between mb-0.5">
-                      <span className="text-[9px] text-slate-400 group-hover/progress:text-forest-500 transition-colors">
+                      <span className="text-[11px] text-slate-400 group-hover/progress:text-forest-500 transition-colors">
                         {localPage}{totalPages ? `/${totalPages}` : ""}p
                       </span>
                     </div>
@@ -343,7 +343,7 @@ export const ContinueReadingCard = memo(function ContinueReadingCard({
               {/* 진행률 바 */}
               <div className="mt-2">
                 <div className="flex items-center justify-between mb-0.5">
-                  <span className="text-[10px] text-slate-400">
+                  <span className="text-[11px] text-slate-400">
                     {localPage}{totalPages ? `/${totalPages}` : ""}p
                   </span>
                 </div>

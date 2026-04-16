@@ -333,7 +333,7 @@ export function BookSearch({ onBookAdded, onSelectBook, excludeBookIds, showAlre
                       <Button
                         size="sm"
                         variant="outline"
-                        className="text-[10px] h-7 gap-1"
+                        className="text-xs h-8 gap-1"
                         onClick={async () => {
                           const key = book.isbn || book.title;
                           if (isAdding === `want-${key}`) return;
@@ -419,11 +419,11 @@ export function BookSearch({ onBookAdded, onSelectBook, excludeBookIds, showAlre
                       {book.title}
                     </p>
                     {book.author && (
-                      <p className="text-[10px] text-muted-foreground line-clamp-1 mb-1">
+                      <p className="text-[11px] sm:text-xs text-muted-foreground line-clamp-1 mb-1">
                         {formatAuthor(book.author)}
                       </p>
                     )}
-                    <div className="flex items-center gap-0.5 text-[10px] text-muted-foreground mb-1.5">
+                    <div className="flex items-center gap-0.5 text-[11px] sm:text-xs text-muted-foreground mb-1.5">
                       <Users className="h-2.5 w-2.5" />
                       <span>{t("dashboard.readersCount", { count: book.readerCount })}</span>
                     </div>
@@ -452,7 +452,7 @@ export function BookSearch({ onBookAdded, onSelectBook, excludeBookIds, showAlre
                       }}
                       disabled={isAddingThis || isAdded}
                       className={cn(
-                        "w-full py-1 px-2 rounded-md text-[10px] font-medium transition-all",
+                        "w-full py-1.5 px-2 rounded-md text-[11px] sm:text-xs font-medium transition-all",
                         isAdded
                           ? "bg-forest-50 dark:bg-forest-900/30 text-forest-600 dark:text-forest-400 border border-forest-200 dark:border-forest-700"
                           : "bg-forest-600 hover:bg-forest-700 text-white shadow-sm"

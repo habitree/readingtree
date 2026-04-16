@@ -116,7 +116,7 @@ export function NoteCard({ note, showDeleteButton = false, onDelete }: NoteCardP
             <div className="flex-1 min-w-0 p-2.5 sm:p-3 flex flex-col">
               {/* 상단: 타입 아이콘 + 메타 */}
               <div className="flex items-center justify-between gap-1.5 mb-1">
-                <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground min-w-0">
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground min-w-0">
                   <Icon className="h-3 w-3 shrink-0" />
                   <span className="font-medium">{typeLabel}</span>
                   {pageNumber && (
@@ -132,14 +132,14 @@ export function NoteCard({ note, showDeleteButton = false, onDelete }: NoteCardP
                     </>
                   )}
                 </div>
-                <time className="text-[10px] text-muted-foreground/50 shrink-0" suppressHydrationWarning>
+                <time className="text-[11px] text-muted-foreground/50 shrink-0" suppressHydrationWarning>
                   {formatSmartDate(note.created_at)}
                 </time>
               </div>
 
               {/* 제목 (1줄) */}
               {displayTitle && (
-                <h3 className="text-[13px] sm:text-sm font-medium line-clamp-1 text-foreground/90 mb-0.5">
+                <h3 className="text-sm font-medium line-clamp-1 text-foreground/90 mb-0.5">
                   {isProgressType ? displayTitle : <BookLinkRenderer text={displayTitle} />}
                 </h3>
               )}

@@ -43,7 +43,7 @@ export function BookStatusBadge({ status, className, size = "default" }: BookSta
   const config = statusConfig[status];
 
   const sizeClasses = {
-    sm: "text-[10px] px-1.5 py-0",
+    sm: "text-[11px] px-1.5 py-0.5",
     default: "",
   };
 

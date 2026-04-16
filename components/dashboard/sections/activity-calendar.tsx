@@ -188,7 +188,7 @@ export function ActivityCalendar({
               30{t("common.day")}
             </span>
           </div>
-          <div className="flex items-center gap-1.5 text-[11px]">
+          <div className="flex items-center gap-1.5 text-xs">
             <span className="text-slate-500 dark:text-slate-400">
               <span className="font-semibold text-forest-600 dark:text-forest-400">{stats.recordedDays}</span>{t("common.day")}
             </span>

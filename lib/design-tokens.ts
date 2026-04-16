@@ -57,7 +57,7 @@ export const typography = {
   /** 작은 텍스트 */
   small: "text-xs sm:text-sm",
   /** 매우 작은 텍스트 */
-  tiny: "text-[10px] sm:text-xs",
+  tiny: "text-[11px] sm:text-xs",
   /** 도움말 텍스트 */
   helper: "text-xs text-muted-foreground",
   /** 에러 텍스트 */
@@ -71,7 +71,7 @@ export const typography = {
 // ============================================================================
 export const grids = {
   /** 책 목록 그리드 (모바일 4열, PC 8열) */
-  bookList: "grid grid-cols-4 gap-1.5 sm:gap-2 md:grid-cols-6 lg:grid-cols-8",
+  bookList: "grid grid-cols-3 gap-2 sm:grid-cols-4 sm:gap-2 md:grid-cols-6 lg:grid-cols-8",
   /** 노트 목록 그리드 */
   noteList: "grid gap-4 sm:gap-5 sm:grid-cols-2 lg:grid-cols-3",
   /** 검색 결과 그리드 */
@@ -81,7 +81,7 @@ export const grids = {
   /** 3열 그리드 (반응형) */
   threeCol: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4",
   /** 그룹 공유서재 그리드 (모바일 3열, PC 5열 — 사이드바 고려) */
-  groupBookGrid: "grid grid-cols-4 gap-1.5 sm:gap-2 md:grid-cols-6 lg:grid-cols-8",
+  groupBookGrid: "grid grid-cols-3 gap-2 sm:grid-cols-4 sm:gap-2 md:grid-cols-6 lg:grid-cols-8",
 } as const;
 
 // ============================================================================

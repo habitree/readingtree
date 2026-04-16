@@ -164,13 +164,13 @@ export function BookListView({ books, isLoading }: BookListViewProps) {
                       <Badge
                         key={gb.group_id}
                         variant="outline"
-                        className="text-[9px] px-1 py-0 h-4"
+                        className="text-[11px] px-1.5 py-0 h-5"
                       >
                         {gb.group_name}
                       </Badge>
                     ))}
                     {userBook.groupBooks.length > 1 && (
-                      <span className="text-[9px] text-muted-foreground">
+                      <span className="text-[11px] text-muted-foreground">
                         +{userBook.groupBooks.length - 1}
                       </span>
                     )}
@@ -182,7 +182,7 @@ export function BookListView({ books, isLoading }: BookListViewProps) {
               <div className="flex items-center gap-2 flex-shrink-0">
                 <Badge
                   variant={getStatusBadgeVariant(userBook.status)}
-                  className="text-[10px] px-2 py-0.5"
+                  className="text-xs px-2 py-0.5"
                 >
                   {t(statusKeyMap[userBook.status] as any)}
                 </Badge>

@@ -46,7 +46,7 @@ export function BookNotesTabs({
           <span className="hidden sm:inline">{t("books.detailedRecords")}</span>
           <span className="sm:hidden">기록</span>
           {detailNotesCount > 0 && (
-            <span className="ml-0.5 text-[10px] bg-muted-foreground/20 text-muted-foreground px-1 py-0.5 rounded-full">
+            <span className="ml-0.5 text-[11px] bg-muted-foreground/20 text-muted-foreground px-1 py-0.5 rounded-full">
               {detailNotesCount}
             </span>
           )}
@@ -56,7 +56,7 @@ export function BookNotesTabs({
           <span className="hidden sm:inline">독서 여정</span>
           <span className="sm:hidden">여정</span>
           {totalCount > 0 && (
-            <span className="ml-0.5 text-[10px] bg-blue-500/20 text-blue-600 dark:text-blue-400 px-1 py-0.5 rounded-full">
+            <span className="ml-0.5 text-[11px] bg-blue-500/20 text-blue-600 dark:text-blue-400 px-1 py-0.5 rounded-full">
               {totalCount}
             </span>
           )}

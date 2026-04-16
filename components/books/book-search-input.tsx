@@ -117,7 +117,7 @@ export function BookSearchInput({ className, basePath: propBasePath }: BookSearc
   return (
     <div className={`relative ${className}`}>
       <Search
-        className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground"
+        className="absolute left-3.5 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground"
         aria-hidden="true"
       />
       <Input
@@ -128,7 +128,7 @@ export function BookSearchInput({ className, basePath: propBasePath }: BookSearc
         onChange={handleQueryChange}
         onCompositionStart={handleCompositionStart}
         onCompositionEnd={handleCompositionEnd}
-        className="pl-9 pr-9 h-9 text-sm"
+        className="pl-10 pr-9 h-11 text-base sm:text-sm"
         aria-label={t("books.searchInputAriaLabel")}
       />
       {isSearching && (
