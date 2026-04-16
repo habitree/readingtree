@@ -12,9 +12,12 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { X, BookOpen, Loader2, Search } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { X, BookOpen, Loader2, Search, Link2 } from "lucide-react";
 import { getUserBooks } from "@/app/actions/books";
 import { updateNote } from "@/app/actions/notes";
+import { syncBookRelationsFromNote } from "@/app/actions/book-relations";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 // import type { BookWithNotes } from "@/app/actions/books";
@@ -51,6 +54,7 @@ export function RelatedBooksManager({
     currentRelatedBookIds || []
   );
   const [searchQuery, setSearchQuery] = useState("");
+  const [autoCreateRelations, setAutoCreateRelations] = useState(false);
 
   // 사용 가능한 책 목록 로드
   useEffect(() => {
@@ -94,12 +98,24 @@ export function RelatedBooksManager({
       });
 
       toast.success(t("notes.relatedBooksUpdated"));
-      
+
+      // 책-책 연결 관계 자동 생성
+      if (autoCreateRelations && selectedBookIds.length > 0) {
+        try {
+          const result = await syncBookRelationsFromNote(mainBookId, selectedBookIds);
+          if (result.created > 0) {
+            toast.success(t("notes.bookRelationsSyncSuccess", { count: result.created }));
+          }
+        } catch {
+          toast.error(t("notes.bookRelationsSyncFailed"));
+        }
+      }
+
       // 부모 컴포넌트에 업데이트된 목록 전달
       if (onUpdate) {
         onUpdate(selectedBookIds.length > 0 ? selectedBookIds : null);
       }
-      
+
       setOpen(false);
       router.refresh();
     } catch (error: unknown) {
@@ -191,6 +207,29 @@ export function RelatedBooksManager({
                   );
                 })}
               </div>
+            </div>
+          )}
+
+          {/* 책-책 연결 자동 생성 옵션 */}
+          {selectedBookIds.length > 0 && (
+            <div className="flex items-center gap-2.5 p-2.5 sm:p-3 rounded-lg border border-dashed bg-muted/30">
+              <Link2 className="w-4 h-4 text-muted-foreground shrink-0" />
+              <div className="flex-1 min-w-0">
+                <Label
+                  htmlFor="auto-create-relations"
+                  className="text-xs sm:text-sm font-medium cursor-pointer"
+                >
+                  {t("notes.autoCreateBookRelations")}
+                </Label>
+                <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">
+                  {t("notes.autoCreateBookRelationsDesc")}
+                </p>
+              </div>
+              <Switch
+                id="auto-create-relations"
+                checked={autoCreateRelations}
+                onCheckedChange={setAutoCreateRelations}
+              />
             </div>
           )}
 

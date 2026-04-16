@@ -3,7 +3,7 @@
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { AdminStatsCard } from "./admin-stats-card";
 import { BatchOCRButton } from "./batch-ocr-button";
-import { Users, BookOpen, FileText, LayoutGrid, Clock, UserPlus, Settings, Zap, TrendingUp, ScanLine, CheckCircle2, XCircle, Bot, ScanText, BarChart3, Globe, ScrollText, Image } from "lucide-react";
+import { Users, BookOpen, FileText, LayoutGrid, Clock, UserPlus, Settings, Zap, TrendingUp, ScanLine, CheckCircle2, XCircle, Bot, ScanText, BarChart3, Globe, ScrollText, Image, Link2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { formatDistanceToNow } from "date-fns";
@@ -93,6 +93,13 @@ export function AdminDashboard({ stats, growth, activity, ocrMonthlyUsage, ocrTo
                     >
                         <Image className="h-4 w-4" />
                         OG 이미지 설정
+                    </Link>
+                    <Link
+                        href="/admin/book-relations"
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium text-sm"
+                    >
+                        <Link2 className="h-4 w-4" />
+                        책 연결 관계
                     </Link>
                     <Link
                         href="/admin/api-info"

@@ -873,6 +873,10 @@ export const ko = {
     relatedBooksUpdated: "관련 책이 업데이트됐어요.",
     relatedBooksUpdateFailed: "관련 책 업데이트에 실패했어요.",
     booksLoadFailed: "책 목록을 불러오지 못했어요.",
+    autoCreateBookRelations: "책 연결 관계도 함께 생성",
+    autoCreateBookRelationsDesc: "선택한 책들 사이에 책-책 연결도 자동으로 만들어요",
+    bookRelationsSyncSuccess: "책 연결 {count}개가 생성됐어요",
+    bookRelationsSyncFailed: "책 연결 생성에 실패했어요",
     saveWithCount: "저장 ({count})",
     // related-books-preview
     linkedBooksCountPreview: "연결된 책 ({count}개)",

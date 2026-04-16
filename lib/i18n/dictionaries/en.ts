@@ -873,6 +873,10 @@ export const en: Dictionary = {
     relatedBooksUpdated: "Linked books updated.",
     relatedBooksUpdateFailed: "Failed to update linked books.",
     booksLoadFailed: "Failed to load book list.",
+    autoCreateBookRelations: "Also create book-to-book relations",
+    autoCreateBookRelationsDesc: "Automatically create connections between selected books",
+    bookRelationsSyncSuccess: "{count} book connections created",
+    bookRelationsSyncFailed: "Failed to create book connections",
     saveWithCount: "Save ({count})",
     // related-books-preview
     linkedBooksCountPreview: "Linked books ({count})",

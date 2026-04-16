@@ -255,3 +255,143 @@ export async function getRelatedBookIds(
 
   return relations.map((r) => r.target_user_book_id);
 }
+
+/**
+ * 기록의 관련 책들 간에 user_book_relations 자동 생성
+ * mainUserBookId와 relatedUserBookIds 간의 모든 쌍에 대해 양방향 관계 생성
+ * @param mainUserBookId 주 책 ID (user_books.id)
+ * @param relatedUserBookIds 관련 책 ID 배열 (user_books.id[])
+ * @param user 선택적 사용자 정보
+ */
+export async function syncBookRelationsFromNote(
+  mainUserBookId: string,
+  relatedUserBookIds: string[],
+  user?: User | null
+): Promise<{ created: number; skipped: number }> {
+  const supabase = await createServerSupabaseClient();
+
+  if (!relatedUserBookIds || relatedUserBookIds.length === 0) {
+    return { created: 0, skipped: 0 };
+  }
+
+  // UUID 검증
+  if (!isValidUUID(mainUserBookId)) {
+    throw new Error("유효하지 않은 책 ID입니다.");
+  }
+  for (const id of relatedUserBookIds) {
+    if (!isValidUUID(id)) {
+      throw new Error("유효하지 않은 관련 책 ID입니다.");
+    }
+  }
+
+  // 현재 사용자 확인
+  let currentUser = user;
+  if (!currentUser) {
+    currentUser = await getCurrentUser();
+    if (!currentUser) {
+      throw new Error("로그인이 필요합니다.");
+    }
+  }
+
+  // 모든 책이 사용자의 것인지 확인
+  const allBookIds = [mainUserBookId, ...relatedUserBookIds];
+  const uniqueBookIds = [...new Set(allBookIds)];
+
+  const { data: userBooks, error: booksCheckError } = await supabase
+    .from("user_books")
+    .select("id")
+    .eq("user_id", currentUser.id)
+    .in("id", uniqueBookIds);
+
+  if (booksCheckError || !userBooks || userBooks.length !== uniqueBookIds.length) {
+    throw new Error("권한이 없거나 책을 찾을 수 없습니다.");
+  }
+
+  // 모든 쌍 생성: mainBook ↔ 각 relatedBook, relatedBook끼리도 연결
+  const pairs: Array<[string, string]> = [];
+
+  // mainBook과 각 relatedBook
+  for (const relatedId of relatedUserBookIds) {
+    if (relatedId !== mainUserBookId) {
+      pairs.push([mainUserBookId, relatedId]);
+    }
+  }
+
+  // relatedBook들 간 상호 연결
+  for (let i = 0; i < relatedUserBookIds.length; i++) {
+    for (let j = i + 1; j < relatedUserBookIds.length; j++) {
+      if (relatedUserBookIds[i] !== relatedUserBookIds[j]) {
+        pairs.push([relatedUserBookIds[i], relatedUserBookIds[j]]);
+      }
+    }
+  }
+
+  if (pairs.length === 0) {
+    return { created: 0, skipped: 0 };
+  }
+
+  // 이미 존재하는 관계 확인
+  const { data: existingRelations } = await supabase
+    .from("user_book_relations")
+    .select("source_user_book_id, target_user_book_id")
+    .eq("user_id", currentUser.id);
+
+  const existingSet = new Set<string>();
+  for (const r of existingRelations || []) {
+    existingSet.add(`${r.source_user_book_id}:${r.target_user_book_id}`);
+  }
+
+  // 새로 생성할 양방향 관계 수집
+  const toInsert: Array<{
+    user_id: string;
+    source_user_book_id: string;
+    target_user_book_id: string;
+  }> = [];
+
+  let skipped = 0;
+
+  for (const [a, b] of pairs) {
+    const forwardKey = `${a}:${b}`;
+    const reverseKey = `${b}:${a}`;
+
+    if (existingSet.has(forwardKey) || existingSet.has(reverseKey)) {
+      skipped++;
+      continue;
+    }
+
+    toInsert.push(
+      { user_id: currentUser.id, source_user_book_id: a, target_user_book_id: b },
+      { user_id: currentUser.id, source_user_book_id: b, target_user_book_id: a }
+    );
+
+    // 삽입 후 중복 방지를 위해 set에 추가
+    existingSet.add(forwardKey);
+    existingSet.add(reverseKey);
+  }
+
+  if (toInsert.length === 0) {
+    return { created: 0, skipped };
+  }
+
+  const { error: insertError } = await supabase
+    .from("user_book_relations")
+    .insert(toInsert);
+
+  if (insertError) {
+    // unique constraint 위반은 무시 (동시 요청 등)
+    if (insertError.code === "23505") {
+      return { created: 0, skipped: skipped + pairs.length };
+    }
+    console.error("책 연결 동기화 오류:", insertError);
+    throw new Error(`책 연결 동기화 실패: ${insertError.message}`);
+  }
+
+  const created = toInsert.length / 2; // 양방향이므로 실제 연결 수는 절반
+
+  // 관련 경로 revalidate
+  for (const bookId of uniqueBookIds) {
+    revalidatePath(`/books/${bookId}`);
+  }
+
+  return { created, skipped };
+}
