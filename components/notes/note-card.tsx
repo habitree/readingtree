@@ -68,6 +68,7 @@ export function NoteCard({ note, showDeleteButton = false, onDelete }: NoteCardP
   // ─── 통합 카드 레이아웃: 좌측 표지 + 우측 내용 (모든 타입 동일) ───
   return (
     <Link
+      id={`note-${note.id}`}
       href={noteHref}
       className="block h-full"
       onClick={(e) => {

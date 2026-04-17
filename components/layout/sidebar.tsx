@@ -26,6 +26,7 @@ import { BookshelfTree } from "./bookshelf-tree";
 import { useEffect, useState, useCallback } from "react";
 import { useTranslation } from "@/lib/i18n";
 import { useQuickCaptureStore } from "@/hooks/use-quick-capture";
+import { useContinueReading } from "@/hooks/use-continue-reading";
 
 /**
  * 사이드바 네비게이션 아이템 타입
@@ -80,6 +81,18 @@ export function Sidebar() {
   }, [pathname]);
 
   const openQuickCapture = useQuickCaptureStore((s) => s.open);
+  const openWithBook = useQuickCaptureStore((s) => s.openWithBook);
+
+  // 이어읽기 책 (공용 훅 — visibilitychange 자동 갱신 포함)
+  const { continueBook } = useContinueReading(user ?? null);
+
+  const handleQuickCapture = useCallback(() => {
+    if (continueBook) {
+      openWithBook(continueBook);
+    } else {
+      openQuickCapture();
+    }
+  }, [continueBook, openWithBook, openQuickCapture]);
 
   const renderNavItem = useCallback((item: SidebarItem) => {
     const Icon = item.icon;
@@ -91,7 +104,7 @@ export function Sidebar() {
           key="quickCapture"
           variant="ghost"
           className="w-full justify-start gap-3 h-11"
-          onClick={openQuickCapture}
+          onClick={handleQuickCapture}
           aria-label={item.label}
         >
           <Icon className="h-5 w-5" aria-hidden="true" />
@@ -135,7 +148,7 @@ export function Sidebar() {
         </Button>
       </Link>
     );
-  }, [pathname, user, openQuickCapture]);
+  }, [pathname, user, handleQuickCapture]);
 
   const visibleSecondaryItems = secondaryItems.filter(
     (item) => !item.adminOnly || isAdmin

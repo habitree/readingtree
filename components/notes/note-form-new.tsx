@@ -100,8 +100,9 @@ export function NoteFormNew({ bookId }: NoteFormNewProps) {
     setUploadType,
   } = useNoteForm({
     bookId,
-    onSuccess: () => {
-      router.push(bookId ? `/books/${bookId}` : "/notes");
+    onSuccess: (noteId?: string) => {
+      const hash = noteId ? `#note-${noteId}` : "";
+      router.push(bookId ? `/books/${bookId}${hash}` : "/notes");
     },
   });
 

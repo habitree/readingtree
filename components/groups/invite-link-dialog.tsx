@@ -10,8 +10,15 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { Link2, Copy, Check, Loader2, Trash2 } from "lucide-react";
+import { Link2, Copy, Check, Loader2, Trash2, RefreshCw } from "lucide-react";
 import { createInviteToken, revokeInviteToken, getInviteTokens } from "@/app/actions/groups";
 import { toast } from "sonner";
 
@@ -34,6 +41,8 @@ export function InviteLinkDialog({ groupId }: InviteLinkDialogProps) {
   const [isCreating, setIsCreating] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [expiresInDays, setExpiresInDays] = useState("7");
+  const [maxUses, setMaxUses] = useState("0"); // 0 = 제한 없음
 
   const loadTokens = async () => {
     setIsLoading(true);
@@ -54,13 +63,35 @@ export function InviteLinkDialog({ groupId }: InviteLinkDialogProps) {
   const handleCreate = async () => {
     setIsCreating(true);
     try {
-      await createInviteToken(groupId);
+      const days = parseInt(expiresInDays);
+      const uses = parseInt(maxUses);
+      await createInviteToken(groupId, {
+        expiresInDays: days,
+        maxUses: uses > 0 ? uses : undefined,
+      });
       toast.success("초대 링크가 생성되었습니다.");
       await loadTokens();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "생성 실패");
     }
     setIsCreating(false);
+  };
+
+  const handleReissue = async (token: InviteToken) => {
+    try {
+      await revokeInviteToken(token.id);
+      const days = token.expires_at
+        ? Math.max(1, Math.ceil((new Date(token.expires_at).getTime() - new Date(token.created_at).getTime()) / (1000 * 60 * 60 * 24)))
+        : 7;
+      await createInviteToken(groupId, {
+        expiresInDays: days,
+        maxUses: token.max_uses ?? undefined,
+      });
+      toast.success("새 초대 링크가 발급되었습니다.");
+      await loadTokens();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "재발급 실패");
+    }
   };
 
   const handleCopy = async (token: string, tokenId: string) => {
@@ -108,6 +139,30 @@ export function InviteLinkDialog({ groupId }: InviteLinkDialogProps) {
         </DialogHeader>
 
         <div className="space-y-4">
+          <div className="flex gap-2">
+            <Select value={expiresInDays} onValueChange={setExpiresInDays}>
+              <SelectTrigger className="h-9 text-xs flex-1">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="7">7일 유효</SelectItem>
+                <SelectItem value="30">30일 유효</SelectItem>
+                <SelectItem value="365">무기한</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={maxUses} onValueChange={setMaxUses}>
+              <SelectTrigger className="h-9 text-xs flex-1">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="0">횟수 제한 없음</SelectItem>
+                <SelectItem value="5">최대 5회</SelectItem>
+                <SelectItem value="10">최대 10회</SelectItem>
+                <SelectItem value="20">최대 20회</SelectItem>
+                <SelectItem value="50">최대 50회</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           <Button
             onClick={handleCreate}
             disabled={isCreating}
@@ -119,7 +174,7 @@ export function InviteLinkDialog({ groupId }: InviteLinkDialogProps) {
             ) : (
               <Link2 className="h-4 w-4 mr-2" />
             )}
-            새 초대 링크 생성 (7일 유효)
+            새 초대 링크 생성
           </Button>
 
           {isLoading ? (
@@ -142,14 +197,16 @@ export function InviteLinkDialog({ groupId }: InviteLinkDialogProps) {
                     value={`/groups/invite/${token.token.slice(0, 8)}...`}
                     className="h-8 text-xs flex-1"
                   />
-                  <div className="text-[10px] text-muted-foreground shrink-0">
-                    {token.use_count}회 사용 | {formatExpiry(token.expires_at)}
+                  <div className="text-[10px] text-muted-foreground shrink-0 text-right leading-relaxed">
+                    <div>{token.max_uses ? `${token.use_count}/${token.max_uses}회` : `${token.use_count}회 사용`}</div>
+                    <div>{formatExpiry(token.expires_at)}</div>
                   </div>
                   <Button
                     variant="ghost"
                     size="icon"
                     className="h-7 w-7 shrink-0"
                     onClick={() => handleCopy(token.token, token.id)}
+                    title="복사"
                   >
                     {copiedId === token.id ? (
                       <Check className="h-3.5 w-3.5 text-green-500" />
@@ -160,8 +217,18 @@ export function InviteLinkDialog({ groupId }: InviteLinkDialogProps) {
                   <Button
                     variant="ghost"
                     size="icon"
+                    className="h-7 w-7 shrink-0"
+                    onClick={() => handleReissue(token)}
+                    title="재발급"
+                  >
+                    <RefreshCw className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
                     className="h-7 w-7 shrink-0 text-destructive hover:text-destructive"
                     onClick={() => handleRevoke(token.id)}
+                    title="비활성화"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                   </Button>

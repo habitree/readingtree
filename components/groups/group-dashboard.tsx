@@ -327,14 +327,16 @@ export function GroupDashboard({ groupData, currentUserId }: GroupDashboardProps
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
+                  {(isLeader || isModerator) && (
+                    <DropdownMenuItem asChild>
+                      <Link href={`/groups/${group.id}/settings`}>
+                        <Settings className="mr-2 h-4 w-4" />
+                        {t("groups.groupSettings")}
+                      </Link>
+                    </DropdownMenuItem>
+                  )}
                   {isLeader && (
                     <>
-                      <DropdownMenuItem asChild>
-                        <Link href={`/groups/${group.id}/settings`}>
-                          <Settings className="mr-2 h-4 w-4" />
-                          {t("groups.groupSettings")}
-                        </Link>
-                      </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem
                         onClick={() => setShowDeleteDialog(true)}

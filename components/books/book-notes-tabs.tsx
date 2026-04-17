@@ -4,6 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { NoteList } from "@/components/notes/note-list";
 import { ReadingJourney } from "./reading-journey";
 import { ReadingTimeTab } from "./reading-time-tab";
+import { BookEmptyOnboarding } from "./book-empty-onboarding";
 import { Map, FileText, Clock } from "lucide-react";
 import { useTranslation } from "@/lib/i18n";
 import type { NoteWithBook } from "@/types/note";
@@ -37,6 +38,10 @@ export function BookNotesTabs({
 
   const detailNotes = notes.filter((n) => n.type !== "progress");
   const totalCount = notes.length;
+
+  if (totalCount === 0) {
+    return <BookEmptyOnboarding userBookId={userBookId} />;
+  }
 
   return (
     <Tabs defaultValue="notes" className="w-full">

@@ -483,6 +483,17 @@ export const ko = {
     statusFilterPaused: "쉬는 중",
     statusFilterNotStarted: "읽을 예정",
     statusFilterRereading: "재독",
+    // book-empty-onboarding
+    emptyOnboarding: {
+      title: "첫 번째 기록을 남겨보세요",
+      subtitle: "읽으면서 떠오른 생��을 기록해보세요",
+      addQuote: "구절 추가",
+      addQuoteDesc: "인상 깊은 문장을 기록하세요",
+      writeThought: "생각 적기",
+      writeThoughtDesc: "떠오른 감상을 메모하세요",
+      updateProgress: "진행률 업데이트",
+      updateProgressDesc: "어디까지 읽었는지 기록하세요",
+    },
     // book-notes-tabs
     detailedRecords: "상세 기록",
     progressLog: "진행 로그",
@@ -1119,6 +1130,14 @@ export const ko = {
     foundResults: "총 {total}개의 결과를 찾았어요.",
     progressCount: "{count}건의 진행 기록",
     progressLabel: "진행 기록",
+    // Command Palette
+    commandPalettePlaceholder: "책, 기록, 모임 검색...",
+    commandPaletteHint: "검색어를 입력하세요",
+    books: "책",
+    notes: "기록",
+    groups: "모임",
+    countUnit: "건",
+    untitledNote: "제목 없는 기록",
   },
 
   groups: {
@@ -2682,6 +2701,8 @@ export const ko = {
     pointRefund: "포인트 환불",
     pointPurchase: "포인트 충전",
     adminAdjust: "관리자 조정",
+    earned: "+{count}P 적립!",
+    viewMyPoints: "내 포인트 보기",
     chargePoints: "포인트 충전하기",
     chargePointsDesc: "AI 채팅, OCR 필사 등 더 많은 기능을 이용하세요",
     mission: {

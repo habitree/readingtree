@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { BookOpen, Send, ChevronDown, ChevronUp, Clock, ArrowRight, Quote } from "lucide-react";
+import { BookOpen, Send, ChevronDown, ChevronUp, Clock, ArrowRight, Quote, Loader2, CheckCircle2 } from "lucide-react";
 import { QuickBookSelector } from "@/components/books/quick-book-selector";
 import type { BookWithNotes } from "@/app/actions/books";
 import { cn } from "@/lib/utils";
@@ -290,7 +290,11 @@ export function QuickCaptureForm({
           disabled={(!content.trim() && !readingDurationSeconds) || isSubmitting}
           className="gap-1.5"
         >
-          <Send className="w-3.5 h-3.5" />
+          {isSubmitting ? (
+            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+          ) : (
+            <Send className="w-3.5 h-3.5" />
+          )}
           {isSubmitting ? "저장 중..." : expanded && publishDirectly ? "발행" : "기록 저장"}
         </Button>
       </div>

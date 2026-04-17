@@ -1,7 +1,7 @@
 "use server";
 
 import { createServerSupabaseClient } from "@/lib/supabase/server";
-import { getWeekStart } from "./_shared";
+import { checkGroupAccess, getWeekStart } from "./_shared";
 
 /**
  * 구성원 진행 상황 조회
@@ -9,29 +9,10 @@ import { getWeekStart } from "./_shared";
 export async function getMemberProgress(groupId: string) {
   const supabase = await createServerSupabaseClient();
 
-  // 현재 사용자 확인
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-
-  if (authError || !user) {
-    throw new Error("로그인이 필요합니다.");
-  }
-
-  // 리더 권한 확인
-  const { data: group, error: groupError } = await supabase
-    .from("groups")
-    .select("leader_id")
-    .eq("id", groupId)
-    .single();
-
-  if (groupError || !group) {
-    throw new Error("모임을 찾을 수 없습니다.");
-  }
-
-  if (group.leader_id !== user.id) {
-    throw new Error("리더만 진행 상황을 조회할 수 있습니다.");
+  // 리더 또는 모더레이터 권한 확인
+  const access = await checkGroupAccess(supabase, groupId);
+  if (!access.isLeader && !access.isModerator) {
+    throw new Error("리더 또는 모더레이터만 진행 상황을 조회할 수 있습니다.");
   }
 
   // 승인된 멤버 목록 조회

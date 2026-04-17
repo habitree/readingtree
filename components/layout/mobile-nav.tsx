@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Home, Library, FileText, Plus, Menu, Music2 } from "lucide-react";
@@ -13,7 +13,7 @@ import { MobileMenuSheet } from "./mobile-menu-sheet";
 import { useQuickCaptureStore } from "@/hooks/use-quick-capture";
 import { useMusicPlayer } from "@/hooks/use-music-player";
 import { useTranslation, type TranslationKey } from "@/lib/i18n";
-import { getContinueReadingBooks } from "@/app/actions/books";
+import { useContinueReading } from "@/hooks/use-continue-reading";
 
 /**
  * 모바일 네비게이션 아이템 타입
@@ -58,32 +58,8 @@ export function MobileNav() {
   const { isOpen, setIsOpen, title, description, requireLogin } = useLoginPrompt();
   const quickCapture = useQuickCaptureStore();
 
-  // 이어읽기 책 캐시 (FAB 원탭 진입용)
-  const [continueBook, setContinueBook] = useState<{
-    id: string;
-    bookId: string;
-    title: string;
-    author: string | null;
-    coverImageUrl: string | null;
-  } | null>(null);
-
-  useEffect(() => {
-    if (!user) return;
-    getContinueReadingBooks(undefined, 1)
-      .then((books) => {
-        if (books.length > 0) {
-          const b = books[0];
-          setContinueBook({
-            id: b.userBookId,
-            bookId: b.bookId,
-            title: b.title,
-            author: b.author,
-            coverImageUrl: b.coverImageUrl,
-          });
-        }
-      })
-      .catch(() => {});
-  }, [user]);
+  // 이어읽기 책 (공용 훅 — visibilitychange 자동 갱신 포함)
+  const { continueBook } = useContinueReading(user ?? null);
 
   const handleNoteAction = useCallback(() => {
     if (!user) {

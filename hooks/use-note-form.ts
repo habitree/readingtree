@@ -29,8 +29,8 @@ export interface NoteFormData {
 export interface UseNoteFormOptions {
   /** user_books.id (책 없이 저장 시 undefined) */
   bookId?: string;
-  /** 저장 성공 콜백 */
-  onSuccess?: () => void;
+  /** 저장 성공 콜백 (noteId: 생성된 기록 ID) */
+  onSuccess?: (noteId?: string) => void;
   /** 저장 실패 콜백 */
   onError?: (error: Error) => void;
   /** 초기 업로드 타입 */
@@ -291,6 +291,7 @@ export function useNoteForm(options: UseNoteFormOptions): UseNoteFormReturn {
 
       let createdCount = 0;
       let lastPointsEarned = 0;
+      let lastNoteId: string | undefined;
 
       // 공통 노트 데이터
       const commonNoteData = {
@@ -318,6 +319,7 @@ export function useNoteForm(options: UseNoteFormOptions): UseNoteFormReturn {
 
           createdCount++;
           lastPointsEarned = result.pointsEarned ?? 0;
+          lastNoteId = result.noteId;
 
           // transcription 타입이면 OCR 처리 요청
           if (noteType === "transcription" && result.noteId) {
@@ -332,18 +334,29 @@ export function useNoteForm(options: UseNoteFormOptions): UseNoteFormReturn {
         });
         createdCount++;
         lastPointsEarned = result.pointsEarned ?? 0;
+        lastNoteId = result.noteId;
       }
 
       // 성공 메시지 (포인트 적립 표시)
-      const pointsMsg = lastPointsEarned > 0 ? ` +${lastPointsEarned}P` : "";
-      if (createdCount > 1) {
-        toast.success(t("noteForm.savedMultiple").replace("{count}", String(createdCount)) + pointsMsg);
+      const successMsg = createdCount > 1
+        ? t("noteForm.savedMultiple").replace("{count}", String(createdCount))
+        : t("noteForm.saved");
+
+      if (lastPointsEarned > 0) {
+        toast.success(successMsg, {
+          description: t("points.earned").replace("{count}", String(lastPointsEarned)),
+          action: {
+            label: t("points.viewMyPoints"),
+            onClick: () => { window.location.href = "/points"; },
+          },
+          duration: 5000,
+        });
       } else {
-        toast.success(t("noteForm.saved") + pointsMsg);
+        toast.success(successMsg);
       }
 
-      // 성공 콜백 호출
-      onSuccess?.();
+      // 성공 콜백 호출 (noteId 전달)
+      onSuccess?.(lastNoteId);
     } catch (error) {
       console.error("[useNoteForm] 기록 저장 오류:", error);
       const errorMessage = error instanceof Error ? error.message : t("noteForm.saveFailed");

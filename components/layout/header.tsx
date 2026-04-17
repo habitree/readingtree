@@ -1,6 +1,6 @@
 "use client";
 
-import { User, Trees, Moon, Sun } from "lucide-react";
+import { User, Trees, Moon, Sun, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -68,6 +68,26 @@ export function Header() {
         {/* 우측 메뉴 */}
         <div className="flex items-center gap-1.5 sm:gap-2 ml-auto shrink-0">
           <TooltipProvider>
+            {/* 통합 검색 (Cmd+K) */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-9 w-9"
+                  onClick={() => {
+                    document.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true }));
+                  }}
+                  aria-label={t("search.search")}
+                >
+                  <Search className="h-[1.2rem] w-[1.2rem]" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>{t("search.search")} <kbd className="ml-1 text-xs opacity-60">⌘K</kbd></p>
+              </TooltipContent>
+            </Tooltip>
+
             {/* 배경음악 토글 */}
             <MusicToggleButton />
 

@@ -484,6 +484,17 @@ export const en: Dictionary = {
     statusFilterPaused: "On hold",
     statusFilterNotStarted: "To read",
     statusFilterRereading: "Re-reading",
+    // book-empty-onboarding
+    emptyOnboarding: {
+      title: "Start your first note",
+      subtitle: "Record your thoughts as you read",
+      addQuote: "Add Quote",
+      addQuoteDesc: "Save memorable passages",
+      writeThought: "Write Thought",
+      writeThoughtDesc: "Jot down your impressions",
+      updateProgress: "Update Progress",
+      updateProgressDesc: "Track how far you've read",
+    },
     // book-notes-tabs
     detailedRecords: "Detailed notes",
     progressLog: "Progress log",
@@ -1119,6 +1130,14 @@ export const en: Dictionary = {
     foundResults: "Found {total} results.",
     progressCount: "{count} progress records",
     progressLabel: "Progress",
+    // Command Palette
+    commandPalettePlaceholder: "Search books, notes, groups...",
+    commandPaletteHint: "Type to search",
+    books: "Books",
+    notes: "Notes",
+    groups: "Groups",
+    countUnit: "",
+    untitledNote: "Untitled note",
   },
 
   groups: {
@@ -2678,6 +2697,8 @@ export const en: Dictionary = {
     pointRefund: "Points refunded",
     pointPurchase: "Points purchased",
     adminAdjust: "Admin adjustment",
+    earned: "+{count}P earned!",
+    viewMyPoints: "View My Points",
     chargePoints: "Charge Points",
     chargePointsDesc: "Get more AI chat, OCR, and other premium features",
     mission: {

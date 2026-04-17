@@ -91,8 +91,8 @@ export function useQuickCapture() {
 
         if (result.success) {
           setLastSavedNoteId(result.noteId);
-          const pointsMsg = result.pointsEarned ? ` +${result.pointsEarned}P` : "";
-          toast.success(`기록이 저장되었습니다${pointsMsg}`, {
+          toast.success("기록이 저장되었습니다", {
+            description: result.pointsEarned ? `+${result.pointsEarned}P 적립!` : undefined,
             action: {
               label: "보완하기",
               onClick: () => {
@@ -140,11 +140,19 @@ export function useQuickCapture() {
 
         if (result.success) {
           setLastSavedNoteId(result.noteId);
-          const pointsMsg = result.pointsEarned ? ` +${result.pointsEarned}P` : "";
+          const pointsDesc = result.pointsEarned ? `+${result.pointsEarned}P 적립!` : undefined;
           if (expandedData.publishDirectly) {
-            toast.success(`기록이 발행되었습니다${pointsMsg}`);
+            toast.success("기록이 발행되었습니다", {
+              description: pointsDesc,
+              action: result.pointsEarned ? {
+                label: "내 포인트 보기",
+                onClick: () => { window.location.href = "/points"; },
+              } : undefined,
+              duration: result.pointsEarned ? 5000 : 3000,
+            });
           } else {
-            toast.success(`기록이 저장되었습니다${pointsMsg}`, {
+            toast.success("기록이 저장되었습니다", {
+              description: pointsDesc,
               action: {
                 label: "보완하기",
                 onClick: () => {

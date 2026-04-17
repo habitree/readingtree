@@ -232,3 +232,69 @@ export async function searchNotes(params: SearchParams, user?: User | null): Pro
   };
 }
 
+/**
+ * 통합 검색 — 책, 기록, 모임을 병렬로 검색
+ * Command Palette에서 사용
+ */
+export async function searchAll(rawQuery: string) {
+  const user = await getCurrentUser();
+  if (!user) return { books: [], notes: [], groups: [] };
+
+  const query = sanitizeSearchQuery(rawQuery);
+  if (!query || query.length < 1) return { books: [], notes: [], groups: [] };
+
+  const supabase = await createServerSupabaseClient();
+  const pattern = `%${query}%`;
+
+  const [booksResult, notesResult, groupsResult] = await Promise.all([
+    // 내 서재의 책 검색 (제목/저자)
+    supabase
+      .from("user_books")
+      .select("id, book_id, status, books!inner(id, title, author, cover_image_url)")
+      .eq("user_id", user.id)
+      .or(`title.ilike.${pattern},author.ilike.${pattern}`, { referencedTable: "books" })
+      .limit(5),
+    // 내 기록 검색 (내용/제목)
+    supabase
+      .from("notes")
+      .select("id, type, title, quote_content, memo_content, created_at")
+      .eq("user_id", user.id)
+      .or(`title.ilike.${pattern},quote_content.ilike.${pattern},memo_content.ilike.${pattern}`)
+      .order("created_at", { ascending: false })
+      .limit(5),
+    // 내가 속한 모임 검색 (모임명)
+    supabase
+      .from("groups")
+      .select("id, name, description, cover_image_url")
+      .ilike("name", pattern)
+      .limit(5),
+  ]);
+
+  return {
+    books: (booksResult.data ?? []).map((ub) => {
+      const book = ub.books as unknown as { id: string; title: string; author: string | null; cover_image_url: string | null };
+      return {
+        userBookId: ub.id,
+        bookId: ub.book_id,
+        status: ub.status,
+        title: book.title,
+        author: book.author,
+        cover_image_url: book.cover_image_url,
+      };
+    }),
+    notes: (notesResult.data ?? []).map((n) => ({
+      id: n.id,
+      type: n.type,
+      title: n.title,
+      preview: n.quote_content?.slice(0, 60) || n.memo_content?.slice(0, 60) || "",
+      createdAt: n.created_at,
+    })),
+    groups: (groupsResult.data ?? []).map((g) => ({
+      id: g.id,
+      name: g.name,
+      description: g.description,
+      coverImageUrl: g.cover_image_url,
+    })),
+  };
+}
+
