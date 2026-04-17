@@ -2,7 +2,9 @@ import { ImageResponse } from "next/og";
 import { createClient } from "@supabase/supabase-js";
 import { isValidUUID } from "@/lib/utils/validation";
 
-export const runtime = "edge";
+// Fluid Compute (Node.js) 런타임 사용.
+// Edge Runtime 1MB 크기 제한을 회피하고, next/og ImageResponse는 Node에서도 정상 동작.
+// 참고: https://vercel.com/docs/functions/runtimes/node-js
 
 const CARD_SIZES = {
   square: { width: 1080, height: 1080 },
