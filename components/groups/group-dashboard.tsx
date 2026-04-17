@@ -598,7 +598,11 @@ export function GroupDashboard({ groupData, currentUserId }: GroupDashboardProps
                         const hasBookCover = bookCover && isValidImageUrl(bookCover);
 
                         return (
-                          <div key={item.id} className="flex items-center gap-3 py-2 px-2 -mx-2 rounded-lg hover:bg-muted/50 transition-colors">
+                          <Link
+                            key={item.id}
+                            href={note?.id ? `/notes/${note.id}` : "#"}
+                            className="flex items-center gap-3 py-2 px-2 -mx-2 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
+                          >
                             {/* 책 표지 (없으면 타입 아이콘) */}
                             {hasBookCover ? (
                               <div className="relative w-9 h-12 rounded-md overflow-hidden bg-muted shrink-0 shadow-sm">
@@ -645,7 +649,7 @@ export function GroupDashboard({ groupData, currentUserId }: GroupDashboardProps
                                 {formatSmartDate(item.shared_at)}
                               </span>
                             </div>
-                          </div>
+                          </Link>
                         );
                       });
                     })()}

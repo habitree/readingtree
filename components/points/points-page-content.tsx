@@ -469,6 +469,17 @@ function EarnGuideItem({
   );
 }
 
+function getTransactionHref(transaction: PointTransaction): string | null {
+  if (!transaction.reference_id || !transaction.reference_type) return null;
+  switch (transaction.reference_type) {
+    case "note": return `/notes/${transaction.reference_id}`;
+    case "book": case "user_book": return `/books/${transaction.reference_id}`;
+    case "feature_request": return `/feature-requests/${transaction.reference_id}`;
+    case "group": return `/groups/${transaction.reference_id}`;
+    default: return null;
+  }
+}
+
 function TransactionRow({
   transaction,
   locale,
@@ -482,9 +493,10 @@ function TransactionRow({
   const actionLabel = getActionLabel(transaction.action_type, t) || transaction.description || t("points.activity" as TranslationKey);
   const date = new Date(transaction.created_at);
   const timeStr = formatTransactionDate(date, locale);
+  const href = getTransactionHref(transaction);
 
-  return (
-    <div className="px-5 py-3 flex items-center gap-3">
+  const content = (
+    <div className={cn("px-5 py-3 flex items-center gap-3", href && "hover:bg-muted/30 transition-colors")}>
       <div className={cn(
         "w-8 h-8 rounded-full flex items-center justify-center shrink-0",
         isEarned
@@ -512,8 +524,13 @@ function TransactionRow({
           {transaction.balance_after.toLocaleString()}P
         </p>
       </div>
+      {href && (
+        <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/50 shrink-0" />
+      )}
     </div>
   );
+
+  return href ? <Link href={href} className="block">{content}</Link> : content;
 }
 
 function getActionLabel(actionType: string, t: (key: TranslationKey) => string): string {

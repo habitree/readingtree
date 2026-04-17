@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -121,13 +122,17 @@ export function WeeklyActivitySummary({ groupId }: WeeklyActivitySummaryProps) {
                       key={member.user?.id}
                       className="flex items-center gap-2.5 py-1"
                     >
-                      <Avatar className="h-6 w-6">
-                        <AvatarImage src={member.user?.avatar_url || undefined} />
-                        <AvatarFallback className="text-[10px]">
-                          {member.user?.name?.[0] || "?"}
-                        </AvatarFallback>
-                      </Avatar>
-                      <span className="text-sm truncate flex-1">{member.user?.name}</span>
+                      <Link href={`/profile/${member.user?.id}`} className="shrink-0">
+                        <Avatar className="h-6 w-6 hover:ring-2 hover:ring-primary/20 transition-all">
+                          <AvatarImage src={member.user?.avatar_url || undefined} />
+                          <AvatarFallback className="text-[10px]">
+                            {member.user?.name?.[0] || "?"}
+                          </AvatarFallback>
+                        </Avatar>
+                      </Link>
+                      <Link href={`/profile/${member.user?.id}`} className="text-sm truncate flex-1 hover:underline">
+                        {member.user?.name}
+                      </Link>
                       <Badge variant="secondary" className="text-xs shrink-0">
                         {t("groups.weeklyNotesUnit").replace("{count}", String(member.notesCount))}
                       </Badge>
