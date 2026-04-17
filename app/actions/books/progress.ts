@@ -126,6 +126,150 @@ export async function updateBookStatus(
 }
 
 /**
+ * 여러 책의 독서 상태를 한 번에 변경.
+ * - RLS와 별개로 `.eq("user_id", user.id)` 2중 방어 적용.
+ * - 완독 처리 시 completed_dates 누적은 단순화: 각 책에 completed_at만 설정.
+ *   (상세 회독 누적은 단건 updateBookStatus에서만 처리)
+ */
+export async function bulkUpdateBookStatus(
+  userBookIds: string[],
+  status: ReadingStatus,
+): Promise<{ success: boolean; updated: number; failed: number; error?: string }> {
+  if (userBookIds.length === 0) {
+    return { success: true, updated: 0, failed: 0 };
+  }
+
+  const supabase = await createServerSupabaseClient();
+  const currentUser = await getCurrentUser();
+  if (!currentUser) {
+    return { success: false, updated: 0, failed: userBookIds.length, error: "로그인이 필요합니다." };
+  }
+
+  const updateData: {
+    status: ReadingStatus;
+    completed_at?: string | null;
+  } = { status };
+
+  if (status === "completed") {
+    updateData.completed_at = new Date().toISOString();
+  } else if (status !== "rereading") {
+    updateData.completed_at = null;
+  }
+
+  const { data, error } = await supabase
+    .from("user_books")
+    .update(updateData)
+    .eq("user_id", currentUser.id)
+    .in("id", userBookIds)
+    .select("id");
+
+  if (error) {
+    return { success: false, updated: 0, failed: userBookIds.length, error: error.message };
+  }
+
+  const updated = data?.length ?? 0;
+
+  revalidatePath("/books");
+  revalidatePath("/bookshelves");
+  revalidatePath("/");
+
+  return {
+    success: true,
+    updated,
+    failed: userBookIds.length - updated,
+  };
+}
+
+/**
+ * 여러 책을 한 번에 특정 책장으로 이동.
+ */
+export async function bulkMoveBooksToBookshelf(
+  userBookIds: string[],
+  bookshelfId: string | null,
+): Promise<{ success: boolean; updated: number; failed: number; error?: string }> {
+  if (userBookIds.length === 0) {
+    return { success: true, updated: 0, failed: 0 };
+  }
+
+  const supabase = await createServerSupabaseClient();
+  const currentUser = await getCurrentUser();
+  if (!currentUser) {
+    return { success: false, updated: 0, failed: userBookIds.length, error: "로그인이 필요합니다." };
+  }
+
+  // bookshelf 소유권 확인 (null이면 책장 미지정)
+  if (bookshelfId) {
+    const { data: shelf } = await supabase
+      .from("bookshelves")
+      .select("id")
+      .eq("id", bookshelfId)
+      .eq("user_id", currentUser.id)
+      .maybeSingle();
+    if (!shelf) {
+      return { success: false, updated: 0, failed: userBookIds.length, error: "책장 권한이 없어요." };
+    }
+  }
+
+  const { data, error } = await supabase
+    .from("user_books")
+    .update({ bookshelf_id: bookshelfId })
+    .eq("user_id", currentUser.id)
+    .in("id", userBookIds)
+    .select("id");
+
+  if (error) {
+    return { success: false, updated: 0, failed: userBookIds.length, error: error.message };
+  }
+
+  revalidatePath("/books");
+  revalidatePath("/bookshelves");
+
+  return {
+    success: true,
+    updated: data?.length ?? 0,
+    failed: userBookIds.length - (data?.length ?? 0),
+  };
+}
+
+/**
+ * 여러 책을 한 번에 삭제.
+ */
+export async function bulkDeleteBooks(
+  userBookIds: string[],
+): Promise<{ success: boolean; deleted: number; failed: number; error?: string }> {
+  if (userBookIds.length === 0) {
+    return { success: true, deleted: 0, failed: 0 };
+  }
+
+  const supabase = await createServerSupabaseClient();
+  const currentUser = await getCurrentUser();
+  if (!currentUser) {
+    return { success: false, deleted: 0, failed: userBookIds.length, error: "로그인이 필요합니다." };
+  }
+
+  const { data, error } = await supabase
+    .from("user_books")
+    .delete()
+    .eq("user_id", currentUser.id)
+    .in("id", userBookIds)
+    .select("id");
+
+  if (error) {
+    return { success: false, deleted: 0, failed: userBookIds.length, error: error.message };
+  }
+
+  revalidatePath("/books");
+  revalidatePath("/bookshelves");
+  revalidatePath("/");
+
+  return {
+    success: true,
+    deleted: data?.length ?? 0,
+    failed: userBookIds.length - (data?.length ?? 0),
+  };
+}
+
+/**
  * 읽기 진행률 업데이트
  * @param userBookId UserBooks 테이블의 ID
  * @param currentPage 현재 읽은 페이지

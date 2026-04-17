@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { isUpgradeModalOnCooldown, markUpgradeModalDismissed } from "@/lib/subscription/upgrade-copy";
 
 interface UpgradeModalState {
   /** 모달 열림 여부 */
@@ -11,30 +12,49 @@ interface UpgradeModalState {
   featureKey: string | null;
   /** 업그레이드 모달 열기 */
   showUpgradeModal: (data: { feature: string; message: string }) => void;
-  /** 업그레이드 모달 닫기 */
+  /** 업그레이드 모달 닫기 (쿨다운 마킹 포함) */
   closeUpgradeModal: () => void;
+  /** 자발적 업그레이드 (프로필 CTA 등)용 직접 호출 */
+  openForUpgrade: (featureKey: string, headline?: string) => void;
 }
 
 /**
  * 업그레이드 유도 모달 전역 상태
- * 한도 도달 시 showUpgradeModal()로 트리거
+ * 한도 도달 시 showUpgradeModal()로 트리거. 4시간 쿨다운 적용.
  */
-export const useUpgradeModal = create<UpgradeModalState>((set) => ({
+export const useUpgradeModal = create<UpgradeModalState>((set, get) => ({
   open: false,
   feature: "",
   message: "",
   featureKey: null,
 
-  showUpgradeModal: (data) =>
+  showUpgradeModal: (data) => {
+    const featureKey = extractFeatureFromError(data.message);
+    if (isUpgradeModalOnCooldown(featureKey)) {
+      // 쿨다운 중이면 노출하지 않음 (스팸 방지)
+      return;
+    }
     set({
       open: true,
       feature: data.feature,
       message: data.message,
-      featureKey: extractFeatureFromError(data.message),
-    }),
+      featureKey,
+    });
+  },
 
-  closeUpgradeModal: () =>
-    set({ open: false, feature: "", message: "", featureKey: null }),
+  closeUpgradeModal: () => {
+    const { featureKey } = get();
+    markUpgradeModalDismissed(featureKey);
+    set({ open: false, feature: "", message: "", featureKey: null });
+  },
+
+  openForUpgrade: (featureKey, headline) =>
+    set({
+      open: true,
+      feature: headline ?? "프리미엄 업그레이드",
+      message: "더 많은 AI 기능과 높은 한도를 사용해보세요.",
+      featureKey,
+    }),
 }));
 
 /** 에러 메시지가 기능 한도 관련인지 판별 */

@@ -61,7 +61,16 @@ export async function addBook(
   status: ReadingStatus = "reading",
   user?: User | null,
   bookshelfId?: string | null
-): Promise<{ success: true; bookId: string; userBookId: string } | { success: false; error: string }> {
+): Promise<
+  | { success: true; bookId: string; userBookId: string }
+  | {
+      success: false;
+      error: string;
+      /** 중복 등록 시 기존 user_books.id (있을 때만). 호출부가 "해당 책으로 이동" 링크를 제공할 수 있다. */
+      existingUserBookId?: string;
+      code?: "DUPLICATE" | "UNKNOWN";
+    }
+> {
   try {
     const supabase = await createServerSupabaseClient();
 
@@ -185,7 +194,12 @@ export async function addBook(
     }
 
     if (existingUserBook) {
-      return { success: false, error: "이미 추가된 책입니다." };
+      return {
+        success: false,
+        error: "이미 서재에 있는 책이에요.",
+        existingUserBookId: existingUserBook.id,
+        code: "DUPLICATE",
+      };
     }
 
     // bookshelf_id 결정: 제공되지 않으면 메인 서재 사용

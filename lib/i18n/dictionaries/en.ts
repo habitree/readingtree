@@ -1492,6 +1492,19 @@ export const en: Dictionary = {
     otherBook: "Other",
   },
 
+  settings: {
+    pageTitle: "Settings",
+    pageDesc: "Manage your account, notifications, and privacy",
+    account: "Account",
+    reading: "Reading Goals",
+    notifications: "Notifications",
+    privacy: "Privacy",
+    exportData: "Export",
+    navigation: "Navigation",
+    saved: "Settings saved",
+    saveFailed: "Failed to save",
+  },
+
   profile: {
     profile: "Profile",
     pageTitle: "Profile",

@@ -6,6 +6,7 @@ import { BookSearchInput } from "@/components/books/book-search-input";
 import { ViewModeToggle } from "@/components/books/view-mode-toggle";
 import { StatusFilter } from "@/components/books/status-filter";
 import { SortSelect } from "@/components/books/sort-select";
+import { FilterChipStack } from "@/components/books/filter-chip-stack";
 import { getUserBooksWithNotes, type BookStats } from "@/app/actions/books";
 import { getSampleBooksWithNotes, getSampleBookshelfBooks } from "@/app/actions/sample";
 import type { ReadingStatus } from "@/types/book";
@@ -66,6 +67,9 @@ export async function BookshelfPageContent({
           </div>
         </div>
       </div>
+
+      {/* 활성 필터 칩 (상태/책장/검색어/정렬) */}
+      {!isGuest && <FilterChipStack basePath={bookshelfId ? undefined : "/books"} />}
 
       {/* 책 목록 (그리드 또는 테이블/리스트) */}
       {/* 모바일에서는 리스트 뷰, 데스크톱에서는 테이블 뷰 */}

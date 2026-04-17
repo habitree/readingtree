@@ -142,6 +142,15 @@ export function LoginForm() {
                   t("auth.login")
                 )}
               </Button>
+
+              <div className="text-center">
+                <Link
+                  href="/reset-password"
+                  className="text-xs text-muted-foreground hover:text-foreground hover:underline"
+                >
+                  {t("auth.forgotPassword")}
+                </Link>
+              </div>
             </form>
           )}
         </div>

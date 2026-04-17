@@ -11,9 +11,9 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Trophy, BookOpen, PartyPopper, Loader2 } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { updateBookStatus } from "@/app/actions/books";
-import { toast } from "sonner";
+import { notify } from "@/lib/toast";
+import { CompletionCelebrationCard } from "./completion-celebration-card";
 
 interface BookCompletionDialogProps {
   open: boolean;
@@ -21,6 +21,7 @@ interface BookCompletionDialogProps {
   userBookId: string;
   bookTitle: string;
   bookAuthor?: string | null;
+  bookCoverUrl?: string | null;
   /** 현재까지 완독한 횟수 (completed_dates 배열 길이) */
   completedCount?: number;
   /** 완독 확정 후 콜백 */
@@ -40,6 +41,7 @@ export function BookCompletionDialog({
   userBookId,
   bookTitle,
   bookAuthor,
+  bookCoverUrl,
   completedCount = 0,
   onCompleted,
   onDismiss,
@@ -114,14 +116,10 @@ export function BookCompletionDialog({
         });
       }, 500);
 
-      // 축하 화면 표시 후 완료 처리
-      setTimeout(() => {
-        toast.success("완독을 축하합니다!", { duration: 4000 });
-        onOpenChange(false);
-        onCompleted?.();
-      }, 2500);
+      // 서버 완독 처리는 끝났지만 축하 카드는 사용자가 닫을 때까지 유지.
+      // onCompleted 콜백(서재 갱신·리로드 등)은 카드 닫힘 시점에 호출한다.
     } catch (error) {
-      toast.error("완독 처리 중 오류가 발생했습니다.");
+      notify.error("완독 처리 중 오류가 발생했어요");
       setIsConfirming(false);
     }
   };
@@ -129,6 +127,11 @@ export function BookCompletionDialog({
   const handleDismiss = () => {
     onOpenChange(false);
     onDismiss?.();
+  };
+
+  const handleCloseCelebration = () => {
+    onOpenChange(false);
+    onCompleted?.();
   };
 
   return (
@@ -211,45 +214,20 @@ export function BookCompletionDialog({
               </div>
             </motion.div>
           ) : (
-            // 축하 화면
             <motion.div
               key="celebration"
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ type: "spring", stiffness: 200, damping: 15 }}
-              className="py-8 text-center"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.2 }}
             >
-              <motion.div
-                className="text-6xl mb-4"
-                animate={{
-                  scale: [1, 1.2, 1],
-                  rotate: [0, -10, 10, -10, 0],
-                }}
-                transition={{ duration: 0.6, ease: "easeInOut" }}
-              >
-                🎉
-              </motion.div>
-              <motion.h2
-                className="text-2xl font-bold bg-gradient-to-r from-emerald-500 to-amber-500 bg-clip-text text-transparent"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
-              >
-                축하합니다!
-              </motion.h2>
-              <motion.p
-                className="text-muted-foreground mt-2"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.4 }}
-              >
-                <span className="font-medium text-foreground">{bookTitle}</span>
-                <br />
-                {completedCount > 0
-                  ? `${nextReadCount}회독 완독을 기록했어요`
-                  : "완독을 기록했어요"
-                }
-              </motion.p>
+              <CompletionCelebrationCard
+                userBookId={userBookId}
+                bookTitle={bookTitle}
+                bookAuthor={bookAuthor}
+                bookCoverUrl={bookCoverUrl}
+                totalReadCount={nextReadCount}
+                onClose={handleCloseCelebration}
+              />
             </motion.div>
           )}
         </AnimatePresence>

@@ -146,6 +146,7 @@ export const ContinueReadingCard = memo(function ContinueReadingCard({
       userBookId={userBookId}
       bookTitle={title}
       bookAuthor={author}
+      bookCoverUrl={coverImageUrl}
       onCompleted={() => {
         window.location.reload();
       }}

@@ -226,7 +226,22 @@ export function BookSearch({ onBookAdded, onSelectBook, excludeBookIds, showAlre
       } else {
         // 기존 동작: 내 서재에 추가
         const result = await addBook(book, "reading");
-        if (!result.success) throw new Error(result.error);
+        if (!result.success) {
+          // 중복인 경우 "해당 책으로 이동" 링크 토스트 제공
+          if (result.code === "DUPLICATE" && result.existingUserBookId) {
+            const existingId = result.existingUserBookId;
+            toast.info(result.error, {
+              action: {
+                label: "해당 책으로 이동",
+                onClick: () => {
+                  router.push(`/books/${existingId}`);
+                },
+              },
+            });
+            return;
+          }
+          throw new Error(result.error);
+        }
         const addedBookId = result.userBookId;
         toast.success(t("books.bookAddedWithAction"), {
           description: t("books.bookAddedActionDesc"),

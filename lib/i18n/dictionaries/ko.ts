@@ -1493,6 +1493,19 @@ export const ko = {
     otherBook: "기타",
   },
 
+  settings: {
+    pageTitle: "설정",
+    pageDesc: "계정과 알림, 프라이버시를 관리해요",
+    account: "계정",
+    reading: "독서 목표",
+    notifications: "알림",
+    privacy: "프라이버시",
+    exportData: "내보내기",
+    navigation: "네비게이션",
+    saved: "설정을 저장했어요",
+    saveFailed: "저장에 실패했어요",
+  },
+
   profile: {
     profile: "프로필",
     pageTitle: "프로필",

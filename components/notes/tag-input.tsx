@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { X, Trash2, Sparkles, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { getUserTags, deleteTag, getTagUsageCount } from "@/app/actions/notes";
+import { getUserTags, getUserTagsWithCount, deleteTag, getTagUsageCount } from "@/app/actions/notes";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/lib/i18n";
 
@@ -42,6 +42,8 @@ export function TagInput({ value, onChange, placeholder, label, noteContent }: T
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [userTags, setUserTags] = useState<string[]>([]);
+  const [tagCounts, setTagCounts] = useState<Map<string, number>>(new Map());
+  const [popularTagSet, setPopularTagSet] = useState<Set<string>>(new Set());
   const [inputValue, setInputValue] = useState(value);
   const [isDeleteMode, setIsDeleteMode] = useState(false);
   const [selectedTagsForDelete, setSelectedTagsForDelete] = useState<Set<string>>(new Set());
@@ -61,10 +63,29 @@ export function TagInput({ value, onChange, placeholder, label, noteContent }: T
 
   const loadUserTags = async () => {
     try {
-      const tags = await getUserTags();
-      setUserTags(tags);
+      const tagsWithCount = await getUserTagsWithCount();
+      // 전체 태그 목록은 자동완성에, count는 인기 태그 배지에 사용
+      const allTags = tagsWithCount.map((t) => t.tag);
+      const countMap = new Map(tagsWithCount.map((t) => [t.tag, t.count]));
+      const popular = new Set(
+        [...tagsWithCount]
+          .sort((a, b) => b.count - a.count)
+          .slice(0, 5)
+          .filter((t) => t.count >= 2)
+          .map((t) => t.tag),
+      );
+      setUserTags(allTags);
+      setTagCounts(countMap);
+      setPopularTagSet(popular);
     } catch (error) {
       console.error("태그 목록 로드 오류:", error);
+      // fallback: 기본 태그 목록만
+      try {
+        const tags = await getUserTags();
+        setUserTags(tags);
+      } catch {
+        // ignore
+      }
     }
   };
 
@@ -534,27 +555,56 @@ export function TagInput({ value, onChange, placeholder, label, noteContent }: T
             </div>
           </div>
           <div className="flex flex-wrap gap-1.5">
-            {availableTags.slice(0, 20).map((tag, index) => {
-              const isSelected = selectedTagsForDelete.has(tag);
-              return (
-                <Badge
-                  key={index}
-                  variant={isDeleteMode ? (isSelected ? "destructive" : "outline") : "outline"}
-                  className={cn(
-                    "cursor-pointer transition-colors px-3 py-1 text-sm h-7 flex items-center",
-                    isDeleteMode
-                      ? isSelected
-                        ? "bg-destructive text-destructive-foreground"
-                        : "hover:bg-muted"
-                      : "hover:bg-primary hover:text-primary-foreground"
-                  )}
-                  onClick={() => handleSavedTagClick(tag)}
-                  title={isDeleteMode ? (isSelected ? t("notes.deselectTag") : t("notes.selectToDelete")) : t("notes.clickToAdd")}
-                >
-                  <span className="truncate max-w-[120px]">{tag}</span>
-                </Badge>
-              );
-            })}
+            {[...availableTags]
+              .sort((a, b) => {
+                const aPopular = popularTagSet.has(a) ? 1 : 0;
+                const bPopular = popularTagSet.has(b) ? 1 : 0;
+                if (aPopular !== bPopular) return bPopular - aPopular;
+                const aCount = tagCounts.get(a) ?? 0;
+                const bCount = tagCounts.get(b) ?? 0;
+                return bCount - aCount;
+              })
+              .slice(0, 20)
+              .map((tag, index) => {
+                const isSelected = selectedTagsForDelete.has(tag);
+                const isPopular = popularTagSet.has(tag);
+                const count = tagCounts.get(tag) ?? 0;
+                return (
+                  <Badge
+                    key={index}
+                    variant={isDeleteMode ? (isSelected ? "destructive" : "outline") : "outline"}
+                    className={cn(
+                      "cursor-pointer transition-colors px-3 py-1 text-sm h-7 inline-flex items-center gap-1",
+                      isDeleteMode
+                        ? isSelected
+                          ? "bg-destructive text-destructive-foreground"
+                          : "hover:bg-muted"
+                        : "hover:bg-primary hover:text-primary-foreground",
+                      !isDeleteMode && isPopular && "border-amber-300 bg-amber-50 text-amber-900 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-200",
+                    )}
+                    onClick={() => handleSavedTagClick(tag)}
+                    title={
+                      isDeleteMode
+                        ? isSelected
+                          ? t("notes.deselectTag")
+                          : t("notes.selectToDelete")
+                        : isPopular
+                          ? `${tag} · ${count}회 사용`
+                          : t("notes.clickToAdd")
+                    }
+                  >
+                    {isPopular && !isDeleteMode && (
+                      <span aria-hidden className="text-[10px]">★</span>
+                    )}
+                    <span className="truncate max-w-[120px]">{tag}</span>
+                    {count > 1 && !isDeleteMode && (
+                      <span className="ml-0.5 text-[10px] text-muted-foreground">
+                        {count}
+                      </span>
+                    )}
+                  </Badge>
+                );
+              })}
           </div>
         </div>
       )}

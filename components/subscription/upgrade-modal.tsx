@@ -20,6 +20,7 @@ import {
 import { useUpgradeModal } from "@/hooks/use-upgrade-modal";
 import { useEffect, useState } from "react";
 import { IS_BETA_MODE } from "@/lib/subscription/beta";
+import { getUpgradeCopy } from "@/lib/subscription/upgrade-copy";
 
 /** 포인트로 가능한 사용 횟수 예시 */
 const POINT_VALUE_EXAMPLES = [
@@ -37,7 +38,8 @@ export function UpgradeModal() {
   const router = useRouter();
   const [isMobile, setIsMobile] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const { open, message, closeUpgradeModal } = useUpgradeModal();
+  const { open, message, featureKey, closeUpgradeModal } = useUpgradeModal();
+  const copy = getUpgradeCopy(featureKey);
 
   useEffect(() => {
     const mql = window.matchMedia("(max-width: 768px)");
@@ -64,8 +66,11 @@ export function UpgradeModal() {
   const content = (
     <div className="space-y-5">
       {/* 한도 도달 메시지 (간결) */}
-      <div className="rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 p-4">
-        <p className="text-sm text-blue-800 dark:text-blue-200">{message}</p>
+      <div className="rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 p-4 space-y-1">
+        <p className="text-xs text-blue-700/80 dark:text-blue-300/80">{copy.description}</p>
+        {message && (
+          <p className="text-sm text-blue-800 dark:text-blue-200">{message}</p>
+        )}
       </div>
 
       {/* Gain-framing: 포인트로 할 수 있는 것들 */}
@@ -141,7 +146,7 @@ export function UpgradeModal() {
           <SheetHeader className="mb-4">
             <SheetTitle className="text-center text-lg flex items-center justify-center gap-2">
               <Lightbulb className="h-5 w-5 text-amber-500" />
-              더 깊은 독서를 이어가세요
+              {copy.headline}
             </SheetTitle>
             <SheetDescription className="text-center sr-only">
               포인트 충전 안내

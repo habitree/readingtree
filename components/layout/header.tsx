@@ -1,6 +1,6 @@
 "use client";
 
-import { User, Trees, Moon, Sun, Search } from "lucide-react";
+import { User, Trees, Moon, Sun, Search, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -25,6 +25,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "@/lib/i18n";
 import { LanguageToggle } from "@/components/ui/language-toggle";
 import { MusicToggleButton } from "@/components/music/music-mini-player";
+import { NotificationBell } from "@/components/notifications/notification-bell";
 
 /**
  * 헤더 컴포넌트
@@ -87,6 +88,9 @@ export function Header() {
                 <p>{t("search.search")} <kbd className="ml-1 text-xs opacity-60">⌘K</kbd></p>
               </TooltipContent>
             </Tooltip>
+
+            {/* 알림 벨 */}
+            <NotificationBell />
 
             {/* 배경음악 토글 */}
             <MusicToggleButton />
@@ -152,6 +156,12 @@ export function Header() {
                       <User className="h-4 w-4" />
                       <span>{t("nav.profile")}</span>
                       <DropdownMenuShortcut>⌘P</DropdownMenuShortcut>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/settings" className="flex items-center gap-2">
+                      <Settings className="h-4 w-4" />
+                      <span>설정</span>
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />

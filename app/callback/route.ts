@@ -52,9 +52,17 @@ export async function GET(request: NextRequest) {
         }
 
         const baseUrl = getAppUrl();
+        const redirectPath = type === "recovery" ? "/reset-password" : "/login";
         return NextResponse.redirect(
-          new URL(`/login?error=${encodeURIComponent(errorMessage)}`, baseUrl)
+          new URL(`${redirectPath}?error=${encodeURIComponent(errorMessage)}`, baseUrl)
         );
+      }
+
+      // 비밀번호 재설정 플로우: 세션 생성 직후 /update-password로 이동
+      if (type === "recovery") {
+        const baseUrl = getAppUrl();
+        const target = next && next.startsWith("/") ? next : "/update-password";
+        return NextResponse.redirect(new URL(target, baseUrl));
       }
 
       // 이메일 인증 성공, 세션 생성됨

@@ -34,6 +34,12 @@ export function ReferralTracker() {
     } else if (path.startsWith("/share/reports/")) {
       sourceType = "report";
       sourceId = path.split("/share/reports/")[1]?.split("?")[0] || "";
+    } else if (path.startsWith("/share/completions/")) {
+      sourceType = "completion";
+      sourceId = path.split("/share/completions/")[1]?.split("?")[0] || "";
+    } else if (path.startsWith("/share/bookshelves/")) {
+      sourceType = "bookshelf";
+      sourceId = path.split("/share/bookshelves/")[1]?.split("?")[0] || "";
     }
 
     if (sourceType && sourceId) {

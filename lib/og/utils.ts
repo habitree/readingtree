@@ -95,6 +95,18 @@ export function createOgAnonSupabaseClient() {
   );
 }
 
+/**
+ * OG 이미지 생성용 service_role 클라이언트.
+ * RLS를 우회해 공개 공유 리소스(예: 완독 카드)를 조회할 때 사용.
+ * 서버 전용 (OG route handler)에서만 호출해야 한다.
+ */
+export function createOgAdminSupabaseClient() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+}
+
 /** 원격 URL에서 브랜드 아이콘을 base64 data URI로 로드 (Supabase Storage용) */
 export async function loadBrandIconFromUrl(
   url: string
