@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Habitree Wave 4~8 고도화 로드맵 — 2026-04-20 (Sentry 보류 반영)</title>
+<style>
+  :root { --bg: #fafaf9; --card: #fff; --border: #e7e5e4; --text: #1c1917; --muted: #78716c; --primary: #16a34a; --primary-bg: #f0fdf4; --warn: #ea580c; --warn-bg: #fff7ed; --info: #2563eb; --info-bg: #eff6ff; --danger: #dc2626; --danger-bg: #fef2f2; --purple: #7c3aed; --purple-bg: #faf5ff; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; padding: 24px; max-width: 1080px; margin: 0 auto; }
+  h1 { font-size: 30px; font-weight: 800; margin-bottom: 8px; letter-spacing: -0.02em; }
+  .subtitle { color: var(--muted); font-size: 14px; margin-bottom: 32px; }
+  h2 { font-size: 22px; font-weight: 700; margin: 40px 0 16px; padding-bottom: 8px; border-bottom: 2px solid var(--border); }
+  h3 { font-size: 16px; font-weight: 600; margin: 20px 0 10px; }
+  h4 { font-size: 14px; font-weight: 600; margin: 12px 0 6px; color: var(--text); }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 16px; transition: box-shadow 0.2s; }
+  .card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
+  .card-decision { background: #fffbeb; border-color: #fde68a; border-left: 4px solid var(--warn); }
+  .card-agent { background: #f0fdf4; border-color: #bbf7d0; border-left: 4px solid var(--primary); }
+  .card-wave { border-left: 4px solid var(--info); }
+  .badge { display: inline-block; font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 99px; margin-right: 6px; letter-spacing: 0.02em; }
+  .badge-wave4 { background: #dbeafe; color: #1e40af; }
+  .badge-wave5 { background: #e0e7ff; color: #3730a3; }
+  .badge-wave6 { background: #ede9fe; color: #5b21b6; }
+  .badge-wave7 { background: #fce7f3; color: #9d174d; }
+  .badge-wave8 { background: #fef3c7; color: #92400e; }
+  .badge-stab { background: #fee2e2; color: var(--danger); }
+  .badge-conv { background: #dcfce7; color: #166534; }
+  .badge-money { background: var(--purple-bg); color: var(--purple); }
+  .badge-agent { background: var(--primary-bg); color: var(--primary); }
+  .badge-decide { background: var(--warn-bg); color: var(--warn); }
+  .tag { display: inline-block; font-size: 11px; color: var(--muted); background: #f5f5f4; padding: 2px 8px; border-radius: 4px; margin: 2px 4px 2px 0; }
+  .desc { color: var(--muted); font-size: 13px; margin: 8px 0; }
+  .detail { font-size: 13px; margin: 12px 0 0; padding: 12px; background: #fafaf9; border-radius: 8px; border-left: 3px solid var(--primary); }
+  .grid { display: grid; gap: 16px; }
+  @media (min-width: 720px) { .grid-2 { grid-template-columns: 1fr 1fr; } .grid-3 { grid-template-columns: 1fr 1fr 1fr; } }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 12px 0; }
+  th { text-align: left; font-weight: 600; padding: 10px 12px; background: #f5f5f4; border-bottom: 1px solid var(--border); }
+  td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  .status-bar { display: flex; gap: 4px; margin: 24px 0; border-radius: 6px; overflow: hidden; }
+  .status-segment { height: 10px; }
+  .legend { display: flex; flex-wrap: wrap; gap: 16px; font-size: 12px; color: var(--muted); margin-bottom: 24px; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 4px; vertical-align: middle; }
+  .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin: 16px 0; }
+  .kpi { background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 14px; text-align: center; }
+  .kpi-value { font-size: 22px; font-weight: 800; color: var(--primary); margin: 4px 0; }
+  .kpi-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+  .kpi-baseline { font-size: 11px; color: var(--muted); margin-top: 4px; }
+  .decision-q { font-weight: 600; font-size: 14px; margin-bottom: 6px; color: var(--text); }
+  .decision-opts { display: grid; gap: 8px; margin-top: 10px; }
+  .decision-opt { padding: 10px 12px; background: #fff; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; }
+  .decision-opt strong { color: var(--warn); }
+  .decision-rec { background: var(--primary-bg); border-color: #86efac; }
+  .decision-rec strong { color: var(--primary); }
+  .dep-diagram { background: #1c1917; color: #fafaf9; padding: 20px; border-radius: 8px; font-family: 'Consolas', 'Monaco', monospace; font-size: 12px; line-height: 1.5; overflow-x: auto; white-space: pre; margin: 16px 0; }
+  .timeline-table th { background: #1c1917; color: #fafaf9; }
+  .risk-row { background: #fef2f2; }
+  .toc { background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 16px 20px; margin-bottom: 24px; }
+  .toc ul { list-style: none; padding-left: 0; }
+  .toc li { padding: 4px 0; font-size: 13px; }
+  .toc a { color: var(--info); text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+  .section-icon { font-size: 20px; margin-right: 8px; vertical-align: middle; }
+  .highlight { background: #fef3c7; padding: 1px 4px; border-radius: 3px; }
+  code { font-family: 'Consolas', 'Monaco', monospace; background: #f5f5f4; padding: 1px 5px; border-radius: 3px; font-size: 12px; }
+  footer { margin-top: 48px; padding-top: 24px; border-top: 1px solid var(--border); text-align: center; color: var(--muted); font-size: 12px; }
+  .alert { padding: 12px 16px; border-radius: 8px; font-size: 13px; margin: 12px 0; }
+  .alert-warn { background: var(--warn-bg); border-left: 4px solid var(--warn); color: #9a3412; }
+  .alert-info { background: var(--info-bg); border-left: 4px solid var(--info); color: #1e40af; }
+  .acceptance { font-size: 12px; background: #f0fdf4; padding: 10px 12px; border-radius: 6px; border-left: 3px solid var(--primary); margin-top: 10px; }
+  .acceptance-title { font-weight: 600; color: var(--primary); margin-bottom: 4px; }
+  .decided { background: #f0fdf4 !important; border-color: #86efac !important; border-left: 4px solid var(--primary) !important; }
+  .decided-banner { display: inline-block; background: var(--primary); color: white; font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 99px; margin-bottom: 8px; letter-spacing: 0.04em; }
+  .strikethrough { text-decoration: line-through; opacity: 0.5; }
+</style>
+</head>
+<body>
+
+<h1>Habitree Wave 4~8 고도화 로드맵</h1>
+<p class="subtitle">3~6개월 (26주) · 2026-04-21 ~ 2026-10-17 · 편의성 · 안정성 · 수익화 완결 3축 병행</p>
+
+<div class="alert" style="background:#dcfce7;border-left:4px solid var(--primary);color:#14532d">
+  <strong>📌 결정 반영 (2026-04-20)</strong><br>
+  • <strong>Decision #1 Sentry 도입 보류</strong> (비용) → 자체 <code>errors</code> 테이블 + Vercel Logs<br>
+  • <strong>Decision #2 재검토 → Supabase 기반 Rate Limit 최종 채택</strong> (Upstash Redis 철회) → 동일 Seoul region으로 5-10ms, 인프라 간결, 비용 0. <strong>rate_limits 테이블 + RPC 적용 + 코드 구현 완료</strong><br>
+  • <strong>Decision #6</strong> 자동 무효 (Sentry 샘플링 불필요)<br>
+  • 헬스체크·Discord 알림·Runbook은 일정대로 진행
+</div>
+
+<!-- 전체 진행 상태바 -->
+<div class="status-bar">
+  <div class="status-segment" style="flex:3; background:#22c55e;" title="Wave 1~3 완료"></div>
+  <div class="status-segment" style="flex:3; background:#3b82f6;" title="Wave 4 예정"></div>
+  <div class="status-segment" style="flex:3; background:#6366f1;" title="Wave 5 예정"></div>
+  <div class="status-segment" style="flex:3; background:#8b5cf6;" title="Wave 6 예정"></div>
+  <div class="status-segment" style="flex:3; background:#ec4899;" title="Wave 7 예정"></div>
+  <div class="status-segment" style="flex:4; background:#f59e0b;" title="Wave 8 예정"></div>
+</div>
+<div class="legend">
+  <span><span class="legend-dot" style="background:#22c55e"></span>Wave 1~3 완료</span>
+  <span><span class="legend-dot" style="background:#3b82f6"></span>Wave 4 (3주)</span>
+  <span><span class="legend-dot" style="background:#6366f1"></span>Wave 5 (3주)</span>
+  <span><span class="legend-dot" style="background:#8b5cf6"></span>Wave 6 (3주)</span>
+  <span><span class="legend-dot" style="background:#ec4899"></span>Wave 7 (3주)</span>
+  <span><span class="legend-dot" style="background:#f59e0b"></span>Wave 8 (4주)</span>
+</div>
+
+<!-- 목차 -->
+<div class="toc">
+  <h3 style="margin-top:0">목차</h3>
+  <ul>
+    <li>1. <a href="#context">Context — 왜 지금 이 작업인가</a></li>
+    <li>2. <a href="#decisions">⚠️ 판단이 필요한 항목 10개</a></li>
+    <li>3. <a href="#agents">4개 신규 도메인 에이전트</a></li>
+    <li>4. <a href="#waves">Wave 4~8 상세</a></li>
+    <li>5. <a href="#kpi">축별 KPI 목표</a></li>
+    <li>6. <a href="#deps">의존관계 다이어그램</a></li>
+    <li>7. <a href="#timeline">주차별 타임라인</a></li>
+    <li>8. <a href="#risks">리스크 & 완화</a></li>
+  </ul>
+</div>
+
+<!-- ===== 1. Context ===== -->
+<h2 id="context"><span class="section-icon">🎯</span>1. Context — 왜 지금 이 작업인가</h2>
+
+<div class="card">
+  <div class="grid grid-3">
+    <div>
+      <div class="kpi-label">현재 규모</div>
+      <div class="kpi-value">69</div>
+      <div class="kpi-baseline">라우트 · 150+ 액션 · 31 테이블</div>
+    </div>
+    <div>
+      <div class="kpi-label">Wave 1~3 완료</div>
+      <div class="kpi-value" style="color:var(--info)">18</div>
+      <div class="kpi-baseline">런칭·리텐션·편의성 완료 항목</div>
+    </div>
+    <div>
+      <div class="kpi-label">남은 블로커</div>
+      <div class="kpi-value" style="color:var(--danger)">5</div>
+      <div class="kpi-baseline">#8·#9·Sentry·Redis·테스트</div>
+    </div>
+  </div>
+  <p class="desc" style="margin-top:16px">
+    Habitree는 기능이 포화 단계에 도달했으나 <span class="highlight">수익화 퍼널(Phase 2 #8·#9)</span>·<span class="highlight">안정성 인프라(Sentry·Redis)</span>·<span class="highlight">파워유저 편의성(Phase 3B)</span>에서 마무리가 필요합니다. 동시에 에이전트 체계에 <strong>리텐션·분석·지원·관측</strong> 도메인이 비어 있어 고도화 중 책임 경계 모호 위험이 있습니다. 본 플랜은 이 둘을 한 번에 해결합니다.
+  </p>
+</div>
+
+<!-- ===== 2. Decision Points ===== -->
+<h2 id="decisions"><span class="section-icon">⚠️</span>2. 판단이 필요한 항목</h2>
+
+<div class="alert alert-warn">
+  <strong>의사결정이 먼저 필요한 10개 항목</strong> — 이 결정들이 Wave 4~6의 세부 구현 방향을 좌우합니다. 각 항목에 <span style="color:var(--primary);font-weight:600">✓ 추천안</span>이 표시되어 있습니다.
+</div>
+
+<!-- Decision 1: Sentry Plan - DECIDED -->
+<div class="card card-decision decided">
+  <span class="decided-banner">✅ 결정됨 (2026-04-20)</span>
+  <span class="badge badge-stab">안정성</span>
+  <span class="badge badge-wave4">Wave 4</span>
+  <h3>~~Sentry 요금제 선택~~ → <strong>자체 errors 테이블 + Vercel Logs</strong></h3>
+  <p class="desc">비용 부담($26+/mo)으로 Sentry 도입 보류. 자체 수집으로 0원에서 시작. <strong>향후 도입 트리거</strong>: MAU 5,000 또는 월 errors 1,000건 초과 시 검토.</p>
+  <div class="decision-opts">
+    <div class="decision-opt decision-rec">
+      <strong>✓ 채택: 자체 errors 테이블 + Vercel Logs</strong> — Supabase에 errors 테이블(message·stack·fingerprint·release·user_id_hash) 신설 + 클라이언트 ErrorBoundary/서버 captureError로 수집 + <code>/admin/errors</code> 대시보드. Vercel Logs 30일 자동 보관. 향후 Sentry 마이그레이션 가능하도록 호환 스키마 유지.
+    </div>
+    <div class="decision-opt strikethrough">
+      Team $26/mo — 추후 도입 후보
+    </div>
+    <div class="decision-opt strikethrough">
+      Business $80/mo — 추후 도입 후보
+    </div>
+  </div>
+</div>
+
+<!-- Decision 2: 재검토 후 Supabase 기반으로 전환 -->
+<div class="card card-decision decided">
+  <span class="decided-banner">✅ 최종 결정 (2026-04-20, 재검토 후 Supabase 채택)</span>
+  <span class="badge badge-stab">안정성</span>
+  <span class="badge badge-wave4">Wave 4</span>
+  <h3>Rate Limit: Supabase rate_limits 테이블 + RPC (Upstash Redis 철회)</h3>
+  <p class="desc">"Redis가 꼭 필요한가?" 재검토 결과, 동일 Seoul region인 Supabase가 더 빠르고 간결. 비용 0.</p>
+  <div class="decision-opts">
+    <div class="decision-opt decision-rec">
+      <strong>✓ 최종 채택: Supabase 기반</strong> — <code>public.rate_limits</code> 테이블 + <code>rate_limit_check(token, limit, window)</code> RPC. 원자적 UPSERT로 race 방지. Vercel Seoul → Supabase Seoul <strong>~5-10ms</strong>(동일 region). fail-open(DB 장애 시 메모리 fallback). 추가 인프라·비용·환경변수 모두 0.
+    </div>
+    <div class="decision-opt strikethrough">
+      Upstash Redis Free + AWS Tokyo — region 열위(~30-40ms), 외부 인프라 관리 복잡도. 철회
+    </div>
+    <div class="decision-opt strikethrough">
+      메모리 유지 + Wave 5 연기 — 다중 인스턴스 정확도 70~90% 수준
+    </div>
+  </div>
+  <div class="acceptance" style="margin-top:12px">
+    <div class="acceptance-title">🎯 적용 완료 (2026-04-20)</div>
+    <ul style="font-size:12px;padding-left:18px;margin:4px 0">
+      <li>DB 마이그레이션 적용: <code>migration-202604201700__monitoring__rate-limits-table.sql</code> (테이블 + RLS + 2개 RPC)</li>
+      <li>코드: <code>lib/middleware/rate-limit.ts</code> Supabase RPC 호출 + 메모리 fallback</li>
+      <li>RPC 동작 검증: 5회 허용 → 6회째 <code>success:false, remaining:0</code> 확인</li>
+      <li>기존 시그니처 100% 유지 → 22개 API 라우트 호출부 변경 0</li>
+      <li>Upstash 패키지 제거, <code>.env.example</code>에서 UPSTASH 변수 삭제</li>
+      <li>타입체크 통과</li>
+    </ul>
+  </div>
+  <div class="acceptance" style="margin-top:8px">
+    <div class="acceptance-title">📊 성능 비교</div>
+    Supabase Seoul: <strong>~5-10ms</strong> (1차 선택) · Upstash Tokyo(철회): ~30-40ms · 메모리(fallback): ~0.1ms
+  </div>
+  <div class="acceptance" style="margin-top:8px">
+    <div class="acceptance-title">🔄 Redis 재도입 트리거</div>
+    Supabase RPC p95 > 100ms 초과 또는 초당 500+ TPS 돌파 시점에 재평가
+  </div>
+</div>
+
+<!-- Decision 3: 포인트 비용 -->
+<div class="card card-decision">
+  <span class="badge badge-decide">DECIDE #3</span>
+  <span class="badge badge-money">수익화</span>
+  <span class="badge badge-wave4">Wave 4</span>
+  <h3>AI 기능 포인트 비용 설정</h3>
+  <p class="desc">무료 한도 초과 시 포인트로 소비. 가격이 낮으면 구독 유인 약해지고, 높으면 전환 자체가 안 됨.</p>
+  <div class="decision-q">초기 비용을 얼마로 설정할까요? (A/B 후 조정 전제)</div>
+  <div class="decision-opts">
+    <div class="decision-opt decision-rec">
+      <strong>✓ 추천 (중간값)</strong> — AI 채팅 <strong>40P</strong> / OCR <strong>25P</strong> / AI 리포트 <strong>100P</strong>. 활발한 사용자 월 적립량(1,500~3,000P) 기준 10~20회 사용 가능. 구독 유인과 경험 허들 균형.
+    </div>
+    <div class="decision-opt">
+      <strong>낮은 가격</strong> — 채팅 20P / OCR 15P / 리포트 50P. 체험 우선, 수익 낮음, 구독 전환 약함.
+    </div>
+    <div class="decision-opt">
+      <strong>높은 가격</strong> — 채팅 60P / OCR 40P / 리포트 150P. 구독 강제도 되지만 이탈 위험.
+    </div>
+  </div>
+</div>
+
+<!-- Decision 4: 구독 가격 -->
+<div class="card card-decision">
+  <span class="badge badge-decide">DECIDE #4</span>
+  <span class="badge badge-money">수익화</span>
+  <span class="badge badge-wave5">Wave 5</span>
+  <h3>구독 요금제 가격</h3>
+  <p class="desc">Polar 체크아웃 연결 시 확정 필요. 독서앱 경쟁군 참고 시 ₩4,900~9,900 대역.</p>
+  <div class="decision-q">reader_v2(기본) / master_v2(고급) 월 가격?</div>
+  <div class="decision-opts">
+    <div class="decision-opt decision-rec">
+      <strong>✓ 추천</strong> — Reader <strong>₩5,900/월</strong> (연 ₩59,000 = 2개월 할인), Master <strong>₩9,900/월</strong> (연 ₩99,000). 심리적 허들 완화 + 연간 17% 할인 강조.
+    </div>
+    <div class="decision-opt">
+      <strong>저가 진입</strong> — Reader ₩3,900 / Master ₩6,900. MAU 성장 우선, ARPPU 낮음.
+    </div>
+    <div class="decision-opt">
+      <strong>프리미엄 포지셔닝</strong> — Reader ₩7,900 / Master ₩14,900. 수익 우선, 전환율 낮음.
+    </div>
+  </div>
+</div>
+
+<!-- Decision 5: 해지방지 할인 -->
+<div class="card card-decision">
+  <span class="badge badge-decide">DECIDE #5</span>
+  <span class="badge badge-money">수익화</span>
+  <span class="badge badge-wave6">Wave 6</span>
+  <h3>해지 방지 오퍼 강도</h3>
+  <p class="desc">해지 설문 후 이유별 오퍼 제시. 할인 과다 시 의도적 해지 남용 발생.</p>
+  <div class="decision-q">가격 이유 해지자에게 얼마나 할인?</div>
+  <div class="decision-opts">
+    <div class="decision-opt decision-rec">
+      <strong>✓ 추천</strong> — <strong>30% 1개월 할인</strong> + 일시중단 최대 <strong>1개월</strong> 옵션. 과거 12개월 내 1회 한정. 남용 방지 쿨다운.
+    </div>
+    <div class="decision-opt">
+      <strong>관대한 오퍼</strong> — 50% 3개월 할인. 단기 churn save는 크지만 LTV 훼손.
+    </div>
+    <div class="decision-opt">
+      <strong>보수적</strong> — 할인 없이 일시중단만 제공. 남용 제로, save rate 낮음.
+    </div>
+  </div>
+</div>
+
+<!-- Decision 6: Sentry 샘플링 - INVALIDATED -->
+<div class="card card-decision decided" style="background:#f5f5f4 !important;border-color:#a8a29e !important;border-left:4px solid var(--muted) !important">
+  <span class="decided-banner" style="background:var(--muted)">자동 무효</span>
+  <span class="badge badge-stab">안정성</span>
+  <h3 class="strikethrough">Sentry 트랜잭션 샘플링 비율</h3>
+  <p class="desc">Decision #1에서 Sentry 도입을 보류했으므로 본 항목은 <strong>자동 무효화</strong>. Sentry 도입 시점에 다시 결정.</p>
+</div>
+
+<!-- Decision 6 대체: 자체 errors 정책 -->
+<div class="card card-decision decided">
+  <span class="decided-banner">✅ 추가 결정 (대체)</span>
+  <span class="badge badge-stab">안정성</span>
+  <span class="badge badge-wave4">Wave 4</span>
+  <h3>자체 errors 테이블 보관·집계 정책</h3>
+  <p class="desc">Sentry 대체 시스템의 운영 파라미터.</p>
+  <div class="decision-opts">
+    <div class="decision-opt decision-rec">
+      <strong>✓ 채택</strong> — 보유 기간 <strong>180일</strong> · 그룹핑 키 <code>fingerprint = sha256(message + first_stack_frame + release)</code> · 동일 fingerprint는 count 증가만 · Discord Critical: 신규 fingerprint 발생 OR 5분간 10건 초과 · admin만 SELECT (RLS).
+    </div>
+  </div>
+</div>
+
+<!-- Decision 7: 알림 채널 -->
+<div class="card card-decision">
+  <span class="badge badge-decide">DECIDE #7</span>
+  <span class="badge badge-stab">안정성</span>
+  <span class="badge badge-wave6">Wave 6</span>
+  <h3>1차 장애 알림 채널</h3>
+  <p class="desc">Monitoring Agent의 Critical 알림 수신처.</p>
+  <div class="decision-q">Discord / Slack / 둘 다?</div>
+  <div class="decision-opts">
+    <div class="decision-opt decision-rec">
+      <strong>✓ 추천: Discord 1차</strong> — 이미 채널 설정 가능 확인됨, 개인 봇 제어 쉬움, Habitree 유저 커뮤니티와 분리된 ops 서버. 무료.
+    </div>
+    <div class="decision-opt">
+      <strong>Slack</strong> — 워크스페이스 미구축 시 신규 생성 필요. 무료 플랜 메시지 90일 제한.
+    </div>
+    <div class="decision-opt">
+      <strong>이메일</strong> — 실시간성 부족, 스팸 처리 위험.
+    </div>
+  </div>
+</div>
+
+<!-- Decision 8: 일본어 i18n 시점 -->
+<div class="card card-decision">
+  <span class="badge badge-decide">DECIDE #8</span>
+  <span class="badge badge-conv">편의성</span>
+  <span class="badge badge-wave8">Wave 8</span>
+  <h3>일본어(ja) i18n 확장 시점</h3>
+  <p class="desc">일본 시장 진입 시 필요. 현재 KR 사용자 위주.</p>
+  <div class="decision-q">Wave 8에 포함할까요?</div>
+  <div class="decision-opts">
+    <div class="decision-opt decision-rec">
+      <strong>✓ 추천: Phase 3C(8월 이후)로 이연</strong> — Wave 4~7 지표 확인 후 일본 시장 진입 타당성 판단. 지금은 ko/en 완성도 우선.
+    </div>
+    <div class="decision-opt">
+      <strong>Wave 8 포함</strong> — 기계 번역 + 검수. 시장 진입 전 준비.
+    </div>
+    <div class="decision-opt">
+      <strong>사용자 요청 시만</strong> — 특정 파트너/B2B 계약 발생 시 착수.
+    </div>
+  </div>
+</div>
+
+<!-- Decision 9: E2E 우선순위 -->
+<div class="card card-decision">
+  <span class="badge badge-decide">DECIDE #9</span>
+  <span class="badge badge-stab">안정성</span>
+  <span class="badge badge-wave6">Wave 6</span>
+  <h3>Playwright E2E 시나리오 우선순위</h3>
+  <p class="desc">8개 골든패스 중 Wave 6 초반 3개만 먼저 확보 필요. 나머지는 Wave 7 분산.</p>
+  <div class="decision-q">먼저 테스트할 3개?</div>
+  <div class="decision-opts">
+    <div class="decision-opt decision-rec">
+      <strong>✓ 추천</strong> — ① 가입→온보딩→첫 책 ② 구독 결제(sandbox)→AI 한도 상향 ③ 노트 작성→공유. <strong>수익·바이럴 리스크 높은 경로 우선</strong>.
+    </div>
+    <div class="decision-opt">
+      <strong>인증 우선</strong> — 가입/로그인/비번재설정 3종. 보안 리스크 우선.
+    </div>
+    <div class="decision-opt">
+      <strong>읽기 퍼널</strong> — 책 검색/추가/진행률/완독 4개. 핵심 기능 회귀 방지.
+    </div>
+  </div>
+</div>
+
+<!-- Decision 10: 포인트 상점 출시 시점 -->
+<div class="card card-decision">
+  <span class="badge badge-decide">DECIDE #10</span>
+  <span class="badge badge-money">수익화</span>
+  <span class="badge badge-wave8">Wave 8+</span>
+  <h3>포인트 상점 출시 시점</h3>
+  <p class="desc">Engagement Agent 관할. 포인트 잉여 해소 + 감정적 보상. Legal 검증 필요.</p>
+  <div class="decision-q">언제 출시?</div>
+  <div class="decision-opts">
+    <div class="decision-opt decision-rec">
+      <strong>✓ 추천: Phase 3C 초반(8~9월)</strong> — Wave 4~6에서 포인트 유통량 데이터 확보 후 시뮬레이션 기반 설계. 현재는 소비처(AI/OCR) 확보가 더 시급.
+    </div>
+    <div class="decision-opt">
+      <strong>Wave 6에 조기 도입</strong> — 바이럴 효과 기대. 단, 포인트 경제 데이터 부족으로 밸런싱 리스크.
+    </div>
+    <div class="decision-opt">
+      <strong>Phase 3C 후반(10월)</strong> — 연말 이벤트에 맞춰 런칭. 리더보드와 동시 출시.
+    </div>
+  </div>
+</div>
+
+<!-- ===== 3. 4개 신규 에이전트 ===== -->
+<h2 id="agents"><span class="section-icon">🤖</span>3. 4개 신규 도메인 에이전트</h2>
+
+<div class="alert alert-info">
+  기존 13개 체계에서 <strong>18개로 확장</strong>. 모두 <code>alwaysApply: false</code>로 glob 조건부 로드 → 컨텍스트 비용 영향 없음. 파일은 <code>.agent/rules/</code>에 이미 생성 완료.
+</div>
+
+<div class="grid grid-2">
+
+<div class="card card-agent">
+  <span class="badge badge-agent">AGENT #15</span>
+  <h3>🏆 Engagement Agent</h3>
+  <p class="desc">게이미피케이션 · 리텐션 (포인트 소비, 뱃지, 미션, 리더보드, 챌린지, A/B)</p>
+  <h4>경계</h4>
+  <p style="font-size:12px;color:var(--muted)">Identity Agent가 포인트 원장 소유 → Engagement는 <strong>소비처·감정 보상</strong>만 설계. 잔액 직접 수정 금지.</p>
+  <h4>신규 테이블</h4>
+  <p style="font-size:12px"><code>achievements</code>, <code>user_achievements</code>, <code>daily_missions</code>, <code>shop_items</code>, <code>leaderboard_snapshots</code>, <code>group_challenges</code>, <code>experiments</code></p>
+  <h4>핵심 원칙</h4>
+  <p style="font-size:12px">인플레이션 방지 · 남용 방지 · A/B 필수 · prefers-reduced-motion 존중</p>
+</div>
+
+<div class="card card-agent">
+  <span class="badge badge-agent">AGENT #16</span>
+  <h3>📊 Analytics Agent</h3>
+  <p class="desc">사용자 분석 (이벤트 스키마, 코호트·펀널, DAU/WAU/MAU, Growth Dashboard)</p>
+  <h4>경계</h4>
+  <p style="font-size:12px;color:var(--muted)">비즈니스 로직 금지 — 수집·집계만. PII 저장 금지 (user_id FK만). 에러는 Monitoring 관할.</p>
+  <h4>신규 테이블</h4>
+  <p style="font-size:12px"><code>events</code>, <code>events_daily_rollup</code>, <code>cohort_snapshots</code>, <code>funnel_definitions</code>, <code>event_schemas</code></p>
+  <h4>핵심 원칙</h4>
+  <p style="font-size:12px">PIPA 최소 수집 · 스키마 버전 관리 · 서버 사이드 우선 · 옵트아웃 존중</p>
+</div>
+
+<div class="card card-agent">
+  <span class="badge badge-agent">AGENT #17</span>
+  <h3>💬 Support Agent</h3>
+  <p class="desc">고객지원 (FAQ·도움말, 인앱 피드백, 공지사항, 버그 리포트, i18n 지원)</p>
+  <h4>경계</h4>
+  <p style="font-size:12px;color:var(--muted)">Admin이 답변·운영 담당 → Support는 <strong>인입 경로</strong>만 소유. 외부 SDK(Intercom/Crisp) 금지.</p>
+  <h4>신규 테이블</h4>
+  <p style="font-size:12px"><code>support_tickets</code>, <code>support_ticket_messages</code>, <code>announcements</code>, <code>user_announcement_reads</code>, <code>faq_articles</code></p>
+  <h4>핵심 원칙</h4>
+  <p style="font-size:12px">i18n 필수(ko/en) · 로그인 전 접근(<code>/help</code>, <code>/faq</code>) · 경량 위젯 <30KB</p>
+</div>
+
+<div class="card card-agent">
+  <span class="badge badge-agent">AGENT #18</span>
+  <h3>🔍 Monitoring Agent</h3>
+  <p class="desc">운영·관측 (Sentry, 헬스체크, 알림, Runbook, SLA/SLO, 자동 롤백)</p>
+  <h4>경계</h4>
+  <p style="font-size:12px;color:var(--muted)">비즈니스 로직 금지 — 계측만. 성공 이벤트는 Analytics 관할. DB 스키마 변경 금지.</p>
+  <h4>SLO 목표</h4>
+  <p style="font-size:12px">가용성 99.5%/월 · 5xx <0.5% · P50 <500ms · P95 <2000ms · 롤백 <5분</p>
+  <h4>핵심 원칙</h4>
+  <p style="font-size:12px">3축 분리(logs/metrics/traces) · SLO 기반 알림 · PII 스크러빙 · Runbook 우선 작성</p>
+</div>
+
+</div>
+
+<h3 style="margin-top:24px">공통 규칙 파일 (EXTENDS 대상)</h3>
+<table>
+  <tr><th>파일</th><th>주 소유자</th><th>목적</th></tr>
+  <tr><td><code>event_schema_rule.md</code></td><td>Analytics</td><td>네임스페이스·스키마 버전·PIPA 최소 수집</td></tr>
+  <tr><td><code>i18n_rule.md</code></td><td>Support</td><td>ko/en 로케일 키·fallback·DB <code>*_ko</code>/<code>*_en</code> 표준</td></tr>
+  <tr><td><code>observability_rule.md</code></td><td>Monitoring</td><td>로그·지표·추적 3축, PII 스크러빙, SLO 임계치</td></tr>
+  <tr><td><code>gamification_economy_rule.md</code></td><td>Engagement</td><td>포인트 인플레이션 방지, A/B 필수, 상점 검증</td></tr>
+</table>
+
+<!-- ===== 4. Wave 4~8 상세 ===== -->
+<h2 id="waves"><span class="section-icon">🌊</span>4. Wave 4~8 상세</h2>
+
+<!-- Wave 4 -->
+<div class="card card-wave">
+  <span class="badge badge-wave4">WAVE 4</span>
+  <span class="badge badge-stab">안정성</span>
+  <span class="badge badge-money">수익화</span>
+  <span class="badge badge-conv">편의성</span>
+  <h3>Wave 4 (4/21 ~ 5/11, 3주) — 기반 안정화 + 포인트 소비</h3>
+  <div class="grid grid-3" style="margin-top:16px">
+    <div>
+      <h4>🔴 안정성 <span style="font-size:10px;background:var(--primary-bg);color:var(--primary);padding:2px 6px;border-radius:4px">Sentry 보류 반영</span></h4>
+      <ul style="font-size:12px;padding-left:16px;color:var(--text)">
+        <li><strong>errors 테이블</strong> 신설 (Supabase) + RLS</li>
+        <li><code>/api/errors/ingest</code> + ErrorBoundary 자동 보고</li>
+        <li><code>lib/monitoring/{capture,scrub,logger}.ts</code></li>
+        <li><code>/admin/errors</code> 대시보드 (빈도순·해결 토글)</li>
+        <li>Vercel Logs 활용 (자동, 30일)</li>
+        <li>Upstash Redis <strong>Free Tier</strong> 전환 (10K cmd/day, sliding window, fail-open, PAYG 자동전환)</li>
+        <li>Supabase PITR 7일 + 백업 runbook</li>
+      </ul>
+    </div>
+    <div>
+      <h4>💜 수익화</h4>
+      <ul style="font-size:12px;padding-left:16px;color:var(--text)">
+        <li>enforce-gate.ts 신설</li>
+        <li>AI 채팅 40P / OCR 25P / 리포트 100P</li>
+        <li>402 응답 → 업그레이드 모달 자동 오픈</li>
+        <li>refund_points RPC (중복 과금 방지)</li>
+        <li>spend는 AI 성공 후 커밋</li>
+      </ul>
+    </div>
+    <div>
+      <h4>💚 편의성</h4>
+      <ul style="font-size:12px;padding-left:16px;color:var(--text)">
+        <li>Quick Capture Adapter 통합</li>
+        <li>기록 템플릿 10종 프리셋</li>
+        <li>계속읽기 "N분 전" 표시</li>
+        <li>정렬 3종 추가 (최근기록·진도·완독임박)</li>
+      </ul>
+    </div>
+  </div>
+  <div class="acceptance">
+    <div class="acceptance-title">✓ 수락 기준</div>
+    의도적 throw → errors 테이블 30초 내 INSERT + fingerprint 그룹핑 · 동일 에러 10회 발생 → Discord Critical 1회 (5분 디바운스) · AI 11회 시도 시 10회 후 포인트 차감 or 402 · QC Dialog/Sheet 코드 중복 40% 제거
+  </div>
+</div>
+
+<!-- Wave 5 -->
+<div class="card card-wave">
+  <span class="badge badge-wave5">WAVE 5</span>
+  <span class="badge badge-stab">안정성</span>
+  <span class="badge badge-money">수익화</span>
+  <span class="badge badge-conv">편의성</span>
+  <h3>Wave 5 (5/12 ~ 6/1, 3주) — 성능 · 구독 · 단축키</h3>
+  <div class="grid grid-3" style="margin-top:16px">
+    <div>
+      <h4>🔴 안정성</h4>
+      <ul style="font-size:12px;padding-left:16px;color:var(--text)">
+        <li>next/image 전면 스윕 (28 파일)</li>
+        <li>plaiceholder blur placeholder</li>
+        <li>Web Vitals RUM → Admin 대시보드</li>
+        <li>Route-level Error Boundary 전수 점검</li>
+      </ul>
+    </div>
+    <div>
+      <h4>💜 수익화 (Phase 2 #8)</h4>
+      <ul style="font-size:12px;padding-left:16px;color:var(--text)">
+        <li>Polar 구독 체크아웃 연결</li>
+        <li>요금제 페이지 완성</li>
+        <li>cancelSubscription(immediate) + webhook 멱등성</li>
+        <li>영수증/결제 내역 UI</li>
+        <li>Feature Gate 전면 적용</li>
+      </ul>
+    </div>
+    <div>
+      <h4>💚 편의성</h4>
+      <ul style="font-size:12px;padding-left:16px;color:var(--text)">
+        <li>Shortcut Provider (? / N / G B / G N / /)</li>
+        <li>모바일 스와이프 (좌→완료, 우→삭제)</li>
+        <li>빠른 필터 칩 (이번주/태그TOP5/미완독)</li>
+        <li>태그 자동완성 (<50ms)</li>
+      </ul>
+    </div>
+  </div>
+  <div class="acceptance">
+    <div class="acceptance-title">✓ 수락 기준</div>
+    LCP p75 < 2.5s · INP p75 < 200ms · 무료→독서가 결제 후 AI 한도 50 즉시 상향 · ? 키 단축키 도움말 동작
+  </div>
+</div>
+
+<!-- Wave 6 -->
+<div class="card card-wave">
+  <span class="badge badge-wave6">WAVE 6</span>
+  <span class="badge badge-stab">안정성</span>
+  <span class="badge badge-money">수익화</span>
+  <span class="badge badge-conv">편의성</span>
+  <h3>Wave 6 (6/2 ~ 6/22, 3주) — 테스트 · 해지방지 · 음성</h3>
+  <div class="grid grid-3" style="margin-top:16px">
+    <div>
+      <h4>🔴 안정성</h4>
+      <ul style="font-size:12px;padding-left:16px;color:var(--text)">
+        <li>Playwright E2E 8개 골든패스</li>
+        <li>Vitest 커버리지 40%+</li>
+        <li>Runbook 5종</li>
+        <li>Discord 알림 (errors 신규 fingerprint 폭증 OR /api/health 연속 실패)</li>
+      </ul>
+    </div>
+    <div>
+      <h4>💜 수익화</h4>
+      <ul style="font-size:12px;padding-left:16px;color:var(--text)">
+        <li>Polar Discount 쿠폰 연동</li>
+        <li>환불 정책 UX + 관리자 승인 환불</li>
+        <li>해지방지 3단계 (설문→오퍼→일시중단)</li>
+        <li>가격 A/B (연간 17% 할인 강조)</li>
+      </ul>
+    </div>
+    <div>
+      <h4>💚 편의성</h4>
+      <ul style="font-size:12px;padding-left:16px;color:var(--text)">
+        <li>음성 입력 (Web Speech API ko-KR)</li>
+        <li>오늘의 추천 영역 (대시보드)</li>
+        <li>기록 간 연결/그룹핑</li>
+        <li>dnd-kit 책장 간 드래그</li>
+      </ul>
+    </div>
+  </div>
+  <div class="acceptance">
+    <div class="acceptance-title">✓ 수락 기준</div>
+    E2E 8개 중 7개 이상 통과 · coverage lines 40%+ · 해지 시도 시 설문→오퍼→일시중단 플로우 완결
+  </div>
+</div>
+
+<!-- Wave 7 & 8 -->
+<div class="grid grid-2">
+  <div class="card card-wave">
+    <span class="badge badge-wave7">WAVE 7</span>
+    <h3>Wave 7 (6/23 ~ 7/13, 3주)</h3>
+    <p class="desc">버퍼 · 튜닝 · A/B 심화</p>
+    <ul style="font-size:13px;padding-left:18px">
+      <li>인시던트 복기, Flaky test 제거, Load test (k6)</li>
+      <li>가격 A/B 2회전, 재가입/업셀 오퍼</li>
+      <li>Phase 3B 잔여 (주간 목표 격려, 그룹핑 정제)</li>
+    </ul>
+  </div>
+  <div class="card card-wave">
+    <span class="badge badge-wave8">WAVE 8</span>
+    <h3>Wave 8 (7/14 ~ 8/10, 4주)</h3>
+    <p class="desc">확장 · 프로모션</p>
+    <ul style="font-size:13px;padding-left:18px">
+      <li>i18n 확대 (ko/en + 검토 후 ja)</li>
+      <li>접근성 WCAG AA 감사</li>
+      <li>Lighthouse CI, Backup 복구 drill</li>
+      <li>Polar 다통화(USD), 1주년 프로모션</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ===== 5. KPI ===== -->
+<h2 id="kpi"><span class="section-icon">📈</span>5. 축별 KPI 목표 (Wave 6 종료 시점)</h2>
+
+<h3>💚 편의성</h3>
+<div class="kpi-grid">
+  <div class="kpi"><div class="kpi-label">QC 평균 클릭</div><div class="kpi-value">2.5</div><div class="kpi-baseline">현재 4.2 → 목표</div></div>
+  <div class="kpi"><div class="kpi-label">단축키 주간 사용률</div><div class="kpi-value">15%+</div><div class="kpi-baseline">현재 0% (신규)</div></div>
+  <div class="kpi"><div class="kpi-label">템플릿 사용률</div><div class="kpi-value">25%+</div><div class="kpi-baseline">현재 N/A (신규)</div></div>
+</div>
+
+<h3>🔴 안정성</h3>
+<div class="kpi-grid">
+  <div class="kpi"><div class="kpi-label">errors 5xx 비율</div><div class="kpi-value">&lt;0.5%</div><div class="kpi-baseline">자체 errors 테이블 기준</div></div>
+  <div class="kpi"><div class="kpi-label">LCP p75</div><div class="kpi-value">&lt;2.5s</div><div class="kpi-baseline">Core Web Vitals</div></div>
+  <div class="kpi"><div class="kpi-label">INP p75</div><div class="kpi-value">&lt;200ms</div><div class="kpi-baseline">Core Web Vitals</div></div>
+  <div class="kpi"><div class="kpi-label">Vitest coverage</div><div class="kpi-value">40%+</div><div class="kpi-baseline">lines 기준</div></div>
+  <div class="kpi"><div class="kpi-label">인시던트 MTTR</div><div class="kpi-value">&lt;60분</div><div class="kpi-baseline">평균 복구 시간</div></div>
+</div>
+
+<h3>💜 수익화</h3>
+<div class="kpi-grid">
+  <div class="kpi"><div class="kpi-label">충전 전환율</div><div class="kpi-value">12%+</div><div class="kpi-baseline">한도 도달 사용자</div></div>
+  <div class="kpi"><div class="kpi-label">구독 전환율</div><div class="kpi-value">5%+</div><div class="kpi-baseline">한도 도달 사용자</div></div>
+  <div class="kpi"><div class="kpi-label">월 해지율</div><div class="kpi-value">&lt;7%</div><div class="kpi-baseline">유료 사용자 churn</div></div>
+  <div class="kpi"><div class="kpi-label">ARPPU</div><div class="kpi-value">₩6,500+</div><div class="kpi-baseline">유료 사용자 평균 매출</div></div>
+</div>
+
+<!-- ===== 6. 의존관계 ===== -->
+<h2 id="deps"><span class="section-icon">🔗</span>6. 축 간 의존관계</h2>
+
+<div class="dep-diagram">                    ┌──────────────────────────────────────┐
+                    │           Wave 4 (4/21~5/11)         │
+                    │                                      │
+   errors 테이블  ─┐  (Sentry 보류 - 자체 수집)            │
+   + Vercel Logs   ├──→ 오류 가시성 확보 ──┐              │
+ Redis Rate Limit ─┘                        │              │
+                                              ▼              │
+                              포인트 소비 API 연결 (AI/OCR) │
+                              (Phase 2 #9 해제)             │
+                    └──────────────────────────────────────┘
+                                              │
+                                              ▼
+                    ┌──────────────────────────────────────┐
+                    │           Wave 5 (5/12~6/1)          │
+                    │                                      │
+   next/image 스윕 ─┐                                      │
+   Web Vitals RUM  ─┼──→ 성능/품질 지표 수립               │
+                    │                                      │
+                    │       구독 UI/API 완결               │
+                    │       (Phase 2 #8 해제) ◀── 포인트  │
+                    │       ├─ Polar 체크아웃              │ 경로 완성 후
+                    │       ├─ Feature Gate 전면           │ 구독 업셀
+                    │       └─ 영수증/해지                 │ 시너지
+                    └──────────────────────────────────────┘
+                                              │
+                                              ▼
+                    ┌──────────────────────────────────────┐
+                    │           Wave 6 (6/2~6/22)          │
+                    │                                      │
+   Playwright E2E ─┐                                       │
+   Runbook        ─┼──→ 운영 내재화                        │
+   Sentry 알림    ─┘                                       │
+                    │                                      │
+                    │   쿠폰 · 환불 · 해지방지 · A/B       │
+                    │   (안정적 테스트 환경 필요)          │
+                    └──────────────────────────────────────┘</div>
+
+<div class="alert alert-info">
+  <strong>핵심 의존 규칙</strong>: Sentry + Redis Rate Limit은 수익화 API 연결의 <strong>선결 조건</strong>(포인트 이중과금·race condition 방지). 구독 UI는 포인트 소비 API가 먼저 동작해야 "한도 초과 → 포인트 사용 or 구독 업셀" 양쪽 CTA가 의미를 가짐.
+</div>
+
+<!-- ===== 7. 타임라인 ===== -->
+<h2 id="timeline"><span class="section-icon">📅</span>7. 주차별 타임라인</h2>
+
+<table class="timeline-table">
+  <tr><th>주차</th><th>날짜</th><th>Wave</th><th>편의성</th><th>안정성</th><th>수익화</th></tr>
+  <tr><td>W1</td><td>4/21~4/27</td><td>4</td><td>QC Adapter 통합</td><td>errors 테이블 + RLS + capture.ts</td><td>enforce-gate.ts 작성</td></tr>
+  <tr><td>W2</td><td>4/28~5/4</td><td>4</td><td>템플릿 10종</td><td>ErrorBoundary + /admin/errors</td><td>AI 채팅 402 + 포인트 차감</td></tr>
+  <tr><td>W3</td><td>5/5~5/11</td><td>4</td><td>계속읽기 시간/정렬</td><td>Upstash Free 전환 + Vercel Marketplace 연동 + 백업 문서</td><td>OCR/리포트 비용 연결</td></tr>
+  <tr><td>W4</td><td>5/12~5/18</td><td>5</td><td>Shortcut Provider</td><td>next/image 스윕 50%</td><td>Polar 구독 체크아웃</td></tr>
+  <tr><td>W5</td><td>5/19~5/25</td><td>5</td><td>스와이프 제스처</td><td>next/image 100% + blur</td><td>요금제 페이지 완성</td></tr>
+  <tr><td>W6</td><td>5/26~6/1</td><td>5</td><td>필터 칩 + 태그 완성</td><td>Web Vitals RUM</td><td>해지 + 영수증 UI</td></tr>
+  <tr><td>W7</td><td>6/2~6/8</td><td>6</td><td>음성 입력</td><td>Playwright 3개</td><td>쿠폰 발급 UI</td></tr>
+  <tr><td>W8</td><td>6/9~6/15</td><td>6</td><td>오늘의 추천</td><td>Playwright 5 + Vitest</td><td>해지 설문 3단계</td></tr>
+  <tr><td>W9</td><td>6/16~6/22</td><td>6</td><td>노트 연결/DnD</td><td>Runbook + Sentry 알림</td><td>일시중단 + 환불 관리</td></tr>
+  <tr><td>W10</td><td>6/23~6/29</td><td>7</td><td colspan="3" style="text-align:center">버퍼 / 회고 / 튜닝</td></tr>
+  <tr><td>W11</td><td>6/30~7/6</td><td>7</td><td colspan="3" style="text-align:center">가격 A/B · Phase 3B 잔여</td></tr>
+  <tr><td>W12</td><td>7/7~7/13</td><td>7</td><td colspan="3" style="text-align:center">버그·UX 핫픽스 · Load test</td></tr>
+  <tr><td>W13~W16</td><td>7/14~8/10</td><td>8</td><td colspan="3" style="text-align:center">i18n · 접근성 AA · Polar 다통화 · 1주년</td></tr>
+</table>
+
+<!-- ===== 8. 리스크 ===== -->
+<h2 id="risks"><span class="section-icon">🚨</span>8. 리스크 & 완화</h2>
+
+<table>
+  <tr><th>리스크</th><th>완화</th></tr>
+  <tr class="risk-row"><td>자체 errors 테이블 폭증으로 DB 부담</td><td>180일 자동 만료 + fingerprint 중복은 count 증가만, Supabase Free 한도(500MB) 내 운영. Sentry 도입 트리거 시 마이그레이션</td></tr>
+  <tr class="risk-row"><td>Redis 콜드 스타트 Edge 지연</td><td>Upstash Global + fail-open(실패 시 허용)</td></tr>
+  <tr class="risk-row"><td>AI 호출 실패 시 포인트만 차감</td><td>spend는 AI 성공 후 커밋 + refund_points RPC</td></tr>
+  <tr class="risk-row"><td>Polar webhook 중복 → 보너스 이중 지급</td><td>(event_type, subscription_id, type) UNIQUE + 멱등성</td></tr>
+  <tr class="risk-row"><td>iOS Safari Speech API 미지원</td><td>feature detect → Gemini audio fallback (유료, #9 시너지)</td></tr>
+  <tr class="risk-row"><td>스와이프와 스크롤 충돌</td><td>pointer events threshold 60px + axis lock</td></tr>
+  <tr class="risk-row"><td>이벤트 수집으로 PIPA 위반</td><td>Analytics Agent beforeSend PII 스크러빙 + Legal 분기 감사</td></tr>
+  <tr class="risk-row"><td>에이전트 증가로 컨텍스트 폭증</td><td>4개 모두 alwaysApply:false, glob 조건부 로드</td></tr>
+  <tr class="risk-row"><td>쿠폰 남용(중복/재가입)</td><td>user_coupons 테이블 + per-user 1회 제약</td></tr>
+  <tr class="risk-row"><td>해지 설문 의도적 할인 남용</td><td>과거 12개월 내 1회 한정 쿨다운</td></tr>
+</table>
+
+<footer>
+  Habitree Reading Hub · 2026-04-20 · 플랜 파일: <code>~/.claude/plans/sorted-popping-bubble.md</code><br>
+  에이전트 체계: <code>.agent/rules/</code> 18개 + 공통 규칙 4개 · 인덱스: <code>doc/claude/RULES.md</code>
+</footer>
+
+</body>
+</html>

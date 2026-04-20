@@ -472,6 +472,14 @@ const handleItemClick = useCallback(() => {
 | 17. 에이전트 시스템 — 배포 | `deploy-agent.md` |
 | 17. 에이전트 시스템 — 테스트 | `test-agent.md` |
 | 17. 에이전트 시스템 — 법률 | `legal-agent.md` |
+| 17. 에이전트 시스템 — 참여 | `engagement-agent.md` |
+| 17. 에이전트 시스템 — 분석 | `analytics-agent.md` |
+| 17. 에이전트 시스템 — 지원 | `support-agent.md` |
+| 17. 에이전트 시스템 — 관측 | `monitoring-agent.md` |
+| 공통 — 이벤트 스키마 | `event_schema_rule.md` |
+| 공통 — i18n | `i18n_rule.md` |
+| 공통 — 관측 표준 | `observability_rule.md` |
+| 공통 — 게이미피케이션 이코노미 | `gamification_economy_rule.md` |
 
 ---
 
@@ -529,6 +537,7 @@ query = query.eq("book_id", READTREE_BOOK_ID).neq("type", "progress");
 | 2026-02-16 | Supabase JOIN 정합성 체크 규칙 추가 (transcriptions JOIN 누락 이슈) | `code_review_checklist.md` |
 | 2026-02-25 | 자유기록 에이전트 v2 — 인간 심리 프레임워크·AI 모델 역할 분리·방향성 수호 규칙 추가 | `free-notes-agent.md` |
 | 2026-02-26 | 12개 에이전트 오케스트레이션 시스템 구축 (섹션 17 추가) | `orchestrator-agent.md` 외 11개 |
+| 2026-04-20 | 4개 도메인 에이전트 추가 — Engagement(게이미피케이션), Analytics(이벤트 추적), Support(고객지원), Monitoring(운영·관측). 공통 규칙 4개 신설. 총 18 에이전트 체계로 확장 | `engagement-agent.md`, `analytics-agent.md`, `support-agent.md`, `monitoring-agent.md`, `event_schema_rule.md`, `i18n_rule.md`, `observability_rule.md`, `gamification_economy_rule.md` |
 
 ---
 
@@ -558,7 +567,7 @@ query = query.eq("book_id", READTREE_BOOK_ID).neq("type", "progress");
 
 ### 17.1 시스템 개요
 
-13개 전문 에이전트가 판단 책임 경계에 따라 분리되어 동작.
+18개 전문 에이전트가 판단 책임 경계에 따라 분리되어 동작.
 오케스트레이터(`orchestrator-agent.md`)만 `alwaysApply: true`, 나머지는 glob 기반 조건부 로드.
 
 ### 17.2 에이전트 목록
@@ -579,12 +588,26 @@ query = query.eq("book_id", READTREE_BOOK_ID).neq("type", "progress");
 | 12 | **Deploy** | `deploy-agent.md` | ❌ | Vercel 배포, 환경변수, 빌드 |
 | 13 | **Test** | `test-agent.md` | ❌ | Vitest, 코드 리뷰, 커버리지 |
 | 14 | **Legal** | `legal-agent.md` | ❌ | 개인정보보호, AI규제, 전자상거래, 저작권, 접근성, 전자금융거래, 미성년자보호, 부가세 |
+| 15 | **Engagement** | `engagement-agent.md` | ❌ | 포인트 소비, 뱃지·업적, 스트릭, 미션, 리더보드, 챌린지, A/B 테스트 |
+| 16 | **Analytics** | `analytics-agent.md` | ❌ | 이벤트 스키마, 코호트·펀널, DAU/WAU/MAU, Growth Dashboard |
+| 17 | **Support** | `support-agent.md` | ❌ | FAQ·도움말, 인앱 피드백, 공지사항, 버그 리포트, i18n |
+| 18 | **Monitoring** | `monitoring-agent.md` | ❌ | Sentry, 헬스체크, 알림, Runbook, SLA/SLO, 자동 롤백 |
+
+### 17.2.1 공통 규칙 파일 (EXTENDS 대상)
+
+| 파일 | 주 소유자 | 목적 |
+|------|----------|------|
+| `event_schema_rule.md` | Analytics | 이벤트 네임스페이스·스키마 버전·PIPA 최소 수집 |
+| `i18n_rule.md` | Support | ko/en 로케일 키·fallback·DB `*_ko`/`*_en` 표준 |
+| `observability_rule.md` | Monitoring | 로그·지표·추적 3축, PII 스크러빙, SLO 임계치 |
+| `gamification_economy_rule.md` | Engagement | 포인트 인플레이션 방지, A/B 필수, 상점 상품 검증 |
 
 ### 17.3 컨텍스트 로딩 전략
 
-- **Always loaded**: `rdrule.md` (13줄) + `orchestrator-agent.md` (~92줄)
-- **Conditional**: 나머지 12개 에이전트는 글로브 패턴 매칭 시만 로드
+- **Always loaded**: `rdrule.md` (13줄) + `orchestrator-agent.md` (~110줄)
+- **Conditional**: 나머지 17개 도메인 에이전트는 글로브 패턴 매칭 시만 로드
 - **EXTENDS 패턴**: 기존 규칙 파일을 참조만 하고 내용 중복 없음
+- **도메인 확장 원칙**: 신규 에이전트는 기존 에이전트와의 **소유 경계(Ownership)** 를 반드시 명시. `alwaysApply: true`는 Orchestrator 외 추가 금지(컨텍스트 비용 관리)
 
 ### 17.4 에스컬레이션 흐름
 

@@ -30,6 +30,10 @@ description: "오케스트레이터 에이전트 — 모든 도메인 에이전�
 | 배포·환경변수·Vercel·CI | Deploy Agent |
 | 테스트·vitest·E2E | Test Agent |
 | 개인정보·이용약관·AI규제·저작권·접근성·법적 점검 | Legal Agent |
+| 포인트 소비·뱃지·업적·미션·리더보드·챌린지·A/B | Engagement Agent |
+| 이벤트 추적·코호트·펀널·DAU/WAU·Growth Dashboard | Analytics Agent |
+| 인앱 피드백·FAQ·도움말·공지·버그 리포트·다국어 지원 | Support Agent |
+| Sentry·헬스체크·알림·Runbook·SLA·장애 롤백 | Monitoring Agent |
 | **복수 도메인** | 병렬 위임 후 종합 |
 
 ---
@@ -64,11 +68,22 @@ description: "오케스트레이터 에이전트 — 모든 도메인 에이전�
 ## 전역 코딩 제약 (모든 에이전트 공통)
 
 - `any` 금지 → `unknown` + 타입 가드
-- `console.log` 커밋 금지
+- `console.log` 커밋 금지 → `lib/monitoring/logger.ts` (Monitoring Agent) 사용
 - DB 접근은 `app/actions/`에서만
 - 새 테이블 → 즉시 RLS + 4가지 정책
 - `.env` 커밋 금지
 - 시크릿은 환경변수/시크릿 매니저
+- 클라이언트 이벤트 수집은 **`/api/analytics/ingest` 경유 필수** (직접 INSERT 금지)
+- 포인트 잔액은 `earnPoints()` / `spendPoints()` 외 직접 수정 금지 (Identity Agent 소유)
+
+---
+
+## 도메인 간 우선권 규칙
+
+- Engagement ↔ Identity (포인트 경제 충돌) → **Identity 우선** (원장 소유자)
+- Analytics ↔ Legal (이벤트 수집 항목 충돌) → **Legal 우선**
+- Monitoring 자동 롤백 2회 연속 발동 → Orchestrator가 **배포 동결** 결정
+- Support 공지사항이 약관 개정 포함 → **Legal 선행** 후 Support 집행
 
 ---
 
