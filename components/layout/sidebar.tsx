@@ -15,6 +15,7 @@ import {
   FileText,
   Coins,
   Lightbulb,
+  Stamp,
   ChevronDown,
   type LucideIcon,
 } from "lucide-react";
@@ -26,6 +27,7 @@ import { BookshelfTree } from "./bookshelf-tree";
 import { useEffect, useState, useCallback } from "react";
 import { useTranslation } from "@/lib/i18n";
 import { useQuickCaptureStore } from "@/hooks/use-quick-capture";
+import { useStampCaptureStore } from "@/hooks/use-stamp-capture";
 import { useContinueReading } from "@/hooks/use-continue-reading";
 
 /**
@@ -35,7 +37,7 @@ interface SidebarItem {
   icon: LucideIcon;
   label: string;
   href?: string;
-  action?: "quickCapture";
+  action?: "quickCapture" | "stampCapture";
   badge?: number;
   adminOnly?: boolean;
 }
@@ -53,12 +55,13 @@ export function Sidebar() {
   const primaryItems: SidebarItem[] = [
     { icon: Home, label: t("nav.home"), href: "/" },
     { icon: Library, label: t("nav.myLibrary"), href: "/books" },
-    { icon: PenLine, label: t("nav.writeNote"), action: "quickCapture" },
+    { icon: Stamp, label: t("stamp.quickAction"), action: "stampCapture" },
     { icon: FileText, label: t("notes.myNotes"), href: "/notes" },
     { icon: User, label: t("nav.profile"), href: "/profile" },
   ];
 
   const secondaryItems: SidebarItem[] = [
+    { icon: Stamp, label: t("stamp.collection"), href: "/stamps" },
     { icon: Users, label: t("nav.groups"), href: "/groups" },
     { icon: Sparkles, label: t("persona.pageTitle"), href: "/stats" },
     { icon: Bot, label: t("nav.aiChat"), href: "/chat" },
@@ -82,6 +85,8 @@ export function Sidebar() {
 
   const openQuickCapture = useQuickCaptureStore((s) => s.open);
   const openWithBook = useQuickCaptureStore((s) => s.openWithBook);
+  const openStampCapture = useStampCaptureStore((s) => s.open);
+  const openStampWithBook = useStampCaptureStore((s) => s.openWithBook);
 
   // 이어읽기 책 (공용 훅 — visibilitychange 자동 갱신 포함)
   const { continueBook } = useContinueReading(user ?? null);
@@ -94,6 +99,21 @@ export function Sidebar() {
     }
   }, [continueBook, openWithBook, openQuickCapture]);
 
+  const handleStampCapture = useCallback(() => {
+    if (continueBook) {
+      openStampWithBook({
+        id: continueBook.id,
+        bookId: continueBook.bookId,
+        title: continueBook.title,
+        author: continueBook.author,
+        coverImageUrl: continueBook.coverImageUrl,
+        totalPages: null,
+      });
+    } else {
+      openStampCapture();
+    }
+  }, [continueBook, openStampWithBook, openStampCapture]);
+
   const renderNavItem = useCallback((item: SidebarItem) => {
     const Icon = item.icon;
 
@@ -105,6 +125,21 @@ export function Sidebar() {
           variant="ghost"
           className="w-full justify-start gap-3 h-11"
           onClick={handleQuickCapture}
+          aria-label={item.label}
+        >
+          <Icon className="h-5 w-5" aria-hidden="true" />
+          <span className="flex-1 text-left">{item.label}</span>
+        </Button>
+      );
+    }
+
+    if (item.action === "stampCapture") {
+      return (
+        <Button
+          key="stampCapture"
+          variant="ghost"
+          className="w-full justify-start gap-3 h-11 text-emerald-700 dark:text-emerald-400"
+          onClick={handleStampCapture}
           aria-label={item.label}
         >
           <Icon className="h-5 w-5" aria-hidden="true" />
@@ -148,7 +183,7 @@ export function Sidebar() {
         </Button>
       </Link>
     );
-  }, [pathname, user, handleQuickCapture]);
+  }, [pathname, user, handleQuickCapture, handleStampCapture]);
 
   const visibleSecondaryItems = secondaryItems.filter(
     (item) => !item.adminOnly || isAdmin

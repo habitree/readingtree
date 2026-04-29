@@ -13,12 +13,14 @@ import { useAuth } from "@/hooks/use-auth";
 import { useLoginPrompt } from "@/hooks/use-login-prompt";
 import { LoginPromptModal } from "@/components/ui/login-prompt-modal";
 import { saveReadingSession } from "@/app/actions/progress";
+import { useStampCaptureStore } from "@/hooks/use-stamp-capture";
 import {
   BookOpen,
   PenLine,
   ArrowRight,
   Clock,
   Loader2,
+  Stamp as StampIcon,
   Infinity as InfinityIcon,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -61,6 +63,33 @@ export function ReadingCompleteDialog() {
   const [isSaving, setIsSaving] = useState(false);
   const [showMemo, setShowMemo] = useState(false);
   const [memo, setMemo] = useState("");
+  const openStampCapture = useStampCaptureStore((s) => s.openWithTimer);
+
+  /** 스탬프 찍기 — StampCaptureSheet 열기 (시간/책 prefill) */
+  function handleOpenStamp() {
+    if (
+      requireLogin({
+        title: "스탬프를 찍으려면",
+        description: "로그인 후 스탬프를 남길 수 있어요.",
+      })
+    )
+      return;
+
+    const book = activeBook
+      ? {
+          id: activeBook.userBookId,
+          bookId: activeBook.bookId,
+          title: activeBook.title,
+          author: null,
+          coverImageUrl: activeBook.coverUrl,
+          totalPages: null,
+        }
+      : null;
+
+    openStampCapture(book, elapsedSeconds);
+    closeCompleteDialog();
+    close();
+  }
 
   /** 시간만 즉시 저장 (원탭) */
   async function handleQuickSave() {
@@ -179,18 +208,28 @@ export function ReadingCompleteDialog() {
 
           {/* 액션 */}
           <div className="px-5 pb-6 space-y-2.5">
-            {/* 시간 기록 저장 (메인 CTA — 원탭) */}
+            {/* 스탬프 찍기 (메인 CTA — 사진+시간+페이지) */}
+            <button
+              onClick={handleOpenStamp}
+              disabled={isSaving}
+              className="w-full py-3.5 rounded-xl bg-emerald-600 text-white font-semibold hover:bg-emerald-700 transition-colors flex items-center justify-center gap-2"
+            >
+              <StampIcon className="w-4 h-4" />
+              스탬프 찍기
+            </button>
+
+            {/* 시간만 빠르게 저장 (보조) */}
             <button
               onClick={handleQuickSave}
               disabled={isSaving}
-              className="w-full py-3.5 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90 transition-colors flex items-center justify-center gap-2"
+              className="w-full py-3 rounded-xl bg-muted font-medium text-sm hover:bg-muted/80 transition-colors flex items-center justify-center gap-2"
             >
               {isSaving ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
                 <Clock className="w-4 h-4" />
               )}
-              시간 기록 저장
+              시간만 저장
             </button>
 
             {/* 메모 남기기 (인라인 토글) */}

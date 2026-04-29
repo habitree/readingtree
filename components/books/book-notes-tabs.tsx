@@ -5,9 +5,10 @@ import { NoteList } from "@/components/notes/note-list";
 import { ReadingJourney } from "./reading-journey";
 import { ReadingTimeTab } from "./reading-time-tab";
 import { BookEmptyOnboarding } from "./book-empty-onboarding";
-import { Map, FileText, Clock } from "lucide-react";
+import { Map, FileText, Clock, Stamp } from "lucide-react";
 import { useTranslation } from "@/lib/i18n";
 import type { NoteWithBook } from "@/types/note";
+import { StampCollectionGrid } from "@/components/stamps/stamp-collection-grid";
 
 interface BookNotesTabsProps {
   userBookId: string;
@@ -44,8 +45,13 @@ export function BookNotesTabs({
   }
 
   return (
-    <Tabs defaultValue="notes" className="w-full">
-      <TabsList className="grid w-full grid-cols-3 mb-4">
+    <Tabs defaultValue="stamps" className="w-full">
+      <TabsList className="grid w-full grid-cols-4 mb-4">
+        <TabsTrigger value="stamps" className="flex items-center gap-1 text-xs sm:text-sm">
+          <Stamp className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+          <span className="hidden sm:inline">{t("stamp.collection")}</span>
+          <span className="sm:hidden">스탬프</span>
+        </TabsTrigger>
         <TabsTrigger value="notes" className="flex items-center gap-1 text-xs sm:text-sm">
           <FileText className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
           <span className="hidden sm:inline">{t("books.detailedRecords")}</span>
@@ -72,6 +78,10 @@ export function BookNotesTabs({
           <span className="sm:hidden">시간</span>
         </TabsTrigger>
       </TabsList>
+
+      <TabsContent value="stamps">
+        <StampCollectionGrid userBookId={userBookId} showCaptureCTA />
+      </TabsContent>
 
       <TabsContent value="notes">
         <NoteList notes={notes} excludeProgress={true} />

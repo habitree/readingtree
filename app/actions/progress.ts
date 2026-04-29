@@ -2,10 +2,21 @@
 
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
-import { isValidUUID, sanitizeErrorMessage } from "@/lib/utils/validation";
+import { isValidUUID, sanitizeErrorMessage, sanitizeErrorForLogging } from "@/lib/utils/validation";
 import type { User } from "@supabase/supabase-js";
-import type { ReadingLog, CreateReadingLogInput, SaveReadingSessionInput, UserReadingTimeStats } from "@/types/progress";
+import type {
+  ReadingLog,
+  CreateReadingLogInput,
+  CreateReadingStampInput,
+  GetReadingStampsParams,
+  ReadingStamp,
+  ReadingStampsResult,
+  SaveReadingSessionInput,
+  UserReadingTimeStats,
+} from "@/types/progress";
 import { READTREE_BOOK_ID } from "@/lib/constants/readtree";
+import { earnPoints } from "./points";
+import { updateBookProgress } from "./books/progress";
 
 /**
  * 진행 로그 생성
@@ -63,7 +74,10 @@ export async function createProgressLog(
     throw new Error("권한이 없습니다. 해당 책을 소유하고 있지 않습니다.");
   }
 
-  // 진행 로그 생성
+  // end_page 는 page_number 와 미러링 (스탬프 마이그레이션 호환)
+  const endPage = data.end_page ?? data.page_number;
+  const startPage = data.start_page ?? null;
+
   const { data: log, error } = await supabase
     .from("reading_logs")
     .insert({
@@ -75,6 +89,9 @@ export async function createProgressLog(
       started_at: data.started_at || null,
       ended_at: data.ended_at || null,
       reading_duration_seconds: data.reading_duration_seconds || 0,
+      start_page: startPage,
+      end_page: endPage,
+      image_url: data.image_url || null,
     })
     .select()
     .single();
@@ -338,6 +355,9 @@ export async function saveReadingSession(
       started_at: data.startedAt,
       ended_at: new Date().toISOString(),
       reading_duration_seconds: data.durationSeconds,
+      start_page: null,
+      end_page: 0,
+      image_url: null,
     })
     .select()
     .single();
@@ -475,5 +495,315 @@ export async function getReadingTimeStats(
     totalSeconds,
     sessionCount: logs.length,
     averageSeconds: logs.length > 0 ? Math.round(totalSeconds / logs.length) : 0,
+  };
+}
+
+// =============================================================================
+// 스탬프 (Reading Stamp) 액션
+// 사진 + 페이지 구간 + 시간을 한 행으로 묶는 통합 기록 단위.
+// reading_logs.image_url IS NOT NULL → 스탬프로 분류.
+// =============================================================================
+
+/** 스탬프 최소 시간 (초) */
+const STAMP_MIN_SECONDS = 30;
+/** 스탬프 메모 최대 길이 */
+const STAMP_MEMO_MAX = 500;
+
+/**
+ * 직전 reading_log.end_page 조회 (start_page 자동승계용).
+ * 우선순위: 직전 reading_logs.end_page → user_books.current_page → 0
+ */
+export async function getLastEndPage(
+  userBookId: string,
+  user?: User | null,
+): Promise<number> {
+  if (!isValidUUID(userBookId)) {
+    throw new Error("유효하지 않은 책 ID입니다.");
+  }
+
+  const supabase = await createServerSupabaseClient();
+
+  let currentUser = user;
+  if (!currentUser) {
+    const {
+      data: { user: fetchedUser },
+      error: authError,
+    } = await supabase.auth.getUser();
+    if (authError || !fetchedUser) throw new Error("로그인이 필요합니다.");
+    currentUser = fetchedUser;
+  }
+
+  // 1. 직전 로그의 end_page 조회
+  const { data: lastLog } = await supabase
+    .from("reading_logs")
+    .select("end_page, page_number")
+    .eq("user_book_id", userBookId)
+    .eq("user_id", currentUser.id)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const lastEnd = lastLog?.end_page ?? lastLog?.page_number;
+  if (typeof lastEnd === "number" && lastEnd >= 0) {
+    return lastEnd;
+  }
+
+  // 2. user_books.current_page 폴백
+  const { data: userBook } = await supabase
+    .from("user_books")
+    .select("current_page")
+    .eq("id", userBookId)
+    .eq("user_id", currentUser.id)
+    .maybeSingle();
+
+  return userBook?.current_page ?? 0;
+}
+
+/**
+ * 스탬프 생성 — 사진/페이지 구간/시간을 묶어 reading_logs 에 저장.
+ * - start_page 미입력 시 직전 end_page 자동승계
+ * - end_page 는 user_books.current_page 동기화
+ * - earnPoints("note_create") 적립
+ */
+export async function createReadingStamp(
+  input: CreateReadingStampInput,
+  user?: User | null,
+): Promise<{ success: boolean; logId: string; pointsEarned: number; reachedEnd: boolean }> {
+  const supabase = await createServerSupabaseClient();
+
+  let currentUser = user;
+  if (!currentUser) {
+    const {
+      data: { user: fetchedUser },
+      error: authError,
+    } = await supabase.auth.getUser();
+    if (authError || !fetchedUser) throw new Error("로그인이 필요합니다.");
+    currentUser = fetchedUser;
+  }
+
+  // 입력 검증
+  if (input.reading_duration_seconds < STAMP_MIN_SECONDS) {
+    throw new Error(`${STAMP_MIN_SECONDS}초 이상의 독서 시간만 저장할 수 있습니다.`);
+  }
+  if (input.end_page < 0) {
+    throw new Error("페이지 번호는 0 이상이어야 합니다.");
+  }
+  if (input.memo && input.memo.length > STAMP_MEMO_MAX) {
+    throw new Error(`메모는 ${STAMP_MEMO_MAX}자 이하여야 합니다.`);
+  }
+
+  // user_book_id 결정 (saveReadingSession 패턴: 미지정 시 READTREE 책 폴백)
+  let userBookId = input.user_book_id;
+  if (userBookId && !isValidUUID(userBookId)) {
+    throw new Error("유효하지 않은 책 ID입니다.");
+  }
+  if (!userBookId) {
+    const { data: existingUB } = await supabase
+      .from("user_books")
+      .select("id")
+      .eq("user_id", currentUser.id)
+      .eq("book_id", READTREE_BOOK_ID)
+      .maybeSingle();
+
+    if (existingUB) {
+      userBookId = existingUB.id;
+    } else {
+      const { data: newUB, error: upsertError } = await supabase
+        .from("user_books")
+        .upsert(
+          { user_id: currentUser.id, book_id: READTREE_BOOK_ID, status: "reading" },
+          { onConflict: "user_id,book_id" },
+        )
+        .select("id")
+        .single();
+
+      if (upsertError || !newUB) {
+        throw new Error("시스템 책 등록에 실패했습니다.");
+      }
+      userBookId = newUB.id;
+    }
+  } else {
+    // 책 소유 확인
+    const { data: ownership } = await supabase
+      .from("user_books")
+      .select("id")
+      .eq("id", userBookId)
+      .eq("user_id", currentUser.id)
+      .maybeSingle();
+    if (!ownership) {
+      throw new Error("권한이 없습니다. 해당 책을 소유하고 있지 않습니다.");
+    }
+  }
+
+  // 위 분기에서 userBookId 가 항상 결정되지만 TypeScript narrowing 한계로 const 재바인딩
+  if (!userBookId) {
+    throw new Error("책 ID 결정에 실패했습니다.");
+  }
+  const resolvedBookId: string = userBookId;
+
+  // start_page 자동승계
+  let startPage = input.start_page;
+  if (typeof startPage !== "number") {
+    startPage = await getLastEndPage(resolvedBookId, currentUser);
+  }
+  if (startPage < 0) startPage = 0;
+
+  // end_page 검증 (start_page 보다 작지 않게)
+  const endPage = Math.max(input.end_page, startPage);
+
+  const startedAt = input.started_at
+    ?? new Date(Date.now() - input.reading_duration_seconds * 1000).toISOString();
+  const endedAt = input.ended_at ?? new Date().toISOString();
+
+  // INSERT
+  const { data: log, error: insertError } = await supabase
+    .from("reading_logs")
+    .insert({
+      user_id: currentUser.id,
+      user_book_id: resolvedBookId,
+      page_number: endPage,
+      memo: input.memo?.trim() || null,
+      is_public: input.is_public ?? true,
+      started_at: startedAt,
+      ended_at: endedAt,
+      reading_duration_seconds: input.reading_duration_seconds,
+      start_page: startPage,
+      end_page: endPage,
+      image_url: input.image_url || null,
+    })
+    .select()
+    .single();
+
+  if (insertError || !log) {
+    throw new Error(sanitizeErrorMessage(insertError || new Error("스탬프 저장에 실패했습니다.")));
+  }
+
+  // user_books.current_page 동기화 (실패해도 스탬프는 성공)
+  let reachedEnd = false;
+  try {
+    const result = await updateBookProgress(resolvedBookId, endPage, currentUser);
+    reachedEnd = result.reachedEnd;
+  } catch (err) {
+    console.error("[createReadingStamp] updateBookProgress 실패:", sanitizeErrorForLogging(err));
+  }
+
+  // 포인트 적립 (실패해도 스탬프는 성공)
+  let pointsEarned = 0;
+  try {
+    const result = await earnPoints("note_create", {
+      user: currentUser,
+      referenceId: log.id,
+      referenceType: "reading_log",
+      description: input.image_url ? "스탬프 작성" : "독서 세션 기록",
+    });
+    if (result.success) pointsEarned = result.points_earned;
+  } catch (err) {
+    console.error("[createReadingStamp] earnPoints 실패:", sanitizeErrorForLogging(err));
+  }
+
+  // 캐시 무효화
+  revalidatePath("/");
+  revalidatePath("/stamps");
+  revalidatePath("/notes");
+  revalidatePath(`/books/${resolvedBookId}`);
+
+  return { success: true, logId: log.id, pointsEarned, reachedEnd };
+}
+
+/**
+ * 스탬프 목록 조회
+ * - userBookId 미지정: 사용자의 모든 스탬프
+ * - 사진 있는(image_url IS NOT NULL) 행만 반환 → /stamps 그리드 전용
+ * - 책 정보 함께 join
+ */
+export async function getReadingStamps(
+  params: GetReadingStampsParams = {},
+  user?: User | null,
+): Promise<ReadingStampsResult> {
+  const supabase = await createServerSupabaseClient();
+
+  let currentUser = user;
+  if (!currentUser) {
+    const {
+      data: { user: fetchedUser },
+      error: authError,
+    } = await supabase.auth.getUser();
+    if (authError || !fetchedUser) throw new Error("로그인이 필요합니다.");
+    currentUser = fetchedUser;
+  }
+
+  const limit = Math.min(Math.max(params.limit ?? 30, 1), 100);
+
+  let query = supabase
+    .from("reading_logs")
+    .select(`
+      *,
+      user_books!inner(
+        id,
+        books(id, title, author, cover_image_url, total_pages)
+      )
+    `)
+    .eq("user_id", currentUser.id)
+    .not("image_url", "is", null)
+    .order("created_at", { ascending: false })
+    .limit(limit + 1);
+
+  if (params.userBookId) {
+    if (!isValidUUID(params.userBookId)) {
+      throw new Error("유효하지 않은 책 ID입니다.");
+    }
+    query = query.eq("user_book_id", params.userBookId);
+  }
+
+  if (params.cursor) {
+    query = query.lt("created_at", params.cursor);
+  }
+
+  const { data, error } = await query;
+
+  if (error) {
+    throw new Error(sanitizeErrorMessage(error));
+  }
+
+  const rows = data ?? [];
+  const hasMore = rows.length > limit;
+  const sliced = hasMore ? rows.slice(0, limit) : rows;
+
+  const stamps: ReadingStamp[] = sliced.map((row) => {
+    const userBooks = row.user_books as unknown as
+      | { id: string; books?: { id: string; title: string; author: string | null; cover_image_url: string | null; total_pages: number | null } }
+      | null;
+    const book = userBooks?.books;
+    return {
+      id: row.id,
+      user_id: row.user_id,
+      user_book_id: row.user_book_id,
+      page_number: row.page_number,
+      memo: row.memo,
+      is_public: row.is_public,
+      started_at: row.started_at,
+      ended_at: row.ended_at,
+      reading_duration_seconds: row.reading_duration_seconds ?? 0,
+      image_url: row.image_url,
+      start_page: row.start_page,
+      end_page: row.end_page,
+      pace_seconds_per_page: row.pace_seconds_per_page,
+      created_at: row.created_at,
+      updated_at: row.updated_at,
+      book: book
+        ? {
+            id: book.id,
+            title: book.title,
+            author: book.author,
+            cover_image_url: book.cover_image_url,
+            total_pages: book.total_pages,
+          }
+        : undefined,
+    };
+  });
+
+  return {
+    stamps,
+    nextCursor: hasMore ? sliced[sliced.length - 1].created_at : null,
   };
 }

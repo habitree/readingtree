@@ -10,6 +10,7 @@ import { UpgradeModal } from "@/components/subscription/upgrade-modal";
 import { PageTracker } from "@/components/tracking/page-tracker";
 import { MusicMiniPlayer } from "@/components/music/music-mini-player";
 import { CommandPalette } from "@/components/search/command-palette";
+import { StampCaptureSheet } from "@/components/stamps/stamp-capture-sheet";
 
 /**
  * 메인 레이아웃
@@ -44,6 +45,7 @@ export default function MainLayout({
         <MusicMiniPlayer />
         <PageTracker />
         <QuickCaptureAdapter />
+        <StampCaptureSheet />
         <CommandPalette />
         <UpgradeModal />
       </div>

@@ -5,6 +5,11 @@
 
 /**
  * 독서 진행 로그 기본 타입
+ *
+ * 스탬프 컬럼(image_url, start_page, end_page, pace_seconds_per_page)은
+ * migration-202604291200__reading_logs__add_stamp_columns.sql 로 추가됨.
+ * - image_url IS NOT NULL → "스탬프"로 분류 (그리드 노출)
+ * - pace_seconds_per_page 는 STORED generated column (Postgres 자동 계산)
  */
 export interface ReadingLog {
   id: string;
@@ -16,6 +21,10 @@ export interface ReadingLog {
   started_at: string | null;
   ended_at: string | null;
   reading_duration_seconds: number;
+  image_url: string | null;
+  start_page: number | null;
+  end_page: number | null;
+  pace_seconds_per_page: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -31,6 +40,56 @@ export interface CreateReadingLogInput {
   started_at?: string;
   ended_at?: string;
   reading_duration_seconds?: number;
+  start_page?: number;
+  end_page?: number;
+  image_url?: string;
+}
+
+/**
+ * 스탬프 생성 입력 — createReadingStamp 전용
+ * page_number 는 end_page 로 자동 미러링되므로 생략.
+ * start_page 는 미입력 시 직전 로그의 end_page 자동승계.
+ */
+export interface CreateReadingStampInput {
+  user_book_id?: string;
+  end_page: number;
+  start_page?: number;
+  image_url?: string;
+  memo?: string;
+  is_public?: boolean;
+  started_at?: string;
+  ended_at?: string;
+  reading_duration_seconds: number;
+}
+
+/**
+ * 스탬프 조회 파라미터
+ */
+export interface GetReadingStampsParams {
+  userBookId?: string;
+  limit?: number;
+  cursor?: string;
+}
+
+/**
+ * 스탬프 조회 결과 (책 + 사용자 정보 join)
+ */
+export interface ReadingStamp extends ReadingLog {
+  book?: {
+    id: string;
+    title: string;
+    author: string | null;
+    cover_image_url: string | null;
+    total_pages: number | null;
+  };
+}
+
+/**
+ * 스탬프 페이지네이션 결과
+ */
+export interface ReadingStampsResult {
+  stamps: ReadingStamp[];
+  nextCursor: string | null;
 }
 
 /**

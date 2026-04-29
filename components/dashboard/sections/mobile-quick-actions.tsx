@@ -3,11 +3,12 @@
 import { useCallback } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { PenTool, BookPlus, Camera, Search } from "lucide-react";
+import { Stamp, BookPlus, Camera, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useQuickCaptureStore } from "@/hooks/use-quick-capture";
+import { useStampCaptureStore } from "@/hooks/use-stamp-capture";
 
-type NoteMode = "memo" | "transcription";
+type NoteMode = "stamp" | "memo" | "transcription";
 import { useLoginPrompt } from "@/hooks/use-login-prompt";
 import { LoginPromptModal } from "@/components/ui/login-prompt-modal";
 import { useTranslation } from "@/lib/i18n";
@@ -28,13 +29,13 @@ interface QuickActionItem {
 // Quick action definitions with i18n keys
 const QUICK_ACTION_KEYS = [
   {
-    icon: PenTool,
-    labelKey: "dashboard.quickWriteNote" as const,
-    sheetMode: "memo" as NoteMode,
+    icon: Stamp,
+    labelKey: "stamp.quickAction" as const,
+    sheetMode: "stamp" as NoteMode,
     desktopHref: "/notes/new",
-    color: "text-forest-600 dark:text-forest-400",
-    bgColor: "bg-forest-50/60 dark:bg-forest-900/20",
-    descKey: "dashboard.quickWriteNoteDesc" as const,
+    color: "text-emerald-600 dark:text-emerald-400",
+    bgColor: "bg-emerald-50/60 dark:bg-emerald-900/20",
+    descKey: "stamp.quickActionDesc" as const,
   },
   {
     icon: BookPlus,
@@ -69,6 +70,7 @@ const QUICK_ACTION_KEYS = [
  */
 export function MobileQuickActions() {
   const { open: openQuickCapture } = useQuickCaptureStore();
+  const { open: openStampCapture } = useStampCaptureStore();
   const { isOpen, setIsOpen, title, description, requireLogin } = useLoginPrompt();
   const { t } = useTranslation();
 
@@ -85,11 +87,12 @@ export function MobileQuickActions() {
       description: t("auth.loginToWriteDesc"),
     })) return;
 
-    // 모바일/데스크톱 모두 Quick Capture 사용
-    if (action.sheetMode) {
+    if (action.sheetMode === "stamp") {
+      openStampCapture();
+    } else if (action.sheetMode) {
       openQuickCapture();
     }
-  }, [openQuickCapture, requireLogin, t]);
+  }, [openQuickCapture, openStampCapture, requireLogin, t]);
 
   const handleLinkClick = useCallback((e: React.MouseEvent, action: QuickActionItem) => {
     const isSearch = action.label === t("dashboard.quickSearch");
@@ -160,11 +163,11 @@ export function MobileQuickActions() {
 /** 데스크탑용 퀵 액션 아이템 */
 const DESKTOP_QUICK_ACTION_KEYS = [
   {
-    icon: PenTool,
-    labelKey: "dashboard.quickWriteNote" as const,
-    quickCapture: true,
-    color: "text-forest-600",
-    descKey: "dashboard.quickWriteNoteDesc" as const,
+    icon: Stamp,
+    labelKey: "stamp.quickAction" as const,
+    stampCapture: true,
+    color: "text-emerald-600",
+    descKey: "stamp.quickActionDesc" as const,
   },
   {
     icon: BookPlus,
@@ -189,12 +192,28 @@ const DESKTOP_QUICK_ACTION_KEYS = [
 export function DesktopQuickActions() {
   const { t } = useTranslation();
   const { open: openQuickCapture } = useQuickCaptureStore();
+  const { open: openStampCapture } = useStampCaptureStore();
 
   return (
     <div className="hidden sm:flex gap-2">
       {DESKTOP_QUICK_ACTION_KEYS.map((action) => {
-        // Quick Capture 대상 액션 (기록 작성, 필사)
-        if (action.quickCapture) {
+        // 스탬프 액션
+        if ("stampCapture" in action && action.stampCapture) {
+          return (
+            <Button
+              key={action.labelKey}
+              variant="outline"
+              size="sm"
+              className="gap-2"
+              onClick={openStampCapture}
+            >
+              <action.icon className={cn("h-4 w-4", action.color)} />
+              {t(action.descKey)}
+            </Button>
+          );
+        }
+        // Quick Capture 대상 액션 (필사)
+        if ("quickCapture" in action && action.quickCapture) {
           return (
             <Button
               key={action.labelKey}

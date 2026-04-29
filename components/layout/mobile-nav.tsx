@@ -10,7 +10,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useLoginPrompt } from "@/hooks/use-login-prompt";
 import { LoginPromptModal } from "@/components/ui/login-prompt-modal";
 import { MobileMenuSheet } from "./mobile-menu-sheet";
-import { useQuickCaptureStore } from "@/hooks/use-quick-capture";
+import { useStampCaptureStore } from "@/hooks/use-stamp-capture";
 import { useMusicPlayer } from "@/hooks/use-music-player";
 import { useTranslation, type TranslationKey } from "@/lib/i18n";
 import { useContinueReading } from "@/hooks/use-continue-reading";
@@ -56,7 +56,7 @@ export function MobileNav() {
   const { user, isLoading } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { isOpen, setIsOpen, title, description, requireLogin } = useLoginPrompt();
-  const quickCapture = useQuickCaptureStore();
+  const stampCapture = useStampCaptureStore();
 
   // 이어읽기 책 (공용 훅 — visibilitychange 자동 갱신 포함)
   const { continueBook } = useContinueReading(user ?? null);
@@ -69,13 +69,20 @@ export function MobileNav() {
       });
       return;
     }
-    // Quick Capture: 이어읽기 책이 있으면 자동 선택 → 바로 입력
+    // Stamp Capture 가 새 기본 기록 단위 — 사진+페이지+시간 통합
     if (continueBook) {
-      quickCapture.openWithBook(continueBook);
+      stampCapture.openWithBook({
+        id: continueBook.id,
+        bookId: continueBook.bookId,
+        title: continueBook.title,
+        author: continueBook.author,
+        coverImageUrl: continueBook.coverImageUrl,
+        totalPages: null,
+      });
     } else {
-      quickCapture.open();
+      stampCapture.open();
     }
-  }, [user, requireLogin, quickCapture, continueBook]);
+  }, [user, requireLogin, stampCapture, continueBook, t]);
 
   return (
     <>
