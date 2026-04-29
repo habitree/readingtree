@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type RefObject } from "react";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Pill } from "./_relations-ui";
 import {
   Table,
   TableBody,
@@ -41,11 +42,15 @@ import type { RelationEntry } from "@/app/actions/admin/book-relations";
 interface BookRelationsTableProps {
   initialData: { relations: RelationEntry[]; total: number };
   selectedUserId?: string;
+  searchInputRef?: RefObject<HTMLInputElement | null>;
+  onRefetch?: () => void;
 }
 
 export function BookRelationsTable({
   initialData,
   selectedUserId,
+  searchInputRef,
+  onRefetch,
 }: BookRelationsTableProps) {
   const [data, setData] = useState(initialData);
   const [page, setPage] = useState(1);
@@ -78,6 +83,7 @@ export function BookRelationsTable({
       );
       toast.success("연결이 삭제되었습니다");
       await loadPage(page);
+      onRefetch?.();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "삭제에 실패했습니다");
     } finally {
@@ -86,12 +92,17 @@ export function BookRelationsTable({
   };
 
   const filteredRelations = searchQuery.trim()
-    ? data.relations.filter(
-        (r) =>
-          r.sourceTitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          r.targetTitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          r.userName?.toLowerCase().includes(searchQuery.toLowerCase())
-      )
+    ? data.relations.filter((r) => {
+        const q = searchQuery.toLowerCase();
+        return (
+          r.sourceTitle.toLowerCase().includes(q) ||
+          r.targetTitle.toLowerCase().includes(q) ||
+          r.sourceAuthor?.toLowerCase().includes(q) ||
+          r.targetAuthor?.toLowerCase().includes(q) ||
+          r.userName?.toLowerCase().includes(q) ||
+          r.reason?.toLowerCase().includes(q)
+        );
+      })
     : data.relations;
 
   const getPageNumbers = () => {
@@ -127,14 +138,15 @@ export function BookRelationsTable({
         <div className="relative w-full sm:w-64">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/40" />
           <Input
+            ref={searchInputRef}
             type="search"
-            placeholder="제목, 저자 또는 사용자 검색..."
+            placeholder="책 제목, 저자, 사유 검색…"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-9 pr-10 h-9 text-[13px] bg-muted/20 dark:bg-white/[0.02] border-black/[0.06] dark:border-white/[0.06] focus:bg-white dark:focus:bg-[#111019] transition-colors rounded-xl"
           />
           <kbd className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground/30 border border-black/[0.06] dark:border-white/[0.06] rounded-md px-1.5 py-0.5 font-mono hidden sm:inline">
-            /
+            ⌘K
           </kbd>
         </div>
       </div>
@@ -156,6 +168,7 @@ export function BookRelationsTable({
                   <TableHead className="min-w-[200px] text-[11px] uppercase tracking-wider font-semibold text-muted-foreground/50 h-9">출발 책</TableHead>
                   <TableHead className="w-[40px] text-center" />
                   <TableHead className="min-w-[200px] text-[11px] uppercase tracking-wider font-semibold text-muted-foreground/50 h-9">도착 책</TableHead>
+                  <TableHead className="min-w-[120px] text-[11px] uppercase tracking-wider font-semibold text-muted-foreground/50 h-9">사유</TableHead>
                   <TableHead className="min-w-[100px] text-[11px] uppercase tracking-wider font-semibold text-muted-foreground/50 h-9">사용자</TableHead>
                   <TableHead className="min-w-[110px] text-[11px] uppercase tracking-wider font-semibold text-muted-foreground/50 h-9">생성일</TableHead>
                   <TableHead className="w-[50px]" />
@@ -175,7 +188,7 @@ export function BookRelationsTable({
                   ))
                 ) : filteredRelations.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="h-32 text-center text-sm text-muted-foreground/50">
+                    <TableCell colSpan={7} className="h-32 text-center text-sm text-muted-foreground/50">
                       검색 결과가 없습니다
                     </TableCell>
                   </TableRow>
@@ -206,6 +219,15 @@ export function BookRelationsTable({
                             author={relation.targetAuthor}
                             coverUrl={relation.targetCoverUrl}
                           />
+                        </td>
+                        <td className="py-3 px-4">
+                          {relation.reason ? (
+                            <Pill size="xs" tone="neutral">
+                              {relation.reason.length > 14 ? `${relation.reason.slice(0, 14)}…` : relation.reason}
+                            </Pill>
+                          ) : (
+                            <span className="text-[12px] text-muted-foreground/35">—</span>
+                          )}
                         </td>
                         <td className="py-3 px-4">
                           <span className="text-[13px] text-foreground/70">

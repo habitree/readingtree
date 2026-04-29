@@ -30,14 +30,12 @@ export default async function BookRelationsPage() {
   ]);
 
   return (
-    <div className="container py-8 max-w-7xl mx-auto">
-      <BookRelationsDashboard
-        initialStats={stats}
-        initialGraph={graph}
-        initialRelations={relations}
-        initialTopBooks={topBooks}
-        users={users}
-      />
-    </div>
+    <BookRelationsDashboard
+      initialStats={stats}
+      initialGraph={graph}
+      initialRelations={relations}
+      initialTopBooks={topBooks}
+      users={users}
+    />
   );
 }

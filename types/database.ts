@@ -1162,6 +1162,7 @@ export type Database = {
         Row: {
           created_at: string | null
           id: string
+          reason: string | null
           source_user_book_id: string
           target_user_book_id: string
           user_id: string
@@ -1169,6 +1170,7 @@ export type Database = {
         Insert: {
           created_at?: string | null
           id?: string
+          reason?: string | null
           source_user_book_id: string
           target_user_book_id: string
           user_id: string
@@ -1176,6 +1178,7 @@ export type Database = {
         Update: {
           created_at?: string | null
           id?: string
+          reason?: string | null
           source_user_book_id?: string
           target_user_book_id?: string
           user_id?: string

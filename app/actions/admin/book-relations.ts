@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { requireAdmin } from "./_shared";
 
@@ -29,6 +30,7 @@ export interface GraphEdge {
   source: string;
   target: string;
   createdAt: string;
+  reason: string | null;
 }
 
 export interface BookRelationsGraphData {
@@ -49,6 +51,7 @@ export interface RelationEntry {
   userId: string;
   userName: string | null;
   createdAt: string;
+  reason: string | null;
 }
 
 export interface TopConnectedBook {
@@ -138,7 +141,7 @@ export async function getBookRelationsGraph(userId?: string): Promise<BookRelati
   // 모든 관계 조회
   let edgesQuery = supabase
     .from("user_book_relations")
-    .select("source_user_book_id, target_user_book_id, created_at, user_id")
+    .select("source_user_book_id, target_user_book_id, created_at, user_id, reason")
     .order("created_at", { ascending: false })
     .limit(2000);
 
@@ -234,6 +237,7 @@ export async function getBookRelationsGraph(userId?: string): Promise<BookRelati
     source: edge.source_user_book_id,
     target: edge.target_user_book_id,
     createdAt: edge.created_at,
+    reason: (edge as { reason?: string | null }).reason ?? null,
   }));
 
   return { nodes, edges };
@@ -254,7 +258,7 @@ export async function getBookRelationsList(
   // 모든 관계 조회 후 클라이언트 사이드 중복 제거 + 페이지네이션
   let query = supabase
     .from("user_book_relations")
-    .select("id, source_user_book_id, target_user_book_id, user_id, created_at")
+    .select("id, source_user_book_id, target_user_book_id, user_id, created_at, reason")
     .order("created_at", { ascending: false });
 
   if (userId) {
@@ -346,6 +350,7 @@ export async function getBookRelationsList(
       userId: r.user_id,
       userName: userNameMap.get(r.user_id) || null,
       createdAt: r.created_at,
+      reason: (r as { reason?: string | null }).reason ?? null,
     };
   });
 
@@ -517,5 +522,155 @@ export async function adminDeleteBookRelation(
     throw new Error(`책 연결 삭제 실패: ${error.message}`);
   }
 
+  revalidatePath("/admin/book-relations");
   return { success: true };
+}
+
+// ============================================================
+// 관리자 연결 생성 (admin이 임의 사용자 명의로 새 연결 생성)
+// ============================================================
+
+export async function adminCreateBookRelation(args: {
+  sourceUserBookId: string;
+  targetUserBookId: string;
+  userId: string;
+  reason?: string | null;
+}): Promise<{ success: boolean; id: string }> {
+  await requireAdmin();
+  const supabase = createAdminSupabaseClient();
+
+  const { sourceUserBookId, targetUserBookId, userId, reason } = args;
+
+  if (sourceUserBookId === targetUserBookId) {
+    throw new Error("같은 책끼리는 연결할 수 없습니다.");
+  }
+
+  // user_books 두 권 모두 동일한 user_id 소유인지 검증
+  const { data: ownership } = await supabase
+    .from("user_books")
+    .select("id, user_id")
+    .in("id", [sourceUserBookId, targetUserBookId]);
+
+  if (!ownership || ownership.length !== 2) {
+    throw new Error("선택한 책을 찾을 수 없습니다.");
+  }
+  if (ownership.some((b) => b.user_id !== userId)) {
+    throw new Error("두 책은 같은 사용자의 서재에 있어야 합니다.");
+  }
+
+  // 양방향 중복 검사
+  const { data: existing } = await supabase
+    .from("user_book_relations")
+    .select("id")
+    .eq("user_id", userId)
+    .or(
+      `and(source_user_book_id.eq.${sourceUserBookId},target_user_book_id.eq.${targetUserBookId}),and(source_user_book_id.eq.${targetUserBookId},target_user_book_id.eq.${sourceUserBookId})`
+    )
+    .maybeSingle();
+
+  if (existing) {
+    throw new Error("이미 존재하는 연결입니다.");
+  }
+
+  const trimmed = reason?.trim() ? reason.trim() : null;
+
+  const { data, error } = await supabase
+    .from("user_book_relations")
+    .insert({
+      user_id: userId,
+      source_user_book_id: sourceUserBookId,
+      target_user_book_id: targetUserBookId,
+      reason: trimmed,
+    })
+    .select("id")
+    .single();
+
+  if (error || !data) {
+    console.error("관리자 책 연결 생성 오류:", error);
+    throw new Error(`책 연결 생성 실패: ${error?.message ?? "알 수 없음"}`);
+  }
+
+  revalidatePath("/admin/book-relations");
+  return { success: true, id: data.id };
+}
+
+// ============================================================
+// 관리자 연결 사유 수정
+// ============================================================
+
+export async function adminUpdateBookRelationReason(args: {
+  sourceUserBookId: string;
+  targetUserBookId: string;
+  userId: string;
+  reason: string | null;
+}): Promise<{ success: boolean }> {
+  await requireAdmin();
+  const supabase = createAdminSupabaseClient();
+
+  const { sourceUserBookId, targetUserBookId, userId, reason } = args;
+  const trimmed = reason?.trim() ? reason.trim() : null;
+
+  const { error } = await supabase
+    .from("user_book_relations")
+    .update({ reason: trimmed })
+    .eq("user_id", userId)
+    .or(
+      `and(source_user_book_id.eq.${sourceUserBookId},target_user_book_id.eq.${targetUserBookId}),and(source_user_book_id.eq.${targetUserBookId},target_user_book_id.eq.${sourceUserBookId})`
+    );
+
+  if (error) {
+    console.error("관리자 책 연결 사유 수정 오류:", error);
+    throw new Error(`연결 사유 수정 실패: ${error.message}`);
+  }
+
+  revalidatePath("/admin/book-relations");
+  return { success: true };
+}
+
+// ============================================================
+// 관리자: 특정 사용자의 user_books 목록 (새 연결 모달용)
+// ============================================================
+
+export interface AdminUserBookOption {
+  userBookId: string;
+  bookId: string;
+  title: string;
+  author: string | null;
+  coverImageUrl: string | null;
+}
+
+export async function getUserBooksForAdmin(userId: string): Promise<AdminUserBookOption[]> {
+  await requireAdmin();
+  const supabase = createAdminSupabaseClient();
+
+  const { data, error } = await supabase
+    .from("user_books")
+    .select(`
+      id,
+      books (
+        id,
+        title,
+        author,
+        cover_image_url
+      )
+    `)
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(200);
+
+  if (error || !data) {
+    console.error("관리자 사용자 책 목록 조회 오류:", error);
+    return [];
+  }
+
+  return data.map((ub: Record<string, unknown>) => {
+    const book = ub.books as Record<string, unknown> | null;
+    return {
+      userBookId: ub.id as string,
+      bookId: (book?.id as string) ?? "",
+      title: (book?.title as string) ?? "알 수 없는 책",
+      author: (book?.author as string) ?? null,
+      coverImageUrl: (book?.cover_image_url as string) ?? null,
+    };
+  });
 }
