@@ -26,9 +26,9 @@ export const RELATIONS_TOKENS_CSS = `
     --rt-accent-soft: hsl(var(--primary) / 0.7);
     --rt-accent-bg: hsl(var(--primary) / 0.12);
     --rt-accent-fg: hsl(var(--primary-foreground));
-    --rt-graph-bg: hsl(var(--muted) / 0.35);
-    --rt-grid-dot: hsl(var(--foreground) / 0.08);
-    --rt-edge: hsl(var(--foreground) / 0.42);
+    --rt-graph-bg: hsl(var(--card));
+    --rt-grid-dot: hsl(var(--foreground) / 0.1);
+    --rt-edge: hsl(var(--foreground) / 0.7);
     --rt-edge-strong: hsl(var(--primary));
 
     --rt-pill-neutral-bg: hsl(var(--muted));

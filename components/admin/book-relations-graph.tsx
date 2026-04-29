@@ -56,15 +56,46 @@ function createInitialNodes(nodes: GraphNode[], width: number, height: number): 
 }
 
 // ============================================================
-// 베지어 커브
+// 베지어 커브 — 노드 사각 카드 가장자리에서 끝나도록 트림
+// (노드 중심에서 출발하면 카드 안쪽에 stroke가 가려져 보이지 않음)
 // ============================================================
 
-function curvePath(sx: number, sy: number, tx: number, ty: number, c: number): string {
-  const mx = (sx + tx) / 2;
-  const my = (sy + ty) / 2;
-  const dx = tx - sx;
-  const dy = ty - sy;
-  return `M${sx},${sy} Q${mx - dy * c},${my + dx * c} ${tx},${ty}`;
+function trimEndpoint(
+  cx: number,
+  cy: number,
+  tx: number,
+  ty: number,
+  halfW: number,
+  halfH: number
+): { x: number; y: number } {
+  const dx = tx - cx;
+  const dy = ty - cy;
+  if (dx === 0 && dy === 0) return { x: cx, y: cy };
+  const adx = Math.abs(dx);
+  const ady = Math.abs(dy);
+  // 사각형 가장자리와의 교차점 (rectangular projection)
+  const tx1 = adx > 0 ? halfW / adx : Infinity;
+  const ty1 = ady > 0 ? halfH / ady : Infinity;
+  const t = Math.min(tx1, ty1);
+  return { x: cx + dx * t, y: cy + dy * t };
+}
+
+function curvePath(
+  sx: number,
+  sy: number,
+  tx: number,
+  ty: number,
+  c: number,
+  halfW: number,
+  halfH: number
+): string {
+  const start = trimEndpoint(sx, sy, tx, ty, halfW, halfH);
+  const end = trimEndpoint(tx, ty, sx, sy, halfW, halfH);
+  const mx = (start.x + end.x) / 2;
+  const my = (start.y + end.y) / 2;
+  const dx = end.x - start.x;
+  const dy = end.y - start.y;
+  return `M${start.x},${start.y} Q${mx - dy * c},${my + dx * c} ${end.x},${end.y}`;
 }
 
 // ============================================================
@@ -415,16 +446,16 @@ export function BookRelationsGraph({
         border: "0.5px solid var(--rt-border)",
       }}
     >
-      {/* 도트 그리드 배경 */}
+      {/* 도트 그리드 배경 (엣지 가시성을 해치지 않도록 약하게) */}
       <div
         aria-hidden
         style={{
           position: "absolute",
           inset: 0,
-          opacity: 0.7,
+          opacity: 0.4,
           pointerEvents: "none",
-          backgroundImage: `radial-gradient(circle, var(--rt-grid-dot) 1.2px, transparent 1.4px)`,
-          backgroundSize: "28px 28px",
+          backgroundImage: `radial-gradient(circle, var(--rt-grid-dot) 1px, transparent 1.2px)`,
+          backgroundSize: "32px 32px",
         }}
       />
 
@@ -461,7 +492,7 @@ export function BookRelationsGraph({
         <rect width={dim.w} height={dim.h} fill="transparent" />
 
         <g transform={`translate(${translate.x},${translate.y}) scale(${scale})`}>
-          {/* 엣지 — 명확한 가시성을 위해 stroke 굵기·불투명도 강화 */}
+          {/* 엣지 — 명확한 가시성을 위해 stroke 굵기·색상 강화, 노드 가장자리까지 트림 */}
           {edges.map((e, i) => {
             const s = nodeMap.get(e.source);
             const t = nodeMap.get(e.target);
@@ -471,21 +502,22 @@ export function BookRelationsGraph({
               focusedId !== null && (e.source === focusedId || e.target === focusedId);
             const isDim = focusedId !== null && !isHigh;
             const c = 0.12 + (i % 3) * 0.05;
-            const path = curvePath(s.x, s.y, t.x, t.y, i % 2 ? c : -c);
+            const halfW = NODE_W / 2 + 2;
+            const halfH = NODE_H / 2 + 2;
+            const path = curvePath(s.x, s.y, t.x, t.y, i % 2 ? c : -c, halfW, halfH);
 
             return (
               <g
                 key={`e-${i}`}
-                opacity={isDim ? 0.18 : 1}
+                opacity={isDim ? 0.25 : 1}
                 style={{ transition: "opacity 300ms" }}
               >
                 {/* 호버 영역 확대 (인터랙션 ease) */}
-                <path d={path} stroke="transparent" strokeWidth={10} fill="none" />
+                <path d={path} stroke="transparent" strokeWidth={12} fill="none" />
                 <path
                   d={path}
                   stroke={isHigh ? "var(--rt-accent)" : "var(--rt-edge)"}
-                  strokeWidth={isHigh ? 2.5 : 1.8}
-                  opacity={isHigh ? 1 : 0.78}
+                  strokeWidth={isHigh ? 2.8 : 2.2}
                   fill="none"
                   strokeLinecap="round"
                 />
@@ -493,8 +525,8 @@ export function BookRelationsGraph({
                   <path
                     d={path}
                     stroke="var(--rt-accent)"
-                    strokeWidth={2.5}
-                    opacity={0.6}
+                    strokeWidth={3}
+                    opacity={0.55}
                     fill="none"
                     strokeLinecap="round"
                     strokeDasharray="3 12"
