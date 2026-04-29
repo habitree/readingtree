@@ -330,14 +330,14 @@ export function BookRelationsDashboard({
         <KpiCard
           label="참여 책"
           value={stats.uniqueBooks}
-          tone="blue"
+          tone="chart1"
           Icon={BookOpen}
           isLoading={isFiltering}
         />
         <KpiCard
           label="참여 사용자"
           value={stats.usersWithRelations}
-          tone="emerald"
+          tone="chart2"
           Icon={Users}
           isLoading={isFiltering}
         />
@@ -345,7 +345,7 @@ export function BookRelationsDashboard({
           label="평균 연결/책"
           value={stats.avgConnectionsPerBook}
           decimals={1}
-          tone="amber"
+          tone="chart3"
           Icon={TrendingUp}
           isLoading={isFiltering}
         />
@@ -495,7 +495,7 @@ export function BookRelationsDashboard({
 // KPI 카드
 // ============================================================
 
-type KpiTone = "accent" | "blue" | "emerald" | "amber";
+type KpiTone = "accent" | "chart1" | "chart2" | "chart3";
 
 interface KpiCardProps {
   label: string;
@@ -506,11 +506,12 @@ interface KpiCardProps {
   isLoading?: boolean;
 }
 
+// 프로젝트 차트 변수(--chart-1..5)에 매핑 — 라이트/다크/forest 테마 자동 대응
 const TONE_STYLES: Record<KpiTone, { bg: string; fg: string }> = {
   accent: { bg: "var(--rt-accent-bg)", fg: "var(--rt-accent)" },
-  blue: { bg: "rgba(70,120,180,0.12)", fg: "oklch(0.55 0.13 240)" },
-  emerald: { bg: "rgba(80,140,90,0.12)", fg: "oklch(0.55 0.13 150)" },
-  amber: { bg: "rgba(180,130,50,0.12)", fg: "oklch(0.6 0.13 60)" },
+  chart1: { bg: "hsl(var(--chart-1) / 0.14)", fg: "hsl(var(--chart-1))" },
+  chart2: { bg: "hsl(var(--chart-2) / 0.14)", fg: "hsl(var(--chart-2))" },
+  chart3: { bg: "hsl(var(--chart-3) / 0.14)", fg: "hsl(var(--chart-3))" },
 };
 
 function KpiCard({ label, value, decimals = 0, tone, Icon, isLoading }: KpiCardProps) {

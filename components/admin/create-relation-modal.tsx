@@ -224,12 +224,16 @@ export function CreateRelationModal({
                   borderRadius: "50%",
                   background:
                     i < step
-                      ? "oklch(0.55 0.13 150)"
+                      ? "var(--rt-accent)"
                       : i === step
                       ? "var(--rt-text-primary)"
                       : "var(--rt-bg-subtle)",
                   color:
-                    i < step ? "white" : i === step ? "var(--rt-bg-card)" : "var(--rt-text-tertiary)",
+                    i < step
+                      ? "var(--rt-accent-fg)"
+                      : i === step
+                      ? "var(--rt-bg-card)"
+                      : "var(--rt-text-tertiary)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",

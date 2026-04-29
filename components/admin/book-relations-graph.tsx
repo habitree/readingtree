@@ -421,9 +421,9 @@ export function BookRelationsGraph({
         style={{
           position: "absolute",
           inset: 0,
-          opacity: 0.5,
+          opacity: 0.7,
           pointerEvents: "none",
-          backgroundImage: `radial-gradient(circle, var(--rt-grid-dot) 1px, transparent 1.2px)`,
+          backgroundImage: `radial-gradient(circle, var(--rt-grid-dot) 1.2px, transparent 1.4px)`,
           backgroundSize: "28px 28px",
         }}
       />
@@ -461,7 +461,7 @@ export function BookRelationsGraph({
         <rect width={dim.w} height={dim.h} fill="transparent" />
 
         <g transform={`translate(${translate.x},${translate.y}) scale(${scale})`}>
-          {/* 엣지 */}
+          {/* 엣지 — 명확한 가시성을 위해 stroke 굵기·불투명도 강화 */}
           {edges.map((e, i) => {
             const s = nodeMap.get(e.source);
             const t = nodeMap.get(e.target);
@@ -476,26 +476,28 @@ export function BookRelationsGraph({
             return (
               <g
                 key={`e-${i}`}
-                opacity={isDim ? 0.06 : 1}
+                opacity={isDim ? 0.18 : 1}
                 style={{ transition: "opacity 300ms" }}
               >
+                {/* 호버 영역 확대 (인터랙션 ease) */}
+                <path d={path} stroke="transparent" strokeWidth={10} fill="none" />
                 <path
                   d={path}
                   stroke={isHigh ? "var(--rt-accent)" : "var(--rt-edge)"}
-                  strokeWidth={isHigh ? 2 : 1.2}
-                  opacity={isHigh ? 0.85 : 0.45}
+                  strokeWidth={isHigh ? 2.5 : 1.8}
+                  opacity={isHigh ? 1 : 0.78}
                   fill="none"
                   strokeLinecap="round"
                 />
                 {isHigh && (
                   <path
                     d={path}
-                    stroke="var(--rt-accent-soft)"
-                    strokeWidth={2}
-                    opacity={0.55}
+                    stroke="var(--rt-accent)"
+                    strokeWidth={2.5}
+                    opacity={0.6}
                     fill="none"
                     strokeLinecap="round"
-                    strokeDasharray="3 14"
+                    strokeDasharray="3 12"
                     style={{ animation: "rt-flow 2s linear infinite" }}
                   />
                 )}
@@ -603,21 +605,21 @@ export function BookRelationsGraph({
                   height={NODE_H}
                   rx={6}
                   fill="none"
-                  stroke="rgba(0,0,0,0.25)"
+                  stroke="var(--rt-border-strong)"
                   strokeWidth={0.8}
                 />
 
                 {/* 연결 카운트 배지 */}
                 {n.connectionCount > 0 && (
                   <g transform={`translate(${NODE_W / 2 - 4},${-NODE_H / 2 + 4})`}>
-                    <circle r={11} fill="white" />
-                    <circle r={11} fill="var(--rt-accent)" opacity={0.95} />
+                    <circle r={11} fill="var(--rt-bg-card)" />
+                    <circle r={11} fill="var(--rt-accent)" />
                     <text
                       textAnchor="middle"
                       dominantBaseline="central"
                       fontSize={11}
                       fontWeight={700}
-                      fill="white"
+                      fill="var(--rt-accent-fg)"
                       style={{ pointerEvents: "none", userSelect: "none" }}
                     >
                       {n.connectionCount}

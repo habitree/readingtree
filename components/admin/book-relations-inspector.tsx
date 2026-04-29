@@ -414,8 +414,8 @@ function RelItem({ book, reason, onSelect, onDelete }: RelItemProps) {
           cursor: "pointer",
         }}
         onMouseEnter={(e) => {
-          e.currentTarget.style.background = "rgba(180,40,40,0.1)";
-          e.currentTarget.style.color = "oklch(0.5 0.18 25)";
+          e.currentTarget.style.background = "hsl(var(--destructive) / 0.12)";
+          e.currentTarget.style.color = "hsl(var(--destructive))";
         }}
         onMouseLeave={(e) => {
           e.currentTarget.style.background = "transparent";

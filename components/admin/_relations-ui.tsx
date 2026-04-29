@@ -8,41 +8,45 @@ import type { CSSProperties, ReactNode } from "react";
 // 라이트: 베이지 #f6f5f2 / 청록 #2f4f4f
 // ============================================================
 
+// 모든 토큰을 프로젝트 shadcn 변수(hsl(var(--background)) 등)에 매핑.
+// 라이트/다크/forest/forest-dark 4테마 모두 자동으로 대응.
 export const RELATIONS_TOKENS_CSS = `
   .rt-relations {
-    --rt-bg: #f6f5f2;
-    --rt-bg-card: #ffffff;
-    --rt-bg-subtle: #f1efea;
-    --rt-bg-hover: rgba(20,18,12,0.04);
-    --rt-bg-active: rgba(20,18,12,0.06);
-    --rt-border: rgba(20,18,12,0.08);
-    --rt-border-strong: rgba(20,18,12,0.14);
-    --rt-text-primary: #1a1815;
-    --rt-text-secondary: #4a4640;
-    --rt-text-tertiary: #8a847a;
-    --rt-accent: #2f4f4f;
-    --rt-accent-soft: #6b8b8b;
-    --rt-accent-bg: #e8eded;
-    --rt-graph-bg: #fbfaf6;
-    --rt-grid-dot: rgba(20,18,12,0.07);
-    --rt-edge: rgba(20,18,12,0.18);
+    --rt-bg: hsl(var(--background));
+    --rt-bg-card: hsl(var(--card));
+    --rt-bg-subtle: hsl(var(--muted));
+    --rt-bg-hover: hsl(var(--muted) / 0.7);
+    --rt-bg-active: hsl(var(--muted));
+    --rt-border: hsl(var(--border));
+    --rt-border-strong: hsl(var(--border) / 1.6);
+    --rt-text-primary: hsl(var(--foreground));
+    --rt-text-secondary: hsl(var(--foreground) / 0.78);
+    --rt-text-tertiary: hsl(var(--muted-foreground));
+    --rt-accent: hsl(var(--primary));
+    --rt-accent-soft: hsl(var(--primary) / 0.7);
+    --rt-accent-bg: hsl(var(--primary) / 0.12);
+    --rt-accent-fg: hsl(var(--primary-foreground));
+    --rt-graph-bg: hsl(var(--muted) / 0.35);
+    --rt-grid-dot: hsl(var(--foreground) / 0.08);
+    --rt-edge: hsl(var(--foreground) / 0.42);
+    --rt-edge-strong: hsl(var(--primary));
 
-    --rt-pill-neutral-bg: #f1efea;
-    --rt-pill-neutral-fg: #4a4640;
-    --rt-pill-neutral-border: rgba(20,18,12,0.06);
-    --rt-pill-accent-bg: #e8eded;
-    --rt-pill-accent-fg: #2f4f4f;
-    --rt-pill-accent-border: rgba(47,79,79,0.18);
-    --rt-pill-success-bg: #e6f0e6;
-    --rt-pill-success-fg: #2d5a2d;
-    --rt-pill-success-border: rgba(45,90,45,0.18);
-    --rt-pill-warn-bg: #fbeed6;
-    --rt-pill-warn-fg: #7a5414;
-    --rt-pill-warn-border: rgba(122,84,20,0.2);
+    --rt-pill-neutral-bg: hsl(var(--muted));
+    --rt-pill-neutral-fg: hsl(var(--muted-foreground));
+    --rt-pill-neutral-border: hsl(var(--border));
+    --rt-pill-accent-bg: hsl(var(--primary) / 0.12);
+    --rt-pill-accent-fg: hsl(var(--primary));
+    --rt-pill-accent-border: hsl(var(--primary) / 0.28);
+    --rt-pill-success-bg: hsl(var(--chart-2) / 0.14);
+    --rt-pill-success-fg: hsl(var(--chart-2));
+    --rt-pill-success-border: hsl(var(--chart-2) / 0.3);
+    --rt-pill-warn-bg: hsl(var(--chart-4) / 0.16);
+    --rt-pill-warn-fg: hsl(var(--chart-4));
+    --rt-pill-warn-border: hsl(var(--chart-4) / 0.3);
 
-    --rt-shadow-sm: 0 1px 2px rgba(20,18,12,0.04);
-    --rt-shadow-md: 0 4px 14px rgba(20,18,12,0.06), 0 1px 2px rgba(20,18,12,0.04);
-    --rt-shadow-lg: 0 12px 40px rgba(20,18,12,0.12), 0 2px 4px rgba(20,18,12,0.04);
+    --rt-shadow-sm: 0 1px 2px hsl(var(--foreground) / 0.04);
+    --rt-shadow-md: 0 4px 14px hsl(var(--foreground) / 0.08), 0 1px 2px hsl(var(--foreground) / 0.04);
+    --rt-shadow-lg: 0 12px 40px hsl(var(--foreground) / 0.16), 0 2px 4px hsl(var(--foreground) / 0.06);
 
     --rt-serif: "Noto Serif KR", ui-serif, Georgia, serif;
 
@@ -51,41 +55,6 @@ export const RELATIONS_TOKENS_CSS = `
     font-size: 13px;
     line-height: 1.5;
     letter-spacing: -0.01em;
-  }
-  .rt-relations[data-theme="dark"] {
-    --rt-bg: #14130f;
-    --rt-bg-card: #1c1a16;
-    --rt-bg-subtle: #232017;
-    --rt-bg-hover: rgba(255,250,235,0.04);
-    --rt-bg-active: rgba(255,250,235,0.06);
-    --rt-border: rgba(255,250,235,0.08);
-    --rt-border-strong: rgba(255,250,235,0.14);
-    --rt-text-primary: #f4f1ea;
-    --rt-text-secondary: #b8b1a3;
-    --rt-text-tertiary: #7a7468;
-    --rt-accent: #8eb5b5;
-    --rt-accent-soft: #5a7a7a;
-    --rt-accent-bg: rgba(142,181,181,0.12);
-    --rt-graph-bg: #18160f;
-    --rt-grid-dot: rgba(255,250,235,0.06);
-    --rt-edge: rgba(255,250,235,0.18);
-
-    --rt-pill-neutral-bg: rgba(255,250,235,0.06);
-    --rt-pill-neutral-fg: #b8b1a3;
-    --rt-pill-neutral-border: rgba(255,250,235,0.08);
-    --rt-pill-accent-bg: rgba(142,181,181,0.14);
-    --rt-pill-accent-fg: #b8d6d6;
-    --rt-pill-accent-border: rgba(142,181,181,0.25);
-    --rt-pill-success-bg: rgba(120,160,90,0.14);
-    --rt-pill-success-fg: #b8d699;
-    --rt-pill-success-border: rgba(120,160,90,0.25);
-    --rt-pill-warn-bg: rgba(200,140,60,0.14);
-    --rt-pill-warn-fg: #d6b888;
-    --rt-pill-warn-border: rgba(200,140,60,0.25);
-
-    --rt-shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
-    --rt-shadow-md: 0 4px 14px rgba(0,0,0,0.3);
-    --rt-shadow-lg: 0 12px 40px rgba(0,0,0,0.4);
   }
   .rt-serif { font-family: var(--rt-serif); }
   .rt-kbd {
@@ -180,10 +149,6 @@ interface AvatarProps {
 
 export function Avatar({ name, size = 24, className }: AvatarProps) {
   const initial = (name ?? "?").charAt(0).toUpperCase();
-  let h = 0;
-  for (let i = 0; i < (name ?? "").length; i++) {
-    h = (h * 31 + (name ?? "").charCodeAt(i)) % 360;
-  }
   return (
     <span
       className={className}
@@ -191,8 +156,8 @@ export function Avatar({ name, size = 24, className }: AvatarProps) {
         width: size,
         height: size,
         borderRadius: "50%",
-        background: `linear-gradient(135deg, oklch(0.78 0.10 ${h}), oklch(0.62 0.13 ${h}))`,
-        color: "white",
+        background: "var(--rt-accent-bg)",
+        color: "var(--rt-accent)",
         fontSize: size * 0.45,
         fontWeight: 600,
         display: "inline-flex",
@@ -222,18 +187,14 @@ interface CoverFallbackProps {
 export function CoverFallback({ title, width, height, radius = 4 }: CoverFallbackProps) {
   const h = height ?? Math.round(width * 1.4);
   const initial = (title || "?").charAt(0);
-  let hue = 0;
-  for (let i = 0; i < title.length; i++) {
-    hue = (hue * 31 + title.charCodeAt(i)) % 360;
-  }
   return (
     <span
       style={{
         width,
         height: h,
         borderRadius: radius,
-        background: `linear-gradient(135deg, oklch(0.62 0.10 ${hue}), oklch(0.42 0.12 ${hue}))`,
-        color: "white",
+        background: "var(--rt-accent-bg)",
+        color: "var(--rt-accent)",
         fontSize: width * 0.42,
         fontWeight: 700,
         display: "inline-flex",
@@ -241,7 +202,8 @@ export function CoverFallback({ title, width, height, radius = 4 }: CoverFallbac
         justifyContent: "center",
         fontFamily: "var(--rt-serif)",
         flexShrink: 0,
-        boxShadow: "0 1px 3px rgba(0,0,0,0.18), inset 0 0 0 0.5px rgba(0,0,0,0.2)",
+        border: "0.5px solid var(--rt-border)",
+        boxShadow: "var(--rt-shadow-sm)",
       }}
     >
       {initial}
