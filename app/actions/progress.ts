@@ -8,6 +8,7 @@ import type {
   ReadingLog,
   CreateReadingLogInput,
   CreateReadingStampInput,
+  AttachStampInput,
   GetReadingStampsParams,
   ReadingStamp,
   ReadingStampsResult,
@@ -799,6 +800,7 @@ export async function getReadingStamps(
             total_pages: book.total_pages,
           }
         : undefined,
+      promoted_at: (row as { promoted_at?: string | null }).promoted_at ?? null,
     };
   });
 
@@ -806,4 +808,152 @@ export async function getReadingStamps(
     stamps,
     nextCursor: hasMore ? sliced[sliced.length - 1].created_at : null,
   };
+}
+
+/**
+ * 기존 reading_log 에 사진을 첨부해 스탬프로 승격.
+ * - image_url 이 이미 있으면 사진 교체로 동작 (promoted_at 유지)
+ * - image_url 이 NULL → NOT NULL 첫 전환 시 promoted_at = NOW()
+ * - start_page / end_page 미입력 시 기존 값 유지
+ * - 권한: 본인 행만 (RLS + user_id 명시 검증)
+ * - 포인트 추가 적립 없음 (이미 기록 시점에 적립됨)
+ */
+export async function attachStampToLog(
+  logId: string,
+  input: AttachStampInput,
+  user?: User | null,
+): Promise<{ success: boolean; promoted: boolean; logId: string }> {
+  const supabase = await createServerSupabaseClient();
+
+  let currentUser = user;
+  if (!currentUser) {
+    const {
+      data: { user: fetchedUser },
+      error: authError,
+    } = await supabase.auth.getUser();
+    if (authError || !fetchedUser) throw new Error("로그인이 필요합니다.");
+    currentUser = fetchedUser;
+  }
+
+  if (!isValidUUID(logId)) {
+    throw new Error("유효하지 않은 로그 ID입니다.");
+  }
+
+  if (!input.image_url || input.image_url.trim().length === 0) {
+    throw new Error("이미지 URL이 필요합니다.");
+  }
+
+  if (input.memo && input.memo.length > 500) {
+    throw new Error("메모는 500자 이하여야 합니다.");
+  }
+
+  // 로그 소유 + 기존 image_url 조회
+  const { data: existingLog, error: checkError } = await supabase
+    .from("reading_logs")
+    .select("id, user_book_id, image_url, start_page, end_page, page_number")
+    .eq("id", logId)
+    .eq("user_id", currentUser.id)
+    .maybeSingle();
+
+  if (checkError && checkError.code !== "PGRST116") {
+    throw new Error("로그 조회에 실패했습니다.");
+  }
+
+  if (!existingLog) {
+    throw new Error("권한이 없습니다. 해당 기록에 접근할 수 없습니다.");
+  }
+
+  const wasNotStamp = !existingLog.image_url;
+  const newStartPage = input.start_page ?? existingLog.start_page ?? null;
+  const newEndPage = input.end_page ?? existingLog.end_page ?? existingLog.page_number ?? null;
+
+  const updatePayload: Record<string, unknown> = {
+    image_url: input.image_url,
+  };
+  if (input.start_page !== undefined) updatePayload.start_page = newStartPage;
+  if (input.end_page !== undefined) {
+    updatePayload.end_page = newEndPage;
+    if (typeof newEndPage === "number") updatePayload.page_number = newEndPage;
+  }
+  if (input.memo !== undefined) updatePayload.memo = input.memo.trim() || null;
+
+  // promoted_at 첫 승격 시에만 NOW() (이미 사진 있던 행은 유지)
+  if (wasNotStamp) {
+    updatePayload.promoted_at = new Date().toISOString();
+  }
+
+  const { error: updateError } = await supabase
+    .from("reading_logs")
+    .update(updatePayload)
+    .eq("id", logId)
+    .eq("user_id", currentUser.id);
+
+  if (updateError) {
+    throw new Error(sanitizeErrorMessage(updateError));
+  }
+
+  // user_books.current_page 동기화 (end_page 가 갱신된 경우)
+  if (input.end_page !== undefined && typeof newEndPage === "number") {
+    try {
+      await updateBookProgress(existingLog.user_book_id, newEndPage, currentUser);
+    } catch (err) {
+      console.error("[attachStampToLog] updateBookProgress 실패:", sanitizeErrorForLogging(err));
+    }
+  }
+
+  revalidatePath("/");
+  revalidatePath("/stamps");
+  revalidatePath("/notes");
+  revalidatePath(`/books/${existingLog.user_book_id}`);
+
+  return { success: true, promoted: wasNotStamp, logId };
+}
+
+/**
+ * 사진 첨부 가능한 최근 reading_log 목록 (image_url IS NULL).
+ * 사후 첨부 진입 화면(예: 토스트 클릭, 책 상세 행 칩)에서 사용.
+ */
+export async function getRecentRecordsForAttach(
+  params: { userBookId?: string; limit?: number; daysWindow?: number } = {},
+  user?: User | null,
+): Promise<ReadingLog[]> {
+  const supabase = await createServerSupabaseClient();
+
+  let currentUser = user;
+  if (!currentUser) {
+    const {
+      data: { user: fetchedUser },
+      error: authError,
+    } = await supabase.auth.getUser();
+    if (authError || !fetchedUser) throw new Error("로그인이 필요합니다.");
+    currentUser = fetchedUser;
+  }
+
+  const limit = Math.min(Math.max(params.limit ?? 20, 1), 100);
+  const daysWindow = params.daysWindow ?? 7;
+  const sinceIso = new Date(Date.now() - daysWindow * 24 * 60 * 60 * 1000).toISOString();
+
+  let query = supabase
+    .from("reading_logs")
+    .select("*")
+    .eq("user_id", currentUser.id)
+    .is("image_url", null)
+    .gte("created_at", sinceIso)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (params.userBookId) {
+    if (!isValidUUID(params.userBookId)) {
+      throw new Error("유효하지 않은 책 ID입니다.");
+    }
+    query = query.eq("user_book_id", params.userBookId);
+  }
+
+  const { data, error } = await query;
+
+  if (error) {
+    throw new Error(sanitizeErrorMessage(error));
+  }
+
+  return (data ?? []) as ReadingLog[];
 }

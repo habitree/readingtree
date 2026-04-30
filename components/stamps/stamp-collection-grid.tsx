@@ -79,16 +79,21 @@ export function StampCollectionGrid({
 
   if (stamps.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 py-12 text-center dark:border-slate-800 dark:bg-slate-900/30">
+      <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 py-12 px-4 text-center dark:border-slate-800 dark:bg-slate-900/30">
         <StampIcon className="h-8 w-8 text-slate-300" />
-        <p className="text-sm text-slate-500">아직 스탬프가 없어요</p>
+        <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
+          기록에 사진을 추가하면 스탬프가 돼요
+        </p>
+        <p className="text-xs text-slate-500 max-w-xs">
+          독서 시간 탭에서 기록 옆 ‘사진 추가’ 칩으로 빠르게 시작할 수 있어요
+        </p>
         {showCaptureCTA && (
           <Button
             type="button"
             onClick={() => stampCapture.open()}
             className="bg-emerald-600 text-white hover:bg-emerald-700"
           >
-            첫 스탬프 찍기
+            바로 기록하기
           </Button>
         )}
       </div>

@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>독서 스탬프 기능 가이드 — Habitree Reading Hub</title>
+<style>
+  :root {
+    --emerald-50: #ecfdf5;
+    --emerald-100: #d1fae5;
+    --emerald-500: #10b981;
+    --emerald-600: #059669;
+    --emerald-700: #047857;
+    --slate-50: #f8fafc;
+    --slate-100: #f1f5f9;
+    --slate-200: #e2e8f0;
+    --slate-300: #cbd5e1;
+    --slate-500: #64748b;
+    --slate-700: #334155;
+    --slate-900: #0f172a;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Pretendard", "Segoe UI", sans-serif;
+    background: var(--slate-50);
+    color: var(--slate-900);
+    margin: 0;
+    padding: 24px 16px;
+    line-height: 1.6;
+  }
+  .container { max-width: 960px; margin: 0 auto; }
+
+  header.hero {
+    background: linear-gradient(135deg, var(--emerald-600), var(--emerald-700));
+    color: white;
+    border-radius: 20px;
+    padding: 32px 28px;
+    margin-bottom: 28px;
+    box-shadow: 0 10px 30px rgba(5, 150, 105, 0.25);
+  }
+  header.hero h1 { margin: 0 0 8px; font-size: 28px; font-weight: 800; }
+  header.hero p { margin: 0; opacity: 0.92; font-size: 15px; }
+  .badge { display: inline-block; padding: 4px 10px; background: rgba(255,255,255,0.18); border-radius: 999px; font-size: 12px; font-weight: 600; margin-bottom: 12px; }
+
+  .quick-links {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+    margin-bottom: 28px;
+  }
+  .quick-link {
+    display: block;
+    text-decoration: none;
+    background: white;
+    border: 1px solid var(--slate-200);
+    border-radius: 14px;
+    padding: 16px;
+    color: var(--slate-900);
+    transition: all 0.15s;
+  }
+  .quick-link:hover {
+    border-color: var(--emerald-500);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.06);
+  }
+  .quick-link .label { font-weight: 700; color: var(--emerald-700); display: block; margin-bottom: 4px; font-size: 14px; }
+  .quick-link .desc { font-size: 12px; color: var(--slate-500); }
+  .quick-link .url { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 11px; color: var(--slate-700); margin-top: 6px; }
+
+  section {
+    background: white;
+    border-radius: 16px;
+    border: 1px solid var(--slate-200);
+    padding: 24px;
+    margin-bottom: 20px;
+  }
+  section h2 {
+    margin: 0 0 4px;
+    font-size: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  section h2 .num {
+    background: var(--emerald-100);
+    color: var(--emerald-700);
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 800;
+  }
+  section .subtitle { color: var(--slate-500); font-size: 13px; margin: 0 0 16px; padding-left: 38px; }
+
+  .menu-card {
+    display: grid;
+    grid-template-columns: 240px 1fr;
+    gap: 20px;
+    background: var(--slate-50);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 12px;
+    align-items: center;
+  }
+  @media (max-width: 640px) {
+    .menu-card { grid-template-columns: 1fr; }
+  }
+  .menu-card .visual {
+    background: white;
+    border: 1px solid var(--slate-200);
+    border-radius: 10px;
+    padding: 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    min-height: 60px;
+  }
+  .menu-card .visual .icon {
+    width: 32px; height: 32px;
+    background: var(--emerald-100);
+    color: var(--emerald-700);
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+  .menu-card .visual.fab .icon {
+    background: var(--emerald-600);
+    color: white;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    box-shadow: 0 4px 12px rgba(5,150,105,0.3);
+  }
+  .menu-card .info h3 { margin: 0 0 4px; font-size: 15px; }
+  .menu-card .info p { margin: 0; font-size: 13px; color: var(--slate-700); }
+  .menu-card .info .path {
+    display: inline-block;
+    background: var(--slate-200);
+    color: var(--slate-700);
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-family: ui-monospace, monospace;
+    font-size: 11px;
+    margin-top: 6px;
+  }
+
+  .flow-list { counter-reset: step; list-style: none; padding: 0; margin: 0; }
+  .flow-list li {
+    counter-increment: step;
+    background: var(--slate-50);
+    border-radius: 12px;
+    padding: 14px 16px 14px 56px;
+    margin-bottom: 10px;
+    position: relative;
+  }
+  .flow-list li::before {
+    content: counter(step);
+    position: absolute;
+    left: 14px; top: 50%;
+    transform: translateY(-50%);
+    width: 30px; height: 30px;
+    background: var(--emerald-600);
+    color: white;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 13px;
+  }
+  .flow-list li strong { color: var(--emerald-700); }
+  .flow-list li .meta { display: block; color: var(--slate-500); font-size: 12px; margin-top: 4px; }
+
+  .stamp-mock {
+    aspect-ratio: 1;
+    max-width: 280px;
+    margin: 16px auto;
+    border-radius: 14px;
+    background:
+      linear-gradient(180deg, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.1) 30%, rgba(0,0,0,0.7) 100%),
+      linear-gradient(135deg, #047857 0%, #10b981 50%, #57534e 100%);
+    color: white;
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+    font-family: ui-monospace, "SF Mono", monospace;
+  }
+  .stamp-mock .label { font-size: 10px; letter-spacing: 2px; opacity: 0.85; text-transform: uppercase; font-weight: 600; }
+  .stamp-mock .big-num { font-size: 48px; font-weight: 800; line-height: 1; margin-top: 2px; }
+  .stamp-mock .unit { font-size: 18px; font-weight: 700; margin-left: 6px; }
+  .stamp-mock .right { text-align: right; align-self: flex-end; }
+  .stamp-mock .right .big-num { font-size: 36px; }
+  .stamp-mock .footer { display: flex; justify-content: space-between; align-items: flex-end; }
+  .stamp-mock .footer .pace .big-num { font-size: 28px; }
+  .stamp-mock .book-meta {
+    text-align: right;
+    font-size: 11px;
+    line-height: 1.3;
+    opacity: 0.92;
+    font-family: -apple-system, sans-serif;
+  }
+
+  .pill-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .pill {
+    display: inline-block;
+    background: var(--emerald-50);
+    color: var(--emerald-700);
+    border: 1px solid var(--emerald-100);
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 500;
+  }
+
+  .footer-note {
+    background: var(--slate-100);
+    border-radius: 12px;
+    padding: 16px 20px;
+    color: var(--slate-700);
+    font-size: 13px;
+    margin-top: 24px;
+  }
+  .footer-note strong { color: var(--slate-900); }
+
+  .grid-3 {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .grid-3 .cell {
+    aspect-ratio: 1;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #047857, #10b981);
+    color: white;
+    padding: 8px;
+    font-size: 11px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .grid-3 .cell.add {
+    background: white;
+    border: 2px dashed var(--emerald-300, #6ee7b7);
+    color: var(--emerald-600);
+    font-size: 28px;
+    font-weight: 300;
+    align-items: center;
+    justify-content: center;
+  }
+  .grid-3 .cell .top { display: flex; justify-content: space-between; }
+  .grid-3 .cell .badge-mini {
+    background: rgba(0,0,0,0.4);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 9px;
+    font-weight: 700;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header class="hero">
+    <span class="badge">v4.0 · Phase 1 MVP</span>
+    <h1>📖 독서 스탬프 (Reading Stamp)</h1>
+    <p>인스타 무드의 사진 + 페이지 + 시간 + 페이스를 한 카드에 — 매일의 기록을 가장 간편하게.</p>
+  </header>
+
+  <!-- 빠른 링크 -->
+  <div class="quick-links">
+    <a class="quick-link" href="http://localhost:3000/" target="_blank">
+      <span class="label">🏠 홈</span>
+      <span class="desc">로그인 후 모바일 퀵액션 첫 칸 "스탬프"</span>
+      <div class="url">http://localhost:3000/</div>
+    </a>
+    <a class="quick-link" href="http://localhost:3000/stamps" target="_blank">
+      <span class="label">🎯 내 스탬프</span>
+      <span class="desc">전체 스탬프 컬렉션 그리드</span>
+      <div class="url">http://localhost:3000/stamps</div>
+    </a>
+    <a class="quick-link" href="http://localhost:3000/books" target="_blank">
+      <span class="label">📚 내 서재</span>
+      <span class="desc">책 클릭 → 4번째 탭 "스탬프"</span>
+      <div class="url">http://localhost:3000/books</div>
+    </a>
+  </div>
+
+  <!-- 1. 모바일 진입점 -->
+  <section>
+    <h2><span class="num">1</span> 모바일 진입점 (5곳)</h2>
+    <p class="subtitle">사용자가 스탬프를 만나는 모든 위치</p>
+
+    <div class="menu-card">
+      <div class="visual fab">
+        <span class="icon">+</span>
+        <span><strong>FAB(+) 버튼</strong></span>
+      </div>
+      <div class="info">
+        <h3>모바일 하단 네비 중앙 +버튼</h3>
+        <p>이어읽기 책이 자동 prefill 됩니다. 책이 없으면 자유 기록.</p>
+        <span class="path">components/layout/mobile-nav.tsx</span>
+      </div>
+    </div>
+
+    <div class="menu-card">
+      <div class="visual">
+        <span class="icon">📮</span>
+        <span><strong>스탬프</strong></span>
+      </div>
+      <div class="info">
+        <h3>대시보드 모바일 퀵액션 첫 칸</h3>
+        <p>홈 화면 4그리드의 첫 번째 액션이 "스탬프"로 변경됨 (기존 "기록작성" 자리).</p>
+        <span class="path">components/dashboard/sections/mobile-quick-actions.tsx</span>
+      </div>
+    </div>
+
+    <div class="menu-card">
+      <div class="visual">
+        <span class="icon">⏱️</span>
+        <span><strong>독서 완료!</strong></span>
+      </div>
+      <div class="info">
+        <h3>음악 타이머 종료 다이얼로그 메인 CTA</h3>
+        <p>음악 타이머 종료 시 측정된 시간과 책이 그대로 prefill 되어 시트가 열립니다.</p>
+        <span class="path">components/music/reading-complete-dialog.tsx</span>
+      </div>
+    </div>
+
+    <div class="menu-card">
+      <div class="visual">
+        <span class="icon">📚</span>
+        <span><strong>책 상세 페이지</strong></span>
+      </div>
+      <div class="info">
+        <h3>책 상세 → 4번째 탭 "스탬프"</h3>
+        <p>해당 책의 스탬프만 그리드로 모아서 표시. 그리드 첫 칸은 "+ 새 스탬프 찍기" CTA.</p>
+        <span class="path">components/books/book-notes-tabs.tsx</span>
+      </div>
+    </div>
+
+    <div class="menu-card">
+      <div class="visual">
+        <span class="icon">📑</span>
+        <span><strong>전체 스탬프 그리드</strong></span>
+      </div>
+      <div class="info">
+        <h3>/stamps 페이지</h3>
+        <p>사용자가 남긴 모든 스탬프를 시간순 그리드로. 사진 있는 reading_log 만 노출.</p>
+        <span class="path">app/(main)/stamps/page.tsx</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. 데스크톱 진입점 -->
+  <section>
+    <h2><span class="num">2</span> 데스크톱 진입점</h2>
+    <p class="subtitle">사이드바 + 대시보드 데스크톱 액션</p>
+
+    <div class="menu-card">
+      <div class="visual">
+        <span class="icon" style="color:#047857;">📮</span>
+        <span><strong>사이드바 · 스탬프</strong></span>
+      </div>
+      <div class="info">
+        <h3>좌측 사이드바 primary 메뉴 3번째</h3>
+        <p>홈 / 내 서재 / <strong>스탬프</strong> / 내 기록 / 프로필 — 클릭하면 즉시 시트가 열립니다.</p>
+        <span class="path">components/layout/sidebar.tsx (primaryItems)</span>
+      </div>
+    </div>
+
+    <div class="menu-card">
+      <div class="visual">
+        <span class="icon">🗂️</span>
+        <span><strong>사이드바 더보기 · 스탬프 컬렉션</strong></span>
+      </div>
+      <div class="info">
+        <h3>사이드바 secondary "스탬프" → /stamps</h3>
+        <p>전체 스탬프 컬렉션 페이지로 이동.</p>
+        <span class="path">components/layout/sidebar.tsx (secondaryItems)</span>
+      </div>
+    </div>
+
+    <div class="menu-card">
+      <div class="visual">
+        <span class="icon">📮</span>
+        <span><strong>데스크톱 퀵액션</strong></span>
+      </div>
+      <div class="info">
+        <h3>대시보드 우측 상단 액션 버튼</h3>
+        <p>"스탬프 찍기" 버튼이 첫 번째로 노출.</p>
+        <span class="path">components/dashboard/sections/mobile-quick-actions.tsx (DesktopQuickActions)</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. 사용자 흐름 -->
+  <section>
+    <h2><span class="num">3</span> 3-tap 사용 흐름</h2>
+    <p class="subtitle">진입 → 사진 → 페이지 → 시간 → 저장</p>
+    <ol class="flow-list">
+      <li>
+        <strong>진입점 탭</strong> — 모바일 FAB(+) 또는 사이드바 "스탬프"
+        <span class="meta">이어읽기 책이 자동으로 선택됨 (useContinueReading)</span>
+      </li>
+      <li>
+        <strong>사진 추가</strong> (선택) — 카메라 또는 앨범에서 1장
+        <span class="meta">사진 없이도 OK. 책 표지 그라데이션으로 fallback</span>
+      </li>
+      <li>
+        <strong>읽은 페이지 입력</strong> — 시작은 직전 기록에서 자동 승계
+        <span class="meta">+5 / +10 / +20 / +30 빠른 증감 칩 + 직접 입력</span>
+      </li>
+      <li>
+        <strong>읽은 시간 선택</strong> — 10/15/25/30/45/60/90분 프리셋
+        <span class="meta">음악 타이머에서 진입 시 자동 prefill</span>
+      </li>
+      <li>
+        <strong>"스탬프 찍기"</strong> — 라이브 미리보기 확인 후 저장
+        <span class="meta">+P 포인트 적립 + user_books.current_page 자동 동기화</span>
+      </li>
+    </ol>
+  </section>
+
+  <!-- 4. 카드 미리보기 -->
+  <section>
+    <h2><span class="num">4</span> 스탬프 카드 미리보기</h2>
+    <p class="subtitle">사진 풀블리드 위에 distance / time / pace 오버레이 (1080x1080 인스타 정사각)</p>
+
+    <div class="stamp-mock">
+      <div>
+        <div class="label">distance</div>
+        <div><span class="big-num">30</span><span class="unit">pages</span></div>
+        <div style="font-size: 11px; opacity: 0.75; margin-top: 4px;">185 → 215p</div>
+      </div>
+      <div class="right">
+        <div class="label">time</div>
+        <div><span class="big-num">25m 00s</span></div>
+      </div>
+      <div class="footer">
+        <div class="pace">
+          <div class="label">pace</div>
+          <div><span class="big-num">50s</span></div>
+        </div>
+        <div class="book-meta">
+          <div style="font-weight: 700;">데미안</div>
+          <div style="opacity: 0.7;">헤르만 헤세</div>
+          <div style="opacity: 0.6;">2026.04.29</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="pill-row" style="justify-content: center;">
+      <span class="pill">distance · 페이지 수</span>
+      <span class="pill">time · 읽은 시간</span>
+      <span class="pill">pace · 페이지당 초</span>
+      <span class="pill">html2canvas로 PNG 캡처</span>
+    </div>
+  </section>
+
+  <!-- 5. 컬렉션 그리드 -->
+  <section>
+    <h2><span class="num">5</span> 컬렉션 그리드</h2>
+    <p class="subtitle">/stamps 또는 책 상세 "스탬프" 탭에서 (모바일 3열, 데스크톱 5~6열)</p>
+    <div class="grid-3">
+      <div class="cell add">+</div>
+      <div class="cell"><div class="top"><span class="badge-mini">30p</span><span class="badge-mini">25분</span></div></div>
+      <div class="cell"><div class="top"><span class="badge-mini">22p</span><span class="badge-mini">18분</span></div></div>
+      <div class="cell"><div class="top"><span class="badge-mini">42p</span><span class="badge-mini">40분</span></div></div>
+      <div class="cell"><div class="top"><span class="badge-mini">15p</span><span class="badge-mini">12분</span></div></div>
+      <div class="cell"><div class="top"><span class="badge-mini">28p</span><span class="badge-mini">22분</span></div></div>
+    </div>
+    <p style="font-size: 12px; color: var(--slate-500); margin-top: 12px;">
+      • 첫 셀은 항상 "+ 새 스탬프" CTA (showCaptureCTA=true 일 때)<br>
+      • 셀 클릭 → 책 상세 페이지의 해당 스탬프 위치로 이동<br>
+      • 무한 스크롤 (cursor 기반 페이징, 30개씩)
+    </p>
+  </section>
+
+  <!-- 6. 데이터 흐름 -->
+  <section>
+    <h2><span class="num">6</span> 데이터 흐름 요약</h2>
+    <p class="subtitle">DB · Server Actions · 진입점</p>
+
+    <div style="background: var(--slate-50); border-radius: 10px; padding: 16px; font-family: ui-monospace, monospace; font-size: 12px; color: var(--slate-700); line-height: 1.7;">
+      <div><strong style="color: var(--emerald-700);">📊 DB</strong> reading_logs 테이블</div>
+      <div>　 + image_url (TEXT, nullable)</div>
+      <div>　 + start_page (INT, 자동승계)</div>
+      <div>　 + end_page (INT, page_number 미러링)</div>
+      <div>　 + pace_seconds_per_page (NUMERIC, GENERATED ALWAYS STORED)</div>
+      <br>
+      <div><strong style="color: var(--emerald-700);">⚡ Server Actions</strong> app/actions/progress.ts</div>
+      <div>　 createReadingStamp() → INSERT + updateBookProgress + earnPoints</div>
+      <div>　 getReadingStamps() → image_url IS NOT NULL 필터 + cursor 페이징</div>
+      <div>　 getLastEndPage() → start_page 자동승계용</div>
+      <br>
+      <div><strong style="color: var(--emerald-700);">🎨 UI</strong> components/stamps/</div>
+      <div>　 StampCaptureSheet → 입력 시트</div>
+      <div>　 StampPreviewCard → 라이브 미리보기</div>
+      <div>　 StampCard / StampCollectionGrid → 컬렉션</div>
+      <div>　 StampShareButton → html2canvas 1080x1080 PNG</div>
+      <br>
+      <div><strong style="color: var(--emerald-700);">🪝 Hook</strong> hooks/use-stamp-capture.ts</div>
+      <div>　 useStampCaptureStore (zustand) — open / openWithBook / openWithTimer</div>
+    </div>
+  </section>
+
+  <!-- 7. 검증 체크리스트 -->
+  <section>
+    <h2><span class="num">7</span> 직접 확인 체크리스트</h2>
+    <p class="subtitle">로그인 후 아래 흐름을 순서대로 시도해보세요</p>
+    <ol class="flow-list">
+      <li>
+        <strong>홈 → 모바일 퀵액션 "스탬프" 탭</strong>
+        <span class="meta">스탬프 시트가 하단에서 슬라이드 업되는지 확인</span>
+      </li>
+      <li>
+        <strong>사진 → 카메라 또는 앨범</strong>
+        <span class="meta">미리보기 카드에 사진이 즉시 반영되는지 확인 (백그라운드 업로드)</span>
+      </li>
+      <li>
+        <strong>+10p 칩 탭</strong>
+        <span class="meta">end_page 가 자동 증가하고 distance 숫자가 라이브 변화하는지 확인</span>
+      </li>
+      <li>
+        <strong>30분 프리셋 선택</strong>
+        <span class="meta">time과 pace 가 라이브 계산되는지 확인</span>
+      </li>
+      <li>
+        <strong>"스탬프 찍기" 탭</strong>
+        <span class="meta">토스트 + "+P 적립" 표시, /stamps 와 책 상세 탭에 즉시 반영</span>
+      </li>
+      <li>
+        <strong>음악 타이머 → 25분 측정 → 종료</strong>
+        <span class="meta">완료 다이얼로그의 "스탬프 찍기" 메인 CTA로 진입 시 시간 자동 prefill</span>
+      </li>
+    </ol>
+  </section>
+
+  <div class="footer-note">
+    <strong>📦 변경 파일:</strong> 18개 (1944+ / 36-)<br>
+    <strong>🚀 커밋:</strong> <code>b1e2c3e</code> — feat: 독서 스탬프(Reading Stamp) 기능 도입<br>
+    <strong>🌳 브랜치:</strong> <code>main</code> (origin/main 푸시 완료)<br>
+    <strong>📋 Phase 2 후보:</strong> 1080x1920 스토리 포맷 · Dark 프리셋 · 캘린더 히트맵 사진 · 완독 콜라주 · 그룹 트레이
+  </div>
+
+</div>
+</body>
+</html>

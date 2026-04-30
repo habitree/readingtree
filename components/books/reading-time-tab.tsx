@@ -2,12 +2,21 @@
 
 import { useEffect, useState } from "react";
 import { getReadingTimeLogs, getReadingTimeStats } from "@/app/actions/progress";
-import { Clock, Timer, TrendingUp, Calendar } from "lucide-react";
+import { Camera, Clock, Image as ImageIcon, Timer, TrendingUp, Calendar } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ReadingLog } from "@/types/progress";
+import { useStampCaptureStore } from "@/hooks/use-stamp-capture";
+import { useTranslation } from "@/lib/i18n";
 
 interface ReadingTimeTabProps {
   userBookId: string;
+  bookInfo?: {
+    bookId: string;
+    title: string;
+    author: string | null;
+    coverImageUrl: string | null;
+    totalPages: number | null;
+  };
 }
 
 function formatDuration(seconds: number): string {
@@ -47,7 +56,9 @@ function groupByDate(logs: ReadingLog[]): Map<string, ReadingLog[]> {
   return groups;
 }
 
-export function ReadingTimeTab({ userBookId }: ReadingTimeTabProps) {
+export function ReadingTimeTab({ userBookId, bookInfo }: ReadingTimeTabProps) {
+  const { t } = useTranslation();
+  const openStampAttach = useStampCaptureStore((s) => s.openAttach);
   const [logs, setLogs] = useState<ReadingLog[]>([]);
   const [stats, setStats] = useState<{
     totalSeconds: number;
@@ -55,6 +66,24 @@ export function ReadingTimeTab({ userBookId }: ReadingTimeTabProps) {
     averageSeconds: number;
   } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  function handleAddPhoto(log: ReadingLog) {
+    openStampAttach(log.id, {
+      book: bookInfo
+        ? {
+            id: userBookId,
+            bookId: bookInfo.bookId,
+            title: bookInfo.title,
+            author: bookInfo.author,
+            coverImageUrl: bookInfo.coverImageUrl,
+            totalPages: bookInfo.totalPages,
+          }
+        : null,
+      startPage: log.start_page ?? undefined,
+      endPage: log.end_page ?? log.page_number ?? undefined,
+      durationSeconds: log.reading_duration_seconds,
+    });
+  }
 
   useEffect(() => {
     async function load() {
@@ -133,31 +162,54 @@ export function ReadingTimeTab({ userBookId }: ReadingTimeTabProps) {
               {dateLabel}
             </p>
             <div className="space-y-1.5">
-              {dateLogs.map((log) => (
-                <div
-                  key={log.id}
-                  className="flex items-start gap-3 p-3 rounded-xl bg-muted/30 border border-transparent hover:border-border transition-colors"
-                >
-                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
-                    <Timer className="w-3.5 h-3.5 text-primary" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-semibold">
-                        {formatDuration(log.reading_duration_seconds)}
-                      </span>
-                      <span className="text-[10px] text-muted-foreground tabular-nums">
-                        {formatTimeRange(log.started_at, log.ended_at)}
-                      </span>
+              {dateLogs.map((log) => {
+                const hasImage = !!log.image_url;
+                return (
+                  <div
+                    key={log.id}
+                    className="flex items-start gap-3 p-3 rounded-xl bg-muted/30 border border-transparent hover:border-border transition-colors"
+                  >
+                    <div
+                      className={cn(
+                        "w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5",
+                        hasImage ? "bg-emerald-100 dark:bg-emerald-950/40" : "bg-primary/10",
+                      )}
+                    >
+                      {hasImage ? (
+                        <ImageIcon className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                      ) : (
+                        <Timer className="w-3.5 h-3.5 text-primary" />
+                      )}
                     </div>
-                    {log.memo && (
-                      <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                        {log.memo}
-                      </p>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-semibold">
+                          {formatDuration(log.reading_duration_seconds)}
+                        </span>
+                        <span className="text-[10px] text-muted-foreground tabular-nums">
+                          {formatTimeRange(log.started_at, log.ended_at)}
+                        </span>
+                      </div>
+                      {log.memo && (
+                        <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                          {log.memo}
+                        </p>
+                      )}
+                    </div>
+                    {!hasImage && (
+                      <button
+                        type="button"
+                        onClick={() => handleAddPhoto(log)}
+                        className="shrink-0 inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-medium text-emerald-700 transition-colors hover:bg-emerald-100 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-400 dark:hover:bg-emerald-950/60"
+                        aria-label={t("stamp.addPhotoLater")}
+                      >
+                        <Camera className="h-3 w-3" />
+                        {t("stamp.addPhotoLater")}
+                      </button>
                     )}
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         ))}

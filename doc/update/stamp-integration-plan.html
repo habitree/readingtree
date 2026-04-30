@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>독서 기록 ↔ 스탬프 통합 기획 (Phase 2)</title>
+<style>
+  :root {
+    --emerald-50: #ecfdf5;
+    --emerald-100: #d1fae5;
+    --emerald-300: #6ee7b7;
+    --emerald-500: #10b981;
+    --emerald-600: #059669;
+    --emerald-700: #047857;
+    --emerald-900: #064e3b;
+    --rose-50: #fff1f2;
+    --rose-100: #ffe4e6;
+    --rose-500: #f43f5e;
+    --rose-700: #be123c;
+    --amber-50: #fffbeb;
+    --amber-100: #fef3c7;
+    --amber-500: #f59e0b;
+    --amber-700: #b45309;
+    --slate-50: #f8fafc;
+    --slate-100: #f1f5f9;
+    --slate-200: #e2e8f0;
+    --slate-300: #cbd5e1;
+    --slate-400: #94a3b8;
+    --slate-500: #64748b;
+    --slate-600: #475569;
+    --slate-700: #334155;
+    --slate-800: #1e293b;
+    --slate-900: #0f172a;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Pretendard", "Segoe UI", sans-serif;
+    background: var(--slate-50);
+    color: var(--slate-900);
+    margin: 0;
+    padding: 24px 16px;
+    line-height: 1.6;
+  }
+  .container { max-width: 1040px; margin: 0 auto; }
+
+  header.hero {
+    background: linear-gradient(135deg, var(--emerald-700), var(--emerald-900));
+    color: white;
+    border-radius: 20px;
+    padding: 36px 28px;
+    margin-bottom: 28px;
+    box-shadow: 0 10px 30px rgba(5, 150, 105, 0.25);
+  }
+  header.hero .badge {
+    display: inline-block;
+    padding: 4px 12px;
+    background: rgba(255,255,255,0.18);
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    margin-bottom: 12px;
+  }
+  header.hero h1 { margin: 0 0 12px; font-size: 30px; font-weight: 800; line-height: 1.2; }
+  header.hero .tagline {
+    margin: 0 0 18px;
+    font-size: 18px;
+    font-weight: 600;
+    background: rgba(255,255,255,0.12);
+    border-left: 4px solid var(--emerald-300);
+    padding: 12px 18px;
+    border-radius: 8px;
+  }
+  header.hero p { margin: 0; opacity: 0.92; font-size: 14px; }
+
+  /* Section */
+  section {
+    background: white;
+    border-radius: 16px;
+    border: 1px solid var(--slate-200);
+    padding: 24px;
+    margin-bottom: 20px;
+  }
+  section h2 {
+    margin: 0 0 6px;
+    font-size: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  section h2 .num {
+    background: var(--emerald-100);
+    color: var(--emerald-700);
+    width: 30px; height: 30px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 800;
+  }
+  section .sub { color: var(--slate-500); font-size: 13px; margin: 0 0 18px; padding-left: 40px; }
+
+  /* Mental model diagram */
+  .mental-model {
+    background: linear-gradient(180deg, var(--emerald-50), white);
+    border: 2px solid var(--emerald-100);
+    border-radius: 14px;
+    padding: 24px;
+    text-align: center;
+  }
+  .mental-model .flow {
+    display: inline-flex;
+    align-items: center;
+    gap: 16px;
+    margin: 12px 0;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .mm-card {
+    background: white;
+    border: 2px solid var(--emerald-200, #a7f3d0);
+    border-radius: 12px;
+    padding: 16px 20px;
+    min-width: 140px;
+  }
+  .mm-card.basic { border-color: var(--slate-300); }
+  .mm-card .title { font-weight: 800; font-size: 16px; color: var(--slate-900); margin-bottom: 4px; }
+  .mm-card .sub { font-size: 11px; color: var(--slate-500); padding: 0; margin: 0; }
+  .mm-arrow {
+    color: var(--emerald-600);
+    font-size: 24px;
+    font-weight: 700;
+    text-align: center;
+  }
+  .mm-arrow .label { display: block; font-size: 11px; font-weight: 600; color: var(--emerald-700); margin-top: -4px; }
+  .mm-note {
+    background: var(--emerald-50);
+    color: var(--emerald-700);
+    font-size: 12px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    margin-top: 12px;
+    display: inline-block;
+  }
+
+  /* Decision cards */
+  .decisions {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 12px;
+  }
+  .decision {
+    background: var(--emerald-50);
+    border: 1px solid var(--emerald-100);
+    border-radius: 12px;
+    padding: 16px;
+  }
+  .decision .label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--emerald-700);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+  }
+  .decision .value {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--slate-900);
+    margin-bottom: 4px;
+  }
+  .decision .reason {
+    font-size: 12px;
+    color: var(--slate-600);
+  }
+
+  /* Before/After columns */
+  .ba-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+  @media (max-width: 720px) {
+    .ba-grid { grid-template-columns: 1fr; }
+  }
+  .ba {
+    border-radius: 12px;
+    padding: 16px;
+    position: relative;
+  }
+  .ba.before {
+    background: var(--rose-50);
+    border: 1px solid var(--rose-100);
+  }
+  .ba.after {
+    background: var(--emerald-50);
+    border: 1px solid var(--emerald-100);
+  }
+  .ba .tag {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 999px;
+    margin-bottom: 8px;
+  }
+  .ba.before .tag { background: var(--rose-500); color: white; }
+  .ba.after .tag { background: var(--emerald-600); color: white; }
+  .ba .title { font-size: 14px; font-weight: 700; margin-bottom: 8px; }
+  .ba ol { padding-left: 20px; margin: 0; }
+  .ba ol li { font-size: 13px; margin-bottom: 4px; color: var(--slate-700); }
+  .ba .meta { font-size: 11px; color: var(--slate-500); margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--slate-200); }
+
+  /* Scenario card */
+  .scenario {
+    border: 1px solid var(--slate-200);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 12px;
+  }
+  .scenario .case {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--slate-800);
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .scenario .case .num {
+    background: var(--slate-700);
+    color: white;
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 800;
+  }
+  .scenario .case .quote { color: var(--slate-500); font-weight: 500; font-size: 13px; }
+
+  /* Mock UI dialog */
+  .mock {
+    background: white;
+    border: 1px solid var(--slate-300);
+    border-radius: 12px;
+    padding: 14px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 11px;
+    line-height: 1.5;
+  }
+  .mock .mock-title {
+    font-family: -apple-system, sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--slate-700);
+    margin-bottom: 10px;
+    border-bottom: 1px dashed var(--slate-200);
+    padding-bottom: 6px;
+  }
+  .btn-mock {
+    display: block;
+    padding: 10px 12px;
+    border-radius: 8px;
+    text-align: center;
+    margin-bottom: 6px;
+    font-family: -apple-system, sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .btn-mock.primary { background: var(--emerald-600); color: white; }
+  .btn-mock.secondary { background: var(--slate-100); color: var(--slate-700); }
+  .btn-mock.ghost { background: transparent; color: var(--slate-500); border: 1px dashed var(--slate-300); }
+  .btn-mock.gone { background: transparent; color: var(--rose-500); text-decoration: line-through; opacity: 0.5; }
+
+  /* Toast mock */
+  .toast-mock {
+    background: var(--slate-900);
+    color: white;
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 12px;
+    font-family: -apple-system, sans-serif;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 8px;
+  }
+  .toast-mock .action {
+    background: var(--emerald-500);
+    color: white;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+
+  /* Entry point table */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 8px;
+    font-size: 13px;
+  }
+  th, td {
+    border-bottom: 1px solid var(--slate-200);
+    padding: 10px 8px;
+    text-align: left;
+    vertical-align: top;
+  }
+  th { background: var(--slate-50); font-weight: 700; font-size: 12px; color: var(--slate-600); }
+  td.before-cell { color: var(--rose-700); font-size: 12px; }
+  td.after-cell { color: var(--emerald-700); font-weight: 600; font-size: 12px; }
+
+  /* Stat / number boxes */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 10px;
+    margin-top: 8px;
+  }
+  .stat {
+    background: var(--slate-50);
+    border-radius: 10px;
+    padding: 12px;
+    text-align: center;
+  }
+  .stat .num {
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--emerald-700);
+    line-height: 1;
+  }
+  .stat .label { font-size: 11px; color: var(--slate-500); margin-top: 4px; }
+
+  /* Step list */
+  .steps { list-style: none; padding: 0; margin: 0; }
+  .steps li {
+    background: var(--slate-50);
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-bottom: 8px;
+    font-size: 13px;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .steps li .week {
+    background: var(--emerald-600);
+    color: white;
+    padding: 3px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    flex-shrink: 0;
+    align-self: flex-start;
+  }
+
+  /* Pill */
+  .pill {
+    display: inline-block;
+    background: var(--slate-100);
+    color: var(--slate-700);
+    padding: 2px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 500;
+  }
+  .pill.new { background: var(--emerald-100); color: var(--emerald-700); }
+  .pill.modify { background: var(--amber-100); color: var(--amber-700); }
+  .pill.remove { background: var(--rose-100); color: var(--rose-700); }
+
+  /* Code blocks */
+  code {
+    background: var(--slate-100);
+    color: var(--slate-700);
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-family: ui-monospace, monospace;
+  }
+  pre {
+    background: var(--slate-900);
+    color: var(--slate-100);
+    padding: 16px;
+    border-radius: 10px;
+    overflow-x: auto;
+    font-size: 12px;
+    line-height: 1.5;
+  }
+
+  /* Tradeoff list */
+  .tradeoff {
+    display: grid;
+    grid-template-columns: 200px 1fr;
+    gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--slate-100);
+    font-size: 13px;
+  }
+  .tradeoff:last-child { border-bottom: none; }
+  .tradeoff .what { font-weight: 700; color: var(--slate-800); }
+  .tradeoff .why { color: var(--slate-600); }
+
+  .footer-cta {
+    background: linear-gradient(135deg, var(--emerald-50), white);
+    border: 2px solid var(--emerald-100);
+    border-radius: 14px;
+    padding: 24px;
+    margin-top: 24px;
+    text-align: center;
+  }
+  .footer-cta h3 {
+    margin: 0 0 8px;
+    color: var(--emerald-700);
+    font-size: 18px;
+  }
+  .footer-cta p { color: var(--slate-600); margin: 0 0 12px; font-size: 13px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- HERO -->
+  <header class="hero">
+    <span class="badge">Phase 2 통합 기획 · 2026.04.30</span>
+    <h1>독서 기록 ↔ 스탬프 통합</h1>
+    <p class="tagline">"기록은 항상 남고, 사진을 더하면 스탬프가 된다."</p>
+    <p>어제 도입한 스탬프와 단순 시간 기록의 분리 문제를 해결. <strong>기록을 먼저 저장 → 사진은 언제든 추가</strong>로 단일 멘탈 모델 구축.</p>
+  </header>
+
+  <!-- 1. 멘탈 모델 -->
+  <section>
+    <h2><span class="num">1</span> 통합 멘탈 모델</h2>
+    <p class="sub">한 줄 정의 + 데이터 흐름</p>
+    <div class="mental-model">
+      <div class="flow">
+        <div class="mm-card basic">
+          <div class="title">📝 기록</div>
+          <div class="sub">시간 / 페이지</div>
+        </div>
+        <div class="mm-arrow">
+          →
+          <span class="label">사진 추가</span>
+        </div>
+        <div class="mm-card">
+          <div class="title">📮 스탬프</div>
+          <div class="sub">+ 사진 (승격됨)</div>
+        </div>
+      </div>
+      <div class="mm-note">
+        둘 다 같은 <code>reading_logs</code> 1건. <strong>image_url</strong>이 채워지면 자동으로 "스탬프"로 분류돼 컬렉션 그리드에 노출됩니다.
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. 사용자 결정사항 -->
+  <section>
+    <h2><span class="num">2</span> 확정된 사용자 결정 (3가지)</h2>
+    <p class="sub">이 결정들이 기획의 토대입니다</p>
+    <div class="decisions">
+      <div class="decision">
+        <div class="label">① 통합 방식</div>
+        <div class="value">B + C 하이브리드</div>
+        <div class="reason">기록은 항상 저장 + 사진은 나중에 첨부 가능 + 한 번에 풀 기록도 지원</div>
+      </div>
+      <div class="decision">
+        <div class="label">② 자동 저장</div>
+        <div class="value">유지 (30초+)</div>
+        <div class="reason">"그만 읽기" 시 자동 저장 → 이탈자 보호. 사후 사진 추가 흐름이 있어 의미 있는 기록이 됨</div>
+      </div>
+      <div class="decision">
+        <div class="label">③ 포인트 정책</div>
+        <div class="value">동일 적립</div>
+        <div class="reason">기록 1건마다 +Xp (사진 유무 무관). "매일 기록 = 포인트" 일관성</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. 음악 타이머 다이얼로그 변화 -->
+  <section>
+    <h2><span class="num">3</span> 가장 큰 변화: 음악 타이머 다이얼로그</h2>
+    <p class="sub">"왜 두 버튼?" 인지 마찰 제거</p>
+    <div class="ba-grid">
+      <div class="ba before">
+        <span class="tag">BEFORE</span>
+        <div class="title">두 버튼 (스탬프 vs 시간만)</div>
+        <div class="mock">
+          <div class="mock-title">📖 독서 완료! · 25분</div>
+          <div class="btn-mock primary">📮 스탬프 찍기</div>
+          <div class="btn-mock secondary">⏱ 시간만 저장</div>
+          <div class="btn-mock ghost">📝 메모 남기기</div>
+          <div class="btn-mock ghost">→ 조금 더 읽기</div>
+          <div class="btn-mock ghost">그만 읽기</div>
+        </div>
+        <div class="meta">사용자 인지 마찰: "왜 두 개? 어느 쪽을 골라야 하지?" · 결정 2회</div>
+      </div>
+      <div class="ba after">
+        <span class="tag">AFTER</span>
+        <div class="title">단일 CTA "기록하기"</div>
+        <div class="mock">
+          <div class="mock-title">📖 독서 완료! · 25분</div>
+          <div class="btn-mock primary">📮 기록하기</div>
+          <div class="btn-mock gone">⏱ 시간만 저장</div>
+          <div class="btn-mock ghost">📝 메모 남기기</div>
+          <div class="btn-mock ghost">→ 조금 더 읽기</div>
+          <div class="btn-mock secondary">그만 읽기 (자동 저장)</div>
+          <div class="toast-mock">
+            <span>📌 기록이 자동 저장됐어요</span>
+            <span class="action">사진 추가</span>
+          </div>
+        </div>
+        <div class="meta">결정 0~1회 · "그만 읽기" 자동 저장 + 토스트의 "사진 추가" 액션</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. StampCaptureSheet 변화 -->
+  <section>
+    <h2><span class="num">4</span> 시트(StampCaptureSheet) 변화</h2>
+    <p class="sub">사진은 옵션, 기록이 디폴트</p>
+    <div class="ba-grid">
+      <div class="ba before">
+        <span class="tag">BEFORE</span>
+        <div class="title">사진 영역이 시트 상단에 큰 영역</div>
+        <div class="mock">
+          <div class="mock-title">📮 스탬프 찍기</div>
+          <div style="background: var(--emerald-100); border-radius: 8px; padding: 30px; text-align: center; font-family: -apple-system; font-size: 12px; color: var(--emerald-700); margin-bottom: 8px;">
+            📷 사진 추가하세요<br>
+            <span style="font-size: 10px;">(카메라 / 앨범)</span>
+          </div>
+          <div style="font-family: -apple-system; font-size: 11px;">📖 페이지: 185 → 215</div>
+          <div style="font-family: -apple-system; font-size: 11px;">⏱ 시간: 25분</div>
+          <div class="btn-mock primary" style="margin-top: 8px;">스탬프 찍기</div>
+        </div>
+        <div class="meta">사진을 안 찍을 사용자에게도 사진 영역이 강요됨</div>
+      </div>
+      <div class="ba after">
+        <span class="tag">AFTER</span>
+        <div class="title">사진 영역 접힘 + 토글</div>
+        <div class="mock">
+          <div class="mock-title">📮 기록하기</div>
+          <div style="background: var(--slate-100); border: 2px dashed var(--slate-300); border-radius: 8px; padding: 14px; text-align: center; font-family: -apple-system; font-size: 11px; color: var(--slate-500); margin-bottom: 8px;">
+            ▶ 📷 사진 추가하기 (선택)
+          </div>
+          <div style="font-family: -apple-system; font-size: 11px; font-weight: 600;">📖 페이지: 185 → 215  +5 +10 +20</div>
+          <div style="font-family: -apple-system; font-size: 11px; font-weight: 600;">⏱ 시간: 25분  [10][15][25][30]</div>
+          <div class="btn-mock primary" style="margin-top: 8px;">기록하기</div>
+          <div class="toast-mock" style="margin-top: 6px;">
+            <span>📌 기록 저장됨</span>
+            <span class="action">사진 추가</span>
+          </div>
+        </div>
+        <div class="meta">사진 토글 펼치면 기존 기능 그대로 · 라벨 "기록하기" → 사진 첨부 시 동적으로 "스탬프 찍기"</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5. 사후 사진 첨부 (사용자 제안의 핵심) -->
+  <section style="border: 2px solid var(--emerald-300);">
+    <h2><span class="num">5</span> 핵심 신규 흐름: 사후 사진 첨부 ⭐</h2>
+    <p class="sub">사용자 제안의 핵심 — 어제 기록한 거에 오늘 사진 추가하기</p>
+
+    <div style="background: var(--emerald-50); border-radius: 12px; padding: 16px; margin-bottom: 14px;">
+      <strong style="color: var(--emerald-700);">🎯 진입점 3곳</strong>
+      <ol style="margin: 8px 0 0 20px; font-size: 13px; color: var(--slate-700);">
+        <li><strong>토스트의 "사진 추가" 액션</strong> — 기록 직후 6초간 노출</li>
+        <li><strong>책 상세 "독서 시간" 탭</strong> — 각 reading_log 행에 인라인 "📷 사진 추가" 칩</li>
+        <li><strong>책 상세 "여정" 탭</strong> — 동일 인라인 칩</li>
+      </ol>
+    </div>
+
+    <div class="ba-grid">
+      <div class="ba before">
+        <span class="tag">BEFORE</span>
+        <div class="title">흐름 자체가 없음 ❌</div>
+        <div style="padding: 30px; text-align: center; color: var(--rose-700); font-size: 12px;">
+          어제 시간만 저장한 reading_log에<br>
+          사진을 추가할 UI가 존재하지 않음<br>
+          <span style="font-size: 11px; opacity: 0.7;">(데이터는 가능하지만 UI 부재)</span>
+        </div>
+      </div>
+      <div class="ba after">
+        <span class="tag">AFTER</span>
+        <div class="title">3-tap 사후 첨부</div>
+        <div class="mock">
+          <div class="mock-title">📚 책 상세 → 독서 시간 탭</div>
+          <div style="font-family: -apple-system; font-size: 11px; padding: 8px; background: var(--slate-50); border-radius: 6px; margin-bottom: 4px;">
+            📅 어제 22:30 · 35분 · p.180~215<br>
+            <span style="color: var(--emerald-600); font-weight: 600; font-size: 10px;">📷 사진 추가</span>
+          </div>
+          <div style="font-family: -apple-system; font-size: 11px; padding: 8px; background: var(--slate-50); border-radius: 6px; margin-bottom: 4px;">
+            📅 그제 21:00 · 28분 · p.150~178<br>
+            <span style="color: var(--emerald-600); font-weight: 600; font-size: 10px;">📷 사진 추가</span>
+          </div>
+          <div style="font-family: -apple-system; font-size: 11px; padding: 8px; background: var(--emerald-50); border-radius: 6px;">
+            📅 3일 전 · 45분 · p.105~150 · 🖼️ 사진 있음
+          </div>
+        </div>
+        <div class="meta">탭 → 시트(attach 모드) → 사진 선택 → 저장 = 3탭</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6. 사용자 시나리오 비교 -->
+  <section>
+    <h2><span class="num">6</span> 사용자 시나리오 (Before vs After 탭 수)</h2>
+    <p class="sub">실제 사용자 경험이 얼마나 단순해지는가</p>
+
+    <div class="scenario">
+      <div class="case"><span class="num">1</span> "오늘 35분 읽었는데 사진은 안 찍었다"</div>
+      <div class="ba-grid" style="margin-top: 10px;">
+        <div class="ba before"><span class="tag">3 결정 + 2 탭</span> 다이얼로그 → "스탬프 vs 시간만" 결정 → "시간만" 클릭 → 저장</div>
+        <div class="ba after"><span class="tag">0~1 탭</span> 다이얼로그 → "그만 읽기" (자동 저장) → 토스트만</div>
+      </div>
+    </div>
+
+    <div class="scenario">
+      <div class="case"><span class="num">2</span> <span class="quote">"어제 35분 기록한 거에 오늘 사진 추가하고 싶다"</span></div>
+      <div class="ba-grid" style="margin-top: 10px;">
+        <div class="ba before"><span class="tag">불가능 ❌</span> 흐름 자체가 없음</div>
+        <div class="ba after"><span class="tag">3 탭</span> 책 상세 → 독서 시간 탭 → "📷 사진 추가" → 시트(attach) → 사진 선택 → 저장</div>
+      </div>
+    </div>
+
+    <div class="scenario">
+      <div class="case"><span class="num">3</span> "지금 다 읽고 사진+페이지+시간 모두 한 번에"</div>
+      <div class="ba-grid" style="margin-top: 10px;">
+        <div class="ba before"><span class="tag">4 탭</span> 다이얼로그 → "스탬프" → 시트 → 사진 → 페이지 → 시간 → 저장</div>
+        <div class="ba after"><span class="tag">3 탭 + 1 토글</span> 다이얼로그 → "기록하기" → 시트 → 사진 토글 펼침 → 사진 → 저장</div>
+      </div>
+    </div>
+
+    <div class="scenario">
+      <div class="case"><span class="num">4</span> "음악 타이머 안 켜고 그냥 책 읽고 빠르게 기록"</div>
+      <div class="ba-grid" style="margin-top: 10px;">
+        <div class="ba before"><span class="tag">3 탭</span> 모바일 FAB(+) → 시트 → 페이지 입력 → 저장</div>
+        <div class="ba after"><span class="tag">3 탭 (동일)</span> 동일하지만 시트 라벨이 "기록하기"로 변경 → "사진 없어도 OK"가 자명</div>
+      </div>
+    </div>
+
+    <div class="scenario">
+      <div class="case"><span class="num">5</span> "공유하고 싶다"</div>
+      <div class="ba-grid" style="margin-top: 10px;">
+        <div class="ba before"><span class="tag">3+ 탭</span> 책 상세 → 스탬프 그리드 → 카드 클릭 → 라이트박스 → 공유</div>
+        <div class="ba after"><span class="tag">1 탭</span> 저장 직후 토스트의 "공유하기" 액션</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7. 진입점 정리 -->
+  <section>
+    <h2><span class="num">7</span> 진입점 정리 매트릭스</h2>
+    <p class="sub">모든 기록 진입점이 일관된 라벨로 정리</p>
+    <table>
+      <thead>
+        <tr>
+          <th>위치</th>
+          <th>BEFORE (어제)</th>
+          <th>AFTER (이번)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>모바일 FAB(+)</td>
+          <td class="before-cell">"스탬프 전용" — 메모/필사 진입점 사라짐</td>
+          <td class="after-cell">"기록하기" 시트 (사진은 옵션) — 메모도 가능</td>
+        </tr>
+        <tr>
+          <td>대시보드 모바일 퀵액션</td>
+          <td class="before-cell">"스탬프" 첫 칸</td>
+          <td class="after-cell">"기록" 으로 라벨 변경 (의미 통합)</td>
+        </tr>
+        <tr>
+          <td>사이드바 primary</td>
+          <td class="before-cell">"스탬프" 액션</td>
+          <td class="after-cell">"기록하기" 로 라벨 변경</td>
+        </tr>
+        <tr>
+          <td>음악 타이머 다이얼로그</td>
+          <td class="before-cell">"스탬프 찍기" + "시간만 저장" 2버튼</td>
+          <td class="after-cell">"기록하기" 단일 CTA + "그만 읽기" 자동저장</td>
+        </tr>
+        <tr>
+          <td>책 상세 "독서 시간" 탭</td>
+          <td class="before-cell">표시만, 사후 첨부 불가</td>
+          <td class="after-cell">행마다 "📷 사진 추가" 인라인 칩</td>
+        </tr>
+        <tr>
+          <td>책 상세 "여정" 탭</td>
+          <td class="before-cell">표시만</td>
+          <td class="after-cell">행마다 "📷 사진 추가" 인라인 칩</td>
+        </tr>
+        <tr>
+          <td>토스트 (저장 후)</td>
+          <td class="before-cell">없음</td>
+          <td class="after-cell">"사진 추가" or "공유하기" 동적 액션</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 8. 데이터 모델 변경 -->
+  <section>
+    <h2><span class="num">8</span> 데이터 모델 변경 (최소)</h2>
+    <p class="sub">마이그레이션 1개 (선택), 신규 액션 1개</p>
+
+    <h3 style="font-size: 14px; color: var(--slate-700); margin: 16px 0 8px;">마이그레이션 (선택적)</h3>
+    <pre>ALTER TABLE reading_logs
+  ADD COLUMN IF NOT EXISTS promoted_at TIMESTAMPTZ;
+
+-- 기존 사진 있는 행은 created_at 으로 백필
+UPDATE reading_logs
+   SET promoted_at = created_at
+ WHERE image_url IS NOT NULL AND promoted_at IS NULL;</pre>
+    <p style="font-size: 12px; color: var(--slate-500); margin-top: 6px;">
+      <strong>왜 필요한가</strong>: "어제 기록 → 오늘 사진 추가" 시 승격 시점 분리. 통계·정렬·정확도 향상. 단순 동작은 컬럼 없이도 가능 (선택적).
+    </p>
+
+    <h3 style="font-size: 14px; color: var(--slate-700); margin: 20px 0 8px;">신규 Server Action</h3>
+    <pre>// app/actions/progress.ts
+export async function attachStampToLog(
+  logId: string,
+  input: {
+    image_url: string;
+    start_page?: number;
+    end_page?: number;
+    memo?: string;
+  },
+  user?: User | null,
+): Promise<{ success: boolean; promoted: boolean }></pre>
+    <p style="font-size: 12px; color: var(--slate-500); margin-top: 6px;">
+      권한: 본인 reading_log 만 (RLS + 명시 user_id 검증) · 포인트 추가 적립 없음 (이미 기록 시점에 적립).
+    </p>
+
+    <h3 style="font-size: 14px; color: var(--slate-700); margin: 20px 0 8px;">변경 없음</h3>
+    <p style="font-size: 13px; color: var(--slate-700); margin: 6px 0;">
+      ✅ <code>image_url</code>, <code>start_page</code>, <code>end_page</code>, <code>pace_seconds_per_page</code> 컬럼 그대로<br>
+      ✅ RLS 정책 그대로 (user_id 기반)<br>
+      ✅ <code>notes</code> 테이블 그대로 (인용/메모/필사는 별도)<br>
+      ✅ <code>createReadingStamp</code>, <code>getReadingStamps</code>, <code>saveReadingSession</code> 그대로
+    </p>
+  </section>
+
+  <!-- 9. 구현 규모 -->
+  <section>
+    <h2><span class="num">9</span> 구현 규모 + 일정</h2>
+    <p class="sub">예상 1.5~2주, 점진적 배포 가능</p>
+
+    <div class="stats">
+      <div class="stat"><div class="num">1</div><div class="label">마이그레이션 (선택)</div></div>
+      <div class="stat"><div class="num">2</div><div class="label">신규 액션</div></div>
+      <div class="stat"><div class="num">3</div><div class="label">신규 파일</div></div>
+      <div class="stat"><div class="num">8</div><div class="label">수정 파일</div></div>
+      <div class="stat"><div class="num">0</div><div class="label">제거 파일</div></div>
+      <div class="stat"><div class="num">~2주</div><div class="label">예상 기간</div></div>
+    </div>
+
+    <h3 style="font-size: 14px; color: var(--slate-700); margin: 20px 0 10px;">단계별 구현 순서</h3>
+    <ol class="steps">
+      <li><span class="week">Week 1</span> <div><strong>데이터 + 액션 + 시트 통합</strong> · promoted_at 마이그레이션 · attachStampToLog · useStampCapture mode/targetLogId 확장 · StampCaptureSheet 사진 토글 + attach 모드 · i18n "기록"으로 카피 통합</div></li>
+      <li><span class="week">Week 2</span> <div><strong>진입점 + 토스트 + 사후 첨부</strong> · ReadingCompleteDialog 단일 CTA · reading-time-tab/journey 행 인라인 칩 · 토스트 헬퍼 통합 · /stamps 빈상태 카피 · 회귀 테스트 · i18n 검수</div></li>
+    </ol>
+
+    <h3 style="font-size: 14px; color: var(--slate-700); margin: 20px 0 10px;">변경 파일 종류별</h3>
+    <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+      <span class="pill new">신규: migration-202604301200__reading_logs__add_promoted_at.sql</span>
+      <span class="pill new">신규: app/actions/__tests__/attach-stamp.test.ts</span>
+      <span class="pill new">신규: lib/utils/stamp-toast.ts</span>
+      <span class="pill modify">수정: app/actions/progress.ts</span>
+      <span class="pill modify">수정: types/progress.ts</span>
+      <span class="pill modify">수정: hooks/use-stamp-capture.ts</span>
+      <span class="pill modify">수정: components/stamps/stamp-capture-sheet.tsx</span>
+      <span class="pill modify">수정: components/music/reading-complete-dialog.tsx</span>
+      <span class="pill modify">수정: components/books/reading-time-tab.tsx</span>
+      <span class="pill modify">수정: components/books/reading-journey.tsx</span>
+      <span class="pill modify">수정: lib/i18n/dictionaries/ko.ts, en.ts</span>
+      <span class="pill modify">수정: app/(main)/stamps/page.tsx</span>
+    </div>
+  </section>
+
+  <!-- 10. 트레이드오프 -->
+  <section>
+    <h2><span class="num">10</span> 주요 트레이드오프</h2>
+    <p class="sub">의도적으로 선택한 절충안</p>
+
+    <div class="tradeoff">
+      <div class="what">사진 영역 기본 접힘</div>
+      <div class="why">"사진 없는 빠른 기록"이 디폴트 흐름이 됨. 풀 기록은 1탭(토글) 추가지만 의미가 명확해짐.</div>
+    </div>
+    <div class="tradeoff">
+      <div class="what">단일 시트 + attach 모드</div>
+      <div class="why">새 컴포넌트 만들지 않고 기존 시트 재사용. 학습 비용 0. 코드 중복 없음.</div>
+    </div>
+    <div class="tradeoff">
+      <div class="what">포인트 동일 적립</div>
+      <div class="why">"기록 1건 = +Xp" 일관성. "사진을 강요하지 않는다"는 메시지. 사용자 결정 #3.</div>
+    </div>
+    <div class="tradeoff">
+      <div class="what">자동 저장 유지 (30초+)</div>
+      <div class="why">음악 타이머 사용자의 이탈자 보호. 사후 사진 첨부 흐름이 있으니 의미 있는 기록이 됨. 사용자 결정 #2.</div>
+    </div>
+    <div class="tradeoff">
+      <div class="what">promoted_at 컬럼 추가</div>
+      <div class="why">사후 승격 시각 분리 → 통계 정확. 마이그레이션 비용 미미. 선택적 (없어도 동작).</div>
+    </div>
+    <div class="tradeoff">
+      <div class="what">메모 전용 진입점은 Phase 2.5</div>
+      <div class="why">이번 통합의 스코프 명확화. Quick Capture(메모) 부활은 별도 결정 필요.</div>
+    </div>
+  </section>
+
+  <!-- 11. Phase 2.5 후보 -->
+  <section>
+    <h2><span class="num">11</span> 다음 단계 후보 (Phase 2.5)</h2>
+    <p class="sub">이번 스코프 외 — 별도 결정 필요</p>
+    <ul style="font-size: 13px; color: var(--slate-700); margin: 0; padding-left: 20px;">
+      <li><strong>메모만 빠른 기록 진입점 부활</strong> — Quick Capture 시트를 사이드바 "메모/인용"으로 살릴지</li>
+      <li><strong>사진 추가 nudge 알림</strong> — "어제 35분 읽었어요. 사진 추가하시겠어요?" 푸시 (notifications 테이블 활용)</li>
+      <li><strong>완독 콜라주</strong> — 책의 모든 스탬프 자동 콜라주 + 공유 카드</li>
+      <li><strong>캘린더 히트맵 사진 썸네일</strong> — 스탬프가 있는 날짜에 사진 썸네일 노출</li>
+    </ul>
+  </section>
+
+  <!-- CTA -->
+  <div class="footer-cta">
+    <h3>📝 결정해 주세요</h3>
+    <p>이 기획대로 구현을 진행할까요? 아니면 더 다듬어야 할 부분이 있나요?</p>
+    <p style="font-size: 12px; color: var(--slate-500); margin-top: 8px;">
+      📂 plan 파일: <code>~/.claude/plans/stamp-record-integration.md</code><br>
+      🌿 작업 브랜치: 새 feature 브랜치 권장 (예: <code>feat/stamp-record-integration</code>)
+    </p>
+  </div>
+
+</div>
+</body>
+</html>

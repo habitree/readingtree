@@ -14,14 +14,30 @@ export interface StampSelectedBook {
   totalPages: number | null;
 }
 
+/** "create" = 신규 reading_log 생성, "attach" = 기존 log 에 사진 첨부 */
+export type StampCaptureMode = "create" | "attach";
+
 interface StampCaptureState {
   isOpen: boolean;
+  mode: StampCaptureMode;
+  targetLogId: string | null;
   selectedBook: StampSelectedBook | null;
   prefillDurationSeconds: number | null;
+  prefillStartPage: number | null;
   prefillEndPage: number | null;
   open: () => void;
   openWithBook: (book: StampSelectedBook, options?: { endPage?: number }) => void;
   openWithTimer: (book: StampSelectedBook | null, durationSeconds: number) => void;
+  /** 기존 reading_log 에 사진 첨부 모드로 진입 */
+  openAttach: (
+    logId: string,
+    options?: {
+      book?: StampSelectedBook | null;
+      startPage?: number;
+      endPage?: number;
+      durationSeconds?: number;
+    },
+  ) => void;
   selectBook: (book: StampSelectedBook | null) => void;
   close: () => void;
   reset: () => void;
@@ -29,26 +45,55 @@ interface StampCaptureState {
 
 export const useStampCaptureStore = create<StampCaptureState>((set) => ({
   isOpen: false,
+  mode: "create",
+  targetLogId: null,
   selectedBook: null,
   prefillDurationSeconds: null,
+  prefillStartPage: null,
   prefillEndPage: null,
 
-  open: () => set({ isOpen: true }),
+  open: () =>
+    set({
+      isOpen: true,
+      mode: "create",
+      targetLogId: null,
+    }),
   openWithBook: (book, options) =>
     set({
       isOpen: true,
+      mode: "create",
+      targetLogId: null,
       selectedBook: book,
       prefillEndPage: options?.endPage ?? null,
     }),
   openWithTimer: (book, durationSeconds) =>
-    set({ isOpen: true, selectedBook: book, prefillDurationSeconds: durationSeconds }),
+    set({
+      isOpen: true,
+      mode: "create",
+      targetLogId: null,
+      selectedBook: book,
+      prefillDurationSeconds: durationSeconds,
+    }),
+  openAttach: (logId, options) =>
+    set({
+      isOpen: true,
+      mode: "attach",
+      targetLogId: logId,
+      selectedBook: options?.book ?? null,
+      prefillStartPage: options?.startPage ?? null,
+      prefillEndPage: options?.endPage ?? null,
+      prefillDurationSeconds: options?.durationSeconds ?? null,
+    }),
   selectBook: (book) => set({ selectedBook: book }),
   close: () => set({ isOpen: false }),
   reset: () =>
     set({
       isOpen: false,
+      mode: "create",
+      targetLogId: null,
       selectedBook: null,
       prefillDurationSeconds: null,
+      prefillStartPage: null,
       prefillEndPage: null,
     }),
 }));

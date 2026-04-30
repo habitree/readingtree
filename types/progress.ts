@@ -25,8 +25,20 @@ export interface ReadingLog {
   start_page: number | null;
   end_page: number | null;
   pace_seconds_per_page: number | null;
+  promoted_at: string | null;
   created_at: string;
   updated_at: string;
+}
+
+/**
+ * 스탬프 사후 첨부 입력 — attachStampToLog 전용
+ * 기존 reading_log 에 사진/페이지를 추가해 스탬프로 승격.
+ */
+export interface AttachStampInput {
+  image_url: string;
+  start_page?: number;
+  end_page?: number;
+  memo?: string;
 }
 
 /**

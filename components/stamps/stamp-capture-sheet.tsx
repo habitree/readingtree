@@ -15,6 +15,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import {
   Camera,
+  ChevronDown,
+  ChevronUp,
   ImagePlus,
   Loader2,
   Lock,
@@ -27,29 +29,38 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useStampCapture } from "@/hooks/use-stamp-capture";
 import { useAuth } from "@/hooks/use-auth";
+import { useTranslation } from "@/lib/i18n";
 import { smartCompressImage } from "@/lib/utils/image";
-import { createReadingStamp, getLastEndPage } from "@/app/actions/progress";
+import {
+  attachStampToLog,
+  createReadingStamp,
+  getLastEndPage,
+} from "@/app/actions/progress";
 import { StampPreviewCard } from "./stamp-preview-card";
 
 const DURATION_PRESETS = [10, 15, 25, 30, 45, 60, 90] as const;
 
 /**
- * Stamp Composer — 사진 + 페이지 구간 + 시간을 한 번에 기록.
- * - 모바일: 풀스크린 Bottom Sheet
- * - 데스크톱: Bottom Sheet (max-w-2xl)
- * - 사진은 선택, 카메라 또는 갤러리에서 추가
- * - start_page 는 직전 reading_log 에서 자동 승계
+ * Stamp Composer (통합 시트)
+ * - mode "create": 신규 reading_log 생성 (사진은 옵션, 토글로 펼침)
+ * - mode "attach": 기존 reading_log 에 사진 첨부 → 스탬프로 승격
+ *
+ * 모바일: Bottom Sheet 풀스크린, 데스크톱: Sheet (max-w-2xl)
  */
 export function StampCaptureSheet() {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const store = useStampCapture();
   const [isPending, startTransition] = useTransition();
+
+  const isAttachMode = store.mode === "attach";
 
   // 입력 상태
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
   const [imageUploadedUrl, setImageUploadedUrl] = useState<string | null>(null);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [photoExpanded, setPhotoExpanded] = useState(false);
   const [startPage, setStartPage] = useState<number>(0);
   const [endPage, setEndPage] = useState<number>(0);
   const [durationMinutes, setDurationMinutes] = useState<number>(25);
@@ -60,16 +71,33 @@ export function StampCaptureSheet() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
 
-  // 시트가 열릴 때마다 직전 end_page 로드
+  // 시트가 열릴 때마다 페이지 prefill
   useEffect(() => {
-    if (!store.isOpen || !store.selectedBook) return;
+    if (!store.isOpen) return;
+
+    // attach 모드: prefill 값 직접 사용
+    if (isAttachMode) {
+      setStartPage(store.prefillStartPage ?? 0);
+      setEndPage(
+        store.prefillEndPage ?? store.prefillStartPage ?? 0,
+      );
+      // attach 모드는 사진이 핵심이므로 사진 영역 자동 펼침
+      setPhotoExpanded(true);
+      return;
+    }
+
+    // create 모드: 책이 있으면 직전 end_page 자동 로드
+    if (!store.selectedBook) {
+      setStartPage(0);
+      setEndPage(store.prefillEndPage ?? 0);
+      return;
+    }
 
     let cancelled = false;
     getLastEndPage(store.selectedBook.id)
       .then((page) => {
         if (cancelled) return;
         setStartPage(page);
-        // prefillEndPage 가 있으면 그 값을, 아니면 startPage + 10 을 기본값으로
         if (typeof store.prefillEndPage === "number") {
           setEndPage(store.prefillEndPage);
         } else {
@@ -83,7 +111,13 @@ export function StampCaptureSheet() {
     return () => {
       cancelled = true;
     };
-  }, [store.isOpen, store.selectedBook, store.prefillEndPage]);
+  }, [
+    store.isOpen,
+    store.selectedBook,
+    store.prefillEndPage,
+    store.prefillStartPage,
+    isAttachMode,
+  ]);
 
   // prefillDuration 반영
   useEffect(() => {
@@ -103,6 +137,7 @@ export function StampCaptureSheet() {
     });
     setImageUploadedUrl(null);
     setIsUploadingImage(false);
+    setPhotoExpanded(false);
     setMemo("");
     setIsPublic(true);
     setShowStartPageEdit(false);
@@ -139,12 +174,12 @@ export function StampCaptureSheet() {
       const res = await fetch("/api/upload", { method: "POST", body: formData });
       if (!res.ok) {
         const errBody = await res.json().catch(() => ({}));
-        throw new Error(errBody.error || "이미지 업로드에 실패했어요.");
+        throw new Error(errBody.error || t("stamp.uploadFailed"));
       }
       const { url } = (await res.json()) as { url: string };
       setImageUploadedUrl(url);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "이미지 업로드 실패");
+      toast.error(err instanceof Error ? err.message : t("stamp.uploadFailed"));
       setImageFile(null);
       setImageUploadedUrl(null);
     } finally {
@@ -167,15 +202,50 @@ export function StampCaptureSheet() {
     setEndPage((prev) => Math.max(startPage, prev + delta));
   };
 
-  const canSave = !isPending && !isUploadingImage && durationSeconds >= 30;
+  const hasImage = !!imageUploadedUrl;
+  // attach 모드는 사진 필수
+  const canSave = isAttachMode
+    ? !isPending && !isUploadingImage && hasImage
+    : !isPending && !isUploadingImage && durationSeconds >= 30;
 
   const handleSave = () => {
     if (!user) {
       toast.error("로그인이 필요해요.");
       return;
     }
+
+    // attach 모드 — 기존 로그에 사진 첨부
+    if (isAttachMode) {
+      if (!store.targetLogId) {
+        toast.error("대상 기록을 찾을 수 없어요.");
+        return;
+      }
+      if (!imageUploadedUrl) {
+        toast.error("사진을 추가해주세요.");
+        return;
+      }
+
+      startTransition(async () => {
+        try {
+          await attachStampToLog(store.targetLogId!, {
+            image_url: imageUploadedUrl,
+            start_page: startPage,
+            end_page: endPage,
+            memo: memo.trim() || undefined,
+          });
+          toast.success(t("stamp.attachSaved"));
+          store.reset();
+        } catch (err) {
+          const message = err instanceof Error ? err.message : t("stamp.attachFailed");
+          toast.error(message);
+        }
+      });
+      return;
+    }
+
+    // create 모드 — 신규 reading_log 생성
     if (durationSeconds < 30) {
-      toast.error("최소 30초 이상의 독서 시간을 입력해주세요.");
+      toast.error(t("stamp.minSecondsError"));
       return;
     }
 
@@ -191,19 +261,35 @@ export function StampCaptureSheet() {
           reading_duration_seconds: durationSeconds,
         });
 
-        toast.success("스탬프를 남겼어요!", {
-          description: result.pointsEarned ? `+${result.pointsEarned}P 적립` : undefined,
+        toast.success(hasImage ? t("stamp.savedWithPhoto") : t("stamp.saved"), {
+          description: result.pointsEarned
+            ? t("stamp.pointsEarned").replace("{{points}}", String(result.pointsEarned))
+            : undefined,
           duration: 4000,
         });
         store.reset();
       } catch (err) {
-        const message = err instanceof Error ? err.message : "스탬프 저장에 실패했어요.";
+        const message = err instanceof Error ? err.message : t("stamp.attachFailed");
         toast.error(message);
       }
     });
   };
 
   const previewImageUrl = imageUploadedUrl ?? imagePreviewUrl ?? undefined;
+
+  const sheetTitle = isAttachMode
+    ? t("stamp.attachTitle")
+    : hasImage
+      ? t("stamp.titleWithPhoto")
+      : t("stamp.title");
+  const sheetDescription = isAttachMode
+    ? t("stamp.attachDescription")
+    : t("stamp.description");
+  const saveLabel = isAttachMode
+    ? t("stamp.attachSave")
+    : hasImage
+      ? t("stamp.saveWithPhoto")
+      : t("stamp.save");
 
   return (
     <Sheet open={store.isOpen} onOpenChange={(open) => (open ? store.open() : store.close())}>
@@ -215,11 +301,9 @@ export function StampCaptureSheet() {
           <SheetHeader className="text-left pb-3">
             <SheetTitle className="flex items-center gap-2">
               <StampIcon className="h-5 w-5 text-emerald-600" />
-              스탬프 찍기
+              {sheetTitle}
             </SheetTitle>
-            <SheetDescription>
-              사진 + 읽은 페이지 + 시간을 한 번에 기록해요.
-            </SheetDescription>
+            <SheetDescription>{sheetDescription}</SheetDescription>
           </SheetHeader>
 
           {/* 책 표시 */}
@@ -236,100 +320,141 @@ export function StampCaptureSheet() {
                 )}
               </div>
             </div>
-          ) : (
+          ) : !isAttachMode ? (
             <div className="mb-4 rounded-xl border border-dashed border-slate-200 bg-slate-50 p-3 text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-900/50 dark:text-slate-400">
-              책 미선택 — 자유 기록으로 저장돼요.
+              {t("stamp.selectBookFirst")}
+            </div>
+          ) : null}
+
+          {/* 라이브 미리보기 (사진 있거나 attach 모드일 때만) */}
+          {(hasImage || photoExpanded || isAttachMode) && (
+            <div className="mx-auto mb-5 max-w-sm">
+              <StampPreviewCard
+                imageUrl={previewImageUrl}
+                bookTitle={store.selectedBook?.title}
+                bookAuthor={store.selectedBook?.author ?? null}
+                coverImageUrl={store.selectedBook?.coverImageUrl ?? null}
+                startPage={startPage}
+                endPage={endPage}
+                durationSeconds={durationSeconds}
+                date={previewDate}
+              />
+              {isUploadingImage && (
+                <div className="mt-2 flex items-center justify-center gap-2 text-xs text-slate-500">
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                  {t("stamp.uploading")}
+                </div>
+              )}
             </div>
           )}
 
-          {/* 라이브 미리보기 */}
-          <div className="mx-auto mb-5 max-w-sm">
-            <StampPreviewCard
-              imageUrl={previewImageUrl}
-              bookTitle={store.selectedBook?.title}
-              bookAuthor={store.selectedBook?.author ?? null}
-              coverImageUrl={store.selectedBook?.coverImageUrl ?? null}
-              startPage={startPage}
-              endPage={endPage}
-              durationSeconds={durationSeconds}
-              date={previewDate}
-            />
-            {isUploadingImage && (
-              <div className="mt-2 flex items-center justify-center gap-2 text-xs text-slate-500">
-                <Loader2 className="h-3 w-3 animate-spin" />
-                사진 업로드 중...
-              </div>
-            )}
-          </div>
+          {/* 사진 토글 (create 모드) */}
+          {!isAttachMode && !photoExpanded && (
+            <button
+              type="button"
+              onClick={() => setPhotoExpanded(true)}
+              className="mb-5 flex w-full items-center justify-between rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-600 transition-colors hover:border-emerald-400 hover:bg-emerald-50 hover:text-emerald-700 dark:border-slate-700 dark:bg-slate-900/50 dark:text-slate-400 dark:hover:border-emerald-700 dark:hover:bg-emerald-950/30"
+              aria-expanded={photoExpanded}
+            >
+              <span className="flex items-center gap-2">
+                <Camera className="h-4 w-4" />
+                {t("stamp.addPhoto")}
+              </span>
+              <ChevronDown className="h-4 w-4" />
+            </button>
+          )}
 
-          {/* 사진 선택 / 제거 */}
-          <div className="mb-5 grid grid-cols-2 gap-2">
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              capture="environment"
-              className="hidden"
-              onChange={(e) => handleFileSelect(e.target.files?.[0] ?? null)}
-            />
-            <input
-              ref={galleryInputRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={(e) => handleFileSelect(e.target.files?.[0] ?? null)}
-            />
-            <Button
-              type="button"
-              variant="outline"
-              className="h-12"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={isUploadingImage || isPending}
-            >
-              <Camera className="mr-2 h-4 w-4" />
-              카메라
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              className="h-12"
-              onClick={() => galleryInputRef.current?.click()}
-              disabled={isUploadingImage || isPending}
-            >
-              <ImagePlus className="mr-2 h-4 w-4" />
-              앨범에서
-            </Button>
-            {imageFile && (
-              <Button
-                type="button"
-                variant="ghost"
-                className="col-span-2 h-9 text-xs text-slate-500 hover:text-red-600"
-                onClick={handleRemoveImage}
-                disabled={isPending}
-              >
-                <Trash2 className="mr-1 h-3 w-3" />
-                사진 지우기
-              </Button>
-            )}
-          </div>
+          {/* 사진 선택 (펼침 또는 attach 모드) */}
+          {(photoExpanded || isAttachMode) && (
+            <div className="mb-5 space-y-2">
+              {!isAttachMode && (
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                    <Camera className="mr-1 inline h-3 w-3" />
+                    {t("stamp.addPhotoExpanded")}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPhotoExpanded(false);
+                      handleRemoveImage();
+                    }}
+                    className="text-xs text-slate-500 hover:text-slate-700"
+                  >
+                    <ChevronUp className="inline h-3 w-3" /> {t("stamp.closeEdit")}
+                  </button>
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-2">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  className="hidden"
+                  onChange={(e) => handleFileSelect(e.target.files?.[0] ?? null)}
+                />
+                <input
+                  ref={galleryInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => handleFileSelect(e.target.files?.[0] ?? null)}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-12"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploadingImage || isPending}
+                >
+                  <Camera className="mr-2 h-4 w-4" />
+                  {t("stamp.takePhoto")}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-12"
+                  onClick={() => galleryInputRef.current?.click()}
+                  disabled={isUploadingImage || isPending}
+                >
+                  <ImagePlus className="mr-2 h-4 w-4" />
+                  {t("stamp.fromGallery")}
+                </Button>
+                {imageFile && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="col-span-2 h-9 text-xs text-slate-500 hover:text-red-600"
+                    onClick={handleRemoveImage}
+                    disabled={isPending}
+                  >
+                    <Trash2 className="mr-1 h-3 w-3" />
+                    {t("stamp.removePhoto")}
+                  </Button>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* 페이지 입력 */}
           <div className="mb-5 space-y-3">
             <div className="flex items-center justify-between">
-              <Label className="text-sm font-medium">읽은 페이지</Label>
+              <Label className="text-sm font-medium">{t("stamp.pages")}</Label>
               <button
                 type="button"
                 className="text-xs text-emerald-600 hover:underline"
                 onClick={() => setShowStartPageEdit((v) => !v)}
               >
-                {showStartPageEdit ? "닫기" : "시작 페이지 수정"}
+                {showStartPageEdit ? t("stamp.closeEdit") : t("stamp.editStartPage")}
               </button>
             </div>
             <div className="flex items-end gap-2">
               {showStartPageEdit && (
                 <>
                   <div className="flex-1">
-                    <Label className="text-xs text-slate-500">시작</Label>
+                    <Label className="text-xs text-slate-500">{t("stamp.fromPage")}</Label>
                     <Input
                       type="number"
                       inputMode="numeric"
@@ -346,7 +471,7 @@ export function StampCaptureSheet() {
               )}
               <div className="flex-1">
                 <Label className="text-xs text-slate-500">
-                  {showStartPageEdit ? "종료" : `시작 ${startPage}p →`}
+                  {showStartPageEdit ? t("stamp.toPage") : `${t("stamp.fromPage")} ${startPage}p →`}
                 </Label>
                 <Input
                   type="number"
@@ -376,59 +501,61 @@ export function StampCaptureSheet() {
                 </Button>
               ))}
               <div className="ml-auto self-center text-sm text-slate-500 tabular-nums">
-                {Math.max(0, endPage - startPage)} pages
+                {Math.max(0, endPage - startPage)} {t("stamp.pages")}
               </div>
             </div>
           </div>
 
-          {/* 시간 입력 */}
-          <div className="mb-5 space-y-3">
-            <div className="flex items-center justify-between">
-              <Label className="text-sm font-medium">읽은 시간</Label>
-              <span className="text-sm font-semibold text-emerald-600 tabular-nums">
-                {durationMinutes}분
-              </span>
+          {/* 시간 입력 (attach 모드는 비활성/숨김 — 기존 시간 유지) */}
+          {!isAttachMode && (
+            <div className="mb-5 space-y-3">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-medium">{t("stamp.time")}</Label>
+                <span className="text-sm font-semibold text-emerald-600 tabular-nums">
+                  {durationMinutes}{t("stamp.timeMinutes")}
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {DURATION_PRESETS.map((min) => (
+                  <Button
+                    key={min}
+                    type="button"
+                    variant={durationMinutes === min ? "default" : "outline"}
+                    size="sm"
+                    className={cn(
+                      durationMinutes === min &&
+                        "bg-emerald-600 text-white hover:bg-emerald-700",
+                    )}
+                    onClick={() => setDurationMinutes(min)}
+                    disabled={isPending}
+                  >
+                    {min}{t("stamp.timeMinutes")}
+                  </Button>
+                ))}
+              </div>
+              <Input
+                type="number"
+                inputMode="numeric"
+                min={1}
+                max={600}
+                value={durationMinutes}
+                onChange={(e) => {
+                  const v = Number(e.target.value);
+                  setDurationMinutes(Number.isFinite(v) && v >= 1 ? v : 1);
+                }}
+                className="h-10"
+              />
             </div>
-            <div className="flex flex-wrap gap-2">
-              {DURATION_PRESETS.map((min) => (
-                <Button
-                  key={min}
-                  type="button"
-                  variant={durationMinutes === min ? "default" : "outline"}
-                  size="sm"
-                  className={cn(
-                    durationMinutes === min &&
-                      "bg-emerald-600 text-white hover:bg-emerald-700",
-                  )}
-                  onClick={() => setDurationMinutes(min)}
-                  disabled={isPending}
-                >
-                  {min}분
-                </Button>
-              ))}
-            </div>
-            <Input
-              type="number"
-              inputMode="numeric"
-              min={1}
-              max={600}
-              value={durationMinutes}
-              onChange={(e) => {
-                const v = Number(e.target.value);
-                setDurationMinutes(Number.isFinite(v) && v >= 1 ? v : 1);
-              }}
-              className="h-10"
-            />
-          </div>
+          )}
 
           {/* 메모 (선택) */}
           <div className="mb-4 space-y-2">
             <Label htmlFor="stamp-memo" className="text-sm">
-              메모 <span className="text-xs text-slate-400">(선택)</span>
+              {t("stamp.memo")} <span className="text-xs text-slate-400">{t("stamp.memoOptional")}</span>
             </Label>
             <Textarea
               id="stamp-memo"
-              placeholder="이 구간에서 인상 깊은 한 줄..."
+              placeholder={t("stamp.memoPlaceholder")}
               value={memo}
               onChange={(e) => setMemo(e.target.value)}
               className="h-20 resize-none"
@@ -437,20 +564,22 @@ export function StampCaptureSheet() {
             <p className="text-right text-xs text-slate-400">{memo.length}/500</p>
           </div>
 
-          {/* 공개 여부 */}
-          <div className="mb-5 flex items-center justify-between rounded-lg bg-slate-50 p-3 dark:bg-slate-900">
-            <div className="flex items-center gap-2">
-              {isPublic ? (
-                <Globe className="h-4 w-4 text-emerald-500" />
-              ) : (
-                <Lock className="h-4 w-4 text-slate-400" />
-              )}
-              <Label htmlFor="stamp-public" className="cursor-pointer text-sm font-medium">
-                {isPublic ? "공개" : "비공개"}
-              </Label>
+          {/* 공개 여부 (create 모드만) */}
+          {!isAttachMode && (
+            <div className="mb-5 flex items-center justify-between rounded-lg bg-slate-50 p-3 dark:bg-slate-900">
+              <div className="flex items-center gap-2">
+                {isPublic ? (
+                  <Globe className="h-4 w-4 text-emerald-500" />
+                ) : (
+                  <Lock className="h-4 w-4 text-slate-400" />
+                )}
+                <Label htmlFor="stamp-public" className="cursor-pointer text-sm font-medium">
+                  {isPublic ? t("stamp.public") : t("stamp.private")}
+                </Label>
+              </div>
+              <Switch id="stamp-public" checked={isPublic} onCheckedChange={setIsPublic} />
             </div>
-            <Switch id="stamp-public" checked={isPublic} onCheckedChange={setIsPublic} />
-          </div>
+          )}
 
           {/* 액션 */}
           <div className="flex gap-2 pb-4">
@@ -462,7 +591,7 @@ export function StampCaptureSheet() {
               disabled={isPending}
             >
               <X className="mr-1 h-4 w-4" />
-              취소
+              {t("stamp.cancel")}
             </Button>
             <Button
               type="button"
@@ -473,12 +602,12 @@ export function StampCaptureSheet() {
               {isPending ? (
                 <>
                   <Loader2 className="mr-1 h-4 w-4 animate-spin" />
-                  저장 중...
+                  {t("stamp.saving")}
                 </>
               ) : (
                 <>
                   <StampIcon className="mr-1 h-4 w-4" />
-                  스탬프 찍기
+                  {saveLabel}
                 </>
               )}
             </Button>
