@@ -2,19 +2,28 @@
 
 /**
  * RecordSheet - Start Step
- * 책 선택 + 시작 페이지 + 시간 옵션 → startReadingSession.
+ * 책 선택(변경 가능) + 시작 페이지 + 시간 옵션 → startReadingSession.
  * 메모/사진 입력 없음 (가벼운 진입).
  */
 
+import Image from "next/image";
 import { useEffect, useState, useTransition } from "react";
-import { Loader2, Play } from "lucide-react";
+import { BookOpen, ChevronRight, Loader2, Play } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { startReadingSession } from "@/app/actions/sessions";
 import { getLastEndPage } from "@/app/actions/progress";
+import { QuickBookSelector } from "@/components/books/quick-book-selector";
 import {
   broadcastSessionStarted,
   generateClientSessionId,
@@ -39,8 +48,9 @@ export function RecordStartStep({ selectedBook, prefillTargetSeconds, prefillSta
   const [startPage, setStartPage] = useState<number>(prefillStartPage ?? 0);
   const [targetSeconds, setTargetSeconds] = useState<number>(prefillTargetSeconds ?? 25 * 60);
   const [isPending, startTransition] = useTransition();
+  const [isPickerOpen, setIsPickerOpen] = useState(false);
   const { setPendingClientSessionId } = useReadingSessionStore();
-  const { close } = useRecordSheetStore();
+  const { close, selectBook } = useRecordSheetStore();
 
   // 시작 페이지 자동 prefill (selectedBook 변경 시)
   useEffect(() => {
@@ -90,25 +100,97 @@ export function RecordStartStep({ selectedBook, prefillTargetSeconds, prefillSta
 
   return (
     <div className="space-y-5">
-      {/* 책 정보 */}
-      {selectedBook ? (
-        <div className="flex items-center gap-3 rounded-xl border border-emerald-100 bg-emerald-50/50 p-3 dark:border-emerald-900 dark:bg-emerald-950/30">
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold text-slate-900 dark:text-white">
-              {selectedBook.title}
-            </p>
-            {selectedBook.author && (
-              <p className="truncate text-xs text-slate-500 dark:text-slate-400">
-                {selectedBook.author}
-              </p>
-            )}
+      {/* 책 정보 + 변경 (선택) */}
+      <button
+        type="button"
+        onClick={() => setIsPickerOpen(true)}
+        disabled={isPending}
+        className={cn(
+          "group flex w-full items-center gap-3 rounded-xl border p-3 text-left transition-colors",
+          selectedBook
+            ? "border-emerald-100 bg-emerald-50/50 hover:bg-emerald-50 dark:border-emerald-900 dark:bg-emerald-950/30 dark:hover:bg-emerald-950/50"
+            : "border-dashed border-slate-200 bg-slate-50 hover:bg-slate-100 dark:border-slate-800 dark:bg-slate-900/50 dark:hover:bg-slate-900",
+        )}
+        aria-label="책 변경"
+      >
+        {selectedBook?.coverImageUrl ? (
+          <div className="relative h-12 w-9 flex-shrink-0 overflow-hidden rounded-md bg-slate-200 shadow-sm dark:bg-slate-700">
+            <Image src={selectedBook.coverImageUrl} alt="" fill sizes="36px" className="object-cover" />
           </div>
+        ) : (
+          <div className="flex h-12 w-9 flex-shrink-0 items-center justify-center rounded-md bg-slate-200 dark:bg-slate-700">
+            <BookOpen className="h-4 w-4 text-slate-400" />
+          </div>
+        )}
+        <div className="min-w-0 flex-1">
+          {selectedBook ? (
+            <>
+              <p className="truncate text-sm font-semibold text-slate-900 dark:text-white">
+                {selectedBook.title}
+              </p>
+              {selectedBook.author && (
+                <p className="truncate text-xs text-slate-500 dark:text-slate-400">
+                  {selectedBook.author}
+                </p>
+              )}
+              <p className="mt-0.5 text-[10px] text-emerald-600 group-hover:underline dark:text-emerald-400">
+                탭해서 다른 책으로 변경
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                책을 선택하세요
+              </p>
+              <p className="text-[10px] text-slate-500 dark:text-slate-400">
+                선택하지 않으면 자유 기록으로 저장됩니다
+              </p>
+            </>
+          )}
         </div>
-      ) : (
-        <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-3 text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-900/50 dark:text-slate-400">
-          책을 선택하지 않으면 자유 기록으로 저장됩니다.
-        </div>
-      )}
+        <ChevronRight className="h-4 w-4 flex-shrink-0 text-slate-400" />
+      </button>
+
+      {/* 책 선택 다이얼로그 */}
+      <Dialog open={isPickerOpen} onOpenChange={setIsPickerOpen}>
+        <DialogContent className="max-w-xl max-h-[80dvh] overflow-hidden p-0 flex flex-col">
+          <DialogHeader className="px-5 pt-5 pb-2">
+            <DialogTitle>책 선택</DialogTitle>
+            <DialogDescription>
+              내 서재에서 책을 선택하거나, 책 없이 기록할 수 있어요.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex-1 overflow-hidden px-5 pb-3">
+            <QuickBookSelector
+              onSelect={(book) => {
+                selectBook({
+                  id: book.id, // user_books.id
+                  bookId: book.books.id, // books.id
+                  title: book.books.title,
+                  author: book.books.author,
+                  coverImageUrl: book.books.cover_image_url,
+                  totalPages: book.books.total_pages ?? null,
+                });
+                setIsPickerOpen(false);
+              }}
+            />
+          </div>
+          <div className="border-t px-5 py-3">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="w-full"
+              onClick={() => {
+                selectBook(null);
+                setIsPickerOpen(false);
+              }}
+            >
+              책 없이 자유 기록으로 시작
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* 시작 페이지 */}
       <div className="space-y-2">
