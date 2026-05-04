@@ -1,6 +1,7 @@
 "use server";
 
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { getCurrentUser } from "@/app/actions/auth";
 import type { Database } from "@/types/database";
 
@@ -91,7 +92,9 @@ export async function recordOcrSuccess(
   noteId?: string,
   durationMs?: number
 ) {
-  const supabase = await createServerSupabaseClient();
+  // 통계 기록은 시스템 작업이므로 service_role 클라이언트를 사용해 RLS와 무관하게 항상 기록되도록 보장
+  // (이전 구현에서 사용자 세션 클라이언트를 사용해 RLS INSERT 정책 부재로 1/16 이후 312건이 누락된 이력이 있음)
+  const supabase = createAdminSupabaseClient();
 
   try {
     // 기존 통계 조회
@@ -162,7 +165,8 @@ export async function recordOcrFailure(
   errorMessage?: string,
   durationMs?: number
 ) {
-  const supabase = await createServerSupabaseClient();
+  // recordOcrSuccess와 동일한 이유로 service_role 클라이언트 사용
+  const supabase = createAdminSupabaseClient();
 
   try {
     // 기존 통계 조회

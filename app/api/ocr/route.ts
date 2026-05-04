@@ -78,6 +78,43 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // imageUrl이 노트의 image_url과 일치하는지 검증
+    // (외부 임의 URL을 보내서 비용을 발생시키는 abuse 방지)
+    const { data: noteRow } = await supabase
+      .from("notes")
+      .select("image_url")
+      .eq("id", noteId)
+      .maybeSingle();
+
+    if (!noteRow || noteRow.image_url !== imageUrl) {
+      return NextResponse.json(
+        { error: "이미지 URL이 노트와 일치하지 않습니다." },
+        { status: 400 }
+      );
+    }
+
+    // 중복 요청 가드: 이미 processing 또는 completed 상태이면 거부
+    // (네트워크 더블클릭, 동시 retry 등으로 같은 노트에 OCR이 중복 호출되어 비용이 두 배가 되는 것을 방지)
+    const { data: existingTranscription } = await supabase
+      .from("transcriptions")
+      .select("status")
+      .eq("note_id", noteId)
+      .maybeSingle();
+
+    if (existingTranscription?.status === "processing") {
+      return NextResponse.json(
+        { error: "이미 OCR 처리 중입니다. 잠시 후 다시 시도해주세요." },
+        { status: 409 }
+      );
+    }
+
+    if (existingTranscription?.status === "completed") {
+      return NextResponse.json(
+        { error: "이미 OCR이 완료된 기록입니다." },
+        { status: 409 }
+      );
+    }
+
     // OCR 처리 시작 전 transcription 초기 상태 생성
     try {
       await createTranscriptionInitial(noteId);

@@ -53,8 +53,8 @@ interface MusicPlayerState {
 
   // ── 타이머 액션 ──
   selectedPlaylistId: string | null;
-  startTimer: (seconds: number, playlistId?: string) => void;
-  startUnlimitedTimer: (playlistId?: string) => void;
+  startTimer: (seconds: number, playlistId?: string, startIndex?: number) => void;
+  startUnlimitedTimer: (playlistId?: string, startIndex?: number) => void;
   pauseTimer: () => void;
   resumeTimer: () => void;
   tickTimer: () => void;
@@ -181,20 +181,25 @@ export const useMusicPlayer = create<MusicPlayerState>((set, get) => ({
   updateTime: (current, dur) => set({ currentTime: current, duration: dur }),
 
   // ── 타이머 액션 ──
-  startTimer: (seconds, playlistId) => {
+  // startIndex 미지정 시 매 호출마다 랜덤 선택 (초기 재생 트랙 랜덤화)
+  startTimer: (seconds, playlistId, startIndex) => {
     const tracks = playlistId
       ? getPlaylistTracks(playlistId)
       : getDefaultPlaylistTracks();
     if (tracks.length === 0) return;
-    const randomIdx = Math.floor(Math.random() * tracks.length);
+    const idx =
+      startIndex !== undefined && startIndex >= 0 && startIndex < tracks.length
+        ? startIndex
+        : Math.floor(Math.random() * tracks.length);
+    const track = tracks[idx];
     set({
       playlist: tracks,
-      currentIndex: randomIdx,
-      currentTrack: tracks[randomIdx] ?? null,
+      currentIndex: idx,
+      currentTrack: track ?? null,
       isVisible: true,
       isPlaying: true,
       currentTime: 0,
-      duration: tracks[0]?.durationSeconds ?? 0,
+      duration: track?.durationSeconds ?? 0,
       selectedPlaylistId: playlistId ?? "comfortable",
       timerStatus: "running",
       targetSeconds: seconds,
@@ -206,20 +211,24 @@ export const useMusicPlayer = create<MusicPlayerState>((set, get) => ({
     });
   },
 
-  startUnlimitedTimer: (playlistId) => {
+  startUnlimitedTimer: (playlistId, startIndex) => {
     const tracks = playlistId
       ? getPlaylistTracks(playlistId)
       : getDefaultPlaylistTracks();
     if (tracks.length === 0) return;
-    const randomIdx = Math.floor(Math.random() * tracks.length);
+    const idx =
+      startIndex !== undefined && startIndex >= 0 && startIndex < tracks.length
+        ? startIndex
+        : Math.floor(Math.random() * tracks.length);
+    const track = tracks[idx];
     set({
       playlist: tracks,
-      currentIndex: randomIdx,
-      currentTrack: tracks[randomIdx] ?? null,
+      currentIndex: idx,
+      currentTrack: track ?? null,
       isVisible: true,
       isPlaying: true,
       currentTime: 0,
-      duration: tracks[0]?.durationSeconds ?? 0,
+      duration: track?.durationSeconds ?? 0,
       selectedPlaylistId: playlistId ?? "comfortable",
       timerStatus: "running",
       targetSeconds: 0,

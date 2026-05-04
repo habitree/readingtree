@@ -148,22 +148,25 @@ export function TimerSheet() {
 
     // 1. 사용자 클릭 동기 컨텍스트에서 audio.play() 호출
     //    (useEffect 경유 시 브라우저 autoplay 정책에 의해 차단됨)
+    //    매 플레이마다 다른 곡이 재생되도록 시작 트랙을 랜덤 선택
     const audio = getGlobalAudio();
     const tracks = getPlaylistTracks(selectedPlaylistId);
-    const firstTrack = tracks[0];
+    const randomStartIdx =
+      tracks.length > 0 ? Math.floor(Math.random() * tracks.length) : 0;
+    const startTrack = tracks[randomStartIdx];
 
-    if (audio && firstTrack) {
-      audio.src = firstTrack.sourceUrl;
+    if (audio && startTrack) {
+      audio.src = startTrack.sourceUrl;
       audio.volume = useMusicPlayer.getState().volume;
       audio.play().catch(() => {});
     }
 
-    // 2. zustand 상태 업데이트 (UI 동기화)
+    // 2. zustand 상태 업데이트 (UI 동기화) — audio와 동일한 랜덤 인덱스 전달
     if (isUnlimited) {
-      startUnlimitedTimer(selectedPlaylistId);
+      startUnlimitedTimer(selectedPlaylistId, randomStartIdx);
     } else {
       const minutes = isCustom ? parseInt(customInput, 10) : selectedMinutes;
-      startTimer(minutes * 60, selectedPlaylistId);
+      startTimer(minutes * 60, selectedPlaylistId, randomStartIdx);
     }
   }
 

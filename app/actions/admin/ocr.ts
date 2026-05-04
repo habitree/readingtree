@@ -103,8 +103,12 @@ export async function getOcrTotalStats() {
 
 /**
  * OCR API 연결 상태 테스트
- * 실제 OCR 서비스에 연결하여 상태를 확인
- * @returns 연결 상태 정보
+ *
+ * 비용 보호: 토큰 발급까지만 검증하고 실제 Cloud Run / Vision API는 호출하지 않습니다.
+ * (이전 구현은 1x1 PNG를 진짜로 전송해서 페이지 진입 시마다 Vision API 과금이 발생했음)
+ * 실제 동작 검증이 필요한 경우 사용자가 OCR 기능을 직접 사용할 때 자연스럽게 검증됩니다.
+ *
+ * @returns 연결 상태 정보 (UI 호환을 위해 기존 스키마 유지)
  */
 export async function testOcrConnection() {
     await requireAdmin();
@@ -129,11 +133,11 @@ export async function testOcrConnection() {
         overallStatus: "unknown" as "connected" | "token_error" | "api_error" | "unknown",
     };
 
-    // 1. 토큰 생성 테스트
     const serviceAccountKey = process.env.GOOGLE_SERVICE_ACCOUNT_KEY;
     const staticToken = process.env.CLOUD_RUN_OCR_AUTH_TOKEN;
 
     let authToken: string | null = null;
+    const startTime = Date.now();
 
     if (serviceAccountKey) {
         result.tokenGeneration.method = "dynamic";
@@ -147,6 +151,8 @@ export async function testOcrConnection() {
         } catch (error) {
             result.tokenGeneration.success = false;
             result.tokenGeneration.message = `동적 토큰 생성 실패: ${error instanceof Error ? error.message : "알 수 없는 오류"}`;
+            result.apiConnection.success = false;
+            result.apiConnection.message = "토큰 생성에 실패하여 연결을 확인할 수 없습니다.";
             result.overallStatus = "token_error";
             return result;
         }
@@ -156,55 +162,22 @@ export async function testOcrConnection() {
         result.tokenGeneration.message = "정적 토큰 사용 중";
         authToken = staticToken;
     } else {
+        // 인증 정보가 전혀 없으면 token_error로 분류 (이전의 "공개 함수 가정"은 보안·비용 관점에서 거부)
         result.tokenGeneration.method = "none";
-        result.tokenGeneration.success = true;
-        result.tokenGeneration.message = "인증 없음 (공개 함수 가정)";
-    }
-
-    // 2. API 연결 테스트 (간단한 Health Check)
-    try {
-        const headers: Record<string, string> = {
-            "Content-Type": "application/json",
-        };
-
-        if (authToken) {
-            headers["Authorization"] = `Bearer ${authToken}`;
-        }
-
-        const startTime = Date.now();
-
-        // 아주 작은 테스트 이미지 (1x1 투명 PNG)
-        const testImage = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
-
-        const response = await fetch(CLOUD_RUN_OCR_URL, {
-            method: "POST",
-            headers,
-            body: JSON.stringify({
-                image: testImage,
-                mimeType: "image/png",
-            }),
-            signal: AbortSignal.timeout(30000),
-        });
-
-        result.apiConnection.latencyMs = Date.now() - startTime;
-        result.apiConnection.statusCode = response.status;
-
-        if (response.ok) {
-            result.apiConnection.success = true;
-            result.apiConnection.message = `연결 성공 (응답 시간: ${result.apiConnection.latencyMs}ms)`;
-            result.overallStatus = "connected";
-        } else {
-            // 403은 인증 문제, 400/500은 API 문제
-            const errorText = await response.text().catch(() => "");
-            result.apiConnection.success = false;
-            result.apiConnection.message = `API 오류: ${response.status} - ${errorText.substring(0, 100)}`;
-            result.overallStatus = response.status === 403 ? "token_error" : "api_error";
-        }
-    } catch (error) {
+        result.tokenGeneration.success = false;
+        result.tokenGeneration.message = "인증 정보 미설정 (GOOGLE_SERVICE_ACCOUNT_KEY 또는 CLOUD_RUN_OCR_AUTH_TOKEN 필요)";
         result.apiConnection.success = false;
-        result.apiConnection.message = `연결 실패: ${error instanceof Error ? error.message : "알 수 없는 오류"}`;
-        result.overallStatus = "api_error";
+        result.apiConnection.message = "인증 정보가 없어 연결을 확인할 수 없습니다.";
+        result.overallStatus = "token_error";
+        return result;
     }
+
+    // 토큰 발급이 성공했다면 연결 가능 상태로 판단 (실제 OCR 호출은 비용이 발생하므로 생략)
+    result.apiConnection.latencyMs = Date.now() - startTime;
+    result.apiConnection.statusCode = 200;
+    result.apiConnection.success = true;
+    result.apiConnection.message = `토큰 검증 통과 (${result.apiConnection.latencyMs}ms). 실제 OCR 호출은 사용자 요청 시 수행됩니다.`;
+    result.overallStatus = "connected";
 
     return result;
 }
@@ -348,10 +321,13 @@ export async function batchProcessOCR(batchSize: number = 50) {
     }
 
     // OCR 처리가 필요한 기록만 필터링
+    // 비용 보호: 'failed' 상태의 기록은 일괄 처리에서 제외합니다.
+    // (같은 이미지가 OCR에 계속 실패하는 경우 매번 일괄 처리 시 Vision API 호출이 반복되어 비용이 폭증할 수 있음)
+    // failed 상태 기록은 사용자가 명시적으로 retry 버튼을 누르거나, 별도 도구로 개별 재처리해야 합니다.
     const notesToProcess = notesNeedingOCR.filter(note => {
         const status = transcriptionMap.get(note.id);
-        // transcription이 없거나 status가 'failed'인 경우만 처리
-        return !status || status === "failed";
+        // transcription이 아예 없는 경우만 처리 (한 번도 시도하지 않은 기록)
+        return !status;
     });
 
     if (notesToProcess.length === 0) {
