@@ -7,6 +7,8 @@ import { StampCard } from "./stamp-card";
 import { Button } from "@/components/ui/button";
 import { Loader2, StampIcon } from "lucide-react";
 import { useStampCapture } from "@/hooks/use-stamp-capture";
+import { useRecordSheetStore } from "@/hooks/use-record-sheet";
+import { isRecordV2Enabled } from "@/lib/feature-flags";
 
 interface StampCollectionGridProps {
   userBookId?: string;
@@ -32,6 +34,11 @@ export function StampCollectionGrid({
   const [nextCursor, setNextCursor] = useState<string | null>(initialNextCursor);
   const [isLoading, setIsLoading] = useState(!initialStamps);
   const stampCapture = useStampCapture();
+  const openRecordStart = useRecordSheetStore((s) => s.openStart);
+  const handleCaptureClick = () => {
+    if (isRecordV2Enabled()) openRecordStart();
+    else stampCapture.open();
+  };
 
   const loadInitial = useCallback(async () => {
     setIsLoading(true);
@@ -90,7 +97,7 @@ export function StampCollectionGrid({
         {showCaptureCTA && (
           <Button
             type="button"
-            onClick={() => stampCapture.open()}
+            onClick={handleCaptureClick}
             className="bg-emerald-600 text-white hover:bg-emerald-700"
           >
             바로 기록하기
@@ -106,7 +113,7 @@ export function StampCollectionGrid({
         {showCaptureCTA && (
           <button
             type="button"
-            onClick={() => stampCapture.open()}
+            onClick={handleCaptureClick}
             className="flex aspect-square w-full items-center justify-center rounded-lg border-2 border-dashed border-emerald-200 bg-emerald-50/50 text-emerald-600 transition-colors hover:border-emerald-400 hover:bg-emerald-50 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-400"
             aria-label="새 스탬프 찍기"
           >

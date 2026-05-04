@@ -28,6 +28,8 @@ import { useEffect, useState, useCallback } from "react";
 import { useTranslation } from "@/lib/i18n";
 import { useQuickCaptureStore } from "@/hooks/use-quick-capture";
 import { useStampCaptureStore } from "@/hooks/use-stamp-capture";
+import { useRecordSheetStore, type RecordSheetBook } from "@/hooks/use-record-sheet";
+import { isRecordV2Enabled } from "@/lib/feature-flags";
 import { useContinueReading } from "@/hooks/use-continue-reading";
 
 /**
@@ -87,6 +89,7 @@ export function Sidebar() {
   const openWithBook = useQuickCaptureStore((s) => s.openWithBook);
   const openStampCapture = useStampCaptureStore((s) => s.open);
   const openStampWithBook = useStampCaptureStore((s) => s.openWithBook);
+  const openRecordStart = useRecordSheetStore((s) => s.openStart);
 
   // 이어읽기 책 (공용 훅 — visibilitychange 자동 갱신 포함)
   const { continueBook } = useContinueReading(user ?? null);
@@ -100,19 +103,29 @@ export function Sidebar() {
   }, [continueBook, openWithBook, openQuickCapture]);
 
   const handleStampCapture = useCallback(() => {
-    if (continueBook) {
-      openStampWithBook({
-        id: continueBook.id,
-        bookId: continueBook.bookId,
-        title: continueBook.title,
-        author: continueBook.author,
-        coverImageUrl: continueBook.coverImageUrl,
-        totalPages: null,
-      });
+    const book: RecordSheetBook | null = continueBook
+      ? {
+          id: continueBook.id,
+          bookId: continueBook.bookId,
+          title: continueBook.title,
+          author: continueBook.author,
+          coverImageUrl: continueBook.coverImageUrl,
+          totalPages: null,
+        }
+      : null;
+
+    // Phase 5 카나리: V2 ON이면 새 RecordSheet, OFF면 기존 StampCaptureSheet
+    if (isRecordV2Enabled()) {
+      openRecordStart({ book });
+      return;
+    }
+
+    if (book) {
+      openStampWithBook(book);
     } else {
       openStampCapture();
     }
-  }, [continueBook, openStampWithBook, openStampCapture]);
+  }, [continueBook, openStampWithBook, openStampCapture, openRecordStart]);
 
   const renderNavItem = useCallback((item: SidebarItem) => {
     const Icon = item.icon;
