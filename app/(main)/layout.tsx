@@ -12,7 +12,6 @@ import { MusicMiniPlayer } from "@/components/music/music-mini-player";
 import { CommandPalette } from "@/components/search/command-palette";
 import { StampCaptureSheet } from "@/components/stamps/stamp-capture-sheet";
 import { RecordSheet } from "@/components/records/record-sheet";
-import { MusicChangeSheet } from "@/components/records/music-change-sheet";
 
 /**
  * 메인 레이아웃
@@ -49,7 +48,6 @@ export default function MainLayout({
         <QuickCaptureAdapter />
         <StampCaptureSheet />
         <RecordSheet />
-        <MusicChangeSheet />
         <CommandPalette />
         <UpgradeModal />
       </div>

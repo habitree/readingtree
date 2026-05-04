@@ -680,6 +680,9 @@ export async function reapOrphanSessions(
  *  - music_playlist_id = string → 음악 추가/변경 (이전 NULL이면 music_started_at 자동)
  *  - music_playlist_id = null → 음악 정지 (DB는 NULL로 유지, music_started_at는 보존)
  *  - target_seconds 옵션으로 진행 중 목표 시간 변경 가능 ("+15분 더" 등)
+ *
+ * @deprecated 음악·기록 완전 분리 (2026-05-05) — 현재 호출처 0.
+ *   향후 통합 재개 시 부활 가능. DB 컬럼·이벤트 타입은 보존.
  */
 export async function attachMusicToSession(
   input: {
