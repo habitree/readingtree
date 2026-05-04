@@ -14,7 +14,7 @@ import { useHapticFeedback } from "@/components/ui/touch-feedback";
 import { useTranslation } from "@/lib/i18n";
 import { formatSmartDate } from "@/lib/utils/date";
 import { updateBookProgress } from "@/app/actions/books";
-import { useMusicPlayer } from "@/hooks/use-music-player";
+import { useRecordSheetStore } from "@/hooks/use-record-sheet";
 import { toast } from "sonner";
 import { BookCompletionDialog } from "@/components/books/book-completion-dialog";
 
@@ -65,14 +65,17 @@ export const ContinueReadingCard = memo(function ContinueReadingCard({
   const handleStartReading = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
-    const { setActiveBook, openTimerSheet } = useMusicPlayer.getState();
-    setActiveBook({
-      userBookId,
-      bookId: bookId || userBookId,
-      title,
-      coverUrl: coverImageUrl,
+    // 음악과 분리 (2026-05-05) — 기록 세션만 시작
+    useRecordSheetStore.getState().openStart({
+      book: {
+        id: userBookId,
+        bookId: bookId || userBookId,
+        title,
+        author: null,
+        coverImageUrl,
+        totalPages: null,
+      },
     });
-    openTimerSheet();
   }, [userBookId, bookId, title, coverImageUrl]);
 
   // 뒤로가기 등으로 경로가 변경되면 네비게이션 상태 리셋

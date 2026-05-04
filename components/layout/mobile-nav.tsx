@@ -116,14 +116,13 @@ export function MobileNav() {
               : false;
             const key = item.href || `action-${item.action}-${index}`;
 
-            // 음악 버튼
+            // 음악 버튼 (단순화 — 음악 시트만 열기)
             if (item.action === "music") {
-              const timerStatus = useMusicPlayer.getState().timerStatus;
-              const isPlaying = timerStatus === "running" || timerStatus === "paused";
+              const isPlaying = useMusicPlayer.getState().isPlaying;
               return (
                 <button
                   key={key}
-                  onClick={() => useMusicPlayer.getState().openTimerSheet()}
+                  onClick={() => useMusicPlayer.getState().openMusicSheet()}
                   className="flex-1 min-h-[44px]"
                   aria-label="음악"
                 >

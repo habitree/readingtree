@@ -56,7 +56,7 @@ export function TrackListSheet() {
   function handleSelectFromAll(track: MusicTrack) {
     const tracks = getFilteredTracks();
     const idx = tracks.findIndex((t) => t.id === track.id);
-    loadPlaylist(tracks, idx >= 0 ? idx : 0);
+    loadPlaylist(tracks, undefined, idx >= 0 ? idx : 0);
     setTimeout(() => useMusicPlayer.getState().play(), 100);
     closeTrackList();
   }

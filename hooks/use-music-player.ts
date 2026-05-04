@@ -1,20 +1,24 @@
 "use client";
 
+/**
+ * useMusicPlayer (단순화 — 2026-05-05 분리 단계 C)
+ *
+ * 음악 재생만 담당. 기록·세션·타이머 책임 모두 제거 — 완전 분리 (사용자 결정).
+ *
+ * 폐기된 영역 (이전 코드):
+ *   - timerStatus / targetSeconds / remainingSeconds / elapsedSeconds / timerStartedAt / isUnlimited
+ *   - startTimer / startUnlimitedTimer / pauseTimer / resumeTimer / tickTimer
+ *   - completeTimer / continueReading / stopTimer
+ *   - openTimerSheet / closeTimerSheet / closeCompleteDialog
+ *   - activeBook / setActiveBook
+ * → 모두 사용자 요구로 제거. 기록은 RecordSheet 도메인에서만 처리.
+ */
+
 import { create } from "zustand";
 import type { MusicTrack } from "@/types/music";
-import { getDefaultPlaylistTracks, getPlaylistTracks } from "@/lib/music";
-
-export type TimerStatus = "idle" | "running" | "paused" | "completed";
-
-export interface ActiveBook {
-  userBookId: string;
-  bookId: string;
-  title: string;
-  coverUrl: string | null;
-}
 
 interface MusicPlayerState {
-  // ── 음악 상태 ──
+  // ── 음악 상태 (재생만) ──
   isVisible: boolean;
   isPlaying: boolean;
   currentTrack: MusicTrack | null;
@@ -23,24 +27,15 @@ interface MusicPlayerState {
   volume: number;
   currentTime: number;
   duration: number;
+  selectedPlaylistId: string | null;
 
-  // ── 타이머 상태 ──
-  timerStatus: TimerStatus;
-  targetSeconds: number;
-  remainingSeconds: number;
-  elapsedSeconds: number;
-  timerStartedAt: string | null;
-  isUnlimited: boolean;
-  isTimerSheetOpen: boolean;
-  isCompleteDialogOpen: boolean;
+  // ── 시트 토글 (음악 시트만) ──
+  isMusicSheetOpen: boolean;
   isTrackListOpen: boolean;
   isVolumeOpen: boolean;
 
-  // ── 독서 연결 ──
-  activeBook: ActiveBook | null;
-
   // ── 음악 액션 ──
-  loadPlaylist: (tracks: MusicTrack[], startIndex?: number) => void;
+  loadPlaylist: (tracks: MusicTrack[], playlistId?: string, startIndex?: number) => void;
   selectTrack: (index: number) => void;
   play: () => void;
   pause: () => void;
@@ -51,46 +46,19 @@ interface MusicPlayerState {
   setVolume: (vol: number) => void;
   updateTime: (current: number, dur: number) => void;
 
-  // ── 타이머 액션 ──
-  selectedPlaylistId: string | null;
-  startTimer: (seconds: number, playlistId?: string, startIndex?: number) => void;
-  startUnlimitedTimer: (playlistId?: string, startIndex?: number) => void;
-  pauseTimer: () => void;
-  resumeTimer: () => void;
-  tickTimer: () => void;
-  completeTimer: () => void;
-  continueReading: (seconds: number) => void;
-  stopTimer: () => void;
-  openTimerSheet: () => void;
-  closeTimerSheet: () => void;
-  closeCompleteDialog: () => void;
+  // ── UI 시트 ──
+  openMusicSheet: () => void;
+  closeMusicSheet: () => void;
   openTrackList: () => void;
   closeTrackList: () => void;
   toggleVolume: () => void;
 
-  // ── 독서 연결 액션 ──
-  setActiveBook: (book: ActiveBook | null) => void;
-
-  // ── 공통 ──
+  // ── 전체 종료 (audio 정지 + UI 닫기) ──
   close: () => void;
 }
 
-const INITIAL_TIMER = {
-  timerStatus: "idle" as TimerStatus,
-  targetSeconds: 0,
-  remainingSeconds: 0,
-  timerStartedAt: null as string | null,
-  isUnlimited: false,
-  isTrackListOpen: false,
-  isVolumeOpen: false,
-  elapsedSeconds: 0,
-  isTimerSheetOpen: false,
-  isCompleteDialogOpen: false,
-  activeBook: null as ActiveBook | null,
-};
-
 export const useMusicPlayer = create<MusicPlayerState>((set, get) => ({
-  // ── 초기값 ──
+  // 초기값
   isVisible: false,
   isPlaying: false,
   currentTrack: null,
@@ -100,11 +68,11 @@ export const useMusicPlayer = create<MusicPlayerState>((set, get) => ({
   currentTime: 0,
   duration: 0,
   selectedPlaylistId: null,
-  ...INITIAL_TIMER,
+  isMusicSheetOpen: false,
+  isTrackListOpen: false,
+  isVolumeOpen: false,
 
-  // ── 음악 액션 ──
-  loadPlaylist: (tracks, startIndex) => {
-    // 기본 랜덤 재생: startIndex 미지정 시 랜덤 트랙부터 시작
+  loadPlaylist: (tracks, playlistId, startIndex) => {
     const idx = startIndex ?? (tracks.length > 0 ? Math.floor(Math.random() * tracks.length) : 0);
     set({
       playlist: tracks,
@@ -114,6 +82,7 @@ export const useMusicPlayer = create<MusicPlayerState>((set, get) => ({
       isPlaying: false,
       currentTime: 0,
       duration: tracks[idx]?.durationSeconds ?? 0,
+      selectedPlaylistId: playlistId ?? get().selectedPlaylistId,
     });
   },
 
@@ -137,7 +106,6 @@ export const useMusicPlayer = create<MusicPlayerState>((set, get) => ({
   next: () => {
     const { playlist, currentIndex } = get();
     if (playlist.length === 0) return;
-    // 랜덤 재생: 현재 트랙을 제외한 랜덤 인덱스 선택
     let nextIndex: number;
     if (playlist.length === 1) {
       nextIndex = 0;
@@ -180,134 +148,12 @@ export const useMusicPlayer = create<MusicPlayerState>((set, get) => ({
   setVolume: (vol) => set({ volume: Math.max(0, Math.min(1, vol)) }),
   updateTime: (current, dur) => set({ currentTime: current, duration: dur }),
 
-  // ── 타이머 액션 ──
-  // startIndex 미지정 시 매 호출마다 랜덤 선택 (초기 재생 트랙 랜덤화)
-  startTimer: (seconds, playlistId, startIndex) => {
-    const tracks = playlistId
-      ? getPlaylistTracks(playlistId)
-      : getDefaultPlaylistTracks();
-    if (tracks.length === 0) return;
-    const idx =
-      startIndex !== undefined && startIndex >= 0 && startIndex < tracks.length
-        ? startIndex
-        : Math.floor(Math.random() * tracks.length);
-    const track = tracks[idx];
-    set({
-      playlist: tracks,
-      currentIndex: idx,
-      currentTrack: track ?? null,
-      isVisible: true,
-      isPlaying: true,
-      currentTime: 0,
-      duration: track?.durationSeconds ?? 0,
-      selectedPlaylistId: playlistId ?? "comfortable",
-      timerStatus: "running",
-      targetSeconds: seconds,
-      remainingSeconds: seconds,
-      elapsedSeconds: 0,
-      timerStartedAt: new Date().toISOString(),
-      isTimerSheetOpen: false,
-      isCompleteDialogOpen: false,
-    });
-  },
-
-  startUnlimitedTimer: (playlistId, startIndex) => {
-    const tracks = playlistId
-      ? getPlaylistTracks(playlistId)
-      : getDefaultPlaylistTracks();
-    if (tracks.length === 0) return;
-    const idx =
-      startIndex !== undefined && startIndex >= 0 && startIndex < tracks.length
-        ? startIndex
-        : Math.floor(Math.random() * tracks.length);
-    const track = tracks[idx];
-    set({
-      playlist: tracks,
-      currentIndex: idx,
-      currentTrack: track ?? null,
-      isVisible: true,
-      isPlaying: true,
-      currentTime: 0,
-      duration: track?.durationSeconds ?? 0,
-      selectedPlaylistId: playlistId ?? "comfortable",
-      timerStatus: "running",
-      targetSeconds: 0,
-      remainingSeconds: 0,
-      elapsedSeconds: 0,
-      isUnlimited: true,
-      timerStartedAt: new Date().toISOString(),
-      isTimerSheetOpen: false,
-      isCompleteDialogOpen: false,
-    });
-  },
-
-  pauseTimer: () =>
-    set({ timerStatus: "paused", isPlaying: false }),
-
-  resumeTimer: () =>
-    set({ timerStatus: "running", isPlaying: true }),
-
-  tickTimer: () => {
-    const { remainingSeconds, timerStatus, isUnlimited } = get();
-    if (timerStatus !== "running") return;
-    if (!isUnlimited && remainingSeconds <= 1) {
-      get().completeTimer();
-      return;
-    }
-    set((s) => ({
-      remainingSeconds: isUnlimited ? s.remainingSeconds : s.remainingSeconds - 1,
-      elapsedSeconds: s.elapsedSeconds + 1,
-    }));
-  },
-
-  completeTimer: () =>
-    set({
-      timerStatus: "completed",
-      remainingSeconds: 0,
-      isPlaying: false,
-      isCompleteDialogOpen: true,
-    }),
-
-  continueReading: (seconds) => {
-    const unlimited = seconds === Infinity;
-    set({
-      timerStatus: "running",
-      targetSeconds: unlimited ? 0 : seconds,
-      remainingSeconds: unlimited ? 0 : seconds,
-      isUnlimited: unlimited,
-      isPlaying: true,
-      isCompleteDialogOpen: false,
-      elapsedSeconds: 0,
-      timerStartedAt: new Date().toISOString(),
-    });
-  },
-
-  stopTimer: () => {
-    const { elapsedSeconds } = get();
-    // 경과 시간이 있으면 완료 팝업 표시
-    if (elapsedSeconds > 0) {
-      set({
-        timerStatus: "completed",
-        remainingSeconds: 0,
-        isPlaying: false,
-        isCompleteDialogOpen: true,
-      });
-    } else {
-      set({ ...INITIAL_TIMER, isPlaying: false });
-    }
-  },
-
-  openTimerSheet: () => set({ isTimerSheetOpen: true }),
-  closeTimerSheet: () => set({ isTimerSheetOpen: false }),
-  closeCompleteDialog: () => set({ isCompleteDialogOpen: false }),
+  openMusicSheet: () => set({ isMusicSheetOpen: true }),
+  closeMusicSheet: () => set({ isMusicSheetOpen: false }),
   openTrackList: () => set({ isTrackListOpen: true }),
   closeTrackList: () => set({ isTrackListOpen: false }),
   toggleVolume: () => set((s) => ({ isVolumeOpen: !s.isVolumeOpen })),
 
-  // ── 독서 연결 ──
-  setActiveBook: (book) => set({ activeBook: book }),
-
-  // ── 전체 종료 ──
   close: () =>
     set({
       isVisible: false,
@@ -317,6 +163,8 @@ export const useMusicPlayer = create<MusicPlayerState>((set, get) => ({
       currentIndex: 0,
       currentTime: 0,
       duration: 0,
-      ...INITIAL_TIMER,
+      isTrackListOpen: false,
+      isVolumeOpen: false,
+      // selectedPlaylistId는 보존 (다음 재생 시 prefill)
     }),
 }));
