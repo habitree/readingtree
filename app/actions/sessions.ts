@@ -172,6 +172,12 @@ export async function startReadingSession(
       status: "in_progress",
       client_session_id: input.client_session_id ?? null,
       app_version: input.app_version ?? null,
+      // Phase 8.A — 음악 통합 (NULL 허용 — 음악 없이도 시작 가능)
+      target_seconds: input.target_seconds ?? null,
+      music_playlist_id: input.music_playlist_id ?? null,
+      music_started_at: input.music_playlist_id
+        ? (input.music_started_at ?? startedAt)
+        : null,
     })
     .select("id, started_at")
     .single();
@@ -210,6 +216,9 @@ export async function startReadingSession(
       has_target_seconds: !!input.target_seconds,
       target_seconds: input.target_seconds ?? null,
       start_page: startPage,
+      // Phase 8.A
+      has_music: !!input.music_playlist_id,
+      music_playlist_id: input.music_playlist_id ?? null,
     },
   });
 
@@ -430,6 +439,11 @@ export async function getActiveSession(
     image_urls: ((row.image_urls as string[] | null) ?? []) as string[],
     client_session_id: (row.client_session_id as string | null) ?? null,
     app_version: (row.app_version as string | null) ?? null,
+    // 음악 통합 (Phase 8.A)
+    target_seconds: (row.target_seconds as number | null) ?? null,
+    music_playlist_id: (row.music_playlist_id as string | null) ?? null,
+    music_track_ids: ((row.music_track_ids as string[] | null) ?? []) as string[],
+    music_started_at: (row.music_started_at as string | null) ?? null,
     book: book
       ? {
           id: book.id,

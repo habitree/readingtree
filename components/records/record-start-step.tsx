@@ -24,6 +24,11 @@ import { cn } from "@/lib/utils";
 import { startReadingSession } from "@/app/actions/sessions";
 import { getLastEndPage } from "@/app/actions/progress";
 import { QuickBookSelector } from "@/components/books/quick-book-selector";
+import { PlaylistMiniPicker } from "@/components/music/playlist-mini-picker";
+import { getGlobalAudio } from "@/components/music/music-mini-player";
+import { getPlaylistTracks } from "@/lib/music";
+import { loadLastPlaylistId, saveLastPlaylistId } from "@/lib/music/last-playlist";
+import { useMusicPlayer } from "@/hooks/use-music-player";
 import {
   broadcastSessionStarted,
   generateClientSessionId,
@@ -49,6 +54,8 @@ export function RecordStartStep({ selectedBook, prefillTargetSeconds, prefillSta
   const [targetSeconds, setTargetSeconds] = useState<number>(prefillTargetSeconds ?? 25 * 60);
   const [isPending, startTransition] = useTransition();
   const [isPickerOpen, setIsPickerOpen] = useState(false);
+  // Phase 8.B — 음악 옵션 (D10: 마지막 선택 prefill, NULL = 음악 없이)
+  const [musicPlaylistId, setMusicPlaylistId] = useState<string | null>(() => loadLastPlaylistId());
   const { setPendingClientSessionId } = useReadingSessionStore();
   const { close, selectBook } = useRecordSheetStore();
 
@@ -76,20 +83,55 @@ export function RecordStartStep({ selectedBook, prefillTargetSeconds, prefillSta
   }, [selectedBook, prefillStartPage]);
 
   const handleStart = () => {
+    // (1) 음악 시작 — 사용자 클릭 컨텍스트에서 동기 호출 (autoplay 정책 W1)
+    let preparedTracks: ReturnType<typeof getPlaylistTracks> = [];
+    let randomStartIdx = 0;
+    if (musicPlaylistId) {
+      preparedTracks = getPlaylistTracks(musicPlaylistId);
+      if (preparedTracks.length > 0) {
+        randomStartIdx = Math.floor(Math.random() * preparedTracks.length);
+        const audio = getGlobalAudio();
+        const startTrack = preparedTracks[randomStartIdx];
+        if (audio && startTrack) {
+          audio.src = startTrack.sourceUrl;
+          audio.volume = useMusicPlayer.getState().volume;
+          audio.play().catch(() => {
+            // 재생 실패는 조용히 — 세션은 그래도 시작
+          });
+        }
+      }
+    }
+
     startTransition(async () => {
       const clientSessionId = generateClientSessionId();
       setPendingClientSessionId(clientSessionId);
+      const startedAtIso = new Date().toISOString();
       try {
         const result = await startReadingSession({
           user_book_id: selectedBook?.id,
           start_page: startPage,
           target_seconds: targetSeconds || undefined,
           client_session_id: clientSessionId,
+          music_playlist_id: musicPlaylistId ?? undefined,
+          music_started_at: musicPlaylistId ? startedAtIso : undefined,
         });
         broadcastSessionStarted(result.sessionId);
+
+        // (2) 음악 zustand 동기화 (UI만 — audio는 이미 재생 중)
+        if (musicPlaylistId && preparedTracks.length > 0) {
+          useMusicPlayer.getState().loadPlaylist(preparedTracks, randomStartIdx);
+          useMusicPlayer.getState().play();
+          saveLastPlaylistId(musicPlaylistId);
+        }
+
         toast.success(result.isResumed ? "이전 기록을 이어갑니다" : "기록을 시작했어요");
         close();
       } catch (err) {
+        // 세션 시작 실패 시 음악도 정지
+        if (musicPlaylistId) {
+          const audio = getGlobalAudio();
+          audio?.pause();
+        }
         const msg = err instanceof Error ? err.message : "기록 시작에 실패했어요.";
         toast.error(msg);
       } finally {
@@ -237,6 +279,18 @@ export function RecordStartStep({ selectedBook, prefillTargetSeconds, prefillSta
         </div>
         <p className="text-xs text-slate-400">
           시간은 안내용이에요. 실제 기록 시간은 종료 시점까지 자동으로 측정됩니다.
+        </p>
+      </div>
+
+      {/* 배경음악 (Phase 8.B) */}
+      <div className="space-y-2">
+        <PlaylistMiniPicker
+          value={musicPlaylistId}
+          onChange={setMusicPlaylistId}
+          disabled={isPending}
+        />
+        <p className="text-xs text-slate-400">
+          기록 시작과 함께 음악이 재생됩니다. 진행 중에도 인디케이터에서 변경할 수 있어요.
         </p>
       </div>
 

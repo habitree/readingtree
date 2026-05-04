@@ -821,6 +821,11 @@ export async function getReadingStamps(
       image_urls: (sessionRow.image_urls as string[] | null | undefined) ?? (row.image_url ? [row.image_url] : []),
       client_session_id: (sessionRow.client_session_id as string | null | undefined) ?? null,
       app_version: (sessionRow.app_version as string | null | undefined) ?? null,
+      // 음악 통합 (Phase 8.A) — 마이그 적용 전에는 fallback 기본값
+      target_seconds: (sessionRow.target_seconds as number | null | undefined) ?? null,
+      music_playlist_id: (sessionRow.music_playlist_id as string | null | undefined) ?? null,
+      music_track_ids: (sessionRow.music_track_ids as string[] | null | undefined) ?? [],
+      music_started_at: (sessionRow.music_started_at as string | null | undefined) ?? null,
     };
   });
 

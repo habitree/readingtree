@@ -54,6 +54,11 @@ export interface ReadingLog {
   image_urls: string[];
   client_session_id: string | null;
   app_version: string | null;
+  // 음악 통합 (Phase 8.A) — migration-202605051200
+  target_seconds: number | null;
+  music_playlist_id: string | null;
+  music_track_ids: string[];
+  music_started_at: string | null;
 }
 
 /**
@@ -77,6 +82,8 @@ export interface ReadingLogActive extends ReadingLog {
  * - start_page 미지정 시 getLastEndPage(user_book_id) 자동승계
  * - target_seconds 0/미지정 = 무제한
  * - client_session_id = 멱등키 (다중 탭 race 방지)
+ * - music_playlist_id (Phase 8.A): 음악 동시 시작 (NULL = 음악 없이)
+ * - music_started_at (Phase 8.A): 음악 시작 시각, 보통 startedAt과 동일
  */
 export interface StartSessionInput {
   user_book_id?: string;
@@ -84,6 +91,8 @@ export interface StartSessionInput {
   target_seconds?: number;
   client_session_id?: string;
   app_version?: string;
+  music_playlist_id?: string;
+  music_started_at?: string;
 }
 
 /**
