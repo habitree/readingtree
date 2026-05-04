@@ -14,7 +14,10 @@ import { useLoginPrompt } from "@/hooks/use-login-prompt";
 import { LoginPromptModal } from "@/components/ui/login-prompt-modal";
 import { saveReadingSession } from "@/app/actions/progress";
 import { useStampCaptureStore } from "@/hooks/use-stamp-capture";
+import { useRecordSheetStore, type RecordSheetBook } from "@/hooks/use-record-sheet";
+import { useReadingSession } from "@/hooks/use-reading-session";
 import { showSaveSuccessToast } from "@/lib/utils/stamp-toast";
+import { isRecordV2Enabled } from "@/lib/feature-flags";
 import {
   BookOpen,
   PenLine,
@@ -65,8 +68,11 @@ export function ReadingCompleteDialog() {
   const [memo, setMemo] = useState("");
   const openStampWithTimer = useStampCaptureStore((s) => s.openWithTimer);
   const openStampAttach = useStampCaptureStore((s) => s.openAttach);
+  const openRecordStart = useRecordSheetStore((s) => s.openStart);
+  const openRecordEnd = useRecordSheetStore((s) => s.openEnd);
+  const { session: activeSession } = useReadingSession();
 
-  function buildBookForStamp() {
+  function buildBookForStamp(): RecordSheetBook | null {
     return activeBook
       ? {
           id: activeBook.userBookId,
@@ -79,7 +85,12 @@ export function ReadingCompleteDialog() {
       : null;
   }
 
-  /** 메인 CTA: 기록하기 — StampCaptureSheet 열기 (시간/책 prefill, 사진은 시트 안에서 옵션) */
+  /**
+   * 메인 CTA: 기록하기
+   *  - V2 카나리 + 진행 중 세션 있음 → end-step 자동 진입
+   *  - V2 카나리 + 세션 없음 → start-step (음악 시간 prefill)
+   *  - Legacy → 기존 StampCaptureSheet 열기
+   */
   function handleOpenRecord() {
     if (
       requireLogin({
@@ -88,6 +99,18 @@ export function ReadingCompleteDialog() {
       })
     )
       return;
+
+    if (isRecordV2Enabled()) {
+      const book = buildBookForStamp();
+      if (activeSession) {
+        openRecordEnd(activeSession.id, { book });
+      } else {
+        openRecordStart({ book, targetSeconds: elapsedSeconds });
+      }
+      closeCompleteDialog();
+      close();
+      return;
+    }
 
     openStampWithTimer(buildBookForStamp(), elapsedSeconds);
     closeCompleteDialog();

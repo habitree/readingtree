@@ -26,6 +26,7 @@ import { useTranslation } from "@/lib/i18n";
 import { LanguageToggle } from "@/components/ui/language-toggle";
 import { MusicToggleButton } from "@/components/music/music-mini-player";
 import { NotificationBell } from "@/components/notifications/notification-bell";
+import { ActiveSessionIndicator } from "@/components/layout/active-session-indicator";
 
 /**
  * 헤더 컴포넌트
@@ -68,6 +69,10 @@ export function Header() {
 
         {/* 우측 메뉴 */}
         <div className="flex items-center gap-1.5 sm:gap-2 ml-auto shrink-0">
+          {/* 진행 중 세션 인디케이터 (D5: 음악과 별도 영역, 데스크톱에서만 hidden→inline) */}
+          <div className="hidden sm:inline-flex">
+            <ActiveSessionIndicator variant="pill" />
+          </div>
           <TooltipProvider>
             {/* 통합 검색 (Cmd+K) */}
             <Tooltip>

@@ -4,12 +4,31 @@
  */
 
 /**
+ * 세션 상태 (migration-202605040100 도입)
+ * - in_progress: 진행 중 (사용자당 1개만, D2)
+ * - completed: 완료 (기본, 기존 행 모두 포함)
+ * - abandoned: 취소 또는 12h orphan 자동 정리
+ */
+export type SessionStatus = "in_progress" | "completed" | "abandoned";
+
+/**
+ * 상세기록 분류 (migration-202605040300 도입)
+ * 기존 notes.type 5종(quote/photo/memo/transcription/progress)을
+ * 새 모델에서는 detail_kind(quote|memo|transcription)와 reading_logs(기록)로 분리.
+ */
+export type DetailKind = "quote" | "memo" | "transcription";
+
+/**
  * 독서 진행 로그 기본 타입
  *
  * 스탬프 컬럼(image_url, start_page, end_page, pace_seconds_per_page)은
  * migration-202604291200__reading_logs__add_stamp_columns.sql 로 추가됨.
  * - image_url IS NOT NULL → "스탬프"로 분류 (그리드 노출)
  * - pace_seconds_per_page 는 STORED generated column (Postgres 자동 계산)
+ *
+ * 세션 컬럼(status, bookmark_*, image_urls, client_session_id, app_version)은
+ * migration-202605040100__reading_logs__add_session_columns.sql 로 추가됨.
+ * - 기록 기능 전면 개편 Phase 1 (세션 모델 통합)
  */
 export interface ReadingLog {
   id: string;
@@ -28,6 +47,60 @@ export interface ReadingLog {
   promoted_at: string | null;
   created_at: string;
   updated_at: string;
+  // 세션 모델 (Phase 1)
+  status: SessionStatus;
+  bookmark_text: string | null;
+  bookmark_page: number | null;
+  image_urls: string[];
+  client_session_id: string | null;
+  app_version: string | null;
+}
+
+/**
+ * 진행 중 세션 — getActiveSession 반환 타입
+ * 책 정보 join 포함 (Active Pill 표시용)
+ */
+export interface ReadingLogActive extends ReadingLog {
+  status: "in_progress";
+  book?: {
+    id: string;
+    title: string;
+    author: string | null;
+    cover_image_url: string | null;
+    total_pages: number | null;
+  };
+}
+
+/**
+ * 세션 시작 입력 — startReadingSession 전용
+ * - user_book_id 미지정 시 READTREE_BOOK_ID 폴백
+ * - start_page 미지정 시 getLastEndPage(user_book_id) 자동승계
+ * - target_seconds 0/미지정 = 무제한
+ * - client_session_id = 멱등키 (다중 탭 race 방지)
+ */
+export interface StartSessionInput {
+  user_book_id?: string;
+  start_page?: number;
+  target_seconds?: number;
+  client_session_id?: string;
+  app_version?: string;
+}
+
+/**
+ * 세션 종료 입력 — endReadingSession 전용
+ * - end_page 필수 (start_page 미만 불가, 같음 허용)
+ * - bookmark_* (D1): 다음 시작점 한 줄 메모
+ * - image_urls (≤5): 첫 장 = 대표 (image_url 자동 동기 — DB 트리거)
+ * - 포인트는 D4 정책에 따라 1회만 적립
+ */
+export interface EndSessionInput {
+  session_id: string;
+  end_page: number;
+  memo?: string;
+  bookmark_text?: string;
+  bookmark_page?: number;
+  image_urls?: string[];
+  is_public?: boolean;
 }
 
 /**

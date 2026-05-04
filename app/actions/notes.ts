@@ -25,9 +25,21 @@ import { getSampleUserId } from "./sample";
  * 기록 생성
  * @param data 기록 데이터
  * @param user 선택적 사용자 정보 (전달되지 않으면 자동 조회)
+ *
+ * Phase 6 모니터링: type='photo' | 'progress' 사용은 새 모델에서 deprecated.
+ *   - photo → endReadingSession.image_urls
+ *   - progress → endReadingSession (세션 모델)
+ *   현재는 throw 없이 console.warn만 — 카나리 운영 데이터로 사용 빈도 추적 후 차단 예정.
  */
 export async function createNote(data: CreateNoteInput, user?: User | null) {
   const supabase = await createServerSupabaseClient();
+
+  // Phase 6 — 신규 photo/progress 사용 모니터링 (server log)
+  if (data.type === "photo" || data.type === "progress") {
+    console.warn(
+      `[deprecation] createNote(type=${data.type}) is being phased out — use endReadingSession (RecordSheet end-step). caller=${data.source_type ?? "unknown"}`,
+    );
+  }
 
   // 현재 사용자 확인
   let currentUser = user;
@@ -294,6 +306,9 @@ export async function createNote(data: CreateNoteInput, user?: User | null) {
  * @param content 자유 텍스트 (인용구/생각 자동 구분 없이 memo로 저장)
  * @param bookId user_books.id (선택, 없으면 READTREE_BOOK_ID)
  * @param readingDurationSeconds 독서 시간 (타이머 연동, 선택)
+ *
+ * @deprecated Phase 5 — 새 진입점은 `addNoteToSession` (sessionId NULL = 자유 상세 D3).
+ *   현재 호출처는 보존(QuickCapture 시트). Phase 6에서 상세기록 전용 시그니처로 정리 예정.
  */
 export async function createQuickNote(
   content: string,

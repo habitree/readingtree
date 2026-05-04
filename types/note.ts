@@ -8,6 +8,13 @@ export type NoteStatus = "draft" | "published";
 
 export type SourceType = "book" | "youtube" | "instagram" | "article" | "other";
 
+/**
+ * 상세기록 분류 (migration-202605040300 도입)
+ * 기록 기능 전면 개편 Phase 1 — quote/memo/transcription 3종으로 통합.
+ * NULL = legacy (기존 photo/progress 등).
+ */
+export type DetailKind = "quote" | "memo" | "transcription";
+
 export interface Note {
   id: string;
   user_id: string;
@@ -26,6 +33,26 @@ export interface Note {
   reading_duration_seconds: number | null;
   created_at: string;
   updated_at: string;
+  // 세션 연결 (Phase 1)
+  reading_log_id: string | null;
+  detail_kind: DetailKind | null;
+}
+
+/**
+ * 상세기록 추가 입력 — addNoteToSession 전용
+ * - sessionId NULL = 자유 상세 (D3)
+ * - detail_kind 필수: quote | memo | transcription
+ */
+export interface AddDetailInput {
+  detail_kind: DetailKind;
+  title?: string;
+  quote_content?: string;
+  memo_content?: string;
+  image_url?: string;
+  page_number?: string;
+  tags?: string[];
+  is_public?: boolean;
+  related_user_book_ids?: string[];
 }
 
 export interface NoteWithBook extends Note {

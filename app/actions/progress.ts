@@ -23,6 +23,10 @@ import { updateBookProgress } from "./books/progress";
  * 진행 로그 생성
  * @param data 진행 로그 데이터
  * @param user 선택적 사용자 정보 (전달되지 않으면 자동 조회)
+ *
+ * @deprecated Phase 5 — 새 진입점은 `endReadingSession` (즉석 완결 세션 패턴).
+ *   현재 호출처는 기존 동작 유지를 위해 보존. Phase 6에서 호출처 정리 후 thin wrapper로 축소 예정.
+ *   문서: doc/update/기록기획/phases/phase-5-integration.md
  */
 export async function createProgressLog(
   data: CreateReadingLogInput,
@@ -295,6 +299,10 @@ const MIN_SESSION_SECONDS = 30;
 /**
  * 음악 타이머 독서 세션 저장 (텍스트 불필요, 시간만 저장)
  * 책 미선택 시 READTREE_BOOK_ID 폴백
+ *
+ * @deprecated Phase 5 — 새 진입점은 `endReadingSession` (세션 모델).
+ *   `reading-complete-dialog.tsx`에서 `NEXT_PUBLIC_RECORD_V2=0`일 때 폴백으로 사용.
+ *   Phase 6에서 호출처 정리 후 thin wrapper로 축소 예정.
  */
 export async function saveReadingSession(
   data: SaveReadingSessionInput,
@@ -565,6 +573,10 @@ export async function getLastEndPage(
  * - start_page 미입력 시 직전 end_page 자동승계
  * - end_page 는 user_books.current_page 동기화
  * - earnPoints("note_create") 적립
+ *
+ * @deprecated Phase 5 — 새 진입점은 `endReadingSession` (사진은 image_urls 배열, DB 트리거가 image_url 미러링·promoted_at 자동).
+ *   `StampCaptureSheet`에서 `NEXT_PUBLIC_RECORD_V2=0`일 때 폴백으로 사용.
+ *   Phase 6에서 호출처 정리 후 thin wrapper로 축소 예정.
  */
 export async function createReadingStamp(
   input: CreateReadingStampInput,
@@ -775,6 +787,7 @@ export async function getReadingStamps(
       | { id: string; books?: { id: string; title: string; author: string | null; cover_image_url: string | null; total_pages: number | null } }
       | null;
     const book = userBooks?.books;
+    const sessionRow = row as Record<string, unknown>;
     return {
       id: row.id,
       user_id: row.user_id,
@@ -800,7 +813,14 @@ export async function getReadingStamps(
             total_pages: book.total_pages,
           }
         : undefined,
-      promoted_at: (row as { promoted_at?: string | null }).promoted_at ?? null,
+      promoted_at: (sessionRow.promoted_at as string | null | undefined) ?? null,
+      // 세션 컬럼 (Phase 1) — DB 마이그 적용 전에는 fallback 기본값
+      status: (sessionRow.status as ReadingStamp["status"]) ?? "completed",
+      bookmark_text: (sessionRow.bookmark_text as string | null | undefined) ?? null,
+      bookmark_page: (sessionRow.bookmark_page as number | null | undefined) ?? null,
+      image_urls: (sessionRow.image_urls as string[] | null | undefined) ?? (row.image_url ? [row.image_url] : []),
+      client_session_id: (sessionRow.client_session_id as string | null | undefined) ?? null,
+      app_version: (sessionRow.app_version as string | null | undefined) ?? null,
     };
   });
 
@@ -869,6 +889,8 @@ export async function attachStampToLog(
 
   const updatePayload: Record<string, unknown> = {
     image_url: input.image_url,
+    // Phase 6: image_urls 배열도 함께 갱신 (DB 트리거가 image_url[0] 미러링 책임지지만 명시)
+    image_urls: [input.image_url],
   };
   if (input.start_page !== undefined) updatePayload.start_page = newStartPage;
   if (input.end_page !== undefined) {

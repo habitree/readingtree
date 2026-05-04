@@ -1,0 +1,187 @@
+"use client";
+
+/**
+ * RecordSheet - Start Step
+ * 책 선택 + 시작 페이지 + 시간 옵션 → startReadingSession.
+ * 메모/사진 입력 없음 (가벼운 진입).
+ */
+
+import { useEffect, useState, useTransition } from "react";
+import { Loader2, Play } from "lucide-react";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
+import { startReadingSession } from "@/app/actions/sessions";
+import { getLastEndPage } from "@/app/actions/progress";
+import {
+  broadcastSessionStarted,
+  generateClientSessionId,
+  useReadingSessionStore,
+} from "@/hooks/use-reading-session";
+import { useRecordSheetStore, type RecordSheetBook } from "@/hooks/use-record-sheet";
+
+const TARGET_PRESETS = [
+  { label: "15분", seconds: 15 * 60 },
+  { label: "25분", seconds: 25 * 60 },
+  { label: "45분", seconds: 45 * 60 },
+  { label: "무제한", seconds: 0 },
+] as const;
+
+interface Props {
+  selectedBook: RecordSheetBook | null;
+  prefillTargetSeconds: number | null;
+  prefillStartPage: number | null;
+}
+
+export function RecordStartStep({ selectedBook, prefillTargetSeconds, prefillStartPage }: Props) {
+  const [startPage, setStartPage] = useState<number>(prefillStartPage ?? 0);
+  const [targetSeconds, setTargetSeconds] = useState<number>(prefillTargetSeconds ?? 25 * 60);
+  const [isPending, startTransition] = useTransition();
+  const { setPendingClientSessionId } = useReadingSessionStore();
+  const { close } = useRecordSheetStore();
+
+  // 시작 페이지 자동 prefill (selectedBook 변경 시)
+  useEffect(() => {
+    if (typeof prefillStartPage === "number") {
+      setStartPage(prefillStartPage);
+      return;
+    }
+    if (!selectedBook) {
+      setStartPage(0);
+      return;
+    }
+    let cancelled = false;
+    getLastEndPage(selectedBook.id)
+      .then((page) => {
+        if (!cancelled) setStartPage(page);
+      })
+      .catch(() => {
+        if (!cancelled) setStartPage(0);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedBook, prefillStartPage]);
+
+  const handleStart = () => {
+    startTransition(async () => {
+      const clientSessionId = generateClientSessionId();
+      setPendingClientSessionId(clientSessionId);
+      try {
+        const result = await startReadingSession({
+          user_book_id: selectedBook?.id,
+          start_page: startPage,
+          target_seconds: targetSeconds || undefined,
+          client_session_id: clientSessionId,
+        });
+        broadcastSessionStarted(result.sessionId);
+        toast.success(result.isResumed ? "이전 기록을 이어갑니다" : "기록을 시작했어요");
+        close();
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "기록 시작에 실패했어요.";
+        toast.error(msg);
+      } finally {
+        setPendingClientSessionId(null);
+      }
+    });
+  };
+
+  return (
+    <div className="space-y-5">
+      {/* 책 정보 */}
+      {selectedBook ? (
+        <div className="flex items-center gap-3 rounded-xl border border-emerald-100 bg-emerald-50/50 p-3 dark:border-emerald-900 dark:bg-emerald-950/30">
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-semibold text-slate-900 dark:text-white">
+              {selectedBook.title}
+            </p>
+            {selectedBook.author && (
+              <p className="truncate text-xs text-slate-500 dark:text-slate-400">
+                {selectedBook.author}
+              </p>
+            )}
+          </div>
+        </div>
+      ) : (
+        <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-3 text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-900/50 dark:text-slate-400">
+          책을 선택하지 않으면 자유 기록으로 저장됩니다.
+        </div>
+      )}
+
+      {/* 시작 페이지 */}
+      <div className="space-y-2">
+        <Label htmlFor="record-start-page" className="text-sm font-medium">
+          시작 페이지
+        </Label>
+        <Input
+          id="record-start-page"
+          type="number"
+          inputMode="numeric"
+          min={0}
+          max={selectedBook?.totalPages ?? undefined}
+          value={startPage}
+          onChange={(e) => {
+            const v = Number(e.target.value);
+            setStartPage(Number.isFinite(v) && v >= 0 ? v : 0);
+          }}
+          disabled={isPending}
+        />
+        <p className="text-xs text-slate-400">
+          이전 기록의 끝 페이지가 자동으로 채워집니다. 다르게 시작하려면 수정하세요.
+        </p>
+      </div>
+
+      {/* 시간 옵션 */}
+      <div className="space-y-2">
+        <Label className="text-sm font-medium">예상 시간 (선택)</Label>
+        <div className="flex flex-wrap gap-2">
+          {TARGET_PRESETS.map((p) => (
+            <Button
+              key={p.label}
+              type="button"
+              variant={targetSeconds === p.seconds ? "default" : "outline"}
+              size="sm"
+              className={cn(
+                targetSeconds === p.seconds && "bg-emerald-600 text-white hover:bg-emerald-700",
+              )}
+              onClick={() => setTargetSeconds(p.seconds)}
+              disabled={isPending}
+            >
+              {p.label}
+            </Button>
+          ))}
+        </div>
+        <p className="text-xs text-slate-400">
+          시간은 안내용이에요. 실제 기록 시간은 종료 시점까지 자동으로 측정됩니다.
+        </p>
+      </div>
+
+      {/* 액션 */}
+      <div className="flex gap-2 pt-2">
+        <Button type="button" variant="outline" onClick={close} disabled={isPending} className="flex-1">
+          취소
+        </Button>
+        <Button
+          type="button"
+          onClick={handleStart}
+          disabled={isPending}
+          className="flex-1 bg-emerald-600 text-white hover:bg-emerald-700"
+        >
+          {isPending ? (
+            <>
+              <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+              시작 중…
+            </>
+          ) : (
+            <>
+              <Play className="mr-1 h-4 w-4" />
+              기록 시작
+            </>
+          )}
+        </Button>
+      </div>
+    </div>
+  );
+}

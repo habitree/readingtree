@@ -11,6 +11,7 @@ import { PageTracker } from "@/components/tracking/page-tracker";
 import { MusicMiniPlayer } from "@/components/music/music-mini-player";
 import { CommandPalette } from "@/components/search/command-palette";
 import { StampCaptureSheet } from "@/components/stamps/stamp-capture-sheet";
+import { RecordSheet } from "@/components/records/record-sheet";
 
 /**
  * 메인 레이아웃
@@ -46,6 +47,7 @@ export default function MainLayout({
         <PageTracker />
         <QuickCaptureAdapter />
         <StampCaptureSheet />
+        <RecordSheet />
         <CommandPalette />
         <UpgradeModal />
       </div>

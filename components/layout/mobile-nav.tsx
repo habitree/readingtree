@@ -14,6 +14,10 @@ import { useStampCaptureStore } from "@/hooks/use-stamp-capture";
 import { useMusicPlayer } from "@/hooks/use-music-player";
 import { useTranslation, type TranslationKey } from "@/lib/i18n";
 import { useContinueReading } from "@/hooks/use-continue-reading";
+import { useReadingSession } from "@/hooks/use-reading-session";
+import { useRecordSheetStore, type RecordSheetBook } from "@/hooks/use-record-sheet";
+import { RecordActivePill } from "@/components/records/record-active-pill";
+import { isRecordV2Enabled } from "@/lib/feature-flags";
 
 /**
  * 모바일 네비게이션 아이템 타입
@@ -57,6 +61,9 @@ export function MobileNav() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { isOpen, setIsOpen, title, description, requireLogin } = useLoginPrompt();
   const stampCapture = useStampCaptureStore();
+  const { session: activeSession, elapsedSeconds } = useReadingSession();
+  const openEndSheet = useRecordSheetStore((s) => s.openEnd);
+  const openStartSheet = useRecordSheetStore((s) => s.openStart);
 
   // 이어읽기 책 (공용 훅 — visibilitychange 자동 갱신 포함)
   const { continueBook } = useContinueReading(user ?? null);
@@ -69,20 +76,30 @@ export function MobileNav() {
       });
       return;
     }
-    // Stamp Capture 가 새 기본 기록 단위 — 사진+페이지+시간 통합
-    if (continueBook) {
-      stampCapture.openWithBook({
-        id: continueBook.id,
-        bookId: continueBook.bookId,
-        title: continueBook.title,
-        author: continueBook.author,
-        coverImageUrl: continueBook.coverImageUrl,
-        totalPages: null,
-      });
+    const book: RecordSheetBook | null = continueBook
+      ? {
+          id: continueBook.id,
+          bookId: continueBook.bookId,
+          title: continueBook.title,
+          author: continueBook.author,
+          coverImageUrl: continueBook.coverImageUrl,
+          totalPages: null,
+        }
+      : null;
+
+    // Phase 5 카나리: 새 RecordSheet 진입 (NEXT_PUBLIC_RECORD_V2=1)
+    if (isRecordV2Enabled()) {
+      openStartSheet({ book });
+      return;
+    }
+
+    // Legacy: Stamp Capture
+    if (book) {
+      stampCapture.openWithBook(book);
     } else {
       stampCapture.open();
     }
-  }, [user, requireLogin, stampCapture, continueBook, t]);
+  }, [user, requireLogin, stampCapture, openStartSheet, continueBook, t]);
 
   return (
     <>
@@ -153,6 +170,36 @@ export function MobileNav() {
 
             // 중앙 FAB 스타일 기록 버튼
             if (item.isFab) {
+              // Phase 4: 진행 중 세션이 있으면 인디케이터로 변형 (탭 → end-step 진입)
+              if (activeSession) {
+                const book: RecordSheetBook | null = activeSession.book
+                  ? {
+                      id: activeSession.user_book_id,
+                      bookId: activeSession.book.id,
+                      title: activeSession.book.title,
+                      author: activeSession.book.author,
+                      coverImageUrl: activeSession.book.cover_image_url,
+                      totalPages: activeSession.book.total_pages,
+                    }
+                  : null;
+                return (
+                  <div
+                    key={key}
+                    className="flex-1 min-h-[44px] flex items-center justify-center"
+                  >
+                    <div className="-mt-3">
+                      <RecordActivePill
+                        elapsedSeconds={elapsedSeconds}
+                        bookTitle={activeSession.book?.title}
+                        coverImageUrl={activeSession.book?.cover_image_url}
+                        variant="fab"
+                        onClick={() => openEndSheet(activeSession.id, { book })}
+                      />
+                    </div>
+                  </div>
+                );
+              }
+
               return (
                 <button
                   key={key}

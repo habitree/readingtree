@@ -7,6 +7,8 @@ import { Stamp, BookPlus, Camera, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useQuickCaptureStore } from "@/hooks/use-quick-capture";
 import { useStampCaptureStore } from "@/hooks/use-stamp-capture";
+import { useRecordSheetStore } from "@/hooks/use-record-sheet";
+import { isRecordV2Enabled } from "@/lib/feature-flags";
 
 type NoteMode = "stamp" | "memo" | "transcription";
 import { useLoginPrompt } from "@/hooks/use-login-prompt";
@@ -71,6 +73,7 @@ const QUICK_ACTION_KEYS = [
 export function MobileQuickActions() {
   const { open: openQuickCapture } = useQuickCaptureStore();
   const { open: openStampCapture } = useStampCaptureStore();
+  const openRecordStart = useRecordSheetStore((s) => s.openStart);
   const { isOpen, setIsOpen, title, description, requireLogin } = useLoginPrompt();
   const { t } = useTranslation();
 
@@ -81,18 +84,24 @@ export function MobileQuickActions() {
     description: t(k.descKey),
   }));
 
-  const handleSheetAction = useCallback((action: QuickActionItem) => {
+  // React 19 Compiler가 자동 메모화 — useCallback 제거
+  const handleSheetAction = (action: QuickActionItem) => {
     if (requireLogin({
       title: t("auth.loginToWrite"),
       description: t("auth.loginToWriteDesc"),
     })) return;
 
     if (action.sheetMode === "stamp") {
-      openStampCapture();
+      // Phase 5 카나리: 새 RecordSheet 진입
+      if (isRecordV2Enabled()) {
+        openRecordStart();
+      } else {
+        openStampCapture();
+      }
     } else if (action.sheetMode) {
       openQuickCapture();
     }
-  }, [openQuickCapture, openStampCapture, requireLogin, t]);
+  };
 
   const handleLinkClick = useCallback((e: React.MouseEvent, action: QuickActionItem) => {
     const isSearch = action.label === t("dashboard.quickSearch");
@@ -193,6 +202,14 @@ export function DesktopQuickActions() {
   const { t } = useTranslation();
   const { open: openQuickCapture } = useQuickCaptureStore();
   const { open: openStampCapture } = useStampCaptureStore();
+  const openRecordStart = useRecordSheetStore((s) => s.openStart);
+  const handleStampClick = () => {
+    if (isRecordV2Enabled()) {
+      openRecordStart();
+    } else {
+      openStampCapture();
+    }
+  };
 
   return (
     <div className="hidden sm:flex gap-2">
@@ -205,7 +222,7 @@ export function DesktopQuickActions() {
               variant="outline"
               size="sm"
               className="gap-2"
-              onClick={openStampCapture}
+              onClick={handleStampClick}
             >
               <action.icon className={cn("h-4 w-4", action.color)} />
               {t(action.descKey)}
