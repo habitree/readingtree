@@ -1,16 +1,18 @@
 "use server";
 
 /**
- * 기록 세션 이벤트 트래킹 (기록 기능 전면 개편 Phase 7)
+ * 기록 세션 이벤트 트래킹 (기록 기능 전면 개편 Phase 7 + 8.C)
  *
- * 4종 이벤트:
+ * 5종 이벤트:
  *   record_started     — startReadingSession 성공 시
  *   record_ended       — endReadingSession 성공 시
  *   record_abandoned   — cancelActiveSession(abandoned) + reapOrphanSessions
  *   detail_added       — addNoteToSession 성공 시
+ *   music_attached     — attachMusicToSession 성공 시 (Phase 8.C)
  *
  * 패턴: share_events와 동일 — 무음 실패, service_role INSERT.
  * 마이그레이션: doc/database/migration-202605041100__tracking__record_events.sql
+ *               doc/database/migration-202605051300__record_events__add_music_event.sql
  */
 
 import { createAdminSupabaseClient } from "@/lib/supabase/server";
@@ -19,7 +21,8 @@ export type RecordEventName =
   | "record_started"
   | "record_ended"
   | "record_abandoned"
-  | "detail_added";
+  | "detail_added"
+  | "music_attached";
 
 interface RecordEventInput {
   event: RecordEventName;

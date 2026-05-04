@@ -670,3 +670,98 @@ export async function reapOrphanSessions(
 
   return { closed: closedRows.length };
 }
+
+// =============================================================================
+// attachMusicToSession — 진행 중 세션에 음악 추가/변경/정지 (Phase 8.C)
+// =============================================================================
+
+/**
+ * 진행 중 세션에 음악을 추가/변경/정지.
+ *  - music_playlist_id = string → 음악 추가/변경 (이전 NULL이면 music_started_at 자동)
+ *  - music_playlist_id = null → 음악 정지 (DB는 NULL로 유지, music_started_at는 보존)
+ *  - target_seconds 옵션으로 진행 중 목표 시간 변경 가능 ("+15분 더" 등)
+ */
+export async function attachMusicToSession(
+  input: {
+    session_id: string;
+    music_playlist_id: string | null;
+    target_seconds?: number;
+  },
+  user?: User | null,
+): Promise<{
+  sessionId: string;
+  music_playlist_id: string | null;
+  action: "add" | "change" | "remove";
+}> {
+  const currentUser = await resolveUser(user);
+  const supabase = await createServerSupabaseClient();
+
+  if (!isValidUUID(input.session_id)) {
+    throw new Error("유효하지 않은 세션 ID입니다.");
+  }
+
+  // 세션 조회 + status·소유 검증
+  const { data: session, error: fetchError } = await supabase
+    .from("reading_logs")
+    .select("id, status, music_playlist_id")
+    .eq("id", input.session_id)
+    .eq("user_id", currentUser.id)
+    .maybeSingle();
+
+  if (fetchError || !session) {
+    throw new Error("세션을 찾을 수 없습니다.");
+  }
+  if (session.status !== "in_progress") {
+    throw new Error("진행 중인 세션이 아닙니다.");
+  }
+
+  const sessionRow = session as Record<string, unknown>;
+  const wasNullMusic = !sessionRow.music_playlist_id;
+  const action: "add" | "change" | "remove" = !input.music_playlist_id
+    ? "remove"
+    : wasNullMusic
+      ? "add"
+      : "change";
+
+  const updatePayload: Record<string, unknown> = {
+    music_playlist_id: input.music_playlist_id,
+    updated_at: new Date().toISOString(),
+  };
+  // 처음 음악 켤 때만 music_started_at 자동 설정
+  if (input.music_playlist_id && wasNullMusic) {
+    updatePayload.music_started_at = new Date().toISOString();
+  }
+  if (typeof input.target_seconds === "number" && input.target_seconds >= 0) {
+    updatePayload.target_seconds = input.target_seconds;
+  }
+
+  const { error: updateError } = await supabase
+    .from("reading_logs")
+    .update(updatePayload)
+    .eq("id", input.session_id)
+    .eq("user_id", currentUser.id);
+
+  if (updateError) {
+    throw new Error(sanitizeErrorMessage(updateError));
+  }
+
+  revalidatePath("/");
+
+  // Phase 7+8.C 텔레메트리 (무음 실패)
+  void recordRecordEvent({
+    event: "music_attached",
+    userId: currentUser.id,
+    sessionId: input.session_id,
+    metadata: {
+      action,
+      music_playlist_id: input.music_playlist_id,
+      target_seconds: input.target_seconds ?? null,
+    },
+  });
+
+  return {
+    sessionId: input.session_id,
+    music_playlist_id: input.music_playlist_id,
+    action,
+  };
+}

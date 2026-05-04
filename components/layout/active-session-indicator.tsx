@@ -15,6 +15,7 @@
 import { useReadingSession } from "@/hooks/use-reading-session";
 import { useRecordSheetStore, type RecordSheetBook } from "@/hooks/use-record-sheet";
 import { RecordActivePill } from "@/components/records/record-active-pill";
+import { RecordActiveMenu } from "@/components/records/record-active-menu";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
 
@@ -43,6 +44,23 @@ export function ActiveSessionIndicator({ variant = "pill", className }: Props) {
       : null;
     openEnd(session.id, { book });
   };
+
+  // pill variant — Pill + ⋯ 메뉴 (D7)
+  // fab variant — Pill만 (모바일 FAB 슬롯, 메뉴는 long-press 또는 Phase 8.D에서 결정)
+  if (variant === "pill") {
+    return (
+      <div className={cn("inline-flex items-center gap-1", className)}>
+        <RecordActivePill
+          elapsedSeconds={elapsedSeconds}
+          bookTitle={session.book?.title}
+          coverImageUrl={session.book?.cover_image_url}
+          variant="pill"
+          onClick={handleClick}
+        />
+        <RecordActiveMenu session={session} />
+      </div>
+    );
+  }
 
   return (
     <RecordActivePill
