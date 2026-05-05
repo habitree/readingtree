@@ -430,6 +430,13 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
           status={userBook.status}
           currentPage={(userBook as any).current_page || 0}
           totalPages={book.total_pages ?? null}
+          bookInfo={{
+            bookId: book.id,
+            title: book.title,
+            author: book.author,
+            coverImageUrl: book.cover_image_url,
+            totalPages: book.total_pages ?? null,
+          }}
         />
       </div>
 

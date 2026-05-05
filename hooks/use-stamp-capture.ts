@@ -101,6 +101,11 @@ export const useStampCaptureStore = create<StampCaptureState>((set) => ({
 /**
  * Stamp Composer 진입 훅.
  * 시트가 열리면 최근 읽던 책을 자동 선택 (사용자가 변경 가능).
+ *
+ * attach 모드(=기존 reading_log에 사진 첨부)에서는 자동 책 선택을 건너뛴다.
+ *  - attach는 기록의 user_book_id가 진짜 소스. 자동 선택이 끼어들면
+ *    화면에 표시되는 책 정보가 실제 첨부 대상과 달라 보일 수 있음.
+ *  - 호출처(예: ReadingTimeTab)가 openAttach({ book }) 로 명시하면 그대로 유지.
  */
 export function useStampCapture() {
   const { user } = useAuth();
@@ -108,6 +113,7 @@ export function useStampCapture() {
 
   useEffect(() => {
     if (!store.isOpen || !user || store.selectedBook) return;
+    if (store.mode === "attach") return;
 
     getContinueReadingBooks(undefined, 1)
       .then((books) => {
