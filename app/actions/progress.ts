@@ -223,6 +223,101 @@ export async function deleteProgressLog(
 }
 
 /**
+ * 시간기록(reading_logs) 항목의 메모·페이지 편집.
+ *
+ * 책 상세 > 독서 시간 탭의 각 항목 인라인 편집에 사용.
+ *  - memo: 200자 이내 또는 null(삭제)
+ *  - start_page / end_page: 0 이상, end >= start 보장
+ *  - user_book.current_page 동기화는 호출자 책임 아님 — 단순 수정만
+ *
+ * RLS + 명시 owner 검증으로 권한 보호.
+ */
+export async function updateReadingLogEntry(
+  logId: string,
+  updates: { memo?: string | null; start_page?: number | null; end_page?: number | null },
+  user?: User | null,
+): Promise<{ success: boolean }> {
+  const supabase = await createServerSupabaseClient();
+
+  let currentUser = user;
+  if (!currentUser) {
+    const {
+      data: { user: fetchedUser },
+      error: authError,
+    } = await supabase.auth.getUser();
+    if (authError || !fetchedUser) throw new Error("로그인이 필요합니다.");
+    currentUser = fetchedUser;
+  }
+
+  if (!isValidUUID(logId)) {
+    throw new Error("유효하지 않은 로그 ID입니다.");
+  }
+
+  if (typeof updates.memo === "string" && updates.memo.length > 200) {
+    throw new Error("메모는 200자 이하여야 합니다.");
+  }
+
+  // 기존 행 조회 + owner 검증 + 누락된 필드 채움
+  const { data: existing, error: fetchError } = await supabase
+    .from("reading_logs")
+    .select("id, user_book_id, start_page, end_page, page_number")
+    .eq("id", logId)
+    .eq("user_id", currentUser.id)
+    .maybeSingle();
+
+  if (fetchError || !existing) {
+    throw new Error("권한이 없거나 기록을 찾을 수 없습니다.");
+  }
+
+  const payload: Record<string, unknown> = {};
+
+  if (updates.memo !== undefined) {
+    payload.memo = updates.memo === null ? null : updates.memo.trim() || null;
+  }
+
+  let nextStart = existing.start_page ?? 0;
+  let nextEnd = existing.end_page ?? existing.page_number ?? 0;
+
+  if (updates.start_page !== undefined) {
+    if (typeof updates.start_page === "number" && updates.start_page >= 0) {
+      nextStart = updates.start_page;
+    }
+  }
+  if (updates.end_page !== undefined) {
+    if (typeof updates.end_page === "number" && updates.end_page >= 0) {
+      nextEnd = updates.end_page;
+    }
+  }
+  if (nextEnd < nextStart) nextEnd = nextStart;
+
+  if (updates.start_page !== undefined) payload.start_page = nextStart;
+  if (updates.end_page !== undefined) {
+    payload.end_page = nextEnd;
+    payload.page_number = nextEnd;
+  }
+
+  if (Object.keys(payload).length === 0) {
+    return { success: true };
+  }
+
+  const { error: updateError } = await supabase
+    .from("reading_logs")
+    .update(payload)
+    .eq("id", logId)
+    .eq("user_id", currentUser.id);
+
+  if (updateError) {
+    throw new Error(sanitizeErrorMessage(updateError));
+  }
+
+  revalidatePath("/notes");
+  revalidatePath(`/books/${existing.user_book_id}`);
+  revalidatePath("/");
+
+  return { success: true };
+}
+
+/**
  * 진행 로그 수정
  * @param logId 진행 로그 ID
  * @param memo 수정할 메모
