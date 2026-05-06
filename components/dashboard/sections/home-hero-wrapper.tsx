@@ -20,6 +20,7 @@ function getKSTToday(): Date {
 }
 import { getContinueReadingBooks, getPopularBooks } from "@/app/actions/books";
 import { getUserReadingTimeStats } from "@/app/actions/progress";
+import { getActiveSession } from "@/app/actions/sessions";
 import { getFreeNoteStats } from "@/app/actions/notes";
 import { generateDemoWeeklyProgress } from "@/lib/demo-calendar-data";
 import {
@@ -90,6 +91,7 @@ export async function HomeHeroWrapper() {
     getCachedPointsDashboardData(user),
     getCachedCheckHasFirstNote(),
     getUserReadingTimeStats(),
+    getActiveSession(user),
   ]);
 
   const streakAndTodayData = extractSettled(primaryResults[0], { streak: 0, todayNotes: 0 });
@@ -98,6 +100,7 @@ export async function HomeHeroWrapper() {
   const pointsData = extractSettled(primaryResults[3], null);
   const firstNoteData = extractSettled(primaryResults[4], { hasFirstNote: true });
   const readingTimeData = extractSettled(primaryResults[5], { totalSeconds: 0, sessionCount: 0, averageSeconds: 0, todaySeconds: 0, thisWeekSeconds: 0 });
+  const activeSession = extractSettled(primaryResults[6], null);
 
   // ── 그룹2: 부차 데이터 (스크롤 아래이거나 부가 정보) ──
   // 핵심 데이터가 준비된 상태에서 병렬 로드
@@ -145,6 +148,8 @@ export async function HomeHeroWrapper() {
         freeNoteStats={freeNoteStats}
         isFirstUserDemo={isFirstUserDemo}
         todayReadingSeconds={readingTimeData.todaySeconds}
+        activeSessionId={activeSession?.id ?? null}
+        activeSessionUserBookId={activeSession?.user_book_id ?? null}
       />
       {hasNoBooks && popularBooks.length > 0 && (
         <PopularBooksWidget books={popularBooks} />

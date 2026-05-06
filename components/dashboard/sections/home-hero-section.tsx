@@ -103,6 +103,10 @@ interface HomeHeroSectionProps {
   isFirstUserDemo?: boolean;
   /** 오늘 독서 시간 (초) */
   todayReadingSeconds?: number;
+  /** 진행 중 reading 세션 ID (있으면 카드의 독서 버튼이 "멈춤"으로 변형) */
+  activeSessionId?: string | null;
+  /** 진행 중 세션의 user_book_id — 매칭되는 카드만 진행 중 모드 */
+  activeSessionUserBookId?: string | null;
 }
 
 /**
@@ -129,6 +133,8 @@ export const HomeHeroSection = memo(function HomeHeroSection({
   freeNoteStats = { totalCount: 0, todayCount: 0 },
   isFirstUserDemo = false,
   todayReadingSeconds = 0,
+  activeSessionId = null,
+  activeSessionUserBookId = null,
 }: HomeHeroSectionProps) {
   const [mounted, setMounted] = useState(false);
   const { greeting, getStreakMessage, getMotivationalMessage } = useStyle();
@@ -362,22 +368,28 @@ export const HomeHeroSection = memo(function HomeHeroSection({
         <div className="space-y-2 sm:space-y-3">
           {continueReadingBooks.length > 0 ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 sm:gap-3">
-              {continueReadingBooks.slice(0, 8).map((book, index) => (
-                <PinnedBookCard
-                  key={book.userBookId}
-                  userBookId={book.userBookId}
-                  bookId={book.bookId}
-                  title={book.title}
-                  author={book.author}
-                  coverImageUrl={book.coverImageUrl}
-                  currentPage={book.currentPage}
-                  totalPages={book.totalPages}
-                  progressPercent={book.progressPercent}
-                  isPinned={!!book.isPinned}
-                  pinDisabled={isGuest}
-                  priority={index < 2}
-                />
-              ))}
+              {continueReadingBooks.slice(0, 8).map((book, index) => {
+                const isActive =
+                  !!activeSessionUserBookId && activeSessionUserBookId === book.userBookId;
+                return (
+                  <PinnedBookCard
+                    key={book.userBookId}
+                    userBookId={book.userBookId}
+                    bookId={book.bookId}
+                    title={book.title}
+                    author={book.author}
+                    coverImageUrl={book.coverImageUrl}
+                    currentPage={book.currentPage}
+                    totalPages={book.totalPages}
+                    progressPercent={book.progressPercent}
+                    isPinned={!!book.isPinned}
+                    pinDisabled={isGuest}
+                    priority={index < 2}
+                    isReadingActive={isActive}
+                    activeSessionId={isActive ? activeSessionId : null}
+                  />
+                );
+              })}
             </div>
           ) : (
             <NoReadingBookCard />

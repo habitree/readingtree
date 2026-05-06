@@ -4,7 +4,7 @@ import { memo, useTransition, useState, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { BookOpen, Star, Loader2, PenLine, X } from "lucide-react";
+import { BookOpen, Star, Loader2, PenLine, X, Square } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { toggleUserBookPin, setUserBookHomeHidden } from "@/app/actions/books";
@@ -25,21 +25,29 @@ interface PinnedBookCardProps {
   /** 핀 토글 / 기록 시작 비활성화 (게스트/샘플) */
   pinDisabled?: boolean;
   priority?: boolean;
+  /**
+   * 이 카드의 책에 진행 중 reading_logs 세션이 있는지.
+   * true 시 "독서" 버튼이 "멈춤" 모드(다른 색·펄스·Square 아이콘)로 변형되고
+   * 클릭 시 세션 종료 시트(openEnd)로 진입한다.
+   */
+  isReadingActive?: boolean;
+  /** 진행 중 세션 ID (isReadingActive=true 일 때 유효) */
+  activeSessionId?: string | null;
 }
 
 /**
  * 메인 대시보드 8개 그리드 카드.
  *
- * 레이아웃:
- *   가로형 — 좌측 작은 표지 + 우측 정보(제목·저자·페이지/진행률).
- *   하단: 진행률 바 + 두 액션 버튼(메모 / 독서) 균등 분할.
- *
- * 두 액션 버튼 (이전 "기록 작성" / "독서 기록" 용어 충돌 정리):
- *   - 메모 (PenLine 아이콘) → /notes/new?bookId=<userBookId>
+ * 두 액션 버튼 (사이트 통일 용어 — "기록"·"독서"):
+ *   - 기록 (PenLine, 슬레이트 톤) → /notes/new?bookId=<userBookId>
  *     자유 노트(인용·메모·사진·필사) 작성. 텍스트 기반.
- *   - 독서 (BookOpen 아이콘) → useRecordSheetStore.openStart()
+ *   - 독서 (BookOpen, forest 톤) → useRecordSheetStore.openStart()
  *     시간 측정 + 페이지 진행 세션 시작.
- *   둘 다 짧은 한 단어 + 명확한 아이콘으로 모바일에서도 직관적.
+ *
+ *   진행 중 모드 (isReadingActive=true):
+ *     - 독서 버튼이 "멈춤"으로 변형 (rose 톤 + 펄스 + Square 아이콘)
+ *     - 클릭 시 openEnd(activeSessionId, ...) 로 종료 시트 진입
+ *     - 시작/멈춤 두 상태가 한눈에 시각적으로 구분됨
  *
  * 기타:
  *   - 카드 본문(Link) → 책 상세
@@ -58,6 +66,8 @@ export const PinnedBookCard = memo(function PinnedBookCard({
   isPinned = false,
   pinDisabled = false,
   priority = false,
+  isReadingActive = false,
+  activeSessionId = null,
 }: PinnedBookCardProps) {
   const router = useRouter();
   const [pinned, setPinned] = useState(isPinned);
@@ -65,6 +75,7 @@ export const PinnedBookCard = memo(function PinnedBookCard({
   const [isPending, startTransition] = useTransition();
   const [isHiding, startHideTransition] = useTransition();
   const openRecordStart = useRecordSheetStore((s) => s.openStart);
+  const openRecordEnd = useRecordSheetStore((s) => s.openEnd);
 
   const handleTogglePin = useCallback(
     (e: React.MouseEvent) => {
@@ -123,28 +134,45 @@ export const PinnedBookCard = memo(function PinnedBookCard({
     [pinDisabled, isHiding, userBookId],
   );
 
-  // "독서" 버튼 — 시간 측정 + 페이지 진행 세션 시작
-  const handleStartReading = useCallback(
+  // "독서" 버튼 — 진행 중 여부에 따라 시작/멈춤으로 분기
+  const handleReadingAction = useCallback(
     (e: React.MouseEvent) => {
       e.preventDefault();
       e.stopPropagation();
       if (pinDisabled) return;
-      openRecordStart({
-        book: {
-          id: userBookId,
-          bookId,
-          title,
-          author,
-          coverImageUrl,
-          totalPages,
-        },
-      });
+      const bookPayload = {
+        id: userBookId,
+        bookId,
+        title,
+        author,
+        coverImageUrl,
+        totalPages,
+      };
+      if (isReadingActive && activeSessionId) {
+        // 멈춤 — 종료 시트 (페이지/메모/사진 입력 후 완료)
+        openRecordEnd(activeSessionId, { book: bookPayload });
+      } else {
+        // 시작 — 시작 시트
+        openRecordStart({ book: bookPayload });
+      }
     },
-    [pinDisabled, openRecordStart, userBookId, bookId, title, author, coverImageUrl, totalPages],
+    [
+      pinDisabled,
+      isReadingActive,
+      activeSessionId,
+      openRecordStart,
+      openRecordEnd,
+      userBookId,
+      bookId,
+      title,
+      author,
+      coverImageUrl,
+      totalPages,
+    ],
   );
 
-  // "메모" 버튼 — 자유 노트(인용·메모·사진·필사) 작성 페이지로 이동
-  const handleOpenMemo = useCallback(
+  // "기록" 버튼 — 자유 노트(인용·메모·사진·필사) 작성 페이지로 이동
+  const handleOpenNote = useCallback(
     (e: React.MouseEvent) => {
       e.preventDefault();
       e.stopPropagation();
@@ -219,35 +247,53 @@ export const PinnedBookCard = memo(function PinnedBookCard({
             />
           </div>
 
-          {/* 두 액션 버튼: 메모(텍스트 작성) / 독서(시간 측정) — 균등 분할 */}
+          {/* 두 액션 버튼: 기록(텍스트 작성) / 독서(시간 측정) — 균등 분할 */}
           <div className="grid grid-cols-2 gap-1.5">
             <button
               type="button"
-              onClick={handleOpenMemo}
+              onClick={handleOpenNote}
               disabled={pinDisabled}
               className={cn(
                 "inline-flex items-center justify-center gap-1 rounded-lg px-1.5 py-1.5 text-[11px] sm:text-xs font-semibold transition-colors",
                 "bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700",
                 pinDisabled && "opacity-50 cursor-not-allowed",
               )}
-              aria-label={`${title} 메모 작성`}
+              aria-label={`${title} 기록 작성`}
             >
               <PenLine className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-              메모
+              기록
             </button>
+            {/* 독서 버튼 — 진행 중이면 "멈춤"(rose + 펄스 + Square)으로 변형 */}
             <button
               type="button"
-              onClick={handleStartReading}
+              onClick={handleReadingAction}
               disabled={pinDisabled}
               className={cn(
-                "inline-flex items-center justify-center gap-1 rounded-lg px-1.5 py-1.5 text-[11px] sm:text-xs font-semibold transition-colors",
-                "bg-forest-50 text-forest-700 hover:bg-forest-100 dark:bg-forest-900/30 dark:text-forest-300 dark:hover:bg-forest-900/50",
+                "relative inline-flex items-center justify-center gap-1 rounded-lg px-1.5 py-1.5 text-[11px] sm:text-xs font-semibold transition-colors",
+                isReadingActive
+                  ? "bg-rose-500 text-white hover:bg-rose-600 ring-2 ring-rose-300 dark:ring-rose-700"
+                  : "bg-forest-50 text-forest-700 hover:bg-forest-100 dark:bg-forest-900/30 dark:text-forest-300 dark:hover:bg-forest-900/50",
                 pinDisabled && "opacity-50 cursor-not-allowed",
               )}
-              aria-label={`${title} 독서 시작`}
+              aria-label={isReadingActive ? `${title} 독서 멈춤` : `${title} 독서 시작`}
+              aria-pressed={isReadingActive}
             >
-              <BookOpen className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-              독서
+              {isReadingActive ? (
+                <>
+                  {/* 진행 중 펄스 인디케이터 */}
+                  <span className="absolute -top-1 -right-1 flex h-2 w-2">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-rose-300 opacity-75" />
+                    <span className="relative inline-flex h-2 w-2 rounded-full bg-rose-200" />
+                  </span>
+                  <Square className="h-3 w-3 sm:h-3.5 sm:w-3.5 fill-current" />
+                  멈춤
+                </>
+              ) : (
+                <>
+                  <BookOpen className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                  독서
+                </>
+              )}
             </button>
           </div>
         </div>
