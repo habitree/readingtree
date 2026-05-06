@@ -2,8 +2,8 @@
 
 import { useState, useCallback } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { Home, Library, FileText, Plus, Menu, Music2 } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { Home, Library, FileText, Menu, Music2, PenLine, BookOpen } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
@@ -26,16 +26,19 @@ interface MobileNavItem {
   icon: React.ComponentType<{ className?: string }>;
   label: string;
   href?: string;
-  action?: "menu" | "note" | "music";
+  /**
+   * action 종류:
+   *   - menu/music: 시트 진입
+   *   - recordPair: "기록 / 독서" 한 칸 안에 두 미니 버튼 (사용자 요구로 분리)
+   */
+  action?: "menu" | "music" | "recordPair";
   /** 게스트에게 로그인 유도가 필요한 항목 */
   requiresAuth?: boolean;
-  /** FAB 스타일 (중앙 기록 버튼) */
-  isFab?: boolean;
 }
 
 /**
  * 모바일 네비게이션 아이템 목록 (labelKey 기반)
- * 홈, 서재, +기록(FAB), 타임라인, 더보기
+ * 홈, 서재, [기록|독서] 페어, 노트, 음악, 더보기
  */
 interface MobileNavItemConfig extends Omit<MobileNavItem, 'label'> {
   labelKey: TranslationKey;
@@ -44,7 +47,8 @@ interface MobileNavItemConfig extends Omit<MobileNavItem, 'label'> {
 const mobileNavItemsConfig: MobileNavItemConfig[] = [
   { icon: Home, labelKey: "nav.home", href: "/" },
   { icon: Library, labelKey: "nav.bookshelf", href: "/books" },
-  { icon: Plus, labelKey: "nav.writeNote", action: "note", requiresAuth: true, isFab: true },
+  // 가운데 한 칸 — 두 미니 FAB(기록 / 독서) 페어로 렌더링
+  { icon: PenLine, labelKey: "nav.writeNote", action: "recordPair", requiresAuth: true },
   { icon: FileText, labelKey: "notes.myNotes", href: "/notes" },
   { icon: Music2, labelKey: "nav.more", action: "music" },
   { icon: Menu, labelKey: "nav.more", action: "menu" },
@@ -57,6 +61,7 @@ const mobileNavItemsConfig: MobileNavItemConfig[] = [
 export function MobileNav() {
   const { t } = useTranslation();
   const pathname = usePathname();
+  const router = useRouter();
   const { user, isLoading } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { isOpen, setIsOpen, title, description, requireLogin } = useLoginPrompt();
@@ -68,7 +73,21 @@ export function MobileNav() {
   // 이어읽기 책 (공용 훅 — visibilitychange 자동 갱신 포함)
   const { continueBook } = useContinueReading(user ?? null);
 
-  const handleNoteAction = useCallback(() => {
+  // "기록" — 자유 노트(인용·메모·사진·필사) 작성 페이지로 이동
+  const handleNoteWrite = useCallback(() => {
+    if (!user) {
+      requireLogin({
+        title: t("nav.writeNoteLoginTitle"),
+        description: t("nav.writeNoteLoginDesc"),
+      });
+      return;
+    }
+    const bookId = continueBook?.id;
+    router.push(bookId ? `/notes/new?bookId=${bookId}` : "/notes/new");
+  }, [user, requireLogin, t, router, continueBook]);
+
+  // "독서" — 시간 측정 세션 시작 (진행 중 처리는 RecordActivePill 분기에서)
+  const handleReadingStart = useCallback(() => {
     if (!user) {
       requireLogin({
         title: t("nav.writeNoteLoginTitle"),
@@ -87,13 +106,12 @@ export function MobileNav() {
         }
       : null;
 
-    // Phase 5 카나리: 새 RecordSheet 진입 (NEXT_PUBLIC_RECORD_V2=1)
     if (isRecordV2Enabled()) {
       openStartSheet({ book });
       return;
     }
 
-    // Legacy: Stamp Capture
+    // Legacy fallback
     if (book) {
       stampCapture.openWithBook(book);
     } else {
@@ -167,10 +185,11 @@ export function MobileNav() {
               );
             }
 
-            // 중앙 FAB 스타일 기록 버튼
-            if (item.isFab) {
-              // Phase 4: 진행 중 세션이 있으면 인디케이터로 변형 (탭 → end-step 진입)
+            // 중앙 페어 — "기록"(노트) + "독서"(세션) 두 미니 FAB.
+            // 진행 중에는 "독서" 자리가 RecordActivePill 로 변형됨.
+            if (item.action === "recordPair") {
               if (activeSession) {
+                // 진행 중: "기록"(작은) + "Pill"(독서 멈춤 인디케이터)
                 const book: RecordSheetBook | null = activeSession.book
                   ? {
                       id: activeSession.user_book_id,
@@ -184,9 +203,21 @@ export function MobileNav() {
                 return (
                   <div
                     key={key}
-                    className="flex-1 min-h-[44px] flex items-center justify-center"
+                    className="flex-1 min-h-[44px] flex items-center justify-center gap-1"
                   >
-                    <div className="-mt-3">
+                    <button
+                      onClick={handleNoteWrite}
+                      className="flex flex-col items-center gap-0.5 touch-manipulation"
+                      aria-label="기록 작성"
+                    >
+                      <div className="flex items-center justify-center w-9 h-9 rounded-full bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300 shadow-sm">
+                        <PenLine className="h-4 w-4" aria-hidden="true" />
+                      </div>
+                      <span className="text-[9px] sm:text-[10px] leading-none font-medium text-slate-600 dark:text-slate-400">
+                        기록
+                      </span>
+                    </button>
+                    <div className="-mt-2">
                       <RecordActivePill
                         elapsedSeconds={elapsedSeconds}
                         bookTitle={activeSession.book?.title}
@@ -199,22 +230,37 @@ export function MobileNav() {
                 );
               }
 
+              // 비진행: "기록"(슬레이트) + "독서"(forest) 두 미니 FAB
               return (
-                <button
+                <div
                   key={key}
-                  onClick={handleNoteAction}
-                  className="flex-1 min-h-[44px] flex items-center justify-center"
-                  aria-label={label}
+                  className="flex-1 min-h-[44px] flex items-center justify-center gap-1.5"
                 >
-                  <div className="flex flex-col items-center gap-0.5 sm:gap-1 touch-manipulation">
-                    <div className="flex items-center justify-center w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-primary text-primary-foreground shadow-md -mt-3 focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2">
-                      <Icon className="h-5 w-5 sm:h-6 sm:w-6" aria-hidden="true" />
+                  <button
+                    onClick={handleNoteWrite}
+                    className="flex flex-col items-center gap-0.5 touch-manipulation"
+                    aria-label="기록 작성"
+                  >
+                    <div className="flex items-center justify-center w-9 h-9 rounded-full bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300 shadow-sm hover:bg-slate-300 dark:hover:bg-slate-700">
+                      <PenLine className="h-4 w-4" aria-hidden="true" />
                     </div>
-                    <span className="text-[10px] sm:text-xs leading-tight font-medium text-primary">
-                      {label}
+                    <span className="text-[9px] sm:text-[10px] leading-none font-medium text-slate-600 dark:text-slate-400">
+                      기록
                     </span>
-                  </div>
-                </button>
+                  </button>
+                  <button
+                    onClick={handleReadingStart}
+                    className="flex flex-col items-center gap-0.5 touch-manipulation"
+                    aria-label="독서 시작"
+                  >
+                    <div className="flex items-center justify-center w-10 h-10 rounded-full bg-forest-600 text-white shadow-md hover:bg-forest-700 -mt-2">
+                      <BookOpen className="h-5 w-5" aria-hidden="true" />
+                    </div>
+                    <span className="text-[9px] sm:text-[10px] leading-none font-semibold text-forest-700 dark:text-forest-400">
+                      독서
+                    </span>
+                  </button>
+                </div>
               );
             }
 

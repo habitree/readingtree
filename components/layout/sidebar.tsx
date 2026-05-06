@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   Home,
   Library,
@@ -16,6 +16,8 @@ import {
   Coins,
   Lightbulb,
   Stamp,
+  BookOpen,
+  Square,
   ChevronDown,
   type LucideIcon,
 } from "lucide-react";
@@ -29,17 +31,24 @@ import { useTranslation } from "@/lib/i18n";
 import { useQuickCaptureStore } from "@/hooks/use-quick-capture";
 import { useStampCaptureStore } from "@/hooks/use-stamp-capture";
 import { useRecordSheetStore, type RecordSheetBook } from "@/hooks/use-record-sheet";
+import { useReadingSession } from "@/hooks/use-reading-session";
 import { isRecordV2Enabled } from "@/lib/feature-flags";
 import { useContinueReading } from "@/hooks/use-continue-reading";
 
 /**
  * 사이드바 네비게이션 아이템 타입
+ *
+ * action 종류:
+ *   - quickCapture: legacy 빠른 캡처 진입
+ *   - stampCapture: legacy 스탬프 시트(현재 미사용 — readingStart 로 대체)
+ *   - noteWrite:    "기록" — 자유 노트(인용·메모·사진·필사) 작성 페이지로 이동
+ *   - readingStart: "독서" — 시간 측정 세션 시작/멈춤 (진행 중 자동 변형)
  */
 interface SidebarItem {
   icon: LucideIcon;
   label: string;
   href?: string;
-  action?: "quickCapture" | "stampCapture";
+  action?: "quickCapture" | "stampCapture" | "noteWrite" | "readingStart";
   badge?: number;
   adminOnly?: boolean;
 }
@@ -57,7 +66,9 @@ export function Sidebar() {
   const primaryItems: SidebarItem[] = [
     { icon: Home, label: t("nav.home"), href: "/" },
     { icon: Library, label: t("nav.myLibrary"), href: "/books" },
-    { icon: Stamp, label: t("stamp.quickAction"), action: "stampCapture" },
+    // "기록" / "독서" 분리 — 메인 카드 정책과 동일한 두 액션
+    { icon: PenLine, label: "기록", action: "noteWrite" },
+    { icon: BookOpen, label: "독서", action: "readingStart" },
     { icon: FileText, label: t("notes.myNotes"), href: "/notes" },
     { icon: User, label: t("nav.profile"), href: "/profile" },
   ];
@@ -85,11 +96,16 @@ export function Sidebar() {
     }
   }, [pathname]);
 
+  const router = useRouter();
   const openQuickCapture = useQuickCaptureStore((s) => s.open);
   const openWithBook = useQuickCaptureStore((s) => s.openWithBook);
   const openStampCapture = useStampCaptureStore((s) => s.open);
   const openStampWithBook = useStampCaptureStore((s) => s.openWithBook);
   const openRecordStart = useRecordSheetStore((s) => s.openStart);
+  const openRecordEnd = useRecordSheetStore((s) => s.openEnd);
+
+  // 진행 중 세션 — "독서" 항목이 "멈춤"으로 변형되는 트리거
+  const { session: activeSession } = useReadingSession();
 
   // 이어읽기 책 (공용 훅 — visibilitychange 자동 갱신 포함)
   const { continueBook } = useContinueReading(user ?? null);
@@ -127,6 +143,41 @@ export function Sidebar() {
     }
   }, [continueBook, openStampWithBook, openStampCapture, openRecordStart]);
 
+  // "기록" 항목 — 자유 노트(인용·메모·사진·필사) 작성 페이지로 이동
+  const handleNoteWrite = useCallback(() => {
+    const bookId = continueBook?.id;
+    router.push(bookId ? `/notes/new?bookId=${bookId}` : "/notes/new");
+  }, [router, continueBook]);
+
+  // "독서" 항목 — 진행 중이면 종료 시트, 아니면 시작 시트
+  const handleReadingAction = useCallback(() => {
+    if (activeSession) {
+      const book: RecordSheetBook | null = activeSession.book
+        ? {
+            id: activeSession.user_book_id,
+            bookId: activeSession.book.id,
+            title: activeSession.book.title,
+            author: activeSession.book.author,
+            coverImageUrl: activeSession.book.cover_image_url,
+            totalPages: activeSession.book.total_pages,
+          }
+        : null;
+      openRecordEnd(activeSession.id, { book });
+      return;
+    }
+    const book: RecordSheetBook | null = continueBook
+      ? {
+          id: continueBook.id,
+          bookId: continueBook.bookId,
+          title: continueBook.title,
+          author: continueBook.author,
+          coverImageUrl: continueBook.coverImageUrl,
+          totalPages: null,
+        }
+      : null;
+    openRecordStart({ book });
+  }, [activeSession, continueBook, openRecordStart, openRecordEnd]);
+
   const renderNavItem = useCallback((item: SidebarItem) => {
     const Icon = item.icon;
 
@@ -157,6 +208,55 @@ export function Sidebar() {
         >
           <Icon className="h-5 w-5" aria-hidden="true" />
           <span className="flex-1 text-left">{item.label}</span>
+        </Button>
+      );
+    }
+
+    // "기록" — 자유 노트 작성 페이지로 이동
+    if (item.action === "noteWrite") {
+      return (
+        <Button
+          key="noteWrite"
+          variant="ghost"
+          className="w-full justify-start gap-3 h-11"
+          onClick={handleNoteWrite}
+          aria-label="기록 작성"
+        >
+          <Icon className="h-5 w-5" aria-hidden="true" />
+          <span className="flex-1 text-left">기록</span>
+        </Button>
+      );
+    }
+
+    // "독서" — 진행 중이면 "멈춤"(rose+펄스), 아니면 시작(forest)
+    if (item.action === "readingStart") {
+      const isActive = !!activeSession;
+      return (
+        <Button
+          key="readingStart"
+          variant="ghost"
+          className={cn(
+            "w-full justify-start gap-3 h-11 relative transition-colors",
+            isActive
+              ? "bg-rose-500 text-white hover:bg-rose-600 hover:text-white ring-2 ring-rose-300 dark:ring-rose-700"
+              : "text-forest-700 dark:text-forest-400 hover:bg-forest-50 dark:hover:bg-forest-950/30",
+          )}
+          onClick={handleReadingAction}
+          aria-label={isActive ? "독서 멈춤" : "독서 시작"}
+          aria-pressed={isActive}
+        >
+          {isActive ? (
+            <Square className="h-5 w-5 fill-current" aria-hidden="true" />
+          ) : (
+            <Icon className="h-5 w-5" aria-hidden="true" />
+          )}
+          <span className="flex-1 text-left">{isActive ? "멈춤" : "독서"}</span>
+          {isActive && (
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-rose-300 opacity-75" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-rose-200" />
+            </span>
+          )}
         </Button>
       );
     }
@@ -196,7 +296,7 @@ export function Sidebar() {
         </Button>
       </Link>
     );
-  }, [pathname, user, handleQuickCapture, handleStampCapture]);
+  }, [pathname, user, handleQuickCapture, handleStampCapture, handleNoteWrite, handleReadingAction, activeSession]);
 
   const visibleSecondaryItems = secondaryItems.filter(
     (item) => !item.adminOnly || isAdmin
