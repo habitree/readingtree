@@ -3,3 +3,4 @@ export type { AddBookInput, BulkBookRow, BulkMatchStatus, BulkBookMatchedRow, Bu
 export * from "./core";
 export * from "./reading";
 export * from "./progress";
+export * from "./pin";

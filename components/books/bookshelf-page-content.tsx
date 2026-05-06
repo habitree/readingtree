@@ -147,6 +147,7 @@ function BooksListRenderer({ booksData, isSample = false }: { booksData: any[]; 
     .map((item) => ({
       id: item.id,
       status: item.status,
+      isPinned: !!item.is_pinned,
       books: {
         id: item.books.id,
         title: item.books.title,

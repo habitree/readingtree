@@ -25,6 +25,8 @@ export interface BookWithNotes {
   started_at?: string;
   bookshelf_id?: string | null;
   current_page?: number; // 현재 읽은 페이지
+  is_pinned?: boolean; // 즐겨찾기(핀) — 메인 최상단 고정
+  pinned_at?: string | null;
   books: {
     id: string;
     title: string;
@@ -383,6 +385,8 @@ export async function getUserBooksWithNotes(
       reading_reason,
       bookshelf_id,
       current_page,
+      is_pinned,
+      pinned_at,
       created_at,
       books (
         id,
@@ -614,6 +618,8 @@ export async function getUserBooksWithNotes(
       started_at: userBook.started_at || null,
       current_page: userBook.current_page || 0,
       bookshelf_id: userBook.bookshelf_id || null,
+      is_pinned: !!userBook.is_pinned,
+      pinned_at: userBook.pinned_at ?? null,
       books: {
         id: userBook.books.id || "",
         title: userBook.books.title || "제목 없음",
@@ -956,10 +962,23 @@ export async function getContinueReadingBook(user?: User | null): Promise<{
 }
 
 /**
- * 계속 읽기 책 목록 조회 (최대 3개)
- * 읽는 중 또는 다시 읽는 중인 책들을 최근 활동 순으로 반환
+ * 계속 읽기 책 목록 조회 (기본 8개)
+ *
+ * 정렬 우선순위:
+ *   1) 핀 고정(is_pinned=TRUE) — pinned_at DESC (최근 핀이 위)
+ *   2) 그 외 — 최근 활동(lastActivityAt) DESC
+ *
+ * lastActivityAt 산정:
+ *   user_books.updated_at(상태/페이지/메타 변경) +
+ *   notes.created_at(기록 작성) +
+ *   reading_logs.updated_at(시간 기록) 중 가장 최근.
+ *   → 책에 어떤 정보 변경이 발생해도 최신순으로 위로 올라옴.
+ *
+ * 대상 상태:
+ *   기본은 reading/rereading. 단 핀된 책은 모든 상태(완독/일시중지/예정 포함)
+ *   를 그대로 노출 — 사용자가 명시적으로 즐겨찾기 한 책은 가려지지 않음.
  */
-export async function getContinueReadingBooks(user?: User | null, maxCount: number = 3): Promise<Array<{
+export async function getContinueReadingBooks(user?: User | null, maxCount: number = 8): Promise<Array<{
   userBookId: string;
   bookId: string;
   title: string;
@@ -969,6 +988,8 @@ export async function getContinueReadingBooks(user?: User | null, maxCount: numb
   totalPages: number | null;
   progressPercent: number;
   lastActivityAt: string;
+  isPinned: boolean;
+  pinnedAt: string | null;
 }>> {
   const supabase = await createServerSupabaseClient();
 
@@ -981,7 +1002,8 @@ export async function getContinueReadingBooks(user?: User | null, maxCount: numb
     }
   }
 
-  // 읽는 중인 책 목록 조회 (최근 업데이트순, 자유 기록 제외)
+  // 후보 풀: reading/rereading 또는 핀된 모든 상태 (자유 기록 책 제외)
+  // 핀된 책은 status 무관하게 노출되어야 함.
   const { data: readingBooks, error: booksError } = await supabase
     .from("user_books")
     .select(`
@@ -989,6 +1011,9 @@ export async function getContinueReadingBooks(user?: User | null, maxCount: numb
       book_id,
       current_page,
       updated_at,
+      status,
+      is_pinned,
+      pinned_at,
       books (
         id,
         title,
@@ -998,41 +1023,64 @@ export async function getContinueReadingBooks(user?: User | null, maxCount: numb
       )
     `)
     .eq("user_id", currentUser.id)
-    .in("status", ["reading", "rereading"])
     .neq("book_id", READTREE_BOOK_ID)
+    .or("status.in.(reading,rereading),is_pinned.eq.true")
     .order("updated_at", { ascending: false })
-    .limit(10);
+    .limit(40);
 
   if (booksError || !readingBooks || readingBooks.length === 0) {
     return [];
   }
 
-  // 각 책의 최근 노트 작성일 조회
   const bookIds = readingBooks.map((rb: any) => rb.book_id).filter(Boolean);
+  const userBookIds = readingBooks.map((rb: any) => rb.id);
 
-  const { data: recentNotes } = await supabase
-    .from("notes")
-    .select("book_id, created_at")
-    .eq("user_id", currentUser.id)
-    .in("book_id", bookIds)
-    .order("created_at", { ascending: false });
+  // 노트 활동 + 시간기록(reading_logs) 활동 — 병렬 조회
+  const [notesResult, logsResult] = await Promise.all([
+    bookIds.length > 0
+      ? supabase
+          .from("notes")
+          .select("book_id, created_at")
+          .eq("user_id", currentUser.id)
+          .in("book_id", bookIds)
+          .order("created_at", { ascending: false })
+      : Promise.resolve({ data: [] as Array<{ book_id: string; created_at: string }> }),
+    userBookIds.length > 0
+      ? supabase
+          .from("reading_logs")
+          .select("user_book_id, updated_at")
+          .eq("user_id", currentUser.id)
+          .in("user_book_id", userBookIds)
+          .order("updated_at", { ascending: false })
+      : Promise.resolve({ data: [] as Array<{ user_book_id: string; updated_at: string }> }),
+  ]);
 
-  // book_id별 최근 노트 날짜 맵 생성
+  // book_id별 최근 노트 작성일
   const noteActivityMap: Record<string, string> = {};
-  for (const note of recentNotes || []) {
+  for (const note of (notesResult.data ?? [])) {
     if (!noteActivityMap[note.book_id]) {
       noteActivityMap[note.book_id] = note.created_at;
     }
   }
 
-  // 각 책의 최근 활동일 기준으로 정렬
+  // user_book_id별 최근 시간기록 갱신일
+  const logActivityMap: Record<string, string> = {};
+  for (const log of (logsResult.data ?? [])) {
+    if (!logActivityMap[log.user_book_id]) {
+      logActivityMap[log.user_book_id] = log.updated_at;
+    }
+  }
+
   const booksWithActivity = readingBooks.map((book: any) => {
     const bookData = book.books as any;
     if (!bookData) return null;
 
-    const noteActivity = noteActivityMap[book.book_id];
-    const bookActivity = book.updated_at;
-    const latestActivity = noteActivity && noteActivity > bookActivity ? noteActivity : bookActivity;
+    const candidates: string[] = [book.updated_at];
+    const noteAt = noteActivityMap[book.book_id];
+    if (noteAt) candidates.push(noteAt);
+    const logAt = logActivityMap[book.id];
+    if (logAt) candidates.push(logAt);
+    const latestActivity = candidates.reduce((acc, cur) => (cur > acc ? cur : acc), candidates[0]);
 
     const currentPage = book.current_page || 0;
     const totalPages = bookData.total_pages || null;
@@ -1050,12 +1098,23 @@ export async function getContinueReadingBooks(user?: User | null, maxCount: numb
       totalPages,
       progressPercent,
       lastActivityAt: latestActivity,
+      isPinned: !!book.is_pinned,
+      pinnedAt: book.pinned_at ?? null,
     };
   }).filter((item): item is NonNullable<typeof item> => item !== null);
 
-  // 최근 활동일 기준 정렬 후 최대 maxCount개 반환
+  // 정렬: 핀 우선(pinned_at DESC) → 그 외 lastActivityAt DESC
   return booksWithActivity
-    .sort((a, b) => new Date(b.lastActivityAt).getTime() - new Date(a.lastActivityAt).getTime())
+    .sort((a, b) => {
+      if (a.isPinned && !b.isPinned) return -1;
+      if (!a.isPinned && b.isPinned) return 1;
+      if (a.isPinned && b.isPinned) {
+        const ap = a.pinnedAt ? new Date(a.pinnedAt).getTime() : 0;
+        const bp = b.pinnedAt ? new Date(b.pinnedAt).getTime() : 0;
+        return bp - ap;
+      }
+      return new Date(b.lastActivityAt).getTime() - new Date(a.lastActivityAt).getTime();
+    })
     .slice(0, maxCount);
 }
 

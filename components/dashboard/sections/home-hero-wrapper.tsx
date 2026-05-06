@@ -54,7 +54,7 @@ export async function HomeHeroWrapper() {
     // 게스트 사용자: 샘플 데이터 조회 (관리자 데이터와 동일하게 표시)
     const guestResults = await Promise.allSettled([
       getSampleDashboardStats(),
-      getSampleContinueReadingBooks(6),
+      getSampleContinueReadingBooks(8),
       getSamplePointsDashboardData(),
     ]);
 
@@ -85,7 +85,7 @@ export async function HomeHeroWrapper() {
   // ── 그룹1: 핵심 데이터 (사용자에게 즉시 보여줘야 하는 정보) ──
   const primaryResults = await Promise.allSettled([
     getCachedStreakAndTodayData(user.id),
-    getContinueReadingBooks(user, 6),
+    getContinueReadingBooks(user, 8),
     getCurrentBookProgress(user),
     getCachedPointsDashboardData(user),
     getCachedCheckHasFirstNote(),

@@ -4,8 +4,7 @@ import { BookCard } from "./book-card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { BookListSkeleton } from "@/components/ui/skeletons";
 import { BookOpen } from "lucide-react";
-import type { BookWithUserBook } from "@/types/book";
-import type { UserBook, ReadingStatus } from "@/types/book";
+import type { BookWithUserBook, ReadingStatus } from "@/types/book";
 import { grids } from "@/lib/design-tokens";
 import { useTranslation } from "@/lib/i18n";
 
@@ -19,6 +18,7 @@ interface BookListProps {
   books: Array<{
     id: string;
     status: ReadingStatus;
+    isPinned?: boolean;
     books: {
       id: string;
       isbn: string | null;
@@ -83,6 +83,7 @@ export function BookList({ books, isLoading, isSample = false }: BookListProps) 
             groupBooks={userBook.groupBooks}
             relatedBooks={userBook.relatedBooks}
             isSample={isSample}
+            isPinned={userBook.isPinned}
           />
         );
       })}

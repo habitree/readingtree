@@ -28,6 +28,9 @@ export interface UserBook {
   completed_dates?: string | null; // JSONB 배열 (문자열로 저장)
   reading_reason: string | null;
   current_page: number | null;
+  /** 즐겨찾기(핀) — 메인 대시보드 최상단 고정 */
+  is_pinned?: boolean;
+  pinned_at?: string | null;
   created_at: string;
   updated_at: string;
 }

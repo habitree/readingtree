@@ -26,7 +26,8 @@ import type { UserPersona } from "@/types/persona";
 import type { ReadingStats } from "@/types/persona";
 import { useStyle } from "@/hooks/use-style";
 import { useTranslation } from "@/lib/i18n";
-import { ContinueReadingCard, NoReadingBookCard } from "./continue-reading-card";
+import { NoReadingBookCard } from "./continue-reading-card";
+import { PinnedBookCard } from "./pinned-book-card";
 import { CollapsibleSection } from "./collapsible-section";
 import { OnboardingChecklist, type OnboardingItem } from "@/components/onboarding/onboarding-checklist";
 import { FirstNotePrompt } from "@/components/onboarding/first-note-prompt";
@@ -43,6 +44,9 @@ interface ContinueReadingData {
   totalPages: number | null;
   progressPercent: number;
   lastActivityAt: string;
+  /** 즐겨찾기(핀) 여부 — 정렬상 최상단 고정 */
+  isPinned?: boolean;
+  pinnedAt?: string | null;
 }
 
 interface WeeklyProgressDay {
@@ -357,20 +361,20 @@ export const HomeHeroSection = memo(function HomeHeroSection({
       {(userName || (isGuest && continueReadingBooks.length > 0)) && (
         <div className="space-y-2 sm:space-y-3">
           {continueReadingBooks.length > 0 ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 gap-2 sm:gap-3">
-              {continueReadingBooks.slice(0, 6).map((book, index) => (
-                <ContinueReadingCard
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 sm:gap-3">
+              {continueReadingBooks.slice(0, 8).map((book, index) => (
+                <PinnedBookCard
                   key={book.userBookId}
                   userBookId={book.userBookId}
-                  bookId={book.bookId}
                   title={book.title}
                   author={book.author}
                   coverImageUrl={book.coverImageUrl}
                   currentPage={book.currentPage}
                   totalPages={book.totalPages}
                   progressPercent={book.progressPercent}
-                  compact={true}
-                  priority={index === 0}
+                  isPinned={!!book.isPinned}
+                  pinDisabled={isGuest}
+                  priority={index < 2}
                 />
               ))}
             </div>

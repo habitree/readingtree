@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, memo } from "react";
+import { useState, useCallback, useTransition, memo } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { BookStatusBadge } from "./book-status-badge";
@@ -17,10 +17,12 @@ import {
 } from "@/components/ui/hover-card";
 import { getImageUrl, isValidImageUrl } from "@/lib/utils/image";
 import { cn } from "@/lib/utils";
-import { BookOpen, Users, Link2 } from "lucide-react";
+import { BookOpen, Users, Link2, Star, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import { useTranslation } from "@/lib/i18n";
 import type { BookWithUserBook, ReadingStatus } from "@/types/book";
 import type { BookWithNotes } from "@/app/actions/books";
+import { toggleUserBookPin } from "@/app/actions/books";
 
 interface RelatedBookPreview {
   userBookId: string;
@@ -35,6 +37,8 @@ interface BookCardProps {
   groupBooks?: BookWithNotes["groupBooks"];
   relatedBooks?: RelatedBookPreview[];
   isSample?: boolean;
+  /** 즐겨찾기(핀) 여부 — 별 아이콘 채움/비어있음 표시 */
+  isPinned?: boolean;
 }
 
 /**
@@ -42,7 +46,7 @@ interface BookCardProps {
  * 책 목록에서 사용되는 카드 형태의 책 정보 표시
  * React.memo로 래핑하여 불필요한 리렌더링 방지
  */
-function BookCardComponent({ book, userBookId, status, groupBooks, relatedBooks, isSample: isSampleProp = false }: BookCardProps) {
+function BookCardComponent({ book, userBookId, status, groupBooks, relatedBooks, isSample: isSampleProp = false, isPinned: isPinnedProp = false }: BookCardProps) {
   const { t } = useTranslation();
   // 이미지 상태를 단일 객체로 통합 (리렌더링 최적화)
   const [imageState, setImageState] = useState({ error: false, retryCount: 0 });
@@ -51,11 +55,30 @@ function BookCardComponent({ book, userBookId, status, groupBooks, relatedBooks,
   // isSample은 prop으로 전달되거나 userBookId가 sample-로 시작하는 경우
   const isSample = isSampleProp || userBookId?.startsWith("sample-") || false;
 
-  // userBookId 검증
-  if (!userBookId || typeof userBookId !== 'string' || userBookId.trim() === '') {
-    console.error('BookCard: userBookId가 유효하지 않습니다.', { userBookId, book });
-    return null;
-  }
+  // 핀 토글 (낙관적 업데이트)
+  const [pinned, setPinned] = useState(isPinnedProp);
+  const [isPinPending, startPinTransition] = useTransition();
+  const handleTogglePin = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (isSample || isPinPending) return;
+      const previous = pinned;
+      setPinned(!previous);
+      startPinTransition(async () => {
+        try {
+          const result = await toggleUserBookPin(userBookId);
+          setPinned(result.isPinned);
+          toast.success(result.isPinned ? "즐겨찾기에 추가했어요." : "즐겨찾기에서 제거했어요.");
+        } catch (err) {
+          setPinned(previous);
+          const msg = err instanceof Error ? err.message : "요청에 실패했어요.";
+          toast.error(msg);
+        }
+      });
+    },
+    [pinned, isPinPending, isSample, userBookId],
+  );
 
   const handleImageError = useCallback(() => {
     setImageState((prev) => {
@@ -71,6 +94,12 @@ function BookCardComponent({ book, userBookId, status, groupBooks, relatedBooks,
       }
     });
   }, []);
+
+  // userBookId 검증 (모든 hooks 이후)
+  if (!userBookId || typeof userBookId !== 'string' || userBookId.trim() === '') {
+    console.error('BookCard: userBookId가 유효하지 않습니다.', { userBookId, book });
+    return null;
+  }
 
   return (
     <div className="relative group">
@@ -109,6 +138,13 @@ function BookCardComponent({ book, userBookId, status, groupBooks, relatedBooks,
                     <Link2 className="w-2.5 h-2.5" />
                     <span>{relatedBooks.length}</span>
                   </div>
+                </div>
+              )}
+
+              {/* 핀(즐겨찾기) 상태 뱃지 — 좌상단, 핀된 책에만 */}
+              {pinned && (
+                <div className="absolute top-1.5 left-1.5 inline-flex items-center gap-0.5 rounded-full bg-amber-400/95 px-1.5 py-0.5 text-[10px] font-bold text-amber-900 shadow-sm backdrop-blur-sm pointer-events-none">
+                  <Star className="h-2.5 w-2.5 fill-current" />
                 </div>
               )}
             </div>
@@ -220,24 +256,55 @@ function BookCardComponent({ book, userBookId, status, groupBooks, relatedBooks,
           </CardContent>
         </Card>
       </Link>
-      {/* 삭제 버튼 - 모바일: 반투명 표시, 데스크톱: 호버 시 표시 (샘플 데이터 제외) */}
+      {/* 우상단 액션 버튼들: 핀 토글 + 삭제 (샘플 데이터 제외) */}
       {!isSample && (
         <div
           className={cn(
-            "absolute top-0.5 right-0.5 sm:top-2 sm:right-2 z-10 transition-opacity origin-top-right",
-            // 모바일: 축소 비율 + 반투명 표시, 터치 시 불투명
+            "absolute top-0.5 right-0.5 sm:top-2 sm:right-2 z-10 flex items-center gap-1 transition-opacity origin-top-right",
             "scale-75 sm:scale-100",
-            "opacity-50 active:opacity-100",
-            // 데스크톱: 호버 시 표시
-            "sm:opacity-0 sm:group-hover:opacity-100"
           )}
           onClick={(e) => e.stopPropagation()}
         >
-          <BookDeleteButton
-            userBookId={userBookId}
-            bookTitle={book.title}
-            variant="icon"
-          />
+          {/* 핀 토글 버튼 */}
+          <button
+            type="button"
+            onClick={handleTogglePin}
+            disabled={isPinPending}
+            aria-label={pinned ? "즐겨찾기 해제" : "즐겨찾기 추가"}
+            aria-pressed={pinned}
+            className={cn(
+              "inline-flex h-7 w-7 items-center justify-center rounded-full shadow-sm border transition-all",
+              pinned
+                ? "bg-amber-400 text-amber-900 border-amber-300 hover:bg-amber-300 opacity-100"
+                : cn(
+                    "bg-white/90 dark:bg-slate-900/90 text-slate-500 hover:text-amber-500 hover:bg-white dark:hover:bg-slate-900 border-white/60 dark:border-slate-700/60",
+                    // 미핀 상태는 모바일 반투명 / PC 호버 강조
+                    "opacity-50 active:opacity-100 sm:opacity-0 sm:group-hover:opacity-100",
+                  ),
+              isPinPending && "opacity-60 cursor-not-allowed",
+            )}
+          >
+            {isPinPending ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Star className={cn("h-3.5 w-3.5", pinned && "fill-current")} />
+            )}
+          </button>
+
+          {/* 삭제 버튼 */}
+          <div
+            className={cn(
+              "transition-opacity",
+              "opacity-50 active:opacity-100",
+              "sm:opacity-0 sm:group-hover:opacity-100",
+            )}
+          >
+            <BookDeleteButton
+              userBookId={userBookId}
+              bookTitle={book.title}
+              variant="icon"
+            />
+          </div>
         </div>
       )}
     </div>
