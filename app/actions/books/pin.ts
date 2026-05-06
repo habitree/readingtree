@@ -68,12 +68,18 @@ export async function toggleUserBookPin(
   const nextPinned = !(existing as { is_pinned?: boolean }).is_pinned;
   const nextPinnedAt = nextPinned ? new Date().toISOString() : null;
 
+  // 핀 ON 시 홈 숨김도 함께 해제(사용자 의도 우선) — 핀했는데 안 보이면 혼란.
+  const updatePayload: Record<string, unknown> = {
+    is_pinned: nextPinned,
+    pinned_at: nextPinnedAt,
+  };
+  if (nextPinned) {
+    updatePayload.hidden_from_home = false;
+  }
+
   const { error: updateError } = await supabase
     .from("user_books")
-    .update({
-      is_pinned: nextPinned,
-      pinned_at: nextPinnedAt,
-    })
+    .update(updatePayload)
     .eq("id", userBookId)
     .eq("user_id", currentUser.id);
 
@@ -85,4 +91,61 @@ export async function toggleUserBookPin(
   revalidatePath("/books");
 
   return { success: true, isPinned: nextPinned, pinnedAt: nextPinnedAt };
+}
+
+interface SetHiddenResult {
+  success: true;
+  hiddenFromHome: boolean;
+}
+
+/**
+ * user_books.hidden_from_home 설정.
+ *  - hidden=true → 홈 이어읽기에서 카드 숨김
+ *  - hidden=false → 홈 이어읽기에 다시 노출
+ *
+ * 핀(is_pinned=TRUE)된 책은 정렬 단계에서 hidden 무관 노출되므로,
+ * 사용자가 명시적으로 핀을 해제하기 전까지는 항상 보임.
+ */
+export async function setUserBookHomeHidden(
+  userBookId: string,
+  hidden: boolean,
+  user?: User | null,
+): Promise<SetHiddenResult> {
+  if (!isValidUUID(userBookId)) {
+    throw new Error("유효하지 않은 책 ID입니다.");
+  }
+
+  const currentUser = user ?? (await getCurrentUser());
+  if (!currentUser) throw new Error("로그인이 필요합니다.");
+
+  const supabase = await createServerSupabaseClient();
+
+  // 소유 검증
+  const { data: existing, error: fetchError } = await supabase
+    .from("user_books")
+    .select("id")
+    .eq("id", userBookId)
+    .eq("user_id", currentUser.id)
+    .maybeSingle();
+
+  if (fetchError) {
+    throw new Error(sanitizeErrorMessage(fetchError));
+  }
+  if (!existing) {
+    throw new Error("권한이 없거나 책을 찾을 수 없습니다.");
+  }
+
+  const { error: updateError } = await supabase
+    .from("user_books")
+    .update({ hidden_from_home: hidden })
+    .eq("id", userBookId)
+    .eq("user_id", currentUser.id);
+
+  if (updateError) {
+    throw new Error(sanitizeErrorMessage(updateError));
+  }
+
+  revalidatePath("/");
+
+  return { success: true, hiddenFromHome: hidden };
 }

@@ -3,10 +3,10 @@
 import { memo, useTransition, useState, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { BookOpen, Star, Loader2, PenLine } from "lucide-react";
+import { BookOpen, Star, Loader2, PenLine, X } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { toggleUserBookPin } from "@/app/actions/books";
+import { toggleUserBookPin, setUserBookHomeHidden } from "@/app/actions/books";
 import { useRecordSheetStore } from "@/hooks/use-record-sheet";
 
 interface PinnedBookCardProps {
@@ -52,7 +52,9 @@ export const PinnedBookCard = memo(function PinnedBookCard({
   priority = false,
 }: PinnedBookCardProps) {
   const [pinned, setPinned] = useState(isPinned);
+  const [hidden, setHidden] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const [isHiding, startHideTransition] = useTransition();
   const openRecordStart = useRecordSheetStore((s) => s.openStart);
 
   const handleTogglePin = useCallback(
@@ -77,6 +79,41 @@ export const PinnedBookCard = memo(function PinnedBookCard({
     [pinned, pinDisabled, isPending, userBookId],
   );
 
+  const handleHideFromHome = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (pinDisabled || isHiding) return;
+      // 즉시 카드 숨김(낙관) — 사용자에게 빠른 피드백
+      setHidden(true);
+      startHideTransition(async () => {
+        try {
+          await setUserBookHomeHidden(userBookId, true);
+          toast.success("홈에서 숨겼어요.", {
+            description: "서재에서 즐겨찾기를 켜면 다시 표시돼요.",
+            action: {
+              label: "되돌리기",
+              onClick: async () => {
+                try {
+                  await setUserBookHomeHidden(userBookId, false);
+                  setHidden(false);
+                  toast.success("다시 표시했어요.");
+                } catch {
+                  toast.error("되돌리기에 실패했어요.");
+                }
+              },
+            },
+          });
+        } catch (err) {
+          setHidden(false);
+          const msg = err instanceof Error ? err.message : "요청에 실패했어요.";
+          toast.error(msg);
+        }
+      });
+    },
+    [pinDisabled, isHiding, userBookId],
+  );
+
   const handleStartRecord = useCallback(
     (e: React.MouseEvent) => {
       e.preventDefault();
@@ -97,6 +134,9 @@ export const PinnedBookCard = memo(function PinnedBookCard({
   );
 
   const safeProgress = Math.max(0, Math.min(100, progressPercent));
+
+  // 홈에서 숨김 처리된 카드는 렌더링하지 않음 (낙관 업데이트 — 서버 revalidate 전)
+  if (hidden) return null;
 
   return (
     <div className="relative group">
@@ -176,31 +216,58 @@ export const PinnedBookCard = memo(function PinnedBookCard({
         </div>
       </Link>
 
-      {/* 핀 토글 (우상단) */}
+      {/* 우상단 액션: 핀 토글 + 홈에서 숨기기 (X) */}
       {!pinDisabled && (
-        <button
-          type="button"
-          onClick={handleTogglePin}
-          disabled={isPending}
-          aria-label={pinned ? "즐겨찾기 해제" : "즐겨찾기 추가"}
-          aria-pressed={pinned}
-          className={cn(
-            "absolute top-1.5 right-1.5 z-10 inline-flex h-6 w-6 items-center justify-center rounded-full shadow-sm backdrop-blur-sm transition-all",
-            "border border-white/60 dark:border-slate-700/60",
-            pinned
-              ? "bg-amber-400 text-amber-900 hover:bg-amber-300"
-              : "bg-white/85 dark:bg-slate-900/85 text-slate-400 hover:text-amber-500 hover:bg-white dark:hover:bg-slate-900",
-            "opacity-90 sm:opacity-0 sm:group-hover:opacity-100",
-            pinned && "opacity-100 sm:opacity-100",
-            isPending && "opacity-60 cursor-not-allowed",
+        <div className="absolute top-1.5 right-1.5 z-10 flex items-center gap-1">
+          {/* 핀 토글 */}
+          <button
+            type="button"
+            onClick={handleTogglePin}
+            disabled={isPending}
+            aria-label={pinned ? "즐겨찾기 해제" : "즐겨찾기 추가"}
+            aria-pressed={pinned}
+            className={cn(
+              "inline-flex h-6 w-6 items-center justify-center rounded-full shadow-sm backdrop-blur-sm transition-all",
+              "border border-white/60 dark:border-slate-700/60",
+              pinned
+                ? "bg-amber-400 text-amber-900 hover:bg-amber-300"
+                : "bg-white/85 dark:bg-slate-900/85 text-slate-400 hover:text-amber-500 hover:bg-white dark:hover:bg-slate-900",
+              "opacity-90 sm:opacity-0 sm:group-hover:opacity-100",
+              pinned && "opacity-100 sm:opacity-100",
+              isPending && "opacity-60 cursor-not-allowed",
+            )}
+          >
+            {isPending ? (
+              <Loader2 className="h-3 w-3 animate-spin" />
+            ) : (
+              <Star className={cn("h-3 w-3", pinned && "fill-current")} />
+            )}
+          </button>
+
+          {/* 홈에서 숨기기 — 핀된 책에는 표시하지 않음(핀이 우선되므로 의미 없음) */}
+          {!pinned && (
+            <button
+              type="button"
+              onClick={handleHideFromHome}
+              disabled={isHiding}
+              aria-label="홈 화면에서 숨기기"
+              title="홈 화면에서 숨기기 (서재에는 그대로)"
+              className={cn(
+                "inline-flex h-5 w-5 items-center justify-center rounded-full shadow-sm backdrop-blur-sm transition-all",
+                "border border-white/60 dark:border-slate-700/60",
+                "bg-white/85 dark:bg-slate-900/85 text-slate-400 hover:text-rose-500 hover:bg-white dark:hover:bg-slate-900",
+                "opacity-70 sm:opacity-0 sm:group-hover:opacity-100",
+                isHiding && "opacity-60 cursor-not-allowed",
+              )}
+            >
+              {isHiding ? (
+                <Loader2 className="h-2.5 w-2.5 animate-spin" />
+              ) : (
+                <X className="h-2.5 w-2.5" strokeWidth={3} />
+              )}
+            </button>
           )}
-        >
-          {isPending ? (
-            <Loader2 className="h-3 w-3 animate-spin" />
-          ) : (
-            <Star className={cn("h-3 w-3", pinned && "fill-current")} />
-          )}
-        </button>
+        </div>
       )}
     </div>
   );

@@ -1014,6 +1014,7 @@ export async function getContinueReadingBooks(user?: User | null, maxCount: numb
       status,
       is_pinned,
       pinned_at,
+      hidden_from_home,
       books (
         id,
         title,
@@ -1100,20 +1101,34 @@ export async function getContinueReadingBooks(user?: User | null, maxCount: numb
       lastActivityAt: latestActivity,
       isPinned: !!book.is_pinned,
       pinnedAt: book.pinned_at ?? null,
+      hiddenFromHome: !!book.hidden_from_home,
     };
-  }).filter((item): item is NonNullable<typeof item> => item !== null);
+  })
+    .filter((item): item is NonNullable<typeof item> => item !== null)
+    // 홈 숨김 필터: 핀된 책은 사용자 의도대로 항상 노출, 비핀이면서 숨김된 책만 제외.
+    .filter((item) => item.isPinned || !item.hiddenFromHome);
 
-  // 정렬: 핀 우선(pinned_at DESC) → 그 외 lastActivityAt DESC
+  // 정렬:
+  //  1) 핀(즐겨찾기) 우선 — is_pinned=TRUE 가 먼저
+  //  2) 같은 그룹(핀끼리, 비핀끼리) 내부에서는 lastActivityAt DESC
+  //     (최근에 진행/기록이 있는 책이 위 — 핀끼리도 자주 읽는 책이 상단)
+  //  3) 활동이 동일한 경우 핀 그룹은 pinned_at DESC 로 안정 정렬 보조
   return booksWithActivity
     .sort((a, b) => {
       if (a.isPinned && !b.isPinned) return -1;
       if (!a.isPinned && b.isPinned) return 1;
+
+      const at = new Date(a.lastActivityAt).getTime();
+      const bt = new Date(b.lastActivityAt).getTime();
+      if (bt !== at) return bt - at;
+
+      // 동률일 때 핀끼리는 pinned_at 으로 보조 정렬
       if (a.isPinned && b.isPinned) {
         const ap = a.pinnedAt ? new Date(a.pinnedAt).getTime() : 0;
         const bp = b.pinnedAt ? new Date(b.pinnedAt).getTime() : 0;
         return bp - ap;
       }
-      return new Date(b.lastActivityAt).getTime() - new Date(a.lastActivityAt).getTime();
+      return 0;
     })
     .slice(0, maxCount);
 }
