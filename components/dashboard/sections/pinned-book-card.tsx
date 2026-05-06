@@ -3,6 +3,7 @@
 import { memo, useTransition, useState, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { BookOpen, Star, Loader2, PenLine, X } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -30,13 +31,20 @@ interface PinnedBookCardProps {
  * 메인 대시보드 8개 그리드 카드.
  *
  * 레이아웃:
- *   가로형 — 좌측 작은 표지(48×64) + 우측 정보(제목·저자·진행률·기록 버튼).
- *   "표지는 작게, 제목·내용·진행률·기록 버튼 모두 표시" 요구에 맞춘 컴팩트 카드.
+ *   가로형 — 좌측 작은 표지 + 우측 정보(제목·저자·페이지/진행률).
+ *   하단: 진행률 바 + 두 액션 버튼(메모 / 독서) 균등 분할.
  *
- * 액션:
+ * 두 액션 버튼 (이전 "기록 작성" / "독서 기록" 용어 충돌 정리):
+ *   - 메모 (PenLine 아이콘) → /notes/new?bookId=<userBookId>
+ *     자유 노트(인용·메모·사진·필사) 작성. 텍스트 기반.
+ *   - 독서 (BookOpen 아이콘) → useRecordSheetStore.openStart()
+ *     시간 측정 + 페이지 진행 세션 시작.
+ *   둘 다 짧은 한 단어 + 명확한 아이콘으로 모바일에서도 직관적.
+ *
+ * 기타:
  *   - 카드 본문(Link) → 책 상세
- *   - 우상단 별 → 즐겨찾기 토글 (낙관 업데이트)
- *   - 하단 "기록" 버튼 → useRecordSheetStore.openStart() 로 세션 시작 시트
+ *   - 우상단 별 → 즐겨찾기 토글 (낙관)
+ *   - 우상단 X (핀 아닌 카드만) → 홈에서 숨기기 (낙관 + Undo 토스트)
  */
 export const PinnedBookCard = memo(function PinnedBookCard({
   userBookId,
@@ -51,6 +59,7 @@ export const PinnedBookCard = memo(function PinnedBookCard({
   pinDisabled = false,
   priority = false,
 }: PinnedBookCardProps) {
+  const router = useRouter();
   const [pinned, setPinned] = useState(isPinned);
   const [hidden, setHidden] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -114,7 +123,8 @@ export const PinnedBookCard = memo(function PinnedBookCard({
     [pinDisabled, isHiding, userBookId],
   );
 
-  const handleStartRecord = useCallback(
+  // "독서" 버튼 — 시간 측정 + 페이지 진행 세션 시작
+  const handleStartReading = useCallback(
     (e: React.MouseEvent) => {
       e.preventDefault();
       e.stopPropagation();
@@ -131,6 +141,17 @@ export const PinnedBookCard = memo(function PinnedBookCard({
       });
     },
     [pinDisabled, openRecordStart, userBookId, bookId, title, author, coverImageUrl, totalPages],
+  );
+
+  // "메모" 버튼 — 자유 노트(인용·메모·사진·필사) 작성 페이지로 이동
+  const handleOpenMemo = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (pinDisabled) return;
+      router.push(`/notes/new?bookId=${userBookId}`);
+    },
+    [pinDisabled, router, userBookId],
   );
 
   const safeProgress = Math.max(0, Math.min(100, progressPercent));
@@ -198,21 +219,37 @@ export const PinnedBookCard = memo(function PinnedBookCard({
             />
           </div>
 
-          {/* 기록 시작 버튼 (풀폭) */}
-          <button
-            type="button"
-            onClick={handleStartRecord}
-            disabled={pinDisabled}
-            className={cn(
-              "w-full inline-flex items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 text-[11px] sm:text-xs font-semibold transition-colors",
-              "bg-forest-50 text-forest-700 hover:bg-forest-100 dark:bg-forest-900/30 dark:text-forest-300 dark:hover:bg-forest-900/50",
-              pinDisabled && "opacity-50 cursor-not-allowed",
-            )}
-            aria-label={`${title} 기록 시작`}
-          >
-            <PenLine className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-            기록
-          </button>
+          {/* 두 액션 버튼: 메모(텍스트 작성) / 독서(시간 측정) — 균등 분할 */}
+          <div className="grid grid-cols-2 gap-1.5">
+            <button
+              type="button"
+              onClick={handleOpenMemo}
+              disabled={pinDisabled}
+              className={cn(
+                "inline-flex items-center justify-center gap-1 rounded-lg px-1.5 py-1.5 text-[11px] sm:text-xs font-semibold transition-colors",
+                "bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700",
+                pinDisabled && "opacity-50 cursor-not-allowed",
+              )}
+              aria-label={`${title} 메모 작성`}
+            >
+              <PenLine className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+              메모
+            </button>
+            <button
+              type="button"
+              onClick={handleStartReading}
+              disabled={pinDisabled}
+              className={cn(
+                "inline-flex items-center justify-center gap-1 rounded-lg px-1.5 py-1.5 text-[11px] sm:text-xs font-semibold transition-colors",
+                "bg-forest-50 text-forest-700 hover:bg-forest-100 dark:bg-forest-900/30 dark:text-forest-300 dark:hover:bg-forest-900/50",
+                pinDisabled && "opacity-50 cursor-not-allowed",
+              )}
+              aria-label={`${title} 독서 시작`}
+            >
+              <BookOpen className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+              독서
+            </button>
+          </div>
         </div>
       </Link>
 
