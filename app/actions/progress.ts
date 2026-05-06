@@ -519,8 +519,15 @@ const STAMP_MIN_SECONDS = 30;
 const STAMP_MEMO_MAX = 500;
 
 /**
- * 직전 reading_log.end_page 조회 (start_page 자동승계용).
- * 우선순위: 직전 reading_logs.end_page → user_books.current_page → 0
+ * 새 세션의 시작 페이지 결정 — 진행률(user_books.current_page) 기준.
+ *
+ * 정책 (사용자 요구: "독서 시작 시 진행률 기준 시작 페이지로 기본 적용"):
+ *   - user_books.current_page 와 직전 reading_logs.end_page 중 더 큰 값을 사용.
+ *   - 사용자가 책 상세에서 진행률을 수동 갱신했을 때 그 값(current_page)이 정확.
+ *   - 단, 마지막 세션의 end_page 가 더 멀리 진행됐다면 그쪽을 우선.
+ *   - 둘 다 없으면 0.
+ *
+ * 호출처: record-start-step.tsx (UI prefill), startReadingSession (서버 결정).
  */
 export async function getLastEndPage(
   userBookId: string,
@@ -542,30 +549,34 @@ export async function getLastEndPage(
     currentUser = fetchedUser;
   }
 
-  // 1. 직전 로그의 end_page 조회
-  const { data: lastLog } = await supabase
-    .from("reading_logs")
-    .select("end_page, page_number")
-    .eq("user_book_id", userBookId)
-    .eq("user_id", currentUser.id)
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+  const [lastLogResult, userBookResult] = await Promise.all([
+    supabase
+      .from("reading_logs")
+      .select("end_page, page_number")
+      .eq("user_book_id", userBookId)
+      .eq("user_id", currentUser.id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    supabase
+      .from("user_books")
+      .select("current_page")
+      .eq("id", userBookId)
+      .eq("user_id", currentUser.id)
+      .maybeSingle(),
+  ]);
 
-  const lastEnd = lastLog?.end_page ?? lastLog?.page_number;
-  if (typeof lastEnd === "number" && lastEnd >= 0) {
-    return lastEnd;
-  }
+  const fromLog = lastLogResult.data
+    ? (lastLogResult.data.end_page ?? lastLogResult.data.page_number ?? null)
+    : null;
+  const fromBook = userBookResult.data?.current_page ?? null;
 
-  // 2. user_books.current_page 폴백
-  const { data: userBook } = await supabase
-    .from("user_books")
-    .select("current_page")
-    .eq("id", userBookId)
-    .eq("user_id", currentUser.id)
-    .maybeSingle();
+  const candidates: number[] = [];
+  if (typeof fromLog === "number" && fromLog >= 0) candidates.push(fromLog);
+  if (typeof fromBook === "number" && fromBook >= 0) candidates.push(fromBook);
+  if (candidates.length === 0) return 0;
 
-  return userBook?.current_page ?? 0;
+  return Math.max(...candidates);
 }
 
 /**

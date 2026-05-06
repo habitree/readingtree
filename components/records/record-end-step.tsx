@@ -65,6 +65,16 @@ export function RecordEndStep({ sessionId, selectedBook, prefillEndPage, onSaved
         broadcastEnd(result.sessionId);
         broadcastSessionEnded(result.sessionId);
 
+        if (result.discarded) {
+          // 3분 미만 + 메모·사진·북마크 모두 없음 → 자동 폐기 (행 삭제됨)
+          toast.info("3분 미만의 단순 시간 기록은 저장하지 않았어요.", {
+            description: "메모·사진·북마크가 있으면 짧아도 그대로 저장돼요.",
+            duration: 4000,
+          });
+          close();
+          return;
+        }
+
         const minutes = Math.round(result.durationSeconds / 60);
         const pagesRead = Math.max(0, endPage - startPage);
         const pointsLabel = result.pointsEarned ? ` +${result.pointsEarned}p` : "";

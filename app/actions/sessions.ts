@@ -35,6 +35,12 @@ const BOOKMARK_TEXT_MAX = 200;
 const IMAGE_URLS_MAX = 5;
 const CANCEL_DELETE_THRESHOLD_S = 30;
 const ABANDON_HOURS = 12;
+/**
+ * 자동 폐기 임계값 — endReadingSession 시 이 미만이고
+ * 메모/북마크/사진이 모두 비어있으면 행을 DELETE 하여 저장하지 않는다.
+ * "3분 이내의 단순 시간만 있는 기록은 삭제" 정책.
+ */
+const AUTO_DISCARD_THRESHOLD_S = 180;
 
 // =============================================================================
 // 내부 헬퍼
@@ -239,6 +245,12 @@ export async function startReadingSession(
  *  - end_page·메모·북마크·image_urls 일괄 저장.
  *  - 포인트는 D4 정책에 따라 1회만 적립 (note_create).
  *  - DB 트리거가 image_urls[0] → image_url 자동 미러링 + 첫 사진 시 promoted_at 자동.
+ *
+ * 자동 폐기:
+ *  - duration < AUTO_DISCARD_THRESHOLD_S(=180s, 3분) 이고
+ *    메모/북마크/사진이 모두 비어있으면 행 DELETE.
+ *  - 이 경우 result.discarded=true 로 반환 → 호출자가 toast 메시지 분기.
+ *  - 메모·사진·북마크 중 하나라도 있으면 정상 저장 (값을 보호).
  */
 export async function endReadingSession(
   input: EndSessionInput,
@@ -249,6 +261,8 @@ export async function endReadingSession(
   pointsEarned: number;
   reachedEnd: boolean;
   promotedToStamp: boolean;
+  /** 시간 짧고 입력 없어 자동 폐기된 경우 true (행 DELETE 됨) */
+  discarded?: boolean;
 }> {
   const currentUser = await resolveUser(user);
   const supabase = await createServerSupabaseClient();
@@ -292,6 +306,51 @@ export async function endReadingSession(
   const startPage = session.start_page ?? 0;
   const endPage = Math.max(input.end_page, startPage);
   const imageUrls = input.image_urls ?? [];
+
+  // ─ 자동 폐기 판정: 3분 미만 + 메모·북마크·사진·페이지 진행 모두 없음 ─
+  const trimmedMemo = input.memo?.trim() ?? "";
+  const trimmedBookmark = input.bookmark_text?.trim() ?? "";
+  const hasMemo = trimmedMemo.length > 0;
+  const hasBookmark = trimmedBookmark.length > 0 || typeof input.bookmark_page === "number";
+  const hasImages = imageUrls.length > 0;
+  const hasPageProgress = endPage > startPage;
+  const isShortAndEmpty =
+    durationSeconds < AUTO_DISCARD_THRESHOLD_S &&
+    !hasMemo && !hasBookmark && !hasImages && !hasPageProgress;
+
+  if (isShortAndEmpty) {
+    const { error: delError } = await supabase
+      .from("reading_logs")
+      .delete()
+      .eq("id", session.id)
+      .eq("user_id", currentUser.id);
+
+    if (delError) {
+      throw new Error(sanitizeErrorMessage(delError));
+    }
+
+    revalidatePath("/");
+
+    // 텔레메트리 — auto_discard 사유로 abandoned 이벤트
+    void recordRecordEvent({
+      event: "record_abandoned",
+      userId: currentUser.id,
+      sessionId: session.id,
+      metadata: {
+        duration_s: durationSeconds,
+        source: "auto_short_empty",
+      },
+    });
+
+    return {
+      sessionId: session.id,
+      durationSeconds,
+      pointsEarned: 0,
+      reachedEnd: false,
+      promotedToStamp: false,
+      discarded: true,
+    };
+  }
 
   const { data: updated, error: updateError } = await supabase
     .from("reading_logs")
