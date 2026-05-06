@@ -35,6 +35,7 @@ import {
   attachStampToLog,
   createReadingStamp,
   getLastEndPage,
+  updateReadingLogEntry,
 } from "@/app/actions/progress";
 import { StampPreviewCard } from "./stamp-preview-card";
 
@@ -203,9 +204,9 @@ export function StampCaptureSheet() {
   };
 
   const hasImage = !!imageUploadedUrl;
-  // attach 모드는 사진 필수
+  // attach 모드 — 사진 선택사항. 메모·페이지만 수정해도 저장 가능.
   const canSave = isAttachMode
-    ? !isPending && !isUploadingImage && hasImage
+    ? !isPending && !isUploadingImage
     : !isPending && !isUploadingImage && durationSeconds >= 30;
 
   const handleSave = () => {
@@ -214,26 +215,33 @@ export function StampCaptureSheet() {
       return;
     }
 
-    // attach 모드 — 기존 로그에 사진 첨부
+    // attach 모드 — 사진 있으면 스탬프 승격, 없으면 메모·페이지만 수정 저장
     if (isAttachMode) {
       if (!store.targetLogId) {
         toast.error("대상 기록을 찾을 수 없어요.");
         return;
       }
-      if (!imageUploadedUrl) {
-        toast.error("사진을 추가해주세요.");
-        return;
-      }
 
       startTransition(async () => {
         try {
-          await attachStampToLog(store.targetLogId!, {
-            image_url: imageUploadedUrl,
-            start_page: startPage,
-            end_page: endPage,
-            memo: memo.trim() || undefined,
-          });
-          toast.success(t("stamp.attachSaved"));
+          if (imageUploadedUrl) {
+            // 사진 첨부 — 스탬프 승격 (메모·페이지 함께 갱신)
+            await attachStampToLog(store.targetLogId!, {
+              image_url: imageUploadedUrl,
+              start_page: startPage,
+              end_page: endPage,
+              memo: memo.trim() || undefined,
+            });
+            toast.success(t("stamp.attachSaved"));
+          } else {
+            // 사진 없이 — 메모·페이지만 수정 저장
+            await updateReadingLogEntry(store.targetLogId!, {
+              memo: memo.trim() || null,
+              start_page: startPage,
+              end_page: endPage,
+            });
+            toast.success("기록을 수정했어요.");
+          }
           store.reset();
         } catch (err) {
           const message = err instanceof Error ? err.message : t("stamp.attachFailed");

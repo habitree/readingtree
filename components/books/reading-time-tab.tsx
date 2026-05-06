@@ -6,10 +6,8 @@ import {
   getReadingTimeLogs,
   getReadingTimeStats,
   deleteProgressLog,
-  updateReadingLogEntry,
 } from "@/app/actions/progress";
 import {
-  Camera,
   Clock,
   Image as ImageIcon,
   Timer,
@@ -23,7 +21,6 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import type { ReadingLog } from "@/types/progress";
 import { useStampCaptureStore } from "@/hooks/use-stamp-capture";
-import { useTranslation } from "@/lib/i18n";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -34,19 +31,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
 import { ReadingTimeShareButton } from "./reading-time-share-button";
+import { ReadingTimeLinkShare } from "./reading-time-link-share";
 
 interface ReadingTimeTabProps {
   userBookId: string;
@@ -96,10 +82,7 @@ function groupByDate(logs: ReadingLog[]): Map<string, ReadingLog[]> {
   return groups;
 }
 
-const MEMO_MAX = 200;
-
 export function ReadingTimeTab({ userBookId, bookInfo }: ReadingTimeTabProps) {
-  const { t } = useTranslation();
   const openStampAttach = useStampCaptureStore((s) => s.openAttach);
   const [logs, setLogs] = useState<ReadingLog[]>([]);
   const [stats, setStats] = useState<{
@@ -111,63 +94,9 @@ export function ReadingTimeTab({ userBookId, bookInfo }: ReadingTimeTabProps) {
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [isDeleting, startDeleteTransition] = useTransition();
 
-  // 편집 다이얼로그 상태
-  const [editingLog, setEditingLog] = useState<ReadingLog | null>(null);
-  const [editMemo, setEditMemo] = useState("");
-  const [editStartPage, setEditStartPage] = useState<number>(0);
-  const [editEndPage, setEditEndPage] = useState<number>(0);
-  const [isSaving, startSaveTransition] = useTransition();
-
-  function openEdit(log: ReadingLog) {
-    setEditingLog(log);
-    setEditMemo(log.memo ?? "");
-    setEditStartPage(log.start_page ?? 0);
-    setEditEndPage(log.end_page ?? log.page_number ?? 0);
-  }
-
-  function closeEdit() {
-    if (isSaving) return;
-    setEditingLog(null);
-  }
-
-  function handleSaveEdit() {
-    if (!editingLog) return;
-    const targetId = editingLog.id;
-    const trimmedMemo = editMemo.trim();
-    const nextStart = Math.max(0, editStartPage);
-    const nextEnd = Math.max(nextStart, editEndPage);
-    const memoValue = trimmedMemo.length > 0 ? trimmedMemo : null;
-
-    startSaveTransition(async () => {
-      try {
-        await updateReadingLogEntry(targetId, {
-          memo: memoValue,
-          start_page: nextStart,
-          end_page: nextEnd,
-        });
-        setLogs((prev) =>
-          prev.map((l) =>
-            l.id === targetId
-              ? {
-                  ...l,
-                  memo: memoValue,
-                  start_page: nextStart,
-                  end_page: nextEnd,
-                  page_number: nextEnd,
-                }
-              : l,
-          ),
-        );
-        toast.success("기록을 수정했어요.");
-        setEditingLog(null);
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : "수정에 실패했어요.";
-        toast.error(msg);
-      }
-    });
-  }
-
-  function handleAddPhoto(log: ReadingLog) {
+  // "편집" — 사진 추가 시트(StampCaptureSheet attach 모드)로 통합 진입.
+  // 시트 안에서 사진/메모/페이지 자유롭게 수정 가능. 사진 없이도 저장됨.
+  function openEditSheet(log: ReadingLog) {
     openStampAttach(log.id, {
       book: bookInfo
         ? {
@@ -268,9 +197,10 @@ export function ReadingTimeTab({ userBookId, bookInfo }: ReadingTimeTabProps) {
   return (
     <>
       <div className="space-y-5">
-        {/* 통계 카드 + 공유 버튼 */}
+        {/* 통계 카드 + 공유 버튼들 (링크 / 이미지) */}
         <div className="space-y-2.5">
-          <div className="flex items-center justify-end">
+          <div className="flex items-center justify-end gap-2">
+            <ReadingTimeLinkShare bookTitle={bookInfo?.title ?? null} />
             <ReadingTimeShareButton
               bookInfo={bookInfo ?? null}
               stats={stats}
@@ -374,26 +304,16 @@ export function ReadingTimeTab({ userBookId, bookInfo }: ReadingTimeTabProps) {
                         )}
                       </div>
 
-                      {/* 우측: 사진추가(없으면) + 편집 + 삭제 */}
+                      {/* 우측: 편집 칩(사진/메모/페이지 통합) + 삭제 */}
                       <div className="flex items-center gap-1 shrink-0">
-                        {!hasImage && (
-                          <button
-                            type="button"
-                            onClick={() => handleAddPhoto(log)}
-                            className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-medium text-emerald-700 transition-colors hover:bg-emerald-100 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-400 dark:hover:bg-emerald-950/60"
-                            aria-label={t("stamp.addPhotoLater")}
-                          >
-                            <Camera className="h-3 w-3" />
-                            {t("stamp.addPhotoLater")}
-                          </button>
-                        )}
                         <button
                           type="button"
-                          onClick={() => openEdit(log)}
-                          className="inline-flex h-7 w-7 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-950/40"
-                          aria-label="기록 수정"
+                          onClick={() => openEditSheet(log)}
+                          className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-medium text-emerald-700 transition-colors hover:bg-emerald-100 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-400 dark:hover:bg-emerald-950/60"
+                          aria-label="기록 편집"
                         >
-                          <Pencil className="h-3.5 w-3.5" />
+                          <Pencil className="h-3 w-3" />
+                          편집
                         </button>
                         <button
                           type="button"
@@ -417,96 +337,6 @@ export function ReadingTimeTab({ userBookId, bookInfo }: ReadingTimeTabProps) {
           ))}
         </div>
       </div>
-
-      {/* 편집 다이얼로그 — 메모·시작/끝 페이지 인라인 수정 */}
-      <Dialog
-        open={!!editingLog}
-        onOpenChange={(open) => {
-          if (!open) closeEdit();
-        }}
-      >
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>기록 수정</DialogTitle>
-            <DialogDescription>
-              메모와 페이지를 자유롭게 수정할 수 있어요.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4">
-            {/* 페이지 */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="edit-start-page" className="text-xs">시작 페이지</Label>
-                <Input
-                  id="edit-start-page"
-                  type="number"
-                  inputMode="numeric"
-                  min={0}
-                  value={editStartPage}
-                  onChange={(e) => {
-                    const v = Number(e.target.value);
-                    setEditStartPage(Number.isFinite(v) && v >= 0 ? v : 0);
-                  }}
-                  disabled={isSaving}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="edit-end-page" className="text-xs">끝 페이지</Label>
-                <Input
-                  id="edit-end-page"
-                  type="number"
-                  inputMode="numeric"
-                  min={editStartPage}
-                  max={bookInfo?.totalPages ?? undefined}
-                  value={editEndPage}
-                  onChange={(e) => {
-                    const v = Number(e.target.value);
-                    setEditEndPage(Number.isFinite(v) ? v : editStartPage);
-                  }}
-                  disabled={isSaving}
-                />
-              </div>
-            </div>
-            <p className="text-[11px] text-muted-foreground tabular-nums">
-              읽은 페이지: {Math.max(0, editEndPage - editStartPage)}p
-            </p>
-
-            {/* 메모 */}
-            <div className="space-y-1.5">
-              <Label htmlFor="edit-memo" className="text-xs">메모 <span className="text-muted-foreground">(선택)</span></Label>
-              <Textarea
-                id="edit-memo"
-                placeholder="짧은 인상이나 생각을 남겨보세요"
-                value={editMemo}
-                onChange={(e) => setEditMemo(e.target.value.slice(0, MEMO_MAX))}
-                maxLength={MEMO_MAX}
-                className="h-24 resize-none"
-                disabled={isSaving}
-              />
-              <p className="text-[11px] text-right text-muted-foreground">
-                {editMemo.length}/{MEMO_MAX}
-              </p>
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={closeEdit} disabled={isSaving}>
-              취소
-            </Button>
-            <Button type="button" onClick={handleSaveEdit} disabled={isSaving}>
-              {isSaving ? (
-                <>
-                  <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
-                  저장 중...
-                </>
-              ) : (
-                "저장"
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       <AlertDialog
         open={!!pendingDeleteId}
