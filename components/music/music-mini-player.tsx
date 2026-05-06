@@ -100,6 +100,15 @@ export function MusicMiniPlayer() {
   const retryCount = useRef(0);
   const retryTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isBuffering = useRef(false);
+  /**
+   * 페이드 인/아웃 보조.
+   * - fadeTimer: 시작 페이드 인 setInterval 핸들 (진행 중 ≠ null)
+   * - 페이드 진행 중에는 useEffect[volume] 의 직접 audio.volume 동기화를 건너뛴다.
+   *   (사용자 슬라이더 변경은 다음 setInterval 콜백에서 자연스럽게 반영)
+   */
+  const fadeTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const FADE_IN_MS = 500;
+  const FADE_OUT_S = 1.2; // 트랙 끝 기준 초
   const MAX_RETRIES = 3;
 
   const {
@@ -141,6 +150,40 @@ export function MusicMiniPlayer() {
     };
   }, [isVisible, currentTrack]);
 
+  // 페이드 타이머 정리
+  const clearFade = useCallback(() => {
+    if (fadeTimer.current) {
+      clearInterval(fadeTimer.current);
+      fadeTimer.current = null;
+    }
+  }, []);
+
+  // 트랙 시작 페이드 인 — audio.volume 0 에서 사용자 설정값까지 점진 증가
+  const startFadeIn = useCallback(
+    (audio: HTMLAudioElement) => {
+      clearFade();
+      const STEPS = 20;
+      const interval = FADE_IN_MS / STEPS;
+      audio.volume = 0;
+      let step = 0;
+      fadeTimer.current = setInterval(() => {
+        step++;
+        const target = useMusicPlayer.getState().volume;
+        audio.volume = Math.max(0, Math.min(1, target * (step / STEPS)));
+        if (step >= STEPS) {
+          audio.volume = target;
+          clearFade();
+        }
+      }, interval);
+    },
+    [clearFade],
+  );
+
+  // unmount 시 타이머 정리
+  useEffect(() => {
+    return () => clearFade();
+  }, [clearFade]);
+
   // 안전한 play 호출 (재시도 포함)
   const safePlay = useCallback((audio: HTMLAudioElement) => {
     audio.play().catch((err: DOMException) => {
@@ -175,11 +218,18 @@ export function MusicMiniPlayer() {
     else audio.pause();
   }, [isPlaying, safePlay]);
 
-  // 트랙 변경 시 src 업데이트
+  // 트랙 변경 시 src 업데이트 + 페이드 인
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio || !currentTrack) return;
-    if (audio.src.endsWith(currentTrack.sourceUrl)) return;
+
+    // 시트(MusicOnlySheet.handlePlay)가 이미 src 설정 + audio.play() 호출한 경우.
+    // useEffect 가 currentTrack id 변경으로 트리거되었지만 src 는 그대로.
+    // → 페이드 인만 적용 (src 재설정·load·canplay 대기 불필요).
+    if (audio.src.endsWith(currentTrack.sourceUrl)) {
+      if (useMusicPlayer.getState().isPlaying) startFadeIn(audio);
+      return;
+    }
 
     isLoadingTrack.current = true;
     retryCount.current = 0;
@@ -191,7 +241,10 @@ export function MusicMiniPlayer() {
     const onCanPlay = () => {
       isLoadingTrack.current = false;
       audio.removeEventListener("canplay", onCanPlay);
-      if (useMusicPlayer.getState().isPlaying) safePlay(audio);
+      if (useMusicPlayer.getState().isPlaying) {
+        startFadeIn(audio);
+        safePlay(audio);
+      }
     };
 
     audio.addEventListener("canplay", onCanPlay);
@@ -202,12 +255,12 @@ export function MusicMiniPlayer() {
       audio.removeEventListener("canplay", onCanPlay);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentTrack?.id, safePlay]);
+  }, [currentTrack?.id, safePlay, startFadeIn]);
 
-  // 볼륨 동기화
+  // 볼륨 동기화 — 페이드 진행 중에는 직접 변경 생략(다음 setInterval 콜백에서 반영)
   useEffect(() => {
     const audio = audioRef.current;
-    if (audio) audio.volume = volume;
+    if (audio && !fadeTimer.current) audio.volume = volume;
   }, [volume]);
 
   // 시킹 동기화
@@ -228,9 +281,24 @@ export function MusicMiniPlayer() {
     if (!audio) return;
     lastSeek.current = audio.currentTime;
     updateTime(audio.currentTime, audio.duration || 0);
+
+    // 트랙 끝 페이드 아웃 — 페이드 인이 진행 중이면 건너뜀
+    if (!fadeTimer.current && audio.duration > 3) {
+      const remaining = audio.duration - audio.currentTime;
+      if (remaining > 0 && remaining < FADE_OUT_S) {
+        const target = useMusicPlayer.getState().volume;
+        audio.volume = Math.max(0, target * (remaining / FADE_OUT_S));
+      }
+    }
   }, [updateTime]);
 
-  const handleEnded = useCallback(() => next(), [next]);
+  const handleEnded = useCallback(() => {
+    // 페이드 아웃 후 다음 트랙 진입 — 페이드 인이 0 으로 다시 리셋해주지만
+    // canplay 대기 사이에 무음으로 들리지 않도록 사용자 볼륨으로 잠시 복원.
+    const audio = audioRef.current;
+    if (audio) audio.volume = useMusicPlayer.getState().volume;
+    next();
+  }, [next]);
 
   const handleError = useCallback(() => {
     isLoadingTrack.current = false;

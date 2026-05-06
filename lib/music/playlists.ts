@@ -1,9 +1,12 @@
 import type { MusicPlaylist } from "@/types/music";
 
-/** 큐레이션 플레이리스트 (8개 카테고리: 클래식 4 + 재즈 4, 검증된 79곡)
+/** 큐레이션 플레이리스트 (8개 카테고리: 클래식 4 + 재즈 4)
  *
- * 품질 개선: 56/96kbps 트랙 제거 → 128kbps+ 고품질 트랙으로 교체
- * 다양성 강화: 미사용 고품질 파일(320/192/160kbps) 15곡 추가
+ * 품질 정책: **128 kbps 이상**만 포함.
+ *  - 56/96 kbps 초기 정리 + 109~127 kbps 재정리(2026-05-06).
+ *  - 제거: track-021(127), track-066(109), track-119(117), track-120(111), track-143(111).
+ *  - tracks 테이블 행은 보존 — 향후 고품질 소스로 교체 시 다시 매핑 가능.
+ *  - DB 동기: migration-202605061700__playlist_tracks__remove_low_quality.sql
  */
 export const MUSIC_PLAYLISTS: MusicPlaylist[] = [
   {
@@ -25,7 +28,7 @@ export const MUSIC_PLAYLISTS: MusicPlaylist[] = [
     emoji: "🌙",
     trackIds: [
       "track-002", "track-008", "track-010", "track-016", "track-017",
-      "track-020", "track-021", "track-030",
+      "track-020", "track-030",
       "track-086", "track-087", "track-089", "track-090",
     ],
   },
@@ -35,7 +38,7 @@ export const MUSIC_PLAYLISTS: MusicPlaylist[] = [
     description: "빠르고 활기찬 클래식으로 에너지 충전",
     emoji: "🔥",
     trackIds: [
-      "track-014", "track-063", "track-064", "track-065", "track-066",
+      "track-014", "track-063", "track-064", "track-065",
       "track-091", "track-092", "track-093", "track-094", "track-095",
       "track-098",
     ],
