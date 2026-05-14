@@ -6,12 +6,9 @@ import { Footer } from "@/components/layout/footer";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { QuickCaptureAdapter } from "@/components/notes/quick-capture-adapter";
 import { NavigationProgress } from "@/components/ui/navigation-progress";
-import { UpgradeModal } from "@/components/subscription/upgrade-modal";
 import { PageTracker } from "@/components/tracking/page-tracker";
-import { MusicMiniPlayer } from "@/components/music/music-mini-player";
-import { CommandPalette } from "@/components/search/command-palette";
-import { StampCaptureSheet } from "@/components/stamps/stamp-capture-sheet";
-import { RecordSheet } from "@/components/records/record-sheet";
+import { LazyOverlays } from "@/components/layout/lazy-overlays";
+import { RecordTimerCompleteDialog } from "@/components/records/record-timer-complete-dialog";
 
 /**
  * 메인 레이아웃
@@ -43,13 +40,10 @@ export default function MainLayout({
           </main>
         </div>
         <MobileNav />
-        <MusicMiniPlayer />
         <PageTracker />
         <QuickCaptureAdapter />
-        <StampCaptureSheet />
-        <RecordSheet />
-        <CommandPalette />
-        <UpgradeModal />
+        <LazyOverlays />
+        <RecordTimerCompleteDialog />
       </div>
     </ErrorBoundary>
   );
