@@ -162,6 +162,10 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
   } else if (userBook.completed_at) {
     completedDates = [userBook.completed_at];
   }
+  // 과거 → 최근 순 정렬 (마지막 요소가 가장 최근 완독일)
+  completedDates = [...completedDates].sort(
+    (a, b) => new Date(a).getTime() - new Date(b).getTime()
+  );
 
   // 상태에 따른 테마 색상
   const statusTheme = {

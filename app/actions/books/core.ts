@@ -693,9 +693,9 @@ export async function updateBookInfo(
 
   if (completedDates !== undefined) {
     // JSONB 배열로 저장 (Supabase가 자동으로 JSONB로 변환)
-    // 빈 배열이면 null로 저장
+    // 빈 배열이면 null로 저장, 과거 → 최근 순으로 정렬해 항상 일관된 순서 유지
     updateData.completed_dates = completedDates && completedDates.length > 0
-      ? completedDates
+      ? [...completedDates].sort((a, b) => new Date(a).getTime() - new Date(b).getTime())
       : null;
   }
 

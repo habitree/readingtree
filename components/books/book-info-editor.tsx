@@ -35,6 +35,19 @@ interface BookInfoEditorProps {
 }
 
 /**
+ * YYYY-MM-DD 형식의 날짜 문자열 배열을 과거 → 최근 순으로 정렬.
+ * 빈 문자열은 정렬 안정성을 위해 뒤로 보낸다.
+ */
+function sortDatesAsc(dates: string[]): string[] {
+  return [...dates].sort((a, b) => {
+    if (!a && !b) return 0;
+    if (!a) return 1;
+    if (!b) return -1;
+    return a.localeCompare(b);
+  });
+}
+
+/**
  * 책 정보 편집 컴포넌트
  * 읽는 이유와 시작일을 편집할 수 있음
  */
@@ -55,7 +68,9 @@ export function BookInfoEditor({
   );
   const [completedDates, setCompletedDates] = useState<string[]>(
     currentCompletedDates && currentCompletedDates.length > 0
-      ? currentCompletedDates.map((date) => new Date(date).toISOString().split("T")[0])
+      ? sortDatesAsc(
+          currentCompletedDates.map((date) => new Date(date).toISOString().split("T")[0])
+        )
       : []
   );
   const [selectedBookshelfId, setSelectedBookshelfId] = useState<string>(
@@ -97,9 +112,9 @@ export function BookInfoEditor({
         ? new Date(startedAt).toISOString()
         : null;
 
-      const completedDatesISO = completedDates
-        .filter((date) => date.trim() !== "")
-        .map((date) => new Date(date).toISOString());
+      const completedDatesISO = sortDatesAsc(
+        completedDates.filter((date) => date.trim() !== "")
+      ).map((date) => new Date(date).toISOString());
 
       // 책 정보 업데이트
       await updateBookInfo(
@@ -139,7 +154,7 @@ export function BookInfoEditor({
   const updateCompletedDate = (index: number, value: string) => {
     const newDates = [...completedDates];
     newDates[index] = value;
-    setCompletedDates(newDates);
+    setCompletedDates(sortDatesAsc(newDates));
   };
 
   return (
