@@ -26,6 +26,7 @@ import { PersonaCard } from "@/components/persona/persona-card";
 import { ReadingStats } from "@/components/persona/reading-stats";
 import { RecapSection } from "@/components/recap/recap-section";
 import { getRecapForView } from "@/app/actions/recap/generate";
+import { getMonthlyBooksList } from "@/app/actions/recap/books-list";
 
 export const metadata: Metadata = {
   title: "독서성향 | ReadTree",
@@ -51,7 +52,10 @@ export default async function StatsPage({
   const isGuest = !user;
 
   const { year: recapYear, month: recapMonth } = resolveRecapMonth((await searchParams)?.m);
-  const recapView = await getRecapForView(recapYear, recapMonth);
+  const [recapView, recapBooks] = await Promise.all([
+    getRecapForView(recapYear, recapMonth),
+    getMonthlyBooksList(recapYear, recapMonth),
+  ]);
 
   // 12주(약 3개월)치 캘린더 데이터
   const endDate = new Date();
@@ -94,7 +98,7 @@ export default async function StatsPage({
       )}
 
       {/* 월간 독서결산 섹션 */}
-      {recapView && <RecapSection initialView={recapView} />}
+      {recapView && <RecapSection initialView={recapView} initialBooks={recapBooks} />}
 
       {/* 독서 페르소나 섹션 */}
       <PersonaCard

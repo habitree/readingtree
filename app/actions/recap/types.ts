@@ -107,6 +107,43 @@ export interface RecapRecord {
   generatedAt: string;
 }
 
+/** 월간 "읽은 책" 대시보드의 책 한 권 (라이브 쿼리, 스냅샷 미저장) */
+export interface MonthlyBookItem {
+  /** /books/{userBookId} 링크용 (없으면 bookId 폴백) */
+  userBookId: string;
+  bookId: string;
+  title: string;
+  author: string | null;
+  coverImageUrl: string | null;
+  totalPages: number | null;
+  currentPage: number | null;
+  /** user_books.status */
+  status: string;
+  /** completed_at가 그 달 범위 안 */
+  completedInMonth: boolean;
+  noteCount: number;
+  readingSeconds: number;
+  pagesRead: number;
+  /** 정렬용 ISO (note/log/완독 중 최신) */
+  lastActiveAt: string;
+  /** 대표 인용/메모 발췌 */
+  excerpt: string | null;
+  /** current/total (0~100) */
+  progressPercent: number | null;
+}
+
+/** getMonthlyBooksList 결과 */
+export interface MonthlyBooksResult {
+  year: number;
+  month: number;
+  totalBooks: number;
+  completedCount: number;
+  totalReadingSeconds: number;
+  /** 완독 우선 → lastActive 내림차순 */
+  books: MonthlyBookItem[];
+  isGuest: boolean;
+}
+
 /** 공유 다이얼로그 / 공개 페이지용 데이터 (스탬프 StampShareData 미러) */
 export interface RecapShareData {
   shareId: string;

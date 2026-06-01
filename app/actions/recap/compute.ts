@@ -12,6 +12,7 @@
  */
 
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { extractQuoteText } from "@/lib/recap/text";
 import type {
   RecapComputed,
   RecapNotesByType,
@@ -323,23 +324,6 @@ export async function computeRecapForUser(
 }
 
 // ── 보조 함수 ────────────────────────────────────────────────────────────
-
-/** notes.content에서 인용 텍스트 추출 (JSON {quote,memo} 또는 평문) */
-function extractQuoteText(content: string): string {
-  const trimmed = content.trim();
-  if (trimmed.startsWith("{")) {
-    try {
-      const parsed = JSON.parse(trimmed) as { quote?: unknown; memo?: unknown; text?: unknown };
-      const q = typeof parsed.quote === "string" ? parsed.quote : "";
-      const m = typeof parsed.memo === "string" ? parsed.memo : "";
-      const x = typeof parsed.text === "string" ? parsed.text : "";
-      return (q || x || m).trim();
-    } catch {
-      return trimmed;
-    }
-  }
-  return trimmed;
-}
 
 /** 정렬된 날짜키 배열에서 최대 연속 일수 */
 function computeMaxStreak(dateKeys: string[]): number {
