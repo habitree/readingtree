@@ -26,6 +26,7 @@ import { useStampCaptureStore } from "@/hooks/use-stamp-capture";
 import { useMusicPlayer } from "@/hooks/use-music-player";
 import { useUpgradeModal } from "@/hooks/use-upgrade-modal";
 import { useStampShareStore } from "@/hooks/use-stamp-share";
+import { useRecapShareStore } from "@/hooks/use-recap-share";
 
 const RecordSheet = dynamic(
   () => import("@/components/records/record-sheet").then((m) => ({ default: m.RecordSheet })),
@@ -72,6 +73,14 @@ const StampShareDialog = dynamic(
   { ssr: false },
 );
 
+const RecapShareDialog = dynamic(
+  () =>
+    import("@/components/recap/recap-share-dialog").then((m) => ({
+      default: m.RecapShareDialog,
+    })),
+  { ssr: false },
+);
+
 export function LazyOverlays() {
   // 각 store의 open/active 상태 구독.
   // "한 번이라도 active였던 적이 있으면 mount 유지" 패턴 — render 중 setState로 latch 처리.
@@ -83,17 +92,20 @@ export function LazyOverlays() {
   );
   const upgradeOpen = useUpgradeModal((s) => s.open);
   const stampShareOpen = useStampShareStore((s) => s.isOpen);
+  const recapShareOpen = useRecapShareStore((s) => s.isOpen);
 
   const [recordSeen, setRecordSeen] = useState(false);
   const [stampSeen, setStampSeen] = useState(false);
   const [musicSeen, setMusicSeen] = useState(false);
   const [upgradeSeen, setUpgradeSeen] = useState(false);
   const [stampShareSeen, setStampShareSeen] = useState(false);
+  const [recapShareSeen, setRecapShareSeen] = useState(false);
   if (recordOpen && !recordSeen) setRecordSeen(true);
   if (stampOpen && !stampSeen) setStampSeen(true);
   if (musicEverActive && !musicSeen) setMusicSeen(true);
   if (upgradeOpen && !upgradeSeen) setUpgradeSeen(true);
   if (stampShareOpen && !stampShareSeen) setStampShareSeen(true);
+  if (recapShareOpen && !recapShareSeen) setRecapShareSeen(true);
 
   // CommandPalette 단축키 — 본체는 lazy지만 단축키는 layout에 항상 살아있어야 함.
   const [paletteOpen, setPaletteOpen] = useState(false);
@@ -121,6 +133,7 @@ export function LazyOverlays() {
       )}
       {upgradeSeen && <UpgradeModal />}
       {stampShareSeen && <StampShareDialog />}
+      {recapShareSeen && <RecapShareDialog />}
     </>
   );
 }

@@ -7,7 +7,7 @@ import { loadKakaoSdk, isKakaoShareAvailable } from "@/lib/kakao/sdk";
  * Phase 3A의 simple-share-dialog.tsx에서 검증된 카카오 공유 패턴을 재사용.
  */
 
-export type ShareKind = "note" | "report" | "completion" | "bookshelf" | "stamp";
+export type ShareKind = "note" | "report" | "completion" | "bookshelf" | "stamp" | "recap";
 
 export type ShareContext = {
   kind: ShareKind;

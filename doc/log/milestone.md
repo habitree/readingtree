@@ -161,3 +161,12 @@
 - **지시:** 30개 UX 개선 기획서 → Phase 3A "런칭 필수" 9개 항목 구현
 - **결과:** 빈 상태 온보딩, 기록 저장 후 복귀+하이라이트, 포인트 리치 토스트, 초대 토큰 정책 UI, 모더레이터 접근제어, Quick Capture 일관성, 통합 검색 Command Palette(Cmd+K)
 - **인사이트:** 기존 코드(checkGroupAccess, createInviteToken options, use-auto-draft 등)가 이미 인프라를 갖추고 있어 UI 레이어만 추가하면 되는 항목이 다수 — 코드베이스 탐색으로 불필요한 중복 구현을 방지
+
+---
+
+### 2026-06-01 — 월간 독서결산(Monthly Reading Recap) 신규 기능
+- **카테고리:** #신규기능 #공유 #리텐션
+- **중요도:** P0
+- **지시:** 한 달 독서를 취합·결산하고 공유하는 메뉴 — 외부 공유로 커뮤니티 가치 창출, 벤치마킹(Wrapped/Goodreads)
+- **결과:** `monthly_recaps` 스냅샷 테이블 + 집계(`computeRecapForUser`) + 4차별화(AI 페르소나·전월/목표·하이라이트·뱃지) + 외부 공유(스탬프 파이프라인 포크: 다이얼로그·OG·공개페이지) + `/stats` 통합 + 월말 자동생성 크론 + `report_ready` 알림
+- **인사이트:** 스탬프 공유·알림·페르소나·골·스트릭 인프라가 이미 완비되어 신규 구축은 스냅샷·집계·크론에 한정 — `ai_generated_reports`의 share_id 토큰 패턴 재사용으로 enumerate 방지. 후속: 마이그레이션 적용·`CRON_SECRET` 설정은 배포 단계 수동 작업
