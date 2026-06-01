@@ -1154,6 +1154,54 @@ export type Database = {
         }
         Relationships: []
       }
+      monthly_recaps: {
+        Row: {
+          ai_caption: string | null
+          created_at: string
+          generated_at: string
+          highlights: Json
+          id: string
+          is_public: boolean
+          month: number
+          share_id: string
+          share_version: number
+          stats: Json
+          updated_at: string
+          user_id: string
+          year: number
+        }
+        Insert: {
+          ai_caption?: string | null
+          created_at?: string
+          generated_at?: string
+          highlights?: Json
+          id?: string
+          is_public?: boolean
+          month: number
+          share_id?: string
+          share_version?: number
+          stats?: Json
+          updated_at?: string
+          user_id: string
+          year: number
+        }
+        Update: {
+          ai_caption?: string | null
+          created_at?: string
+          generated_at?: string
+          highlights?: Json
+          id?: string
+          is_public?: boolean
+          month?: number
+          share_id?: string
+          share_version?: number
+          stats?: Json
+          updated_at?: string
+          user_id?: string
+          year?: number
+        }
+        Relationships: []
+      }
       notes: {
         Row: {
           book_id: string | null
@@ -1742,6 +1790,9 @@ export type Database = {
           image_urls: Json
           is_public: boolean | null
           memo: string | null
+          music_playlist_id: string | null
+          music_started_at: string | null
+          music_track_ids: Json | null
           pace_seconds_per_page: number | null
           page_number: number
           promoted_at: string | null
@@ -1749,6 +1800,7 @@ export type Database = {
           start_page: number | null
           started_at: string | null
           status: string
+          target_seconds: number | null
           updated_at: string | null
           user_book_id: string
           user_id: string
@@ -1766,6 +1818,9 @@ export type Database = {
           image_urls?: Json
           is_public?: boolean | null
           memo?: string | null
+          music_playlist_id?: string | null
+          music_started_at?: string | null
+          music_track_ids?: Json | null
           pace_seconds_per_page?: number | null
           page_number?: number
           promoted_at?: string | null
@@ -1773,6 +1828,7 @@ export type Database = {
           start_page?: number | null
           started_at?: string | null
           status?: string
+          target_seconds?: number | null
           updated_at?: string | null
           user_book_id: string
           user_id: string
@@ -1790,6 +1846,9 @@ export type Database = {
           image_urls?: Json
           is_public?: boolean | null
           memo?: string | null
+          music_playlist_id?: string | null
+          music_started_at?: string | null
+          music_track_ids?: Json | null
           pace_seconds_per_page?: number | null
           page_number?: number
           promoted_at?: string | null
@@ -1797,6 +1856,7 @@ export type Database = {
           start_page?: number | null
           started_at?: string | null
           status?: string
+          target_seconds?: number | null
           updated_at?: string | null
           user_book_id?: string
           user_id?: string
@@ -1810,6 +1870,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      record_events: {
+        Row: {
+          created_at: string
+          event: string
+          id: string
+          metadata: Json | null
+          session_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          event: string
+          id?: string
+          metadata?: Json | null
+          session_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          event?: string
+          id?: string
+          metadata?: Json | null
+          session_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
       }
       referrals: {
         Row: {
@@ -2190,7 +2277,10 @@ export type Database = {
           completed_dates: Json | null
           created_at: string | null
           current_page: number | null
+          hidden_from_home: boolean
           id: string
+          is_pinned: boolean
+          pinned_at: string | null
           reading_reason: string | null
           started_at: string | null
           status: Database["public"]["Enums"]["reading_status"] | null
@@ -2205,7 +2295,10 @@ export type Database = {
           completed_dates?: Json | null
           created_at?: string | null
           current_page?: number | null
+          hidden_from_home?: boolean
           id?: string
+          is_pinned?: boolean
+          pinned_at?: string | null
           reading_reason?: string | null
           started_at?: string | null
           status?: Database["public"]["Enums"]["reading_status"] | null
@@ -2220,7 +2313,10 @@ export type Database = {
           completed_dates?: Json | null
           created_at?: string | null
           current_page?: number | null
+          hidden_from_home?: boolean
           id?: string
+          is_pinned?: boolean
+          pinned_at?: string | null
           reading_reason?: string | null
           started_at?: string | null
           status?: Database["public"]["Enums"]["reading_status"] | null
