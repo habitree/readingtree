@@ -15,6 +15,8 @@ import { Badge } from "@/components/ui/badge";
 import { useTranslation } from "@/lib/i18n";
 import { formatAuthor } from "@/lib/utils/book";
 import { cn } from "@/lib/utils";
+import { cache } from "@/lib/utils/cache";
+import { withRetry } from "@/lib/utils/retry";
 
 interface SearchResult {
   isbn: string | null;
@@ -52,47 +54,63 @@ export function BookSearch({ onBookAdded, onSelectBook, excludeBookIds, showAlre
   const isComposingRef = useRef(false);
   const [searchTrigger, setSearchTrigger] = useState(0);
 
-  // 초기 로드 시 인기 도서 조회
+  // 인기 도서 조회는 메인 스레드 idle 시점까지 양보 (검색 입력 응답성 우선).
+  // requestIdleCallback 미지원 브라우저(Safari)는 setTimeout으로 fallback.
   useEffect(() => {
-    getPopularBooks(8)
-      .then(setPopularBooks)
-      .catch(() => setPopularBooks([]))
-      .finally(() => setIsLoadingPopular(false));
+    let cancelled = false;
+    const load = () => {
+      if (cancelled) return;
+      getPopularBooks(8)
+        .then((books) => {
+          if (!cancelled) setPopularBooks(books);
+        })
+        .catch(() => {
+          if (!cancelled) setPopularBooks([]);
+        })
+        .finally(() => {
+          if (!cancelled) setIsLoadingPopular(false);
+        });
+    };
+
+    type IdleWindow = Window & {
+      requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number;
+      cancelIdleCallback?: (id: number) => void;
+    };
+    const w = window as IdleWindow;
+    let idleId: number | null = null;
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
+    if (typeof w.requestIdleCallback === "function") {
+      idleId = w.requestIdleCallback(load, { timeout: 1500 });
+    } else {
+      timeoutId = setTimeout(load, 200);
+    }
+
+    return () => {
+      cancelled = true;
+      if (idleId !== null && typeof w.cancelIdleCallback === "function") {
+        w.cancelIdleCallback(idleId);
+      }
+      if (timeoutId !== null) clearTimeout(timeoutId);
+    };
   }, []);
 
-  // 디바운싱을 위한 검색 함수
+  // 검색 실행 — 캐시 + 재시도 + SWR(stale 백그라운드 갱신).
   const performSearch = useCallback(async (searchQuery: string) => {
     if (!searchQuery.trim()) {
       setResults([]);
       return;
     }
 
-    setIsSearching(true);
-    try {
-      // 캐시 확인 (클라이언트 사이드에서만)
-      if (typeof window !== "undefined") {
-        const { cache } = await import("@/lib/utils/cache");
-        const cacheKey = `book-search-${searchQuery}`;
-        const cached = cache.get<any>(cacheKey);
-        
-        if (cached) {
-          setResults(cached.books || []);
-          setIsSearching(false);
-          return;
-        }
-      }
+    const cacheKey = `book-search-${searchQuery}`;
 
-      // 재시도 로직이 포함된 fetch
-      const { withRetry } = await import("@/lib/utils/retry");
-      
+    const fetchAndStore = async (): Promise<{ books: SearchResult[] } | null> => {
       const data = await withRetry(
         async () => {
           const response = await fetch(
             `/api/books/search?query=${encodeURIComponent(searchQuery)}&display=10`
           );
-
           if (!response.ok) {
-            // API에서 반환한 에러 메시지 가져오기
             let errorMessage = t("books.searchFailedMsg");
             try {
               const errorData = await response.json();
@@ -102,8 +120,7 @@ export function BookSearch({ onBookAdded, onSelectBook, excludeBookIds, showAlre
             }
             throw new Error(errorMessage);
           }
-
-          return await response.json();
+          return (await response.json()) as { books: SearchResult[] };
         },
         {
           maxRetries: 2,
@@ -120,15 +137,37 @@ export function BookSearch({ onBookAdded, onSelectBook, excludeBookIds, showAlre
           },
         }
       );
-
       // 캐시에 저장 (5분간 유지)
       if (typeof window !== "undefined") {
-        const { cache } = await import("@/lib/utils/cache");
-        const cacheKey = `book-search-${searchQuery}`;
         cache.set(cacheKey, data, 5 * 60 * 1000);
       }
+      return data;
+    };
 
-      setResults(data.books || []);
+    setIsSearching(true);
+    try {
+      // SWR: 캐시 히트 시 즉시 표시, TTL의 절반(2.5분) 경과했으면 백그라운드 갱신.
+      if (typeof window !== "undefined") {
+        const entry = cache.getEntry<{ books: SearchResult[] }>(cacheKey);
+        if (entry) {
+          setResults(entry.data.books || []);
+          setIsSearching(false);
+
+          if (Date.now() - entry.timestamp > entry.ttl / 2) {
+            void fetchAndStore()
+              .then((fresh) => {
+                if (fresh && fresh.books) setResults(fresh.books);
+              })
+              .catch(() => {
+                /* stale revalidate 실패는 무시 — 사용자에게 이미 캐시 결과 표시됨 */
+              });
+          }
+          return;
+        }
+      }
+
+      const data = await fetchAndStore();
+      setResults(data?.books || []);
     } catch (error) {
       console.error("책 검색 오류:", error);
       const errorMessage = error instanceof Error ? error.message : t("books.unknownErrorMsg");

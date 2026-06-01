@@ -774,6 +774,17 @@ export async function createReadingStamp(
     ?? new Date(Date.now() - input.reading_duration_seconds * 1000).toISOString();
   const endedAt = input.ended_at ?? new Date().toISOString();
 
+  // 사진 입력 정규화: image_urls 우선, 없으면 image_url 단일을 배열로.
+  const normalizedImageUrls: string[] = (() => {
+    if (Array.isArray(input.image_urls) && input.image_urls.length > 0) {
+      return input.image_urls.filter((u) => typeof u === "string" && u.trim().length > 0).slice(0, 5);
+    }
+    if (input.image_url && input.image_url.trim().length > 0) {
+      return [input.image_url];
+    }
+    return [];
+  })();
+
   // INSERT
   const { data: log, error: insertError } = await supabase
     .from("reading_logs")
@@ -788,7 +799,8 @@ export async function createReadingStamp(
       reading_duration_seconds: input.reading_duration_seconds,
       start_page: startPage,
       end_page: endPage,
-      image_url: input.image_url || null,
+      image_url: normalizedImageUrls[0] ?? null,
+      image_urls: normalizedImageUrls.length > 0 ? normalizedImageUrls : null,
     })
     .select()
     .single();
@@ -813,7 +825,7 @@ export async function createReadingStamp(
       user: currentUser,
       referenceId: log.id,
       referenceType: "reading_log",
-      description: input.image_url ? "스탬프 작성" : "독서 세션 기록",
+      description: normalizedImageUrls.length > 0 ? "스탬프 작성" : "독서 세션 기록",
     });
     if (result.success) pointsEarned = result.points_earned;
   } catch (err) {
@@ -970,7 +982,18 @@ export async function attachStampToLog(
     throw new Error("유효하지 않은 로그 ID입니다.");
   }
 
-  if (!input.image_url || input.image_url.trim().length === 0) {
+  // 사진 입력 정규화: image_urls 우선, 없으면 image_url 단일을 배열로.
+  const normalizedImageUrls: string[] = (() => {
+    if (Array.isArray(input.image_urls) && input.image_urls.length > 0) {
+      return input.image_urls.filter((u) => typeof u === "string" && u.trim().length > 0).slice(0, 5);
+    }
+    if (input.image_url && input.image_url.trim().length > 0) {
+      return [input.image_url];
+    }
+    return [];
+  })();
+
+  if (normalizedImageUrls.length === 0) {
     throw new Error("이미지 URL이 필요합니다.");
   }
 
@@ -999,9 +1022,8 @@ export async function attachStampToLog(
   const newEndPage = input.end_page ?? existingLog.end_page ?? existingLog.page_number ?? null;
 
   const updatePayload: Record<string, unknown> = {
-    image_url: input.image_url,
-    // Phase 6: image_urls 배열도 함께 갱신 (DB 트리거가 image_url[0] 미러링 책임지지만 명시)
-    image_urls: [input.image_url],
+    image_url: normalizedImageUrls[0],
+    image_urls: normalizedImageUrls,
   };
   if (input.start_page !== undefined) updatePayload.start_page = newStartPage;
   if (input.end_page !== undefined) {

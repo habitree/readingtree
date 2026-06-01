@@ -15,14 +15,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import {
   Camera,
+  Check,
   ChevronDown,
   ChevronUp,
-  ImagePlus,
   Loader2,
   Lock,
   Globe,
+  Share2,
   Stamp as StampIcon,
-  Trash2,
   X,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -30,7 +30,8 @@ import { cn } from "@/lib/utils";
 import { useStampCapture } from "@/hooks/use-stamp-capture";
 import { useAuth } from "@/hooks/use-auth";
 import { useTranslation } from "@/lib/i18n";
-import { smartCompressImage } from "@/lib/utils/image";
+import { copyImageToClipboard } from "@/lib/utils/clipboard";
+import { downloadImage, isMobile } from "@/lib/utils/device";
 import {
   attachStampToLog,
   createReadingStamp,
@@ -38,6 +39,7 @@ import {
   updateReadingLogEntry,
 } from "@/app/actions/progress";
 import { StampPreviewCard } from "./stamp-preview-card";
+import { RecordPhotoStrip } from "@/components/records/record-photo-strip";
 
 const DURATION_PRESETS = [10, 15, 25, 30, 45, 60, 90] as const;
 
@@ -57,10 +59,7 @@ export function StampCaptureSheet() {
   const isAttachMode = store.mode === "attach";
 
   // 입력 상태
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
-  const [imageUploadedUrl, setImageUploadedUrl] = useState<string | null>(null);
-  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [imageUrls, setImageUrls] = useState<string[]>([]);
   const [photoExpanded, setPhotoExpanded] = useState(false);
   const [startPage, setStartPage] = useState<number>(0);
   const [endPage, setEndPage] = useState<number>(0);
@@ -69,8 +68,9 @@ export function StampCaptureSheet() {
   const [isPublic, setIsPublic] = useState(true);
   const [showStartPageEdit, setShowStartPageEdit] = useState(false);
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const galleryInputRef = useRef<HTMLInputElement>(null);
+  const shareCaptureRef = useRef<HTMLDivElement>(null);
+  const [isSharing, setIsSharing] = useState(false);
+  const [justShared, setJustShared] = useState(false);
 
   // 시트가 열릴 때마다 페이지 prefill
   useEffect(() => {
@@ -131,13 +131,7 @@ export function StampCaptureSheet() {
   // 시트 닫힐 때 상태 초기화
   useEffect(() => {
     if (store.isOpen) return;
-    setImageFile(null);
-    setImagePreviewUrl((prev) => {
-      if (prev) URL.revokeObjectURL(prev);
-      return null;
-    });
-    setImageUploadedUrl(null);
-    setIsUploadingImage(false);
+    setImageUrls([]);
     setPhotoExpanded(false);
     setMemo("");
     setIsPublic(true);
@@ -148,66 +142,16 @@ export function StampCaptureSheet() {
 
   const previewDate = useMemo(() => new Date(), [store.isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const handleFileSelect = async (file: File | null) => {
-    if (!file) return;
-    if (!file.type.startsWith("image/")) {
-      toast.error("이미지 파일만 업로드할 수 있어요.");
-      return;
-    }
-
-    // 미리보기 즉시 표시
-    const localUrl = URL.createObjectURL(file);
-    setImageFile(file);
-    setImagePreviewUrl((prev) => {
-      if (prev) URL.revokeObjectURL(prev);
-      return localUrl;
-    });
-
-    // 백그라운드 업로드
-    setIsUploadingImage(true);
-    setImageUploadedUrl(null);
-    try {
-      const compressed = await smartCompressImage(file, { verbose: false });
-      const formData = new FormData();
-      formData.append("file", compressed);
-      formData.append("type", "photo");
-
-      const res = await fetch("/api/upload", { method: "POST", body: formData });
-      if (!res.ok) {
-        const errBody = await res.json().catch(() => ({}));
-        throw new Error(errBody.error || t("stamp.uploadFailed"));
-      }
-      const { url } = (await res.json()) as { url: string };
-      setImageUploadedUrl(url);
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : t("stamp.uploadFailed"));
-      setImageFile(null);
-      setImageUploadedUrl(null);
-    } finally {
-      setIsUploadingImage(false);
-    }
-  };
-
-  const handleRemoveImage = () => {
-    setImageFile(null);
-    setImageUploadedUrl(null);
-    setImagePreviewUrl((prev) => {
-      if (prev) URL.revokeObjectURL(prev);
-      return null;
-    });
-    if (fileInputRef.current) fileInputRef.current.value = "";
-    if (galleryInputRef.current) galleryInputRef.current.value = "";
-  };
-
   const adjustEndPage = (delta: number) => {
     setEndPage((prev) => Math.max(startPage, prev + delta));
   };
 
-  const hasImage = !!imageUploadedUrl;
+  const hasImage = imageUrls.length > 0;
+  const coverUrl = imageUrls[0] ?? null;
   // attach 모드 — 사진 선택사항. 메모·페이지만 수정해도 저장 가능.
   const canSave = isAttachMode
-    ? !isPending && !isUploadingImage
-    : !isPending && !isUploadingImage && durationSeconds >= 30;
+    ? !isPending
+    : !isPending && durationSeconds >= 30;
 
   const handleSave = () => {
     if (!user) {
@@ -224,10 +168,10 @@ export function StampCaptureSheet() {
 
       startTransition(async () => {
         try {
-          if (imageUploadedUrl) {
+          if (imageUrls.length > 0) {
             // 사진 첨부 — 스탬프 승격 (메모·페이지 함께 갱신)
             await attachStampToLog(store.targetLogId!, {
-              image_url: imageUploadedUrl,
+              image_urls: imageUrls,
               start_page: startPage,
               end_page: endPage,
               memo: memo.trim() || undefined,
@@ -263,7 +207,7 @@ export function StampCaptureSheet() {
           user_book_id: store.selectedBook?.id,
           end_page: endPage,
           start_page: startPage,
-          image_url: imageUploadedUrl || undefined,
+          image_urls: imageUrls.length > 0 ? imageUrls : undefined,
           memo: memo.trim() || undefined,
           is_public: isPublic,
           reading_duration_seconds: durationSeconds,
@@ -283,7 +227,121 @@ export function StampCaptureSheet() {
     });
   };
 
-  const previewImageUrl = imageUploadedUrl ?? imagePreviewUrl ?? undefined;
+  const previewImageUrl = coverUrl ?? undefined;
+
+  /**
+   * 미리보기 스탬프 카드를 1080×1080 PNG 로 캡처해서 공유.
+   * Web Share API(files) 우선 — 모바일 시스템 시트로 카카오·인스타·메시지 즉시.
+   * 폴백: 클립보드 복사 → 다운로드.
+   */
+  const handleShareCard = async () => {
+    if (!shareCaptureRef.current || isSharing) return;
+    setIsSharing(true);
+    try {
+      const html2canvasModule = await import("html2canvas");
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const html2canvas = html2canvasModule.default as any;
+      const target = shareCaptureRef.current;
+
+      // 이미지 로딩 대기
+      const images = target.querySelectorAll("img");
+      await Promise.all(
+        Array.from(images).map((img) => {
+          if (img.complete && img.naturalWidth > 0) return Promise.resolve();
+          return new Promise<void>((resolve) => {
+            const t = setTimeout(() => resolve(), 5000);
+            img.onload = () => {
+              clearTimeout(t);
+              resolve();
+            };
+            img.onerror = () => {
+              clearTimeout(t);
+              resolve();
+            };
+          });
+        }),
+      );
+
+      const isMobileDevice = isMobile();
+      await new Promise((r) => setTimeout(r, isMobileDevice ? 1200 : 800));
+
+      const CARD_SIZE = 540;
+      const TARGET_SIZE = 1080;
+      const scale = TARGET_SIZE / CARD_SIZE;
+      const canvas = await html2canvas(target, {
+        scale,
+        useCORS: true,
+        allowTaint: false,
+        backgroundColor: null,
+        logging: false,
+        imageTimeout: isMobileDevice ? 20000 : 15000,
+        windowWidth: CARD_SIZE,
+        windowHeight: CARD_SIZE,
+        width: CARD_SIZE,
+        height: CARD_SIZE,
+      });
+
+      const blob = await new Promise<Blob>((resolve, reject) => {
+        canvas.toBlob(
+          (b: Blob | null) =>
+            b && b.size > 0 ? resolve(b) : reject(new Error("이미지 변환 실패")),
+          "image/png",
+        );
+      });
+
+      const filename = `readtree-stamp-${Date.now()}.png`;
+
+      // 1) Web Share API (파일 공유) — 모바일 우선
+      const file = new File([blob], filename, { type: "image/png" });
+      const navWithShare = navigator as Navigator & {
+        canShare?: (data: { files?: File[] }) => boolean;
+        share?: (data: { files?: File[]; title?: string; text?: string }) => Promise<void>;
+      };
+      if (
+        navWithShare.share &&
+        navWithShare.canShare &&
+        navWithShare.canShare({ files: [file] })
+      ) {
+        try {
+          await navWithShare.share({
+            files: [file],
+            title: store.selectedBook?.title
+              ? `${store.selectedBook.title} 스탬프`
+              : "ReadTree 스탬프",
+            text: "ReadTree에서 만든 독서 스탬프 카드",
+          });
+          setJustShared(true);
+          setTimeout(() => setJustShared(false), 2500);
+          return;
+        } catch (err) {
+          // 사용자 취소(AbortError) → 추가 폴백 없이 종료
+          if (err instanceof Error && err.name === "AbortError") return;
+          // 다른 에러는 폴백으로 진행
+        }
+      }
+
+      // 2) 클립보드 복사 폴백
+      const clipboardOk = await copyImageToClipboard(blob, {
+        onSuccess: () => {
+          setJustShared(true);
+          toast.success("스탬프 카드를 복사했어요. 인스타·카카오에 붙여넣기 해보세요.");
+          setTimeout(() => setJustShared(false), 2500);
+        },
+      });
+      if (clipboardOk) return;
+
+      // 3) 다운로드 폴백
+      downloadImage(blob, filename);
+      setJustShared(true);
+      toast.success("스탬프 이미지를 다운로드했어요.");
+      setTimeout(() => setJustShared(false), 2500);
+    } catch (err) {
+      console.error("스탬프 카드 공유 실패:", err);
+      toast.error("공유에 실패했어요. 다시 시도해주세요.");
+    } finally {
+      setIsSharing(false);
+    }
+  };
 
   const sheetTitle = isAttachMode
     ? t("stamp.attachTitle")
@@ -347,14 +405,56 @@ export function StampCaptureSheet() {
                 durationSeconds={durationSeconds}
                 date={previewDate}
               />
-              {isUploadingImage && (
-                <div className="mt-2 flex items-center justify-center gap-2 text-xs text-slate-500">
-                  <Loader2 className="h-3 w-3 animate-spin" />
-                  {t("stamp.uploading")}
-                </div>
-              )}
+              {/* 카드 이미지 공유 버튼 — Web Share API(파일) 우선, 폴백 클립보드/다운로드 */}
+              <div className="mt-2 flex justify-center">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleShareCard}
+                  disabled={isSharing}
+                  className="h-8 px-3 text-xs"
+                >
+                  {isSharing ? (
+                    <>
+                      <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+                      준비 중...
+                    </>
+                  ) : justShared ? (
+                    <>
+                      <Check className="mr-1 h-3.5 w-3.5" />
+                      공유됨
+                    </>
+                  ) : (
+                    <>
+                      <Share2 className="mr-1 h-3.5 w-3.5" />
+                      이 카드 공유
+                    </>
+                  )}
+                </Button>
+              </div>
             </div>
           )}
+
+          {/* hidden 캡처 카드 (1080×1080 출력 위해 540×540 렌더 후 2× 스케일) */}
+          <div
+            aria-hidden="true"
+            className="pointer-events-none fixed -left-[9999px] top-0 opacity-0"
+          >
+            <div style={{ width: 540, height: 540 }}>
+              <StampPreviewCard
+                captureRef={shareCaptureRef}
+                imageUrl={previewImageUrl}
+                bookTitle={store.selectedBook?.title ?? null}
+                bookAuthor={store.selectedBook?.author ?? null}
+                coverImageUrl={store.selectedBook?.coverImageUrl ?? null}
+                startPage={startPage}
+                endPage={endPage}
+                durationSeconds={durationSeconds}
+                date={previewDate}
+              />
+            </div>
+          </div>
 
           {/* 사진 토글 (create 모드) */}
           {!isAttachMode && !photoExpanded && (
@@ -372,7 +472,7 @@ export function StampCaptureSheet() {
             </button>
           )}
 
-          {/* 사진 선택 (펼침 또는 attach 모드) */}
+          {/* 사진 선택 (펼침 또는 attach 모드) — 최대 5장, 첫 장이 대표 */}
           {(photoExpanded || isAttachMode) && (
             <div className="mb-5 space-y-2">
               {!isAttachMode && (
@@ -380,12 +480,13 @@ export function StampCaptureSheet() {
                   <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
                     <Camera className="mr-1 inline h-3 w-3" />
                     {t("stamp.addPhotoExpanded")}
+                    <span className="ml-1 text-xs text-slate-400">(최대 5장 · 첫 장이 대표)</span>
                   </span>
                   <button
                     type="button"
                     onClick={() => {
                       setPhotoExpanded(false);
-                      handleRemoveImage();
+                      setImageUrls([]);
                     }}
                     className="text-xs text-slate-500 hover:text-slate-700"
                   >
@@ -394,55 +495,11 @@ export function StampCaptureSheet() {
                 </div>
               )}
 
-              <div className="grid grid-cols-2 gap-2">
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  capture="environment"
-                  className="hidden"
-                  onChange={(e) => handleFileSelect(e.target.files?.[0] ?? null)}
-                />
-                <input
-                  ref={galleryInputRef}
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={(e) => handleFileSelect(e.target.files?.[0] ?? null)}
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="h-12"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={isUploadingImage || isPending}
-                >
-                  <Camera className="mr-2 h-4 w-4" />
-                  {t("stamp.takePhoto")}
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="h-12"
-                  onClick={() => galleryInputRef.current?.click()}
-                  disabled={isUploadingImage || isPending}
-                >
-                  <ImagePlus className="mr-2 h-4 w-4" />
-                  {t("stamp.fromGallery")}
-                </Button>
-                {imageFile && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    className="col-span-2 h-9 text-xs text-slate-500 hover:text-red-600"
-                    onClick={handleRemoveImage}
-                    disabled={isPending}
-                  >
-                    <Trash2 className="mr-1 h-3 w-3" />
-                    {t("stamp.removePhoto")}
-                  </Button>
-                )}
-              </div>
+              <RecordPhotoStrip
+                urls={imageUrls}
+                onChange={setImageUrls}
+                disabled={isPending}
+              />
             </div>
           )}
 

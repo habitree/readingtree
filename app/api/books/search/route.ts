@@ -70,12 +70,22 @@ export async function GET(request: Request) {
     // 네이버 API 응답을 앱 내부 형식으로 변환
     const books = response.items.map(transformNaverBookItem);
 
-    return NextResponse.json({
-      total: response.total,
-      start: response.start,
-      display: response.display,
-      books,
-    });
+    return NextResponse.json(
+      {
+        total: response.total,
+        start: response.start,
+        display: response.display,
+        books,
+      },
+      {
+        headers: {
+          // 같은 검색어 5분 내 재요청은 Vercel Edge/CDN 캐시 히트 → 모바일 RTT 1회로 끝.
+          // stale 600초 동안 백그라운드 갱신 허용.
+          // 에러 응답에는 적용하지 않아 재시도 차단 방지(아래 catch 블록은 헤더 미설정).
+          "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600",
+        },
+      }
+    );
   } catch (error) {
     console.error("책 검색 API 오류:", error);
     

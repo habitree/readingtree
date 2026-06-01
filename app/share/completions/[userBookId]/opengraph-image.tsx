@@ -28,6 +28,8 @@ import { getOgConfig } from "@/lib/og/settings";
 export const alt = "ReadTree 완독 축하 카드";
 export const size = OG_SIZE;
 export const contentType = "image/png";
+export const runtime = "nodejs";
+export const revalidate = 3600;
 
 export default async function OgImage({
   params,

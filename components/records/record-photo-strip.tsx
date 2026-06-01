@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useRef, useState } from "react";
-import { Camera, ImagePlus, Loader2, X } from "lucide-react";
+import { Camera, ImagePlus, Loader2, Star, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { smartCompressImage } from "@/lib/utils/image";
@@ -65,6 +65,14 @@ export function RecordPhotoStrip({ urls, onChange, max = DEFAULT_MAX, disabled }
     onChange(urls.filter((_, i) => i !== idx));
   };
 
+  const handlePromoteCover = (idx: number) => {
+    if (idx === 0 || idx >= urls.length) return;
+    const next = [...urls];
+    const [picked] = next.splice(idx, 1);
+    next.unshift(picked);
+    onChange(next);
+  };
+
   const canAddMore = urls.length < max;
 
   return (
@@ -105,9 +113,23 @@ export function RecordPhotoStrip({ urls, onChange, max = DEFAULT_MAX, disabled }
                 </button>
               )}
               {i === 0 && urls.length > 1 && (
-                <span className="absolute bottom-0.5 left-0.5 rounded bg-emerald-600/90 px-1 text-[10px] font-medium text-white">
+                <span className="absolute bottom-0.5 left-0.5 inline-flex items-center gap-0.5 rounded bg-emerald-600/90 px-1 text-[10px] font-medium text-white">
+                  <Star className="h-2.5 w-2.5 fill-white" />
                   대표
                 </span>
+              )}
+              {!disabled && i > 0 && (
+                <button
+                  type="button"
+                  onClick={() => handlePromoteCover(i)}
+                  className="absolute bottom-0.5 left-0.5 inline-flex items-center gap-0.5 rounded bg-black/55 px-1 text-[10px] font-medium text-white opacity-0 transition-opacity hover:bg-emerald-700/90 focus:opacity-100 group-hover:opacity-100"
+                  style={{ opacity: 1 }}
+                  aria-label={`사진 ${i + 1}을 대표로 설정`}
+                  title="대표로 설정"
+                >
+                  <Star className="h-2.5 w-2.5" />
+                  대표
+                </button>
               )}
             </div>
           ))}

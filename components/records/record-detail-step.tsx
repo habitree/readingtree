@@ -16,6 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { addNoteToSession } from "@/app/actions/sessions";
 import { useRecordSheetStore, type RecordSheetBook } from "@/hooks/use-record-sheet";
+import { useStampShareStore } from "@/hooks/use-stamp-share";
 import type { DetailKind } from "@/types/note";
 
 const QUOTE_MAX = 5000;
@@ -39,6 +40,7 @@ export function RecordDetailStep({ sessionId, selectedBook }: Props) {
   const [pageNumber, setPageNumber] = useState<string>("");
   const [isPending, startTransition] = useTransition();
   const { close } = useRecordSheetStore();
+  const openStampShare = useStampShareStore((s) => s.openShare);
 
   const handleSave = () => {
     const hasContent =
@@ -60,8 +62,19 @@ export function RecordDetailStep({ sessionId, selectedBook }: Props) {
           page_number: pageNumber.trim() || undefined,
           is_public: true,
         });
+        const linkedSessionId = sessionId;
         toast.success(sessionId ? "상세 기록 연결됨" : "상세 기록 저장됨", {
-          duration: 3000,
+          duration: 5000,
+          // sessionId가 있으면 (방금 종료한 스탬프와 연결) 공유 액션 노출
+          action: linkedSessionId
+            ? {
+                label: "공유",
+                onClick: () =>
+                  openStampShare(linkedSessionId, {
+                    bookTitle: selectedBook?.title ?? null,
+                  }),
+              }
+            : undefined,
         });
         close();
       } catch (err) {

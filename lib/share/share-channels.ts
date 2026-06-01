@@ -7,7 +7,7 @@ import { loadKakaoSdk, isKakaoShareAvailable } from "@/lib/kakao/sdk";
  * Phase 3A의 simple-share-dialog.tsx에서 검증된 카카오 공유 패턴을 재사용.
  */
 
-export type ShareKind = "note" | "report" | "completion" | "bookshelf";
+export type ShareKind = "note" | "report" | "completion" | "bookshelf" | "stamp";
 
 export type ShareContext = {
   kind: ShareKind;
@@ -25,16 +25,24 @@ export type ShareContext = {
 
 /**
  * 공유 URL을 만든다. 사용자 ID가 주어지면 `?ref={id}&src={kind}` 파라미터를 부착.
+ *
+ * `options.version`을 전달하면 `?v={version}` 쿼리가 추가되어 카카오/페이스북
+ * 봇의 OG 캐시를 우회한다. 리소스의 `updated_at` epoch ms 또는 ISO 문자열을
+ * 그대로 넘기면 된다.
  */
 export function buildShareUrl(
   baseUrl: string,
   context: ShareContext,
   referrerUserId?: string | null,
+  options?: { version?: string | number | null },
 ): string {
   const url = new URL(context.path, baseUrl.endsWith("/") ? baseUrl : baseUrl + "/");
   if (referrerUserId) {
     url.searchParams.set("ref", referrerUserId);
     url.searchParams.set("src", context.kind);
+  }
+  if (options?.version != null && options.version !== "") {
+    url.searchParams.set("v", String(options.version));
   }
   return url.toString();
 }
@@ -87,15 +95,28 @@ export async function shareViaKakao(params: {
   baseUrl: string;
   context: ShareContext;
   referrerUserId?: string | null;
+  /** 리소스 버전(updated_at). 부착 시 카카오/FB 봇 캐시 우회 */
+  version?: string | number | null;
 }): Promise<boolean> {
   if (!isKakaoShareAvailable()) return false;
 
   const kakao = await loadKakaoSdk();
   if (!kakao) return false;
 
-  const shareUrl = buildShareUrl(params.baseUrl, params.context, params.referrerUserId);
+  const shareUrl = buildShareUrl(params.baseUrl, params.context, params.referrerUserId, {
+    version: params.version,
+  });
   const ogImageUrl = resolveOgImageUrl(params.baseUrl, params.context);
   const description = truncateForKakao(params.context.description);
+
+  // 카카오 봇이 OG를 페치하기 전에 ISR 캐시를 워밍한다.
+  // cold start 시 카카오 측 fetch가 타임아웃되어 OG가 누락되는 현상 완화.
+  // 실패는 무시 (이미 캐시 있거나 네트워크 차단 시 무의미).
+  try {
+    await fetch(ogImageUrl, { method: "HEAD", mode: "no-cors", cache: "no-store" });
+  } catch {
+    // ignore
+  }
 
   kakao.Share.sendDefault({
     objectType: "feed",
@@ -131,10 +152,13 @@ export function shareViaX(params: {
   baseUrl: string;
   context: ShareContext;
   referrerUserId?: string | null;
+  version?: string | number | null;
 }): boolean {
   if (typeof window === "undefined") return false;
 
-  const shareUrl = buildShareUrl(params.baseUrl, params.context, params.referrerUserId);
+  const shareUrl = buildShareUrl(params.baseUrl, params.context, params.referrerUserId, {
+    version: params.version,
+  });
   const text = `${params.context.title} | ${truncateForX(params.context.description)}`;
   const intentUrl = new URL("https://x.com/intent/tweet");
   intentUrl.searchParams.set("text", text);
@@ -155,10 +179,13 @@ export async function shareViaNative(params: {
   baseUrl: string;
   context: ShareContext;
   referrerUserId?: string | null;
+  version?: string | number | null;
 }): Promise<boolean> {
   if (!isNativeShareAvailable()) return false;
 
-  const shareUrl = buildShareUrl(params.baseUrl, params.context, params.referrerUserId);
+  const shareUrl = buildShareUrl(params.baseUrl, params.context, params.referrerUserId, {
+    version: params.version,
+  });
 
   try {
     await navigator.share({

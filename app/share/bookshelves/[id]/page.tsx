@@ -1,9 +1,9 @@
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getPublicBookshelfWithBooks } from "@/app/actions/bookshelves";
-import { getAppUrl } from "@/lib/utils/url";
 import { isValidUUID } from "@/lib/utils/validation";
 import { ShareBookshelfView } from "@/components/share/share-bookshelf-view";
+import { buildShareMetadata, buildShareNotFoundMetadata } from "@/lib/og/meta";
 
 /**
  * 공유 서재 메타데이터 생성
@@ -17,50 +17,30 @@ export async function generateMetadata({
   const bookshelfId = resolvedParams.id;
 
   if (!bookshelfId || typeof bookshelfId !== "string" || !isValidUUID(bookshelfId)) {
-    return { title: "서재를 찾을 수 없습니다" };
+    return buildShareNotFoundMetadata("bookshelf");
   }
 
   const result = await getPublicBookshelfWithBooks(bookshelfId);
 
   if (!result) {
-    return { title: "서재를 찾을 수 없습니다" };
+    return buildShareNotFoundMetadata("bookshelf");
   }
 
   const { bookshelf, books, owner } = result;
-  const baseUrl = getAppUrl();
-  const shareUrl = `${baseUrl}/share/bookshelves/${bookshelf.id}`;
-  const ogImageUrl = `${baseUrl}/share/bookshelves/${bookshelf.id}/opengraph-image`;
+  const ownerName = owner?.name || "ReadTree 사용자";
+  const ogTitle = `${ownerName}님의 ${bookshelf.name}`;
+  const ogDescription = bookshelf.description
+    || `${ownerName}님이 모은 ${books.length}권의 책을 둘러보세요.`;
 
-  const ownerName = owner?.name || "Habitree 사용자";
-  const description = bookshelf.description
-    || `${ownerName}님의 서재 - ${books.length}권의 책`;
-
-  return {
-    title: `${bookshelf.name} - ${ownerName}님의 서재`,
-    description,
-    openGraph: {
-      title: `${bookshelf.name} - ${ownerName}님의 서재`,
-      description,
-      type: "website",
-      url: shareUrl,
-      images: [
-        {
-          url: ogImageUrl,
-          width: 1200,
-          height: 630,
-          alt: `${bookshelf.name} - ${ownerName}님의 서재`,
-        },
-      ],
-      siteName: "Habitree",
-      locale: "ko_KR",
-    },
-    twitter: {
-      card: "summary_large_image",
-      title: `${bookshelf.name} - ${ownerName}님의 서재`,
-      description,
-      images: [ogImageUrl],
-    },
-  };
+  return buildShareMetadata({
+    kind: "bookshelf",
+    id: bookshelf.id,
+    path: `/share/bookshelves/${bookshelf.id}`,
+    ogTitle,
+    ogDescription,
+    pageTitle: `${bookshelf.name} - ${ownerName}님의 서재 | ReadTree`,
+    alt: `${bookshelf.name} - ${ownerName}님의 서재`,
+  });
 }
 
 /**

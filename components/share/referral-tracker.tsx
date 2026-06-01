@@ -40,6 +40,9 @@ export function ReferralTracker() {
     } else if (path.startsWith("/share/bookshelves/")) {
       sourceType = "bookshelf";
       sourceId = path.split("/share/bookshelves/")[1]?.split("?")[0] || "";
+    } else if (path.startsWith("/share/stamps/")) {
+      sourceType = "stamp";
+      sourceId = path.split("/share/stamps/")[1]?.split("?")[0] || "";
     }
 
     if (sourceType && sourceId) {

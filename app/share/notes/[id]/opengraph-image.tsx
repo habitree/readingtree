@@ -30,9 +30,11 @@ import {
 } from "@/lib/og/components";
 import { getOgConfig } from "@/lib/og/settings";
 
-export const alt = "Habitree 독서 기록 공유";
+export const alt = "ReadTree 독서 기록 공유";
 export const size = OG_SIZE;
 export const contentType = "image/png";
+export const runtime = "nodejs";
+export const revalidate = 3600;
 
 export default async function OgImage({
   params,

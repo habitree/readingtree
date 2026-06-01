@@ -83,8 +83,11 @@ export async function HomeHeroWrapper() {
   const today = getKSTToday();
   const activityCalendarStart = new Date(today.getTime() - 29 * 24 * 60 * 60 * 1000);
 
-  // ── 그룹1: 핵심 데이터 (사용자에게 즉시 보여줘야 하는 정보) ──
-  const primaryResults = await Promise.allSettled([
+  // ── 단일 웨이브: 히어로에 필요한 모든 데이터 병렬 로드 ──
+  // 기존엔 핵심(그룹1)을 전부 await한 뒤 부차(그룹2)를 시작해 DB 라운드트립이 2-웨이브로
+  // 직렬화됐으나, 두 그룹 간 데이터 의존성이 없어 단일 Promise.allSettled로 병합한다.
+  // (popularBooks만 continueReadingBooks 의존이므로 아래 후속 웨이브 유지)
+  const results = await Promise.allSettled([
     getCachedStreakAndTodayData(user.id),
     getContinueReadingBooks(user, 8),
     getCurrentBookProgress(user),
@@ -92,19 +95,6 @@ export async function HomeHeroWrapper() {
     getCachedCheckHasFirstNote(),
     getUserReadingTimeStats(),
     getActiveSession(user),
-  ]);
-
-  const streakAndTodayData = extractSettled(primaryResults[0], { streak: 0, todayNotes: 0 });
-  const continueReadingBooks = extractSettled(primaryResults[1], []);
-  const currentBookProgress = extractSettled(primaryResults[2], null);
-  const pointsData = extractSettled(primaryResults[3], null);
-  const firstNoteData = extractSettled(primaryResults[4], { hasFirstNote: true });
-  const readingTimeData = extractSettled(primaryResults[5], { totalSeconds: 0, sessionCount: 0, averageSeconds: 0, todaySeconds: 0, thisWeekSeconds: 0 });
-  const activeSession = extractSettled(primaryResults[6], null);
-
-  // ── 그룹2: 부차 데이터 (스크롤 아래이거나 부가 정보) ──
-  // 핵심 데이터가 준비된 상태에서 병렬 로드
-  const secondaryResults = await Promise.allSettled([
     getCachedPersonaDashboardData(),
     getCachedReadingStats(user),
     getWeeklyProgress(user),
@@ -112,11 +102,18 @@ export async function HomeHeroWrapper() {
     getFreeNoteStats(user),
   ]);
 
-  const personaData = extractSettled(secondaryResults[0], null);
-  const readingStats = extractSettled(secondaryResults[1], null);
-  const weeklyProgress = extractSettled(secondaryResults[2], null);
-  const dailyRecordsByType = extractSettled(secondaryResults[3], {});
-  const freeNoteStats = extractSettled(secondaryResults[4], { totalCount: 0, todayCount: 0 });
+  const streakAndTodayData = extractSettled(results[0], { streak: 0, todayNotes: 0 });
+  const continueReadingBooks = extractSettled(results[1], []);
+  const currentBookProgress = extractSettled(results[2], null);
+  const pointsData = extractSettled(results[3], null);
+  const firstNoteData = extractSettled(results[4], { hasFirstNote: true });
+  const readingTimeData = extractSettled(results[5], { totalSeconds: 0, sessionCount: 0, averageSeconds: 0, todaySeconds: 0, thisWeekSeconds: 0 });
+  const activeSession = extractSettled(results[6], null);
+  const personaData = extractSettled(results[7], null);
+  const readingStats = extractSettled(results[8], null);
+  const weeklyProgress = extractSettled(results[9], null);
+  const dailyRecordsByType = extractSettled(results[10], {});
+  const freeNoteStats = extractSettled(results[11], { totalCount: 0, todayCount: 0 });
 
   // 책 0권 사용자에게 인기 도서 위젯 표시
   const hasNoBooks = (!continueReadingBooks || continueReadingBooks.length === 0);

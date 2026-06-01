@@ -3,6 +3,8 @@
  * 책 검색 기능 제공
  */
 
+import { withRetry } from "@/lib/utils/retry";
+
 export interface NaverBookItem {
   title: string;
   link: string;
@@ -59,8 +61,6 @@ export async function searchBooks(
   url.searchParams.append("start", start.toString());
 
   // 재시도 로직이 포함된 fetch
-  const { withRetry } = await import("@/lib/utils/retry");
-  
   const response = await withRetry(
     async () => {
       const res = await fetch(url.toString(), {

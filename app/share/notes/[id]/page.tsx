@@ -1,12 +1,12 @@
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
-import { getAppUrl } from "@/lib/utils/url";
 import { parseNoteContentFields } from "@/lib/utils/note";
 import { isValidUUID } from "@/lib/utils/validation";
 import { ShareNoteCard } from "@/components/share/share-note-card";
 import { ShareCtaSection } from "@/components/share/share-cta-section";
 import { ReferralTracker } from "@/components/share/referral-tracker";
+import { buildShareMetadata, buildShareNotFoundMetadata } from "@/lib/og/meta";
 import type { NoteWithBook } from "@/types/note";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -24,9 +24,8 @@ export async function generateMetadata({
   const resolvedParams = await params;
   const noteId = resolvedParams.id;
 
-  // params.id 검증
-  if (!noteId || typeof noteId !== 'string' || !isValidUUID(noteId)) {
-    return { title: "기록을 찾을 수 없습니다" };
+  if (!noteId || typeof noteId !== "string" || !isValidUUID(noteId)) {
+    return buildShareNotFoundMetadata("note");
   }
 
   const supabase = createAdminSupabaseClient();
@@ -38,7 +37,7 @@ export async function generateMetadata({
     .single();
 
   if (!note) {
-    return { title: "기록을 찾을 수 없습니다" };
+    return buildShareNotFoundMetadata("note");
   }
 
   const book = note.books as unknown as { id: string; title: string; author: string | null; cover_image_url: string | null } | null;
@@ -47,7 +46,7 @@ export async function generateMetadata({
   const cleanTitle = bookTitle.replace(/\s*\(.*?\)\s*$/, "").trim() || bookTitle;
   const { quote, memo } = parseNoteContentFields(note.content);
 
-  // 필사(transcription) 타입일 때 OCR 보정 텍스트 사용 (JOIN으로 이미 조회됨)
+  // 필사(transcription) 타입일 때 OCR 보정 텍스트 사용
   const transcription = (note as Record<string, unknown>).transcriptions as { extracted_text?: string } | null;
   const transcriptionText = (note.type === "transcription" && transcription?.extracted_text)
     ? transcription.extracted_text
@@ -60,65 +59,32 @@ export async function generateMetadata({
     userName = user?.name || null;
   }
 
-  const baseUrl = getAppUrl();
-  const shareUrl = `${baseUrl}/share/notes/${note.id}`;
-
-  // OG 설명 구성: 날짜/제목 접두어 제거 → 핵심 문장만 인용 형태로
+  // 설명: 날짜/책제목 접두어 제거 후 인용 형태
   let rawDesc = transcriptionText || quote || memo || "";
-  // 날짜 접두어 제거 (예: "25.10.15", "2025-10-15")
   rawDesc = rawDesc.replace(/^\d{2,4}[.\-/]\d{1,2}[.\-/]\d{1,2}\s*/, "");
-  // 본문 앞에 반복된 책 제목 제거
   if (book?.title) {
     const escaped = book.title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     rawDesc = rawDesc.replace(new RegExp(`^${escaped}\\s*`), "");
   }
   rawDesc = rawDesc.trim();
 
-  let description: string;
-  if (rawDesc) {
-    const truncated = rawDesc.length > 70 ? rawDesc.substring(0, 67) + "..." : rawDesc;
-    description = `"${truncated}"`;
-  } else {
-    description = `${cleanTitle}에서 마음에 남은 문장을 확인해보세요.`;
-  }
+  const ogDescription = rawDesc
+    ? `"${rawDesc}"`
+    : `${cleanTitle}에서 마음에 남은 문장을 확인해보세요.`;
 
-  // OG 제목: 사용자명 + 책 제목으로 호기심 유발
-  // OG 제목: 25자 제한 (카카오톡/FB 1줄)
-  const rawOgTitle = userName
+  const ogTitle = userName
     ? `${userName}님이 ${cleanTitle}에서 밑줄 친 문장`
     : `${cleanTitle} - 마음에 남은 문장`;
-  const ogTitle = rawOgTitle.length > 25 ? rawOgTitle.slice(0, 22) + "..." : rawOgTitle;
-  const pageTitle = `${cleanTitle} - 독서 기록 | Habitree`;
 
-  // OG 이미지: 해당 링크 페이지 화면과 동일한 레이아웃의 동적 이미지 사용
-  const ogImageUrl = `${baseUrl}/share/notes/${note.id}/opengraph-image`;
-
-  return {
-    title: pageTitle,
-    description: description,
-    openGraph: {
-      title: ogTitle,
-      description: description,
-      type: "article",
-      url: shareUrl,
-      images: [
-        {
-          url: ogImageUrl,
-          width: 1200,
-          height: 630,
-          alt: `${cleanTitle} - ${book?.author || ""}`.trim() || "독서 기록",
-        },
-      ],
-      siteName: "Habitree",
-      locale: "ko_KR",
-    },
-    twitter: {
-      card: "summary_large_image",
-      title: ogTitle,
-      description: description,
-      images: [ogImageUrl],
-    },
-  };
+  return buildShareMetadata({
+    kind: "note",
+    id: note.id,
+    path: `/share/notes/${note.id}`,
+    ogTitle,
+    ogDescription,
+    pageTitle: `${cleanTitle} - 독서 기록 | ReadTree`,
+    alt: `${cleanTitle} - ${book?.author || ""}`.trim() || "독서 기록",
+  });
 }
 
 /**

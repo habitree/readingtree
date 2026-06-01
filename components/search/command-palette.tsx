@@ -36,13 +36,35 @@ interface SearchResults {
   }>;
 }
 
+interface CommandPaletteProps {
+  /**
+   * 외부에서 open 상태를 제어할 때 전달 (lazy wrapper 등). 미전달 시 내부 상태와 단축키로 자체 제어.
+   */
+  open?: boolean;
+  onOpenChange?: (next: boolean) => void;
+}
+
 /**
  * 통합 검색 Command Palette
- * Cmd+K / Ctrl+K 단축키로 열림
+ * Cmd+K / Ctrl+K 단축키로 열림 (open prop이 없는 경우)
  * 책, 기록, 모임을 병렬 검색하여 카테고리별로 표시
  */
-export function CommandPalette() {
-  const [open, setOpen] = useState(false);
+export function CommandPalette({ open: controlledOpen, onOpenChange }: CommandPaletteProps = {}) {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const isControlled = controlledOpen !== undefined;
+  const open = isControlled ? controlledOpen : internalOpen;
+  const setOpen = useCallback(
+    (next: boolean | ((prev: boolean) => boolean)) => {
+      if (isControlled) {
+        const value = typeof next === "function" ? next(controlledOpen) : next;
+        onOpenChange?.(value);
+      } else {
+        setInternalOpen(next);
+      }
+    },
+    [isControlled, controlledOpen, onOpenChange]
+  );
+
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResults | null>(null);
   const [isSearching, setIsSearching] = useState(false);
@@ -50,17 +72,18 @@ export function CommandPalette() {
   const { t } = useTranslation();
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(null);
 
-  // Cmd+K / Ctrl+K 단축키
+  // Cmd+K / Ctrl+K 단축키 — controlled 모드에서는 wrapper가 직접 처리하므로 비활성화.
   useEffect(() => {
+    if (isControlled) return;
     const handler = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
         e.preventDefault();
-        setOpen((prev) => !prev);
+        setInternalOpen((prev) => !prev);
       }
     };
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
-  }, []);
+  }, [isControlled]);
 
   // 디바운스 검색
   const handleSearch = useCallback((value: string) => {
@@ -91,7 +114,7 @@ export function CommandPalette() {
     setQuery("");
     setResults(null);
     router.push(href);
-  }, [router]);
+  }, [router, setOpen]);
 
   const totalResults =
     (results?.books.length ?? 0) +

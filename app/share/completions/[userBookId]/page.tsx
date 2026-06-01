@@ -3,11 +3,12 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ChevronLeft, Trophy, Sparkles } from "lucide-react";
 
-import { getAppUrl } from "@/lib/utils/url";
 import { isValidUUID } from "@/lib/utils/validation";
 import { createAdminSupabaseClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
 import { ReferralTracker } from "@/components/share/referral-tracker";
+import { ShareCtaSection } from "@/components/share/share-cta-section";
+import { buildShareMetadata, buildShareNotFoundMetadata } from "@/lib/og/meta";
 
 type CompletionPublicData = {
   bookTitle: string;
@@ -77,51 +78,32 @@ export async function generateMetadata({
   const { userBookId } = await params;
 
   if (!userBookId || !isValidUUID(userBookId)) {
-    return { title: "완독 기록을 찾을 수 없습니다" };
+    return buildShareNotFoundMetadata("completion");
   }
 
   const completion = await getPublicCompletion(userBookId);
   if (!completion) {
-    return { title: "완독 기록을 찾을 수 없습니다" };
+    return buildShareNotFoundMetadata("completion");
   }
 
-  const baseUrl = getAppUrl();
-  const shareUrl = `${baseUrl}/share/completions/${userBookId}`;
-  const ogImageUrl = `${baseUrl}/share/completions/${userBookId}/opengraph-image`;
-  const title =
+  const ownerLabel = completion.ownerName ? `${completion.ownerName}님이 ` : "";
+  const ogTitle =
     completion.readCount > 1
-      ? `${completion.bookTitle} — ${completion.readCount}회독 완독!`
-      : `${completion.bookTitle} 완독했어요`;
-  const description = completion.bookAuthor
-    ? `${completion.bookAuthor}의 책을 다 읽었어요. 나의 독서 기록도 ReadTree에서 시작해보세요.`
-    : "한 권의 책을 다 읽었어요. 나의 독서 기록도 ReadTree에서 시작해보세요.";
+      ? `${ownerLabel}${completion.bookTitle} ${completion.readCount}회독 완독!`
+      : `${ownerLabel}${completion.bookTitle} 완독!`;
+  const ogDescription = completion.bookAuthor
+    ? `${completion.bookAuthor}의 책을 다 읽었어요. ReadTree에서 나의 독서 기록도 시작해보세요.`
+    : "한 권의 책을 다 읽었어요. ReadTree에서 나의 독서 기록도 시작해보세요.";
 
-  return {
-    title,
-    description,
-    openGraph: {
-      title,
-      description,
-      type: "article",
-      url: shareUrl,
-      images: [
-        {
-          url: ogImageUrl,
-          width: 1200,
-          height: 630,
-          alt: `${completion.bookTitle} 완독 카드`,
-        },
-      ],
-      siteName: "Habitree",
-      locale: "ko_KR",
-    },
-    twitter: {
-      card: "summary_large_image",
-      title,
-      description,
-      images: [ogImageUrl],
-    },
-  };
+  return buildShareMetadata({
+    kind: "completion",
+    id: userBookId,
+    path: `/share/completions/${userBookId}`,
+    ogTitle,
+    ogDescription,
+    pageTitle: `${completion.bookTitle} 완독 | ReadTree`,
+    alt: `${completion.bookTitle} 완독 카드`,
+  });
 }
 
 function formatDate(value: string | null): string | null {

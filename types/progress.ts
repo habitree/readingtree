@@ -115,9 +115,12 @@ export interface EndSessionInput {
 /**
  * 스탬프 사후 첨부 입력 — attachStampToLog 전용
  * 기존 reading_log 에 사진/페이지를 추가해 스탬프로 승격.
+ * - image_urls (≤5): 첫 장 = 대표. DB 트리거가 image_url 자동 동기화.
+ * - image_url (단일): image_urls 미사용 시 호환용. 내부에서 [image_url]로 변환됨.
  */
 export interface AttachStampInput {
-  image_url: string;
+  image_url?: string;
+  image_urls?: string[];
   start_page?: number;
   end_page?: number;
   memo?: string;
@@ -148,7 +151,10 @@ export interface CreateReadingStampInput {
   user_book_id?: string;
   end_page: number;
   start_page?: number;
+  /** 단일 사진 호환 입력. image_urls 미사용 시 [image_url]로 변환됨. */
   image_url?: string;
+  /** 사진 배열 (≤5). 첫 장이 대표. DB 트리거가 image_url 자동 동기화. */
+  image_urls?: string[];
   memo?: string;
   is_public?: boolean;
   started_at?: string;

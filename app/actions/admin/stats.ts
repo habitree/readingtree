@@ -155,26 +155,30 @@ export async function getUserGrowthData() {
 
     const supabase = createAdminSupabaseClient();
     const now = new Date();
-    const growthData = [];
 
-    for (let i = 5; i >= 0; i--) {
+    // 최근 6개월 월별 카운트를 병렬 조회 (직렬 대기 제거)
+    const months = Array.from({ length: 6 }, (_, idx) => {
+        const i = 5 - idx;
         const startOfMonth = new Date(now.getFullYear(), now.getMonth() - i, 1);
         const endOfMonth = new Date(now.getFullYear(), now.getMonth() - i + 1, 0, 23, 59, 59);
+        return { startOfMonth, endOfMonth };
+    });
 
-        const { count } = await supabase
-            .from("users")
-            .select("*", { count: "exact", head: true })
-            .gte("created_at", startOfMonth.toISOString())
-            .lte("created_at", endOfMonth.toISOString());
+    const counts = await Promise.all(
+        months.map(({ startOfMonth, endOfMonth }) =>
+            supabase
+                .from("users")
+                .select("*", { count: "exact", head: true })
+                .gte("created_at", startOfMonth.toISOString())
+                .lte("created_at", endOfMonth.toISOString()),
+        ),
+    );
 
-        growthData.push({
-            month: `${startOfMonth.getMonth() + 1}월`,
-            count: count || 0,
-            fullDate: startOfMonth.toISOString(),
-        });
-    }
-
-    return growthData;
+    return months.map(({ startOfMonth }, idx) => ({
+        month: `${startOfMonth.getMonth() + 1}월`,
+        count: counts[idx].count || 0,
+        fullDate: startOfMonth.toISOString(),
+    }));
 }
 
 /**
@@ -185,17 +189,18 @@ export async function getRecentSystemActivity() {
 
     const supabase = createAdminSupabaseClient();
 
-    // 최근 가입한 사용자 5명
-    const { data: recentUsers } = await supabase
-        .from("users")
-        .select("id, name, email, avatar_url, created_at")
-        .order("created_at", { ascending: false })
-        .limit(5);
-
-    // 최근 작성된 기록 5개
-    const { data: recentNotes } = await supabase
-        .from("notes")
-        .select(`
+    // 최근 가입자·최근 기록을 병렬 조회 (직렬 대기 제거)
+    const [{ data: recentUsers }, { data: recentNotes }] = await Promise.all([
+        // 최근 가입한 사용자 5명
+        supabase
+            .from("users")
+            .select("id, name, email, avatar_url, created_at")
+            .order("created_at", { ascending: false })
+            .limit(5),
+        // 최근 작성된 기록 5개
+        supabase
+            .from("notes")
+            .select(`
       id,
       content,
       type,
@@ -204,8 +209,9 @@ export async function getRecentSystemActivity() {
       users (name),
       books (title)
     `)
-        .order("created_at", { ascending: false })
-        .limit(10);
+            .order("created_at", { ascending: false })
+            .limit(10),
+    ]);
 
     return {
         recentUsers: recentUsers || [],

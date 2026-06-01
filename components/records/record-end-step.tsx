@@ -15,6 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { cancelActiveSession, endReadingSession } from "@/app/actions/sessions";
 import { broadcastSessionCancelled, broadcastSessionEnded, useReadingSession } from "@/hooks/use-reading-session";
 import { useRecordSheetStore, type RecordSheetBook } from "@/hooks/use-record-sheet";
+import { useStampShareStore } from "@/hooks/use-stamp-share";
 import { RecordBookmarkToggle } from "./record-bookmark-toggle";
 import { RecordPhotoStrip } from "./record-photo-strip";
 
@@ -40,6 +41,7 @@ export function RecordEndStep({ sessionId, selectedBook, prefillEndPage, onSaved
   const [isPending, startTransition] = useTransition();
   const [isCancelling, startCancel] = useTransition();
   const { close } = useRecordSheetStore();
+  const openStampShare = useStampShareStore((s) => s.openShare);
 
   const startPage = session?.start_page ?? 0;
   const defaultEndPage =
@@ -78,11 +80,21 @@ export function RecordEndStep({ sessionId, selectedBook, prefillEndPage, onSaved
         const minutes = Math.round(result.durationSeconds / 60);
         const pagesRead = Math.max(0, endPage - startPage);
         const pointsLabel = result.pointsEarned ? ` +${result.pointsEarned}p` : "";
+        const savedSessionId = result.sessionId;
         toast.success(
           result.promotedToStamp
             ? `스탬프 +1 · ${minutes}분 · ${pagesRead}p${pointsLabel}`
             : `기록 저장 · ${minutes}분 · ${pagesRead}p${pointsLabel}`,
-          { duration: 4000 },
+          {
+            duration: 5000,
+            action: {
+              label: "공유",
+              onClick: () =>
+                openStampShare(savedSessionId, {
+                  bookTitle: selectedBook?.title ?? null,
+                }),
+            },
+          },
         );
 
         if (afterSave === "detail") {

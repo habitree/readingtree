@@ -1134,6 +1134,294 @@ export async function getContinueReadingBooks(user?: User | null, maxCount: numb
 }
 
 /**
+ * QuickBookSelector 다이얼로그 첫 화면용 가벼운 조회
+ *
+ * 목적:
+ *   - 다이얼로그 진입 시 사용자가 가장 자주 고를 책(이어읽기 + 최근 기록)을
+ *     최소 쿼리로 즉시 노출.
+ *   - 통계·그룹·연결책 등 picker에서 미사용 정보는 제외.
+ *
+ * 쿼리 비용:
+ *   1) getContinueReadingBooks(user, 8)  — 홈에서 호출되는 함수와 동일.
+ *      Next.js fetch/RSC 캐시가 살아있으면 추가 비용 없음.
+ *   2) notes 최근 50개  — 사용자 최근 기록에서 distinct book_id 추출용.
+ *   3) user_books in (book_ids)  — 책 메타와 user_books.id 매핑.
+ *
+ * 반환값은 기존 BookWithNotes 인터페이스를 만족하도록 채워서
+ * onSelect 시그니처를 변경하지 않는다.
+ */
+export async function getQuickPickerBooks(user?: User | null): Promise<{
+  continueReading: BookWithNotes[];
+  recentNoted: BookWithNotes[];
+}> {
+  const supabase = await createServerSupabaseClient();
+
+  let currentUser = user;
+  if (!currentUser) {
+    currentUser = await getCurrentUser();
+  }
+  if (!currentUser) {
+    return { continueReading: [], recentNoted: [] };
+  }
+
+  const [continueReadingList, notesResult] = await Promise.all([
+    getContinueReadingBooks(currentUser, 8),
+    supabase
+      .from("notes")
+      .select("id, type, book_id, created_at")
+      .eq("user_id", currentUser.id)
+      .order("created_at", { ascending: false })
+      .limit(50),
+  ]);
+
+  const continueReadingUserBookIds = new Set(
+    continueReadingList.map((b) => b.userBookId),
+  );
+
+  // notes에서 distinct book_id 12개 추출 + 카운트/최신 매핑
+  const noteCountMap: Record<string, number> = {};
+  const latestNoteMap: Record<string, { id: string; type: string; created_at: string }> = {};
+  const distinctBookIds: string[] = [];
+  const seen = new Set<string>();
+
+  for (const note of notesResult.data || []) {
+    if (!note.book_id) continue;
+    noteCountMap[note.book_id] = (noteCountMap[note.book_id] || 0) + 1;
+    if (!latestNoteMap[note.book_id]) {
+      latestNoteMap[note.book_id] = {
+        id: note.id,
+        type: note.type,
+        created_at: note.created_at,
+      };
+    }
+    if (!seen.has(note.book_id) && distinctBookIds.length < 12) {
+      seen.add(note.book_id);
+      distinctBookIds.push(note.book_id);
+    }
+  }
+
+  let recentNoted: BookWithNotes[] = [];
+  if (distinctBookIds.length > 0) {
+    const { data: userBooksData } = await supabase
+      .from("user_books")
+      .select(
+        `
+        id,
+        status,
+        book_id,
+        books!inner (
+          id,
+          title,
+          author,
+          cover_image_url,
+          total_pages
+        )
+      `,
+      )
+      .eq("user_id", currentUser.id)
+      .in("book_id", distinctBookIds);
+
+    const ubList = (userBooksData ?? []) as unknown as PickerUserBookRow[];
+    const ubMap = new Map<string, PickerUserBookRow>();
+    for (const ub of ubList) {
+      ubMap.set(ub.book_id, ub);
+    }
+
+    recentNoted = distinctBookIds
+      .map((bookId) => {
+        const ub = ubMap.get(bookId);
+        if (!ub || !ub.books) return null;
+        if (continueReadingUserBookIds.has(ub.id)) return null;
+        return toPickerBookWithNotes(ub, ub.books, noteCountMap[bookId] || 0, latestNoteMap[bookId]);
+      })
+      .filter((b): b is BookWithNotes => b !== null)
+      .slice(0, 6);
+  }
+
+  // 이어읽기 책 → BookWithNotes 형식으로 변환
+  const continueReading: BookWithNotes[] = continueReadingList.map((b) => ({
+    id: b.userBookId,
+    status: "reading" as ReadingStatus,
+    reading_reason: null,
+    completed_at: null,
+    started_at: undefined,
+    bookshelf_id: null,
+    current_page: b.currentPage,
+    is_pinned: b.isPinned,
+    pinned_at: b.pinnedAt,
+    books: {
+      id: b.bookId,
+      title: b.title,
+      author: b.author,
+      publisher: null,
+      isbn: null,
+      published_date: null,
+      cover_image_url: b.coverImageUrl,
+      description_summary: null,
+      summary: null,
+      total_pages: b.totalPages,
+    },
+    noteCount: noteCountMap[b.bookId] || 0,
+    latestNote: latestNoteMap[b.bookId],
+    groupBooks: [],
+    relatedBooks: [],
+  }));
+
+  return { continueReading, recentNoted };
+}
+
+/**
+ * QuickBookSelector 검색용 가벼운 조회
+ *
+ * getUserBooksWithNotes 대비 차이:
+ *   - group_books, user_book_relations, bookshelf 캐싱 등 picker 미사용 조인 제외.
+ *   - 통계 집계 제외 (picker는 통계 안 씀).
+ *   - 최대 100건으로 제한 (picker UI는 어차피 스크롤 한계).
+ */
+export async function searchUserBooksForPicker(
+  query: string,
+  user?: User | null,
+): Promise<BookWithNotes[]> {
+  const supabase = await createServerSupabaseClient();
+
+  let currentUser = user;
+  if (!currentUser) {
+    currentUser = await getCurrentUser();
+  }
+  if (!currentUser) return [];
+
+  const sanitized = sanitizeSearchQuery(query);
+  if (!sanitized) return [];
+
+  const { data: matchingBooks } = await supabase
+    .from("books")
+    .select("id")
+    .or(`title.ilike.%${sanitized}%,author.ilike.%${sanitized}%,isbn.ilike.%${sanitized}%`)
+    .limit(200);
+
+  const matchingBookIds = matchingBooks?.map((b) => b.id) || [];
+  if (matchingBookIds.length === 0) return [];
+
+  const [userBooksResult, notesResult] = await Promise.all([
+    supabase
+      .from("user_books")
+      .select(
+        `
+        id,
+        status,
+        book_id,
+        current_page,
+        is_pinned,
+        pinned_at,
+        books!inner (
+          id,
+          title,
+          author,
+          cover_image_url,
+          total_pages
+        )
+      `,
+      )
+      .eq("user_id", currentUser.id)
+      .in("book_id", matchingBookIds)
+      .order("updated_at", { ascending: false })
+      .limit(100),
+    supabase
+      .from("notes")
+      .select("id, type, book_id, created_at")
+      .eq("user_id", currentUser.id)
+      .in("book_id", matchingBookIds)
+      .order("created_at", { ascending: false }),
+  ]);
+
+  const noteCountMap: Record<string, number> = {};
+  const latestNoteMap: Record<string, { id: string; type: string; created_at: string }> = {};
+  for (const note of notesResult.data || []) {
+    noteCountMap[note.book_id] = (noteCountMap[note.book_id] || 0) + 1;
+    if (!latestNoteMap[note.book_id]) {
+      latestNoteMap[note.book_id] = {
+        id: note.id,
+        type: note.type,
+        created_at: note.created_at,
+      };
+    }
+  }
+
+  const userBooksList = (userBooksResult.data ?? []) as unknown as PickerUserBookRow[];
+  return userBooksList
+    .filter((ub): ub is PickerUserBookRow & { books: PickerBookRow } => !!ub.books)
+    .map((ub) =>
+      toPickerBookWithNotes(
+        ub,
+        ub.books,
+        noteCountMap[ub.book_id] || 0,
+        latestNoteMap[ub.book_id],
+      ),
+    );
+}
+
+/**
+ * picker용 가벼운 select 응답 타입.
+ * Supabase select가 books를 단일 객체로 반환할 때 사용.
+ */
+interface PickerBookRow {
+  id: string;
+  title: string;
+  author: string | null;
+  cover_image_url: string | null;
+  total_pages: number | null;
+}
+
+interface PickerUserBookRow {
+  id: string;
+  status: string;
+  book_id: string;
+  current_page?: number | null;
+  is_pinned?: boolean | null;
+  pinned_at?: string | null;
+  books: PickerBookRow | null;
+}
+
+/**
+ * picker용 user_books row → BookWithNotes 변환 헬퍼.
+ * picker가 사용하지 않는 필드는 안전한 기본값으로 채운다.
+ */
+function toPickerBookWithNotes(
+  ub: PickerUserBookRow,
+  bookData: PickerBookRow,
+  noteCount: number,
+  latestNote?: { id: string; type: string; created_at: string },
+): BookWithNotes {
+  return {
+    id: ub.id,
+    status: ub.status as ReadingStatus,
+    reading_reason: null,
+    completed_at: null,
+    started_at: undefined,
+    bookshelf_id: null,
+    current_page: ub.current_page ?? 0,
+    is_pinned: !!ub.is_pinned,
+    pinned_at: ub.pinned_at ?? null,
+    books: {
+      id: bookData.id,
+      title: bookData.title,
+      author: bookData.author,
+      publisher: null,
+      isbn: null,
+      published_date: null,
+      cover_image_url: bookData.cover_image_url,
+      description_summary: null,
+      summary: null,
+      total_pages: bookData.total_pages ?? null,
+    },
+    noteCount,
+    latestNote,
+    groupBooks: [],
+    relatedBooks: [],
+  };
+}
+
+/**
  * 인기 도서 조회 (user_books 기준 가장 많이 등록된 책)
  * Cold Start 사용자에게 책 발견 경험을 제공
  * @param limit 조회할 최대 개수 (기본값: 10)

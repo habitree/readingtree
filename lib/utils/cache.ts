@@ -10,7 +10,7 @@ interface CacheEntry<T> {
 }
 
 class SimpleCache {
-  private cache: Map<string, CacheEntry<any>> = new Map();
+  private cache: Map<string, CacheEntry<unknown>> = new Map();
 
   /**
    * 캐시에 데이터 저장
@@ -45,6 +45,21 @@ class SimpleCache {
     }
 
     return entry.data as T;
+  }
+
+  /**
+   * 캐시 항목을 메타데이터(timestamp, ttl)와 함께 조회.
+   * SWR 패턴(즉시 표시 + 백그라운드 갱신) 구현 시 stale 여부 판정에 사용.
+   */
+  getEntry<T>(key: string): { data: T; timestamp: number; ttl: number } | null {
+    const entry = this.cache.get(key);
+    if (!entry) return null;
+    const now = Date.now();
+    if (now - entry.timestamp > entry.ttl) {
+      this.cache.delete(key);
+      return null;
+    }
+    return entry as CacheEntry<T>;
   }
 
   /**

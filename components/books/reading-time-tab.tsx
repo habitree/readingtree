@@ -10,17 +10,20 @@ import {
 import {
   Clock,
   Image as ImageIcon,
+  Images,
   Timer,
   TrendingUp,
   Calendar,
   Trash2,
   Loader2,
   Pencil,
+  Share2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import type { ReadingLog } from "@/types/progress";
 import { useStampCaptureStore } from "@/hooks/use-stamp-capture";
+import { useStampShareStore } from "@/hooks/use-stamp-share";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,6 +36,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { ReadingTimeShareButton } from "./reading-time-share-button";
 import { ReadingTimeLinkShare } from "./reading-time-link-share";
+import { Lightbox } from "@/components/stamps/photo-gallery";
 
 interface ReadingTimeTabProps {
   userBookId: string;
@@ -84,6 +88,7 @@ function groupByDate(logs: ReadingLog[]): Map<string, ReadingLog[]> {
 
 export function ReadingTimeTab({ userBookId, bookInfo }: ReadingTimeTabProps) {
   const openStampAttach = useStampCaptureStore((s) => s.openAttach);
+  const openStampShare = useStampShareStore((s) => s.openShare);
   const [logs, setLogs] = useState<ReadingLog[]>([]);
   const [stats, setStats] = useState<{
     totalSeconds: number;
@@ -93,6 +98,7 @@ export function ReadingTimeTab({ userBookId, bookInfo }: ReadingTimeTabProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [isDeleting, startDeleteTransition] = useTransition();
+  const [lightbox, setLightbox] = useState<{ urls: string[]; index: number; alt: string } | null>(null);
 
   // "편집" — 사진 추가 시트(StampCaptureSheet attach 모드)로 통합 진입.
   // 시트 안에서 사진/메모/페이지 자유롭게 수정 가능. 사진 없이도 저장됨.
@@ -167,9 +173,25 @@ export function ReadingTimeTab({ userBookId, bookInfo }: ReadingTimeTabProps) {
   }, [userBookId]);
 
   if (isLoading) {
+    // 로드 후 레이아웃(통계 3-그리드 + 로그 리스트)에 맞춘 스켈레톤 — CLS 방지
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      <div className="space-y-5">
+        <div className="grid grid-cols-3 gap-2.5">
+          {[0, 1, 2].map((i) => (
+            <div
+              key={i}
+              className="h-[88px] rounded-xl border bg-muted/40 animate-pulse"
+            />
+          ))}
+        </div>
+        <div className="space-y-1.5">
+          {[0, 1, 2].map((i) => (
+            <div
+              key={i}
+              className="h-[68px] rounded-xl bg-muted/30 animate-pulse"
+            />
+          ))}
+        </div>
       </div>
     );
   }
@@ -244,7 +266,14 @@ export function ReadingTimeTab({ userBookId, bookInfo }: ReadingTimeTabProps) {
               </p>
               <div className="space-y-1.5">
                 {dateLogs.map((log) => {
-                  const hasImage = !!log.image_url;
+                  const photoUrls: string[] =
+                    Array.isArray(log.image_urls) && log.image_urls.length > 0
+                      ? log.image_urls
+                      : log.image_url
+                        ? [log.image_url]
+                        : [];
+                  const hasImage = photoUrls.length > 0;
+                  const photoCount = photoUrls.length;
                   const pages =
                     typeof log.end_page === "number" && typeof log.start_page === "number"
                       ? Math.max(0, log.end_page - log.start_page)
@@ -254,18 +283,35 @@ export function ReadingTimeTab({ userBookId, bookInfo }: ReadingTimeTabProps) {
                       key={log.id}
                       className="flex items-start gap-3 p-3 rounded-xl bg-muted/30 border border-transparent hover:border-border transition-colors"
                     >
-                      {/* 좌측: 사진 썸네일(스탬프) 또는 아이콘 */}
+                      {/* 좌측: 사진 썸네일(스탬프) 또는 아이콘 — 클릭 시 라이트박스 */}
                       {hasImage ? (
-                        <div className="relative w-12 h-12 rounded-lg overflow-hidden shrink-0 bg-neutral-900 ring-1 ring-emerald-200 dark:ring-emerald-900">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setLightbox({
+                              urls: photoUrls,
+                              index: 0,
+                              alt: bookInfo?.title ? `${bookInfo.title} 스탬프 사진` : "스탬프 사진",
+                            })
+                          }
+                          className="relative w-12 h-12 rounded-lg overflow-hidden shrink-0 bg-neutral-900 ring-1 ring-emerald-200 dark:ring-emerald-900 transition-transform active:scale-95"
+                          aria-label={photoCount > 1 ? `사진 ${photoCount}장 크게 보기` : "사진 크게 보기"}
+                        >
                           <Image
-                            src={log.image_url!}
+                            src={photoUrls[0]}
                             alt="스탬프 사진"
                             fill
                             sizes="48px"
                             className="object-cover"
                             unoptimized
                           />
-                        </div>
+                          {photoCount > 1 && (
+                            <span className="absolute bottom-0 right-0 inline-flex items-center gap-0.5 rounded-tl-md bg-emerald-600/90 px-1 text-[9px] font-bold tabular-nums text-white">
+                              <Images className="h-2 w-2" />
+                              {photoCount}
+                            </span>
+                          )}
+                        </button>
                       ) : (
                         <div
                           className={cn(
@@ -304,7 +350,7 @@ export function ReadingTimeTab({ userBookId, bookInfo }: ReadingTimeTabProps) {
                         )}
                       </div>
 
-                      {/* 우측: 편집 칩(사진/메모/페이지 통합) + 삭제 */}
+                      {/* 우측: 편집 / 공유 / 삭제 */}
                       <div className="flex items-center gap-1 shrink-0">
                         <button
                           type="button"
@@ -314,6 +360,14 @@ export function ReadingTimeTab({ userBookId, bookInfo }: ReadingTimeTabProps) {
                         >
                           <Pencil className="h-3 w-3" />
                           편집
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => openStampShare(log.id, { bookTitle: bookInfo?.title ?? null })}
+                          className="inline-flex h-7 w-7 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-emerald-50 hover:text-emerald-600 dark:hover:bg-emerald-950/40"
+                          aria-label="기록 공유"
+                        >
+                          <Share2 className="h-3.5 w-3.5" />
                         </button>
                         <button
                           type="button"
@@ -337,6 +391,16 @@ export function ReadingTimeTab({ userBookId, bookInfo }: ReadingTimeTabProps) {
           ))}
         </div>
       </div>
+
+      {lightbox && (
+        <Lightbox
+          urls={lightbox.urls}
+          index={lightbox.index}
+          alt={lightbox.alt}
+          onIndexChange={(i) => setLightbox((prev) => (prev ? { ...prev, index: i } : prev))}
+          onClose={() => setLightbox(null)}
+        />
+      )}
 
       <AlertDialog
         open={!!pendingDeleteId}
