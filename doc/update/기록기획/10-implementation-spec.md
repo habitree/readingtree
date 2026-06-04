@@ -69,7 +69,8 @@
 | **B3-2** | 표시 스트릭 단일화 — `getWeeklyProgress`도 `computeCurrentStreak` 위임(홈·통계·결산 일치). DB `current_streak`은 게이미피케이션 미션 전용 유지 | ✅ 완료(tsc) |
 | **A4** | RecordSheet 단일 진입점 — 고아 `progress-record-sheet.tsx`(importer 0) 삭제 | ✅ 완료(tsc) |
 | **B6** | orphan 정리 cron — `api/cron/reap-orphan-sessions`(admin 전체 사용자) + `vercel.json`(`0 15 * * *`) | ✅ 완료(라우트 200 `{closed:0}`) |
-| **B2/B4/B5** | deprecated 함수 정리 · 컬럼 의미 `DATA_MODEL.md` 반영 | ⬜ |
+| **B4/B5** | 컬럼 의미 `DATA_MODEL.md` 반영 | ✅ 완료(reading_logs 섹션 현행화 + page/timestamp 의미 정리) |
+| **B2** | deprecated 함수 정리 | 🔁 부분 — `createReadingStamp`는 **활성**(stamp-capture-sheet)이라 유지. `createProgressLog`는 **호출처 0(고아)** → 제거 후보(별도) |
 | **DEC-6 구현** | 진행률 저장 시 여정 편입 규칙 — `upsertDailyProgressNote`(메모없음=일1점 집약·전진만) + 메모=항상 | ✅ 완료(tsc·MCP 쿼리검증: 156→139 dedup효과) |
 
 ### P2 — 신규 가치
@@ -78,8 +79,10 @@
 | **C9** | 출력(`review`) 항목 — 마이그레이션(`notes_detail_kind_check`+review) + 저장 매핑(review→type memo) + RecordSheet detail 옵션 + note-card 라벨 | ✅ 완료(마이그 적용·DB insert 검증·tsc·/notes 200) |
 | **C7** | 페이지별 독서 페이스 패널(`reading-pace-panel.tsx`, 페이지당 평균·남은 예상) — 시간탭 통합 | ✅ 완료(tsc) |
 | **C8** | 3축 통합 뷰 — `reading-overview-panel.tsx`(⏱시간·📊진행률·🧭여정 요약) 책 상세 탭 위 통합 | ✅ 완료(tsc·Playwright 렌더 확인) |
-| **C1/C2** | 타이머 목표 UI · 페이스 분석(C7로 일부 노출) | ⬜ |
-| **C3/C4** | 캘린더 SSOT · 음악-세션 동기화 | ⬜ |
+| **C1** | 타이머 목표 UI | ✅ **이미 구현됨** — `record-start-step` 프리셋(15/25/45/무제한) + `record-timer-complete-dialog`(elapsed≥target, layout 전역 마운트) |
+| **C2** | 페이스 분석 | ✅ C7로 노출 완료(`reading-pace-panel`) |
+| **C3** | 캘린더 SSOT | 🔁 **재평가: 불필요** — `activity-calendar`(타입별 30일 히트맵)와 `monthly-book-calendar`(책별 월간)는 서로 다른 facet이며 KST는 A1으로 이미 공유. 억지 통합 가치 낮음 |
+| **C4** | 음악-세션 동기화 | ⬜ **향후 기능** — `attachMusicToSession`(Phase 8) 존재하나 자동 재생/정지 연동은 UX 민감 신규 기능. 별도 진행 |
 
 > 📐 **남은 단계 상세 설계 = `11-next-steps-design.md`** (A5·A3·B3-2·C7·C8·C9·B1 + 후순위, 의존성 순서·SQL·체크리스트 포함).
 > 핵심 확정: **C9는 CHECK 제약 `notes_detail_kind_check`(quote/memo/transcription만) 때문에 마이그레이션 필수**,

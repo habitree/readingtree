@@ -1074,14 +1074,38 @@ CREATE TYPE feature_request_status AS ENUM ('requested', 'under_review', 'planne
 
 **소유 구조**: 개인 (`auth.uid() = user_id`)
 
-**주요 컬럼**:
-- `id` (UUID, PK): 기본 키
-- `user_id` (UUID, NOT NULL): 사용자 ID (`auth.users(id)` 참조, CASCADE)
-- `user_book_id` (UUID, NOT NULL): 사용자 책 ID (`user_books(id)` 참조, CASCADE)
-- `page_number` (INTEGER, NOT NULL): 기록 시점의 페이지 번호 (CHECK >= 0)
-- `memo` (TEXT): 한줄 메모 (선택)
-- `is_public` (BOOLEAN, DEFAULT TRUE): 공개 여부
-- `created_at`, `updated_at` (TIMESTAMPTZ): 생성/수정 시간
+**주요 컬럼** (기록 개편 v1.0 세션 모델 — B5 컬럼 의미 정리, 2026-06-04):
+
+*기본*
+- `id` (UUID, PK) · `user_id` (UUID, NOT NULL, CASCADE) · `user_book_id` (UUID, NOT NULL, CASCADE)
+- `memo` (TEXT, ≤500) · `is_public` (BOOLEAN, DEFAULT TRUE)
+
+*세션 (migration-202605040100)*
+- `status` (TEXT): `in_progress | completed | abandoned`. **사용자당 in_progress 1개**(부분 unique 인덱스)
+- `client_session_id` (UUID): 멱등키(다중탭 race 방지) · `app_version` (TEXT): 진단용
+- `bookmark_text` (TEXT, ≤200) · `bookmark_page` (INTEGER): "다음 시작점" 한 줄 메모 (D1)
+- `image_urls` (JSONB): 사진 다중(≤5)
+
+*페이지 (📊 진행률 축) — 의미별 분리*
+- `page_number` (INTEGER, NOT NULL, CHECK ≥0): 기록 시점 페이지(레거시 기준점)
+- `start_page` / `end_page` (INTEGER): 이 세션에 읽은 구간
+- `bookmark_page` (INTEGER): 다음 시작점(위 세션 항목과 동일 컬럼)
+- ※ 책의 "현재 페이지"는 `user_books.current_page`가 정본. `getLastEndPage`가 둘 중 큰 값으로 다음 세션 start_page 승계.
+
+*시간 (⏱ 독서시간 축) — 의미별 분리*
+- `started_at` / `ended_at` (TIMESTAMPTZ): 독서 행위의 시작/종료 시각
+- `reading_duration_seconds` (INTEGER): 실제 읽은 길이 = (ended - started). **"읽은 시간"**
+- `pace_seconds_per_page` (NUMERIC, STORED 생성컬럼): duration ÷ (end_page - start_page)
+- `target_seconds` (INTEGER): 타이머 목표(안내용, Phase 8.A)
+- `music_started_at` (TIMESTAMPTZ): 음악 재생 시작
+- `promoted_at` (TIMESTAMPTZ): 스탬프 승격 시각 (사진 첨부 트리거)
+- `created_at` / `updated_at` (TIMESTAMPTZ): 행 생성/수정 시각. **"적은 시각"(기록시간)** — `reading_duration_seconds`(읽은 시간)와 구분
+
+*스탬프 / 음악*
+- `image_url` (TEXT): 대표 사진. **스탬프 = `image_url IS NOT NULL AND promoted_at IS NOT NULL`**
+- `music_playlist_id` (UUID) · `music_track_ids` (JSONB)
+
+> **타임스탬프 계층**: `created_at`(적음) ⊃ `started_at`→`ended_at`(읽음) · `promoted_at`(승격) · `music_started_at`(음악). 집계의 "독서시간"은 `reading_duration_seconds`, "기록시간"은 `created_at`을 쓴다.
 
 **인덱스**:
 - `idx_reading_logs_user_id`: 사용자별 조회
