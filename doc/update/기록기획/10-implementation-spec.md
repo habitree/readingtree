@@ -70,7 +70,7 @@
 | **A4** | RecordSheet 단일 진입점 — 고아 `progress-record-sheet.tsx`(importer 0) 삭제 | ✅ 완료(tsc) |
 | **B6** | orphan 정리 cron — `api/cron/reap-orphan-sessions`(admin 전체 사용자) + `vercel.json`(`0 15 * * *`) | ✅ 완료(라우트 200 `{closed:0}`) |
 | **B2/B4/B5** | deprecated 함수 정리 · 컬럼 의미 `DATA_MODEL.md` 반영 | ⬜ |
-| **DEC-6 구현** | 진행률 저장 시 여정 편입 규칙(일 1점 집약 등) 적용 | ⬜ |
+| **DEC-6 구현** | 진행률 저장 시 여정 편입 규칙 — `upsertDailyProgressNote`(메모없음=일1점 집약·전진만) + 메모=항상 | ✅ 완료(tsc·MCP 쿼리검증: 156→139 dedup효과) |
 
 ### P2 — 신규 가치
 | 코드 | 작업 | 상태 |

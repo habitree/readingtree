@@ -302,6 +302,57 @@ export async function createNote(data: CreateNoteInput, user?: User | null) {
 }
 
 /**
+ * 진행률 변경의 여정 편입 (DEC-6).
+ *
+ * 메모 없는 단순 진행 기록을 "같은 날 1점"으로 집약한다:
+ *   - 같은 날(KST) 같은 책의 메모 없는 progress 노트가 있으면 page_number만 갱신,
+ *   - 없으면 새로 생성.
+ * 후퇴/정정(페이지 감소)은 호출부에서 제외해 여정 노이즈를 줄인다.
+ * 메모가 있는 진행 기록은 항상 별도 createNote(type='progress', content)로 남긴다.
+ */
+export async function upsertDailyProgressNote(
+  userBookId: string,
+  page: number,
+): Promise<{ action: "created" | "updated"; noteId: string }> {
+  const user = await getCurrentUser();
+  if (!user) throw new Error("로그인이 필요합니다.");
+
+  const supabase = await createServerSupabaseClient();
+  const todayKstMidnight = getKSTToday().toISOString();
+
+  // 같은 날 메모 없는 progress 노트(content IS NULL) 탐색
+  const { data: existing } = await supabase
+    .from("notes")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("book_id", userBookId)
+    .eq("type", "progress")
+    .is("content", null)
+    .gte("created_at", todayKstMidnight)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (existing) {
+    const { error } = await supabase
+      .from("notes")
+      .update({ page_number: String(page) })
+      .eq("id", existing.id);
+    if (error) throw new Error("진행 기록 갱신에 실패했습니다.");
+    revalidatePath(`/books/${userBookId}`);
+    return { action: "updated", noteId: existing.id };
+  }
+
+  const result = await createNote({
+    book_id: userBookId,
+    type: "progress",
+    page_number: String(page),
+    is_public: true,
+  });
+  return { action: "created", noteId: result.noteId };
+}
+
+/**
  * 빠른 기록 (Quick Capture)
  * 최소한의 입력으로 draft 상태 기록을 즉시 생성
  * @param content 자유 텍스트 (인용구/생각 자동 구분 없이 memo로 저장)

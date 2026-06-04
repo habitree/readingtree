@@ -142,14 +142,11 @@ export function ReadingProgress({
     try {
       const result = await updateBookProgress(userBookId, pendingPageUpdate);
 
-      // 메모 없이도 진행 기록 생성 (내 기록에 표시되도록)
-      const { createNote } = await import("@/app/actions/notes");
-      await createNote({
-        book_id: userBookId,
-        type: "progress",
-        page_number: String(pendingPageUpdate),
-        is_public: true,
-      });
+      // 진행 기록의 여정 편입 (DEC-6): 전진만 기록(후퇴/정정 제외) + 같은 날 1점 집약
+      if (pendingPageUpdate > currentPage) {
+        const { upsertDailyProgressNote } = await import("@/app/actions/notes");
+        await upsertDailyProgressNote(userBookId, pendingPageUpdate);
+      }
 
       setCurrentPage(pendingPageUpdate);
       setInputValue(String(pendingPageUpdate));
