@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>기록·시간 업데이트 — 화면별 UI 가이드</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --panel:#fff; --ink:#1f2328; --muted:#6b7280; --line:#e7e5e0;
+    --emerald:#2f7d57; --emerald-bg:#ecfdf5; --emerald-br:#a7e3c4;
+    --blue:#2f6db8; --blue-bg:#eff6ff; --blue-br:#bcd7f5;
+    --violet:#6f4f93; --violet-bg:#f5f0fb; --violet-br:#d7c4ec;
+    --amber:#b4884d; --shadow:0 1px 2px rgba(0,0,0,.05),0 8px 24px rgba(0,0,0,.06);
+    --new:#c0392b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);line-height:1.6;
+    font-family:"Pretendard","Segoe UI",-apple-system,"Malgun Gothic",sans-serif;font-size:15px}
+  .wrap{max-width:1080px;margin:0 auto;padding:32px 20px 100px}
+  code{font-family:"JetBrains Mono",Consolas,monospace;font-size:.85em;background:#f0ede7;color:#5a4636;padding:1px 6px;border-radius:5px}
+  h1{font-size:28px;letter-spacing:-.5px;margin:0 0 4px}
+  h2{font-size:20px;margin:40px 0 4px;letter-spacing:-.3px;display:flex;align-items:center;gap:9px}
+  h2 .n{background:var(--emerald);color:#fff;width:26px;height:26px;border-radius:7px;display:inline-flex;align-items:center;justify-content:center;font-size:13px;flex:0 0 26px}
+  .path{font-size:13px;color:var(--muted);margin:2px 0 14px}
+  .path b{color:var(--ink)}
+  .path .crumb{color:var(--emerald);font-weight:600}
+  .cover{background:linear-gradient(135deg,#2f7d57,#23624a);color:#fff;border-radius:18px;padding:32px 34px;box-shadow:var(--shadow);margin-bottom:10px}
+  .cover h1{color:#fff} .cover p{opacity:.94;margin:8px 0 0;font-size:14px}
+  .cover .meta{margin-top:16px;font-size:12.5px;opacity:.9;display:flex;flex-wrap:wrap;gap:6px 18px}
+  .legend{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0 0}
+  .chip{font-size:11.5px;font-weight:700;padding:2px 9px;border-radius:999px;background:#f0ede7;color:#444;display:inline-flex;align-items:center;gap:4px}
+  .chip.new{background:#fde8e6;color:var(--new)}
+  /* feature block */
+  .feat{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:22px;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:22px;box-shadow:var(--shadow);margin-top:14px}
+  @media(max-width:820px){.feat{grid-template-columns:1fr}}
+  .feat .desc h3{margin:0 0 8px;font-size:16px}
+  .feat .desc p{margin:7px 0;font-size:14px;color:#333}
+  .feat .desc .why{border-left:3px solid var(--amber);background:#faf6ee;padding:8px 12px;border-radius:0 8px 8px 0;font-size:13px;margin-top:10px}
+  .mock-wrap{display:flex;flex-direction:column;gap:8px}
+  .mock-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:700}
+  .device{background:#fbfbfa;border:1px solid var(--line);border-radius:14px;padding:14px;box-shadow:inset 0 1px 0 #fff}
+  .device .bar{display:flex;align-items:center;gap:6px;font-size:11px;color:#9aa0a6;margin-bottom:10px}
+  .device .bar .dot{width:8px;height:8px;border-radius:50%;background:#dcdcd6}
+  /* note-card mock */
+  .notecard{display:flex;height:96px;border:1px solid #e9e7e2;border-radius:11px;overflow:hidden;background:#fff}
+  .notecard .cov{width:72px;flex:0 0 72px;background:linear-gradient(160deg,#cdd7e6,#aeb9c9);display:flex;align-items:center;justify-content:center;color:#7c8aa0;font-size:11px}
+  .notecard .body{flex:1;min-width:0;padding:10px 11px;display:flex;flex-direction:column}
+  .metaline{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)}
+  .metaline .t{margin-left:auto;font-size:11px;color:#aaa}
+  .sep{color:#cfcdc7}
+  .badge-time{display:inline-flex;align-items:center;gap:3px;color:var(--emerald);font-weight:600}
+  .badge-rev{display:inline-flex;align-items:center;gap:3px;font-weight:600}
+  .notecard h4{margin:6px 0 2px;font-size:13.5px}
+  .notecard .prev{font-size:12px;color:#8a8f96;line-height:1.4}
+  .hl{position:relative;outline:2px solid var(--emerald);outline-offset:3px;border-radius:11px}
+  .hl.blue{outline-color:var(--blue)} .hl.violet{outline-color:var(--violet)}
+  .tag-new{position:absolute;top:-10px;right:-8px;background:var(--new);color:#fff;font-size:10px;font-weight:800;padding:1px 7px;border-radius:999px;z-index:2}
+  /* axis cards */
+  .axis-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .axis{border-radius:12px;padding:11px}
+  .axis .h{display:flex;align-items:center;gap:4px;font-size:11px;font-weight:700;margin-bottom:4px}
+  .axis .big{font-size:18px;font-weight:800;letter-spacing:-.3px}
+  .axis .sub{font-size:11px;color:var(--muted);margin-top:2px}
+  .ax-e{background:var(--emerald-bg);border:1px solid var(--emerald-br)} .ax-e .h{color:var(--emerald)}
+  .ax-b{background:var(--blue-bg);border:1px solid var(--blue-br)} .ax-b .h{color:var(--blue)}
+  .ax-v{background:var(--violet-bg);border:1px solid var(--violet-br)} .ax-v .h{color:var(--violet)}
+  .pbar{height:6px;border-radius:4px;background:#d7e6f8;margin:5px 0 2px;overflow:hidden}
+  .pbar>i{display:block;height:100%;background:var(--blue);border-radius:4px}
+  /* pace panel */
+  .pace{border:1px solid var(--emerald-br);background:var(--emerald-bg);border-radius:12px;padding:13px}
+  .pace .h{display:flex;align-items:center;gap:5px;color:var(--emerald);font-weight:700;font-size:13px;margin-bottom:10px}
+  .pace .cols{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center}
+  .pace .v{font-size:16px;font-weight:800}
+  .pace .l{font-size:11px;color:var(--muted);margin-top:2px}
+  /* radio list (detail step) */
+  .radio{display:flex;gap:10px;align-items:flex-start;border:1px solid #e6e4df;border-radius:10px;padding:10px 12px;margin:6px 0;background:#fff}
+  .radio.sel{border-color:var(--emerald);background:var(--emerald-bg)}
+  .radio .ring{margin-top:3px;width:15px;height:15px;border-radius:50%;border:2px solid #cfcdc7;flex:0 0 15px}
+  .radio.sel .ring{border-color:var(--emerald);background:var(--emerald)}
+  .radio .ti{font-weight:600;font-size:13.5px} .radio .de{font-size:12px;color:var(--muted)}
+  /* tabs strip */
+  .tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:10px}
+  .tab{border:1px solid var(--line);border-radius:9px;padding:7px;text-align:center;font-size:12px;color:var(--muted);background:#fff;display:flex;align-items:center;justify-content:center;gap:4px}
+  .tab.on{background:var(--emerald);color:#fff;border-color:var(--emerald);font-weight:700}
+  /* journey before/after */
+  .ba{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px}
+  .ba .col{border:1px solid var(--line);border-radius:10px;padding:10px;background:#fff}
+  .ba .col h5{margin:0 0 8px;font-size:12px;font-weight:700}
+  .ba .col.before h5{color:#b4424a} .ba .col.after h5{color:var(--emerald)}
+  .jrow{display:flex;align-items:center;gap:7px;font-size:11.5px;color:#555;padding:3px 0}
+  .jdot{width:7px;height:7px;border-radius:50%;background:var(--violet);flex:0 0 7px}
+  .jrow.dim{opacity:.4;text-decoration:line-through}
+  /* table */
+  table{width:100%;border-collapse:collapse;font-size:13.5px;background:#fff;border-radius:12px;overflow:hidden;box-shadow:var(--shadow);margin:10px 0}
+  th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{background:var(--emerald-bg);color:var(--emerald);font-size:12px;font-weight:700}
+  tr:last-child td{border-bottom:none}
+  .invisible{background:#fff;border:1px dashed var(--line);border-radius:14px;padding:18px 20px;margin-top:14px}
+  .invisible h3{margin:0 0 6px;font-size:15px}
+  .toolbar{position:fixed;top:14px;right:18px}
+  .btn{background:#fff;border:1px solid var(--line);border-radius:9px;padding:7px 12px;font-size:12.5px;cursor:pointer;box-shadow:var(--shadow);font-weight:600}
+  .small{font-size:12px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="toolbar"><button class="btn" onclick="window.print()">🖨 인쇄/PDF</button></div>
+<div class="wrap">
+
+  <div class="cover">
+    <h1>기록·시간 업데이트 — 화면별 UI 가이드</h1>
+    <p>이번 개편에서 추가·변경된 기능이 <b>어느 메뉴의 어디에, 어떻게</b> 보이는지 실제 컴포넌트 모양 그대로 정리했습니다.</p>
+    <div class="meta">
+      <span>작성일 2026-06-04</span><span>브랜치 feat/record-time-consolidation</span><span>대상 사용자 화면(+ 백엔드 정합성)</span>
+    </div>
+    <div class="legend">
+      <span class="chip new">NEW 신규 표시</span>
+      <span class="chip">📍 화면 위치</span>
+      <span class="chip">목업 = 실제 라벨·색상 반영</span>
+    </div>
+  </div>
+
+  <!-- MAP -->
+  <h2><span class="n">★</span>한눈에 — 메뉴별 변경 지도</h2>
+  <table>
+    <thead><tr><th style="width:230px">메뉴 / 화면</th><th>이번에 보이는 변화</th><th style="width:90px">코드</th></tr></thead>
+    <tbody>
+      <tr><td><b>내 기록</b> <span class="small">/notes</span></td><td>각 기록 카드에 <b>⏱ 독서시간 배지</b> · 독후감은 <b>"독후감" 라벨</b></td><td>C6·C9</td></tr>
+      <tr><td><b>기록 작성 시트</b> <span class="small">기록 버튼 → 상세</span></td><td>종류 선택에 <b>"독후감·리뷰"</b> 항목 추가</td><td>C9</td></tr>
+      <tr><td><b>책 상세 (상단)</b> <span class="small">내 서재 → 책</span></td><td><b>3축 통합 요약</b>(⏱독서시간·📊진행률·🧭여정)</td><td>C8</td></tr>
+      <tr><td><b>책 상세 → 독서 시간 탭</b></td><td><b>독서 페이스 카드</b>(페이지당 평균·남은 예상)</td><td>C7</td></tr>
+      <tr><td><b>책 상세 → 진행률 / 여정 탭</b></td><td>진행률 수정 시 <b>여정 점이 깔끔하게</b>(같은 날 1점·전진만)</td><td>DEC-6</td></tr>
+      <tr><td><b>홈 · 통계 · 결산</b></td><td><b>연속일(스트릭)·시간 숫자가 화면 간 일치</b></td><td>B3-2·A1~A3</td></tr>
+      <tr><td><span class="small">(화면 비가시)</span> 백그라운드</td><td>미종료 세션 자동 정리 · 숫자 정합 토대</td><td>B6·A4·B1</td></tr>
+    </tbody>
+  </table>
+
+  <!-- C6 -->
+  <h2><span class="n">1</span>내 기록 — 독서시간 배지 <span class="chip new">NEW</span></h2>
+  <div class="path">📍 <span class="crumb">내 기록</span> (<code>/notes</code>) · 좌측 메뉴 "내 기록"</div>
+  <div class="feat">
+    <div class="desc">
+      <h3>기록 카드에 "읽은 시간"이 함께 보입니다</h3>
+      <p>지금까지 기록 카드는 <b>"언제 적었는지"(어제)</b> 만 보여줬습니다. 이제 그 기록이 독서 세션과 연결돼 있으면 <b>실제 읽은 시간(⏱ 23분)</b> 을 메타줄에 배지로 표시합니다.</p>
+      <p class="small">"읽은 <b>시각</b>"(우측 회색)과 "읽은 <b>시간</b>"(에메랄드 배지)을 구분합니다.</p>
+      <div class="why"><b>왜:</b> 독서시간(<code>reading_duration_seconds</code>)이 책 상세에만 묻혀 있어, 내 기록 목록에서 "이 기록에 얼마나 읽었나"가 보이지 않았습니다.</div>
+    </div>
+    <div class="mock-wrap">
+      <div class="mock-label">실제 모양</div>
+      <div class="device">
+        <div class="bar"><span class="dot"></span><span>내 기록</span></div>
+        <div class="notecard hl"><span class="tag-new">NEW</span>
+          <div class="cov">표지</div>
+          <div class="body">
+            <div class="metaline">
+              <span>📝 구절</span><span class="sep">·</span><span>p.123</span>
+              <span class="sep">·</span><span class="badge-time">⏱ 23분</span>
+              <span class="t">어제</span>
+            </div>
+            <h4>"문장은 생각의 윤곽이다."</h4>
+            <div class="prev">밑줄 그은 구절과 짧은 메모…</div>
+          </div>
+        </div>
+        <div style="height:8px"></div>
+        <div class="notecard">
+          <div class="cov">표지</div>
+          <div class="body">
+            <div class="metaline"><span>📖 독후감</span><span class="sep">·</span><span class="badge-rev" style="color:#555">긴 글</span><span class="t">2일 전</span></div>
+            <h4>『아비투스』를 읽고</h4>
+            <div class="prev">책 전체에 대한 감상…</div>
+          </div>
+        </div>
+      </div>
+      <div class="small">⏱ 배지는 세션과 연결된 기록에만 표시됩니다(점차 늘어남). 아래 카드는 C9 "독후감" 라벨 예시.</div>
+    </div>
+  </div>
+
+  <!-- C9 -->
+  <h2><span class="n">2</span>기록 작성 — "독후감·리뷰" 항목 <span class="chip new">NEW</span></h2>
+  <div class="path">📍 하단 <span class="crumb">기록</span> 버튼 → 기록 시트 → <b>상세 기록</b> 단계 → "종류"</div>
+  <div class="feat">
+    <div class="desc">
+      <h3>읽기뿐 아니라 "출력(쓰기)"을 위한 항목이 생겼습니다</h3>
+      <p>상세 기록 종류에 <b>독후감·리뷰</b> 가 추가됐습니다. 구절/생각/필사가 짧은 메모라면, 독후감은 <b>책 전체에 대한 긴 글(출력)</b> 입니다.</p>
+      <p class="small">저장 시 일반 메모와 구분되도록 <code>detail_kind='review'</code> 로 기록되며(DB 제약도 반영 완료), 내 기록에서 "독후감"으로 표시됩니다.</p>
+      <div class="why"><b>왜:</b> "읽고 쓰는" 독서법에서 핵심인 산출물(독후감/리뷰)을 담을 전용 항목이 없었습니다.</div>
+    </div>
+    <div class="mock-wrap">
+      <div class="mock-label">상세 기록 — 종류 선택</div>
+      <div class="device">
+        <div class="bar"><span class="dot"></span><span>기록 시트 · 상세 기록</span></div>
+        <div class="radio"><span class="ring"></span><div><div class="ti">인상깊은 구절</div><div class="de">책에서 옮겨 적은 문장</div></div></div>
+        <div class="radio"><span class="ring"></span><div><div class="ti">내 생각</div><div class="de">독서 후 떠오른 길게 남기는 메모</div></div></div>
+        <div class="radio sel" style="position:relative"><span class="tag-new">NEW</span><span class="ring"></span><div><div class="ti">독후감·리뷰</div><div class="de">책 전체에 대한 긴 글(출력)</div></div></div>
+        <div class="radio"><span class="ring"></span><div><div class="ti">필사</div><div class="de">사진을 OCR로 텍스트화</div></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- C8 -->
+  <h2><span class="n">3</span>책 상세 — 3축 통합 요약 <span class="chip new">NEW</span></h2>
+  <div class="path">📍 <span class="crumb">내 서재</span> → 책 선택 → 책 상세 페이지 <b>기록 영역 맨 위</b></div>
+  <div class="feat">
+    <div class="desc">
+      <h3>한 책의 시간·진행률·여정을 한 줄에서 비교</h3>
+      <p>그동안 따로 흩어져 있던 3가지 관점을 책 상세 상단에 <b>요약 스트립</b>으로 모았습니다:</p>
+      <p>⏱ <b>독서시간</b> "얼마나 오래" · 📊 <b>진행률</b> "어디까지"(바 포함) · 🧭 <b>여정</b> "회독·기록 수".</p>
+      <p class="small">요약을 보고 아래 탭(독서 시간/기록/여정)으로 자세히 들어가는 구조입니다. 숫자는 다른 화면(통계·결산)과 같은 계산을 씁니다.</p>
+      <div class="why"><b>왜:</b> 사용자가 요청한 "독서시간/읽기진행률/여정 3가지 구분·비교"를 한 화면에서 실현.</div>
+    </div>
+    <div class="mock-wrap">
+      <div class="mock-label">책 상세 상단</div>
+      <div class="device">
+        <div class="bar"><span class="dot"></span><span>아비투스 · 책 상세</span></div>
+        <div class="hl violet" style="position:relative;padding:2px"><span class="tag-new" style="background:var(--violet)">NEW</span>
+          <div class="axis-grid">
+            <div class="axis ax-e"><div class="h">⏱ 독서시간</div><div class="big">2시간 5분</div><div class="sub">8세션</div></div>
+            <div class="axis ax-b"><div class="h">📊 진행률</div><div class="big">100%</div><div class="pbar"><i style="width:100%"></i></div><div class="sub">p.372/372</div></div>
+            <div class="axis ax-v"><div class="h">🧭 여정</div><div class="big">1회독</div><div class="sub">22기록</div></div>
+          </div>
+        </div>
+        <div class="tabs">
+          <div class="tab on">⏱ 독서 시간</div><div class="tab">📄 기록 12</div><div class="tab">🗺 여정 22</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- C7 -->
+  <h2><span class="n">4</span>책 상세 · 독서 시간 탭 — 독서 페이스 <span class="chip new">NEW</span></h2>
+  <div class="path">📍 책 상세 → <span class="crumb">독서 시간</span> 탭 → 통계 카드 아래</div>
+  <div class="feat">
+    <div class="desc">
+      <h3>"페이지당 얼마나 걸리나 · 끝까지 얼마나 남았나"</h3>
+      <p>세션의 구간(시작~끝 페이지)과 시간을 묶어 <b>독서 페이스</b> 를 보여줍니다:</p>
+      <p>① <b>페이지당 평균</b>(예 38초) · ② <b>읽은 분량</b>(45p · 누적 시간) · ③ <b>남은 분량 + 예상 시간</b>.</p>
+      <p class="small">시간(⏱)과 진행률(📊)을 곱해 만든 "결합" 지표입니다. 페이지 구간이 있는 세션만 집계합니다.</p>
+      <div class="why"><b>왜:</b> 요청하신 "독서시간 페이지 별도 관리"를 페이스·예상완독 형태로 가시화.</div>
+    </div>
+    <div class="mock-wrap">
+      <div class="mock-label">독서 시간 탭</div>
+      <div class="device">
+        <div class="bar"><span class="dot"></span><span>독서 시간</span></div>
+        <div class="axis-grid" style="margin-bottom:8px">
+          <div class="axis" style="background:#eef6f1;border:1px solid #d6e9df;text-align:center"><div class="big" style="color:var(--emerald)">2시간 5분</div><div class="sub">총 독서 시간</div></div>
+          <div class="axis" style="background:#f3f3f1;border:1px solid #e6e4df;text-align:center"><div class="big">8</div><div class="sub">세션</div></div>
+          <div class="axis" style="background:#f3f3f1;border:1px solid #e6e4df;text-align:center"><div class="big">15분</div><div class="sub">평균/회</div></div>
+        </div>
+        <div class="pace hl" style="position:relative"><span class="tag-new">NEW</span>
+          <div class="h">⏲ 독서 페이스</div>
+          <div class="cols">
+            <div><div class="v">38초</div><div class="l">페이지당 평균</div></div>
+            <div><div class="v">📖 45p</div><div class="l">읽은 분량 · 1시간 20분</div></div>
+            <div><div class="v">⏳ 120p</div><div class="l">남음 · 예상 1시간 16분</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DEC-6 -->
+  <h2><span class="n">5</span>책 상세 · 진행률/여정 — 여정 정리(자동) <span class="chip">동작 변경</span></h2>
+  <div class="path">📍 책 상세 → 진행률 슬라이더 저장 → <span class="crumb">여정</span> 탭 표시</div>
+  <div class="feat">
+    <div class="desc">
+      <h3>진행률을 여러 번 바꿔도 여정이 지저분해지지 않습니다</h3>
+      <p>이제 진행률 저장이 <b>여정에 남는 기준</b>을 따릅니다:</p>
+      <p>• 메모를 적으면 → <b>항상</b> 여정 점으로 남김<br>
+         • 메모 없이 페이지만 올리면 → <b>같은 날은 1점으로 집약</b>(마지막 값으로 갱신)<br>
+         • 페이지를 <b>되돌리면(정정)</b> → 여정 점 안 남김(진행률 값은 갱신)</p>
+      <p class="small">화면에 새 버튼이 생기는 변화는 아니고, <b>여정 탭의 진행 기록이 깔끔해지는</b> 동작 변경입니다.</p>
+      <div class="why"><b>왜:</b> 요청하신 "진행률 수정 시 여정으로 가는 기준"을 규칙화(노이즈 제거).</div>
+    </div>
+    <div class="mock-wrap">
+      <div class="mock-label">여정 탭 — 같은 날 진행</div>
+      <div class="device">
+        <div class="bar"><span class="dot"></span><span>여정</span></div>
+        <div class="ba">
+          <div class="col before">
+            <h5>이전 (점이 쌓임)</h5>
+            <div class="jrow"><span class="jdot"></span>오늘 14:02 · p.50</div>
+            <div class="jrow"><span class="jdot"></span>오늘 14:20 · p.62</div>
+            <div class="jrow"><span class="jdot"></span>오늘 15:10 · p.78</div>
+          </div>
+          <div class="col after">
+            <h5>이후 (1점 집약)</h5>
+            <div class="jrow dim"><span class="jdot"></span>오늘 14:02 · p.50</div>
+            <div class="jrow dim"><span class="jdot"></span>오늘 14:20 · p.62</div>
+            <div class="jrow"><span class="jdot"></span>오늘 · p.78 <span style="color:var(--emerald)">(최신)</span></div>
+          </div>
+        </div>
+        <div class="small">메모를 단 진행은 집약되지 않고 그대로 남습니다.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- B3-2 -->
+  <h2><span class="n">6</span>홈 · 통계 · 결산 — 숫자 정합 <span class="chip">정합성</span></h2>
+  <div class="path">📍 <span class="crumb">홈</span> 히어로 · <span class="crumb">통계</span>(/stats) · <span class="crumb">월간 결산</span></div>
+  <div class="feat">
+    <div class="desc">
+      <h3>"연속일·독서시간" 숫자가 화면마다 같아졌습니다</h3>
+      <p>예전엔 홈·통계·결산이 <b>각자 다른 계산</b>으로 스트릭/시간을 구해 값이 어긋날 수 있었습니다. 이제 <b>하나의 계산 코어</b>를 공유합니다.</p>
+      <p class="small">연속일은 계산식 한 곳으로 통일(홈=통계=결산). 시간 표기(N시간 M분)·월 경계(KST)도 단일 기준.</p>
+      <div class="why"><b>왜:</b> 같은 사용자에게 화면마다 다른 숫자가 보이면 신뢰가 깨집니다.</div>
+    </div>
+    <div class="mock-wrap">
+      <div class="mock-label">일치 예시</div>
+      <div class="device">
+        <div class="bar"><span class="dot"></span><span>홈 / 통계 / 결산</span></div>
+        <div style="display:flex;gap:8px">
+          <div class="axis" style="flex:1;background:#fff;border:1px solid var(--line);text-align:center"><div class="sub">홈 히어로</div><div class="big" style="color:#c0392b">🔥 5일</div></div>
+          <div class="axis" style="flex:1;background:#fff;border:1px solid var(--line);text-align:center"><div class="sub">통계 /stats</div><div class="big" style="color:#c0392b">🔥 5일</div></div>
+          <div class="axis" style="flex:1;background:#fff;border:1px solid var(--line);text-align:center"><div class="sub">월간 결산</div><div class="big" style="color:#c0392b">🔥 5일</div></div>
+        </div>
+        <div class="small" style="margin-top:8px">※ 게이미피케이션 포인트 적립 규칙은 그대로(표시 출처만 계산식으로 통일).</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- INVISIBLE -->
+  <h2><span class="n">7</span>화면엔 안 보이지만 — 토대 정리</h2>
+  <div class="invisible">
+    <h3>백엔드 정합성 · 자동화 (사용자 비가시)</h3>
+    <table style="box-shadow:none;margin-top:8px">
+      <thead><tr><th style="width:120px">코드</th><th>한 일</th><th>효과</th></tr></thead>
+      <tbody>
+        <tr><td><b>A1·A2</b></td><td>KST 날짜·시간 포맷 계산을 한 곳으로 통합</td><td>월 경계/시간표기 어긋남 제거</td></tr>
+        <tr><td><b>A3·A5</b></td><td>집계(시간·진행률·완독·스트릭) 공용 코어·타입</td><td>모든 화면이 같은 숫자</td></tr>
+        <tr><td><b>B6</b></td><td>12시간 넘게 안 끝낸 독서 세션 <b>자동 정리</b>(매일)</td><td>"읽는 중" 유령 세션 방지</td></tr>
+        <tr><td><b>A4</b></td><td>안 쓰는 옛 기록 입력 컴포넌트 제거</td><td>진입점 단일화·코드 정리</td></tr>
+        <tr><td><b>B1</b></td><td>레거시 사진 기록만 경고로 한정(진행 기록은 활성 유지)</td><td>잘못된 차단 방지(실데이터 근거)</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- SUMMARY -->
+  <h2><span class="n">✓</span>요약 — 어디서 무엇을 보게 되나</h2>
+  <table>
+    <thead><tr><th style="width:200px">이동 경로</th><th>보게 되는 것</th></tr></thead>
+    <tbody>
+      <tr><td>좌측 <b>내 기록</b></td><td>기록마다 <b>⏱ 독서시간 배지</b>, 독후감은 "독후감" 라벨</td></tr>
+      <tr><td>하단 <b>기록</b> → 상세</td><td>종류에 <b>독후감·리뷰</b> 선택지</td></tr>
+      <tr><td><b>내 서재</b> → 책</td><td>상단 <b>3축 요약</b> + (독서 시간 탭) <b>독서 페이스</b> + (여정) <b>정리된 진행 기록</b></td></tr>
+      <tr><td><b>홈/통계/결산</b></td><td>연속일·시간 숫자 <b>일치</b></td></tr>
+    </tbody>
+  </table>
+  <p class="small" style="margin-top:18px">이 문서는 구현된 변경의 화면 표현 가이드입니다. 실제 픽셀은 디바이스/테마에 따라 다를 수 있으나 라벨·구성·색상은 코드와 일치합니다. · ReadingTree · 2026-06-04</p>
+
+</div>
+</body>
+</html>
