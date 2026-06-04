@@ -58,4 +58,8 @@ nul
 nul.*
 *.nul
 
+# Tooling artifacts (Claude worktrees, Playwright MCP captures)
+.claude/worktrees/
+.playwright-mcp/
+
 
