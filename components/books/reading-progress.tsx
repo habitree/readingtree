@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { TotalPagesEditor } from "./total-pages-editor";
 import { BookCompletionDialog } from "./book-completion-dialog";
 import { cn } from "@/lib/utils";
+import { computeProgressPercent } from "@/lib/reading/progress";
 import { useTranslation } from "@/lib/i18n";
 
 interface ReadingProgressProps {
@@ -92,20 +93,15 @@ export function ReadingProgress({
     onTotalPagesUpdate?.(newTotalPages);
   };
 
-  // 진행률 계산 (totalPages가 없으면 표시 불가)
-  const progressPercent = totalPages && totalPages > 0
-    ? Math.min(Math.round((currentPage / totalPages) * 100), 100)
-    : null;
+  // 진행률 계산 (totalPages가 없으면 표시 불가) — 단일 출처(A5)
+  const progressPercent = computeProgressPercent(currentPage, totalPages);
 
   // 드래그 중일 때의 퍼센트
-  const dragPercent = totalPages && totalPages > 0
-    ? Math.min(Math.round((dragValue / totalPages) * 100), 100)
-    : null;
+  const dragPercent = computeProgressPercent(dragValue, totalPages);
 
   // 보류 중인 업데이트의 퍼센트
-  const pendingPercent = pendingPageUpdate !== null && totalPages && totalPages > 0
-    ? Math.min(Math.round((pendingPageUpdate / totalPages) * 100), 100)
-    : null;
+  const pendingPercent =
+    pendingPageUpdate !== null ? computeProgressPercent(pendingPageUpdate, totalPages) : null;
 
   // 완독 상태면 100%로 표시, 드래그 중이면 드래그 값, 보류 중이면 보류 값
   const displayPercent = status === "completed" ? 100 : (isDragging ? dragPercent : (pendingPercent ?? progressPercent));

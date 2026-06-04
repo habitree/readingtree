@@ -9,6 +9,7 @@ import type { User } from "@supabase/supabase-js";
 import { OPEN_LIBRARY_COVER_BATCH_LIMIT, OPEN_LIBRARY_COVER_TIMEOUT_MS } from "./_shared";
 import { READTREE_BOOK_ID } from "@/lib/constants/readtree";
 import { sanitizeSearchQuery } from "@/lib/utils/validation";
+import { computeProgressPercent } from "@/lib/reading/progress";
 
 export interface RelatedBookPreview {
   userBookId: string;
@@ -944,9 +945,7 @@ export async function getContinueReadingBook(user?: User | null): Promise<{
 
   const currentPage = mostRecentBook.current_page || 0;
   const totalPages = bookData.total_pages || null;
-  const progressPercent = totalPages && totalPages > 0
-    ? Math.min(Math.round((currentPage / totalPages) * 100), 100)
-    : 0;
+  const progressPercent = computeProgressPercent(currentPage, totalPages) ?? 0;
 
   return {
     userBookId: mostRecentBook.id,
@@ -1085,9 +1084,7 @@ export async function getContinueReadingBooks(user?: User | null, maxCount: numb
 
     const currentPage = book.current_page || 0;
     const totalPages = bookData.total_pages || null;
-    const progressPercent = totalPages && totalPages > 0
-      ? Math.min(Math.round((currentPage / totalPages) * 100), 100)
-      : 0;
+    const progressPercent = computeProgressPercent(currentPage, totalPages) ?? 0;
 
     return {
       userBookId: book.id,

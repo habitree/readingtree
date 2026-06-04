@@ -19,7 +19,7 @@ import {
   toKSTDateKey,
   kstHour,
 } from "@/lib/utils/timezone";
-import { computeCurrentStreak, computeMaxStreak } from "@/lib/utils/streak";
+import { computeReadingMetrics } from "@/lib/reading/metrics";
 import type {
   RecapComputed,
   RecapNotesByType,
@@ -148,6 +148,24 @@ export async function computeRecapForUser(
   const notes = (notesRes.data ?? []) as unknown as NoteRow[];
   const logs = (logsRes.data ?? []) as unknown as LogRow[];
   const completed = (completedRes.data ?? []) as unknown as CompletedRow[];
+  const streakNotes = (streakNotesRes.data ?? []) as unknown as { created_at: string }[];
+
+  // ── 집계 코어(A3) — 일반 메트릭의 단일 출처. 하이라이트는 아래에서 별도 계산 ──
+  const metrics = computeReadingMetrics({
+    notes: notes.map((n) => ({
+      created_at: n.created_at,
+      type: n.type,
+      bookId: firstRelation(n.books) ? n.book_id : null,
+    })),
+    logs: logs.map((l) => ({
+      reading_duration_seconds: l.reading_duration_seconds,
+      start_page: l.start_page,
+      end_page: l.end_page,
+    })),
+    completedCount: completed.length,
+    range: { start, end },
+    streakDateKeys: streakNotes.map((n) => toKSTDateKey(new Date(n.created_at))),
+  });
 
   // ── notes 집계 ──────────────────────────────────────────────
   const notesByType: RecapNotesByType = { ...EMPTY_NOTES_BY_TYPE };
@@ -189,16 +207,16 @@ export async function computeRecapForUser(
     }
   }
 
-  const totalNotes = notes.length;
-  const activeDays = dayCounts.size;
-  const booksTouched = bookNoteCounts.size;
+  const totalNotes = metrics.notes;
+  const activeDays = metrics.activeDays;
+  const booksTouched = metrics.booksTouched;
 
   let busiestDay: RecapHighlights["busiestDay"] = null;
   for (const [dateKey, count] of dayCounts) {
     if (!busiestDay || count > busiestDay.count) busiestDay = { dateKey, count };
   }
 
-  const maxStreakInMonth = computeMaxStreak([...dayCounts.keys()]);
+  const maxStreakInMonth = metrics.maxStreak;
 
   let topBook: RecapTopBook | null = null;
   for (const { book, count } of bookNoteCounts.values()) {
@@ -217,27 +235,23 @@ export async function computeRecapForUser(
     if (!mostReadAuthor || count > mostReadAuthor.noteCount) mostReadAuthor = { name, noteCount: count };
   }
 
-  // ── reading_logs 집계 ───────────────────────────────────────
-  let totalReadingSeconds = 0;
-  let totalPages = 0;
+  // ── reading_logs — 시간/페이지/세션은 코어(A3), longestSession만 별도 ──
+  const totalReadingSeconds = metrics.time.totalSeconds;
+  const totalPages = metrics.pages;
+  const sessionCount = metrics.time.sessionCount;
   let longestSession: RecapHighlights["longestSession"] = null;
   let longestSeconds = 0;
   for (const log of logs) {
     const sec = log.reading_duration_seconds ?? 0;
-    totalReadingSeconds += sec;
-    if (log.start_page != null && log.end_page != null) {
-      totalPages += Math.max(0, log.end_page - log.start_page);
-    }
     if (sec > longestSeconds) {
       longestSeconds = sec;
       const lb = firstRelation(log.user_books?.books ?? null);
       longestSession = { bookTitle: lb?.title ?? "", minutes: Math.round(sec / 60) };
     }
   }
-  const sessionCount = logs.length;
 
-  // ── completed 집계 ──────────────────────────────────────────
-  const completedBooks = completed.length;
+  // ── completed 집계 (완독 권수는 코어, 표지만 별도) ──────────
+  const completedBooks = metrics.completedBooks;
   const completedCovers: string[] = [];
   for (const c of completed) {
     const cb = firstRelation(c.books);
@@ -256,9 +270,8 @@ export async function computeRecapForUser(
   const completedYTD = completedYTDRes.count ?? 0;
   const goalProgress = goalTarget > 0 ? Math.min(Math.round((completedYTD / goalTarget) * 100), 100) : 0;
 
-  // ── 현재 연속 기록일 ────────────────────────────────────────
-  const streakNotes = (streakNotesRes.data ?? []) as unknown as { created_at: string }[];
-  const currentStreak = computeCurrentStreak(streakNotes.map((n) => toKSTDateKey(new Date(n.created_at))));
+  // ── 현재 연속 기록일 — 코어(A3, streakDateKeys 기반) ──────────
+  const currentStreak = metrics.currentStreak;
 
   // ── 페르소나 타이틀 / 뱃지 ──────────────────────────────────
   const personaTitle = buildPersonaTitle({

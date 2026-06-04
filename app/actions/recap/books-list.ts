@@ -22,6 +22,7 @@ import {
   kstMonthEnd,
   isFutureKSTMonth as isFutureMonth,
 } from "@/lib/utils/timezone";
+import { computeProgressPercent } from "@/lib/reading/progress";
 import type { MonthlyBookItem, MonthlyBooksResult } from "./types";
 
 interface NoteRow {
@@ -199,9 +200,7 @@ export async function getMonthlyBooksList(
     const totalPages = meta?.total_pages ?? null;
     const currentPage = ub?.current_page ?? null;
     const progressPercent =
-      totalPages && totalPages > 0 && currentPage != null
-        ? Math.min(100, Math.round((currentPage / totalPages) * 100))
-        : null;
+      currentPage != null ? computeProgressPercent(currentPage, totalPages) : null;
 
     items.push({
       userBookId: ub?.id ?? a.bookId,

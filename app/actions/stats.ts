@@ -866,24 +866,10 @@ export async function getWeeklyProgress(user: User | null): Promise<{
     .gte("created_at", thirtyDaysAgo.toISOString())
     .order("created_at", { ascending: false });
 
-  let streak = 0;
-  if (streakNotes && streakNotes.length > 0) {
-    const recordedDates = new Set<string>();
-    streakNotes.forEach((note) => {
-      recordedDates.add(toKSTDateKey(new Date(note.created_at)));
-    });
-
-    for (let i = 0; i < 30; i++) {
-      const checkTime = kstTodayMidnight.getTime() - i * 24 * 60 * 60 * 1000;
-      const dateKey = toKSTDateKey(new Date(checkTime));
-
-      if (recordedDates.has(dateKey)) {
-        streak++;
-      } else if (i > 0) {
-        break;
-      }
-    }
-  }
+  // 스트릭 — 단일 출처(lib/utils/streak.ts). 홈(getStreakAndTodayData)·결산(compute)과 동일 계산 (B3-2)
+  const recordedDates = new Set<string>();
+  (streakNotes ?? []).forEach((note) => recordedDates.add(toKSTDateKey(new Date(note.created_at))));
+  const streak = computeCurrentStreak(recordedDates);
 
   // 스트릭 상태 결정
   const todayRecorded = dailyCounts[kstTodayKey] > 0;

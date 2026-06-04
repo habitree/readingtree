@@ -61,12 +61,12 @@
 > 책 상세 시간탭은 이미 `formatDuration`으로 노출 중. → C6은 dev 서버 띄워 시각 검증과 함께 별도 증분으로.
 
 ### P1 — 구조·어휘 통합
-| 코드 | 작업 |
-|---|---|
-| **A5** | 3축 공용 타입·어휘 (`types/reading-metrics.ts` · `computeProgressPercent`) |
-| **A3** | `computeReadingMetrics(input)` 순수 코어 추출 → 라이브/스냅샷 공유 |
-| **B3-2** | gamification `current_streak` 원장 정합(표시 출처 계산식 통일) |
-| **A4** | RecordSheet 단일 진입점, 구형 `progress-record-sheet` deprecate |
+| 코드 | 작업 | 상태 |
+|---|---|---|
+| **A5** | 3축 공용 타입·어휘 (`types/reading-metrics.ts` · `lib/reading/progress.ts`) | ✅ 완료(tsc) |
+| **A3** | `computeReadingMetrics` 순수 코어 + vitest → `compute.ts` 위임 | ✅ 완료(tsc·vitest 6/6·/recap·/stats 200) |
+| **B3-2** | 표시 스트릭 단일화 — `getWeeklyProgress`도 `computeCurrentStreak` 위임(홈·통계·결산 일치). DB `current_streak`은 게이미피케이션 미션 전용 유지 | ✅ 완료(tsc) |
+| **A4** | RecordSheet 단일 진입점, 구형 `progress-record-sheet` deprecate | ⬜ |
 | **B6** | `reapOrphanSessions` Vercel Cron 연결 |
 | **B2/B4/B5** | deprecated 함수 정리 · 컬럼 의미 `DATA_MODEL.md` 반영 |
 | **DEC-6 구현** | 진행률 저장 시 여정 편입 규칙(일 1점 집약 등) 적용 |
