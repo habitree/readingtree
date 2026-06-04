@@ -42,7 +42,7 @@
 |---|---|---|---|
 | **A1** | KST 타임존 헬퍼 통합 | `lib/utils/timezone.ts` + 결산/통계 도메인 6파일 위임 | ✅ 완료(tsc green) |
 | **A2** | 시간/Duration 포맷 통합 | `lib/utils/duration.ts` + 4개 호출처 위임 | ✅ 완료(tsc green) |
-| **B1** | 레거시 photo/progress 신규 차단 | `createNote` 가드 + 진입 UI 제거 | ⏸ **보류** — 아래 ⚠ 참조 |
+| **B1** | 레거시 차단 → **데이터 기반 재조정** | warn을 photo에만 한정(progress는 활성 유지) | ✅ 재조정 완료(아래 ⚠) |
 | **B3** | 스트릭 SSOT (계산식) | `lib/utils/streak.ts` + `stats.ts`·`compute.ts` 위임 | ✅ 완료(tsc green) |
 | **C6** | 내 기록에 독서시간 배지 | `getTimeline` 세션 조인 + `note-card` 배지 | ✅ 완료(tsc green · /notes 200 검증) |
 
@@ -51,10 +51,11 @@
 > **잔여(B3-2, P1):** gamification 원장 `user_points.current_streak`(`points.ts updateStreak`, 증가식)을 이 계산값과 정합화할지 결정 —
 > 포인트 적립 로직과 얽혀 별도 증분으로 분리. UI 라벨("현재 연속" vs "이달 최대")은 이미 데이터상 분리돼 있음(`RecapHighlights`).
 
-> ⚠ **B1 보류 사유 (2026-06-04 발견).** `app/actions/notes.ts:224-225`에서 사진 업로드 시
-> `upload_type === "photo"` → `noteType = "photo"`로 **여전히 활성 생성**된다. 지금 하드 차단하면
-> 사진 노트 업로드가 깨진다. v1.0이 의도한 "카나리 사용 데이터 확인 → 차단" 순서를 따라,
-> 사진 경로를 `endReadingSession.image_urls`로 이관(또는 사용 0 확인)한 뒤 차단해야 안전하다.
+> ⚠ **B1 재조정 (2026-06-04, MCP 운영 데이터 기준).** 전수 카운트 결과 **type=photo 최근 30일 0건**(사실상 사망),
+> **type=progress 최근 30일 15건**(활성!) — progress는 진행률 슬라이더→여정(reading-journey)의 데이터 소스다.
+> 따라서 v1.0의 "photo+progress 차단" 전제는 현실과 다르다: **progress는 차단하지 않는다.**
+> photo는 미사용이나 note-form 업로드 옵션이 잔존하므로 하드 throw 대신 **warn을 photo에만 한정**하고
+> 오해 소지 있던 progress deprecation 경고를 제거했다(`notes.ts createNote`). photo UI 옵션 제거는 별도 UX 판단.
 >
 > **C6 범위 정정.** `reading_duration_seconds`는 `reading_logs`에만 존재 → 진행로그(`notes`)·이어읽기 카드에
 > 독서시간을 노출하려면 서버 액션 쿼리에 duration을 실어 보내는 **데이터 플러밍**이 선행돼야 한다(순수 UI 추가 아님).
@@ -66,10 +67,10 @@
 | **A5** | 3축 공용 타입·어휘 (`types/reading-metrics.ts` · `lib/reading/progress.ts`) | ✅ 완료(tsc) |
 | **A3** | `computeReadingMetrics` 순수 코어 + vitest → `compute.ts` 위임 | ✅ 완료(tsc·vitest 6/6·/recap·/stats 200) |
 | **B3-2** | 표시 스트릭 단일화 — `getWeeklyProgress`도 `computeCurrentStreak` 위임(홈·통계·결산 일치). DB `current_streak`은 게이미피케이션 미션 전용 유지 | ✅ 완료(tsc) |
-| **A4** | RecordSheet 단일 진입점, 구형 `progress-record-sheet` deprecate | ⬜ |
-| **B6** | `reapOrphanSessions` Vercel Cron 연결 |
-| **B2/B4/B5** | deprecated 함수 정리 · 컬럼 의미 `DATA_MODEL.md` 반영 |
-| **DEC-6 구현** | 진행률 저장 시 여정 편입 규칙(일 1점 집약 등) 적용 |
+| **A4** | RecordSheet 단일 진입점 — 고아 `progress-record-sheet.tsx`(importer 0) 삭제 | ✅ 완료(tsc) |
+| **B6** | orphan 정리 cron — `api/cron/reap-orphan-sessions`(admin 전체 사용자) + `vercel.json`(`0 15 * * *`) | ✅ 완료(라우트 200 `{closed:0}`) |
+| **B2/B4/B5** | deprecated 함수 정리 · 컬럼 의미 `DATA_MODEL.md` 반영 | ⬜ |
+| **DEC-6 구현** | 진행률 저장 시 여정 편입 규칙(일 1점 집약 등) 적용 | ⬜ |
 
 ### P2 — 신규 가치
 | 코드 | 작업 | 상태 |

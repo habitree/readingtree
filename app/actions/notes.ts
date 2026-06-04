@@ -27,18 +27,18 @@ import { getSampleUserId } from "./sample";
  * @param data 기록 데이터
  * @param user 선택적 사용자 정보 (전달되지 않으면 자동 조회)
  *
- * Phase 6 모니터링: type='photo' | 'progress' 사용은 새 모델에서 deprecated.
- *   - photo → endReadingSession.image_urls
- *   - progress → endReadingSession (세션 모델)
- *   현재는 throw 없이 console.warn만 — 카나리 운영 데이터로 사용 빈도 추적 후 차단 예정.
+ * 모니터링 (2026-06-04 운영 데이터 기준 재조정):
+ *   - photo → 사실상 미사용(최근 30일 0건). 사진은 reading_logs.image_urls(스탬프)로 이관됨 → 신규 생성은 레거시.
+ *   - progress → **활성**(최근 30일 15건). 진행률 슬라이더 → 여정(reading-journey)의 데이터 소스 → deprecated 아님(차단 X).
+ *   따라서 warn은 photo에만 한정한다.
  */
 export async function createNote(data: CreateNoteInput, user?: User | null) {
   const supabase = await createServerSupabaseClient();
 
-  // Phase 6 — 신규 photo/progress 사용 모니터링 (server log)
-  if (data.type === "photo" || data.type === "progress") {
+  // photo만 레거시 모니터링 (progress는 진행률/여정의 활성 경로 — 차단 대상 아님)
+  if (data.type === "photo") {
     console.warn(
-      `[deprecation] createNote(type=${data.type}) is being phased out — use endReadingSession (RecordSheet end-step). caller=${data.source_type ?? "unknown"}`,
+      `[legacy] createNote(type=photo) — 사진은 RecordSheet(스탬프/세션 image_urls)로 이관됨. caller=${data.source_type ?? "unknown"}`,
     );
   }
 

@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/generate-monthly-recap",
       "schedule": "0 0 1 * *"
+    },
+    {
+      "path": "/api/cron/reap-orphan-sessions",
+      "schedule": "0 15 * * *"
     }
   ]
 }
