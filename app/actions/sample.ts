@@ -752,6 +752,9 @@ export async function getSampleAllNotes(): Promise<NoteWithBook[]> {
         title,
         author,
         cover_image_url
+      ),
+      reading_logs (
+        reading_duration_seconds
       )
     `)
     .eq("user_id", sampleUserId)
@@ -764,10 +767,12 @@ export async function getSampleAllNotes(): Promise<NoteWithBook[]> {
 
   return notes.map((note: any) => {
     const book = Array.isArray(note.books) ? note.books[0] : note.books;
-    const { books, ...restNote } = note;
+    const session = Array.isArray(note.reading_logs) ? note.reading_logs[0] : note.reading_logs;
+    const { books, reading_logs, ...restNote } = note;
     return {
       ...restNote,
       book: book || undefined,
+      reading_duration_seconds: session?.reading_duration_seconds ?? null,
     };
   }) as NoteWithBook[];
 }

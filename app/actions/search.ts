@@ -117,6 +117,9 @@ export async function searchNotes(params: SearchParams, user?: User | null): Pro
       ),
       transcriptions (
         status
+      ),
+      reading_logs (
+        reading_duration_seconds
       )
     `,
       { count: "exact" }
@@ -215,9 +218,12 @@ export async function searchNotes(params: SearchParams, user?: User | null): Pro
   // notes 결과에 user_books 정보 병합
   const resultsWithUserBooks = notes.map((note: any) => {
     const userBook = userBooksMap.get(note.book_id);
+    // 세션 연결(reading_log_id) 시 독서시간 노출 (C6)
+    const session = Array.isArray(note.reading_logs) ? note.reading_logs[0] : note.reading_logs;
     return {
       ...note,
       user_books: userBook ? [userBook] : undefined,
+      reading_duration_seconds: session?.reading_duration_seconds ?? null,
     };
   });
 

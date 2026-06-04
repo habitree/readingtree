@@ -44,7 +44,7 @@
 | **A2** | 시간/Duration 포맷 통합 | `lib/utils/duration.ts` + 4개 호출처 위임 | ✅ 완료(tsc green) |
 | **B1** | 레거시 차단 → **데이터 기반 재조정** | warn을 photo에만 한정(progress는 활성 유지) | ✅ 재조정 완료(아래 ⚠) |
 | **B3** | 스트릭 SSOT (계산식) | `lib/utils/streak.ts` + `stats.ts`·`compute.ts` 위임 | ✅ 완료(tsc green) |
-| **C6** | 내 기록에 독서시간 배지 | `getTimeline` 세션 조인 + `note-card` 배지 | ✅ 완료(tsc green · /notes 200 검증) |
+| **C6** | 내 기록에 독서시간 배지 | `searchNotes`·`getSampleAllNotes`·`getTimeline` 세션 조인 + `note-card` 배지 | ✅ 완료 — **Playwright 캡처 중 데이터경로 버그 수정**(/notes는 searchNotes/getSampleAllNotes 사용, getTimeline 아님) |
 
 > ✅ **B3 1차 완료 (2026-06-04).** 현재/최대 스트릭 **계산 알고리즘**을 `lib/utils/streak.ts`로 통합,
 > `getStreakAndTodayData`(stats)와 `computeCurrentStreak/MaxStreak`(recap)이 동일 함수를 공유 → 두 화면 스트릭 일치.
