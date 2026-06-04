@@ -18,10 +18,11 @@ import {
 } from "@/components/ui/alert-dialog";
 import { getImageUrl } from "@/lib/utils/image";
 import { formatSmartDate } from "@/lib/utils/date";
+import { formatDuration } from "@/lib/utils/duration";
 import { getNoteTypeLabel, parsePageNumber } from "@/lib/utils/note";
 import { NoteContentViewer } from "./note-content-viewer";
 import type { NoteWithBook } from "@/types/note";
-import { FileText, PenTool, Camera, Trash2, Loader2, BookOpen, StickyNote } from "lucide-react";
+import { FileText, PenTool, Camera, Trash2, Loader2, BookOpen, StickyNote, Timer } from "lucide-react";
 import { BookLinkRenderer } from "./book-link-renderer";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/lib/i18n";
@@ -55,6 +56,11 @@ export function NoteCard({ note, showDeleteButton = false, onDelete }: NoteCardP
   const pageNumber = parsePageNumber(note.page_number);
   const isProgressType = note.type === "progress";
   const typeLabel = getNoteTypeLabel(note.type, !!note.image_url);
+  // 독서시간(세션 연결 시) — "읽은 시각(created_at)"과 구분되는 "읽은 시간" (C6)
+  const readingDurationLabel =
+    note.reading_duration_seconds && note.reading_duration_seconds > 0
+      ? formatDuration(note.reading_duration_seconds)
+      : null;
 
   // 표시할 제목: progress는 책 제목, 일반은 노트 제목
   const displayTitle = isProgressType ? note.book?.title : note.title;
@@ -124,6 +130,15 @@ export function NoteCard({ note, showDeleteButton = false, onDelete }: NoteCardP
                     <>
                       <span className="text-muted-foreground/40">&middot;</span>
                       <span>p.{pageNumber}</span>
+                    </>
+                  )}
+                  {readingDurationLabel && (
+                    <>
+                      <span className="text-muted-foreground/40">&middot;</span>
+                      <span className="inline-flex items-center gap-0.5 text-emerald-600 dark:text-emerald-400">
+                        <Timer className="h-3 w-3 shrink-0" />
+                        {readingDurationLabel}
+                      </span>
                     </>
                   )}
                   {isDraft && (

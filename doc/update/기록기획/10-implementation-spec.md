@@ -44,7 +44,7 @@
 | **A2** | 시간/Duration 포맷 통합 | `lib/utils/duration.ts` + 4개 호출처 위임 | ✅ 완료(tsc green) |
 | **B1** | 레거시 photo/progress 신규 차단 | `createNote` 가드 + 진입 UI 제거 | ⏸ **보류** — 아래 ⚠ 참조 |
 | **B3** | 스트릭 SSOT (계산식) | `lib/utils/streak.ts` + `stats.ts`·`compute.ts` 위임 | ✅ 완료(tsc green) |
-| **C6** | 내 기록에 독서시간 배지 | 진행로그·이어읽기·노트목록에 `formatDuration` 배지 | ⬜ (데이터 플러밍 필요) |
+| **C6** | 내 기록에 독서시간 배지 | `getTimeline` 세션 조인 + `note-card` 배지 | ✅ 완료(tsc green · /notes 200 검증) |
 
 > ✅ **B3 1차 완료 (2026-06-04).** 현재/최대 스트릭 **계산 알고리즘**을 `lib/utils/streak.ts`로 통합,
 > `getStreakAndTodayData`(stats)와 `computeCurrentStreak/MaxStreak`(recap)이 동일 함수를 공유 → 두 화면 스트릭 일치.
@@ -99,8 +99,13 @@
 - 위임: `reading-time-tab.tsx`(formatDuration/formatTimeRange) · `music-mini-player.tsx`·`track-list-sheet.tsx`(formatTime→formatClock) · `lib/recap/text.ts::formatReadingTime`(=`formatDuration(s,{rounding:"round",zeroLabel:"0분"})`로 동작 보존).
 - `stamp-card.tsx`의 "N분" 배지는 의미가 다른 별도 포맷이므로 본 PR 미변경(별도 검토).
 
+### C6 내 기록에 독서시간 노출 (DEC-8 1차)
+- `getTimeline`(stats.ts) select에 `reading_logs ( reading_duration_seconds )` 임베드 추가(게스트·인증 양 경로). `notes.reading_log_id → reading_logs.id` FK(`notes_reading_log_id_fkey`)로 to-one 조인 → 매핑 시 `reading_duration_seconds` 채움.
+- `note-card.tsx` 메타라인에 `formatDuration` 독서시간 배지(⏱) — 세션 연결된 기록만. "읽은 시각(created_at)"과 "읽은 시간(duration)" 구분.
+- **런타임 검증:** FK 존재 확인(MCP) · 조인 실값 확인(1건, 1337초) · dev 서버 `/notes` 200(임베드 쿼리 정상). 세션-연결 노트가 늘수록 노출 확대(현재 데이터 희소 — 신규 모델 특성).
+
 ### 검증
-- `npx tsc --noEmit` (타입), 영향 화면 수동 확인(통계/결산/책 시간탭/음악 플레이어).
+- `npx tsc --noEmit` (타입), 영향 화면 수동 확인(통계/결산/책 시간탭/음악 플레이어/내 기록).
 
 ---
 

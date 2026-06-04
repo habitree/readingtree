@@ -88,6 +88,9 @@ export async function getTimeline(
           title,
           author,
           cover_image_url
+        ),
+        reading_logs (
+          reading_duration_seconds
         )
       `,
         { count: "exact" }
@@ -126,10 +129,12 @@ export async function getTimeline(
     // Supabase 조인 결과가 배열로 반환될 수 있으므로 객체로 변환
     const items = (data || []).map((note: any) => {
       const book = Array.isArray(note.books) ? note.books[0] : (note.books || note.book);
-      const { books, ...restNote } = note;
+      const session = Array.isArray(note.reading_logs) ? note.reading_logs[0] : note.reading_logs;
+      const { books, reading_logs, ...restNote } = note;
       return {
         ...restNote,
         book: book || null,
+        reading_duration_seconds: session?.reading_duration_seconds ?? null,
       };
     }) as NoteWithBook[];
 
@@ -153,6 +158,9 @@ export async function getTimeline(
         title,
         author,
         cover_image_url
+      ),
+      reading_logs (
+        reading_duration_seconds
       )
     `,
       { count: "exact" }
@@ -186,10 +194,13 @@ export async function getTimeline(
   const items = (data || []).map((note: any) => {
     // books가 배열인 경우 첫 번째 요소 사용, 객체인 경우 그대로 사용
     const book = Array.isArray(note.books) ? note.books[0] : (note.books || note.book);
-    const { books, ...restNote } = note; // books 키 제거
+    // 세션(reading_logs) 조인 → 독서시간(reading_duration_seconds) 추출 (C6)
+    const session = Array.isArray(note.reading_logs) ? note.reading_logs[0] : note.reading_logs;
+    const { books, reading_logs, ...restNote } = note; // books·reading_logs 키 제거
     return {
       ...restNote,
       book: book || null, // book (단수)로 변환
+      reading_duration_seconds: session?.reading_duration_seconds ?? null,
     };
   }) as NoteWithBook[];
 
