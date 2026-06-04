@@ -12,12 +12,7 @@ import {
   getCurrentBookProgress,
 } from "@/app/actions/stats";
 
-/** KST 기준 현재 날짜의 자정(00:00:00) UTC Date 반환 */
-function getKSTToday(): Date {
-  const now = new Date();
-  const kst = new Date(now.getTime() + 9 * 60 * 60 * 1000);
-  return new Date(Date.UTC(kst.getUTCFullYear(), kst.getUTCMonth(), kst.getUTCDate()) - 9 * 60 * 60 * 1000);
-}
+import { getKSTToday } from "@/lib/utils/timezone";
 import { getContinueReadingBooks, getPopularBooks } from "@/app/actions/books";
 import { getUserReadingTimeStats } from "@/app/actions/progress";
 import { getActiveSession } from "@/app/actions/sessions";

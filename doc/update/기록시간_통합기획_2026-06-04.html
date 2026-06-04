@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ReadingTree · 기록·시간 통합 기획서 v2 (2026-06-04)</title>
+<style>
+  :root{
+    --bg:#f7f6f3; --panel:#ffffff; --ink:#1f2328; --muted:#6b7280; --line:#e6e3dd;
+    --brand:#2f7d57; --brand-soft:#e6f3ec; --accent:#b4884d; --accent-soft:#f6efe2;
+    --p0:#c0392b; --p1:#b4884d; --p2:#5a8db8; --ok:#2f7d57; --warn:#c47f17; --danger:#c0392b;
+    --t1:#2f7d57; --t2:#5a8db8; --t3:#8e6bb0;  /* 3축 색 */
+    --chipbg:#f0eee8; --code:#5a4636; --codebg:#f3efe7;
+    --shadow:0 1px 2px rgba(0,0,0,.04),0 6px 18px rgba(0,0,0,.05);
+  }
+  html[data-theme="dark"]{
+    --bg:#15171a; --panel:#1d2024; --ink:#e8e8e6; --muted:#9aa0a6; --line:#2c2f34;
+    --brand:#5fb487; --brand-soft:#1c2c24; --accent:#c7a36a; --accent-soft:#2a2418;
+    --t1:#5fb487; --t2:#79a8d6; --t3:#b394d6;
+    --chipbg:#26292e; --code:#d9c4a6; --codebg:#23262b; --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 18px rgba(0,0,0,.35);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:"Pretendard","Segoe UI",-apple-system,BlinkMacSystemFont,"Malgun Gothic",sans-serif;
+    line-height:1.65;font-size:15px;-webkit-font-smoothing:antialiased}
+  a{color:var(--brand);text-decoration:none}
+  code,.mono{font-family:"JetBrains Mono","Cascadia Code",Consolas,monospace;font-size:.86em;
+    background:var(--codebg);color:var(--code);padding:1px 6px;border-radius:5px}
+  .layout{display:flex;align-items:flex-start;max-width:1320px;margin:0 auto}
+  nav.toc{position:sticky;top:0;height:100vh;overflow-y:auto;width:264px;flex:0 0 264px;
+    padding:26px 18px;border-right:1px solid var(--line);background:var(--panel)}
+  nav.toc .brand{font-weight:800;font-size:16px;color:var(--brand);letter-spacing:-.3px}
+  nav.toc .sub{font-size:11px;color:var(--muted);margin:2px 0 18px}
+  nav.toc ol{list-style:none;margin:0;padding:0;counter-reset:s}
+  nav.toc li{counter-increment:s;margin:2px 0}
+  nav.toc a{display:block;padding:7px 10px;border-radius:8px;color:var(--ink);font-size:13px;font-weight:500}
+  nav.toc a::before{content:counter(s)". ";color:var(--muted);font-weight:600}
+  nav.toc a:hover{background:var(--brand-soft);color:var(--brand)}
+  nav.toc .new{font-size:9px;font-weight:800;color:#fff;background:var(--accent);border-radius:4px;padding:0 4px;margin-left:5px;vertical-align:middle}
+  main{flex:1;min-width:0;padding:36px 44px 120px}
+  section{scroll-margin-top:20px;margin-bottom:46px}
+  h1{font-size:30px;letter-spacing:-.6px;margin:0 0 6px}
+  h2{font-size:21px;letter-spacing:-.3px;margin:0 0 16px;padding-bottom:8px;border-bottom:2px solid var(--line);
+    display:flex;align-items:center;gap:10px}
+  h2 .num{background:var(--brand);color:#fff;font-size:13px;width:26px;height:26px;border-radius:7px;
+    display:inline-flex;align-items:center;justify-content:center;flex:0 0 26px}
+  h2 .badge-new{font-size:10px;font-weight:800;color:#fff;background:var(--accent);border-radius:6px;padding:2px 8px}
+  h3{font-size:16px;margin:22px 0 8px}
+  p{margin:8px 0}
+  .lead{color:var(--muted);font-size:14px}
+  .cover{background:linear-gradient(135deg,var(--brand) 0%,#246148 100%);color:#fff;border-radius:18px;
+    padding:38px 40px;box-shadow:var(--shadow);margin-bottom:34px}
+  .cover h1{color:#fff}
+  .cover .meta{display:flex;flex-wrap:wrap;gap:8px 22px;margin-top:18px;font-size:13px;opacity:.94}
+  .cover .meta b{opacity:.7;font-weight:600;margin-right:6px}
+  .cover .tagline{font-size:15px;margin-top:14px;opacity:.95;font-style:italic}
+  .chip{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;
+    padding:2px 9px;border-radius:999px;background:var(--chipbg);color:var(--ink);white-space:nowrap}
+  .p0{background:rgba(192,57,43,.13);color:var(--p0)} .p1{background:rgba(180,136,77,.15);color:var(--p1)}
+  .p2{background:rgba(90,141,184,.15);color:var(--p2)}
+  .eff{background:var(--accent-soft);color:var(--accent)}
+  .st-ok{background:rgba(47,125,87,.13);color:var(--ok)} .st-mid{background:rgba(196,127,23,.14);color:var(--warn)}
+  .st-bad{background:rgba(192,57,43,.13);color:var(--danger)}
+  .cnew{background:var(--accent);color:#fff}
+  .grid{display:grid;gap:16px}
+  .g2{grid-template-columns:repeat(2,1fr)} .g3{grid-template-columns:repeat(3,1fr)}
+  .g4{grid-template-columns:repeat(4,1fr)}
+  @media(max-width:1080px){.g3,.g4{grid-template-columns:repeat(2,1fr)}}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 18px 16px;box-shadow:var(--shadow)}
+  .card.kpi{text-align:center;padding:20px 14px}
+  .kpi .big{font-size:30px;font-weight:800;letter-spacing:-.5px;line-height:1.1}
+  .kpi .lbl{font-size:12px;color:var(--muted);margin-top:6px}
+  .kpi .bar{height:6px;border-radius:4px;background:var(--line);margin-top:12px;overflow:hidden}
+  .kpi .bar>i{display:block;height:100%;background:var(--brand);border-radius:4px}
+  /* 3축 카드 */
+  .axis{border-radius:16px;padding:20px;color:#fff;box-shadow:var(--shadow);position:relative;overflow:hidden}
+  .axis .ic{font-size:26px} .axis h3{margin:8px 0 2px;color:#fff;font-size:18px}
+  .axis .q{font-size:13px;opacity:.92;font-style:italic}
+  .axis dl{margin:14px 0 0;font-size:12.5px}
+  .axis dt{opacity:.7;font-weight:700;font-size:10.5px;text-transform:uppercase;letter-spacing:.4px;margin-top:9px}
+  .axis dd{margin:2px 0 0}
+  .axis .mono{background:rgba(255,255,255,.16);color:#fff}
+  .ax1{background:linear-gradient(135deg,var(--t1),#246148)}
+  .ax2{background:linear-gradient(135deg,var(--t2),#3f6f96)}
+  .ax3{background:linear-gradient(135deg,var(--t3),#6f4f93)}
+  .fcard{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:0;overflow:hidden;box-shadow:var(--shadow)}
+  .fcard .hd{display:flex;align-items:flex-start;gap:10px;padding:15px 16px 12px;border-bottom:1px solid var(--line)}
+  .fcard .tag{font-weight:800;font-size:13px;color:#fff;background:var(--brand);border-radius:8px;padding:3px 9px;flex:0 0 auto}
+  .fcard.b .tag{background:var(--accent)} .fcard.c .tag{background:var(--p2)}
+  .fcard .ti{font-weight:700;font-size:15px;flex:1}
+  .fcard .meta{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+  .fcard .bd{padding:13px 16px 16px;font-size:13.5px}
+  .fcard .bd dt{font-weight:700;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.4px;margin-top:10px}
+  .fcard .bd dt:first-child{margin-top:0}
+  .fcard .bd dd{margin:3px 0 0}
+  table{width:100%;border-collapse:collapse;font-size:13px;background:var(--panel);border-radius:12px;overflow:hidden;box-shadow:var(--shadow);margin:6px 0}
+  th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{background:var(--brand-soft);color:var(--brand);font-weight:700;font-size:12px;letter-spacing:.2px}
+  tr:last-child td{border-bottom:none}
+  td .mono{font-size:.82em}
+  .note{border-left:4px solid var(--accent);background:var(--accent-soft);padding:12px 16px;border-radius:0 10px 10px 0;margin:14px 0;font-size:13.5px}
+  .note.warn{border-color:var(--warn)} .note.brand{border-color:var(--brand);background:var(--brand-soft)}
+  .note b{color:var(--ink)}
+  .tl{position:relative;margin:10px 0 4px;padding-left:22px}
+  .tl::before{content:"";position:absolute;left:6px;top:4px;bottom:4px;width:2px;background:var(--line)}
+  .tl .it{position:relative;margin-bottom:11px}
+  .tl .it::before{content:"";position:absolute;left:-19px;top:5px;width:9px;height:9px;border-radius:50%;background:var(--brand);border:2px solid var(--panel)}
+  .tl .d{font-weight:700;font-size:12.5px;color:var(--brand)}
+  .tl .t{font-size:13px}
+  .matrix{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:8px 0}
+  .quad{border:1px dashed var(--line);border-radius:12px;padding:13px 15px;background:var(--panel);min-height:96px}
+  .quad h4{margin:0 0 8px;font-size:13px}
+  .quad .qm{font-size:11px;color:var(--muted);margin-bottom:8px}
+  .quad ul{margin:0;padding-left:16px;font-size:12.5px} .quad li{margin:3px 0}
+  .dec{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin-bottom:14px;box-shadow:var(--shadow)}
+  .dec .dh{display:flex;align-items:center;gap:10px;font-weight:700;font-size:15px;margin-bottom:4px}
+  .dec .did{background:var(--ink);color:var(--bg);font-size:11px;font-weight:800;border-radius:6px;padding:2px 8px}
+  .dec .q{color:var(--muted);font-size:13px;margin-bottom:10px}
+  .opt{display:flex;align-items:flex-start;gap:9px;padding:8px 11px;border:1px solid var(--line);border-radius:10px;margin:6px 0;cursor:pointer;transition:.12s}
+  .opt:hover{border-color:var(--brand)}
+  .opt input{margin-top:3px}
+  .opt.rec{border-color:var(--brand);background:var(--brand-soft)}
+  .opt .ot{font-weight:600;font-size:13.5px} .opt .od{font-size:12px;color:var(--muted)}
+  .opt .rectag{margin-left:auto;font-size:10.5px;font-weight:800;color:var(--brand);background:var(--panel);border:1px solid var(--brand);border-radius:999px;padding:1px 8px;white-space:nowrap}
+  .legend{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  .toolbar{position:fixed;top:16px;right:22px;z-index:30;display:flex;gap:8px}
+  .btn{background:var(--panel);border:1px solid var(--line);color:var(--ink);border-radius:9px;padding:7px 12px;font-size:12.5px;cursor:pointer;box-shadow:var(--shadow);font-weight:600}
+  .btn:hover{border-color:var(--brand);color:var(--brand)}
+  .flow{font-family:"JetBrains Mono",Consolas,monospace;font-size:12px;background:var(--codebg);color:var(--code);padding:16px;border-radius:12px;white-space:pre;overflow-x:auto;line-height:1.5}
+  ul.tight{margin:6px 0;padding-left:20px} ul.tight li{margin:4px 0;font-size:13.5px}
+  .src{font-size:11.5px;color:var(--muted);margin-top:8px}
+  hr.soft{border:none;border-top:1px dashed var(--line);margin:18px 0}
+  .changelog{background:var(--accent-soft);border:1px solid var(--accent);border-radius:12px;padding:14px 18px;font-size:13px;margin-top:18px}
+  .changelog b{color:var(--accent)}
+  @media(max-width:860px){nav.toc{display:none}main{padding:24px 18px 100px}.g2,.g3,.g4,.matrix{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="toolbar">
+  <button class="btn" id="themeBtn">🌙 다크</button>
+  <button class="btn" onclick="window.print()">🖨 인쇄/PDF</button>
+</div>
+
+<div class="layout">
+<nav class="toc">
+  <div class="brand">📚 기록·시간 통합 기획</div>
+  <div class="sub">ReadingTree · 2026-06-04 · v2 (개념 확장)</div>
+  <ol>
+    <li><a href="#s1">표지·메타</a></li>
+    <li><a href="#s2">Executive Summary</a></li>
+    <li><a href="#s3">기본 개념 · 독서 3축<span class="new">NEW</span></a></li>
+    <li><a href="#s4">독서법 · 읽기·쓰기·출력<span class="new">NEW</span></a></li>
+    <li><a href="#s5">현황 지도</a></li>
+    <li><a href="#s6">데이터 모델 현황</a></li>
+    <li><a href="#s7">A. 합칠 부분</a></li>
+    <li><a href="#s8">B. 정리할 부분</a></li>
+    <li><a href="#s9">C. 새로 만들 부분</a></li>
+    <li><a href="#s10">통합 로드맵</a></li>
+    <li><a href="#s11">의사결정 체크리스트</a></li>
+    <li><a href="#s12">부록 (기술 명세)</a></li>
+  </ol>
+</nav>
+
+<main>
+
+<!-- 1. COVER -->
+<section id="s1">
+  <div class="cover">
+    <h1>기록·시간 통합 기획서 <span style="font-size:16px;opacity:.8">v2</span></h1>
+    <div class="tagline">"독서를 3개의 눈으로 — 시간(얼마나) · 진행률(어디까지) · 여정(어떻게 걸어왔나). 읽기와 쓰기를 한 흐름으로."</div>
+    <div class="meta">
+      <span><b>작성일</b>2026-06-04</span>
+      <span><b>버전</b>v2 (개념 확장 반영)</span>
+      <span><b>범위</b>기록(Record) + 시간(Time) 전 기능</span>
+      <span><b>관계</b>「기록기획 v1.0」 흡수·확장</span>
+    </div>
+  </div>
+
+  <div class="changelog">
+    <b>v2 변경점 (사용자 추가 요구 반영).</b>
+    ① <b>독서 3축 모델</b>(독서시간/읽기진행률/여정) 정의·비교·정리를 핵심 개념으로 신설(§3) ·
+    ② <b>독서법</b>(읽기+쓰기 동시 = 출력 기록) 개념과 <b>기록시간 vs 독서시간</b> 구분 신설(§4) ·
+    ③ "진행률 수정 → 여정 편입 기준" 결정 항목 추가 ·
+    ④ 내 기록에 독서시간 노출 / 페이지별 시간 관리 항목 추가(C군) ·
+    ⑤ 현황 지도·데이터 모델에 진행률(<code>reading-progress.tsx</code>)·여정(<code>reading-journey.tsx</code>) 반영.
+  </div>
+
+  <div class="note warn" style="margin-top:14px">
+    <b>출발점.</b> 원본 지시 파일 <code>doc/question/260604_기록관련 정리.md</code> 가 빈 파일이었고, 이후 사용자가 구두로 추가 요구(3축·독서법·출력기록·내기록 독서시간)를 제시 — 본 v2가 이를 코드 전수 분석으로 검증해 반영한 결과다.
+  </div>
+
+  <h3>범례</h3>
+  <div class="legend">
+    <span class="chip p0">P0 즉시</span><span class="chip p1">P1 다음</span><span class="chip p2">P2 이후</span>
+    <span class="chip eff">공수 S/M/L</span><span class="chip cnew">NEW 신규개념</span>
+    <span class="chip st-ok">정상/운영</span><span class="chip st-mid">주의</span><span class="chip st-bad">위험</span>
+  </div>
+</section>
+
+<!-- 2. EXEC SUMMARY -->
+<section id="s2">
+  <h2><span class="num">2</span>Executive Summary</h2>
+  <p class="lead">독서를 측정·기록하는 <b>3개의 축</b>(시간·진행률·여정)이 이미 코드에 <b>흩어져</b> 존재한다. v2의 핵심은 이 3축을 <b>명확히 구분·비교·정리</b>하고, 읽기와 쓰기를 한 흐름으로 묶는 <b>독서법</b> 관점을 더하는 것.</p>
+
+  <div class="grid g4">
+    <div class="card kpi"><div class="big" style="color:var(--t1)">⏱</div><div class="lbl"><b>독서시간</b><br>세션·타이머 ~70%</div><div class="bar"><i style="width:70%;background:var(--t1)"></i></div></div>
+    <div class="card kpi"><div class="big" style="color:var(--t2)">📊</div><div class="lbl"><b>읽기진행률</b><br>슬라이더·카드 운영</div><div class="bar"><i style="width:85%;background:var(--t2)"></i></div></div>
+    <div class="card kpi"><div class="big" style="color:var(--t3)">🧭</div><div class="lbl"><b>여정</b><br>회독 타임라인 운영</div><div class="bar"><i style="width:80%;background:var(--t3)"></i></div></div>
+    <div class="card kpi"><div class="big">7</div><div class="lbl">의사결정 대기<br>(DEC-1 ~ DEC-7)</div><div class="bar"><i style="width:100%;background:var(--accent)"></i></div></div>
+  </div>
+
+  <h3>핵심 발견 Top 7</h3>
+  <table>
+    <thead><tr><th style="width:34px">#</th><th>발견</th><th style="width:96px">분류</th><th style="width:74px">심각도</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td><b>3축이 서로 모른다.</b> 독서시간(reading_logs)·진행률(user_books)·여정(reading-journey)이 다른 테이블·다른 계산으로 따로 살아, 한 화면에서 통합되어 보이지 않는다.</td><td>개념/UX</td><td><span class="chip st-mid">주의</span></td></tr>
+      <tr><td>2</td><td><b>진행률→여정 기준 부재.</b> 진행률 수정 시 <code>notes(type=progress)</code>가 생성돼 여정 점이 되지만, "어떤 변경이 여정에 남는가" 규칙이 없어 노이즈/누락 위험.</td><td>개념</td><td><span class="chip st-mid">주의</span></td></tr>
+      <tr><td>3</td><td><b>기록시간이 독서시간을 가린다.</b> 대부분 화면이 <code>created_at</code>("~에 읽음")만 보여줘, 실제 독서한 시간(<code>reading_duration_seconds</code>)이 묻힌다.</td><td>UX</td><td><span class="chip st-mid">주의</span></td></tr>
+      <tr><td>4</td><td><b>스트릭 두 갈래.</b> <code>current_streak</code>(DB) vs <code>computeMaxStreak</code>(계산)이 섞여 화면 간 불일치 위험.</td><td>정합성</td><td><span class="chip st-bad">위험</span></td></tr>
+      <tr><td>5</td><td><b>KST 헬퍼·시간 포맷 중복.</b> <code>stats.ts</code>↔<code>compute.ts</code> KST 함수, formatDuration 4곳 산재.</td><td>모델</td><td><span class="chip st-mid">주의</span></td></tr>
+      <tr><td>6</td><td><b>출력(긴 글) 전용 항목 없음.</b> quote/memo/transcription만 있고, 독후감·리뷰 같은 "산출물" 기록이 독서법으로 정리돼 있지 않다.</td><td>개념</td><td><span class="chip st-mid">주의</span></td></tr>
+      <tr><td>7</td><td><b>레거시 미차단 + 진입 3중.</b> photo/progress 신규 차단 미완, RecordSheet·구형시트·자유폼 공존.</td><td>정리</td><td><span class="chip st-mid">주의</span></td></tr>
+    </tbody>
+  </table>
+
+  <h3>권장 로드맵 (한 장 요약)</h3>
+  <div class="grid g3">
+    <div class="card"><span class="chip p0">P0 · 즉시</span><ul class="tight">
+      <li><b>개념 확정</b> 3축·독서법·기록시간 정의(§3·§4)</li><li><b>B3</b> 스트릭 SSOT</li><li><b>A1·A2</b> 유틸 통합 · <b>B1</b> 레거시 차단</li></ul></div>
+    <div class="card"><span class="chip p1">P1 · 다음</span><ul class="tight">
+      <li><b>A3</b> 집계 SSOT · <b>A5</b> 3축 공용 어휘</li><li><b>A4</b> 진입점 단일화 · <b>B6</b> orphan cron</li><li><b>C6</b> 내기록 독서시간 노출</li></ul></div>
+    <div class="card"><span class="chip p2">P2 · 이후</span><ul class="tight">
+      <li><b>C8</b> 3축 통합 뷰 · <b>C1</b> 타이머 UI</li><li><b>C7</b> 페이지별 시간 · <b>C2</b> 페이스</li><li><b>C9</b> 출력(독후감) 항목 · <b>C4</b> 음악</li></ul></div>
+  </div>
+</section>
+
+<!-- 3. 기본 개념 — 3축 -->
+<section id="s3">
+  <h2><span class="num">3</span>기본 개념 — 독서의 3축 모델 <span class="badge-new">NEW</span></h2>
+  <p class="lead">"기록과 시간"을 하나로 뭉뚱그리지 않고, 독서를 측정·기록하는 <b>3개의 서로 다른 축</b>으로 분리해 정의한다. 세 축은 같은 독서 행위를 <b>다른 질문</b>으로 바라본다.</p>
+
+  <div class="grid g3">
+    <div class="axis ax1"><div class="ic">⏱</div><h3>독서시간</h3><div class="q">"얼마나 오래 읽었나?"</div>
+      <dl><dt>단위</dt><dd>초 · 분 · 누적시간</dd>
+        <dt>데이터</dt><dd class="mono">reading_logs.reading_duration_seconds · started_at/ended_at</dd>
+        <dt>현재</dt><dd>세션 측정·타이머·결산 집계 (~70%)</dd></dl></div>
+    <div class="axis ax2"><div class="ic">📊</div><h3>읽기진행률</h3><div class="q">"어디까지 읽었나?"</div>
+      <dl><dt>단위</dt><dd>페이지 · %</dd>
+        <dt>데이터</dt><dd class="mono">user_books.current_page ÷ books.total_pages</dd>
+        <dt>현재</dt><dd>슬라이더·이어읽기 카드 (운영)</dd></dl></div>
+    <div class="axis ax3"><div class="ic">🧭</div><h3>여정</h3><div class="q">"어떻게 걸어왔나?"</div>
+      <dl><dt>단위</dt><dd>변화 이력 · 회독 · 타임라인</dd>
+        <dt>데이터</dt><dd class="mono">completed_dates[] + notes(type=progress)</dd>
+        <dt>현재</dt><dd class="mono">reading-journey.tsx</dd> <dd>(회독별 여정 운영)</dd></dl></div>
+  </div>
+
+  <h3>3.1 세 축 비교표</h3>
+  <table>
+    <thead><tr><th>구분</th><th>⏱ 독서시간</th><th>📊 읽기진행률</th><th>🧭 여정</th></tr></thead>
+    <tbody>
+      <tr><td>질문</td><td>얼마나 오래?</td><td>어디까지?</td><td>어떻게 걸어왔나?</td></tr>
+      <tr><td>성격</td><td>양(量) · 누적</td><td>위치(位) · 스냅샷</td><td>서사(敍) · 시계열</td></tr>
+      <tr><td>저장 단위</td><td>세션(행)</td><td>책당 1개 현재값</td><td>변화 이벤트의 누적</td></tr>
+      <tr><td>핵심 컬럼</td><td class="mono">reading_duration_seconds</td><td class="mono">current_page / total_pages</td><td class="mono">completed_dates[] · progress notes</td></tr>
+      <tr><td>대표 UI</td><td>타이머·시간탭·결산</td><td>슬라이더·이어읽기바</td><td>읽기 여정(회독 카드)</td></tr>
+      <tr><td>한계</td><td>"어디까지"를 모름</td><td>"얼마나 걸렸나"를 모름</td><td>점이 너무 잦으면 노이즈</td></tr>
+    </tbody>
+  </table>
+
+  <h3>3.2 세 축의 관계 — 따로지만 이어진다</h3>
+  <div class="flow">      ⏱ 독서시간 ──┐
+                  ├──▶ 페이스 = pace_seconds_per_page = 시간 ÷ (읽은 페이지)  →  예상 완독일
+      📊 진행률  ──┘                                       (시간 × 진행률의 결합)
+
+      📊 진행률(스냅샷)  ──시간이 흐르며 값이 바뀜──▶  🧭 여정(진행률의 시계열)
+                                                    └ 회독 완료(completed_dates)는 여정의 구간 경계</div>
+  <ul class="tight">
+    <li><b>독서시간 × 진행률 = 페이스.</b> 둘을 곱하면(=나누면) "페이지당 N초", "이 속도면 며칠 후 완독"이 나온다. 이미 <code>pace_seconds_per_page</code> STORED 컬럼으로 계산되지만 UI 미노출(→ C2).</li>
+    <li><b>진행률의 변화 이력 = 여정.</b> 진행률은 "지금 어디"라는 한 점, 여정은 그 점들이 시간축에 쌓인 선. 즉 여정은 진행률의 시계열이다.</li>
+    <li><b>회독 완료 = 여정의 구간 경계.</b> <code>completed_dates[]</code>로 1회독·2회독을 분할(<code>deriveReadingSessions</code>).</li>
+  </ul>
+
+  <h3>3.3 진행률 → 여정 편입 기준 (핵심 정의 — DEC-6)</h3>
+  <div class="note brand">
+    현재 흐름: 진행률을 수정하면 <code>notes(type="progress")</code> 1건이 생성되고, 이 행이 여정 타임라인의 한 점이 된다. 문제는 <b>"어떤 진행률 변경이 여정에 남을 가치가 있는가"</b>의 규칙이 없다는 것 — 모든 사소한 수정이 점이 되면 노이즈, 안 남기면 누락.
+  </div>
+  <table>
+    <thead><tr><th>변경 종류</th><th>여정 편입?</th><th>제안 기준 (권장안)</th></tr></thead>
+    <tbody>
+      <tr><td>메모를 동반한 진행률 변경</td><td><span class="chip st-ok">항상</span></td><td>출력(쓰기)이 있으므로 무조건 여정 점</td></tr>
+      <tr><td>회독 완료(100% 도달)</td><td><span class="chip st-ok">항상</span></td><td>여정의 <b>구간 경계</b>로 승격</td></tr>
+      <tr><td>메모 없는 단순 페이지 수정</td><td><span class="chip st-mid">집약</span></td><td>같은 날 여러 번이면 <b>일 1점</b>으로 묶기(마지막값) — 노이즈 방지</td></tr>
+      <tr><td>오타 정정·되돌리기(감소)</td><td><span class="chip st-bad">제외</span></td><td>진행 후퇴/미세 정정은 여정 점 생성 안 함</td></tr>
+    </tbody>
+  </table>
+  <p class="src">근거: <code>components/books/reading-progress.tsx:96-98,412-476</code> · <code>lib/utils/reading-sessions.ts:36-152</code> · <code>components/books/reading-journey.tsx:48-425</code></p>
+</section>
+
+<!-- 4. 독서법 -->
+<section id="s4">
+  <h2><span class="num">4</span>독서법 — 읽기·쓰기·출력 <span class="badge-new">NEW</span></h2>
+  <p class="lead">독서를 "입력(읽기)"만이 아니라 <b>"출력(쓰기)"까지 한 흐름</b>으로 본다. 읽으면서 쓰고, 그 산출물을 기록에 포함하는 것을 하나의 <b>독서법</b>으로 정의한다.</p>
+
+  <div class="grid g2">
+    <div class="card"><h3 style="margin-top:0">📥 입력형 기록 (수동적)</h3>
+      <p class="lead">"읽었다"는 사실을 남김 — 행위 자체의 흔적</p>
+      <ul class="tight">
+        <li><b>독서시간</b> — 세션을 시작/종료해 시간을 남김</li>
+        <li><b>읽기진행률</b> — 현재 페이지를 갱신</li>
+      </ul>
+      <p class="src">축: 시간 · 진행률. 데이터: reading_logs · user_books</p>
+    </div>
+    <div class="card"><h3 style="margin-top:0">📤 출력형 기록 (능동적) — 쓰기</h3>
+      <p class="lead">"써냈다"는 산출물을 남김 — 사고의 결과물</p>
+      <ul class="tight">
+        <li><b>구절(quote)</b> — 책의 문장 발췌</li>
+        <li><b>생각(memo)</b> — 내 코멘트</li>
+        <li><b>필사·OCR(transcription)</b> — 사진→추출→보정</li>
+        <li><span class="chip cnew">신규 후보</span> <b>독후감·리뷰·요약</b> — 긴 호흡의 산출물(현재 전용 항목 없음 → C9)</li>
+      </ul>
+      <p class="src">데이터: notes(detail_kind) + transcriptions</p>
+    </div>
+  </div>
+
+  <div class="note brand"><b>독서법의 핵심 = 읽기와 쓰기를 한 세션에서.</b> RecordSheet가 이미 <b>세션(시간/페이지)</b> + <b>상세(출력)</b>를 한 시트의 3-step으로 처리하므로 구조적 토대는 있다. 빠진 것은 ① "출력"을 독서법으로 <b>명시적으로 분류·제시</b>하는 UI 언어, ② 긴 산출물(독후감) 전용 항목.</div>
+
+  <h3>4.1 기록시간 vs 독서시간 — 항목 정리 (혼동 해소)</h3>
+  <p class="lead">"읽은 <b>시각</b>"과 "읽은 <b>시간</b>"은 다르다. 현재 대부분 UI가 앞의 것(기록시간)만 보여준다.</p>
+  <table>
+    <thead><tr><th>개념</th><th>컬럼</th><th>의미</th><th>현재 표시</th></tr></thead>
+    <tbody>
+      <tr><td><b>독서시간</b> (얼마나)</td><td class="mono">reading_duration_seconds</td><td>실제 읽은 길이(초)</td><td><span class="chip st-mid">타이머 기록에만</span></td></tr>
+      <tr><td><b>독서 일시</b> (언제 읽음)</td><td class="mono">started_at / ended_at</td><td>독서 행위의 시각</td><td><span class="chip st-mid">여정·일부</span></td></tr>
+      <tr><td><b>기록시간</b> (언제 적음)</td><td class="mono">created_at</td><td>기록을 남긴 시각</td><td><span class="chip st-ok">거의 모든 UI</span></td></tr>
+    </tbody>
+  </table>
+  <div class="note warn"><b>문제.</b> 이어읽기 카드·진행로그·여정이 모두 <code>created_at</code> 기반 "~에 읽음"만 노출 → 사용자가 "오늘 23분 읽었다"는 핵심 정보를 보지 못함. <b>정리 방향:</b> "읽은 시각(기록시간)"과 "읽은 시간(독서시간)"을 라벨로 분리하고, 내 기록 항목마다 독서시간 배지를 노출(→ C6).</div>
+  <p class="src">근거: <code>continue-reading-card.tsx:341-343</code> · <code>progress-log-list.tsx:116-119</code> · <code>reading-journey.tsx:194-208</code></p>
+</section>
+
+<!-- 5. 현황 지도 -->
+<section id="s5">
+  <h2><span class="num">5</span>현황 지도 — 전 기능 취합</h2>
+
+  <h3>5.1 기록(Record) 기능</h3>
+  <table>
+    <thead><tr><th>기능</th><th>축</th><th>저장처</th><th>상태</th></tr></thead>
+    <tbody>
+      <tr><td>독서 세션 시작/종료</td><td>⏱시간</td><td class="mono">reading_logs</td><td><span class="chip st-ok">운영</span></td></tr>
+      <tr><td>타이머(목표시간)</td><td>⏱시간</td><td class="mono">target_seconds</td><td><span class="chip st-mid">부분</span></td></tr>
+      <tr><td>진행률 수정(슬라이더/입력)</td><td>📊진행률</td><td class="mono">user_books.current_page</td><td><span class="chip st-ok">운영</span></td></tr>
+      <tr><td>이어읽기 카드(진행 바)</td><td>📊진행률</td><td class="mono">current_page/total_pages</td><td><span class="chip st-ok">운영</span></td></tr>
+      <tr><td>읽기 여정(회독 타임라인)</td><td>🧭여정</td><td class="mono">completed_dates + progress notes</td><td><span class="chip st-ok">운영</span></td></tr>
+      <tr><td>진행 기록(progress note)</td><td>🧭여정</td><td class="mono">notes.type=progress</td><td><span class="chip st-ok">운영</span></td></tr>
+      <tr><td>구절/생각(quote/memo)</td><td>📤출력</td><td class="mono">notes detail_kind</td><td><span class="chip st-ok">운영</span></td></tr>
+      <tr><td>필사·OCR(transcription)</td><td>📤출력</td><td class="mono">notes + transcriptions</td><td><span class="chip st-ok">운영</span></td></tr>
+      <tr><td>독후감·리뷰·요약(긴 산출물)</td><td>📤출력</td><td>—</td><td><span class="chip st-bad">없음(C9)</span></td></tr>
+      <tr><td>사진/스탬프</td><td>⏱+📤</td><td class="mono">reading_logs.image_url(s)</td><td><span class="chip st-ok">운영</span></td></tr>
+      <tr><td>음악 동시 저장</td><td>⏱시간</td><td class="mono">music_*</td><td><span class="chip st-mid">부분</span></td></tr>
+      <tr><td>자유 기록(책 없음)</td><td>📤출력</td><td class="mono">reading_log_id NULL</td><td><span class="chip st-ok">운영</span></td></tr>
+      <tr><td>월간 결산 / 통계</td><td>전체집계</td><td class="mono">monthly_recaps / 집계</td><td><span class="chip st-ok">운영</span></td></tr>
+      <tr><td>레거시 photo / progress 타입</td><td>—</td><td class="mono">notes.type</td><td><span class="chip st-bad">deprecated</span></td></tr>
+    </tbody>
+  </table>
+
+  <h3>5.2 표시 화면 13개 — 같은 지표를 여러 곳에서</h3>
+  <table>
+    <thead><tr><th>화면</th><th>경로</th><th>주 노출 축·지표</th></tr></thead>
+    <tbody>
+      <tr><td>홈 히어로</td><td class="mono">/</td><td>스트릭 · 오늘/주간 기록수</td></tr>
+      <tr><td>이어읽기 카드</td><td class="mono">/</td><td>📊진행률 · 기록시간("~에 읽음")</td></tr>
+      <tr><td>주간 진행바 · 월간 달력</td><td class="mono">/</td><td>일별 기록 히트맵</td></tr>
+      <tr><td>통계 페이지</td><td class="mono">/stats</td><td>완독·기록·스트릭·결산섹션</td></tr>
+      <tr><td>책 상세 · 진행률</td><td class="mono">/books/[id]</td><td>📊슬라이더 · 남은쪽 · 예상완독</td></tr>
+      <tr><td>책 상세 · 읽기 여정</td><td class="mono">/books/[id]</td><td>🧭회독별 타임라인 · 진행기록</td></tr>
+      <tr><td>책 상세 · 시간탭</td><td class="mono">/books/[id]</td><td>⏱책별 독서시간 · 세션수</td></tr>
+      <tr><td>월간 책장 / 공개 결산</td><td class="mono">/recap · /share/recaps</td><td>책별 시간·노트수 · 스냅샷</td></tr>
+      <tr><td>프로필 / 포인트 / 스탬프공유</td><td class="mono">/profile · /points · /share/stamps</td><td>완독·스트릭·시간 뱃지</td></tr>
+    </tbody>
+  </table>
+  <div class="note">독서시간은 <b>5개</b>, 기록수 <b>6개</b>, 스트릭 <b>4개</b> 화면에서 재계산된다. 집계 공식은 대체로 일치하나 출처(라이브 vs 스냅샷 vs DB컬럼)·표현이 갈린다.</div>
+</section>
+
+<!-- 6. DATA MODEL -->
+<section id="s6">
+  <h2><span class="num">6</span>데이터 모델 현황</h2>
+  <p class="lead">3축은 <b>3개 테이블 군</b>에 나뉘어 있다 — 시간/출력=<code>reading_logs·notes</code>, 진행률=<code>user_books·books</code>, 여정=<code>completed_dates + progress notes</code>.</p>
+
+  <h3>6.1 축별 핵심 컬럼</h3>
+  <table>
+    <thead><tr><th>축</th><th>테이블·컬럼</th></tr></thead>
+    <tbody>
+      <tr><td>⏱ 독서시간</td><td class="mono">reading_logs: reading_duration_seconds · started_at · ended_at · target_seconds · pace_seconds_per_page(STORED) · music_started_at</td></tr>
+      <tr><td>📊 읽기진행률</td><td class="mono">user_books.current_page · books.total_pages · reading_logs.start_page/end_page/bookmark_page</td></tr>
+      <tr><td>🧭 여정</td><td class="mono">user_books.completed_dates(JSONB[]) · started_at · completed_at · notes(type=progress).created_at</td></tr>
+      <tr><td>📤 출력</td><td class="mono">notes.detail_kind(quote|memo|transcription) · notes.content(JSON) · transcriptions.*</td></tr>
+    </tbody>
+  </table>
+
+  <h3>6.2 시간 컬럼 의미 계층 (문서화 필요 — B5)</h3>
+  <div class="flow">reading_logs 한 행의 시간 라이프사이클
+─────────────────────────────────────────────
+ created_at      행 INSERT (= 기록시간, "언제 적음")
+   └ started_at    독서 시작 (사용자 행위)      ┐
+   └ ended_at      독서 종료                    ├─ reading_duration_seconds (= 독서시간, "얼마나")
+   └ music_started_at  음악 재생 시작            ┘
+   └ promoted_at   스탬프 승격
+ ▶ pace_seconds_per_page = duration ÷ (end_page - start_page)   [STORED · UI 미노출]</div>
+
+  <h3>6.3 중복·분산 지점</h3>
+  <table>
+    <thead><tr><th>지점</th><th>현황</th><th>판정</th></tr></thead>
+    <tbody>
+      <tr><td>3축 분산</td><td>시간·진행률·여정이 다른 테이블·다른 계산 → 통합 어휘/뷰 부재</td><td><span class="chip st-mid">분산</span></td></tr>
+      <tr><td>KST 헬퍼</td><td><code>stats.ts</code>↔<code>compute.ts</code> 거의 동일 함수 복제("동일 공식" 주석)</td><td><span class="chip st-bad">중복</span></td></tr>
+      <tr><td>시간 포맷</td><td><code>formatDuration</code>·<code>formatReadingTime</code>·<code>formatTime</code>·인라인 4종</td><td><span class="chip st-bad">중복</span></td></tr>
+      <tr><td>마지막 페이지</td><td><code>getLastEndPage</code>가 <code>user_books.current_page</code> vs 직전 <code>end_page</code> 중 큰 값 — 진행률·시간 축 연결점</td><td><span class="chip st-ok">정상(연결됨)</span></td></tr>
+      <tr><td>기록시간/독서시간</td><td>UI가 <code>created_at</code> 위주 → 독서시간 묻힘</td><td><span class="chip st-mid">정리필요</span></td></tr>
+    </tbody>
+  </table>
+  <p class="src">근거: <code>app/actions/progress.ts:627-675(getLastEndPage)</code> · <code>app/actions/books/progress.ts:278-341(updateBookProgress)</code> · <code>types/database.ts(reading_logs 1779~, user_books)</code></p>
+</section>
+
+<!-- 7. A. CONSOLIDATE -->
+<section id="s7">
+  <h2><span class="num">7</span>분류 A — 합칠 수 있는 부분 <span class="chip" style="background:var(--brand);color:#fff">Consolidate</span></h2>
+  <div class="grid g2">
+    <div class="fcard"><div class="hd"><span class="tag">A1</span><div><div class="ti">KST 타임존 헬퍼 통합</div>
+      <div class="meta"><span class="chip p0">P0</span><span class="chip eff">S</span><span class="chip">모델</span></div></div></div>
+      <dl class="bd"><dt>현황</dt><dd><code>stats.ts</code>·<code>recap/compute.ts</code>가 동일 KST 함수 각자 정의.</dd>
+        <dt>제안</dt><dd><code>lib/utils/timezone.ts</code> 단일 출처(<code>kstDateKey·kstMonthStart/End·kstComponents·kstHour</code>).</dd></dl></div>
+
+    <div class="fcard"><div class="hd"><span class="tag">A2</span><div><div class="ti">시간·Duration 포맷 통합</div>
+      <div class="meta"><span class="chip p0">P0</span><span class="chip eff">S</span><span class="chip">모델</span></div></div></div>
+      <dl class="bd"><dt>현황</dt><dd>"N시간 M분"·"MM:SS"·"123분" 4곳 산재.</dd>
+        <dt>제안</dt><dd><code>lib/utils/duration.ts</code>로 통합, <code>formatReadingTime</code> 위임.</dd></dl></div>
+
+    <div class="fcard"><div class="hd"><span class="tag">A3</span><div><div class="ti">통계 집계 SSOT 코어</div>
+      <div class="meta"><span class="chip p1">P1</span><span class="chip eff">M</span><span class="chip">정합성</span></div></div></div>
+      <dl class="bd"><dt>현황</dt><dd>라이브(<code>stats.ts</code>)·스냅샷(<code>compute.ts</code>)이 동일 메트릭 따로 계산.</dd>
+        <dt>제안</dt><dd>순수 <code>computeReadingMetrics(rows, range)</code> 추출 → 라이브·스냅샷·크론 공유.</dd></dl></div>
+
+    <div class="fcard"><div class="hd"><span class="tag">A4</span><div><div class="ti">기록 입력 진입점 단일화</div>
+      <div class="meta"><span class="chip p1">P1</span><span class="chip eff">M</span><span class="chip">UX</span></div></div></div>
+      <dl class="bd"><dt>현황</dt><dd>RecordSheet·<code>progress-record-sheet</code>·<code>note-form-new</code> 3중 진입.</dd>
+        <dt>제안</dt><dd>RecordSheet 단일화, 구형 시트 deprecate(DEC-4).</dd></dl></div>
+
+    <div class="fcard"><div class="hd"><span class="tag">A5</span><div><div class="ti">3축 공용 어휘·계산 정리 <span class="chip cnew">NEW</span></div>
+      <div class="meta"><span class="chip p1">P1</span><span class="chip eff">M</span><span class="chip">개념</span></div></div></div>
+      <dl class="bd"><dt>현황</dt><dd>시간·진행률·여정이 코드·UI에서 제각각 이름으로 흩어짐. "진행률"이 페이지인지 %인지 화면마다 다름.</dd>
+        <dt>제안</dt><dd>§3 비교표를 <b>표준 어휘</b>로 채택 → 타입·컴포넌트·문구 통일(<code>ReadingTime / ReadingProgress / ReadingJourney</code>). A3 코어가 이 어휘로 메트릭 반환.</dd>
+        <dt>영향</dt><dd>3축이 한 언어로 묶여 이후 통합 뷰(C8)의 토대가 됨.</dd></dl></div>
+  </div>
+</section>
+
+<!-- 8. B. CLEANUP -->
+<section id="s8">
+  <h2><span class="num">8</span>분류 B — 정리할 부분 <span class="chip" style="background:var(--accent);color:#fff">Clean up</span></h2>
+  <div class="grid g2">
+    <div class="fcard b"><div class="hd"><span class="tag">B3</span><div><div class="ti">스트릭 정합성(SSOT)</div>
+      <div class="meta"><span class="chip p0">P0</span><span class="chip eff">M</span><span class="chip st-bad">위험</span></div></div></div>
+      <dl class="bd"><dt>현황</dt><dd><code>current_streak</code>(DB) vs <code>computeMaxStreak</code>(계산) 혼용 → 4화면 불일치.</dd>
+        <dt>제안</dt><dd>A3 코어에서 streak 산출, DB값은 캐시. 라벨 분리("현재 연속" vs "이달 최대").</dd></dl></div>
+
+    <div class="fcard b"><div class="hd"><span class="tag">B1</span><div><div class="ti">레거시 photo/progress 실차단</div>
+      <div class="meta"><span class="chip p0">P0</span><span class="chip eff">S</span><span class="chip">정리</span></div></div></div>
+      <dl class="bd"><dt>현황</dt><dd><code>createNote(type=photo|progress)</code>가 warn만 — 실제 통과.</dd>
+        <dt>제안</dt><dd>신규 생성 에러 반환 + 진입 UI 제거. 기존 행 보존(DEC-2).</dd></dl></div>
+
+    <div class="fcard b"><div class="hd"><span class="tag">B6</span><div><div class="ti">orphan 세션 정리 cron</div>
+      <div class="meta"><span class="chip p1">P1</span><span class="chip eff">S</span><span class="chip">정리</span></div></div></div>
+      <dl class="bd"><dt>현황</dt><dd><code>reapOrphanSessions</code>(12h→abandoned) 구현됐으나 스케줄 미연결.</dd>
+        <dt>제안</dt><dd>Vercel Cron 연결(결산 cron 패턴 재사용).</dd></dl></div>
+
+    <div class="fcard b"><div class="hd"><span class="tag">B2·B4·B5</span><div><div class="ti">deprecated 함수 · 컬럼 의미 문서화</div>
+      <div class="meta"><span class="chip p1">P1</span><span class="chip eff">S</span><span class="chip">정리</span></div></div></div>
+      <dl class="bd"><dt>현황</dt><dd><code>createProgressLog/createReadingStamp</code> @deprecated 잔존, page 5종·timestamp 6종 의미 미정리.</dd>
+        <dt>제안</dt><dd>호출처 0 확인 후 제거 · §6.2 계층도를 <code>DATA_MODEL.md</code>에 반영.</dd></dl></div>
+  </div>
+</section>
+
+<!-- 9. C. NEW -->
+<section id="s9">
+  <h2><span class="num">9</span>분류 C — 새로 만들 부분 <span class="chip" style="background:var(--p2);color:#fff">New</span></h2>
+  <div class="grid g2">
+    <div class="fcard c"><div class="hd"><span class="tag">C6</span><div><div class="ti">내 기록에 독서시간 노출 <span class="chip cnew">NEW</span></div>
+      <div class="meta"><span class="chip p1">P1</span><span class="chip eff">S</span><span class="chip">시간/UX</span></div></div></div>
+      <dl class="bd"><dt>요구</dt><dd>"내 기록에 독서시간 추가" — 기록시간(<code>created_at</code>)만 보이는 현 UI에 실제 독서시간(<code>reading_duration_seconds</code>)을 함께.</dd>
+        <dt>제안</dt><dd>이어읽기 카드·진행로그·여정·노트 목록의 각 항목에 "📖 23분" 배지. 라벨로 "읽은 시각" vs "읽은 시간" 구분.</dd>
+        <dt>의존</dt><dd>A2(포맷 통합) 위에 구현.</dd></dl></div>
+
+    <div class="fcard c"><div class="hd"><span class="tag">C7</span><div><div class="ti">페이지별 독서시간 관리 <span class="chip cnew">NEW</span></div>
+      <div class="meta"><span class="chip p2">P2</span><span class="chip eff">M</span><span class="chip">시간/진행률</span></div></div></div>
+      <dl class="bd"><dt>요구</dt><dd>"독서시간 페이지 별도 관리" — 구간(<code>start_page~end_page</code>)별로 시간을 묶어 본다.</dd>
+        <dt>제안</dt><dd>세션별 (구간·시간)을 모아 "이 구간 N분 · 페이지당 M초" 뷰 = 시간×진행률 결합. 시간탭 확장 또는 전용 페이지.</dd></dl></div>
+
+    <div class="fcard c"><div class="hd"><span class="tag">C8</span><div><div class="ti">3축 통합 뷰 <span class="chip cnew">NEW</span></div>
+      <div class="meta"><span class="chip p2">P2</span><span class="chip eff">L</span><span class="chip">UX</span></div></div></div>
+      <dl class="bd"><dt>요구</dt><dd>"3가지 구분 비교 및 정리" — 시간·진행률·여정을 한 화면에서 비교.</dd>
+        <dt>제안</dt><dd>책 상세에 3축 통합 패널: ⏱총시간/세션 · 📊진행률 바 · 🧭여정 타임라인을 한 곳에. A5 어휘 + A3 코어 위에.</dd></dl></div>
+
+    <div class="fcard c"><div class="hd"><span class="tag">C9</span><div><div class="ti">출력(독후감·리뷰) 전용 항목 <span class="chip cnew">NEW</span></div>
+      <div class="meta"><span class="chip p2">P2</span><span class="chip eff">M</span><span class="chip">독서법</span></div></div></div>
+      <dl class="bd"><dt>요구</dt><dd>"출력에 대한 기록 포함" — 긴 호흡 산출물(독후감/리뷰/요약)이 현재 전용 항목 없음.</dd>
+        <dt>제안</dt><dd><code>detail_kind='review'</code>(또는 출력 카테고리) 추가, RecordSheet detail에 "독후감/요약" 옵션(DEC-7).</dd></dl></div>
+
+    <div class="fcard c"><div class="hd"><span class="tag">C1·C2</span><div><div class="ti">타이머 UI · 페이스 분석</div>
+      <div class="meta"><span class="chip p2">P2</span><span class="chip eff">M</span><span class="chip">시간고도화</span></div></div></div>
+      <dl class="bd"><dt>현황</dt><dd><code>target_seconds</code> 입력 UI 불완전 · <code>pace_seconds_per_page</code> UI 미노출.</dd>
+        <dt>제안</dt><dd>start에 목표시간 프리셋 · 책탭/결산에 "페이지당 N초·예상 완독 D일".</dd></dl></div>
+
+    <div class="fcard c"><div class="hd"><span class="tag">C3·C4</span><div><div class="ti">캘린더 SSOT · 음악 동기화</div>
+      <div class="meta"><span class="chip p2">P2</span><span class="chip eff">M</span><span class="chip">UX/시간</span></div></div></div>
+      <dl class="bd"><dt>현황</dt><dd><code>activity-calendar</code>·<code>monthly-book-calendar</code> 분리 · 음악-세션 동기 미확인.</dd>
+        <dt>제안</dt><dd>공용 일별 집계 위 두 표현 통합 · 세션 시작=재생, 종료=정지 연동.</dd></dl></div>
+  </div>
+</section>
+
+<!-- 10. ROADMAP -->
+<section id="s10">
+  <h2><span class="num">10</span>통합 로드맵</h2>
+  <h3>10.1 우선순위 매트릭스 (영향 × 공수)</h3>
+  <div class="matrix">
+    <div class="quad"><h4>🟢 높은 영향·낮은 공수 <span class="chip p0">먼저</span></h4>
+      <ul><li>개념 확정(§3·§4)</li><li>A1·A2 유틸 · B1 차단</li><li>C6 내기록 독서시간</li></ul></div>
+    <div class="quad"><h4>🔵 높은 영향·높은 공수 <span class="chip p1">계획</span></h4>
+      <ul><li>B3 스트릭 SSOT</li><li>A3 집계 코어 · A5 3축 어휘</li><li>A4 진입점 단일화</li></ul></div>
+    <div class="quad"><h4>⚪ 낮은 영향·낮은 공수 <span class="chip p1">틈틈이</span></h4>
+      <ul><li>B2 deprecated · B4·B5 문서화</li><li>B6 orphan cron</li></ul></div>
+    <div class="quad"><h4>🟣 신규 가치·높은 공수 <span class="chip p2">이후</span></h4>
+      <ul><li>C8 3축 통합 뷰 · C9 출력 항목</li><li>C7 페이지별 시간 · C1·C2</li><li>C3·C4</li></ul></div>
+  </div>
+
+  <h3>10.2 단계별 실행 & 의존성</h3>
+  <table>
+    <thead><tr><th>단계</th><th>항목</th><th>선행 의존</th><th>완료 기준</th></tr></thead>
+    <tbody>
+      <tr><td><span class="chip p0">P0</span></td><td>개념확정 · A1 · A2 · B1 · <b>B3</b> · C6</td><td>B3은 DEC-1, 개념은 DEC-6 결정 후</td><td>3축 정의 합의 · 유틸 단일화 · 내기록에 독서시간 노출 · 스트릭 일치</td></tr>
+      <tr><td><span class="chip p1">P1</span></td><td>A3 · A5 · A4 · B2 · B4·B5 · B6</td><td>A1·A2</td><td>모든 화면 동일 숫자 · 3축 공용 어휘 · 단일 진입점</td></tr>
+      <tr><td><span class="chip p2">P2</span></td><td>C8 · C9 · C7 · C1 · C2 · C3 · C4</td><td>A3·A5(C8) · DEC-7(C9)</td><td>3축 통합 뷰 · 출력 항목 · 시간 고도화 출시</td></tr>
+    </tbody>
+  </table>
+  <div class="note brand"><b>흐름.</b> P0(개념 합의 + 정합성·부채) → P1(구조·어휘 통합) → P2(3축 통합 뷰·독서법 출력·시간 고도화). v1.0의 남은 Phase(5·6·7)는 A4·B1·B6로 흡수.</div>
+</section>
+
+<!-- 11. DECISIONS -->
+<section id="s11">
+  <h2><span class="num">11</span>의사결정 체크리스트 (신규 ADR)</h2>
+  <p class="lead">7건이 로드맵의 분기점이다. 각 항목에서 하나를 고르면 후속 구현을 그에 맞춘다. <b>(체크박스는 기록용 — 결정 후 알려주세요.)</b></p>
+
+  <div class="dec">
+    <div class="dh"><span class="did">DEC-1</span> 통계·스트릭 단일 진실(SSOT)?</div>
+    <div class="q">관련: A3·B3</div>
+    <label class="opt rec"><input type="checkbox"><div><div class="ot">공용 계산 코어 추출 <span class="rectag">권장</span></div><div class="od">순수 함수가 메트릭 산출 → 라이브·스냅샷·캐시 공유.</div></div></label>
+    <label class="opt"><input type="checkbox"><div><div class="ot">라이브 우선</div><div class="od">실시간성↑ 공개안정성↓</div></div></label>
+    <label class="opt"><input type="checkbox"><div><div class="ot">스냅샷 우선</div><div class="od">안정성↑ 실시간↓</div></div></label>
+  </div>
+
+  <div class="dec">
+    <div class="dh"><span class="did">DEC-6</span> 진행률 변경 → 여정 편입 기준? <span class="chip cnew">NEW</span></div>
+    <div class="q">관련: §3.3 · 영향: 여정 노이즈/누락</div>
+    <label class="opt rec"><input type="checkbox"><div><div class="ot">메모 동반=항상 · 단순수정=일1점 집약 · 회독완료=구간경계 <span class="rectag">권장</span></div><div class="od">의미 있는 변화만 여정에 남겨 서사 가독성↑.</div></div></label>
+    <label class="opt"><input type="checkbox"><div><div class="ot">모든 진행률 변경을 점으로</div><div class="od">완전한 이력, 단 노이즈 많음.</div></div></label>
+    <label class="opt"><input type="checkbox"><div><div class="ot">메모 있는 변경만 여정</div><div class="od">가장 단순, 시간 흐름 점은 적음.</div></div></label>
+  </div>
+
+  <div class="dec">
+    <div class="dh"><span class="did">DEC-7</span> 출력(독후감·리뷰) 전용 항목 신설? <span class="chip cnew">NEW</span></div>
+    <div class="q">관련: C9·독서법(§4)</div>
+    <label class="opt rec"><input type="checkbox"><div><div class="ot">신설 — detail_kind='review' 추가 <span class="rectag">권장</span></div><div class="od">긴 산출물을 독서법 출력으로 명시. quote/memo와 분리.</div></div></label>
+    <label class="opt"><input type="checkbox"><div><div class="ot">기존 memo로 충분</div><div class="od">신규 타입 없이 memo 길이로 흡수.</div></div></label>
+  </div>
+
+  <div class="dec">
+    <div class="dh"><span class="did">DEC-8</span> 내 기록 독서시간 노출 방식? <span class="chip cnew">NEW</span></div>
+    <div class="q">관련: C6·C7</div>
+    <label class="opt rec"><input type="checkbox"><div><div class="ot">기록마다 독서시간 배지 먼저(C6) <span class="rectag">권장</span></div><div class="od">저비용·고체감. 페이지별 관리(C7)는 P2.</div></div></label>
+    <label class="opt"><input type="checkbox"><div><div class="ot">페이지별 구간 시간 관리(C7)까지</div><div class="od">시간×진행률 결합 뷰 동시 도입.</div></div></label>
+    <label class="opt"><input type="checkbox"><div><div class="ot">둘 다 한 번에</div><div class="od">공수↑, 한 번에 완결.</div></div></label>
+  </div>
+
+  <div class="dec">
+    <div class="dh"><span class="did">DEC-2</span> 레거시 photo/progress 행 처리?</div>
+    <div class="q">관련: B1</div>
+    <label class="opt rec"><input type="checkbox"><div><div class="ot">보존 + 신규만 차단 <span class="rectag">권장</span></div><div class="od">데이터 손실 0.</div></div></label>
+    <label class="opt"><input type="checkbox"><div><div class="ot">세션 모델로 변환</div><div class="od">깔끔하나 변환 리스크.</div></div></label>
+  </div>
+
+  <div class="dec">
+    <div class="dh"><span class="did">DEC-4</span> 진입점 단일화 시 <code>/notes/free</code>·구형시트?</div>
+    <div class="q">관련: A4</div>
+    <label class="opt rec"><input type="checkbox"><div><div class="ot"><code>/notes/free</code> 존치 + 구형 시트만 제거 <span class="rectag">권장</span></div><div class="od">자유기록 URL 유지, 중복 진입만 정리.</div></div></label>
+    <label class="opt"><input type="checkbox"><div><div class="ot">RecordSheet로 완전 흡수</div><div class="od">일관성↑, 동선 변경.</div></div></label>
+  </div>
+
+  <div class="dec">
+    <div class="dh"><span class="did">DEC-5</span> 3축 통합 뷰(C8) 도입 시점?</div>
+    <div class="q">관련: C8</div>
+    <label class="opt"><input type="checkbox"><div><div class="ot">P2 즉시 착수</div><div class="od">차별화 가치 빠르게.</div></div></label>
+    <label class="opt rec"><input type="checkbox"><div><div class="ot">A3·A5(어휘·코어) 완료 후 <span class="rectag">권장</span></div><div class="od">토대 위에 올려야 정합성 보장.</div></div></label>
+  </div>
+</section>
+
+<!-- 12. APPENDIX -->
+<section id="s12">
+  <h2><span class="num">12</span>부록 — 기술 명세</h2>
+
+  <h3>12.1 3축 데이터 흐름도</h3>
+  <div class="flow">원본(Supabase)              3축 매핑                         대표 UI
+──────────────────────────────────────────────────────────────────────
+ reading_logs(duration…) ─▶ ⏱ 독서시간 ─▶ 시간탭 · 타이머 · 결산
+ user_books(current_page)─▶ 📊 진행률  ─▶ 슬라이더 · 이어읽기 바
+ books(total_pages)      ─┘
+ completed_dates[] ┐
+ notes(progress)   ├──────▶ 🧭 여정    ─▶ reading-journey.tsx(회독 카드)
+ notes(detail_kind)──────▶ 📤 출력    ─▶ 노트 목록 · 필사 에디터
+ ⚠ 진행률 수정 → notes(progress) 생성 = 여정 점 (편입기준 DEC-6)
+ ⚠ 시간 ÷ 진행률 = pace_seconds_per_page (UI 미노출 → C2)</div>
+
+  <h3>12.2 주요 함수·컴포넌트</h3>
+  <table>
+    <thead><tr><th>이름</th><th>파일</th><th>역할(축)</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">startReadingSession/endReadingSession</td><td class="mono">app/actions/sessions.ts</td><td>⏱ 세션·duration</td></tr>
+      <tr><td class="mono">updateBookProgress</td><td class="mono">app/actions/books/progress.ts:278</td><td>📊 current_page 갱신·100%감지</td></tr>
+      <tr><td class="mono">getLastEndPage</td><td class="mono">app/actions/progress.ts:627</td><td>📊⏱ 다음 세션 시작페이지(축 연결)</td></tr>
+      <tr><td class="mono">deriveReadingSessions</td><td class="mono">lib/utils/reading-sessions.ts:36</td><td>🧭 회독 분할</td></tr>
+      <tr><td class="mono">ReadingProgress / ReadingJourney</td><td class="mono">components/books/reading-progress.tsx · reading-journey.tsx</td><td>📊·🧭 UI</td></tr>
+      <tr><td class="mono">createNote / transcription</td><td class="mono">app/actions/notes.ts:31,1126</td><td>📤 출력 기록</td></tr>
+      <tr><td class="mono">computeRecapForUser</td><td class="mono">app/actions/recap/compute.ts</td><td>전체 집계(A3 대상)</td></tr>
+      <tr><td class="mono">formatReadingTime</td><td class="mono">lib/recap/text.ts:8</td><td>⏱ 포맷(A2 통합)</td></tr>
+    </tbody>
+  </table>
+
+  <h3>12.3 참고 문서</h3>
+  <ul class="tight">
+    <li><code>doc/update/기록기획/{00-master,01-data-model,05-decisions}.md</code> — v1.0(본 문서가 흡수)</li>
+    <li><code>doc/database/DATA_MODEL.md</code> — 모델 표준(§6.2·DEC 반영 대상)</li>
+    <li><code>doc/log/2026-{05,06}.md</code> — 진행 로그</li>
+  </ul>
+
+  <hr class="soft">
+  <p class="src">v2 — 분석·기획·문서화 산출물. 코드·DB 변경 없음. §11 의사결정(특히 DEC-6 여정기준·DEC-7 출력항목·DEC-8 독서시간노출) 후 P0부터 별도 작업으로 착수. · ReadingTree · 2026-06-04</p>
+</section>
+
+</main>
+</div>
+
+<script>
+  (function(){
+    var btn=document.getElementById('themeBtn'), root=document.documentElement;
+    function set(t){root.setAttribute('data-theme',t);btn.textContent=t==='dark'?'☀️ 라이트':'🌙 다크';}
+    var saved=null; try{saved=localStorage.getItem('rt-theme');}catch(e){}
+    set(saved||'light');
+    btn.addEventListener('click',function(){
+      var n=root.getAttribute('data-theme')==='dark'?'light':'dark';
+      set(n); try{localStorage.setItem('rt-theme',n);}catch(e){}
+    });
+  })();
+  document.querySelectorAll('nav.toc a').forEach(function(a){
+    a.addEventListener('click',function(e){
+      var el=document.querySelector(a.getAttribute('href'));
+      if(el){e.preventDefault();el.scrollIntoView({behavior:'smooth',block:'start'});}
+    });
+  });
+</script>
+</body>
+</html>

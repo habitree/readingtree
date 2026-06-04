@@ -13,6 +13,13 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { extractQuoteText } from "@/lib/recap/text";
+import {
+  kstMonthStart,
+  kstMonthEnd,
+  toKSTDateKey,
+  kstHour,
+} from "@/lib/utils/timezone";
+import { computeCurrentStreak, computeMaxStreak } from "@/lib/utils/streak";
 import type {
   RecapComputed,
   RecapNotesByType,
@@ -20,21 +27,6 @@ import type {
   RecapTopBook,
   RecapHighlights,
 } from "./types";
-
-// ── KST 헬퍼 (stats.ts와 동일 공식) ──────────────────────────────────────
-function kstMonthStart(year: number, month: number): Date {
-  return new Date(Date.UTC(year, month - 1, 1) - 9 * 60 * 60 * 1000);
-}
-function kstMonthEnd(year: number, month: number): Date {
-  return new Date(Date.UTC(year, month, 0, 23, 59, 59, 999) - 9 * 60 * 60 * 1000);
-}
-function toKSTDateKey(date: Date): string {
-  const kst = new Date(date.getTime() + 9 * 60 * 60 * 1000);
-  return `${kst.getUTCFullYear()}-${String(kst.getUTCMonth() + 1).padStart(2, "0")}-${String(kst.getUTCDate()).padStart(2, "0")}`;
-}
-function kstHour(date: Date): number {
-  return new Date(date.getTime() + 9 * 60 * 60 * 1000).getUTCHours();
-}
 
 // ── 쿼리 결과 행 타입 ────────────────────────────────────────────────────
 interface BookMini {
@@ -324,41 +316,7 @@ export async function computeRecapForUser(
 }
 
 // ── 보조 함수 ────────────────────────────────────────────────────────────
-
-/** 정렬된 날짜키 배열에서 최대 연속 일수 */
-function computeMaxStreak(dateKeys: string[]): number {
-  if (dateKeys.length === 0) return 0;
-  const days = [...dateKeys].sort();
-  let max = 1;
-  let cur = 1;
-  for (let i = 1; i < days.length; i++) {
-    const prev = new Date(`${days[i - 1]}T00:00:00Z`).getTime();
-    const now = new Date(`${days[i]}T00:00:00Z`).getTime();
-    if (now - prev === 86400000) {
-      cur += 1;
-      if (cur > max) max = cur;
-    } else if (now !== prev) {
-      cur = 1;
-    }
-  }
-  return max;
-}
-
-/** 오늘(또는 어제)부터 거슬러 올라가는 현재 연속 기록일 */
-function computeCurrentStreak(dateKeys: string[]): number {
-  const set = new Set(dateKeys);
-  if (set.size === 0) return 0;
-  const todayKst = new Date(Date.now() + 9 * 60 * 60 * 1000);
-  const todayMid = Date.UTC(todayKst.getUTCFullYear(), todayKst.getUTCMonth(), todayKst.getUTCDate());
-  let streak = 0;
-  for (let i = 0; i < 60; i++) {
-    const d = new Date(todayMid - i * 86400000);
-    const key = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
-    if (set.has(key)) streak += 1;
-    else if (i > 0) break;
-  }
-  return streak;
-}
+// 현재/최대 스트릭 계산은 `lib/utils/streak.ts`로 통합 (stats.ts와 단일 출처 공유).
 
 /** 규칙 기반 독서 페르소나 타이틀 */
 function buildPersonaTitle(input: {

@@ -3,6 +3,7 @@
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { revalidatePath } from "next/cache";
+import { getKSTToday } from "@/lib/utils/timezone";
 import type {
   CreateNoteInput,
   UpdateNoteInput,
@@ -1415,12 +1416,7 @@ export async function updateNoteContent(noteId: string, extractedText: string) {
 
 /** KST 기준 현재 날짜의 자정(00:00:00) UTC ISO 문자열 반환 */
 function getKSTTodayISO(): string {
-  const now = new Date();
-  const kst = new Date(now.getTime() + 9 * 60 * 60 * 1000);
-  const midnightUTC = new Date(
-    Date.UTC(kst.getUTCFullYear(), kst.getUTCMonth(), kst.getUTCDate()) - 9 * 60 * 60 * 1000
-  );
-  return midnightUTC.toISOString();
+  return getKSTToday().toISOString();
 }
 
 /**

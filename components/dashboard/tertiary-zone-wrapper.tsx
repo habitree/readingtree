@@ -1,4 +1,5 @@
 import { getCachedCurrentUser, getCachedPersonaDashboardData } from "@/lib/cached";
+import { getKSTYearMonth } from "@/lib/utils/timezone";
 import { getMonthlyBookActivities } from "@/app/actions/stats";
 import { getSampleMonthlyActivities } from "@/app/actions/sample";
 import { generateDemoMonthlyActivities } from "@/lib/demo-calendar-data";
@@ -13,10 +14,7 @@ export async function TertiaryZoneWrapper() {
   const user = await getCachedCurrentUser();
 
   // 현재 월의 독서 활동 조회 (KST 기준)
-  const now = new Date();
-  const kst = new Date(now.getTime() + 9 * 60 * 60 * 1000);
-  const currentYear = kst.getUTCFullYear();
-  const currentMonth = kst.getUTCMonth() + 1;
+  const { year: currentYear, month: currentMonth } = getKSTYearMonth();
 
   if (!user) {
     // 게스트 사용자: 샘플 월별 활동 데이터 조회

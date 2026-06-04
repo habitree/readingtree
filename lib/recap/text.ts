@@ -4,14 +4,14 @@
  * "use server" 없는 순수 모듈 — compute.ts(집계)와 books-list.ts(책별 발췌) 양쪽에서 공유.
  */
 
-/** 초 → "N시간 M분" / "M분" 한국어 표기 */
+import { formatDuration } from "@/lib/utils/duration";
+
+/**
+ * 초 → "N시간 M분" / "M분" 한국어 표기.
+ * 단일 출처 `lib/utils/duration.ts`에 위임 (분은 반올림, 0초는 "0분").
+ */
 export function formatReadingTime(seconds: number): string {
-  const total = Math.max(0, Math.floor(seconds));
-  const h = Math.floor(total / 3600);
-  const m = Math.round((total % 3600) / 60);
-  if (h > 0 && m > 0) return `${h}시간 ${m}분`;
-  if (h > 0) return `${h}시간`;
-  return `${m}분`;
+  return formatDuration(seconds, { rounding: "round", zeroLabel: "0분" });
 }
 
 /** notes.content에서 인용 텍스트 추출 (JSON {quote,memo,text} 또는 평문) */

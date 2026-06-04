@@ -17,22 +17,12 @@ import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { getCurrentUser } from "@/app/actions/auth";
 import { getSampleUserId } from "@/app/actions/sample";
 import { extractQuoteText } from "@/lib/recap/text";
+import {
+  kstMonthStart,
+  kstMonthEnd,
+  isFutureKSTMonth as isFutureMonth,
+} from "@/lib/utils/timezone";
 import type { MonthlyBookItem, MonthlyBooksResult } from "./types";
-
-function kstMonthStart(year: number, month: number): Date {
-  return new Date(Date.UTC(year, month - 1, 1) - 9 * 60 * 60 * 1000);
-}
-function kstMonthEnd(year: number, month: number): Date {
-  return new Date(Date.UTC(year, month, 0, 23, 59, 59, 999) - 9 * 60 * 60 * 1000);
-}
-function currentKstYearMonth(): { year: number; month: number } {
-  const kst = new Date(Date.now() + 9 * 60 * 60 * 1000);
-  return { year: kst.getUTCFullYear(), month: kst.getUTCMonth() + 1 };
-}
-function isFutureMonth(year: number, month: number): boolean {
-  const cur = currentKstYearMonth();
-  return year > cur.year || (year === cur.year && month > cur.month);
-}
 
 interface NoteRow {
   book_id: string;

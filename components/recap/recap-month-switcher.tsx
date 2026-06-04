@@ -2,6 +2,7 @@
 
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { getKSTYearMonth } from "@/lib/utils/timezone";
 
 interface RecapMonthSwitcherProps {
   year: number;
@@ -10,14 +11,8 @@ interface RecapMonthSwitcherProps {
   disabled?: boolean;
 }
 
-/** KST 기준 현재 연/월 */
-function currentKstYearMonth(): { year: number; month: number } {
-  const kst = new Date(Date.now() + 9 * 60 * 60 * 1000);
-  return { year: kst.getUTCFullYear(), month: kst.getUTCMonth() + 1 };
-}
-
 export function RecapMonthSwitcher({ year, month, onChange, disabled }: RecapMonthSwitcherProps) {
-  const cur = currentKstYearMonth();
+  const cur = getKSTYearMonth();
   const isCurrentOrFuture = year > cur.year || (year === cur.year && month >= cur.month);
 
   const go = (delta: number) => {

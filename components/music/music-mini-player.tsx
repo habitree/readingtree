@@ -28,6 +28,7 @@ import {
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { formatClock as formatTime } from "@/lib/utils/duration";
 
 interface NetworkInformation extends EventTarget {
   type?: string;
@@ -37,12 +38,6 @@ interface NetworkInformation extends EventTarget {
 }
 interface NavigatorWithConnection extends Navigator {
   connection?: NetworkInformation;
-}
-
-function formatTime(sec: number): string {
-  const m = Math.floor(sec / 60);
-  const s = Math.floor(sec % 60);
-  return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
 /** 헤더 음악 버튼 — 단순 idle/playing 분기 */

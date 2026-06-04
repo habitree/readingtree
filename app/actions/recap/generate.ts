@@ -17,6 +17,10 @@ import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { getCurrentUser } from "@/app/actions/auth";
 import { getSampleUserId } from "@/app/actions/sample";
 import { computeRecapForUser } from "./compute";
+import {
+  getKSTYearMonth as currentKstYearMonth,
+  isFutureKSTMonth as isFutureMonth,
+} from "@/lib/utils/timezone";
 import type { RecapComputed, RecapRecord } from "./types";
 
 interface RecapRow {
@@ -49,17 +53,6 @@ function rowToRecord(row: RecapRow): RecapRecord {
   };
 }
 
-/** KST 기준 현재 연/월 */
-function currentKstYearMonth(): { year: number; month: number } {
-  const kst = new Date(Date.now() + 9 * 60 * 60 * 1000);
-  return { year: kst.getUTCFullYear(), month: kst.getUTCMonth() + 1 };
-}
-
-/** (year, month)가 현재 KST 월보다 미래인지 */
-function isFutureMonth(year: number, month: number): boolean {
-  const cur = currentKstYearMonth();
-  return year > cur.year || (year === cur.year && month > cur.month);
-}
 function isCurrentMonth(year: number, month: number): boolean {
   const cur = currentKstYearMonth();
   return year === cur.year && month === cur.month;

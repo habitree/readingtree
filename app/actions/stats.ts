@@ -6,37 +6,17 @@ import type { NoteWithBook } from "@/types/note";
 import type { User } from "@supabase/supabase-js";
 import { getSampleUserId as getSampleUserIdFromSample } from "./sample";
 import { getCurrentUser } from "./auth";
+import {
+  toKSTDateKey,
+  getKSTToday,
+  toKSTMidnight,
+  getKSTComponents,
+  kstMonthStart,
+  kstMonthEnd,
+} from "@/lib/utils/timezone";
+import { computeCurrentStreak } from "@/lib/utils/streak";
 
 export type TimelineSortBy = "latest" | "oldest" | "book";
-
-/** UTC Date를 KST(UTC+9) 기준 YYYY-MM-DD 문자열로 변환 */
-function toKSTDateKey(date: Date): string {
-  const kst = new Date(date.getTime() + 9 * 60 * 60 * 1000);
-  return `${kst.getUTCFullYear()}-${String(kst.getUTCMonth() + 1).padStart(2, "0")}-${String(kst.getUTCDate()).padStart(2, "0")}`;
-}
-
-/** KST 기준 현재 날짜의 자정(00:00:00) UTC Date 반환 */
-function getKSTToday(): Date {
-  const now = new Date();
-  const kst = new Date(now.getTime() + 9 * 60 * 60 * 1000);
-  return new Date(Date.UTC(kst.getUTCFullYear(), kst.getUTCMonth(), kst.getUTCDate()) - 9 * 60 * 60 * 1000);
-}
-
-/** KST 기준 지정 날짜의 자정(00:00:00) UTC Date 반환 */
-function toKSTMidnight(year: number, month: number, day: number): Date {
-  return new Date(Date.UTC(year, month - 1, day) - 9 * 60 * 60 * 1000);
-}
-
-/** KST 기준 Date의 연/월/일 컴포넌트 반환 */
-function getKSTComponents(date: Date): { year: number; month: number; day: number; dayOfWeek: number } {
-  const kst = new Date(date.getTime() + 9 * 60 * 60 * 1000);
-  return {
-    year: kst.getUTCFullYear(),
-    month: kst.getUTCMonth() + 1,
-    day: kst.getUTCDate(),
-    dayOfWeek: kst.getUTCDay(),
-  };
-}
 
 /**
  * 샘플 사용자(관리자) ID를 동적으로 조회
@@ -1119,8 +1099,8 @@ export async function getMonthlyBookActivities(
   const supabase = await createServerSupabaseClient();
 
   // 해당 월의 시작일과 종료일 계산 (KST 기준)
-  const startDate = new Date(Date.UTC(year, month - 1, 1) - 9 * 60 * 60 * 1000);
-  const endDate = new Date(Date.UTC(year, month, 0, 23, 59, 59, 999) - 9 * 60 * 60 * 1000);
+  const startDate = kstMonthStart(year, month);
+  const endDate = kstMonthEnd(year, month);
 
   // 해당 월의 기록 조회 (책 정보 + 기록 타입 포함)
   const { data: notes, error } = await supabase
@@ -1285,34 +1265,20 @@ export async function getStreakAndTodayData(userId: string): Promise<{ streak: n
       return { streak: 0, todayNotes: 0 };
     }
 
-    // 날짜별로 그룹화 및 오늘 기록 수 계산 (KST 기준)
-    const dateCountMap = new Map<string, number>();
+    // 날짜키 수집 및 오늘 기록 수 계산 (KST 기준)
+    const dateKeys: string[] = [];
     let todayNotes = 0;
 
     notes.forEach((note) => {
       const dateKey = toKSTDateKey(new Date(note.created_at));
-
       if (dateKey === kstTodayKey) {
         todayNotes++;
       }
-
-      dateCountMap.set(dateKey, (dateCountMap.get(dateKey) || 0) + 1);
+      dateKeys.push(dateKey);
     });
 
-    // 연속 일수 계산 (KST 기준)
-    let streak = 0;
-
-    for (let i = 0; i < 30; i++) {
-      const checkTime = kstTodayMidnight.getTime() - i * 24 * 60 * 60 * 1000;
-      const dateKey = toKSTDateKey(new Date(checkTime));
-
-      if (dateCountMap.has(dateKey)) {
-        streak++;
-      } else if (i > 0) {
-        // 오늘은 아직 기록 안 해도 어제까지 연속이면 유지
-        break;
-      }
-    }
+    // 연속 일수 계산 — recap/compute.ts와 단일 출처 공유 (lib/utils/streak.ts)
+    const streak = computeCurrentStreak(dateKeys);
 
     return { streak, todayNotes };
   } catch (error) {

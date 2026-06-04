@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { formatDuration, formatTimeRange } from "@/lib/utils/duration";
 import type { ReadingLog } from "@/types/progress";
 import { useStampCaptureStore } from "@/hooks/use-stamp-capture";
 import { useStampShareStore } from "@/hooks/use-stamp-share";
@@ -47,24 +48,6 @@ interface ReadingTimeTabProps {
     coverImageUrl: string | null;
     totalPages: number | null;
   };
-}
-
-function formatDuration(seconds: number): string {
-  const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  if (h > 0 && m > 0) return `${h}시간 ${m}분`;
-  if (h > 0) return `${h}시간`;
-  if (m > 0) return `${m}분`;
-  return "1분 미만";
-}
-
-function formatTimeRange(startedAt: string | null, endedAt: string | null): string {
-  if (!startedAt) return "";
-  const opts: Intl.DateTimeFormatOptions = { hour: "2-digit", minute: "2-digit" };
-  const start = new Date(startedAt).toLocaleTimeString("ko-KR", opts);
-  if (!endedAt) return start;
-  const end = new Date(endedAt).toLocaleTimeString("ko-KR", opts);
-  return `${start} ~ ${end}`;
 }
 
 function groupByDate(logs: ReadingLog[]): Map<string, ReadingLog[]> {

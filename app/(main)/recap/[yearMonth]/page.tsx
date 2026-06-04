@@ -7,6 +7,7 @@ import { GuestAlert } from "@/components/ui/guest-alert";
 import { getMonthlyBooksList } from "@/app/actions/recap/books-list";
 import { MonthlyBooksShowcase } from "@/components/recap/monthly-books-showcase";
 import { RecapPageMonthSwitcher } from "@/components/recap/recap-page-month-switcher";
+import { getKSTYearMonth } from "@/lib/utils/timezone";
 
 export const metadata: Metadata = {
   title: "월간 독서 책장 | ReadTree",
@@ -15,8 +16,8 @@ export const metadata: Metadata = {
 
 /** KST 기준 현재 YYYY-MM */
 function currentYearMonth(): string {
-  const kst = new Date(Date.now() + 9 * 60 * 60 * 1000);
-  return `${kst.getUTCFullYear()}-${String(kst.getUTCMonth() + 1).padStart(2, "0")}`;
+  const { year, month } = getKSTYearMonth();
+  return `${year}-${String(month).padStart(2, "0")}`;
 }
 
 /** YYYY-MM 파싱 → 유효하면 {year, month}, 아니면 null */

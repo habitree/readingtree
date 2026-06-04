@@ -19,6 +19,7 @@ import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { computeRecapForUser } from "@/app/actions/recap/compute";
 import { upsertRecapSnapshot } from "@/app/actions/recap/generate";
 import { createNotification } from "@/app/actions/notifications";
+import { kstMonthStart, kstMonthEnd } from "@/lib/utils/timezone";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
@@ -33,13 +34,6 @@ function previousKstMonth(): { year: number; month: number } {
     year -= 1;
   }
   return { year, month };
-}
-
-function kstMonthStart(year: number, month: number): Date {
-  return new Date(Date.UTC(year, month - 1, 1) - 9 * 60 * 60 * 1000);
-}
-function kstMonthEnd(year: number, month: number): Date {
-  return new Date(Date.UTC(year, month, 0, 23, 59, 59, 999) - 9 * 60 * 60 * 1000);
 }
 
 export async function GET(request: Request) {

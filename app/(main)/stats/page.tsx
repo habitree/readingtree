@@ -1,5 +1,6 @@
 import { Metadata } from "next";
 import { getCachedCurrentUser, getCachedPersonaDashboardData } from "@/lib/cached";
+import { getKSTYearMonth } from "@/lib/utils/timezone";
 import {
   getReadingStats,
   getMonthlyStats,
@@ -39,8 +40,7 @@ function resolveRecapMonth(m: string | undefined): { year: number; month: number
     const [y, mo] = m.split("-").map(Number);
     if (mo >= 1 && mo <= 12) return { year: y, month: mo };
   }
-  const kst = new Date(Date.now() + 9 * 60 * 60 * 1000);
-  return { year: kst.getUTCFullYear(), month: kst.getUTCMonth() + 1 };
+  return getKSTYearMonth();
 }
 
 export default async function StatsPage({
