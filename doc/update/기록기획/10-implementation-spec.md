@@ -76,7 +76,7 @@
 |---|---|---|
 | **C9** | 출력(`review`) 항목 — 마이그레이션(`notes_detail_kind_check`+review) + 저장 매핑(review→type memo) + RecordSheet detail 옵션 + note-card 라벨 | ✅ 완료(마이그 적용·DB insert 검증·tsc·/notes 200) |
 | **C7** | 페이지별 독서 페이스 패널(`reading-pace-panel.tsx`, 페이지당 평균·남은 예상) — 시간탭 통합 | ✅ 완료(tsc) |
-| **C8** | 3축 통합 뷰 (책 상세) — A3·A5 후 | ⬜ |
+| **C8** | 3축 통합 뷰 — `reading-overview-panel.tsx`(⏱시간·📊진행률·🧭여정 요약) 책 상세 탭 위 통합 | ✅ 완료(tsc·Playwright 렌더 확인) |
 | **C1/C2** | 타이머 목표 UI · 페이스 분석(C7로 일부 노출) | ⬜ |
 | **C3/C4** | 캘린더 SSOT · 음악-세션 동기화 | ⬜ |
 

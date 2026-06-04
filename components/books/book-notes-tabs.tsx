@@ -4,6 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { NoteList } from "@/components/notes/note-list";
 import { ReadingJourney } from "./reading-journey";
 import { ReadingTimeTab } from "./reading-time-tab";
+import { ReadingOverviewPanel } from "./reading-overview-panel";
 import { BookEmptyOnboarding } from "./book-empty-onboarding";
 import { Map, FileText, Clock } from "lucide-react";
 import type { NoteWithBook } from "@/types/note";
@@ -58,6 +59,15 @@ export function BookNotesTabs({
 
   return (
     <Tabs defaultValue="time" className="w-full">
+      {/* 3축 통합 요약 (C8) — 시간·진행률·여정 한눈에, 아래 탭이 상세 */}
+      <ReadingOverviewPanel
+        userBookId={userBookId}
+        currentPage={currentPage}
+        totalPages={totalPages}
+        completedCount={completedDates.length}
+        status={status}
+        recordsCount={totalCount}
+      />
       <TabsList className="grid w-full grid-cols-3 mb-4">
         <TabsTrigger value="time" className="flex items-center gap-1 text-xs sm:text-sm">
           <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
