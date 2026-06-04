@@ -11,9 +11,11 @@ export type SourceType = "book" | "youtube" | "instagram" | "article" | "other";
 /**
  * 상세기록 분류 (migration-202605040300 도입)
  * 기록 기능 전면 개편 Phase 1 — quote/memo/transcription 3종으로 통합.
+ * review = 출력(독후감/리뷰) — migration-202606041200 추가 (C9).
+ *   저장 시 note.type='memo' + detail_kind='review' (note_type ENUM 미확장).
  * NULL = legacy (기존 photo/progress 등).
  */
-export type DetailKind = "quote" | "memo" | "transcription";
+export type DetailKind = "quote" | "memo" | "transcription" | "review";
 
 export interface Note {
   id: string;

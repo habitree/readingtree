@@ -52,10 +52,12 @@ export function NoteCard({ note, showDeleteButton = false, onDelete }: NoteCardP
 
   const isDraft = note.status === "draft";
   const noteHref = isDraft ? `/notes/${note.id}/edit` : `/notes/${note.id}`;
-  const Icon = typeIcons[note.type];
+  const Icon = note.detail_kind === "review" ? FileText : typeIcons[note.type];
   const pageNumber = parsePageNumber(note.page_number);
   const isProgressType = note.type === "progress";
-  const typeLabel = getNoteTypeLabel(note.type, !!note.image_url);
+  // 출력(독후감) = detail_kind='review' (저장 type은 memo) — 별도 라벨/아이콘 (C9)
+  const isReview = note.detail_kind === "review";
+  const typeLabel = isReview ? "독후감" : getNoteTypeLabel(note.type, !!note.image_url);
   // 독서시간(세션 연결 시) — "읽은 시각(created_at)"과 구분되는 "읽은 시간" (C6)
   const readingDurationLabel =
     note.reading_duration_seconds && note.reading_duration_seconds > 0

@@ -634,7 +634,8 @@ export async function addNoteToSession(
   //  - quote → "quote"
   //  - memo → "memo"
   //  - transcription → "transcription"
-  const noteType = input.detail_kind;
+  //  - review → "memo" (note_type ENUM 미확장 — 출력은 detail_kind로 구분, C9)
+  const noteType = input.detail_kind === "review" ? "memo" : input.detail_kind;
 
   // content는 quote/memo JSON 묶음 (기존 createNote 패턴)
   const contentObj: Record<string, string> = {};

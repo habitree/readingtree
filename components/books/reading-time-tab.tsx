@@ -37,6 +37,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { ReadingTimeShareButton } from "./reading-time-share-button";
 import { ReadingTimeLinkShare } from "./reading-time-link-share";
+import { ReadingPacePanel } from "./reading-pace-panel";
 import { Lightbox } from "@/components/stamps/photo-gallery";
 
 interface ReadingTimeTabProps {
@@ -239,6 +240,8 @@ export function ReadingTimeTab({ userBookId, bookInfo }: ReadingTimeTabProps) {
             </div>
           </div>
         </div>
+
+        <ReadingPacePanel logs={logs} totalPages={bookInfo?.totalPages ?? null} />
 
         {/* 날짜별 기록 */}
         <div className="space-y-4">

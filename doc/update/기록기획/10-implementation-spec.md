@@ -72,13 +72,13 @@
 | **DEC-6 구현** | 진행률 저장 시 여정 편입 규칙(일 1점 집약 등) 적용 |
 
 ### P2 — 신규 가치
-| 코드 | 작업 |
-|---|---|
-| **C8** | 3축 통합 뷰 (책 상세) — A3·A5 후 |
-| **C9** | 출력(`review`) 항목 — **DB 마이그레이션 필수**(`notes_detail_kind_check` 교체) + RecordSheet detail |
-| **C7** | 페이지별(구간별) 독서시간 관리 |
-| **C1/C2** | 타이머 목표 UI · 페이스 분석(`pace_seconds_per_page` 노출) |
-| **C3/C4** | 캘린더 SSOT · 음악-세션 동기화 |
+| 코드 | 작업 | 상태 |
+|---|---|---|
+| **C9** | 출력(`review`) 항목 — 마이그레이션(`notes_detail_kind_check`+review) + 저장 매핑(review→type memo) + RecordSheet detail 옵션 + note-card 라벨 | ✅ 완료(마이그 적용·DB insert 검증·tsc·/notes 200) |
+| **C7** | 페이지별 독서 페이스 패널(`reading-pace-panel.tsx`, 페이지당 평균·남은 예상) — 시간탭 통합 | ✅ 완료(tsc) |
+| **C8** | 3축 통합 뷰 (책 상세) — A3·A5 후 | ⬜ |
+| **C1/C2** | 타이머 목표 UI · 페이스 분석(C7로 일부 노출) | ⬜ |
+| **C3/C4** | 캘린더 SSOT · 음악-세션 동기화 | ⬜ |
 
 > 📐 **남은 단계 상세 설계 = `11-next-steps-design.md`** (A5·A3·B3-2·C7·C8·C9·B1 + 후순위, 의존성 순서·SQL·체크리스트 포함).
 > 핵심 확정: **C9는 CHECK 제약 `notes_detail_kind_check`(quote/memo/transcription만) 때문에 마이그레이션 필수**,

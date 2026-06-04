@@ -25,6 +25,7 @@ const MEMO_MAX = 10000;
 const KINDS: { value: DetailKind; label: string; description: string }[] = [
   { value: "quote", label: "인상깊은 구절", description: "책에서 옮겨 적은 문장" },
   { value: "memo", label: "내 생각", description: "독서 후 떠오른 길게 남기는 메모" },
+  { value: "review", label: "독후감·리뷰", description: "책 전체에 대한 긴 글(출력)" },
   { value: "transcription", label: "필사", description: "사진을 OCR로 텍스트화" },
 ];
 
@@ -43,10 +44,11 @@ export function RecordDetailStep({ sessionId, selectedBook }: Props) {
   const openStampShare = useStampShareStore((s) => s.openShare);
 
   const handleSave = () => {
-    const hasContent =
-      (kind !== "memo" && quoteContent.trim().length > 0) ||
-      (kind === "memo" && memoContent.trim().length > 0) ||
-      (kind === "transcription" && quoteContent.trim().length > 0);
+    // memo·review는 본문(memoContent), quote·transcription은 구절(quoteContent) 필요
+    const usesMemoOnly = kind === "memo" || kind === "review";
+    const hasContent = usesMemoOnly
+      ? memoContent.trim().length > 0
+      : quoteContent.trim().length > 0;
 
     if (!hasContent) {
       toast.error("내용을 입력해주세요.");
@@ -157,18 +159,27 @@ export function RecordDetailStep({ sessionId, selectedBook }: Props) {
         </div>
       ) : null}
 
-      {(kind === "quote" || kind === "memo") && (
+      {(kind === "quote" || kind === "memo" || kind === "review") && (
         <div className="space-y-2">
           <Label htmlFor="record-detail-memo" className="text-sm font-medium">
-            {kind === "memo" ? "내 생각" : "내 생각 (선택)"}
+            {kind === "memo" ? "내 생각" : kind === "review" ? "독후감·리뷰" : "내 생각 (선택)"}
           </Label>
           <Textarea
             id="record-detail-memo"
-            placeholder={kind === "memo" ? "독서 후 떠오른 생각" : "구절에 대한 짧은 메모"}
+            placeholder={
+              kind === "memo"
+                ? "독서 후 떠오른 생각"
+                : kind === "review"
+                  ? "책 전체에 대한 감상과 평을 자유롭게 남겨보세요"
+                  : "구절에 대한 짧은 메모"
+            }
             value={memoContent}
             onChange={(e) => setMemoContent(e.target.value.slice(0, MEMO_MAX))}
             maxLength={MEMO_MAX}
-            className={cn(kind === "memo" ? "h-40" : "h-24", "resize-none")}
+            className={cn(
+              kind === "review" ? "h-48" : kind === "memo" ? "h-40" : "h-24",
+              "resize-none",
+            )}
             disabled={isPending}
           />
           <p className="text-right text-xs text-slate-400">
