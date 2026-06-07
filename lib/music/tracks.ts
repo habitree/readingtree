@@ -1,11 +1,26 @@
-import type { MusicTrack } from "@/types/music";
-
-/** 전체 트랙 목록 (클래식 44곡 + 재즈 35곡 = 79곡 — 폴백용)
+/**
+ * 병합 빌드 전용 원본 트랙 목록 (scripts/build-combined-music.ts 에서만 사용).
  *
- * 품질 기준: 128kbps 이상만 포함 (56/96kbps 트랙 제거)
- * 콘텐츠 중복: 골드베르크 Aria da Capo 제거 (Aria와 동일곡)
+ * 클래식/재즈 음원의 순서·메타데이터 소스. 런타임 앱은 이 파일을 import 하지 않으며
+ * 병합된 lib/music/genres.ts(자동 생성)만 사용한다.
+ *
+ * 품질 기준: 128kbps 이상만 포함. era === "jazz" → 재즈, 그 외 → 클래식.
  */
-export const MUSIC_TRACKS: MusicTrack[] = [
+export interface SourceTrack {
+  id: string;
+  title: string;
+  composer: string;
+  performer: string;
+  sourceUrl: string;
+  isExternal: boolean;
+  durationSeconds: number;
+  moods: string[];
+  era: string;
+  instruments: string[];
+  intensity: number;
+}
+
+export const MUSIC_TRACKS: SourceTrack[] = [
   // ── 바로크 ──
   { id: "track-001", title: "골드베르크 변주곡 - Aria", composer: "바흐", performer: "Musopen", sourceUrl: "/music/bach-goldberg-aria.mp3", isExternal: false, durationSeconds: 292, moods: ["focus", "peaceful"], era: "baroque", instruments: ["piano"], intensity: 1 },
   { id: "track-002", title: "골드베르크 변주곡 - Var.25", composer: "바흐", performer: "Musopen", sourceUrl: "/music/bach-goldberg-var25.mp3", isExternal: false, durationSeconds: 410, moods: ["contemplative", "emotional"], era: "baroque", instruments: ["piano"], intensity: 2 },

@@ -88,7 +88,7 @@ export function LazyOverlays() {
   const recordOpen = useRecordSheetStore((s) => s.isOpen);
   const stampOpen = useStampCaptureStore((s) => s.isOpen);
   const musicEverActive = useMusicPlayer(
-    (s) => s.isPlaying || s.isMusicSheetOpen || s.isTrackListOpen,
+    (s) => s.isPlaying || s.isMusicSheetOpen,
   );
   const upgradeOpen = useUpgradeModal((s) => s.open);
   const stampShareOpen = useStampShareStore((s) => s.isOpen);

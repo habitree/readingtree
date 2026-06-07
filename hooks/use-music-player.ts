@@ -1,170 +1,98 @@
 "use client";
 
 /**
- * useMusicPlayer (단순화 — 2026-05-05 분리 단계 C)
+ * useMusicPlayer (병합 + 파트 분할 재구성 — 2026-06-08)
  *
- * 음악 재생만 담당. 기록·세션·타이머 책임 모두 제거 — 완전 분리 (사용자 결정).
+ * 장르(클래식/재즈)별로 분할된 파트를 이중 버퍼로 이어 붙여 단일 음원처럼 재생한다.
+ * 곡/플레이리스트/인덱스/스킵 개념 제거 — 장르 선택 + 재생/정지/종료 + 볼륨만.
  *
- * 폐기된 영역 (이전 코드):
- *   - timerStatus / targetSeconds / remainingSeconds / elapsedSeconds / timerStartedAt / isUnlimited
- *   - startTimer / startUnlimitedTimer / pauseTimer / resumeTimer / tickTimer
- *   - completeTimer / continueReading / stopTimer
- *   - openTimerSheet / closeTimerSheet / closeCompleteDialog
- *   - activeBook / setActiveBook
- * → 모두 사용자 요구로 제거. 기록은 RecordSheet 도메인에서만 처리.
+ * currentTime 은 "장르 전체 타임라인" 기준(초). 현재 곡 제목은
+ * currentTime + currentGenre.cues 로 컴포넌트에서 계산한다.
  */
 
 import { create } from "zustand";
-import type { MusicTrack } from "@/types/music";
+import type { MusicGenre } from "@/types/music";
 
 interface MusicPlayerState {
-  // ── 음악 상태 (재생만) ──
+  // ── 재생 상태 ──
   isVisible: boolean;
   isPlaying: boolean;
-  currentTrack: MusicTrack | null;
-  playlist: MusicTrack[];
-  currentIndex: number;
+  currentGenre: MusicGenre | null;
   volume: number;
+  /** 장르 전체 타임라인 기준 현재 재생 위치(초) */
   currentTime: number;
+  /** 장르 전체 길이(초) */
   duration: number;
-  selectedPlaylistId: string | null;
+  /** 장르 선택 시 정해지는 랜덤 시작 위치(초) — 컴포넌트가 적용 */
+  startAt: number;
+  /**
+   * 장르 선택 시 증가하는 토큰. 컴포넌트는 변경을 감지해
+   * 파트 로드 + 랜덤 시작 위치 적용을 1회 수행한다.
+   */
+  loadToken: number;
 
-  // ── 시트 토글 (음악 시트만) ──
+  // ── 시트 토글 ──
   isMusicSheetOpen: boolean;
-  isTrackListOpen: boolean;
   isVolumeOpen: boolean;
 
-  // ── 음악 액션 ──
-  loadPlaylist: (tracks: MusicTrack[], playlistId?: string, startIndex?: number) => void;
-  selectTrack: (index: number) => void;
+  // ── 액션 ──
+  selectGenre: (genre: MusicGenre) => void;
   play: () => void;
   pause: () => void;
   toggle: () => void;
-  next: () => void;
-  prev: () => void;
-  seekTo: (time: number) => void;
   setVolume: (vol: number) => void;
-  updateTime: (current: number, dur: number) => void;
+  updateTime: (current: number, dur?: number) => void;
 
-  // ── UI 시트 ──
   openMusicSheet: () => void;
   closeMusicSheet: () => void;
-  openTrackList: () => void;
-  closeTrackList: () => void;
   toggleVolume: () => void;
 
-  // ── 전체 종료 (audio 정지 + UI 닫기) ──
+  /** 전체 종료 (audio 정지 + UI 닫기) */
   close: () => void;
 }
 
-export const useMusicPlayer = create<MusicPlayerState>((set, get) => ({
-  // 초기값
+export const useMusicPlayer = create<MusicPlayerState>((set) => ({
   isVisible: false,
   isPlaying: false,
-  currentTrack: null,
-  playlist: [],
-  currentIndex: 0,
+  currentGenre: null,
   volume: 0.35,
   currentTime: 0,
   duration: 0,
-  selectedPlaylistId: null,
+  startAt: 0,
+  loadToken: 0,
   isMusicSheetOpen: false,
-  isTrackListOpen: false,
   isVolumeOpen: false,
 
-  loadPlaylist: (tracks, playlistId, startIndex) => {
-    const idx = startIndex ?? (tracks.length > 0 ? Math.floor(Math.random() * tracks.length) : 0);
-    set({
-      playlist: tracks,
-      currentIndex: idx,
-      currentTrack: tracks[idx] ?? null,
+  selectGenre: (genre) =>
+    set((s) => ({
+      currentGenre: genre,
       isVisible: true,
-      isPlaying: false,
-      currentTime: 0,
-      duration: tracks[idx]?.durationSeconds ?? 0,
-      selectedPlaylistId: playlistId ?? get().selectedPlaylistId,
-    });
-  },
-
-  selectTrack: (index) => {
-    const { playlist } = get();
-    const track = playlist[index];
-    if (!track) return;
-    set({
-      currentIndex: index,
-      currentTrack: track,
-      currentTime: 0,
-      duration: track.durationSeconds,
       isPlaying: true,
-    });
-  },
+      // 끝부분 8% 여유 두고 랜덤 시작 → 랜덤 재생처럼 느껴지게
+      startAt: Math.random() * genre.durationSeconds * 0.92,
+      currentTime: 0,
+      duration: genre.durationSeconds,
+      loadToken: s.loadToken + 1,
+    })),
 
   play: () => set({ isPlaying: true }),
   pause: () => set({ isPlaying: false }),
   toggle: () => set((s) => ({ isPlaying: !s.isPlaying })),
-
-  next: () => {
-    const { playlist, currentIndex } = get();
-    if (playlist.length === 0) return;
-    let nextIndex: number;
-    if (playlist.length === 1) {
-      nextIndex = 0;
-    } else {
-      do {
-        nextIndex = Math.floor(Math.random() * playlist.length);
-      } while (nextIndex === currentIndex);
-    }
-    const track = playlist[nextIndex];
-    if (!track) return;
-    set({
-      currentIndex: nextIndex,
-      currentTrack: track,
-      currentTime: 0,
-      duration: track.durationSeconds,
-      isPlaying: true,
-    });
-  },
-
-  prev: () => {
-    const { playlist, currentIndex, currentTime } = get();
-    if (playlist.length === 0) return;
-    if (currentTime > 3) {
-      set({ currentTime: 0 });
-      return;
-    }
-    const prevIndex = (currentIndex - 1 + playlist.length) % playlist.length;
-    const track = playlist[prevIndex];
-    if (!track) return;
-    set({
-      currentIndex: prevIndex,
-      currentTrack: track,
-      currentTime: 0,
-      duration: track.durationSeconds,
-      isPlaying: true,
-    });
-  },
-
-  seekTo: (time) => set({ currentTime: time }),
   setVolume: (vol) => set({ volume: Math.max(0, Math.min(1, vol)) }),
-  updateTime: (current, dur) => set({ currentTime: current, duration: dur }),
+  updateTime: (current, dur) =>
+    set((s) => ({ currentTime: current, duration: dur ?? s.duration })),
 
   openMusicSheet: () => set({ isMusicSheetOpen: true }),
   closeMusicSheet: () => set({ isMusicSheetOpen: false }),
-  openTrackList: () => set({ isTrackListOpen: true }),
-  closeTrackList: () => set({ isTrackListOpen: false }),
   toggleVolume: () => set((s) => ({ isVolumeOpen: !s.isVolumeOpen })),
 
   close: () =>
     set({
       isVisible: false,
       isPlaying: false,
-      currentTrack: null,
-      playlist: [],
-      currentIndex: 0,
+      currentGenre: null,
       currentTime: 0,
       duration: 0,
-      isTrackListOpen: false,
       isVolumeOpen: false,
-      // selectedPlaylistId는 보존 (다음 재생 시 prefill)
     }),
 }));

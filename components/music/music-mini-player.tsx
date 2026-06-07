@@ -1,34 +1,25 @@
 "use client";
 
 /**
- * MusicMiniPlayer (단순화 — 2026-05-05 분리 단계 C)
+ * MusicMiniPlayer (병합 + 파트 분할 재구성 — 2026-06-08)
  *
- * 음악 전용. 기록·세션·타이머와 분리.
- * 표시: 재생 중 곡 정보 + 재생/정지/이전/다음/볼륨/곡목록 버튼.
- * 시간 표시·CircleTimer·"독서 시간"·activeBook·종료 버튼 모두 제거.
+ * 장르(클래식/재즈)별로 분할된 파트를 두 개의 audio 엘리먼트로 이중 버퍼링하여
+ * 끊김 없이 이어 붙여 "하나의 연속 음원"처럼 재생한다.
+ * 재생 시 장르 전체 타임라인에서 랜덤 위치(startAt)부터 시작하고, 끝에 도달하면 처음으로 순환.
  *
- * audio 처리 로직(safePlay·재시도·버퍼링·네트워크 복구·Media Session)은 보존.
+ * 컨트롤: 재생/일시정지 · 볼륨 · 종료 만. 스킵/곡목록 제거.
+ * 현재 곡 제목은 (현재 파트.start + audio.currentTime) + cues 로 계산해 표시.
+ *
+ * audio 안정화 로직(safePlay·재시도·버퍼링·네트워크·visibility 복구·fade-in·Media Session) 보존.
  */
 
 import { useRef, useEffect, useCallback } from "react";
 import { useMusicPlayer } from "@/hooks/use-music-player";
-import { getTrackMoodLabel, initMusicData } from "@/lib/music";
+import { findCueAt, findPartIndexAt } from "@/lib/music";
+import type { MusicGenre } from "@/types/music";
 import { MusicOnlySheet } from "./music-only-sheet";
-import { TrackListSheet } from "./track-list-sheet";
-import {
-  Pause,
-  Play,
-  SkipBack,
-  SkipForward,
-  Volume2,
-  VolumeX,
-  Music2,
-  ListMusic,
-  Headphones,
-  X,
-} from "lucide-react";
+import { Pause, Play, Volume2, VolumeX, Music2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { formatClock as formatTime } from "@/lib/utils/duration";
 
 interface NetworkInformation extends EventTarget {
   type?: string;
@@ -40,22 +31,29 @@ interface NavigatorWithConnection extends Navigator {
   connection?: NetworkInformation;
 }
 
+/** 사용자 클릭 컨텍스트에서 재생을 시작/제어하기 위한 컨트롤러 */
+interface MusicController {
+  startGenre: (genre: MusicGenre) => void;
+  resume: () => void;
+  pauseAudio: () => void;
+}
+let controller: MusicController | null = null;
+export function getMusicController() {
+  return controller;
+}
+
 /** 헤더 음악 버튼 — 단순 idle/playing 분기 */
 export function MusicToggleButton() {
-  const { isPlaying, openMusicSheet, pause, play } = useMusicPlayer();
-  const audio = getGlobalAudio();
+  const { isPlaying, currentGenre, openMusicSheet } = useMusicPlayer();
 
   function handleClick() {
+    const ctrl = getMusicController();
     if (isPlaying) {
-      audio?.pause();
-      pause();
+      ctrl?.pauseAudio();
+    } else if (ctrl && currentGenre) {
+      ctrl.resume();
     } else {
-      // 이미 곡이 로드되어 있으면 재생, 없으면 시트 열기
-      if (audio?.src) {
-        audio.play().then(() => play()).catch(() => openMusicSheet());
-      } else {
-        openMusicSheet();
-      }
+      openMusicSheet();
     }
   }
 
@@ -81,71 +79,53 @@ export function MusicToggleButton() {
   );
 }
 
-/** 전역 audio 참조 — 외부에서 사용자 클릭 컨텍스트로 audio.play() 호출 */
-let globalAudioRef: HTMLAudioElement | null = null;
-export function getGlobalAudio() {
-  return globalAudioRef;
-}
-
 /** 미니 플레이어 (음악만) */
 export function MusicMiniPlayer() {
-  const audioRef = useRef<HTMLAudioElement>(null);
-  const progressRef = useRef<HTMLDivElement>(null);
-  const isLoadingTrack = useRef(false);
+  const aRef = useRef<HTMLAudioElement>(null);
+  const bRef = useRef<HTMLAudioElement>(null);
+  const activeIdx = useRef<0 | 1>(0);
+  const partIdx = useRef(0);
+  const preloadedFor = useRef<number | null>(null);
   const retryCount = useRef(0);
   const retryTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isBuffering = useRef(false);
-  /**
-   * 페이드 인/아웃 보조.
-   * - fadeTimer: 시작 페이드 인 setInterval 핸들 (진행 중 ≠ null)
-   * - 페이드 진행 중에는 useEffect[volume] 의 직접 audio.volume 동기화를 건너뛴다.
-   *   (사용자 슬라이더 변경은 다음 setInterval 콜백에서 자연스럽게 반영)
-   */
   const fadeTimer = useRef<ReturnType<typeof setInterval> | null>(null);
   const FADE_IN_MS = 500;
-  const FADE_OUT_S = 1.2; // 트랙 끝 기준 초
+  const PRELOAD_LEAD_S = 12; // 파트 끝 N초 전 다음 파트 프리로드
   const MAX_RETRIES = 3;
 
   const {
     isVisible,
     isPlaying,
-    currentTrack,
+    currentGenre,
     currentTime,
-    duration,
     volume,
     isVolumeOpen,
-    toggle,
-    next,
-    prev,
-    seekTo,
     setVolume,
     updateTime,
-    openTrackList,
     toggleVolume,
+    openMusicSheet,
     close,
   } = useMusicPlayer();
 
-  useEffect(() => {
-    initMusicData();
-  }, []);
+  const getActive = useCallback(
+    () => (activeIdx.current === 0 ? aRef.current : bRef.current),
+    [],
+  );
+  const getInactive = useCallback(
+    () => (activeIdx.current === 0 ? bRef.current : aRef.current),
+    [],
+  );
 
+  // 미니플레이어 높이 CSS 변수
   useEffect(() => {
-    globalAudioRef = audioRef.current;
-    return () => {
-      globalAudioRef = null;
-    };
-  }, []);
-
-  // 미니플레이어 높이 CSS 변수 (모바일 하단 패딩 계산용)
-  useEffect(() => {
-    const h = isVisible && currentTrack ? "60px" : "0px";
+    const h = isVisible && currentGenre ? "60px" : "0px";
     document.documentElement.style.setProperty("--music-player-height", h);
     return () => {
       document.documentElement.style.setProperty("--music-player-height", "0px");
     };
-  }, [isVisible, currentTrack]);
+  }, [isVisible, currentGenre]);
 
-  // 페이드 타이머 정리
   const clearFade = useCallback(() => {
     if (fadeTimer.current) {
       clearInterval(fadeTimer.current);
@@ -153,7 +133,6 @@ export function MusicMiniPlayer() {
     }
   }, []);
 
-  // 트랙 시작 페이드 인 — audio.volume 0 에서 사용자 설정값까지 점진 증가
   const startFadeIn = useCallback(
     (audio: HTMLAudioElement) => {
       clearFade();
@@ -174,12 +153,8 @@ export function MusicMiniPlayer() {
     [clearFade],
   );
 
-  // unmount 시 타이머 정리
-  useEffect(() => {
-    return () => clearFade();
-  }, [clearFade]);
+  useEffect(() => () => clearFade(), [clearFade]);
 
-  // 안전한 play 호출 (재시도 포함)
   const safePlay = useCallback((audio: HTMLAudioElement) => {
     audio.play().catch((err: DOMException) => {
       if (err.name === "NotAllowedError") {
@@ -190,155 +165,216 @@ export function MusicMiniPlayer() {
         retryCount.current += 1;
         const delay = 1000 * Math.pow(2, retryCount.current - 1);
         retryTimer.current = setTimeout(() => {
-          const state = useMusicPlayer.getState();
-          if (state.isPlaying && audio === audioRef.current) {
+          if (useMusicPlayer.getState().isPlaying && audio === getActive()) {
             safePlay(audio);
           }
         }, delay);
       } else {
         retryCount.current = 0;
-        useMusicPlayer.getState().next();
+        useMusicPlayer.getState().pause();
       }
     });
-  }, []);
+  }, [getActive]);
 
-  // 재생/정지 동기화
+  /** 장르 전체 타임라인 globalT 위치부터 재생 시작 (현재 활성 엘리먼트 사용) */
+  const beginAt = useCallback(
+    (genre: MusicGenre, globalT: number, fade: boolean) => {
+      const audio = getActive();
+      if (!audio) return;
+      clearFade();
+      const inactive = getInactive();
+      inactive?.pause();
+      preloadedFor.current = null;
+      retryCount.current = 0;
+
+      const pIdx = findPartIndexAt(genre.parts, globalT);
+      partIdx.current = pIdx;
+      const part = genre.parts[pIdx];
+      const offset = Math.max(0, globalT - part.start);
+
+      audio.loop = false;
+      audio.volume = 0;
+      audio.src = part.url;
+      audio.play().catch(() => {}); // 사용자 제스처 내 호출 — autoplay 정책
+
+      const onMeta = () => {
+        audio.removeEventListener("loadedmetadata", onMeta);
+        if (offset > 0 && Number.isFinite(audio.duration)) {
+          audio.currentTime = Math.min(offset, Math.max(0, audio.duration - 0.3));
+        }
+        if (useMusicPlayer.getState().isPlaying) {
+          if (fade) startFadeIn(audio);
+          else audio.volume = useMusicPlayer.getState().volume;
+          safePlay(audio);
+        }
+      };
+      audio.addEventListener("loadedmetadata", onMeta);
+    },
+    [getActive, getInactive, clearFade, startFadeIn, safePlay],
+  );
+
+  // 컨트롤러 등록 (사용자 제스처용)
   useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-    if (isLoadingTrack.current && isPlaying) return;
-    if (isPlaying && !audio.paused) return;
-    if (!isPlaying && audio.paused) return;
-    if (isPlaying) safePlay(audio);
-    else audio.pause();
-  }, [isPlaying, safePlay]);
-
-  // 트랙 변경 시 src 업데이트 + 페이드 인
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio || !currentTrack) return;
-
-    // 시트(MusicOnlySheet.handlePlay)가 이미 src 설정 + audio.play() 호출한 경우.
-    // useEffect 가 currentTrack id 변경으로 트리거되었지만 src 는 그대로.
-    // → 페이드 인만 적용 (src 재설정·load·canplay 대기 불필요).
-    if (audio.src.endsWith(currentTrack.sourceUrl)) {
-      if (useMusicPlayer.getState().isPlaying) startFadeIn(audio);
-      return;
-    }
-
-    isLoadingTrack.current = true;
-    retryCount.current = 0;
-    if (retryTimer.current) {
-      clearTimeout(retryTimer.current);
-      retryTimer.current = null;
-    }
-
-    const onCanPlay = () => {
-      isLoadingTrack.current = false;
-      audio.removeEventListener("canplay", onCanPlay);
-      if (useMusicPlayer.getState().isPlaying) {
-        startFadeIn(audio);
-        safePlay(audio);
-      }
+    controller = {
+      startGenre: (genre) => {
+        useMusicPlayer.getState().selectGenre(genre);
+        beginAt(genre, useMusicPlayer.getState().startAt, true);
+      },
+      resume: () => {
+        const audio = getActive();
+        const genre = useMusicPlayer.getState().currentGenre;
+        if (!audio || !genre) return;
+        if (!audio.src) {
+          beginAt(genre, useMusicPlayer.getState().startAt, true);
+          return;
+        }
+        audio.play().then(() => useMusicPlayer.getState().play()).catch(() => {});
+      },
+      pauseAudio: () => {
+        getActive()?.pause();
+        useMusicPlayer.getState().pause();
+      },
     };
-
-    audio.addEventListener("canplay", onCanPlay);
-    audio.src = currentTrack.sourceUrl;
-    audio.load();
-
     return () => {
-      audio.removeEventListener("canplay", onCanPlay);
+      controller = null;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentTrack?.id, safePlay, startFadeIn]);
+  }, [beginAt, getActive]);
 
-  // 볼륨 동기화 — 페이드 진행 중에는 직접 변경 생략(다음 setInterval 콜백에서 반영)
+  // 재생/정지 동기화 (활성 엘리먼트)
   useEffect(() => {
-    const audio = audioRef.current;
-    if (audio && !fadeTimer.current) audio.volume = volume;
+    const audio = getActive();
+    if (!audio) return;
+    if (isPlaying && audio.paused && audio.src) safePlay(audio);
+    else if (!isPlaying && !audio.paused) audio.pause();
+  }, [isPlaying, safePlay, getActive]);
+
+  // 볼륨 동기화 — 양쪽 엘리먼트(페이드 중 제외)
+  useEffect(() => {
+    if (fadeTimer.current) return;
+    if (aRef.current) aRef.current.volume = volume;
+    if (bRef.current) bRef.current.volume = volume;
   }, [volume]);
 
-  // 시킹 동기화
-  const lastSeek = useRef(0);
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-    if (Math.abs(currentTime - lastSeek.current) > 1) {
-      if (Math.abs(audio.currentTime - currentTime) > 2) {
-        audio.currentTime = currentTime;
-      }
-    }
-    lastSeek.current = currentTime;
-  }, [currentTime]);
-
-  const handleTimeUpdate = useCallback(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-    lastSeek.current = audio.currentTime;
-    updateTime(audio.currentTime, audio.duration || 0);
-
-    // 트랙 끝 페이드 아웃 — 페이드 인이 진행 중이면 건너뜀
-    if (!fadeTimer.current && audio.duration > 3) {
-      const remaining = audio.duration - audio.currentTime;
-      if (remaining > 0 && remaining < FADE_OUT_S) {
-        const target = useMusicPlayer.getState().volume;
-        audio.volume = Math.max(0, target * (remaining / FADE_OUT_S));
-      }
-    }
-  }, [updateTime]);
-
-  const handleEnded = useCallback(() => {
-    // 페이드 아웃 후 다음 트랙 진입 — 페이드 인이 0 으로 다시 리셋해주지만
-    // canplay 대기 사이에 무음으로 들리지 않도록 사용자 볼륨으로 잠시 복원.
-    const audio = audioRef.current;
-    if (audio) audio.volume = useMusicPlayer.getState().volume;
-    next();
-  }, [next]);
-
-  const handleError = useCallback(() => {
-    isLoadingTrack.current = false;
-    const state = useMusicPlayer.getState();
-    if (!state.isPlaying) return;
-    if (retryCount.current < MAX_RETRIES) {
-      retryCount.current += 1;
-      const delay = 1000 * Math.pow(2, retryCount.current - 1);
-      retryTimer.current = setTimeout(() => {
-        const audio = audioRef.current;
-        const s = useMusicPlayer.getState();
-        if (audio && s.isPlaying && s.currentTrack) {
-          audio.load();
-          audio.addEventListener("canplay", function onRetry() {
-            audio.removeEventListener("canplay", onRetry);
-            if (useMusicPlayer.getState().isPlaying) safePlay(audio);
-          });
+  /** 파트 끝 근처에서 다음 파트 프리로드 (이중 버퍼) */
+  const maybePreloadNext = useCallback((audio: HTMLAudioElement) => {
+    const genre = useMusicPlayer.getState().currentGenre;
+    if (!genre || genre.parts.length < 2) return;
+    if (!Number.isFinite(audio.duration)) return;
+    const remaining = audio.duration - audio.currentTime;
+    if (remaining > 0 && remaining < PRELOAD_LEAD_S) {
+      const nextPart = (partIdx.current + 1) % genre.parts.length;
+      if (preloadedFor.current !== nextPart) {
+        const inactive = getInactive();
+        if (inactive) {
+          inactive.src = genre.parts[nextPart].url;
+          inactive.load();
+          preloadedFor.current = nextPart;
         }
-      }, delay);
-    } else {
-      retryCount.current = 0;
-      state.next();
+      }
     }
-  }, [safePlay]);
+  }, [getInactive]);
+
+  const handleTimeUpdate = useCallback(
+    (e: React.SyntheticEvent<HTMLAudioElement>) => {
+      const audio = e.currentTarget;
+      if (audio !== getActive()) return;
+      const genre = useMusicPlayer.getState().currentGenre;
+      if (!genre) return;
+      const part = genre.parts[partIdx.current];
+      if (!part) return;
+      updateTime(part.start + audio.currentTime, genre.durationSeconds);
+      maybePreloadNext(audio);
+    },
+    [getActive, updateTime, maybePreloadNext],
+  );
+
+  // 파트 끝 → 다음 파트로 끊김 없이 전환 (loop 순환)
+  const handleEnded = useCallback(
+    (e: React.SyntheticEvent<HTMLAudioElement>) => {
+      const ended = e.currentTarget;
+      if (ended !== getActive()) return;
+      const genre = useMusicPlayer.getState().currentGenre;
+      if (!genre) return;
+      const nextPart = (partIdx.current + 1) % genre.parts.length;
+      const vol = useMusicPlayer.getState().volume;
+      const inactive = getInactive();
+
+      if (inactive && preloadedFor.current === nextPart && inactive.readyState >= 2) {
+        // 프리로드 완료 → 즉시 전환(끊김 최소)
+        try { inactive.currentTime = 0; } catch { /* noop */ }
+        inactive.volume = vol;
+        inactive.play().catch(() => {});
+        ended.pause();
+        activeIdx.current = activeIdx.current === 0 ? 1 : 0;
+        partIdx.current = nextPart;
+        preloadedFor.current = null;
+      } else {
+        // 폴백: 활성 엘리먼트에 다음 파트 로드
+        partIdx.current = nextPart;
+        const audio = getActive();
+        if (!audio) return;
+        audio.src = genre.parts[nextPart].url;
+        audio.volume = vol;
+        const onCp = () => {
+          audio.removeEventListener("canplay", onCp);
+          if (useMusicPlayer.getState().isPlaying) safePlay(audio);
+        };
+        audio.addEventListener("canplay", onCp);
+        audio.load();
+      }
+    },
+    [getActive, getInactive, safePlay],
+  );
+
+  const handleError = useCallback(
+    (e: React.SyntheticEvent<HTMLAudioElement>) => {
+      const audio = e.currentTarget;
+      if (audio !== getActive()) return;
+      const state = useMusicPlayer.getState();
+      if (!state.isPlaying) return;
+      if (retryCount.current < MAX_RETRIES) {
+        retryCount.current += 1;
+        const delay = 1000 * Math.pow(2, retryCount.current - 1);
+        retryTimer.current = setTimeout(() => {
+          if (useMusicPlayer.getState().isPlaying && audio === getActive()) {
+            audio.load();
+            audio.addEventListener("canplay", function onRetry() {
+              audio.removeEventListener("canplay", onRetry);
+              if (useMusicPlayer.getState().isPlaying) safePlay(audio);
+            });
+          }
+        }, delay);
+      } else {
+        retryCount.current = 0;
+        state.pause();
+      }
+    },
+    [getActive, safePlay],
+  );
 
   // 버퍼링 감지
   useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
+    const audios = [aRef.current, bRef.current].filter(Boolean) as HTMLAudioElement[];
     function handleWaiting() { isBuffering.current = true; }
     function handlePlaying() { isBuffering.current = false; retryCount.current = 0; }
-    audio.addEventListener("waiting", handleWaiting);
-    audio.addEventListener("playing", handlePlaying);
+    audios.forEach((a) => {
+      a.addEventListener("waiting", handleWaiting);
+      a.addEventListener("playing", handlePlaying);
+    });
     return () => {
-      audio.removeEventListener("waiting", handleWaiting);
-      audio.removeEventListener("playing", handlePlaying);
+      audios.forEach((a) => {
+        a.removeEventListener("waiting", handleWaiting);
+        a.removeEventListener("playing", handlePlaying);
+      });
     };
   }, []);
 
-  // 네트워크 복구
+  // 네트워크 복구 + 모바일 백그라운드 복귀
   useEffect(() => {
     function recoverPlayback() {
-      const audio = audioRef.current;
+      const audio = getActive();
       const state = useMusicPlayer.getState();
-      if (!audio || !state.isPlaying || !state.currentTrack) return;
+      if (!audio || !state.isPlaying || !state.currentGenre) return;
       if (audio.paused || isBuffering.current) {
         const savedTime = audio.currentTime;
         retryCount.current = 0;
@@ -346,101 +382,70 @@ export function MusicMiniPlayer() {
         audio.load();
         audio.addEventListener("canplay", function onRecover() {
           audio.removeEventListener("canplay", onRecover);
-          if (savedTime > 0) audio.currentTime = savedTime;
+          if (savedTime > 0) {
+            try { audio.currentTime = savedTime; } catch { /* noop */ }
+          }
           if (useMusicPlayer.getState().isPlaying) safePlay(audio);
         });
       }
     }
     function handleOnline() { recoverPlayback(); }
     function handleStalled() {
-      const audio = audioRef.current;
       const state = useMusicPlayer.getState();
-      if (!audio || !state.isPlaying) return;
+      if (!state.isPlaying) return;
       isBuffering.current = true;
       retryTimer.current = setTimeout(() => recoverPlayback(), 2000);
     }
     function handleConnectionChange() {
-      const state = useMusicPlayer.getState();
-      if (!state.isPlaying) return;
+      if (!useMusicPlayer.getState().isPlaying) return;
       retryTimer.current = setTimeout(() => recoverPlayback(), 1000);
     }
-    const audio = audioRef.current;
+    function handleVisibility() {
+      if (document.visibilityState !== "visible") return;
+      const audio = getActive();
+      const state = useMusicPlayer.getState();
+      if (!audio || !state.isPlaying || !state.currentGenre) return;
+      if (audio.paused || isBuffering.current) {
+        audio.play().catch(() => recoverPlayback());
+      }
+    }
+    const audios = [aRef.current, bRef.current].filter(Boolean) as HTMLAudioElement[];
     window.addEventListener("online", handleOnline);
-    audio?.addEventListener("stalled", handleStalled);
+    audios.forEach((a) => a.addEventListener("stalled", handleStalled));
+    document.addEventListener("visibilitychange", handleVisibility);
     const connection = (navigator as NavigatorWithConnection).connection;
     connection?.addEventListener("change", handleConnectionChange);
     return () => {
       window.removeEventListener("online", handleOnline);
-      audio?.removeEventListener("stalled", handleStalled);
+      audios.forEach((a) => a.removeEventListener("stalled", handleStalled));
+      document.removeEventListener("visibilitychange", handleVisibility);
       connection?.removeEventListener("change", handleConnectionChange);
       if (retryTimer.current) {
         clearTimeout(retryTimer.current);
         retryTimer.current = null;
       }
     };
-  }, [safePlay]);
+  }, [safePlay, getActive]);
 
-  // 모바일 백그라운드 복귀
-  useEffect(() => {
-    function handleVisibilityChange() {
-      if (document.visibilityState !== "visible") return;
-      const audio = audioRef.current;
-      const state = useMusicPlayer.getState();
-      if (!audio || !state.isPlaying || !state.currentTrack) return;
-      if (audio.paused || isBuffering.current) {
-        const savedTime = audio.currentTime;
-        retryCount.current = 0;
-        isBuffering.current = false;
-        audio.play().catch(() => {
-          audio.load();
-          audio.addEventListener("canplay", function onRecover() {
-            audio.removeEventListener("canplay", onRecover);
-            if (savedTime > 0) audio.currentTime = savedTime;
-            if (useMusicPlayer.getState().isPlaying) safePlay(audio);
-          });
-        });
-      }
-    }
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
-  }, [safePlay]);
+  // 현재 곡 (큐포인트 계산 — 장르 전체 타임라인 기준)
+  const currentCue = currentGenre ? findCueAt(currentGenre.cues, currentTime) : null;
 
-  // Media Session API (단순화 — timer 의존 제거)
+  // Media Session API
   useEffect(() => {
-    if (!currentTrack || !("mediaSession" in navigator)) return;
-    const moodLabel = getTrackMoodLabel(currentTrack);
+    if (!currentGenre || !("mediaSession" in navigator)) return;
     navigator.mediaSession.metadata = new MediaMetadata({
-      title: currentTrack.title,
-      artist: currentTrack.composer,
-      album: `ReadingTree - ${moodLabel.name}`,
+      title: currentCue?.title ?? currentGenre.name,
+      artist: currentCue?.composer ?? "ReadingTree",
+      album: `ReadingTree - ${currentGenre.name}`,
     });
-    navigator.mediaSession.setActionHandler("play", () => useMusicPlayer.getState().play());
-    navigator.mediaSession.setActionHandler("pause", () => useMusicPlayer.getState().pause());
-    navigator.mediaSession.setActionHandler("previoustrack", () => useMusicPlayer.getState().prev());
-    navigator.mediaSession.setActionHandler("nexttrack", () => useMusicPlayer.getState().next());
-  }, [currentTrack]);
-
-  function handleProgressClick(e: React.MouseEvent<HTMLDivElement>) {
-    const bar = progressRef.current;
-    const audio = audioRef.current;
-    if (!bar || !audio || !audio.duration) return;
-    const rect = bar.getBoundingClientRect();
-    const pct = (e.clientX - rect.left) / rect.width;
-    audio.currentTime = pct * audio.duration;
-    seekTo(pct * audio.duration);
-  }
+    navigator.mediaSession.setActionHandler("play", () => getMusicController()?.resume());
+    navigator.mediaSession.setActionHandler("pause", () => getMusicController()?.pauseAudio());
+  }, [currentGenre, currentCue?.title, currentCue?.composer]);
 
   function handlePlayToggle() {
-    const audio = audioRef.current;
-    if (!audio) { toggle(); return; }
-    if (isPlaying) {
-      audio.pause();
-      useMusicPlayer.getState().pause();
-    } else {
-      audio.play().then(() => {
-        useMusicPlayer.getState().play();
-      }).catch(() => {});
-    }
+    const ctrl = getMusicController();
+    if (isPlaying) ctrl?.pauseAudio();
+    else ctrl?.resume();
   }
 
   function handleVolumeChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -448,28 +453,36 @@ export function MusicMiniPlayer() {
   }
 
   function handleClose() {
-    const audio = audioRef.current;
-    audio?.pause();
+    aRef.current?.pause();
+    bRef.current?.pause();
     close();
   }
 
-  // audio 엘리먼트는 항상 렌더링 (autoplay 정책 우회 위해)
-  if (!isVisible || !currentTrack) {
+  const audioEls = (
+    <>
+      <audio ref={aRef} preload="auto" onTimeUpdate={handleTimeUpdate} onEnded={handleEnded} onError={handleError} />
+      <audio ref={bRef} preload="auto" onTimeUpdate={handleTimeUpdate} onEnded={handleEnded} onError={handleError} />
+    </>
+  );
+
+  if (!isVisible || !currentGenre) {
     return (
       <>
-        <audio ref={audioRef} preload="metadata" onTimeUpdate={handleTimeUpdate} onEnded={handleEnded} onError={handleError} />
+        {audioEls}
         <MusicOnlySheet />
-        <TrackListSheet />
       </>
     );
   }
 
-  const catInfo = getTrackMoodLabel(currentTrack);
-  const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
+  // 현재 곡 내 진행률 (비대화형 표시용)
+  const songProgress =
+    currentCue && currentCue.duration > 0
+      ? Math.max(0, Math.min(100, ((currentTime - currentCue.start) / currentCue.duration) * 100))
+      : 0;
 
   return (
     <>
-      <audio ref={audioRef} preload="metadata" onTimeUpdate={handleTimeUpdate} onEnded={handleEnded} onError={handleError} />
+      {audioEls}
 
       <div
         className={cn(
@@ -480,46 +493,35 @@ export function MusicMiniPlayer() {
           "bg-background/98 backdrop-blur-md",
         )}
       >
-        {/* 프로그레스 바 (드래그 가능) */}
-        <div
-          ref={progressRef}
-          onClick={handleProgressClick}
-          className="h-1 bg-muted transition-all cursor-pointer hover:h-1.5"
-        >
+        {/* 현재 곡 진행바 (비대화형) */}
+        <div className="h-1 bg-muted">
           <div
             className="h-full rounded-r-full bg-primary transition-[width] duration-1000"
-            style={{ width: `${progress}%` }}
+            style={{ width: `${songProgress}%` }}
           />
         </div>
 
         {/* 메인 컨텐츠 */}
         <div className="flex items-center gap-2 px-2.5 py-1.5 sm:px-4 sm:py-2">
           <button
-            onClick={openTrackList}
-            className="w-10 h-10 shrink-0 rounded-xl bg-gradient-to-br from-primary/10 to-violet-500/10 flex items-center justify-center ring-1 ring-primary/10 shadow-sm hover:shadow-md transition-shadow"
-            title="재생 목록"
+            onClick={openMusicSheet}
+            className="flex min-w-0 flex-1 items-center gap-2 text-left"
+            title="음악 종류 변경"
           >
-            <Headphones className="w-5 h-5 text-primary" />
-          </button>
-
-          <button onClick={openTrackList} className="min-w-0 flex-1 text-left">
-            <p className="text-[13px] font-medium truncate leading-tight">
-              {currentTrack.composer} — {currentTrack.title}
-            </p>
-            <p className="text-[11px] text-muted-foreground truncate mt-0.5 leading-tight">
-              {catInfo?.emoji} {catInfo?.name} · {formatTime(currentTime)}/{formatTime(duration)}
-            </p>
+            <span className="w-10 h-10 shrink-0 rounded-xl bg-gradient-to-br from-primary/10 to-violet-500/10 flex items-center justify-center ring-1 ring-primary/10 shadow-sm">
+              <span className="text-lg" aria-hidden>{currentGenre.emoji}</span>
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-[13px] font-medium truncate leading-tight">
+                {currentCue ? `${currentCue.composer} — ${currentCue.title}` : currentGenre.name}
+              </span>
+              <span className="block text-[11px] text-muted-foreground truncate mt-0.5 leading-tight">
+                {currentGenre.emoji} {currentGenre.name} · 종류 변경
+              </span>
+            </span>
           </button>
 
           <div className="flex items-center gap-px shrink-0">
-            <button
-              onClick={prev}
-              className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
-              title="이전 곡"
-            >
-              <SkipBack className="w-3.5 h-3.5" />
-            </button>
-
             <button
               onClick={handlePlayToggle}
               className={cn(
@@ -533,14 +535,6 @@ export function MusicMiniPlayer() {
             </button>
 
             <button
-              onClick={next}
-              className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
-              title="다음 곡"
-            >
-              <SkipForward className="w-3.5 h-3.5" />
-            </button>
-
-            <button
               onClick={toggleVolume}
               className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
               title="음량 조절"
@@ -550,14 +544,6 @@ export function MusicMiniPlayer() {
               ) : (
                 <Volume2 className="w-3.5 h-3.5 text-muted-foreground" />
               )}
-            </button>
-
-            <button
-              onClick={openTrackList}
-              className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
-              title="재생 목록"
-            >
-              <ListMusic className="w-3.5 h-3.5 text-muted-foreground" />
             </button>
 
             <button
@@ -599,7 +585,6 @@ export function MusicMiniPlayer() {
       </div>
 
       <MusicOnlySheet />
-      <TrackListSheet />
     </>
   );
 }

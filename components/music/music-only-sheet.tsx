@@ -1,19 +1,13 @@
 "use client";
 
 /**
- * MusicOnlySheet (분리 단계 B — 2026-05-05)
+ * MusicOnlySheet (단일파일 병합 재구성 — 2026-06-08)
  *
- * 사용자 결정: 음악과 기록 완전 분리. 음악 시트는 단순 — 플레이리스트 선택 + 재생/정지만.
- *
- * 폐기된 영역 (기존 TimerSheet에서):
- *   - 책 선택 (최근 3권 책 표지)
- *   - 시간 프리셋 + 즐겨찾기 + 직접 입력
- *   - "독서 시작" 버튼 → startTimer
- * → 모두 제거. 기록 시작은 RecordSheet에서만 처리.
+ * 클래식/재즈 2장르 카드 + 재생/정지만. 플레이리스트·곡목록·스킵 전부 제거.
+ * 장르 선택 시 병합된 단일 MP3 를 랜덤 위치에서 재생한다(끊김 없음).
  */
 
-import { useEffect, useMemo, useState } from "react";
-import { Music2, Pause, Play, Shuffle } from "lucide-react";
+import { Music2, Pause, Play } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -24,130 +18,32 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useMusicPlayer } from "@/hooks/use-music-player";
-import { getPlaylists, getThemeGroups, getPlaylistTracks } from "@/lib/music";
-import type { MusicTrack } from "@/types/music";
-import { getGlobalAudio } from "./music-mini-player";
-
-const LAST_PLAYLIST_KEY = "readingtree-last-playlist";
-/** 첫 셀("전체")의 sentinel 플레이리스트 ID — 모든 큐레이션 트랙 합집합 풀 */
-const ALL_PLAYLIST_ID = "all";
-
-function loadLastPlaylist(): string | null {
-  if (typeof window === "undefined") return null;
-  try {
-    return localStorage.getItem(LAST_PLAYLIST_KEY);
-  } catch {
-    return null;
-  }
-}
-
-function saveLastPlaylist(id: string | null) {
-  if (typeof window === "undefined") return;
-  try {
-    if (id === null) localStorage.removeItem(LAST_PLAYLIST_KEY);
-    else localStorage.setItem(LAST_PLAYLIST_KEY, id);
-  } catch {
-    // 무음
-  }
-}
+import { MUSIC_GENRES } from "@/lib/music";
+import type { MusicGenre } from "@/types/music";
+import { getMusicController } from "./music-mini-player";
 
 export function MusicOnlySheet() {
   const {
     isMusicSheetOpen,
     closeMusicSheet,
     isPlaying,
-    selectedPlaylistId,
-    pause,
-    loadPlaylist,
-    play,
+    currentGenre,
+    selectGenre,
   } = useMusicPlayer();
 
-  const playlists = getPlaylists();
-  const themeGroups = getThemeGroups();
-
-  // "전체" 풀 — 모든 큐레이션 플레이리스트의 trackIds 합집합 (중복 제거)
-  // 저품질 트랙(playlists.ts에서 이미 제외된 ID)은 자연스럽게 빠짐.
-  const allCuratedTracks = useMemo<MusicTrack[]>(() => {
-    const seen = new Set<string>();
-    const merged: MusicTrack[] = [];
-    for (const pl of playlists) {
-      for (const t of getPlaylistTracks(pl.id)) {
-        if (!seen.has(t.id)) {
-          seen.add(t.id);
-          merged.push(t);
-        }
-      }
-    }
-    return merged;
-  }, [playlists]);
-
-  // 첫 진입 기본값: "전체"(ALL_PLAYLIST_ID). 마지막 선택이 있으면 복원.
-  const [pickedId, setPickedId] = useState<string>(
-    selectedPlaylistId ?? loadLastPlaylist() ?? ALL_PLAYLIST_ID,
-  );
-  const [activeGenre, setActiveGenre] = useState<string | null>(null);
-
-  // 시트 열릴 때 prefill 동기
-  useEffect(() => {
-    if (isMusicSheetOpen) {
-      setPickedId(selectedPlaylistId ?? loadLastPlaylist() ?? ALL_PLAYLIST_ID);
-    }
-  }, [isMusicSheetOpen, selectedPlaylistId]);
-
-  // 첫 그룹 자동 선택 — "전체" 선택 시 첫 장르 그룹 표시
-  useEffect(() => {
-    if (!activeGenre && themeGroups.length > 0) {
-      const detected =
-        pickedId !== ALL_PLAYLIST_ID
-          ? themeGroups.find((g) => g.playlists.includes(pickedId))?.id
-          : undefined;
-      setActiveGenre(detected ?? themeGroups[0].id);
-    }
-  }, [activeGenre, themeGroups, pickedId]);
-
-  const genrePlaylists = activeGenre
-    ? themeGroups
-        .find((g) => g.id === activeGenre)
-        ?.playlists.map((pid) => playlists.find((p) => p.id === pid))
-        .filter((p): p is NonNullable<typeof p> => !!p) ?? []
-    : playlists;
-
-  const handlePlay = () => {
-    // "전체" — 모든 큐레이션 플레이리스트 합집합에서 랜덤 재생
-    const tracks =
-      pickedId === ALL_PLAYLIST_ID ? allCuratedTracks : getPlaylistTracks(pickedId);
-
-    if (tracks.length === 0) {
-      closeMusicSheet();
-      return;
-    }
-    const randomIdx = Math.floor(Math.random() * tracks.length);
-    const startTrack = tracks[randomIdx];
-
-    // 사용자 클릭 컨텍스트 — audio.play() 동기 호출 (autoplay 정책)
-    // 볼륨 0 으로 시작 → 컴포넌트의 startFadeIn 이 트랙 변경 useEffect 에서 인계받아 페이드 인.
-    const audio = getGlobalAudio();
-    if (audio && startTrack) {
-      audio.src = startTrack.sourceUrl;
-      audio.volume = 0;
-      audio.play().catch(() => {});
-    }
-
-    loadPlaylist(tracks, pickedId, randomIdx);
-    play();
-    saveLastPlaylist(pickedId);
+  const handlePlay = (genre: MusicGenre) => {
+    // 사용자 클릭 컨텍스트 — 컨트롤러가 랜덤 시작 위치부터 파트 로드 + play() 호출(autoplay 정책).
+    const ctrl = getMusicController();
+    if (ctrl) ctrl.startGenre(genre);
+    else selectGenre(genre); // 폴백 (미니플레이어 미마운트 시)
     closeMusicSheet();
   };
 
   const handleStop = () => {
-    const audio = getGlobalAudio();
-    audio?.pause();
-    pause();
+    getMusicController()?.pauseAudio();
     useMusicPlayer.getState().close();
     closeMusicSheet();
   };
-
-  const isAllSelected = pickedId === ALL_PLAYLIST_ID;
 
   return (
     <Sheet open={isMusicSheetOpen} onOpenChange={(open) => (open ? null : closeMusicSheet())}>
@@ -162,77 +58,41 @@ export function MusicOnlySheet() {
               배경음악
             </SheetTitle>
             <SheetDescription>
-              플레이리스트를 선택하고 재생하세요. 기록과는 별도로 동작합니다.
+              종류를 선택하면 끊김 없이 이어서 재생됩니다.
             </SheetDescription>
           </SheetHeader>
 
-          {/* 장르 탭 */}
-          {themeGroups.length > 1 && (
-            <div className="mb-3 flex gap-1.5">
-              {themeGroups.map((group) => {
-                const isActive = activeGenre === group.id;
-                return (
-                  <button
-                    key={group.id}
-                    type="button"
-                    onClick={() => setActiveGenre(group.id)}
-                    className={cn(
-                      "flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-all",
-                      isActive
-                        ? "bg-primary/10 text-primary ring-1 ring-primary/30"
-                        : "bg-muted/50 text-muted-foreground hover:bg-muted",
-                    )}
-                  >
-                    <span>{group.emoji}</span>
-                    <span>{group.name}</span>
-                  </button>
-                );
-              })}
-            </div>
-          )}
-
-          {/* 플레이리스트 그리드 — "전체"(랜덤 합집합) 첫 셀 + 장르별 8개 */}
-          <div className="mb-4 grid grid-cols-3 gap-2 sm:grid-cols-4">
-            <button
-              type="button"
-              onClick={() => setPickedId(ALL_PLAYLIST_ID)}
-              className={cn(
-                "flex flex-col items-center gap-0.5 rounded-xl px-1.5 py-2.5 text-center transition-all",
-                isAllSelected
-                  ? "bg-primary/10 text-primary ring-1 ring-primary/30"
-                  : "bg-muted/50 text-muted-foreground hover:bg-muted",
-              )}
-            >
-              <Shuffle className="h-4 w-4" />
-              <span className="text-[10px] font-semibold leading-tight">전체</span>
-              <span className="text-[9px] opacity-60">{allCuratedTracks.length}곡</span>
-            </button>
-
-            {genrePlaylists.map((pl) => {
-              const isSelected = pickedId === pl.id;
+          {/* 2장르 카드 */}
+          <div className="mb-4 grid grid-cols-2 gap-3">
+            {MUSIC_GENRES.map((genre) => {
+              const isActive = isPlaying && currentGenre?.id === genre.id;
               return (
                 <button
-                  key={pl.id}
+                  key={genre.id}
                   type="button"
-                  onClick={() => setPickedId(pl.id)}
+                  onClick={() => handlePlay(genre)}
                   className={cn(
-                    "flex flex-col items-center gap-0.5 rounded-xl px-1.5 py-2.5 text-center transition-all",
-                    isSelected
-                      ? "bg-primary/10 text-primary ring-1 ring-primary/30"
-                      : "bg-muted/50 text-muted-foreground hover:bg-muted",
+                    "flex flex-col items-center justify-center gap-2 rounded-2xl py-7 text-center transition-all",
+                    isActive
+                      ? "bg-emerald-500/10 text-emerald-700 ring-2 ring-emerald-500/40 dark:text-emerald-400"
+                      : "bg-muted/50 text-foreground hover:bg-muted ring-1 ring-border",
                   )}
                 >
-                  <span className="text-lg">{pl.emoji}</span>
-                  <span className="text-[10px] font-semibold leading-tight">{pl.name}</span>
-                  <span className="text-[9px] opacity-60">{pl.trackIds.length}곡</span>
+                  <span className="text-4xl">{genre.emoji}</span>
+                  <span className="text-sm font-semibold">{genre.name}</span>
+                  {isActive && (
+                    <span className="text-[11px] text-emerald-600 dark:text-emerald-400">
+                      재생 중
+                    </span>
+                  )}
                 </button>
               );
             })}
           </div>
 
-          {/* 액션 — 재생/정지 */}
-          <div className="flex gap-2 pt-2">
-            {isPlaying && (
+          {/* 정지 (재생 중일 때만) */}
+          {isPlaying && (
+            <div className="flex pt-1">
               <Button
                 type="button"
                 variant="outline"
@@ -242,20 +102,21 @@ export function MusicOnlySheet() {
                 <Pause className="mr-1 h-4 w-4" />
                 정지
               </Button>
-            )}
-            <Button
-              type="button"
-              onClick={handlePlay}
-              className="flex-1 bg-emerald-600 text-white hover:bg-emerald-700"
-            >
-              {isAllSelected ? (
-                <Shuffle className="mr-1 h-4 w-4" />
-              ) : (
+            </div>
+          )}
+
+          {!isPlaying && currentGenre && (
+            <div className="flex pt-1">
+              <Button
+                type="button"
+                onClick={() => handlePlay(currentGenre)}
+                className="flex-1 bg-emerald-600 text-white hover:bg-emerald-700"
+              >
                 <Play className="mr-1 h-4 w-4" />
-              )}
-              {isPlaying ? "다른 곡 재생" : isAllSelected ? "전체 랜덤 재생" : "재생"}
-            </Button>
-          </div>
+                {currentGenre.name} 다시 재생
+              </Button>
+            </div>
+          )}
         </div>
       </SheetContent>
     </Sheet>
