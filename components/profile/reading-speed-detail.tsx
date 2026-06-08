@@ -23,17 +23,24 @@ import {
   AlertTriangle,
   Clock,
   Sparkles,
+  SlidersHorizontal,
+  RotateCcw,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
   computeRobustPace,
   classifyPaceSessions,
   formatPacePerPage,
+  DEFAULT_PACE_CONSTANTS,
   type ExclusionReason,
 } from "@/lib/reading/pace";
 import { formatDuration } from "@/lib/utils/duration";
-import { updateReadingLogEntry, deleteProgressLog } from "@/app/actions/progress";
-import type { PaceSession } from "@/types/progress";
+import {
+  updateReadingLogEntry,
+  deleteProgressLog,
+  updateReadingSpeedGuide,
+} from "@/app/actions/progress";
+import type { PaceSession, ReadingSpeedGuide } from "@/types/progress";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -48,7 +55,13 @@ import {
 interface Props {
   initialPaced: PaceSession[];
   initialTimeOnly: PaceSession[];
+  initialGuide: ReadingSpeedGuide;
 }
+
+const DEFAULT_GUIDE: ReadingSpeedGuide = {
+  minSecPerPage: DEFAULT_PACE_CONSTANTS.minSecPerPage,
+  maxSecPerPage: DEFAULT_PACE_CONSTANTS.maxSecPerPage,
+};
 
 /** 세션 → computeRobustPace 입력 형태 */
 function toPaceLogs(sessions: PaceSession[]) {
@@ -70,9 +83,10 @@ const REASON_LABEL: Record<Exclude<ExclusionReason, "not_paced">, string> = {
   mad_outlier: "제외 · 이상치",
 };
 
-export function ReadingSpeedDetail({ initialPaced, initialTimeOnly }: Props) {
+export function ReadingSpeedDetail({ initialPaced, initialTimeOnly, initialGuide }: Props) {
   const [paced, setPaced] = useState<PaceSession[]>(initialPaced);
   const [timeOnly, setTimeOnly] = useState<PaceSession[]>(initialTimeOnly);
+  const [guide, setGuide] = useState<ReadingSpeedGuide>(initialGuide);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [isSaving, startSave] = useTransition();
@@ -80,12 +94,48 @@ export function ReadingSpeedDetail({ initialPaced, initialTimeOnly }: Props) {
 
   const [form, setForm] = useState({ start: 0, end: 0, min: 0, sec: 0 });
 
-  // 로버스트 전체 평균 — 낙관적 재계산
-  const robust = useMemo(() => computeRobustPace(toPaceLogs(paced)), [paced]);
+  // 가이드 범위 편집 — min은 초, max는 분 단위로 입력받음(사용자 친화)
+  const [guideEditing, setGuideEditing] = useState(false);
+  const [guideForm, setGuideForm] = useState({
+    minSec: initialGuide.minSecPerPage,
+    maxMin: Math.round(initialGuide.maxSecPerPage / 60),
+  });
+  const [isSavingGuide, startSaveGuide] = useTransition();
+
+  function saveGuide(next: ReadingSpeedGuide) {
+    startSaveGuide(async () => {
+      try {
+        const res = await updateReadingSpeedGuide(next);
+        setGuide(res.guide);
+        setGuideForm({ minSec: res.guide.minSecPerPage, maxMin: Math.round(res.guide.maxSecPerPage / 60) });
+        setGuideEditing(false);
+        toast.success("속도 가이드 범위를 저장했어요.");
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "저장에 실패했어요.");
+      }
+    });
+  }
+
+  function submitGuide() {
+    const minSec = Math.round(guideForm.minSec);
+    const maxSec = Math.round(guideForm.maxMin) * 60;
+    if (maxSec <= minSec) {
+      toast.error("느린 한계는 빠른 한계보다 커야 해요.");
+      return;
+    }
+    saveGuide({ minSecPerPage: minSec, maxSecPerPage: maxSec });
+  }
+
+  const isDefaultGuide =
+    guide.minSecPerPage === DEFAULT_GUIDE.minSecPerPage &&
+    guide.maxSecPerPage === DEFAULT_GUIDE.maxSecPerPage;
+
+  // 로버스트 전체 평균 — 사용자 가이드 범위로 낙관적 재계산
+  const robust = useMemo(() => computeRobustPace(toPaceLogs(paced), guide), [paced, guide]);
   const overallPace = robust.pacePerPageSeconds;
 
   // paced 세션별 제외 사유(헤드라인과 동일 기준)
-  const reasons = useMemo(() => classifyPaceSessions(toPaceLogs(paced)), [paced]);
+  const reasons = useMemo(() => classifyPaceSessions(toPaceLogs(paced), guide), [paced, guide]);
   const reasonById = useMemo(() => {
     const m = new Map<string, ExclusionReason | null>();
     paced.forEach((s, i) => m.set(s.id, reasons[i]));
@@ -105,9 +155,9 @@ export function ReadingSpeedDetail({ initialPaced, initialTimeOnly }: Props) {
     return Array.from(map.entries()).map(([userBookId, g]) => ({
       userBookId,
       ...g,
-      pace: computeRobustPace(toPaceLogs(g.items)),
+      pace: computeRobustPace(toPaceLogs(g.items), guide),
     }));
-  }, [paced]);
+  }, [paced, guide]);
 
   function beginEdit(s: PaceSession, prefillEndFromEstimate = false) {
     let end = s.endPage;
@@ -307,6 +357,109 @@ export function ReadingSpeedDetail({ initialPaced, initialTimeOnly }: Props) {
             {excludedCount > 0 && timeOnly.length > 0 && " · "}
             {timeOnly.length > 0 && <span>시간만 기록 {timeOnly.length}개</span>}
           </p>
+        )}
+      </div>
+
+      {/* 속도 가이드 범위 — 이상치 제외 기준을 사용자가 지정 */}
+      <div className="rounded-2xl border border-border bg-card p-4">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-1.5">
+            <SlidersHorizontal className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm font-semibold">속도 가이드 범위</span>
+          </div>
+          {!guideEditing && (
+            <button
+              type="button"
+              onClick={() => setGuideEditing(true)}
+              className="inline-flex items-center gap-1 rounded-full border border-border px-2.5 py-1 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-muted"
+            >
+              <Pencil className="h-3 w-3" />
+              수정
+            </button>
+          )}
+        </div>
+
+        {!guideEditing ? (
+          <>
+            <div className="mt-3 flex items-center gap-2">
+              <span className="rounded-lg bg-muted px-2.5 py-1 text-sm font-semibold tabular-nums">
+                {formatPacePerPage(guide.minSecPerPage)}
+              </span>
+              <span className="text-xs text-muted-foreground">~</span>
+              <span className="rounded-lg bg-muted px-2.5 py-1 text-sm font-semibold tabular-nums">
+                {formatPacePerPage(guide.maxSecPerPage)}
+              </span>
+              <span className="ml-1 text-[11px] text-muted-foreground">/ 페이지</span>
+              {isDefaultGuide && (
+                <span className="ml-auto text-[10px] text-muted-foreground/60">기본값</span>
+              )}
+            </div>
+            <p className="mt-2 text-[11px] text-muted-foreground">
+              이 범위(페이지당 시간)를 벗어난 기록은 평균에서 자동 제외돼요. 평소보다 아주 빠르거나
+              (오기록), 타이머를 켜둔 듯 과도하게 느린 기록을 걸러 줍니다.
+            </p>
+          </>
+        ) : (
+          <div className="mt-3">
+            <div className="grid grid-cols-2 gap-3">
+              <label className="text-[11px] text-muted-foreground">
+                가장 빠른 한계 · 초/페이지
+                <input
+                  type="number"
+                  min={1}
+                  value={guideForm.minSec}
+                  onChange={(e) => setGuideForm((f) => ({ ...f, minSec: Number(e.target.value) }))}
+                  className="mt-1 w-full rounded-lg border bg-background px-2.5 py-1.5 text-sm tabular-nums"
+                />
+                <span className="mt-1 block text-[10px] text-muted-foreground/70">이보다 빠르면 제외</span>
+              </label>
+              <label className="text-[11px] text-muted-foreground">
+                가장 느린 한계 · 분/페이지
+                <input
+                  type="number"
+                  min={1}
+                  value={guideForm.maxMin}
+                  onChange={(e) => setGuideForm((f) => ({ ...f, maxMin: Number(e.target.value) }))}
+                  className="mt-1 w-full rounded-lg border bg-background px-2.5 py-1.5 text-sm tabular-nums"
+                />
+                <span className="mt-1 block text-[10px] text-muted-foreground/70">이보다 느리면 제외</span>
+              </label>
+            </div>
+            <div className="mt-3 flex items-center justify-between gap-2">
+              <button
+                type="button"
+                onClick={() => saveGuide(DEFAULT_GUIDE)}
+                disabled={isSavingGuide || isDefaultGuide}
+                className="inline-flex items-center gap-1 rounded-full px-2.5 py-1.5 text-[11px] text-muted-foreground hover:bg-muted disabled:opacity-40"
+              >
+                <RotateCcw className="h-3 w-3" />
+                기본값으로
+              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setGuideEditing(false);
+                    setGuideForm({ minSec: guide.minSecPerPage, maxMin: Math.round(guide.maxSecPerPage / 60) });
+                  }}
+                  disabled={isSavingGuide}
+                  className="inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-xs text-muted-foreground hover:bg-muted"
+                >
+                  <X className="h-3.5 w-3.5" />
+                  취소
+                </button>
+                <button
+                  type="button"
+                  onClick={submitGuide}
+                  disabled={isSavingGuide}
+                  className="inline-flex items-center gap-1 rounded-full bg-rose-600 px-3.5 py-1.5 text-xs font-medium text-white hover:bg-rose-700 disabled:opacity-60"
+                >
+                  {isSavingGuide ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+                  저장
+                </button>
+              </div>
+            </div>
+          </div>
         )}
       </div>
 

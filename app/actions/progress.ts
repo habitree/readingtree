@@ -16,9 +16,10 @@ import type {
   UserReadingTimeStats,
   PaceSession,
   PaceSessionsResult,
+  ReadingSpeedGuide,
 } from "@/types/progress";
 import { READTREE_BOOK_ID } from "@/lib/constants/readtree";
-import { computeRobustPace } from "@/lib/reading/pace";
+import { computeRobustPace, DEFAULT_PACE_CONSTANTS } from "@/lib/reading/pace";
 import { earnPoints } from "./points";
 import { updateBookProgress } from "./books/progress";
 
@@ -500,6 +501,103 @@ export async function saveReadingSession(
   return { success: true, logId: log.id };
 }
 
+// =============================================================================
+// 독서 속도 가이드 — 이상치 제외 범위(페이지당 최소~최대 초) 사용자 지정
+// =============================================================================
+
+const SPEED_GUIDE_MIN_FLOOR = 1; // 최소 1초/페이지
+const SPEED_GUIDE_MAX_CEIL = 4 * 60 * 60; // 최대 4시간/페이지
+
+/** users.reading_speed_guide(JSONB) → 검증된 범위. NULL/이상값이면 앱 기본값. */
+function parseGuide(raw: unknown): ReadingSpeedGuide {
+  const guide: ReadingSpeedGuide = {
+    minSecPerPage: DEFAULT_PACE_CONSTANTS.minSecPerPage,
+    maxSecPerPage: DEFAULT_PACE_CONSTANTS.maxSecPerPage,
+  };
+  if (raw && typeof raw === "object") {
+    const o = raw as Record<string, unknown>;
+    if (typeof o.minSecPerPage === "number" && o.minSecPerPage > 0) {
+      guide.minSecPerPage = o.minSecPerPage;
+    }
+    if (typeof o.maxSecPerPage === "number" && o.maxSecPerPage > 0) {
+      guide.maxSecPerPage = o.maxSecPerPage;
+    }
+  }
+  // 안전: max는 항상 min보다 커야 함
+  if (guide.maxSecPerPage <= guide.minSecPerPage) {
+    guide.maxSecPerPage = DEFAULT_PACE_CONSTANTS.maxSecPerPage;
+    guide.minSecPerPage = DEFAULT_PACE_CONSTANTS.minSecPerPage;
+  }
+  return guide;
+}
+
+/** 현재 사용자의 속도 가이드 범위 조회(미설정 시 기본값). */
+export async function getReadingSpeedGuide(user?: User | null): Promise<ReadingSpeedGuide> {
+  const supabase = await createServerSupabaseClient();
+
+  let currentUser = user;
+  if (!currentUser) {
+    const {
+      data: { user: fetched },
+      error: authError,
+    } = await supabase.auth.getUser();
+    if (authError || !fetched) throw new Error("로그인이 필요합니다.");
+    currentUser = fetched;
+  }
+
+  const { data } = await supabase
+    .from("users")
+    .select("reading_speed_guide")
+    .eq("id", currentUser.id)
+    .maybeSingle();
+
+  return parseGuide(data?.reading_speed_guide);
+}
+
+/** 속도 가이드 범위 저장. 검증·클램프 후 JSONB로 기록. */
+export async function updateReadingSpeedGuide(
+  input: ReadingSpeedGuide,
+): Promise<{ success: true; guide: ReadingSpeedGuide }> {
+  const supabase = await createServerSupabaseClient();
+
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+  if (authError || !user) throw new Error("로그인이 필요합니다.");
+
+  const min = Math.round(input.minSecPerPage);
+  const max = Math.round(input.maxSecPerPage);
+  if (!Number.isFinite(min) || !Number.isFinite(max)) {
+    throw new Error("올바른 숫자를 입력해 주세요.");
+  }
+  if (min < SPEED_GUIDE_MIN_FLOOR) {
+    throw new Error(`최소 한계는 ${SPEED_GUIDE_MIN_FLOOR}초 이상이어야 해요.`);
+  }
+  if (max > SPEED_GUIDE_MAX_CEIL) {
+    throw new Error("최대 한계는 4시간을 넘을 수 없어요.");
+  }
+  if (max <= min) {
+    throw new Error("최대 한계는 최소 한계보다 커야 해요.");
+  }
+
+  const guide: ReadingSpeedGuide = { minSecPerPage: min, maxSecPerPage: max };
+
+  const { error } = await supabase
+    .from("users")
+    .update({ reading_speed_guide: guide })
+    .eq("id", user.id);
+
+  if (error) throw new Error(sanitizeErrorMessage(error));
+
+  revalidatePath("/profile/reading-speed");
+  revalidatePath("/profile");
+  revalidatePath("/stats");
+  revalidatePath("/");
+
+  return { success: true, guide };
+}
+
 /**
  * 사용자 전체 독서 시간 통계 (책별이 아닌 전체)
  */
@@ -512,15 +610,19 @@ export async function getUserReadingTimeStats(): Promise<UserReadingTimeStats> {
   } = await supabase.auth.getUser();
   if (authError || !user) throw new Error("로그인이 필요합니다.");
 
-  const { data, error } = await supabase
-    .from("reading_logs")
-    .select("reading_duration_seconds, started_at, start_page, end_page")
-    .eq("user_id", user.id)
-    .gt("reading_duration_seconds", 0);
+  const [{ data, error }, { data: guideRow }] = await Promise.all([
+    supabase
+      .from("reading_logs")
+      .select("reading_duration_seconds, started_at, start_page, end_page")
+      .eq("user_id", user.id)
+      .gt("reading_duration_seconds", 0),
+    supabase.from("users").select("reading_speed_guide").eq("id", user.id).maybeSingle(),
+  ]);
 
   if (error) throw new Error(sanitizeErrorMessage(error));
 
   const logs = data || [];
+  const guide = parseGuide(guideRow?.reading_speed_guide);
   const now = new Date();
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
   const weekStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay()).toISOString();
@@ -538,8 +640,8 @@ export async function getUserReadingTimeStats(): Promise<UserReadingTimeStats> {
   }
 
   // 전체 페이지당 평균(가중) — 적격 세션만 집계하되, 타이머 과다·오기록 등
-  // 이상치는 자동 제외(로버스트)하여 평균 왜곡 방지.
-  const pace = computeRobustPace(logs);
+  // 이상치는 사용자 가이드 범위로 자동 제외(로버스트)하여 평균 왜곡 방지.
+  const pace = computeRobustPace(logs, guide);
 
   return {
     totalSeconds,
@@ -566,21 +668,26 @@ export async function getPaceSessions(): Promise<PaceSessionsResult> {
   } = await supabase.auth.getUser();
   if (authError || !user) throw new Error("로그인이 필요합니다.");
 
-  // 시간 기록이 있는 모든 세션(페이지 유무 무관) — 페이지 진행 여부로 JS에서 분기
-  const { data, error } = await supabase
-    .from("reading_logs")
-    .select(`
-      id, user_book_id, created_at, start_page, end_page, reading_duration_seconds,
-      user_books!inner(
-        id,
-        books(title, cover_image_url, total_pages)
-      )
-    `)
-    .eq("user_id", user.id)
-    .gt("reading_duration_seconds", 0)
-    .order("created_at", { ascending: false });
+  // 시간 기록이 있는 모든 세션(페이지 유무 무관) + 사용자 가이드 범위
+  const [{ data, error }, { data: guideRow }] = await Promise.all([
+    supabase
+      .from("reading_logs")
+      .select(`
+        id, user_book_id, created_at, start_page, end_page, reading_duration_seconds,
+        user_books!inner(
+          id,
+          books(title, cover_image_url, total_pages)
+        )
+      `)
+      .eq("user_id", user.id)
+      .gt("reading_duration_seconds", 0)
+      .order("created_at", { ascending: false }),
+    supabase.from("users").select("reading_speed_guide").eq("id", user.id).maybeSingle(),
+  ]);
 
   if (error) throw new Error(sanitizeErrorMessage(error));
+
+  const guide = parseGuide(guideRow?.reading_speed_guide);
 
   interface RawRow {
     id: string;
@@ -631,7 +738,7 @@ export async function getPaceSessions(): Promise<PaceSessionsResult> {
     else timeOnly.push(session);
   }
 
-  return { paced, timeOnly };
+  return { paced, timeOnly, guide };
 }
 
 /**

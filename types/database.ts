@@ -2513,6 +2513,7 @@ export type Database = {
           onboarding_checklist: Json | null
           privacy_agreed: boolean | null
           reading_goal: number | null
+          reading_speed_guide: Json | null
           terms_agreed: boolean | null
           ui_style: string | null
           updated_at: string | null
@@ -2534,6 +2535,7 @@ export type Database = {
           onboarding_checklist?: Json | null
           privacy_agreed?: boolean | null
           reading_goal?: number | null
+          reading_speed_guide?: Json | null
           terms_agreed?: boolean | null
           ui_style?: string | null
           updated_at?: string | null
@@ -2555,6 +2557,7 @@ export type Database = {
           onboarding_checklist?: Json | null
           privacy_agreed?: boolean | null
           reading_goal?: number | null
+          reading_speed_guide?: Json | null
           terms_agreed?: boolean | null
           ui_style?: string | null
           updated_at?: string | null

@@ -15,20 +15,22 @@ import {
   formatPacePerPage,
   estimateRemainingSeconds,
 } from "@/lib/reading/pace";
-import type { ReadingLog } from "@/types/progress";
+import type { ReadingLog, ReadingSpeedGuide } from "@/types/progress";
 
 interface Props {
   logs: ReadingLog[];
   totalPages: number | null;
   /** 내 전체 페이지당 평균 초 — 이 책 페이스와 비교 표시용. 없으면 비교 생략 */
   overallPaceSeconds?: number | null;
+  /** 사용자 속도 가이드 범위 — 전체 평균과 동일 기준으로 이상치 제외 */
+  guide?: ReadingSpeedGuide;
 }
 
 /** 비교 "비슷" 판정 임계값 (±10%) */
 const SIMILAR_THRESHOLD = 0.1;
 
-export function ReadingPacePanel({ logs, totalPages, overallPaceSeconds }: Props) {
-  const pace = computeRobustPace(logs);
+export function ReadingPacePanel({ logs, totalPages, overallPaceSeconds, guide }: Props) {
+  const pace = computeRobustPace(logs, guide);
   if (pace.pacePerPageSeconds == null) return null;
 
   const pacePerPage = pace.pacePerPageSeconds;

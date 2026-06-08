@@ -274,13 +274,24 @@ export interface PaceSession {
 }
 
 /**
+ * 독서 속도 가이드(이상치 제외) 범위 — 사용자 지정값.
+ * 이 범위(페이지당 초)를 벗어난 세션은 평균에서 자동 제외된다.
+ */
+export interface ReadingSpeedGuide {
+  minSecPerPage: number;
+  maxSecPerPage: number;
+}
+
+/**
  * 독서 속도 상세 조회 결과 — 페이스 기여 세션과 시간만 기록 세션을 분리 반환.
  * paced: 페이지 진행 있는 적격 세션(평균 계산 대상).
  * timeOnly: 시간은 있으나 페이지 진행 없음(평균 미반영, "페이지 추가" 대상).
+ * guide: 현재 사용자 가이드 범위(이상치 제외 기준).
  */
 export interface PaceSessionsResult {
   paced: PaceSession[];
   timeOnly: PaceSession[];
+  guide: ReadingSpeedGuide;
 }
 
 /**

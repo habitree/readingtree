@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
 import { getCachedCurrentUser } from "@/lib/cached";
 import { getPaceSessions } from "@/app/actions/progress";
+import { DEFAULT_PACE_CONSTANTS } from "@/lib/reading/pace";
 import { ReadingSpeedDetail } from "@/components/profile/reading-speed-detail";
 import type { PaceSessionsResult } from "@/types/progress";
 
@@ -24,7 +25,14 @@ export default async function ReadingSpeedPage() {
   try {
     data = await getPaceSessions();
   } catch {
-    data = { paced: [], timeOnly: [] };
+    data = {
+      paced: [],
+      timeOnly: [],
+      guide: {
+        minSecPerPage: DEFAULT_PACE_CONSTANTS.minSecPerPage,
+        maxSecPerPage: DEFAULT_PACE_CONSTANTS.maxSecPerPage,
+      },
+    };
   }
 
   return (
@@ -43,7 +51,11 @@ export default async function ReadingSpeedPage() {
         </p>
       </div>
 
-      <ReadingSpeedDetail initialPaced={data.paced} initialTimeOnly={data.timeOnly} />
+      <ReadingSpeedDetail
+        initialPaced={data.paced}
+        initialTimeOnly={data.timeOnly}
+        initialGuide={data.guide}
+      />
     </div>
   );
 }

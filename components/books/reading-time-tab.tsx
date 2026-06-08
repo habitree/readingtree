@@ -6,6 +6,7 @@ import {
   getReadingTimeLogs,
   getReadingTimeStats,
   getUserReadingTimeStats,
+  getReadingSpeedGuide,
   deleteProgressLog,
 } from "@/app/actions/progress";
 import {
@@ -23,7 +24,7 @@ import {
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { formatDuration, formatTimeRange } from "@/lib/utils/duration";
-import type { ReadingLog } from "@/types/progress";
+import type { ReadingLog, ReadingSpeedGuide } from "@/types/progress";
 import { useStampCaptureStore } from "@/hooks/use-stamp-capture";
 import { useStampShareStore } from "@/hooks/use-stamp-share";
 import {
@@ -81,6 +82,7 @@ export function ReadingTimeTab({ userBookId, bookInfo }: ReadingTimeTabProps) {
     averageSeconds: number;
   } | null>(null);
   const [overallPaceSeconds, setOverallPaceSeconds] = useState<number | null>(null);
+  const [guide, setGuide] = useState<ReadingSpeedGuide | undefined>(undefined);
   const [isLoading, setIsLoading] = useState(true);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [isDeleting, startDeleteTransition] = useTransition();
@@ -139,15 +141,17 @@ export function ReadingTimeTab({ userBookId, bookInfo }: ReadingTimeTabProps) {
     let cancelled = false;
     async function load() {
       try {
-        const [logsData, statsData, userTimeStats] = await Promise.all([
+        const [logsData, statsData, userTimeStats, guideData] = await Promise.all([
           getReadingTimeLogs(userBookId),
           getReadingTimeStats(userBookId),
           getUserReadingTimeStats().catch(() => null),
+          getReadingSpeedGuide().catch(() => undefined),
         ]);
         if (cancelled) return;
         setLogs(logsData);
         setStats(statsData);
         setOverallPaceSeconds(userTimeStats?.pacePerPageSeconds ?? null);
+        setGuide(guideData ?? undefined);
       } catch {
         // 에러 무시 (빈 상태)
       } finally {
@@ -249,6 +253,7 @@ export function ReadingTimeTab({ userBookId, bookInfo }: ReadingTimeTabProps) {
           logs={logs}
           totalPages={bookInfo?.totalPages ?? null}
           overallPaceSeconds={overallPaceSeconds}
+          guide={guide}
         />
 
         {/* 날짜별 기록 */}
