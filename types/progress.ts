@@ -256,6 +256,24 @@ export interface UserReadingTimeStats {
 }
 
 /**
+ * 독서 속도 상세 — 페이스 집계에 기여한 개별 세션(reading_logs).
+ * 책 무관 전역 목록. 잘못된 기록 수정/삭제 대상.
+ */
+export interface PaceSession {
+  id: string;
+  userBookId: string;
+  bookTitle: string;
+  coverImageUrl: string | null;
+  totalPages: number | null;
+  createdAt: string;
+  startPage: number;
+  endPage: number;
+  durationSeconds: number;
+  /** 이 세션의 페이지당 초 */
+  pacePerPageSeconds: number;
+}
+
+/**
  * 진행 로그 통계
  */
 export interface ReadingLogStats {

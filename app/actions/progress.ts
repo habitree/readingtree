@@ -14,6 +14,7 @@ import type {
   ReadingStampsResult,
   SaveReadingSessionInput,
   UserReadingTimeStats,
+  PaceSession,
 } from "@/types/progress";
 import { READTREE_BOOK_ID } from "@/lib/constants/readtree";
 import { computePace } from "@/lib/reading/pace";
@@ -218,6 +219,9 @@ export async function deleteProgressLog(
   // 캐시 무효화
   revalidatePath("/notes");
   revalidatePath(`/books/${log.user_book_id}`);
+  revalidatePath("/profile/reading-speed");
+  revalidatePath("/profile");
+  revalidatePath("/stats");
   revalidatePath("/");
 
   return { success: true };
@@ -235,7 +239,13 @@ export async function deleteProgressLog(
  */
 export async function updateReadingLogEntry(
   logId: string,
-  updates: { memo?: string | null; start_page?: number | null; end_page?: number | null },
+  updates: {
+    memo?: string | null;
+    start_page?: number | null;
+    end_page?: number | null;
+    /** 독서 시간(초) 보정 — 독서 속도 상세에서 잘못된 시간 수정용. 0~24h */
+    reading_duration_seconds?: number | null;
+  },
   user?: User | null,
 ): Promise<{ success: boolean }> {
   const supabase = await createServerSupabaseClient();
@@ -297,6 +307,15 @@ export async function updateReadingLogEntry(
     payload.page_number = nextEnd;
   }
 
+  // 독서 시간 보정 — 0~24시간 범위로 클램프(생성 컬럼 pace_seconds_per_page 자동 재계산)
+  if (updates.reading_duration_seconds !== undefined && updates.reading_duration_seconds !== null) {
+    const dur = Math.round(updates.reading_duration_seconds);
+    if (!Number.isFinite(dur) || dur < 0) {
+      throw new Error("독서 시간은 0초 이상이어야 합니다.");
+    }
+    payload.reading_duration_seconds = Math.min(dur, 24 * 60 * 60);
+  }
+
   if (Object.keys(payload).length === 0) {
     return { success: true };
   }
@@ -313,6 +332,9 @@ export async function updateReadingLogEntry(
 
   revalidatePath("/notes");
   revalidatePath(`/books/${existing.user_book_id}`);
+  revalidatePath("/profile/reading-speed");
+  revalidatePath("/profile");
+  revalidatePath("/stats");
   revalidatePath("/");
 
   return { success: true };
@@ -526,6 +548,82 @@ export async function getUserReadingTimeStats(): Promise<UserReadingTimeStats> {
     pacePerPageSeconds: pace.pacePerPageSeconds,
     totalPagesRead: pace.pagesRead,
   };
+}
+
+/**
+ * 독서 속도 상세용 — 페이스에 기여한 전체 세션 목록(책 무관).
+ * 적격 세션(start_page·end_page·시간 모두 양수, end>start)만 책정보와 함께 최신순 반환.
+ * 독서 속도 상세 페이지에서 개별 기록 확인·수정·삭제 대상으로 사용.
+ */
+export async function getPaceSessions(): Promise<PaceSession[]> {
+  const supabase = await createServerSupabaseClient();
+
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+  if (authError || !user) throw new Error("로그인이 필요합니다.");
+
+  const { data, error } = await supabase
+    .from("reading_logs")
+    .select(`
+      id, user_book_id, created_at, start_page, end_page, reading_duration_seconds,
+      user_books!inner(
+        id,
+        books(title, cover_image_url, total_pages)
+      )
+    `)
+    .eq("user_id", user.id)
+    .gt("reading_duration_seconds", 0)
+    .not("start_page", "is", null)
+    .not("end_page", "is", null)
+    .order("created_at", { ascending: false });
+
+  if (error) throw new Error(sanitizeErrorMessage(error));
+
+  interface RawRow {
+    id: string;
+    user_book_id: string;
+    created_at: string;
+    start_page: number | null;
+    end_page: number | null;
+    reading_duration_seconds: number | null;
+    user_books?: {
+      books?: { title?: string | null; cover_image_url?: string | null; total_pages?: number | null }
+        | { title?: string | null; cover_image_url?: string | null; total_pages?: number | null }[]
+        | null;
+    } | { books?: unknown }[] | null;
+  }
+
+  const rows = (data ?? []) as unknown as RawRow[];
+  const out: PaceSession[] = [];
+
+  for (const r of rows) {
+    const sp = r.start_page;
+    const ep = r.end_page;
+    const dur = r.reading_duration_seconds ?? 0;
+    // 적격 세션만(역순·0초 제외) — computePace와 동일 기준
+    if (sp == null || ep == null || ep - sp <= 0 || dur <= 0) continue;
+
+    const ub = Array.isArray(r.user_books) ? r.user_books[0] : r.user_books;
+    const bookRaw = ub && "books" in ub ? ub.books : null;
+    const book = Array.isArray(bookRaw) ? bookRaw[0] : bookRaw;
+
+    out.push({
+      id: r.id,
+      userBookId: r.user_book_id,
+      createdAt: r.created_at,
+      startPage: sp,
+      endPage: ep,
+      durationSeconds: dur,
+      pacePerPageSeconds: dur / (ep - sp),
+      bookTitle: book?.title ?? "알 수 없는 책",
+      coverImageUrl: book?.cover_image_url ?? null,
+      totalPages: book?.total_pages ?? null,
+    });
+  }
+
+  return out;
 }
 
 /**
