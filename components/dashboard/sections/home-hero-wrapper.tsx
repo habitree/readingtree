@@ -102,7 +102,7 @@ export async function HomeHeroWrapper() {
   const currentBookProgress = extractSettled(results[2], null);
   const pointsData = extractSettled(results[3], null);
   const firstNoteData = extractSettled(results[4], { hasFirstNote: true });
-  const readingTimeData = extractSettled(results[5], { totalSeconds: 0, sessionCount: 0, averageSeconds: 0, todaySeconds: 0, thisWeekSeconds: 0 });
+  const readingTimeData = extractSettled(results[5], { totalSeconds: 0, sessionCount: 0, averageSeconds: 0, todaySeconds: 0, thisWeekSeconds: 0, pacePerPageSeconds: null, totalPagesRead: 0 });
   const activeSession = extractSettled(results[6], null);
   const personaData = extractSettled(results[7], null);
   const readingStats = extractSettled(results[8], null);

@@ -5,6 +5,7 @@ import Image from "next/image";
 import {
   getReadingTimeLogs,
   getReadingTimeStats,
+  getUserReadingTimeStats,
   deleteProgressLog,
 } from "@/app/actions/progress";
 import {
@@ -79,6 +80,7 @@ export function ReadingTimeTab({ userBookId, bookInfo }: ReadingTimeTabProps) {
     sessionCount: number;
     averageSeconds: number;
   } | null>(null);
+  const [overallPaceSeconds, setOverallPaceSeconds] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [isDeleting, startDeleteTransition] = useTransition();
@@ -137,13 +139,15 @@ export function ReadingTimeTab({ userBookId, bookInfo }: ReadingTimeTabProps) {
     let cancelled = false;
     async function load() {
       try {
-        const [logsData, statsData] = await Promise.all([
+        const [logsData, statsData, userTimeStats] = await Promise.all([
           getReadingTimeLogs(userBookId),
           getReadingTimeStats(userBookId),
+          getUserReadingTimeStats().catch(() => null),
         ]);
         if (cancelled) return;
         setLogs(logsData);
         setStats(statsData);
+        setOverallPaceSeconds(userTimeStats?.pacePerPageSeconds ?? null);
       } catch {
         // 에러 무시 (빈 상태)
       } finally {
@@ -241,7 +245,11 @@ export function ReadingTimeTab({ userBookId, bookInfo }: ReadingTimeTabProps) {
           </div>
         </div>
 
-        <ReadingPacePanel logs={logs} totalPages={bookInfo?.totalPages ?? null} />
+        <ReadingPacePanel
+          logs={logs}
+          totalPages={bookInfo?.totalPages ?? null}
+          overallPaceSeconds={overallPaceSeconds}
+        />
 
         {/* 날짜별 기록 */}
         <div className="space-y-4">

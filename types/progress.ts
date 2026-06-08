@@ -249,6 +249,10 @@ export interface UserReadingTimeStats {
   averageSeconds: number;
   todaySeconds: number;
   thisWeekSeconds: number;
+  /** 전체 페이지당 평균 초(가중). 적격 세션 없으면 null */
+  pacePerPageSeconds: number | null;
+  /** 페이스 집계에 포함된 총 읽은 페이지 수 */
+  totalPagesRead: number;
 }
 
 /**

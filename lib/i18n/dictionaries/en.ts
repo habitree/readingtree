@@ -2836,6 +2836,8 @@ export const en: Dictionary = {
     viewAllBooks: "View all",
     totalReadingTime: "Reading Time",
     sessionCount: "{count} sessions",
+    pacePerPage: "Avg. per page",
+    paceBasis: "based on {pages}p",
   },
 
   bookshelves: {

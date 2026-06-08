@@ -2840,6 +2840,8 @@ export const ko = {
     viewAllBooks: "전체 보기",
     totalReadingTime: "독서 시간",
     sessionCount: "{count}회 세션",
+    pacePerPage: "페이지당 평균",
+    paceBasis: "{pages}p 기준",
   },
 
   bookshelves: {

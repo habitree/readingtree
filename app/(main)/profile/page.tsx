@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { ProfileContent } from "@/components/profile/profile-content";
+import { ReadingSpeedCard } from "@/components/profile/reading-speed-card";
 import { PageHeader } from "@/components/layout/page-header";
 import { SubscriptionCtaCard } from "@/components/subscription/subscription-cta-card";
 import { getCachedCurrentUser } from "@/lib/cached";
@@ -37,6 +38,7 @@ export default async function ProfilePage() {
     <div className="space-y-4 sm:space-y-6">
       <PageHeader titleKey="profile.pageTitle" descriptionKey="profile.pageDesc" />
       <SubscriptionCtaCard tier={tier} points={userPoints?.total_points} />
+      <ReadingSpeedCard />
       <ProfileContent initialProfile={profile} />
     </div>
   );

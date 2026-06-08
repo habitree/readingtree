@@ -16,6 +16,7 @@ import type {
   UserReadingTimeStats,
 } from "@/types/progress";
 import { READTREE_BOOK_ID } from "@/lib/constants/readtree";
+import { computePace } from "@/lib/reading/pace";
 import { earnPoints } from "./points";
 import { updateBookProgress } from "./books/progress";
 
@@ -490,7 +491,7 @@ export async function getUserReadingTimeStats(): Promise<UserReadingTimeStats> {
 
   const { data, error } = await supabase
     .from("reading_logs")
-    .select("reading_duration_seconds, started_at")
+    .select("reading_duration_seconds, started_at, start_page, end_page")
     .eq("user_id", user.id)
     .gt("reading_duration_seconds", 0);
 
@@ -513,12 +514,17 @@ export async function getUserReadingTimeStats(): Promise<UserReadingTimeStats> {
     if (startedAt >= weekStart) thisWeekSeconds += dur;
   }
 
+  // 전체 페이지당 평균(가중) — 적격 세션(페이지 진행 + 시간 모두 양수)만 집계
+  const pace = computePace(logs);
+
   return {
     totalSeconds,
     sessionCount: logs.length,
     averageSeconds: logs.length > 0 ? Math.round(totalSeconds / logs.length) : 0,
     todaySeconds,
     thisWeekSeconds,
+    pacePerPageSeconds: pace.pacePerPageSeconds,
+    totalPagesRead: pace.pagesRead,
   };
 }
 

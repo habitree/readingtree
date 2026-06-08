@@ -13,7 +13,9 @@ import {
   CheckCircle2,
   Calendar,
   Timer,
+  Gauge,
 } from "lucide-react";
+import { formatPacePerPage } from "@/lib/reading/pace";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
@@ -48,7 +50,12 @@ interface StatsContentProps {
   };
   topTags: Array<{ tag: string; count: number }>;
   dailyRecords: Record<string, number>;
-  readingTimeStats?: { totalSeconds: number; sessionCount: number };
+  readingTimeStats?: {
+    totalSeconds: number;
+    sessionCount: number;
+    pacePerPageSeconds?: number | null;
+    totalPagesRead?: number;
+  };
 }
 
 export function StatsContent({
@@ -122,6 +129,23 @@ export function StatsContent({
             subtitle={t("stats.sessionCount", { count: readingTimeStats.sessionCount })}
           />
         )}
+        {readingTimeStats &&
+          readingTimeStats.pacePerPageSeconds != null &&
+          readingTimeStats.pacePerPageSeconds > 0 && (
+            <StatCard
+              icon={Gauge}
+              label={t("stats.pacePerPage")}
+              value={formatPacePerPage(readingTimeStats.pacePerPageSeconds)}
+              unit=""
+              color="text-rose-600 dark:text-rose-400"
+              bgColor="bg-rose-50 dark:bg-rose-950/30"
+              subtitle={
+                readingTimeStats.totalPagesRead
+                  ? t("stats.paceBasis", { pages: readingTimeStats.totalPagesRead })
+                  : undefined
+              }
+            />
+          )}
       </div>
 
       {/* 이번 주 진행 현황 */}
@@ -310,7 +334,7 @@ function StatCard({
 }: {
   icon: React.ComponentType<{ className?: string }>;
   label: string;
-  value: number;
+  value: number | string;
   unit: string;
   color: string;
   bgColor: string;

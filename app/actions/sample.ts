@@ -1436,5 +1436,8 @@ export async function getSampleReadingTimeStats() {
     averageSeconds: 1337,
     todaySeconds: 1800,
     thisWeekSeconds: 5400,
+    // 18720초 / 240페이지 = 78초/페이지 (약 1분 18초)
+    pacePerPageSeconds: 78,
+    totalPagesRead: 240,
   };
 }
