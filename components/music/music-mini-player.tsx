@@ -21,16 +21,6 @@ import { MusicOnlySheet } from "./music-only-sheet";
 import { Pause, Play, Volume2, VolumeX, Music2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-interface NetworkInformation extends EventTarget {
-  type?: string;
-  effectiveType?: string;
-  addEventListener(type: string, listener: EventListener): void;
-  removeEventListener(type: string, listener: EventListener): void;
-}
-interface NavigatorWithConnection extends Navigator {
-  connection?: NetworkInformation;
-}
-
 /** 사용자 클릭 컨텍스트에서 재생을 시작/제어하기 위한 컨트롤러 */
 interface MusicController {
   startGenre: (genre: MusicGenre) => void;
@@ -91,7 +81,7 @@ export function MusicMiniPlayer() {
   const isBuffering = useRef(false);
   const fadeTimer = useRef<ReturnType<typeof setInterval> | null>(null);
   const FADE_IN_MS = 500;
-  const PRELOAD_LEAD_S = 12; // 파트 끝 N초 전 다음 파트 프리로드
+  const PRELOAD_LEAD_S = 30; // 파트 끝 N초 전 다음 파트 프리로드(느린 회선 여유)
   const MAX_RETRIES = 3;
 
   const {
@@ -199,13 +189,25 @@ export function MusicMiniPlayer() {
 
       const onMeta = () => {
         audio.removeEventListener("loadedmetadata", onMeta);
-        if (offset > 0 && Number.isFinite(audio.duration)) {
+        const seeked = offset > 0 && Number.isFinite(audio.duration);
+        if (seeked) {
           audio.currentTime = Math.min(offset, Math.max(0, audio.duration - 0.3));
         }
-        if (useMusicPlayer.getState().isPlaying) {
+        const proceed = () => {
+          if (!useMusicPlayer.getState().isPlaying) return;
           if (fade) startFadeIn(audio);
           else audio.volume = useMusicPlayer.getState().volume;
           safePlay(audio);
+        };
+        if (seeked) {
+          // seek 위치가 재생 가능해질 때까지 한 번 대기 → 무음으로 페이드되는 것 방지
+          const onCp = () => {
+            audio.removeEventListener("canplay", onCp);
+            proceed();
+          };
+          audio.addEventListener("canplay", onCp);
+        } else {
+          proceed();
         }
       };
       audio.addEventListener("loadedmetadata", onMeta);
@@ -299,8 +301,8 @@ export function MusicMiniPlayer() {
       const vol = useMusicPlayer.getState().volume;
       const inactive = getInactive();
 
-      if (inactive && preloadedFor.current === nextPart && inactive.readyState >= 2) {
-        // 프리로드 완료 → 즉시 전환(끊김 최소)
+      if (inactive && preloadedFor.current === nextPart && inactive.readyState >= 3) {
+        // 프리로드 충분(HAVE_FUTURE_DATA 이상) → 즉시 전환(끊김 없음)
         try { inactive.currentTime = 0; } catch { /* noop */ }
         inactive.volume = vol;
         inactive.play().catch(() => {});
@@ -352,11 +354,18 @@ export function MusicMiniPlayer() {
     [getActive, safePlay],
   );
 
-  // 버퍼링 감지
+  // 버퍼링 감지 — 활성(재생 중) 엘리먼트의 이벤트만 반영.
+  // 비활성(프리로드) 엘리먼트의 waiting/stalled가 재생 중 음원을 건드리지 않게 한다.
   useEffect(() => {
     const audios = [aRef.current, bRef.current].filter(Boolean) as HTMLAudioElement[];
-    function handleWaiting() { isBuffering.current = true; }
-    function handlePlaying() { isBuffering.current = false; retryCount.current = 0; }
+    function handleWaiting(e: Event) {
+      if (e.target === getActive()) isBuffering.current = true;
+    }
+    function handlePlaying(e: Event) {
+      if (e.target !== getActive()) return;
+      isBuffering.current = false;
+      retryCount.current = 0;
+    }
     audios.forEach((a) => {
       a.addEventListener("waiting", handleWaiting);
       a.addEventListener("playing", handlePlaying);
@@ -367,59 +376,66 @@ export function MusicMiniPlayer() {
         a.removeEventListener("playing", handlePlaying);
       });
     };
-  }, []);
+  }, [getActive]);
 
   // 네트워크 복구 + 모바일 백그라운드 복귀
+  //
+  // 핵심 원칙: 일시적 버퍼링에는 절대 audio.load()(전체 리셋)를 호출하지 않는다.
+  // 브라우저는 데이터가 차면 스스로 재개하므로, 우리가 리로드하면 오히려 끊긴다.
+  // 1차로 가벼운 play() 재개만 시도하고, 진짜로 멈춰 있을 때만(8초+ stuck) 하드 복구.
   useEffect(() => {
-    function recoverPlayback() {
+    // 가벼운 재개 — load() 없이. 재생 중(paused=false)이면 개입하지 않음.
+    function gentleResume() {
       const audio = getActive();
       const state = useMusicPlayer.getState();
       if (!audio || !state.isPlaying || !state.currentGenre) return;
-      if (audio.paused || isBuffering.current) {
-        const savedTime = audio.currentTime;
-        retryCount.current = 0;
-        isBuffering.current = false;
-        audio.load();
-        audio.addEventListener("canplay", function onRecover() {
-          audio.removeEventListener("canplay", onRecover);
-          if (savedTime > 0) {
-            try { audio.currentTime = savedTime; } catch { /* noop */ }
-          }
-          if (useMusicPlayer.getState().isPlaying) safePlay(audio);
-        });
-      }
+      if (!audio.paused) return; // 버퍼링 중이면 브라우저 자동 회복에 맡김
+      audio.play().catch(() => hardRecover());
     }
-    function handleOnline() { recoverPlayback(); }
-    function handleStalled() {
+    // 최후수단 — 같은 위치로 reload+seek. stuck(8초+ 진전 없음)에서만.
+    function hardRecover() {
+      const audio = getActive();
       const state = useMusicPlayer.getState();
-      if (!state.isPlaying) return;
-      isBuffering.current = true;
-      retryTimer.current = setTimeout(() => recoverPlayback(), 2000);
+      if (!audio || !state.isPlaying || !state.currentGenre) return;
+      const savedTime = audio.currentTime;
+      retryCount.current = 0;
+      isBuffering.current = false;
+      audio.load();
+      audio.addEventListener("canplay", function onRecover() {
+        audio.removeEventListener("canplay", onRecover);
+        if (savedTime > 0) {
+          try { audio.currentTime = savedTime; } catch { /* noop */ }
+        }
+        if (useMusicPlayer.getState().isPlaying) safePlay(audio);
+      });
     }
-    function handleConnectionChange() {
+    function handleOnline() { gentleResume(); }
+    function handleStalled(e: Event) {
+      // 활성 엘리먼트가 멈춘 경우만. 비활성(프리로드) stalled는 무시.
+      if (e.target !== getActive()) return;
       if (!useMusicPlayer.getState().isPlaying) return;
-      retryTimer.current = setTimeout(() => recoverPlayback(), 1000);
+      isBuffering.current = true;
+      if (retryTimer.current) clearTimeout(retryTimer.current);
+      // 8초 여유를 준 뒤에도 정말 멈춰 있으면만 복구(즉시 load 금지)
+      retryTimer.current = setTimeout(() => {
+        const audio = getActive();
+        if (!audio || !useMusicPlayer.getState().isPlaying) return;
+        if (audio.paused) gentleResume();
+        else if (isBuffering.current && audio.readyState < 3) hardRecover();
+      }, 8000);
     }
     function handleVisibility() {
       if (document.visibilityState !== "visible") return;
-      const audio = getActive();
-      const state = useMusicPlayer.getState();
-      if (!audio || !state.isPlaying || !state.currentGenre) return;
-      if (audio.paused || isBuffering.current) {
-        audio.play().catch(() => recoverPlayback());
-      }
+      gentleResume();
     }
     const audios = [aRef.current, bRef.current].filter(Boolean) as HTMLAudioElement[];
     window.addEventListener("online", handleOnline);
     audios.forEach((a) => a.addEventListener("stalled", handleStalled));
     document.addEventListener("visibilitychange", handleVisibility);
-    const connection = (navigator as NavigatorWithConnection).connection;
-    connection?.addEventListener("change", handleConnectionChange);
     return () => {
       window.removeEventListener("online", handleOnline);
       audios.forEach((a) => a.removeEventListener("stalled", handleStalled));
       document.removeEventListener("visibilitychange", handleVisibility);
-      connection?.removeEventListener("change", handleConnectionChange);
       if (retryTimer.current) {
         clearTimeout(retryTimer.current);
         retryTimer.current = null;

@@ -234,7 +234,13 @@ async function main() {
         console.log(`\n[업로드] ${objectName} (${(buf.length / 1024 / 1024).toFixed(1)}MB)...`);
         const { error } = await supabase.storage
           .from(BUCKET)
-          .upload(objectName, buf, { contentType: "audio/mpeg", upsert: true });
+          // cacheControl: 1년 immutable — 파일명({genre}-{n}.mp3)이 고정이라
+          // CDN(Cloudflare) 엣지 캐시로 Range 스트리밍을 안정화(재생 중 끊김 방지).
+          .upload(objectName, buf, {
+            contentType: "audio/mpeg",
+            upsert: true,
+            cacheControl: "31536000",
+          });
         if (error) throw new Error(`업로드 실패(${objectName}): ${error.message}`);
         partUrls[gi][p] = `${publicBase}/${objectName}`;
         console.log(`  ✓ ${partUrls[gi][p]}`);
