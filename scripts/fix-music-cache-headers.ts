@@ -1,15 +1,20 @@
 /**
- * 음악 파트 파일에 immutable 캐시 헤더 일괄 재적용 (1회성)
+ * 음악 파트 파일에 immutable 캐시 헤더 일괄 재적용 시도 (1회성)
  *
- * 배경: 기존 병합 파트(.mp3)들이 cacheControl 없이 업로드되어 Supabase가
- *       `Cache-Control: no-cache`로 서빙 → 대용량 파트의 Range 스트리밍이
- *       매 요청 재검증·CDN MISS로 재생 중 끊김을 유발.
+ * ⚠️ 검증 결과(2026-06-08): 현재 음악 Supabase(public 버킷, sb-gateway-mode:direct)는
+ *    update/upload의 cacheControl 옵션을 **무시하고 항상 `Cache-Control: no-cache`로 서빙**한다.
+ *    (파일 교체로 ETag·Last-Modified는 바뀌나 서빙 cache-control은 불변 — 원본 검증 완료.)
+ *    따라서 이 스크립트로는 캐시 헤더를 바꿀 수 없다. CDN 캐싱이 필요하면
+ *    버킷/프로젝트 레벨 설정 변경 또는 별도 CDN/프록시가 필요하다.
+ *    ※ 단일 세션 연속 재생의 "중간 끊김"은 cache-control과 무관(브라우저가 Range로 점진 수신).
+ *      실제 끊김 해결은 클라이언트 복구 로직(music-mini-player) 수정이 담당한다.
+ *    이 스크립트는 향후 스토리지 정책이 cacheControl을 존중하게 되면 그대로 사용 가능하도록 보존한다.
  *
  * 동작: lib/music/genres.ts의 모든 파트 URL을 순회하며 기존 파일을
  *       공개 URL로 그대로 다운로드 → 같은 이름으로 cacheControl=1년 immutable로
- *       재업로드(upsert). **재인코딩·내용 변경 없음, 헤더만 갱신.**
+ *       update. **재인코딩·내용 변경 없음.**
  *
- * 실행: npx tsx scripts/fix-music-cache-headers.ts
+ * 실행: npx tsx scripts/fix-music-cache-headers.ts [파일명필터]
  *
  * 필요한 환경변수 (.env.local):
  *   NEXT_PUBLIC_SUPABASE_MUSIC_URL
@@ -46,8 +51,11 @@ async function main() {
 
   const supabase = createClient(url, serviceKey);
 
-  const targets = MUSIC_GENRES.flatMap((g) => g.parts.map((p) => p.url));
-  console.log(`=== 음악 캐시 헤더 재적용: ${targets.length}개 파트 ===`);
+  // 선택: 인자로 특정 파일명(예: jazz-2)만 처리 — 빠른 검증용
+  const only = process.argv[2];
+  let targets = MUSIC_GENRES.flatMap((g) => g.parts.map((p) => p.url));
+  if (only) targets = targets.filter((u) => u.includes(only));
+  console.log(`=== 음악 캐시 헤더 재적용: ${targets.length}개 파트${only ? ` (필터: ${only})` : ""} ===`);
 
   let ok = 0;
   for (const partUrl of targets) {
@@ -65,14 +73,16 @@ async function main() {
     }
     const buf = Buffer.from(await res.arrayBuffer());
 
-    // 2) 같은 이름으로 cacheControl 지정해 재업로드(내용 동일)
-    const { error } = await supabase.storage.from(BUCKET).upload(objectName, buf, {
+    // 2) 같은 이름으로 cacheControl 지정해 교체.
+    //    upsert 업로드는 기존 오브젝트의 cache-control 메타데이터를 갱신하지 않으므로
+    //    update()로 메타데이터까지 교체한다(내용은 동일 바이트).
+    const { error } = await supabase.storage.from(BUCKET).update(objectName, buf, {
       contentType: "audio/mpeg",
-      upsert: true,
       cacheControl: CACHE_CONTROL,
+      upsert: true,
     });
     if (error) {
-      console.warn(`  ⚠ 업로드 실패: ${objectName} — ${error.message}`);
+      console.warn(`  ⚠ 업데이트 실패: ${objectName} — ${error.message}`);
       continue;
     }
     ok += 1;
