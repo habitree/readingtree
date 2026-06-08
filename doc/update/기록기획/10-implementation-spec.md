@@ -80,7 +80,8 @@
 | **C7** | 페이지별 독서 페이스 패널(`reading-pace-panel.tsx`, 페이지당 평균·남은 예상) — 시간탭 통합 | ✅ 완료(tsc) |
 | **C8** | 3축 통합 뷰 — `reading-overview-panel.tsx`(⏱시간·📊진행률·🧭여정 요약) 책 상세 탭 위 통합 | ✅ 완료(tsc·Playwright 렌더 확인) |
 | **C1** | 타이머 목표 UI | ✅ **이미 구현됨** — `record-start-step` 프리셋(15/25/45/무제한) + `record-timer-complete-dialog`(elapsed≥target, layout 전역 마운트) |
-| **C2** | 페이스 분석 | ✅ C7로 노출 완료(`reading-pace-panel`) |
+| **C2** | 페이스 분석 | ✅ C7로 노출 완료(`reading-pace-panel`). **C2+로 전체 평균·비교 확장** |
+| **C2+** | 독서 속도 측정(페이지당 시간) — **전체 평균** 추가 | ✅ 완료 — `lib/reading/pace.ts`(`computePace` 가중 집계 SSOT·`formatPacePerPage` 이동) 신설. `getUserReadingTimeStats`에 `pacePerPageSeconds·totalPagesRead` 추가(새 컬럼·마이그 없이 reading_logs 실시간 집계). 노출 3곳: 통계 요약 카드 + 책상세 "내 평균 대비"(±10% 비교) + 프로필 `ReadingSpeedCard`. 단위테스트 8/8·tsc ✅ (커밋 `29a72f2`) |
 | **C3** | 캘린더 SSOT | 🔁 **재평가: 불필요** — `activity-calendar`(타입별 30일 히트맵)와 `monthly-book-calendar`(책별 월간)는 서로 다른 facet이며 KST는 A1으로 이미 공유. 억지 통합 가치 낮음 |
 | **C4** | 음악-세션 동기화 | ⬜ **향후 기능** — `attachMusicToSession`(Phase 8) 존재하나 자동 재생/정지 연동은 UX 민감 신규 기능. 별도 진행 |
 
