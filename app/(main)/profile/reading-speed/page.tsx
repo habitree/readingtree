@@ -5,7 +5,7 @@ import { ChevronLeft } from "lucide-react";
 import { getCachedCurrentUser } from "@/lib/cached";
 import { getPaceSessions } from "@/app/actions/progress";
 import { ReadingSpeedDetail } from "@/components/profile/reading-speed-detail";
-import type { PaceSession } from "@/types/progress";
+import type { PaceSessionsResult } from "@/types/progress";
 
 export const metadata: Metadata = {
   title: "내 독서 속도",
@@ -20,11 +20,11 @@ export default async function ReadingSpeedPage() {
   const user = await getCachedCurrentUser();
   if (!user) redirect("/login");
 
-  let sessions: PaceSession[];
+  let data: PaceSessionsResult;
   try {
-    sessions = await getPaceSessions();
+    data = await getPaceSessions();
   } catch {
-    sessions = [];
+    data = { paced: [], timeOnly: [] };
   }
 
   return (
@@ -43,7 +43,7 @@ export default async function ReadingSpeedPage() {
         </p>
       </div>
 
-      <ReadingSpeedDetail initialSessions={sessions} />
+      <ReadingSpeedDetail initialPaced={data.paced} initialTimeOnly={data.timeOnly} />
     </div>
   );
 }

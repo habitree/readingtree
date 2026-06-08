@@ -269,8 +269,18 @@ export interface PaceSession {
   startPage: number;
   endPage: number;
   durationSeconds: number;
-  /** 이 세션의 페이지당 초 */
+  /** 이 세션의 페이지당 초 (페이지 진행 없으면 0) */
   pacePerPageSeconds: number;
+}
+
+/**
+ * 독서 속도 상세 조회 결과 — 페이스 기여 세션과 시간만 기록 세션을 분리 반환.
+ * paced: 페이지 진행 있는 적격 세션(평균 계산 대상).
+ * timeOnly: 시간은 있으나 페이지 진행 없음(평균 미반영, "페이지 추가" 대상).
+ */
+export interface PaceSessionsResult {
+  paced: PaceSession[];
+  timeOnly: PaceSession[];
 }
 
 /**

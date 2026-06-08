@@ -15,9 +15,10 @@ import type {
   SaveReadingSessionInput,
   UserReadingTimeStats,
   PaceSession,
+  PaceSessionsResult,
 } from "@/types/progress";
 import { READTREE_BOOK_ID } from "@/lib/constants/readtree";
-import { computePace } from "@/lib/reading/pace";
+import { computeRobustPace } from "@/lib/reading/pace";
 import { earnPoints } from "./points";
 import { updateBookProgress } from "./books/progress";
 
@@ -536,8 +537,9 @@ export async function getUserReadingTimeStats(): Promise<UserReadingTimeStats> {
     if (startedAt >= weekStart) thisWeekSeconds += dur;
   }
 
-  // 전체 페이지당 평균(가중) — 적격 세션(페이지 진행 + 시간 모두 양수)만 집계
-  const pace = computePace(logs);
+  // 전체 페이지당 평균(가중) — 적격 세션만 집계하되, 타이머 과다·오기록 등
+  // 이상치는 자동 제외(로버스트)하여 평균 왜곡 방지.
+  const pace = computeRobustPace(logs);
 
   return {
     totalSeconds,
@@ -555,7 +557,7 @@ export async function getUserReadingTimeStats(): Promise<UserReadingTimeStats> {
  * 적격 세션(start_page·end_page·시간 모두 양수, end>start)만 책정보와 함께 최신순 반환.
  * 독서 속도 상세 페이지에서 개별 기록 확인·수정·삭제 대상으로 사용.
  */
-export async function getPaceSessions(): Promise<PaceSession[]> {
+export async function getPaceSessions(): Promise<PaceSessionsResult> {
   const supabase = await createServerSupabaseClient();
 
   const {
@@ -564,6 +566,7 @@ export async function getPaceSessions(): Promise<PaceSession[]> {
   } = await supabase.auth.getUser();
   if (authError || !user) throw new Error("로그인이 필요합니다.");
 
+  // 시간 기록이 있는 모든 세션(페이지 유무 무관) — 페이지 진행 여부로 JS에서 분기
   const { data, error } = await supabase
     .from("reading_logs")
     .select(`
@@ -575,8 +578,6 @@ export async function getPaceSessions(): Promise<PaceSession[]> {
     `)
     .eq("user_id", user.id)
     .gt("reading_duration_seconds", 0)
-    .not("start_page", "is", null)
-    .not("end_page", "is", null)
     .order("created_at", { ascending: false });
 
   if (error) throw new Error(sanitizeErrorMessage(error));
@@ -596,34 +597,41 @@ export async function getPaceSessions(): Promise<PaceSession[]> {
   }
 
   const rows = (data ?? []) as unknown as RawRow[];
-  const out: PaceSession[] = [];
+  const paced: PaceSession[] = [];
+  const timeOnly: PaceSession[] = [];
 
   for (const r of rows) {
     const sp = r.start_page;
     const ep = r.end_page;
     const dur = r.reading_duration_seconds ?? 0;
-    // 적격 세션만(역순·0초 제외) — computePace와 동일 기준
-    if (sp == null || ep == null || ep - sp <= 0 || dur <= 0) continue;
+    if (dur <= 0) continue;
 
     const ub = Array.isArray(r.user_books) ? r.user_books[0] : r.user_books;
     const bookRaw = ub && "books" in ub ? ub.books : null;
     const book = Array.isArray(bookRaw) ? bookRaw[0] : bookRaw;
 
-    out.push({
+    const startPage = sp ?? 0;
+    const endPage = ep ?? startPage;
+    const hasProgress = sp != null && ep != null && ep - sp > 0;
+
+    const session: PaceSession = {
       id: r.id,
       userBookId: r.user_book_id,
       createdAt: r.created_at,
-      startPage: sp,
-      endPage: ep,
+      startPage,
+      endPage,
       durationSeconds: dur,
-      pacePerPageSeconds: dur / (ep - sp),
+      pacePerPageSeconds: hasProgress ? dur / (endPage - startPage) : 0,
       bookTitle: book?.title ?? "알 수 없는 책",
       coverImageUrl: book?.cover_image_url ?? null,
       totalPages: book?.total_pages ?? null,
-    });
+    };
+
+    if (hasProgress) paced.push(session);
+    else timeOnly.push(session);
   }
 
-  return out;
+  return { paced, timeOnly };
 }
 
 /**

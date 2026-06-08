@@ -11,7 +11,7 @@
 import { Gauge, BookOpenCheck, Hourglass, Rabbit, Turtle } from "lucide-react";
 import { formatDuration } from "@/lib/utils/duration";
 import {
-  computePace,
+  computeRobustPace,
   formatPacePerPage,
   estimateRemainingSeconds,
 } from "@/lib/reading/pace";
@@ -28,7 +28,7 @@ interface Props {
 const SIMILAR_THRESHOLD = 0.1;
 
 export function ReadingPacePanel({ logs, totalPages, overallPaceSeconds }: Props) {
-  const pace = computePace(logs);
+  const pace = computeRobustPace(logs);
   if (pace.pacePerPageSeconds == null) return null;
 
   const pacePerPage = pace.pacePerPageSeconds;
