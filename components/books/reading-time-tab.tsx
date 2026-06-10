@@ -26,6 +26,8 @@ import { cn } from "@/lib/utils";
 import { formatDuration, formatTimeRange } from "@/lib/utils/duration";
 import type { ReadingLog, ReadingSpeedGuide } from "@/types/progress";
 import { useStampCaptureStore } from "@/hooks/use-stamp-capture";
+import { useRecordSheetStore } from "@/hooks/use-record-sheet";
+import { isRecordV2Enabled } from "@/lib/feature-flags";
 import { useStampShareStore } from "@/hooks/use-stamp-share";
 import {
   AlertDialog,
@@ -74,6 +76,7 @@ function groupByDate(logs: ReadingLog[]): Map<string, ReadingLog[]> {
 
 export function ReadingTimeTab({ userBookId, bookInfo }: ReadingTimeTabProps) {
   const openStampAttach = useStampCaptureStore((s) => s.openAttach);
+  const openRecordAttach = useRecordSheetStore((s) => s.openAttach);
   const openStampShare = useStampShareStore((s) => s.openShare);
   const [logs, setLogs] = useState<ReadingLog[]>([]);
   const [stats, setStats] = useState<{
@@ -88,24 +91,32 @@ export function ReadingTimeTab({ userBookId, bookInfo }: ReadingTimeTabProps) {
   const [isDeleting, startDeleteTransition] = useTransition();
   const [lightbox, setLightbox] = useState<{ urls: string[]; index: number; alt: string } | null>(null);
 
-  // "편집" — 사진 추가 시트(StampCaptureSheet attach 모드)로 통합 진입.
-  // 시트 안에서 사진/메모/페이지 자유롭게 수정 가능. 사진 없이도 저장됨.
+  // "편집" — 사진 추가 시트로 통합 진입(사진/메모/페이지 자유 수정, 사진 없이도 저장).
+  // 카나리 ON → 새 RecordSheet(attach), OFF → 기존 StampCaptureSheet(attach).
   function openEditSheet(log: ReadingLog) {
-    openStampAttach(log.id, {
-      book: bookInfo
-        ? {
-            id: userBookId,
-            bookId: bookInfo.bookId,
-            title: bookInfo.title,
-            author: bookInfo.author,
-            coverImageUrl: bookInfo.coverImageUrl,
-            totalPages: bookInfo.totalPages,
-          }
-        : null,
-      startPage: log.start_page ?? undefined,
-      endPage: log.end_page ?? log.page_number ?? undefined,
-      durationSeconds: log.reading_duration_seconds,
-    });
+    const book = bookInfo
+      ? {
+          id: userBookId,
+          bookId: bookInfo.bookId,
+          title: bookInfo.title,
+          author: bookInfo.author,
+          coverImageUrl: bookInfo.coverImageUrl,
+          totalPages: bookInfo.totalPages,
+        }
+      : null;
+    const startPage = log.start_page ?? undefined;
+    const endPage = log.end_page ?? log.page_number ?? undefined;
+
+    if (isRecordV2Enabled()) {
+      openRecordAttach(log.id, { book, startPage, endPage });
+    } else {
+      openStampAttach(log.id, {
+        book,
+        startPage,
+        endPage,
+        durationSeconds: log.reading_duration_seconds,
+      });
+    }
   }
 
   function handleConfirmDelete() {

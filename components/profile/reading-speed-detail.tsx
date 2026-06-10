@@ -25,6 +25,8 @@ import {
   Sparkles,
   SlidersHorizontal,
   RotateCcw,
+  Camera,
+  Stamp as StampIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -40,6 +42,8 @@ import {
   deleteProgressLog,
   updateReadingSpeedGuide,
 } from "@/app/actions/progress";
+import { useRecordSheetStore } from "@/hooks/use-record-sheet";
+import { Lightbox } from "@/components/stamps/photo-gallery";
 import type { PaceSession, ReadingSpeedGuide } from "@/types/progress";
 import {
   AlertDialog,
@@ -83,6 +87,8 @@ const REASON_LABEL: Record<Exclude<ExclusionReason, "not_paced">, string> = {
   mad_outlier: "제외 · 이상치",
 };
 
+type RecordFilter = "all" | "timeOnly" | "stamp";
+
 export function ReadingSpeedDetail({ initialPaced, initialTimeOnly, initialGuide }: Props) {
   const [paced, setPaced] = useState<PaceSession[]>(initialPaced);
   const [timeOnly, setTimeOnly] = useState<PaceSession[]>(initialTimeOnly);
@@ -92,7 +98,12 @@ export function ReadingSpeedDetail({ initialPaced, initialTimeOnly, initialGuide
   const [isSaving, startSave] = useTransition();
   const [isDeleting, startDelete] = useTransition();
 
-  const [form, setForm] = useState({ start: 0, end: 0, min: 0, sec: 0 });
+  // 내 기록 통합 뷰(기록 기획 12 Phase D)
+  const [filter, setFilter] = useState<RecordFilter>("all");
+  const [lightbox, setLightbox] = useState<{ urls: string[]; index: number; alt: string } | null>(null);
+  const openRecordAttach = useRecordSheetStore((s) => s.openAttach);
+
+  const [form, setForm] = useState({ start: 0, end: 0, min: 0, sec: 0, memo: "" });
 
   // 가이드 범위 편집 — min은 초, max는 분 단위로 입력받음(사용자 친화)
   const [guideEditing, setGuideEditing] = useState(false);
@@ -144,6 +155,31 @@ export function ReadingSpeedDetail({ initialPaced, initialTimeOnly, initialGuide
   const excludedCount = useMemo(() => reasons.filter((r) => r != null).length, [reasons]);
   const usedCount = paced.length - excludedCount;
 
+  // 스탬프(사진 있는 세션) — paced·timeOnly를 가로질러 최신순
+  const stamped = useMemo(
+    () =>
+      [...paced, ...timeOnly]
+        .filter((s) => !!s.imageUrl)
+        .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1)),
+    [paced, timeOnly],
+  );
+
+  /** 사후 사진 첨부(스탬프 승격) 시트 진입 — 책 정보는 표시용(첨부 대상은 logId로 결정) */
+  function attachPhoto(s: PaceSession) {
+    openRecordAttach(s.id, {
+      book: {
+        id: s.userBookId,
+        bookId: s.userBookId, // 표시 전용 — attach 흐름에서 미사용
+        title: s.bookTitle,
+        author: null,
+        coverImageUrl: s.coverImageUrl,
+        totalPages: s.totalPages,
+      },
+      startPage: s.startPage,
+      endPage: s.endPage > s.startPage ? s.endPage : undefined,
+    });
+  }
+
   // 책별 그룹 (paced — 입력 순서=최신순)
   const groups = useMemo(() => {
     const map = new Map<string, { title: string; cover: string | null; items: PaceSession[] }>();
@@ -170,6 +206,7 @@ export function ReadingSpeedDetail({ initialPaced, initialTimeOnly, initialGuide
       end,
       min: Math.floor(s.durationSeconds / 60),
       sec: s.durationSeconds % 60,
+      memo: s.memo ?? "",
     });
     setEditingId(s.id);
   }
@@ -188,18 +225,22 @@ export function ReadingSpeedDetail({ initialPaced, initialTimeOnly, initialGuide
       return;
     }
 
+    const nextMemo = form.memo.trim().slice(0, 200);
+
     startSave(async () => {
       try {
         await updateReadingLogEntry(id, {
           start_page: start,
           end_page: end,
           reading_duration_seconds: duration,
+          memo: nextMemo || null,
         });
         const updatedFields = {
           startPage: start,
           endPage: end,
           durationSeconds: duration,
           pacePerPageSeconds: duration / (end - start),
+          memo: nextMemo || null,
         };
         // timeOnly에서 수정했다면 paced로 이동(이제 페이지 진행 있음)
         const fromTimeOnly = timeOnly.find((s) => s.id === id);
@@ -250,6 +291,39 @@ export function ReadingSpeedDetail({ initialPaced, initialTimeOnly, initialGuide
     );
   }
 
+  /** 사진 썸네일(스탬프) 또는 "사진 추가" 칩 — 카드 액션 영역에 배치 */
+  function photoButton(s: PaceSession) {
+    if (s.imageUrl) {
+      const urls = s.imageUrls.length > 0 ? s.imageUrls : [s.imageUrl];
+      return (
+        <button
+          type="button"
+          onClick={() => setLightbox({ urls, index: 0, alt: s.bookTitle })}
+          className="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg border border-emerald-200 dark:border-emerald-900"
+          aria-label="스탬프 사진 보기"
+        >
+          <Image src={s.imageUrl} alt="" fill sizes="40px" className="object-cover" unoptimized />
+          {urls.length > 1 && (
+            <span className="absolute bottom-0 right-0 rounded-tl bg-black/55 px-1 text-[9px] font-medium text-white tabular-nums">
+              {urls.length}
+            </span>
+          )}
+        </button>
+      );
+    }
+    return (
+      <button
+        type="button"
+        onClick={() => attachPhoto(s)}
+        className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-medium text-emerald-700 transition-colors hover:bg-emerald-100 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-400 dark:hover:bg-emerald-950/60"
+        aria-label="사진 추가"
+      >
+        <Camera className="h-3 w-3" />
+        사진
+      </button>
+    );
+  }
+
   /** 편집 폼 (paced·timeOnly 공용) */
   function editForm(id: string) {
     return (
@@ -297,6 +371,17 @@ export function ReadingSpeedDetail({ initialPaced, initialTimeOnly, initialGuide
             />
           </label>
         </div>
+        <label className="mt-2.5 block text-[11px] text-muted-foreground">
+          메모 <span className="text-muted-foreground/60">(선택)</span>
+          <textarea
+            value={form.memo}
+            onChange={(e) => setForm((f) => ({ ...f, memo: e.target.value.slice(0, 200) }))}
+            maxLength={200}
+            rows={2}
+            placeholder="이 기록에 남길 짧은 메모"
+            className="mt-1 w-full resize-none rounded-lg border bg-background px-2.5 py-1.5 text-sm"
+          />
+        </label>
         <div className="mt-3 flex items-center justify-end gap-2">
           <button
             type="button"
@@ -469,8 +554,36 @@ export function ReadingSpeedDetail({ initialPaced, initialTimeOnly, initialGuide
         평균이 즉시 다시 계산됩니다.
       </p>
 
-      {/* 책별 그룹 (paced) */}
-      {groups.length > 0 && (
+      {/* 내 기록 필터 — 전체 / 시간만 / 스탬프 */}
+      <div className="flex items-center gap-1 rounded-xl border border-border bg-muted/40 p-1">
+        {(
+          [
+            ["all", "전체", paced.length + timeOnly.length],
+            ["timeOnly", "시간만", timeOnly.length],
+            ["stamp", "스탬프", stamped.length],
+          ] as const
+        ).map(([key, label, count]) => (
+          <button
+            key={key}
+            type="button"
+            onClick={() => setFilter(key)}
+            className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-medium transition-colors ${
+              filter === key
+                ? "bg-background text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+            aria-pressed={filter === key}
+          >
+            {key === "stamp" && <StampIcon className="h-3 w-3" />}
+            {key === "timeOnly" && <Clock className="h-3 w-3" />}
+            {label}
+            <span className="text-[10px] tabular-nums text-muted-foreground/70">{count}</span>
+          </button>
+        ))}
+      </div>
+
+      {/* 책별 그룹 (paced) — 전체 보기에서만 */}
+      {filter === "all" && groups.length > 0 && (
         <div className="space-y-5">
           {groups.map((g) => (
             <div key={g.userBookId}>
@@ -510,6 +623,12 @@ export function ReadingSpeedDetail({ initialPaced, initialTimeOnly, initialGuide
                           <span className="text-sm font-semibold tabular-nums">
                             페이지당 {formatPacePerPage(s.pacePerPageSeconds)}
                           </span>
+                          {s.imageUrl && (
+                            <span className="inline-flex items-center gap-0.5 rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400">
+                              <StampIcon className="h-2.5 w-2.5" />
+                              스탬프
+                            </span>
+                          )}
                           {isExcluded && (
                             <span className="inline-flex items-center gap-0.5 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 dark:bg-amber-950/40 dark:text-amber-400">
                               <AlertTriangle className="h-2.5 w-2.5" />
@@ -521,8 +640,14 @@ export function ReadingSpeedDetail({ initialPaced, initialTimeOnly, initialGuide
                           p.{s.startPage}→{s.endPage} · {s.endPage - s.startPage}p ·{" "}
                           {formatDuration(s.durationSeconds)} · {formatDate(s.createdAt)}
                         </p>
+                        {s.memo && (
+                          <p className="mt-0.5 truncate text-[11px] italic text-muted-foreground/80">
+                            “{s.memo}”
+                          </p>
+                        )}
                       </div>
                       <div className="flex shrink-0 items-center gap-1">
+                        {photoButton(s)}
                         <button
                           type="button"
                           onClick={() => beginEdit(s)}
@@ -550,8 +675,8 @@ export function ReadingSpeedDetail({ initialPaced, initialTimeOnly, initialGuide
         </div>
       )}
 
-      {/* 시간만 기록 — 페이지 추가하면 평균에 반영 */}
-      {timeOnly.length > 0 && (
+      {/* 시간만 기록 — 페이지 추가하면 평균에 반영 (전체·시간만 보기) */}
+      {(filter === "all" || filter === "timeOnly") && timeOnly.length > 0 && (
         <div>
           <div className="mb-2 flex items-center gap-1.5 px-1">
             <Clock className="h-4 w-4 text-muted-foreground" />
@@ -571,7 +696,15 @@ export function ReadingSpeedDetail({ initialPaced, initialTimeOnly, initialGuide
                   className="flex items-center gap-3 rounded-xl border border-dashed border-border bg-muted/20 p-3"
                 >
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold tabular-nums">{formatDuration(s.durationSeconds)}</p>
+                    <p className="flex items-center gap-1.5 text-sm font-semibold tabular-nums">
+                      {formatDuration(s.durationSeconds)}
+                      {s.imageUrl && (
+                        <span className="inline-flex items-center gap-0.5 rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400">
+                          <StampIcon className="h-2.5 w-2.5" />
+                          스탬프
+                        </span>
+                      )}
+                    </p>
                     <p className="mt-0.5 text-[11px] text-muted-foreground tabular-nums">
                       {s.bookTitle} · {s.startPage > 0 ? `p.${s.startPage}~ · ` : ""}
                       {formatDate(s.createdAt)}
@@ -581,8 +714,14 @@ export function ReadingSpeedDetail({ initialPaced, initialTimeOnly, initialGuide
                         </span>
                       )}
                     </p>
+                    {s.memo && (
+                      <p className="mt-0.5 truncate text-[11px] italic text-muted-foreground/80">
+                        “{s.memo}”
+                      </p>
+                    )}
                   </div>
                   <div className="flex shrink-0 items-center gap-1">
+                    {photoButton(s)}
                     <button
                       type="button"
                       onClick={() => beginEdit(s, estimate != null)}
@@ -612,6 +751,76 @@ export function ReadingSpeedDetail({ initialPaced, initialTimeOnly, initialGuide
             </p>
           )}
         </div>
+      )}
+
+      {/* 스탬프 — 사진이 있는 기록만 (paced·timeOnly 가로지름) */}
+      {filter === "stamp" && (
+        <div>
+          {stamped.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-border py-12 text-center">
+              <StampIcon className="mx-auto mb-2 h-8 w-8 text-muted-foreground/30" />
+              <p className="text-sm text-muted-foreground">아직 사진이 있는 기록(스탬프)이 없어요</p>
+              <p className="mt-1 text-xs text-muted-foreground/60">
+                기록의 “사진” 버튼으로 사진을 더하면 스탬프가 돼요
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-1.5">
+              {stamped.map((s) => {
+                if (editingId === s.id) return <div key={s.id}>{editForm(s.id)}</div>;
+                return (
+                  <div
+                    key={s.id}
+                    className="flex items-center gap-3 rounded-xl border border-emerald-100 bg-emerald-50/30 p-3 dark:border-emerald-900/40 dark:bg-emerald-950/20"
+                  >
+                    {photoButton(s)}
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-semibold">{s.bookTitle}</p>
+                      <p className="mt-0.5 text-[11px] text-muted-foreground tabular-nums">
+                        {s.endPage > s.startPage ? `p.${s.startPage}→${s.endPage} · ` : ""}
+                        {formatDuration(s.durationSeconds)} · {formatDate(s.createdAt)}
+                      </p>
+                      {s.memo && (
+                        <p className="mt-0.5 truncate text-[11px] italic text-muted-foreground/80">
+                          “{s.memo}”
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex shrink-0 items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => beginEdit(s)}
+                        className="inline-flex items-center gap-1 rounded-full border border-rose-200 bg-rose-50 px-2.5 py-1 text-[11px] font-medium text-rose-700 transition-colors hover:bg-rose-100 dark:border-rose-900 dark:bg-rose-950/40 dark:text-rose-400"
+                        aria-label="기록 수정"
+                      >
+                        <Pencil className="h-3 w-3" />
+                        수정
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPendingDeleteId(s.id)}
+                        className="inline-flex h-7 w-7 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/40"
+                        aria-label="기록 삭제"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {lightbox && (
+        <Lightbox
+          urls={lightbox.urls}
+          index={lightbox.index}
+          onIndexChange={(n) => setLightbox((lb) => (lb ? { ...lb, index: n } : lb))}
+          onClose={() => setLightbox(null)}
+          alt={lightbox.alt}
+        />
       )}
 
       <AlertDialog
