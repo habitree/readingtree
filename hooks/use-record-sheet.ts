@@ -7,6 +7,7 @@
  *  - "start"  → 세션 시작 (책·시작 페이지·시간 옵션)
  *  - "end"    → 세션 종료 (끝 페이지·메모·북마크·사진들)
  *  - "detail" → 상세기록 (구절·생각·필사) — 세션 옵셔널 (D3)
+ *  - "attach" → 기존 기록에 사진/페이지/메모 사후 첨부 → 스탬프 승격 (기록 기획 12)
  *
  * Phase 4 ActiveSessionIndicator가 openEnd()를 호출.
  * Phase 5에서 모든 진입점이 본 훅을 사용하도록 통합.
@@ -27,23 +28,30 @@ export interface RecordSheetBook {
   totalPages: number | null;
 }
 
-export type RecordSheetMode = "start" | "end" | "detail";
+export type RecordSheetMode = "start" | "end" | "detail" | "attach";
 
 interface RecordSheetState {
   isOpen: boolean;
   mode: RecordSheetMode;
   /** end / detail 모드 진입 시 대상 세션 (null 가능 — detail은 자유 상세) */
   targetSessionId: string | null;
+  /** attach 모드 진입 시 사진을 첨부할 대상 reading_log id */
+  targetLogId: string | null;
   selectedBook: RecordSheetBook | null;
   /** start step의 prefill */
   prefillTargetSeconds: number | null;
   prefillStartPage: number | null;
-  /** end step의 prefill */
+  /** end / attach step의 prefill */
   prefillEndPage: number | null;
 
   openStart: (options?: { book?: RecordSheetBook | null; targetSeconds?: number; startPage?: number }) => void;
   openEnd: (sessionId: string, options?: { book?: RecordSheetBook | null; endPage?: number }) => void;
   openDetail: (sessionId?: string | null, options?: { book?: RecordSheetBook | null }) => void;
+  /** 기존 reading_log 에 사진/페이지/메모를 사후 첨부 (스탬프 승격) */
+  openAttach: (
+    logId: string,
+    options?: { book?: RecordSheetBook | null; startPage?: number; endPage?: number },
+  ) => void;
   selectBook: (book: RecordSheetBook | null) => void;
   close: () => void;
   reset: () => void;
@@ -53,6 +61,7 @@ export const useRecordSheetStore = create<RecordSheetState>((set) => ({
   isOpen: false,
   mode: "start",
   targetSessionId: null,
+  targetLogId: null,
   selectedBook: null,
   prefillTargetSeconds: null,
   prefillStartPage: null,
@@ -63,6 +72,7 @@ export const useRecordSheetStore = create<RecordSheetState>((set) => ({
       isOpen: true,
       mode: "start",
       targetSessionId: null,
+      targetLogId: null,
       selectedBook: options?.book ?? null,
       prefillTargetSeconds: options?.targetSeconds ?? null,
       prefillStartPage: options?.startPage ?? null,
@@ -73,6 +83,7 @@ export const useRecordSheetStore = create<RecordSheetState>((set) => ({
       isOpen: true,
       mode: "end",
       targetSessionId: sessionId,
+      targetLogId: null,
       selectedBook: options?.book ?? null,
       prefillEndPage: options?.endPage ?? null,
     }),
@@ -81,7 +92,18 @@ export const useRecordSheetStore = create<RecordSheetState>((set) => ({
       isOpen: true,
       mode: "detail",
       targetSessionId: sessionId ?? null,
+      targetLogId: null,
       selectedBook: options?.book ?? null,
+    }),
+  openAttach: (logId, options) =>
+    set({
+      isOpen: true,
+      mode: "attach",
+      targetSessionId: null,
+      targetLogId: logId,
+      selectedBook: options?.book ?? null,
+      prefillStartPage: options?.startPage ?? null,
+      prefillEndPage: options?.endPage ?? null,
     }),
   selectBook: (book) => set({ selectedBook: book }),
   close: () => set({ isOpen: false }),
@@ -90,6 +112,7 @@ export const useRecordSheetStore = create<RecordSheetState>((set) => ({
       isOpen: false,
       mode: "start",
       targetSessionId: null,
+      targetLogId: null,
       selectedBook: null,
       prefillTargetSeconds: null,
       prefillStartPage: null,

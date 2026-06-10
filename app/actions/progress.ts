@@ -20,6 +20,7 @@ import type {
 } from "@/types/progress";
 import { READTREE_BOOK_ID } from "@/lib/constants/readtree";
 import { computeRobustPace, DEFAULT_PACE_CONSTANTS } from "@/lib/reading/pace";
+import { summarizeReadingTime } from "@/lib/reading/time-stats";
 import { earnPoints } from "./points";
 import { updateBookProgress } from "./books/progress";
 
@@ -624,31 +625,22 @@ export async function getUserReadingTimeStats(): Promise<UserReadingTimeStats> {
   const logs = data || [];
   const guide = parseGuide(guideRow?.reading_speed_guide);
   const now = new Date();
-  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
-  const weekStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay()).toISOString();
+  const todayStartIso = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+  const weekStartIso = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay()).toISOString();
 
-  let totalSeconds = 0;
-  let todaySeconds = 0;
-  let thisWeekSeconds = 0;
-
-  for (const log of logs) {
-    const dur = log.reading_duration_seconds || 0;
-    totalSeconds += dur;
-    const startedAt = log.started_at || "";
-    if (startedAt >= todayStart) todaySeconds += dur;
-    if (startedAt >= weekStart) thisWeekSeconds += dur;
-  }
+  // 합산 로직은 공용 순수 헬퍼로 위임(lib/reading/time-stats) — 중복 제거.
+  const summary = summarizeReadingTime(logs, { todayStartIso, weekStartIso });
 
   // 전체 페이지당 평균(가중) — 적격 세션만 집계하되, 타이머 과다·오기록 등
   // 이상치는 사용자 가이드 범위로 자동 제외(로버스트)하여 평균 왜곡 방지.
   const pace = computeRobustPace(logs, guide);
 
   return {
-    totalSeconds,
-    sessionCount: logs.length,
-    averageSeconds: logs.length > 0 ? Math.round(totalSeconds / logs.length) : 0,
-    todaySeconds,
-    thisWeekSeconds,
+    totalSeconds: summary.totalSeconds,
+    sessionCount: summary.sessionCount,
+    averageSeconds: summary.averageSeconds,
+    todaySeconds: summary.todaySeconds,
+    thisWeekSeconds: summary.thisWeekSeconds,
     pacePerPageSeconds: pace.pacePerPageSeconds,
     totalPagesRead: pace.pagesRead,
   };
@@ -674,6 +666,7 @@ export async function getPaceSessions(): Promise<PaceSessionsResult> {
       .from("reading_logs")
       .select(`
         id, user_book_id, created_at, start_page, end_page, reading_duration_seconds,
+        memo, image_url, image_urls, promoted_at,
         user_books!inner(
           id,
           books(title, cover_image_url, total_pages)
@@ -696,6 +689,10 @@ export async function getPaceSessions(): Promise<PaceSessionsResult> {
     start_page: number | null;
     end_page: number | null;
     reading_duration_seconds: number | null;
+    memo: string | null;
+    image_url: string | null;
+    image_urls: string[] | null;
+    promoted_at: string | null;
     user_books?: {
       books?: { title?: string | null; cover_image_url?: string | null; total_pages?: number | null }
         | { title?: string | null; cover_image_url?: string | null; total_pages?: number | null }[]
@@ -721,6 +718,8 @@ export async function getPaceSessions(): Promise<PaceSessionsResult> {
     const endPage = ep ?? startPage;
     const hasProgress = sp != null && ep != null && ep - sp > 0;
 
+    const imageUrls = Array.isArray(r.image_urls) ? r.image_urls.filter((u): u is string => typeof u === "string" && u.length > 0) : [];
+
     const session: PaceSession = {
       id: r.id,
       userBookId: r.user_book_id,
@@ -732,6 +731,10 @@ export async function getPaceSessions(): Promise<PaceSessionsResult> {
       bookTitle: book?.title ?? "알 수 없는 책",
       coverImageUrl: book?.cover_image_url ?? null,
       totalPages: book?.total_pages ?? null,
+      memo: r.memo ?? null,
+      imageUrl: r.image_url ?? (imageUrls[0] ?? null),
+      imageUrls,
+      promotedAt: r.promoted_at ?? null,
     };
 
     if (hasProgress) paced.push(session);
@@ -808,16 +811,13 @@ export async function getReadingTimeStats(
 
   if (error) throw new Error(sanitizeErrorMessage(error));
 
-  const logs = data || [];
-  const totalSeconds = logs.reduce(
-    (sum, l) => sum + (l.reading_duration_seconds || 0),
-    0
-  );
+  // 책별 시간 합산 — 공용 순수 헬퍼 재사용(오늘/이번주 경계 불필요).
+  const summary = summarizeReadingTime(data || []);
 
   return {
-    totalSeconds,
-    sessionCount: logs.length,
-    averageSeconds: logs.length > 0 ? Math.round(totalSeconds / logs.length) : 0,
+    totalSeconds: summary.totalSeconds,
+    sessionCount: summary.sessionCount,
+    averageSeconds: summary.averageSeconds,
   };
 }
 
@@ -1278,6 +1278,7 @@ export async function attachStampToLog(
   revalidatePath("/");
   revalidatePath("/stamps");
   revalidatePath("/notes");
+  revalidatePath("/profile/reading-speed");
   revalidatePath(`/books/${existingLog.user_book_id}`);
 
   return { success: true, promoted: wasNotStamp, logId };

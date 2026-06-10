@@ -1,5 +1,5 @@
 /**
- * Feature flags (기록 기능 전면 개편 Phase 5)
+ * Feature flags (기록 기능 전면 개편 Phase 5 → 기록 기획 12 Phase C)
  *
  * 환경변수 기반의 단순 카나리 토글. 빌드 타임에 인라인.
  * 새 진입점(RecordSheet)으로의 점진 이행을 위한 안전장치.
@@ -9,28 +9,26 @@
  *   if (isRecordV2Enabled()) { useRecordSheet().openStart() }
  *   else { useStampCaptureStore().open() }
  *
- * 환경변수 설정:
- *   NEXT_PUBLIC_RECORD_V2=1  →  새 RecordSheet 활성화
- *   미지정 / "0" / "false"  →  기존 StampCaptureSheet 유지 (안전 기본값)
+ * 환경변수 설정 (기록 기획 12 Phase C — 기본값 ON 전환):
+ *   미지정 / "1" / "true" / "yes" / "on"  →  새 RecordSheet 활성화 (기본)
+ *   "0" / "false" / "no" / "off"          →  기존 StampCaptureSheet 폴백 (킬 스위치)
  *
- * 카나리 단계:
- *   1) 내부 사용자만 — env override (.env.local에 1)
- *   2) 신규 가입자 10% — Vercel env 분기 (Edge config 추후)
- *   3) 전체 — Phase 6에서 토글 제거 + 코드에서 legacy 분기 삭제
+ * 점진 이행 메모:
+ *   - Phase B에서 RecordSheet가 attach(사후 사진 첨부) 패리티를 달성 → Phase C에서 기본 ON.
+ *   - legacy(StampCaptureSheet/createReadingStamp 등) 물리 삭제는 ON 검증(1주) 통과 후 별도 PR.
+ *   - 롤백이 필요하면 NEXT_PUBLIC_RECORD_V2=0 으로 즉시 폴백.
  */
 
-const TRUTHY = new Set(["1", "true", "yes", "on"]);
-
-function readBooleanEnv(value: string | undefined): boolean {
-  if (!value) return false;
-  return TRUTHY.has(value.toLowerCase());
-}
+const FALSY = new Set(["0", "false", "no", "off"]);
 
 /**
- * 새 RecordSheet 통합 진입점 활성화 여부.
+ * 새 RecordSheet 통합 진입점 활성화 여부. (기본 ON)
  *
  * SSR/CSR 모두에서 동일 결과 — `NEXT_PUBLIC_*` 인라인 → hydration mismatch 없음.
  */
 export function isRecordV2Enabled(): boolean {
-  return readBooleanEnv(process.env.NEXT_PUBLIC_RECORD_V2);
+  const raw = process.env.NEXT_PUBLIC_RECORD_V2;
+  // 미지정/빈값 → 기본 ON. 명시적 falsy 값일 때만 OFF(킬 스위치).
+  if (raw == null || raw.trim() === "") return true;
+  return !FALSY.has(raw.trim().toLowerCase());
 }

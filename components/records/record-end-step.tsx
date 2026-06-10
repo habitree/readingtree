@@ -40,7 +40,7 @@ export function RecordEndStep({ sessionId, selectedBook, prefillEndPage, onSaved
   const [imageUrls, setImageUrls] = useState<string[]>([]);
   const [isPending, startTransition] = useTransition();
   const [isCancelling, startCancel] = useTransition();
-  const { close } = useRecordSheetStore();
+  const { close, openAttach } = useRecordSheetStore();
   const openStampShare = useStampShareStore((s) => s.openShare);
 
   const startPage = session?.start_page ?? 0;
@@ -81,19 +81,31 @@ export function RecordEndStep({ sessionId, selectedBook, prefillEndPage, onSaved
         const pagesRead = Math.max(0, endPage - startPage);
         const pointsLabel = result.pointsEarned ? ` +${result.pointsEarned}p` : "";
         const savedSessionId = result.sessionId;
+        const savedHasImage = imageUrls.length > 0;
         toast.success(
           result.promotedToStamp
             ? `스탬프 +1 · ${minutes}분 · ${pagesRead}p${pointsLabel}`
             : `기록 저장 · ${minutes}분 · ${pagesRead}p${pointsLabel}`,
           {
             duration: 5000,
-            action: {
-              label: "공유",
-              onClick: () =>
-                openStampShare(savedSessionId, {
-                  bookTitle: selectedBook?.title ?? null,
-                }),
-            },
+            // 사진과 함께 저장 → "공유", 사진 없이 저장 → "사진 추가"(사후 첨부 진입)
+            action: savedHasImage
+              ? {
+                  label: "공유",
+                  onClick: () =>
+                    openStampShare(savedSessionId, {
+                      bookTitle: selectedBook?.title ?? null,
+                    }),
+                }
+              : {
+                  label: "사진 추가",
+                  onClick: () =>
+                    openAttach(savedSessionId, {
+                      book: selectedBook,
+                      startPage,
+                      endPage,
+                    }),
+                },
           },
         );
 

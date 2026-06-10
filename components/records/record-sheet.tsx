@@ -13,7 +13,7 @@
  */
 
 import { useEffect } from "react";
-import { Pencil } from "lucide-react";
+import { Camera, Pencil } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -26,10 +26,13 @@ import { useReadingSession } from "@/hooks/use-reading-session";
 import { RecordStartStep } from "./record-start-step";
 import { RecordEndStep } from "./record-end-step";
 import { RecordDetailStep } from "./record-detail-step";
+import { RecordAttachStep } from "./record-attach-step";
 
 export function RecordSheet() {
   const store = useRecordSheet();
   const { session: activeSession } = useReadingSession();
+
+  const isAttach = store.mode === "attach";
 
   // start 모드 진입 시 이미 진행 중인 세션이 있으면 end로 자동 전환 (D2)
   useEffect(() => {
@@ -54,14 +57,18 @@ export function RecordSheet() {
       ? "기록 시작"
       : store.mode === "end"
         ? "기록 종료"
-        : "상세 기록";
+        : store.mode === "attach"
+          ? "사진 추가"
+          : "상세 기록";
 
   const description =
     store.mode === "start"
       ? "책과 시작 페이지를 확인하고 기록을 시작하세요."
       : store.mode === "end"
         ? "끝 페이지와 메모, 사진을 남기고 저장하세요."
-        : "구절·생각·필사를 자유롭게 남길 수 있어요.";
+        : store.mode === "attach"
+          ? "이 기록에 사진을 더하면 스탬프가 돼요. 페이지·메모도 함께 수정할 수 있어요."
+          : "구절·생각·필사를 자유롭게 남길 수 있어요.";
 
   return (
     <Sheet
@@ -77,7 +84,11 @@ export function RecordSheet() {
         <div className="px-4 py-4 sm:px-6">
           <SheetHeader className="text-left pb-3">
             <SheetTitle className="flex items-center gap-2">
-              <Pencil className="h-5 w-5 text-emerald-600" />
+              {isAttach ? (
+                <Camera className="h-5 w-5 text-emerald-600" />
+              ) : (
+                <Pencil className="h-5 w-5 text-emerald-600" />
+              )}
               {title}
             </SheetTitle>
             <SheetDescription>{description}</SheetDescription>
@@ -106,6 +117,16 @@ export function RecordSheet() {
             <RecordDetailStep
               sessionId={store.targetSessionId}
               selectedBook={store.selectedBook}
+            />
+          )}
+
+          {store.mode === "attach" && store.targetLogId && (
+            <RecordAttachStep
+              key={store.targetLogId}
+              logId={store.targetLogId}
+              selectedBook={store.selectedBook}
+              prefillStartPage={store.prefillStartPage}
+              prefillEndPage={store.prefillEndPage}
             />
           )}
         </div>

@@ -271,6 +271,15 @@ export interface PaceSession {
   durationSeconds: number;
   /** 이 세션의 페이지당 초 (페이지 진행 없으면 0) */
   pacePerPageSeconds: number;
+  // 내 기록 통합 뷰(기록 기획 12 Phase D) — 시간·페이지·스탬프·메모를 한 곳에서 관리
+  /** 간단 메모 (없으면 null) */
+  memo: string | null;
+  /** 대표 사진 (있으면 스탬프). null = 사진 없음 */
+  imageUrl: string | null;
+  /** 사진 배열 (≤5, 첫 장이 대표) */
+  imageUrls: string[];
+  /** 스탬프 승격 시각 (사진 첨부 시점). null = 미승격 */
+  promotedAt: string | null;
 }
 
 /**

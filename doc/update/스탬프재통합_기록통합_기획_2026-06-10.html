@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>스탬프 재통합 + 독서 기록 시스템 정리 기획 (2026-06-10)</title>
+<style>
+  :root {
+    --emerald-50: #ecfdf5;
+    --emerald-100: #d1fae5;
+    --emerald-200: #a7f3d0;
+    --emerald-300: #6ee7b7;
+    --emerald-500: #10b981;
+    --emerald-600: #059669;
+    --emerald-700: #047857;
+    --emerald-900: #064e3b;
+    --rose-50: #fff1f2;
+    --rose-100: #ffe4e6;
+    --rose-500: #f43f5e;
+    --rose-700: #be123c;
+    --amber-50: #fffbeb;
+    --amber-100: #fef3c7;
+    --amber-500: #f59e0b;
+    --amber-700: #b45309;
+    --sky-50: #f0f9ff;
+    --sky-100: #e0f2fe;
+    --sky-500: #0ea5e9;
+    --sky-700: #0369a1;
+    --violet-50: #f5f3ff;
+    --violet-100: #ede9fe;
+    --violet-500: #8b5cf6;
+    --violet-700: #6d28d9;
+    --slate-50: #f8fafc;
+    --slate-100: #f1f5f9;
+    --slate-200: #e2e8f0;
+    --slate-300: #cbd5e1;
+    --slate-400: #94a3b8;
+    --slate-500: #64748b;
+    --slate-600: #475569;
+    --slate-700: #334155;
+    --slate-800: #1e293b;
+    --slate-900: #0f172a;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Pretendard", "Segoe UI", sans-serif;
+    background: var(--slate-50);
+    color: var(--slate-900);
+    margin: 0;
+    padding: 24px 16px;
+    line-height: 1.6;
+  }
+  .container { max-width: 1060px; margin: 0 auto; }
+
+  /* HERO */
+  header.hero {
+    background: linear-gradient(135deg, var(--emerald-700), var(--emerald-900));
+    color: white;
+    border-radius: 20px;
+    padding: 38px 30px;
+    margin-bottom: 26px;
+    box-shadow: 0 10px 30px rgba(5, 150, 105, 0.25);
+  }
+  header.hero .badge {
+    display: inline-block;
+    padding: 4px 12px;
+    background: rgba(255,255,255,0.18);
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    margin-bottom: 12px;
+  }
+  header.hero h1 { margin: 0 0 12px; font-size: 30px; font-weight: 800; line-height: 1.25; }
+  header.hero .tagline {
+    margin: 0 0 18px;
+    font-size: 18px;
+    font-weight: 600;
+    background: rgba(255,255,255,0.12);
+    border-left: 4px solid var(--emerald-300);
+    padding: 12px 18px;
+    border-radius: 8px;
+  }
+  header.hero p { margin: 0; opacity: 0.92; font-size: 14px; }
+  header.hero .meta-row {
+    margin-top: 16px; display: flex; flex-wrap: wrap; gap: 8px;
+  }
+  header.hero .meta-chip {
+    background: rgba(255,255,255,0.14); border-radius: 8px;
+    padding: 6px 12px; font-size: 12px; font-weight: 500;
+  }
+
+  /* TOC */
+  .toc {
+    background: white; border: 1px solid var(--slate-200);
+    border-radius: 14px; padding: 16px 20px; margin-bottom: 22px;
+    display: flex; flex-wrap: wrap; gap: 8px;
+  }
+  .toc a {
+    text-decoration: none; font-size: 12px; font-weight: 600;
+    color: var(--slate-600); background: var(--slate-100);
+    padding: 6px 12px; border-radius: 999px;
+  }
+  .toc a:hover { background: var(--emerald-100); color: var(--emerald-700); }
+
+  /* Section */
+  section {
+    background: white;
+    border-radius: 16px;
+    border: 1px solid var(--slate-200);
+    padding: 26px;
+    margin-bottom: 20px;
+  }
+  section h2 {
+    margin: 0 0 6px;
+    font-size: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  section h2 .num {
+    background: var(--emerald-100);
+    color: var(--emerald-700);
+    width: 30px; height: 30px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 800;
+    flex-shrink: 0;
+  }
+  section .sub { color: var(--slate-500); font-size: 13px; margin: 0 0 18px; padding-left: 40px; }
+  h3.block { font-size: 15px; color: var(--slate-700); margin: 22px 0 10px; }
+
+  /* Gap / problem cards */
+  .gap-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: 12px;
+  }
+  .gap {
+    background: var(--rose-50);
+    border: 1px solid var(--rose-100);
+    border-radius: 12px;
+    padding: 14px 16px;
+  }
+  .gap .t { font-weight: 700; font-size: 13px; color: var(--rose-700); margin-bottom: 4px; }
+  .gap .d { font-size: 12px; color: var(--slate-600); }
+  .gap code { font-size: 11px; }
+
+  .note-box {
+    background: var(--emerald-50); color: var(--emerald-700);
+    border: 1px solid var(--emerald-100); border-radius: 10px;
+    padding: 12px 16px; font-size: 13px; margin-top: 14px;
+  }
+
+  /* Mental model — 4 axes */
+  .axes {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-top: 8px;
+  }
+  @media (max-width: 760px) { .axes { grid-template-columns: 1fr 1fr; } }
+  .axis {
+    border-radius: 12px; padding: 14px; text-align: center;
+    border: 2px solid var(--slate-200); background: var(--slate-50);
+  }
+  .axis.time { border-color: var(--sky-100); background: var(--sky-50); }
+  .axis.progress { border-color: var(--amber-100); background: var(--amber-50); }
+  .axis.journey { border-color: var(--violet-100); background: var(--violet-50); }
+  .axis.stamp { border-color: var(--emerald-200); background: var(--emerald-50); }
+  .axis .ico { font-size: 22px; }
+  .axis .title { font-weight: 800; font-size: 14px; margin: 4px 0 2px; }
+  .axis .ssot { font-size: 10px; color: var(--slate-500); }
+  .axis code { font-size: 10px; padding: 1px 4px; }
+
+  .source-banner {
+    text-align: center; margin: 16px 0 6px; font-size: 13px;
+    color: var(--slate-600);
+  }
+  .source-banner .pill {
+    background: var(--slate-900); color: white; font-weight: 700;
+    padding: 6px 14px; border-radius: 999px; font-size: 13px;
+  }
+
+  /* Flow steps (vertical) */
+  .flow-v { margin-top: 12px; }
+  .flow-step {
+    display: flex; gap: 14px; align-items: flex-start;
+    padding: 12px 0; border-bottom: 1px dashed var(--slate-200);
+  }
+  .flow-step:last-child { border-bottom: none; }
+  .flow-step .badge-step {
+    flex-shrink: 0; width: 30px; height: 30px; border-radius: 8px;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 13px; color: white; background: var(--emerald-600);
+  }
+  .flow-step .body { font-size: 13px; }
+  .flow-step .body strong { color: var(--slate-900); }
+  .flow-step .body .desc { color: var(--slate-600); font-size: 12px; }
+
+  /* Before/After columns */
+  .ba-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 720px) { .ba-grid { grid-template-columns: 1fr; } }
+  .ba { border-radius: 12px; padding: 16px; position: relative; }
+  .ba.before { background: var(--rose-50); border: 1px solid var(--rose-100); }
+  .ba.after { background: var(--emerald-50); border: 1px solid var(--emerald-100); }
+  .ba .tag {
+    display: inline-block; font-size: 11px; font-weight: 700;
+    padding: 2px 8px; border-radius: 999px; margin-bottom: 8px;
+  }
+  .ba.before .tag { background: var(--rose-500); color: white; }
+  .ba.after .tag { background: var(--emerald-600); color: white; }
+  .ba .title { font-size: 14px; font-weight: 700; margin-bottom: 8px; }
+  .ba ul, .ba ol { padding-left: 18px; margin: 0; }
+  .ba li { font-size: 12.5px; margin-bottom: 4px; color: var(--slate-700); }
+  .ba .meta { font-size: 11px; color: var(--slate-500); margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--slate-200); }
+
+  /* Mock UI */
+  .mock {
+    background: white; border: 1px solid var(--slate-300); border-radius: 12px;
+    padding: 14px; box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+    font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 11px; line-height: 1.5;
+  }
+  .mock .mock-title {
+    font-family: -apple-system, sans-serif; font-size: 13px; font-weight: 700;
+    color: var(--slate-700); margin-bottom: 10px;
+    border-bottom: 1px dashed var(--slate-200); padding-bottom: 6px;
+  }
+  .row-card {
+    font-family: -apple-system, sans-serif; font-size: 11px;
+    padding: 8px 10px; background: var(--slate-50); border-radius: 6px; margin-bottom: 5px;
+  }
+  .row-card.stamped { background: var(--emerald-50); }
+  .chip-add {
+    display: inline-block; color: var(--emerald-600); font-weight: 700; font-size: 10px;
+    border: 1px dashed var(--emerald-300); border-radius: 999px; padding: 1px 8px; margin-top: 4px;
+  }
+  .chip-have { color: var(--emerald-700); font-weight: 600; font-size: 10px; }
+  .seg {
+    display: inline-flex; gap: 2px; background: var(--slate-100); border-radius: 8px;
+    padding: 2px; font-family: -apple-system, sans-serif; margin-bottom: 8px;
+  }
+  .seg span { font-size: 10px; padding: 3px 10px; border-radius: 6px; color: var(--slate-500); }
+  .seg span.on { background: white; color: var(--emerald-700); font-weight: 700; box-shadow: 0 1px 2px rgba(0,0,0,0.08); }
+  .toast-mock {
+    background: var(--slate-900); color: white; border-radius: 10px;
+    padding: 10px 12px; font-size: 12px; font-family: -apple-system, sans-serif;
+    display: flex; justify-content: space-between; align-items: center; margin-top: 8px;
+  }
+  .toast-mock .action {
+    background: var(--emerald-500); color: white; padding: 4px 10px;
+    border-radius: 6px; font-size: 11px; font-weight: 600;
+  }
+
+  /* Tables */
+  table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 13px; }
+  th, td { border-bottom: 1px solid var(--slate-200); padding: 10px 8px; text-align: left; vertical-align: top; }
+  th { background: var(--slate-50); font-weight: 700; font-size: 12px; color: var(--slate-600); }
+  td.before-cell { color: var(--rose-700); font-size: 12px; }
+  td.after-cell { color: var(--emerald-700); font-weight: 600; font-size: 12px; }
+  td code, th code { font-size: 11px; }
+
+  /* Phase timeline */
+  .phases { list-style: none; padding: 0; margin: 8px 0 0; }
+  .phases li {
+    background: var(--slate-50); border-radius: 12px; padding: 14px 16px; margin-bottom: 10px;
+    display: flex; align-items: flex-start; gap: 14px;
+  }
+  .phases li .ph {
+    background: var(--emerald-600); color: white; padding: 4px 12px; border-radius: 8px;
+    font-size: 12px; font-weight: 800; flex-shrink: 0; align-self: flex-start; min-width: 64px; text-align: center;
+  }
+  .phases li.main .ph { background: var(--emerald-700); box-shadow: 0 0 0 3px var(--emerald-100); }
+  .phases li.gate .ph { background: var(--amber-500); }
+  .phases li .pbody { font-size: 13px; }
+  .phases li .pbody .pt { font-weight: 700; color: var(--slate-900); margin-bottom: 3px; }
+  .phases li .pbody .pd { color: var(--slate-600); font-size: 12px; }
+  .phases li .pbody .files { margin-top: 6px; display: flex; flex-wrap: wrap; gap: 4px; }
+
+  /* Pills */
+  .pill { display: inline-block; background: var(--slate-100); color: var(--slate-700); padding: 2px 9px; border-radius: 999px; font-size: 11px; font-weight: 500; }
+  .pill.new { background: var(--emerald-100); color: var(--emerald-700); }
+  .pill.modify { background: var(--amber-100); color: var(--amber-700); }
+  .pill.remove { background: var(--rose-100); color: var(--rose-700); }
+  .pill.keep { background: var(--sky-100); color: var(--sky-700); }
+  .pill.exist { background: var(--violet-100); color: var(--violet-700); }
+
+  code { background: var(--slate-100); color: var(--slate-700); padding: 1px 6px; border-radius: 4px; font-size: 12px; font-family: ui-monospace, monospace; }
+  pre { background: var(--slate-900); color: var(--slate-100); padding: 16px; border-radius: 10px; overflow-x: auto; font-size: 12px; line-height: 1.55; }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 0; }
+
+  /* Decision row */
+  .tradeoff { display: grid; grid-template-columns: 220px 1fr; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--slate-100); font-size: 13px; }
+  .tradeoff:last-child { border-bottom: none; }
+  .tradeoff .what { font-weight: 700; color: var(--slate-800); }
+  .tradeoff .why { color: var(--slate-600); }
+  @media (max-width: 640px) { .tradeoff { grid-template-columns: 1fr; gap: 2px; } }
+
+  .footer-cta {
+    background: linear-gradient(135deg, var(--emerald-50), white);
+    border: 2px solid var(--emerald-100); border-radius: 14px;
+    padding: 26px; margin-top: 24px; text-align: center;
+  }
+  .footer-cta h3 { margin: 0 0 8px; color: var(--emerald-700); font-size: 18px; }
+  .footer-cta p { color: var(--slate-600); margin: 0 0 10px; font-size: 13px; }
+  .footer-cta .opts { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 14px; }
+  .footer-cta .opt {
+    background: white; border: 1px solid var(--emerald-200); border-radius: 10px;
+    padding: 12px 18px; font-size: 13px; font-weight: 600; color: var(--emerald-700); min-width: 150px;
+  }
+  .footer-cta .opt .s { display: block; font-size: 11px; font-weight: 400; color: var(--slate-500); margin-top: 3px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- HERO -->
+  <header class="hero">
+    <span class="badge">기록 기능 개편 · 다음 단계 설계 · 2026.06.10</span>
+    <h1>스탬프 재통합 + 독서 기록 시스템 정리</h1>
+    <p class="tagline">"스탬프는 새 기능이 아니라, 시간을 기록한 세션에 사진을 더한 한 상태다."</p>
+    <p>2026-04-30 통합 기획은 <strong>구(舊) 스탬프 시트</strong> 위에서 그려졌습니다. 그 뒤 도입된 <strong>세션 모델(RecordSheet)</strong> 위에서 "시간 기록 → 사진 승격 → 스탬프 관리"를 다시 잇고, 흩어진 기록 기능을 묶어 정리합니다.</p>
+    <div class="meta-row">
+      <span class="meta-chip">📄 설계서: doc/update/기록기획/12-stamp-reintegration.md</span>
+      <span class="meta-chip">🔀 카나리: NEXT_PUBLIC_RECORD_V2 (현재 OFF)</span>
+      <span class="meta-chip">🧭 방향: 점진적 통합 · 패리티 후 ON</span>
+    </div>
+  </header>
+
+  <!-- TOC -->
+  <nav class="toc">
+    <a href="#s1">1 · 문제(갭)</a>
+    <a href="#s2">2 · 통합 멘탈 모델</a>
+    <a href="#s3">3 · 단일 흐름</a>
+    <a href="#s4">4 · 스탬프 재통합 ★</a>
+    <a href="#s5">5 · 내 기록 통합 뷰</a>
+    <a href="#s6">6 · 진입점 매트릭스</a>
+    <a href="#s7">7 · 정리 맵</a>
+    <a href="#s8">8 · 실행 계획</a>
+    <a href="#s9">9 · 결정 정합성</a>
+  </nav>
+
+  <!-- 1. 문제 -->
+  <section id="s1">
+    <h2><span class="num">1</span> 왜 다시 기획하나 — 갭의 정체</h2>
+    <p class="sub">스탬프는 이미 구현됐다. 문제는 "구 경로와 새 세션 모델의 이원화"다.</p>
+
+    <div class="note-box" style="margin-top:0; margin-bottom:16px;">
+      <strong>이미 있는 것</strong> — 스탬프 = 사진 첨부된 <code>reading_logs</code> 행. 생성/조회/공유 액션, <code>/stamps</code> 컬렉션, <code>/share/stamps/[id]</code> 공개 페이지, 8개 컴포넌트, <code>promoted_at</code>(사후 승격 시각) 컬럼까지 모두 구현 완료.
+    </div>
+
+    <div class="gap-grid">
+      <div class="gap">
+        <div class="t">① 이원화</div>
+        <div class="d">구: <code>StampCaptureSheet</code> + <code>createReadingStamp</code> · 신: <code>RecordSheet</code> + <code>endReadingSession</code>. 카나리 <code>NEXT_PUBLIC_RECORD_V2</code> OFF로 둘이 공존(분기 5곳).</div>
+      </div>
+      <div class="gap">
+        <div class="t">② attach 모드 누락</div>
+        <div class="d">새 <code>RecordSheet</code>엔 <strong>사후 사진 첨부 흐름이 없음</strong>. 사후 첨부는 아직 구 <code>StampCaptureSheet</code>만 가능.</div>
+      </div>
+      <div class="gap">
+        <div class="t">③ "사진 추가" 진입점 미연결</div>
+        <div class="d"><code>record-end-step</code> 종료 토스트엔 "공유"만. <code>stamp-toast.ts</code>의 <code>onAddPhoto</code> 슬롯이 비어 있음.</div>
+      </div>
+      <div class="gap">
+        <div class="t">④ 미배선 액션</div>
+        <div class="d"><code>getRecentRecordsForAttach</code> 호출처 0건. "최근 기록에 사진 추가" 진입이 어디에도 안 붙음.</div>
+      </div>
+    </div>
+
+    <div class="note-box">
+      📌 기존 <code>doc/update/기록기획/</code> 로드맵(묶음1~5: A5·A3·C7·C8·C9·B1…)에는 <strong>스탬프 재통합 항목 자체가 없습니다.</strong> 본 기획이 그 빈 칸을 채웁니다. (사용자 메모 <code>260604_기록관련 정리.md</code>: "독서시간/진행률/여정 3축 정리", "내 기록에 독서시간·페이지별 관리")
+    </div>
+  </section>
+
+  <!-- 2. 멘탈 모델 -->
+  <section id="s2">
+    <h2><span class="num">2</span> 통합 멘탈 모델 — 한 행이 네 축의 원천</h2>
+    <p class="sub"><code>reading_logs</code> 한 행 = 단일 기록 원자. 네 축은 그 행의 다른 얼굴일 뿐.</p>
+
+    <div class="source-banner">
+      <span class="pill">reading_logs (세션) 1행</span>
+      <div style="font-size:11px; color:var(--slate-400); margin-top:6px;">start_page · end_page · duration · image_urls · memo · bookmark · status · promoted_at</div>
+      <div style="font-size:18px; color:var(--emerald-600); margin:6px 0;">▼</div>
+    </div>
+
+    <div class="axes">
+      <div class="axis time">
+        <div class="ico">⏱</div>
+        <div class="title">독서시간</div>
+        <div class="ssot">duration 합 · pace</div>
+      </div>
+      <div class="axis progress">
+        <div class="ico">📊</div>
+        <div class="title">진행률</div>
+        <div class="ssot">user_books.current_page</div>
+      </div>
+      <div class="axis journey">
+        <div class="ico">🧭</div>
+        <div class="title">여정</div>
+        <div class="ssot">시간순 세션 점 (DEC-6)</div>
+      </div>
+      <div class="axis stamp">
+        <div class="ico">🏅</div>
+        <div class="title">스탬프</div>
+        <div class="ssot">image_url≠NULL &amp;&amp; promoted_at≠NULL</div>
+      </div>
+    </div>
+
+    <table style="margin-top:18px;">
+      <thead><tr><th>축</th><th>정본(SSOT)</th><th>reading_logs와의 관계</th></tr></thead>
+      <tbody>
+        <tr><td>⏱ 독서시간</td><td><code>reading_duration_seconds</code> 합</td><td>세션 직접 속성. pace = <code>lib/reading/pace.ts</code></td></tr>
+        <tr><td>📊 진행률</td><td><code>user_books.current_page</code></td><td><code>endReadingSession</code>이 <code>updateBookProgress(end_page)</code>로 동기화</td></tr>
+        <tr><td>🧭 여정</td><td>시간순 reading_logs 뷰</td><td>end_page 전진 세션 = 여정 점 (DEC-6)</td></tr>
+        <tr><td>🏅 스탬프</td><td><code>image_url≠NULL AND promoted_at≠NULL</code></td><td><strong>같은 세션의 사진 승격 상태</strong> — 별도 테이블 아님</td></tr>
+      </tbody>
+    </table>
+
+    <div class="note-box">
+      💡 구 <code>createReadingStamp</code>는 스탬프를 "또 다른 행"처럼 만들었던 게 이원화의 뿌리입니다. 새 모델에서는 <strong>모든 세션이 같은 행이고 사진 첨부 여부만 다릅니다.</strong> 따라서 "재통합" = 모든 경로를 <strong><code>endReadingSession</code>(생성·즉시승격) + <code>attachStampToLog</code>(사후승격) 두 경로로 수렴</strong>시키는 일입니다.
+    </div>
+  </section>
+
+  <!-- 3. 단일 흐름 -->
+  <section id="s3">
+    <h2><span class="num">3</span> 단일 흐름 — 시간 기록 이후 스탬프 관리</h2>
+    <p class="sub">"별도의 스탬프"가 아니라 "시간 기록 → (선택) 사진 승격 → 관리"의 한 줄기</p>
+
+    <div class="flow-v">
+      <div class="flow-step">
+        <span class="badge-step">1</span>
+        <div class="body"><strong>기록 시작</strong> · <code>startReadingSession</code>
+          <div class="desc">status='in_progress' · start_page = max(current_page, 직전 end_page) 자동 승계 · 사용자당 1개(D2)</div>
+        </div>
+      </div>
+      <div class="flow-step">
+        <span class="badge-step">2</span>
+        <div class="body"><strong>기록 종료</strong> · <code>endReadingSession(end_page, memo, image_urls?)</code>
+          <div class="desc">사진 있음 → 트리거가 image_url 미러 + <code>promoted_at</code> 즉시 설정 = <b>스탬프</b> · 사진 없음 → 시간·페이지만 저장 + <code>updateBookProgress</code>(진행률 동기화)</div>
+        </div>
+      </div>
+      <div class="flow-step">
+        <span class="badge-step">3</span>
+        <div class="body"><strong>사후 승격</strong> · <code>attachStampToLog(logId, {image_urls, page?, memo?})</code>
+          <div class="desc">"어제 시간만 기록한 세션"에 오늘 사진을 추가 → promoted_at 첫 전환 · <b>포인트 추가 적립 없음(D4)</b></div>
+        </div>
+      </div>
+      <div class="flow-step">
+        <span class="badge-step">4</span>
+        <div class="body"><strong>관리</strong> · <code>/stamps</code> 컬렉션 · <code>/share/stamps/[id]</code> 공유 · 내 기록 통합 뷰
+          <div class="desc">스탬프 필터 = <code>image_url≠NULL</code> (정의 불변, 어디서나 동일)</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. 스탬프 재통합 (메인) -->
+  <section id="s4" style="border:2px solid var(--emerald-300);">
+    <h2><span class="num">4</span> 스탬프 재통합 설계 ★ <span style="font-size:12px;color:var(--emerald-600);font-weight:600;">(Phase B — 본 기획의 메인)</span></h2>
+    <p class="sub">새 세션 모델(RecordSheet)에 사후 첨부(attach)를 잇고, 종료 후 진입점을 연결</p>
+
+    <h3 class="block">변경 요약</h3>
+    <ul style="font-size:13px; color:var(--slate-700); margin:0 0 6px; padding-left:18px;">
+      <li><b>4.1 종료 시 즉시 승격</b> — 이미 구현(<code>endReadingSession({image_urls})</code> → 트리거). 정식 경로로 확정.</li>
+      <li><b>4.2 RecordSheet attach 모드 신설</b> — <code>use-record-sheet.ts</code>에 <code>mode:"attach"</code> + <code>openAttach(logId, options)</code>, 신규 <code>components/records/record-attach-step.tsx</code>(사진 → <code>attachStampToLog</code> / 페이지·메모 → <code>updateReadingLogEntry</code>), <code>record-sheet.tsx</code> 라우팅.</li>
+      <li><b>4.3 종료 후 "사진 추가" 진입점</b> — 사진 없이 저장 시 토스트 액션 <code>onAddPhoto → openAttach(sessionId)</code> 연결.</li>
+      <li><b>4.4 reading-time-tab 카나리 분기</b> — <code>openEditSheet</code>를 <code>isRecordV2Enabled()</code>로 분기(ON→openAttach, OFF→legacy).</li>
+      <li><b>4.5 getRecentRecordsForAttach 활성화</b> — 통합 뷰·시간탭의 "최근 기록에 사진 추가" 진입에 연결.</li>
+    </ul>
+
+    <h3 class="block">음악 타이머 / 종료 다이얼로그 — Before / After</h3>
+    <div class="ba-grid">
+      <div class="ba before">
+        <span class="tag">BEFORE (구 스탬프 시트, 카나리 OFF)</span>
+        <div class="title">사후 첨부는 구 시트 전용</div>
+        <div class="mock">
+          <div class="mock-title">📖 독서 완료 · 25분</div>
+          <div class="row-card">📮 스탬프 찍기 (사진 강제 인상)</div>
+          <div class="row-card">⏱ 시간만 저장</div>
+          <div class="toast-mock"><span>저장됨</span><span class="action" style="background:var(--slate-500)">공유</span></div>
+        </div>
+        <div class="meta">종료 후 사진 추가 흐름이 <b>새 모델엔 없음</b> · "사진 추가" 토스트 슬롯 비어 있음</div>
+      </div>
+      <div class="ba after">
+        <span class="tag">AFTER (세션 모델, 카나리 ON)</span>
+        <div class="title">종료 → 토스트 "사진 추가" → attach</div>
+        <div class="mock">
+          <div class="mock-title">📖 독서 완료 · 25분</div>
+          <div class="row-card">📝 기록하기 (사진은 선택)</div>
+          <div class="row-card" style="background:var(--slate-100)">그만 읽기 (자동 저장)</div>
+          <div class="toast-mock"><span>📌 기록 저장됨 · p.180~215</span><span class="action">사진 추가</span></div>
+        </div>
+        <div class="meta">"사진 추가" → <code>openAttach(sessionId)</code> → record-attach-step → 승격 · 사진 있으면 토스트는 "공유하기"</div>
+      </div>
+    </div>
+
+    <h3 class="block">신규 액션 시그니처 (이미 존재 / 배선만)</h3>
+    <pre>// app/actions/progress.ts — 이미 구현됨, 새 시트에 연결만
+attachStampToLog(logId, { image_urls, start_page?, end_page?, memo? })
+  → { success, promoted }   // promoted_at 최초 1회 전환, 포인트 적립 없음
+
+// hooks/use-record-sheet.ts — 신규 모드
+type RecordSheetMode = "start" | "end" | "detail" | "attach"  // ← attach 추가
+openAttach(logId: string, options?: { book?, start_page?, end_page? })</pre>
+
+    <h3 class="block">legacy 정리 (Phase C — 카나리 ON 검증 후)</h3>
+    <div class="legend">
+      <span class="pill remove">제거: components/stamps/stamp-capture-sheet.tsx</span>
+      <span class="pill remove">제거: hooks/use-stamp-capture.ts</span>
+      <span class="pill modify">정리: progress.ts createReadingStamp/saveReadingSession → endReadingSession 위임</span>
+      <span class="pill keep">유지: /stamps · /share · stamp-collection-grid · stamp-share-*</span>
+    </div>
+  </section>
+
+  <!-- 5. 내 기록 통합 뷰 -->
+  <section id="s5">
+    <h2><span class="num">5</span> 내 기록 통합 뷰 <span style="font-size:12px;color:var(--slate-500);font-weight:600;">(Phase D — 요구 7번)</span></h2>
+    <p class="sub">시간·페이지·스탬프·메모를 한 곳에서 — <code>reading-speed-detail.tsx</code> 확장 (신규 페이지 X)</p>
+
+    <div class="ba-grid">
+      <div class="ba before">
+        <span class="tag">BEFORE</span>
+        <div class="title">속도 분석만 — 사진/스탬프 분리</div>
+        <div class="mock">
+          <div class="mock-title">📊 내 독서 속도 상세</div>
+          <div class="row-card">p.150→178 · 28분 · 페이지당 60초</div>
+          <div class="row-card">⏱ 시간만 기록 · 35분 <span class="chip-add">페이지 추가</span></div>
+          <div style="font-size:10px;color:var(--slate-400);margin-top:6px;font-family:-apple-system">사진은 /stamps 따로, 메모는 안 보임</div>
+        </div>
+        <div class="meta">시간/페이지/스탬프/메모가 화면마다 흩어짐</div>
+      </div>
+      <div class="ba after">
+        <span class="tag">AFTER</span>
+        <div class="title">한 카드에서 전부 관리</div>
+        <div class="mock">
+          <div class="mock-title">📊 내 독서 기록 · 속도</div>
+          <div class="seg"><span class="on">전체</span><span>시간만</span><span>스탬프</span></div>
+          <div class="row-card stamped">🖼️ p.150→178 · 28분 · "인상 깊은 구절" <span class="chip-have">스탬프</span></div>
+          <div class="row-card">⏱ 35분 <span class="chip-add">📷 사진 추가</span> <span class="chip-add">페이지 추가</span></div>
+          <div class="row-card">p.180→215 · 25분 · 메모 ✎</div>
+        </div>
+        <div class="meta">썸네일·스탬프 배지 · "사진 추가" 칩 → openAttach · 메모 인라인 편집 · 세그먼트 필터</div>
+      </div>
+    </div>
+
+    <div class="note-box">
+      데이터: <code>getPaceSessions</code> select에 <code>memo, image_url, image_urls, promoted_at, status</code> 추가 + <code>PaceSession</code> 타입 확장. paced/timeOnly 분류는 유지. Lightbox는 <code>components/stamps/photo-gallery.tsx</code> 재사용.
+    </div>
+  </section>
+
+  <!-- 6. 진입점 매트릭스 -->
+  <section id="s6">
+    <h2><span class="num">6</span> 진입점 매트릭스</h2>
+    <p class="sub">"사진 추가(스탬프 승격)" 진입이 일관되게 새 모델로 수렴</p>
+    <table>
+      <thead><tr><th>위치</th><th>BEFORE</th><th>AFTER</th></tr></thead>
+      <tbody>
+        <tr><td>음악 타이머 / 종료 다이얼로그</td><td class="before-cell">구 시트 "스탬프 vs 시간만"</td><td class="after-cell">"기록하기" 단일 + 종료 토스트 "사진 추가"</td></tr>
+        <tr><td>책 상세 "독서 시간" 탭</td><td class="before-cell">구 시트 attach만 (카나리 무관)</td><td class="after-cell">카나리 분기 → RecordSheet openAttach</td></tr>
+        <tr><td>내 기록(독서속도 상세)</td><td class="before-cell">사진 진입 없음</td><td class="after-cell">행마다 "📷 사진 추가" 칩 → openAttach</td></tr>
+        <tr><td>최근 기록 목록</td><td class="before-cell"><code>getRecentRecordsForAttach</code> 미배선</td><td class="after-cell">"최근 기록에 사진 추가" 진입 활성화</td></tr>
+        <tr><td>모바일 FAB · 사이드바 · 퀵액션</td><td class="before-cell">카나리 OFF → 구 시트</td><td class="after-cell">카나리 ON → RecordSheet (분기 5곳 고정)</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 7. 정리 맵 -->
+  <section id="s7">
+    <h2><span class="num">7</span> 정리 맵 — "묶어서 정리" (기존 로드맵과 정합)</h2>
+    <p class="sub">신규 기여 vs 기존 로드맵에 이미 있는 것 — 중복 없이 연결</p>
+    <table>
+      <thead><tr><th>정리 항목</th><th>기존 로드맵</th><th>본 기획 처리</th></tr></thead>
+      <tbody>
+        <tr><td>스탬프 재통합 (attach·종료후 진입점·통합뷰)</td><td><span class="pill new">로드맵에 없음 (신규 갭)</span></td><td class="after-cell">본 기획 메인 · Phase B/D</td></tr>
+        <tr><td>세션모델 단일화 · 카나리 ON · legacy 제거</td><td><span class="pill exist">Phase 5~6, A4</span></td><td class="after-cell">점진적 — 패리티 후 ON</td></tr>
+        <tr><td>시간통계 3함수 분산 → <code>lib/reading/time-stats.ts</code></td><td><span class="pill new">신규 정리</span></td><td class="after-cell">저위험 선행 (Phase A)</td></tr>
+        <tr><td>진행률 % 계산 3중복 → <code>computeProgressPercent</code></td><td><span class="pill exist">A5</span></td><td>기존 묶음1 참조 (중복 회피)</td></tr>
+        <tr><td>집계 코어 <code>computeReadingMetrics</code></td><td><span class="pill exist">A3</span></td><td>기존 묶음1 참조</td></tr>
+        <tr><td>notes 타입 축소 (photo 0건 차단, progress 이관)</td><td><span class="pill exist">B1</span></td><td>기존 로드맵 참조 — 사진경로 이관 후</td></tr>
+        <tr><td>캘린더 출처 이중화 (notes vs reading_logs)</td><td><span class="pill exist">C3</span></td><td>기존 로드맵 참조</td></tr>
+        <tr><td>3축 통합 뷰 / 페이지별 페이스</td><td><span class="pill exist">C8 / C7</span></td><td>기존 로드맵 참조</td></tr>
+      </tbody>
+    </table>
+    <div class="note-box">
+      ✅ <strong>이번 기획의 신규 기여 = "스탬프 재통합 + 내 기록 통합 뷰".</strong> 나머지 정리는 <code>11-next-steps-design.md</code> 묶음1~5에 이미 설계돼 있어 <b>중복 작성하지 않고 연결만</b> 합니다.
+    </div>
+  </section>
+
+  <!-- 8. 실행 계획 -->
+  <section id="s8">
+    <h2><span class="num">8</span> 단계별 실행 계획 (점진적)</h2>
+    <p class="sub">패리티 확보 → 카나리 ON 1주 검증 → legacy 제거</p>
+    <ul class="phases">
+      <li>
+        <span class="ph">Phase A</span>
+        <div class="pbody">
+          <div class="pt">시간통계 통합 (선행 · 저위험 · 마이그 없음)</div>
+          <div class="pd">시간통계 3함수를 <code>lib/reading/time-stats.ts</code>로 이전 + <code>progress.ts</code> re-export 위임. 동작 보존.</div>
+          <div class="files"><span class="pill new">lib/reading/time-stats.ts</span><span class="pill modify">app/actions/progress.ts</span></div>
+        </div>
+      </li>
+      <li class="main">
+        <span class="ph">Phase B ★</span>
+        <div class="pbody">
+          <div class="pt">스탬프 재통합 (메인)</div>
+          <div class="pd">RecordSheet attach 모드 + 종료 후 진입점 + 카나리 분기 → 새 모델이 legacy 패리티 달성.</div>
+          <div class="files"><span class="pill modify">use-record-sheet.ts</span><span class="pill new">record-attach-step.tsx</span><span class="pill modify">record-sheet.tsx</span><span class="pill modify">record-end-step.tsx</span><span class="pill modify">reading-time-tab.tsx</span></div>
+        </div>
+      </li>
+      <li class="gate">
+        <span class="ph">Phase C</span>
+        <div class="pbody">
+          <div class="pt">단일화 · 카나리 ON (게이트: 1주 검증)</div>
+          <div class="pd"><code>feature-flags.ts</code> ON → 분기 5곳 모니터링 → 검증 SQL 통과 후 고정 → 구 시트/훅/액션 제거.</div>
+          <div class="files"><span class="pill modify">lib/feature-flags.ts</span><span class="pill remove">stamp-capture-sheet.tsx</span><span class="pill remove">use-stamp-capture.ts</span><span class="pill modify">lazy-overlays.tsx</span></div>
+        </div>
+      </li>
+      <li>
+        <span class="ph">Phase D</span>
+        <div class="pbody">
+          <div class="pt">내 기록 통합 뷰 (요구 7번)</div>
+          <div class="pd"><code>reading-speed-detail.tsx</code> 확장 — 사진/스탬프/메모/세그먼트 필터. <code>getPaceSessions</code>/<code>PaceSession</code> 확장.</div>
+          <div class="files"><span class="pill modify">reading-speed-detail.tsx</span><span class="pill modify">progress.ts (getPaceSessions)</span><span class="pill modify">types/progress.ts</span></div>
+        </div>
+      </li>
+    </ul>
+    <div class="note-box">
+      🗄️ <strong>신규 마이그레이션 불필요</strong> — <code>promoted_at</code> 이미 존재. (C9 review·notes 정리는 기존 로드맵의 마이그레이션 항목으로 분리)
+    </div>
+  </section>
+
+  <!-- 9. 결정 정합성 -->
+  <section id="s9">
+    <h2><span class="num">9</span> 결정 정합성 — 기존 ADR/DEC와 충돌 없음</h2>
+    <p class="sub">기존 합의를 깨지 않음을 명시</p>
+    <div class="tradeoff">
+      <div class="what">D2 · in_progress 1개</div>
+      <div class="why">attach는 <b>완료된 세션</b> 대상이라 진행 중 세션 정책과 무관.</div>
+    </div>
+    <div class="tradeoff">
+      <div class="what">D4 · 포인트 종료 1회</div>
+      <div class="why"><code>attachStampToLog</code>는 <b>추가 적립 없음</b> — 정책 불변. 사진 보너스 도입은 별도 결정.</div>
+    </div>
+    <div class="tradeoff">
+      <div class="what">DEC-6 · 여정 편입</div>
+      <div class="why">스탬프 승격(사진)은 여정 점 판정(end_page 전진)과 독립 — 충돌 없음.</div>
+    </div>
+    <div class="tradeoff">
+      <div class="what">스탬프 정의</div>
+      <div class="why"><code>image_url≠NULL AND promoted_at≠NULL</code> — <code>00-master.md</code>와 동일하게 유지(불변).</div>
+    </div>
+    <div class="tradeoff">
+      <div class="what">기존 공유 자산</div>
+      <div class="why"><code>/stamps</code> · <code>/share/stamps/[id]</code> · <code>stamp-share-*</code> · 컬렉션 그리드는 <b>모두 유지</b> — 제거 대상은 구 입력 시트뿐.</div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <div class="footer-cta">
+    <h3>📝 진행 여부를 결정해 주세요</h3>
+    <p>이 기획대로 진행할까요? 아래 중 선택하시거나, 다듬을 부분을 알려주세요.</p>
+    <div class="opts">
+      <div class="opt">A → B 먼저<span class="s">시간통계 정리 후 스탬프 재통합(메인)부터</span></div>
+      <div class="opt">B만 (스탬프 재통합)<span class="s">카나리·legacy는 나중에</span></div>
+      <div class="opt">전체 A→B→C→D<span class="s">통합 뷰까지 한 흐름으로</span></div>
+    </div>
+    <p style="font-size:12px;color:var(--slate-500);margin-top:16px;">
+      📂 설계서: <code>doc/update/기록기획/12-stamp-reintegration.md</code><br>
+      🔗 선행 기획: <code>doc/update/stamp-integration-plan.html</code> (2026-04-30, legacy 기반) · 로드맵: <code>11-next-steps-design.md</code>
+    </p>
+  </div>
+
+</div>
+</body>
+</html>
