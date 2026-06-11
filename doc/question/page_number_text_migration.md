@@ -126,8 +126,23 @@ LIMIT 5;
 - ✅ 기록 수정 폼 변경 (`note-edit-form.tsx`)
 - ✅ 기록 생성 폼 변경 (`note-form-new.tsx`)
 - ✅ 스키마 검증 변경
-- ⏳ **Supabase 마이그레이션 실행 필요**
+- ✅ **Supabase 마이그레이션 실행 완료 (2026-06-12)**
+- ✅ `createNote` 정수 검증 → 텍스트 길이 검증으로 정정 (`app/actions/notes.ts`)
+- ✅ `types/database.ts` notes.page_number `number` → `string` 정정
 
 ---
 
-**다음 단계:** Supabase 대시보드에서 마이그레이션 SQL을 실행하세요!
+## 사후 기록 (2026-06-12)
+
+**증상:** 책 기록 저장 시 "An error occurred in the Server Components render…" 에러.
+
+**근본 원인:** 위 마이그레이션이 **프로덕션에 미실행**된 채로 코드/폼/타입만 string으로 선행 변경됨.
+페이지 칸에 비숫자 값(예: `25p`, `10-20`)을 입력하면 `notes` INSERT가
+`invalid input syntax for type integer: "25p"`(HTTP 400)로 실패. 프로덕션 Next.js가
+서버액션 에러를 가려 "Server Components render" 메시지로 표시.
+
+**확인 근거:** Supabase api 로그 `POST | 400 | /rest/v1/notes`, postgres 로그
+`invalid input syntax for type integer: "25p"` 다수(동일 사용자 3회 재시도).
+
+**조치:** `ALTER TABLE notes ALTER COLUMN page_number TYPE TEXT`(idempotent) 적용 →
+컬럼 타입 `text` 확정, 기존 294개 페이지값 무손실 보존(`"291"` 등).

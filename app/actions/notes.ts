@@ -117,11 +117,10 @@ export async function createNote(data: CreateNoteInput, user?: User | null) {
     throw new Error("태그는 최대 10개까지, 각 태그는 50자 이하여야 합니다.");
   }
 
-  if (data.page_number !== null && data.page_number !== undefined) {
-    const pageNum = typeof data.page_number === 'string' ? parseInt(data.page_number, 10) : data.page_number;
-    if (!Number.isInteger(pageNum) || pageNum < 1) {
-      throw new Error("페이지 번호는 1 이상의 정수여야 합니다.");
-    }
+  // page_number는 자유 텍스트(단일 "25" · 범위 "10-20" · 여러 개 "10, 15" · "25p" 등).
+  // DB 컬럼이 TEXT이므로 정수 강제 대신 길이만 검증한다(폼 한도 1,500자와 일치).
+  if (data.page_number != null && String(data.page_number).length > 1500) {
+    throw new Error("페이지 표기는 1,500자 이하여야 합니다.");
   }
 
   // 책 소유 확인 및 book_id 조회 (book_id가 있는 경우에만)

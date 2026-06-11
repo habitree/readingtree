@@ -1212,7 +1212,7 @@ export type Database = {
           image_url: string | null
           is_public: boolean | null
           is_sample: boolean | null
-          page_number: number | null
+          page_number: string | null
           reading_log_id: string | null
           related_user_book_ids: string[] | null
           source_label: string | null
@@ -1233,7 +1233,7 @@ export type Database = {
           image_url?: string | null
           is_public?: boolean | null
           is_sample?: boolean | null
-          page_number?: number | null
+          page_number?: string | null
           reading_log_id?: string | null
           related_user_book_ids?: string[] | null
           source_label?: string | null
@@ -1254,7 +1254,7 @@ export type Database = {
           image_url?: string | null
           is_public?: boolean | null
           is_sample?: boolean | null
-          page_number?: number | null
+          page_number?: string | null
           reading_log_id?: string | null
           related_user_book_ids?: string[] | null
           source_label?: string | null
