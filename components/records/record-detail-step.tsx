@@ -7,17 +7,19 @@
  */
 
 import { useState, useTransition } from "react";
-import { Loader2, Save } from "lucide-react";
+import { Loader2, Save, ScanLine } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+import { smartCompressImage } from "@/lib/utils/image";
 import { addNoteToSession } from "@/app/actions/sessions";
 import { useRecordSheetStore, type RecordSheetBook } from "@/hooks/use-record-sheet";
 import { useStampShareStore } from "@/hooks/use-stamp-share";
 import type { DetailKind } from "@/types/note";
+import { BookPageScanner } from "./book-page-scanner";
 
 const QUOTE_MAX = 5000;
 const MEMO_MAX = 10000;
@@ -40,8 +42,80 @@ export function RecordDetailStep({ sessionId, selectedBook }: Props) {
   const [memoContent, setMemoContent] = useState("");
   const [pageNumber, setPageNumber] = useState<string>("");
   const [isPending, startTransition] = useTransition();
+  const [scannerOpen, setScannerOpen] = useState(false);
+  const [scanning, setScanning] = useState(false);
+  const [scannedImageUrl, setScannedImageUrl] = useState<string | undefined>(undefined);
   const { close } = useRecordSheetStore();
   const openStampShare = useStampShareStore((s) => s.openShare);
+
+  /**
+   * 스캐너에서 받은 페이지들을 업로드 → 동기 OCR → 텍스트 결합.
+   * 첫 페이지 이미지는 기록의 image_url 로 저장한다(필사 증빙).
+   */
+  const handleScanComplete = async (files: File[]) => {
+    if (files.length === 0) return;
+    setScanning(true);
+    const texts: string[] = [];
+    let firstUrl = scannedImageUrl;
+    try {
+      for (let i = 0; i < files.length; i++) {
+        let file = files[i];
+        try {
+          file = await smartCompressImage(files[i], {
+            compressionThreshold: 1024 * 1024,
+            maxWidth: 1920,
+            maxHeight: 1920,
+            targetSizeBytes: 1024 * 1024,
+            minQuality: 0.5,
+            maxQuality: 0.92,
+            verbose: false,
+          });
+        } catch {
+          file = files[i];
+        }
+
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("type", "transcription");
+        const uploadRes = await fetch("/api/upload", { method: "POST", body: formData });
+        if (!uploadRes.ok) {
+          toast.warning(`${i + 1}페이지 업로드에 실패했어요.`);
+          continue;
+        }
+        const { url } = (await uploadRes.json()) as { url?: string };
+        if (!url) continue;
+        if (!firstUrl) firstUrl = url;
+
+        const ocrRes = await fetch("/api/ocr/scan", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ imageUrl: url }),
+        });
+        if (ocrRes.ok) {
+          const { text } = (await ocrRes.json()) as { text?: string };
+          if (text && text.trim()) texts.push(text.trim());
+        } else {
+          const err = (await ocrRes.json().catch(() => ({}))) as { error?: string };
+          toast.warning(err.error || `${i + 1}페이지 글자 인식에 실패했어요.`);
+        }
+      }
+
+      if (firstUrl) setScannedImageUrl(firstUrl);
+
+      if (texts.length > 0) {
+        setQuoteContent((prev) => {
+          const joined = texts.join("\n\n");
+          const combined = prev.trim() ? `${prev.trim()}\n\n${joined}` : joined;
+          return combined.slice(0, QUOTE_MAX);
+        });
+        toast.success(`${texts.length}페이지 텍스트를 불러왔어요. 필요하면 수정하세요.`);
+      } else {
+        toast.warning("인식된 텍스트가 없어요. 직접 입력해도 돼요.");
+      }
+    } finally {
+      setScanning(false);
+    }
+  };
 
   const handleSave = () => {
     // memo·review는 본문(memoContent), quote·transcription은 구절(quoteContent) 필요
@@ -62,6 +136,7 @@ export function RecordDetailStep({ sessionId, selectedBook }: Props) {
           quote_content: quoteContent.trim() || undefined,
           memo_content: memoContent.trim() || undefined,
           page_number: pageNumber.trim() || undefined,
+          image_url: kind === "transcription" ? scannedImageUrl : undefined,
           is_public: true,
         });
         const linkedSessionId = sessionId;
@@ -138,6 +213,34 @@ export function RecordDetailStep({ sessionId, selectedBook }: Props) {
         </div>
       </div>
 
+      {/* 필사: 페이지 스캔 */}
+      {kind === "transcription" && (
+        <div className="rounded-xl border border-emerald-200 bg-emerald-50/60 p-3 dark:border-emerald-900 dark:bg-emerald-950/20">
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-slate-900 dark:text-white">페이지 스캔</p>
+              <p className="text-xs text-slate-500">
+                카메라로 책 페이지를 촬영하면 자동으로 텍스트를 인식해요. (최대 3페이지)
+              </p>
+            </div>
+            <Button
+              type="button"
+              size="sm"
+              onClick={() => setScannerOpen(true)}
+              disabled={isPending || scanning}
+              className="shrink-0 bg-emerald-600 text-white hover:bg-emerald-700"
+            >
+              {scanning ? (
+                <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+              ) : (
+                <ScanLine className="mr-1 h-4 w-4" />
+              )}
+              {scanning ? "인식 중" : "스캔"}
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* 본문 */}
       {kind === "quote" || kind === "transcription" ? (
         <div className="space-y-2">
@@ -146,12 +249,16 @@ export function RecordDetailStep({ sessionId, selectedBook }: Props) {
           </Label>
           <Textarea
             id="record-detail-quote"
-            placeholder="책에서 옮겨 적을 문장"
+            placeholder={
+              kind === "transcription"
+                ? "스캔하면 인식된 텍스트가 여기에 채워져요. 직접 입력·수정도 가능해요."
+                : "책에서 옮겨 적을 문장"
+            }
             value={quoteContent}
             onChange={(e) => setQuoteContent(e.target.value.slice(0, QUOTE_MAX))}
             maxLength={QUOTE_MAX}
             className="h-32 resize-none"
-            disabled={isPending}
+            disabled={isPending || scanning}
           />
           <p className="text-right text-xs text-slate-400">
             {quoteContent.length}/{QUOTE_MAX}
@@ -224,6 +331,14 @@ export function RecordDetailStep({ sessionId, selectedBook }: Props) {
           저장
         </Button>
       </div>
+
+      {/* 페이지 스캐너 (필사) */}
+      <BookPageScanner
+        open={scannerOpen}
+        onClose={() => setScannerOpen(false)}
+        onCapture={handleScanComplete}
+        maxPages={3}
+      />
     </div>
   );
 }
