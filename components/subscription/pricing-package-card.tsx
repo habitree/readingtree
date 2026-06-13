@@ -13,7 +13,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { PointPackageInfo } from "@/lib/subscription/pricing-data";
-import { formatPrice, formatPriceUsd } from "@/lib/subscription/pricing-data";
+import { formatPriceUsd, formatPriceKrwExample } from "@/lib/subscription/pricing-data";
 import { usePolarPayment } from "@/hooks/use-polar-payment";
 import { useAuth } from "@/contexts/auth-context";
 
@@ -57,11 +57,11 @@ export function PricingPackageCard({ pkg }: PricingPackageCardProps) {
         <div className="mt-2 space-y-0.5">
           <div>
             <span className="text-3xl font-bold">
-              {formatPrice(pkg.price)}
+              {formatPriceUsd(pkg.priceUsd)}
             </span>
           </div>
           <div className="text-sm text-muted-foreground">
-            {formatPriceUsd(pkg.priceUsd)}
+            {formatPriceKrwExample(pkg.price)} (예시)
           </div>
         </div>
         <CardDescription>

@@ -229,3 +229,22 @@ export function formatPriceUsd(price: number): string {
   if (price === 0) return "Free";
   return `$${price.toFixed(2)}`;
 }
+
+/**
+ * KRW 예시 가격 포맷 (예: 3900 → "약 ₩3,900")
+ *
+ * 결제는 USD 기준으로 청구되므로, 원화 금액은 참고용 예시일 뿐
+ * 환율 변동에 따라 실제 청구 금액과 차이가 날 수 있다.
+ */
+export function formatPriceKrwExample(price: number): string {
+  if (price === 0) return "무료";
+  return `약 ₩${price.toLocaleString("ko-KR")}`;
+}
+
+/**
+ * 결제 통화 안내 (환율 변동 주석)
+ *
+ * 가격을 USD 기준(주 표기)으로 노출하고 원화를 예시로 보조 표기할 때 함께 노출한다.
+ */
+export const CURRENCY_NOTICE =
+  "결제는 USD(달러) 기준으로 진행됩니다. 표시된 원화 금액은 예시이며, 환율 변동에 따라 실제 청구 금액과 차이가 날 수 있습니다.";

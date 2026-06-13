@@ -41,7 +41,7 @@ import type {
   MissionWithDetails,
 } from "@/types/points";
 import { LEVEL_STYLES, LEVEL_DEFAULTS, POINT_ACTION_DEFAULTS } from "@/types/points";
-import { ACTIVE_POINT_PACKAGES, FEATURE_INFO_ROWS } from "@/lib/subscription/pricing-data";
+import { ACTIVE_POINT_PACKAGES, FEATURE_INFO_ROWS, formatPriceUsd, formatPriceKrwExample } from "@/lib/subscription/pricing-data";
 import { LoginPromptModal } from "@/components/ui/login-prompt-modal";
 
 interface PointsPageContentProps {
@@ -773,8 +773,11 @@ function GuestPointsGuide() {
                   +{pkg.bonusPoints}P 보너스
                 </p>
               )}
-              <p className="text-sm font-medium text-muted-foreground">
-                ₩{pkg.price.toLocaleString()}
+              <p className="text-sm font-medium text-foreground">
+                {formatPriceUsd(pkg.priceUsd)}
+              </p>
+              <p className="text-[10px] text-muted-foreground">
+                {formatPriceKrwExample(pkg.price)} 예시
               </p>
               <p className="text-[10px] text-amber-500">
                 첫충전 +{pkg.firstPurchaseBonusPoints}P

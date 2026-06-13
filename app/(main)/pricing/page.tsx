@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
-import { Sparkles, Zap, BookOpen, ScanText, FileBarChart, Gift, Flame, Trophy, Pen, UserPlus, Coins } from "lucide-react";
+import { Sparkles, Zap, BookOpen, ScanText, FileBarChart, Gift, Flame, Trophy, Pen, Coins, Info } from "lucide-react";
 import { IS_BETA_MODE, BETA_MESSAGE } from "@/lib/subscription/beta";
-import { ACTIVE_POINT_PACKAGES, PAID_SUBSCRIPTION_PLANS } from "@/lib/subscription/pricing-data";
+import { ACTIVE_POINT_PACKAGES, PAID_SUBSCRIPTION_PLANS, CURRENCY_NOTICE } from "@/lib/subscription/pricing-data";
 import { PricingPackageCard } from "@/components/subscription/pricing-package-card";
 import { SubscriptionPlanCard } from "@/components/subscription/subscription-plan-card";
 import { PricingComparisonTable } from "@/components/subscription/pricing-comparison-table";
@@ -91,6 +91,12 @@ export default function PricingPage() {
             <p className="text-sm text-amber-700 dark:text-amber-400">
               지금 충전하면 2배의 포인트를 드려요
             </p>
+          </div>
+
+          {/* 결제 통화 안내 (USD 기준 · 원화는 예시) */}
+          <div className="flex items-start gap-2 rounded-lg border border-border bg-muted/40 px-4 py-3 text-xs text-muted-foreground">
+            <Info className="h-4 w-4 flex-shrink-0 mt-0.5" />
+            <p>{CURRENCY_NOTICE}</p>
           </div>
 
           {/* 구독 플랜 */}

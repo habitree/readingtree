@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>vFlat급 책페이지 캡처 고도화 — 타당성 검토 보고서 (2026-06-13)</title>
+<style>
+  :root{
+    --emerald-50:#ecfdf5; --emerald-100:#d1fae5; --emerald-200:#a7f3d0; --emerald-300:#6ee7b7;
+    --emerald-500:#10b981; --emerald-600:#059669; --emerald-700:#047857; --emerald-900:#064e3b;
+    --rose-50:#fff1f2; --rose-100:#ffe4e6; --rose-500:#f43f5e; --rose-700:#be123c;
+    --amber-50:#fffbeb; --amber-100:#fef3c7; --amber-500:#f59e0b; --amber-700:#b45309;
+    --sky-50:#f0f9ff; --sky-100:#e0f2fe; --sky-500:#0ea5e9; --sky-700:#0369a1;
+    --violet-50:#f5f3ff; --violet-100:#ede9fe; --violet-700:#6d28d9;
+    --slate-50:#f8fafc; --slate-100:#f1f5f9; --slate-200:#e2e8f0; --slate-300:#cbd5e1;
+    --slate-400:#94a3b8; --slate-500:#64748b; --slate-600:#475569; --slate-700:#334155;
+    --slate-800:#1e293b; --slate-900:#0f172a;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Pretendard","Segoe UI",sans-serif; background:var(--slate-50); color:var(--slate-900); margin:0; padding:24px 16px; line-height:1.65; word-break:keep-all; overflow-wrap:anywhere;}
+  .container{max-width:1180px; margin:0 auto;}
+
+  /* hero */
+  header.hero{background:linear-gradient(135deg,var(--emerald-700),var(--emerald-900)); color:#fff; border-radius:20px; padding:34px 30px; margin-bottom:22px; box-shadow:0 10px 30px rgba(5,150,105,.25); position:relative;}
+  header.hero .badge{display:inline-block; padding:4px 12px; background:rgba(255,255,255,.18); border-radius:999px; font-size:12px; font-weight:600; margin-bottom:12px;}
+  header.hero h1{margin:0 0 12px; font-size:27px; font-weight:800; line-height:1.25;}
+  header.hero p{margin:0; opacity:.93; font-size:14px; max-width:820px;}
+  header.hero .chips{margin-top:16px; display:flex; flex-wrap:wrap; gap:8px;}
+  header.hero .chip{background:rgba(255,255,255,.14); border-radius:8px; padding:6px 12px; font-size:12px; font-weight:500;}
+  header.hero .tools{position:absolute; top:22px; right:22px; display:flex; gap:8px;}
+  header.hero .tools button{background:rgba(255,255,255,.16); border:1px solid rgba(255,255,255,.25); color:#fff; border-radius:8px; padding:6px 12px; font-size:12px; font-weight:600; cursor:pointer;}
+  header.hero .tools button:hover{background:rgba(255,255,255,.28);}
+
+  /* layout: left sticky TOC + content */
+  .layout{display:grid; grid-template-columns:230px 1fr; gap:22px; align-items:start;}
+  .content{min-width:0;}
+  .toc-side{position:sticky; top:18px; background:#fff; border:1px solid var(--slate-200); border-radius:14px; padding:14px 12px;}
+  .toc-side .t-title{font-size:11px; font-weight:800; color:var(--slate-400); letter-spacing:.06em; text-transform:uppercase; padding:4px 8px 8px;}
+  .toc-side a{display:block; text-decoration:none; font-size:12.5px; font-weight:600; color:var(--slate-600); padding:7px 10px; border-radius:8px; margin-bottom:2px;}
+  .toc-side a:hover{background:var(--emerald-50); color:var(--emerald-700);}
+  .toc-side a .n{display:inline-block; width:18px; color:var(--emerald-600); font-weight:800;}
+  @media (max-width:920px){ .layout{grid-template-columns:1fr;} .toc-side{position:static; display:flex; flex-wrap:wrap; gap:6px;} .toc-side .t-title{width:100%;} .toc-side a{margin:0;} }
+
+  /* sections */
+  section{background:#fff; border-radius:16px; border:1px solid var(--slate-200); padding:24px; margin-bottom:18px;}
+  section h2{margin:0 0 6px; font-size:19px; display:flex; align-items:center; gap:10px;}
+  section h2 .num{background:var(--emerald-100); color:var(--emerald-700); width:30px; height:30px; border-radius:8px; display:inline-flex; align-items:center; justify-content:center; font-size:14px; font-weight:800; flex-shrink:0;}
+  section .sub{color:var(--slate-500); font-size:13px; margin:0 0 16px; padding-left:40px;}
+  section h3{font-size:15px; margin:20px 0 8px; color:var(--slate-800);}
+  p{font-size:13.5px;}
+  ul{margin:6px 0; padding-left:20px;} li{font-size:13.5px; margin-bottom:5px; color:var(--slate-700);} li b{color:var(--slate-900);}
+
+  /* table */
+  .table-wrap{overflow-x:auto; margin-top:8px;}
+  table{width:100%; border-collapse:collapse; font-size:12.5px; min-width:520px;}
+  th,td{border-bottom:1px solid var(--slate-200); padding:9px 9px; text-align:left; vertical-align:top;}
+  th{background:var(--slate-50); font-weight:700; font-size:11.5px; color:var(--slate-600); position:sticky; top:0;}
+  tbody tr:hover{background:var(--slate-50);}
+  td.center,th.center{text-align:center;}
+  code{background:var(--slate-100); color:var(--slate-700); padding:1px 6px; border-radius:4px; font-size:11.5px; font-family:ui-monospace,SFMono-Regular,Menlo,monospace;}
+
+  /* pills / chips */
+  .pill{display:inline-block; padding:2px 9px; border-radius:999px; font-size:11px; font-weight:700; white-space:nowrap;}
+  .pill.new{background:var(--emerald-100); color:var(--emerald-700);}
+  .pill.chg{background:var(--amber-100); color:var(--amber-700);}
+  .pill.bad{background:var(--rose-100); color:var(--rose-700);}
+  .pill.ok{background:var(--emerald-100); color:var(--emerald-700);}
+  .pill.p0{background:var(--rose-100); color:var(--rose-700);}
+  .pill.p1{background:var(--amber-100); color:var(--amber-700);}
+  .pill.p2{background:var(--sky-100); color:var(--sky-700);}
+  .yes{color:var(--emerald-600); font-weight:800;}
+  .no{color:var(--rose-500); font-weight:800;}
+  .mid{color:var(--amber-500); font-weight:800;}
+
+  /* callout */
+  .note{background:var(--sky-50); border:1px solid var(--sky-100); color:var(--sky-700); border-radius:10px; padding:12px 16px; font-size:13px; margin-top:14px;}
+  .note.amber{background:var(--amber-50); border-color:var(--amber-100); color:var(--amber-700);}
+  .note.emerald{background:var(--emerald-50); border-color:var(--emerald-100); color:var(--emerald-700);}
+  .note.rose{background:var(--rose-50); border-color:var(--rose-100); color:var(--rose-700);}
+  .note b{color:inherit;}
+
+  /* code/flow block */
+  pre.flow{background:var(--slate-900); color:#e2e8f0; border-radius:12px; padding:16px 18px; font-size:12px; line-height:1.5; overflow-x:auto; font-family:ui-monospace,SFMono-Regular,Menlo,monospace;}
+  pre.flow .hi{color:var(--emerald-300);}
+  pre.flow .mut{color:var(--slate-400);}
+
+  /* tier cards */
+  .tiers{display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:12px; margin-top:8px;}
+  .tier{border:1px solid var(--slate-200); border-radius:12px; padding:14px; background:var(--slate-50);}
+  .tier.reco{border-color:var(--emerald-300); background:var(--emerald-50); box-shadow:0 0 0 1px var(--emerald-200);}
+  .tier .th{font-size:13px; font-weight:800; color:var(--slate-800); display:flex; align-items:center; gap:6px; margin-bottom:6px;}
+  .tier .lv{font-size:10px; font-weight:800; padding:2px 7px; border-radius:999px; background:var(--slate-200); color:var(--slate-600);}
+  .tier.reco .lv{background:var(--emerald-600); color:#fff;}
+  .tier p{font-size:11.5px; color:var(--slate-600); margin:4px 0;}
+  .tier .cost{font-size:11px; font-weight:700; margin-top:6px;}
+
+  /* timeline (roadmap) */
+  .timeline{display:flex; flex-direction:column; gap:0; margin-top:10px;}
+  .tl-item{display:grid; grid-template-columns:120px 1fr; gap:14px; padding:0 0 16px; position:relative; padding-left:8px;}
+  .tl-item::before{content:""; position:absolute; left:130px; top:6px; bottom:-6px; width:2px; background:var(--slate-200);}
+  .tl-item:last-child::before{display:none;}
+  .tl-phase{font-size:12px; font-weight:800; color:#fff; background:var(--emerald-600); border-radius:8px; padding:6px 8px; text-align:center; height:fit-content; position:relative; z-index:1;}
+  .tl-phase.b{background:var(--sky-700);} .tl-phase.c{background:var(--violet-700);}
+  .tl-body{font-size:12.5px;}
+  .tl-body .g{display:inline-block; font-size:11px; color:var(--slate-500); margin-top:4px;}
+
+  /* kpi cards */
+  .kpis{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; margin-top:8px;}
+  .kpi{background:var(--slate-50); border:1px solid var(--slate-200); border-radius:12px; padding:14px;}
+  .kpi .k{font-size:11px; color:var(--slate-500); font-weight:600;}
+  .kpi .v{font-size:18px; font-weight:800; color:var(--emerald-700); margin-top:2px;}
+  .kpi .d{font-size:11px; color:var(--slate-500); margin-top:3px;}
+
+  footer{color:var(--slate-400); font-size:12px; text-align:center; padding:24px 0 8px;}
+  a.ext{color:var(--emerald-700); font-weight:600; word-break:break-all;}
+  .legend{display:flex; gap:14px; flex-wrap:wrap; font-size:11.5px; color:var(--slate-500); margin-top:8px;}
+  .legend span b{color:var(--slate-700);}
+
+  @media print{
+    body{padding:0; background:#fff;}
+    .toc-side, header.hero .tools{display:none;}
+    .layout{grid-template-columns:1fr;}
+    section{break-inside:avoid; box-shadow:none; border-color:var(--slate-300);}
+    header.hero{box-shadow:none;}
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header class="hero">
+    <div class="tools">
+      <button onclick="window.print()">🖨 인쇄 / PDF</button>
+    </div>
+    <span class="badge">타당성 검토 보고서 · Feasibility · 2026.06.13</span>
+    <h1>vFlat급 책페이지 캡처 고도화 — 적용 가능성·방법·비용 검토</h1>
+    <p>"VPLAT"(실제 명칭 <b>vFlat/브이플랫</b>, VoyagerX의 책 스캐너 앱) 방식의 캡처 품질을 ReadTree에 도입할 수 있는지, 어떻게·어디까지·얼마의 비용으로 가능한지를 <b>고도화 착수 전</b>에 검토합니다. 핵심 발견: ReadTree는 <b>이미 OCR을 완비</b>했고, 격차는 OCR이 아니라 <b>"촬영 전처리 품질"</b>입니다.</p>
+    <div class="chips">
+      <span class="chip">🎯 권장: 단계적 균형(Tier1 즉시)</span>
+      <span class="chip">📄 1차 범위: 발췌 + 한 기록당 ≤3페이지</span>
+      <span class="chip">🌐 제약: 웹앱(PWA) ≠ 네이티브</span>
+      <span class="chip">💰 Tier1 라이선스 $0(오픈소스)</span>
+    </div>
+  </header>
+
+  <div class="layout">
+
+    <!-- LEFT TOC -->
+    <nav class="toc-side">
+      <div class="t-title">목차</div>
+      <a href="#s0"><span class="n">0</span>개요(한눈에)</a>
+      <a href="#s1"><span class="n">1</span>배경</a>
+      <a href="#s2"><span class="n">2</span>현황 분석(As-Is)</a>
+      <a href="#s3"><span class="n">3</span>vFlat 분석</a>
+      <a href="#s4"><span class="n">4</span>결정적 제약</a>
+      <a href="#s5"><span class="n">5</span>Tier 0~4 비교</a>
+      <a href="#s6"><span class="n">6</span>권장 로드맵</a>
+      <a href="#s7"><span class="n">7</span>상세 적용 방법</a>
+      <a href="#s8"><span class="n">8</span>비용 분석</a>
+      <a href="#s9"><span class="n">9</span>검토사항·리스크</a>
+      <a href="#s10"><span class="n">10</span>결론·다음 단계</a>
+      <a href="#sa"><span class="n">＋</span>부록·출처</a>
+    </nav>
+
+    <!-- CONTENT -->
+    <div class="content">
+
+      <!-- 0 -->
+      <section id="s0">
+        <h2><span class="num">0</span> 개요 — 한눈에 보기</h2>
+        <p class="sub">결론: 단계적 균형 전략 권장 · Tier1(브라우저 전처리) 즉시 + 한 기록당 ≤3페이지 스캔 기본 지원 · Tier2/3는 검증 후 확대</p>
+        <div class="table-wrap">
+        <table>
+          <tbody>
+            <tr><th style="width:160px">벤치마크</th><td><b>vFlat(브이플랫)</b> — VoyagerX의 책 스캐너 앱(질문의 "VPLAT")</td></tr>
+            <tr><th>핵심 발견</th><td>ReadTree는 <b>이미 OCR 엔진을 완비</b>. vFlat과의 격차는 OCR이 아니라 <b>"촬영 전처리 품질"</b></td></tr>
+            <tr><th>결정적 제약</th><td>ReadTree = <b>Next.js PWA 웹앱</b>, vFlat = <b>네이티브 앱</b>(온디바이스 GPU ML). vFlat 공개 API/SDK 없음 → 직접 연동 불가 → 적용 범위가 <b>티어(Tier)</b>로 갈림</td></tr>
+            <tr><th>권장 전략</th><td><span class="pill ok">단계적 균형</span> Tier1 즉시 → Tier2/3 검증 후 확대</td></tr>
+            <tr><th>1차 적용 범위</th><td>필사·발췌 품질 개선 중심 + <b>한 기록(항목)당 스캔 페이지 최대 3페이지 기본 지원</b></td></tr>
+            <tr><th>비용 핵심</th><td>Tier1은 <b>오픈소스(라이선스 $0)</b>, OCR 단가는 페이지당 수 원 이하. 고품질(Tier3 상용 SDK)은 연 정액 라이선스(견적 필요)</td></tr>
+          </tbody>
+        </table>
+        </div>
+      </section>
+
+      <!-- 1 -->
+      <section id="s1">
+        <h2><span class="num">1</span> 배경 — 왜 검토하는가</h2>
+        <p class="sub">요청: vFlat의 기능·품질을 분석하고, ReadTree 적용 방법·검토사항·비용·적용 가능 범위를 문서화 + HTML 보고서화</p>
+        <p>검토를 통해 드러난 핵심 전제 3가지:</p>
+        <ul>
+          <li><b>ReadTree는 이미 OCR을 한다.</b> 캡처 사진 → Supabase Storage → <b>Google Cloud Run OCR</b> → 선택적 <b>AI 텍스트 보정</b>(GPT/Gemini/Claude) → <code>transcriptions</code> 저장. 통계·쿼터·레이트리밋·캐시·배치 보정까지 운영 중.</li>
+          <li><b>격차는 "전처리"다.</b> 현재 캡처는 <code>&lt;input type="file" capture="environment"&gt;</code>로 정지 사진 1장을 받아 압축만 한다. <b>곡면 보정·손가락 제거·테두리 인식·자동 촬영이 전혀 없다.</b></li>
+          <li><b>vFlat의 본질은 캡처 전처리다.</b> "전문 북스캐너처럼" 보이는 이유는 OCR 엔진이 아니라 촬영 순간의 AI 보정이다.</li>
+        </ul>
+        <div class="note emerald"><b>본 검토의 질문 한 문장:</b> "네이티브 앱 vFlat의 캡처 전처리 품질을, 웹앱인 ReadTree에서 어디까지·어떻게·얼마의 비용으로 따라잡을 수 있는가?"</div>
+      </section>
+
+      <!-- 2 -->
+      <section id="s2">
+        <h2><span class="num">2</span> 현황 분석 (As-Is)</h2>
+        <p class="sub">현재 캡처 → OCR 파이프라인과 보유/부재 기능</p>
+        <pre class="flow"><span class="mut">[모바일 카메라/앨범]</span>
+   │  &lt;input type="file" capture="environment"&gt;   <span class="mut">← 정지 사진 1장, 전처리 없음</span>
+   ▼
+smartCompressImage <span class="mut">(lib/utils/image.ts)</span>            <span class="mut">← 압축만</span>
+   ▼
+POST /api/upload                                  <span class="mut">← 검증 + sharp + Supabase Storage</span>
+   ▼  public URL
+POST /api/ocr                                     <span class="mut">← 쿼터/레이트리밋(15/min)/소유검증 → after()</span>
+   ▼
+POST /api/ocr/process  <span class="mut">(maxDuration 60s)</span>
+   ├─ <span class="hi">extractTextFromImage</span> <span class="mut">→ Google Cloud Run OCR</span>
+   ├─ <span class="hi">correctOcrText</span> <span class="mut">→ 선택적 AI 보정</span>
+   └─ createOrUpdateTranscription <span class="mut">→ transcriptions (note 1:1)</span>
+   ▼
+<span class="hi">[필사/발췌]</span> 사용자 편집 → quote_content / memo_content</pre>
+
+        <h3>보유 vs 부재 기능</h3>
+        <div class="table-wrap">
+        <table>
+          <thead><tr><th style="width:90px">구분</th><th>기능</th><th class="center" style="width:80px">상태</th><th>근거(파일/테이블)</th></tr></thead>
+          <tbody>
+            <tr><td>OCR 엔진</td><td>텍스트 추출</td><td class="center"><span class="yes">✅</span></td><td><code>lib/api/cloud-run-ocr.ts</code></td></tr>
+            <tr><td>후처리</td><td>AI 텍스트 보정</td><td class="center"><span class="yes">✅</span></td><td><code>lib/ai/ocr-correction.ts</code></td></tr>
+            <tr><td>운영</td><td>쿼터·구독·포인트 게이트</td><td class="center"><span class="yes">✅</span></td><td><code>app/api/ocr/route.ts</code></td></tr>
+            <tr><td>운영</td><td>레이트리밋(15/min)</td><td class="center"><span class="yes">✅</span></td><td><code>app/api/ocr/route.ts</code></td></tr>
+            <tr><td>운영</td><td>통계·로그·실패 추적</td><td class="center"><span class="yes">✅</span></td><td><code>ocr_logs</code>, <code>ocr_usage_stats</code></td></tr>
+            <tr><td>운영</td><td>관리자 배치 OCR·정리</td><td class="center"><span class="yes">✅</span></td><td><code>app/actions/admin/ocr.ts</code></td></tr>
+            <tr><td>업로드</td><td>이중 압축·파일 검증</td><td class="center"><span class="yes">✅</span></td><td><code>lib/security/file-validation.ts</code></td></tr>
+            <tr style="background:var(--rose-50)"><td><b>전처리</b></td><td><b>테두리 자동 인식·크롭</b></td><td class="center"><span class="no">❌</span></td><td>—</td></tr>
+            <tr style="background:var(--rose-50)"><td><b>전처리</b></td><td><b>원근/기울기 보정(deskew)</b></td><td class="center"><span class="no">❌</span></td><td>—</td></tr>
+            <tr style="background:var(--rose-50)"><td><b>전처리</b></td><td><b>곡면 보정(dewarp)</b></td><td class="center"><span class="no">❌</span></td><td>—</td></tr>
+            <tr style="background:var(--rose-50)"><td><b>전처리</b></td><td><b>손가락 자동 제거</b></td><td class="center"><span class="no">❌</span></td><td>—</td></tr>
+            <tr style="background:var(--rose-50)"><td><b>전처리</b></td><td><b>자동 촬영</b></td><td class="center"><span class="no">❌</span></td><td>—</td></tr>
+            <tr style="background:var(--rose-50)"><td><b>전처리</b></td><td><b>양면 동시 촬영·분할</b></td><td class="center"><span class="no">❌</span></td><td>—</td></tr>
+            <tr><td>다중 페이지</td><td>한 기록에 여러 스캔 페이지</td><td class="center"><span class="mid">△</span></td><td>사진 ≤5장 가능, OCR 다중연결 미흡(<code>note_id</code> UNIQUE)</td></tr>
+          </tbody>
+        </table>
+        </div>
+        <div class="note rose"><b>핵심 갭: "캡처 전처리 = 0".</b> OCR·운영 인프라는 성숙했으나, 입력 이미지 품질을 끌어올리는 단계가 통째로 비어 있다. 이것이 vFlat 대비 인식률 격차의 1차 원인이다.</div>
+      </section>
+
+      <!-- 3 -->
+      <section id="s3">
+        <h2><span class="num">3</span> vFlat(VPLAT) 분석</h2>
+        <p class="sub">정체·기술·핵심 기능 6가지와 ReadTree 적용 시 필요한 기술 매핑</p>
+        <h3>정체 및 포지션</h3>
+        <ul>
+          <li><b>제품</b>: vFlat Scan — PDF Scanner, OCR (개발사 <b>VoyagerX</b>, 패키지 <code>com.voyagerx.scanner</code>)</li>
+          <li><b>형태</b>: 네이티브 iOS/Android 앱. 무료 + 인앱결제(OCR 100p 한도 후 크레딧/광고)</li>
+          <li><b>공개 API/SDK</b>: <span class="pill bad">없음</span> 소비자 앱 전용 → ReadTree "직접 연동" 불가, "방식 차용"만 가능</li>
+          <li><b>기술</b>: 온디바이스 딥러닝 — TensorFlow Lite <b>GPU delegate</b>로 책 검출·보정을 단말에서 실시간 추론</li>
+        </ul>
+        <h3>핵심 기능 6가지 (= 따라잡아야 할 품질 항목)</h3>
+        <div class="table-wrap">
+        <table>
+          <thead><tr><th style="width:30px">#</th><th>vFlat 기능</th><th>효과</th><th>적용 시 필요한 기술</th><th class="center" style="width:100px">웹 난이도</th></tr></thead>
+          <tbody>
+            <tr><td>1</td><td><b>테두리 자동 인식·크롭</b></td><td>어느 각도에서도 페이지만 추출</td><td>윤곽 검출+코너(OpenCV.js)</td><td class="center"><span class="mid">중</span></td></tr>
+            <tr><td>2</td><td><b>원근/기울기 보정</b></td><td>비스듬해도 정면처럼</td><td><code>warpPerspective</code></td><td class="center"><span class="mid">중</span></td></tr>
+            <tr><td>3</td><td><b>곡면 보정(dewarp)</b></td><td>휜 면을 펼침</td><td>딥러닝 dewarp 모델</td><td class="center"><span class="no">상(웹 비현실)</span></td></tr>
+            <tr><td>4</td><td><b>손가락 자동 제거</b></td><td>누른 손가락 지움</td><td>세그멘테이션+인페인팅</td><td class="center"><span class="no">상(웹 비현실)</span></td></tr>
+            <tr><td>5</td><td><b>자동 촬영</b></td><td>안정 시 자동 셔터 → 대량 빠름</td><td>실시간 프레임+코너 안정화</td><td class="center"><span class="mid">중</span></td></tr>
+            <tr><td>6</td><td><b>양면 동시·분할</b></td><td>펼친 책 한 번에 2p</td><td>중앙 분할+페이지별 보정</td><td class="center"><span class="no">중~상</span></td></tr>
+            <tr style="background:var(--emerald-50)"><td>—</td><td>OCR / TTS / 내보내기</td><td>텍스트화·낭독·내보내기</td><td><b>OCR은 ReadTree 이미 보유</b></td><td class="center"><span class="yes">보유</span></td></tr>
+          </tbody>
+        </table>
+        </div>
+        <div class="note"><b>통찰:</b> 1·2·5(테두리·원근·자동촬영)는 <b>브라우저 오픈소스로 상당 부분 재현 가능</b>. 3·4(곡면·손가락 제거)는 딥러닝이 필요해 <b>웹 단독으로는 비현실적</b> — 이 둘이 "웹앱이 네이티브를 100% 못 따라가는 경계선"이다.</div>
+      </section>
+
+      <!-- 4 -->
+      <section id="s4">
+        <h2><span class="num">4</span> 결정적 제약 — 웹앱 아키텍처</h2>
+        <p class="sub">ReadTree는 Next.js PWA 웹앱. 브라우저 카메라의 한계가 적용 범위를 티어로 가른다</p>
+        <div class="table-wrap">
+        <table>
+          <thead><tr><th style="width:200px">방식</th><th>설명</th><th>전처리 가능성</th></tr></thead>
+          <tbody>
+            <tr><td><code>&lt;input capture&gt;</code> <span class="pill chg">현행</span></td><td>네이티브 카메라 호출 → <b>정지 사진 1장</b></td><td>촬영 후 후처리만(라이브 가이드 불가)</td></tr>
+            <tr><td><code>getUserMedia()</code></td><td><b>라이브 카메라 스트림</b>을 <code>&lt;video&gt;</code>/<code>&lt;canvas&gt;</code>로</td><td>실시간 분석·자동촬영·테두리 가이드 가능</td></tr>
+          </tbody>
+        </table>
+        </div>
+        <h3>핵심 제약</h3>
+        <ul>
+          <li><b>HTTPS 필수</b> — <code>getUserMedia</code>는 보안 컨텍스트에서만. (Vercel HTTPS → 충족)</li>
+          <li><b>iOS Safari 제약</b> — 카메라 권한·자동재생·백그라운드 처리 제약 → UX 예외처리 필요</li>
+          <li><b>온디바이스 GPU ML 실시간 처리는 비현실적</b> — dewarp/손가락 제거 같은 무거운 딥러닝을 브라우저 실시간으로 돌리는 것은 성능·번들상 사실상 불가(저사양 모바일 발열·지연)</li>
+          <li><b>번들 비용</b> — OpenCV.js WASM ~8MB → 페이지 로드 차단 위험 → <b>지연 로드(동적 import) 필수</b></li>
+        </ul>
+        <div class="note amber"><b>결론:</b> "vFlat을 그대로 웹에 이식"은 불가능. 현실적 목표는 <b>테두리·원근·자동촬영을 웹으로 재현해 OCR 입력 품질을 크게 올리는 것</b>이며, 곡면·손가락 제거가 필요하면 클라우드(Tier2)/상용 SDK(Tier3)로 보완한다.</div>
+      </section>
+
+      <!-- 5 -->
+      <section id="s5">
+        <h2><span class="num">5</span> 적용 옵션 — Tier 0~4 비교</h2>
+        <p class="sub">웹앱 제약을 전제로 한 5단계 적용 수준</p>
+        <div class="tiers">
+          <div class="tier"><div class="th"><span class="lv">T0</span> 현행</div><p>file-input → Cloud Run OCR</p><p>전처리 없음</p><div class="cost" style="color:var(--slate-500)">품질 낮음 · 현행 비용</div></div>
+          <div class="tier reco"><div class="th"><span class="lv">T1</span> 브라우저 전처리</div><p>getUserMedia + OpenCV.js/jscanify</p><p>테두리·원근·자동촬영</p><div class="cost" style="color:var(--emerald-700)">품질 중상 · 라이선스 $0</div></div>
+          <div class="tier"><div class="th"><span class="lv">T2</span> 클라우드 전처리</div><p>서버 dewarp/손가락 제거 모델</p><p>(Cloud Run 확장/Aspose)</p><div class="cost" style="color:var(--amber-700)">품질 상 · 중비용</div></div>
+          <div class="tier"><div class="th"><span class="lv">T3</span> 상용 웹 SDK</div><p>Scanbot/Dynamsoft (WASM)</p><p>vFlat급 최근접</p><div class="cost" style="color:var(--rose-700)">품질 상~최상 · 고비용</div></div>
+          <div class="tier"><div class="th"><span class="lv">T4</span> 네이티브 전환</div><p>Capacitor/RN + ML Kit</p><p>완전 패리티</p><div class="cost" style="color:var(--rose-700)">최상 · 최고비용</div></div>
+        </div>
+        <div class="table-wrap" style="margin-top:16px">
+        <table>
+          <thead><tr>
+            <th style="width:120px">항목</th>
+            <th class="center">T0 현행</th><th class="center" style="background:var(--emerald-50)">T1 브라우저</th><th class="center">T2 클라우드</th><th class="center">T3 상용SDK</th><th class="center">T4 네이티브</th>
+          </tr></thead>
+          <tbody>
+            <tr><td>테두리·원근</td><td class="center"><span class="no">✕</span></td><td class="center"><span class="yes">○</span></td><td class="center"><span class="yes">○</span></td><td class="center"><span class="yes">◎</span></td><td class="center"><span class="yes">◎</span></td></tr>
+            <tr><td>곡면(dewarp)</td><td class="center"><span class="no">✕</span></td><td class="center"><span class="no">✕</span></td><td class="center"><span class="yes">○</span></td><td class="center"><span class="yes">○</span></td><td class="center"><span class="yes">◎</span></td></tr>
+            <tr><td>손가락 제거</td><td class="center"><span class="no">✕</span></td><td class="center"><span class="no">✕</span></td><td class="center"><span class="yes">○</span></td><td class="center"><span class="mid">△~○</span></td><td class="center"><span class="yes">◎</span></td></tr>
+            <tr><td>자동 촬영</td><td class="center"><span class="no">✕</span></td><td class="center"><span class="yes">○</span></td><td class="center"><span class="yes">○</span></td><td class="center"><span class="yes">◎</span></td><td class="center"><span class="yes">◎</span></td></tr>
+            <tr><td>오프라인 처리</td><td class="center"><span class="no">✕</span></td><td class="center"><span class="yes">○</span></td><td class="center"><span class="no">✕</span></td><td class="center"><span class="yes">○</span></td><td class="center"><span class="yes">○</span></td></tr>
+            <tr><td>웹앱 적합성</td><td class="center"><span class="yes">○</span></td><td class="center"><span class="yes">○</span></td><td class="center"><span class="yes">○</span></td><td class="center"><span class="yes">○</span></td><td class="center"><span class="no">✕ 전환</span></td></tr>
+            <tr><td><b>예상 품질</b></td><td class="center">낮음</td><td class="center" style="background:var(--emerald-50)"><b>중상</b></td><td class="center">상</td><td class="center"><b>상~최상</b></td><td class="center"><b>최상</b></td></tr>
+            <tr><td><b>비용</b></td><td class="center">현행</td><td class="center" style="background:var(--emerald-50)"><b>≈0(오픈소스)</b></td><td class="center">중</td><td class="center"><b>고(연 정액)</b></td><td class="center">최고</td></tr>
+            <tr><td>개발 난이도</td><td class="center">—</td><td class="center">중</td><td class="center">중상</td><td class="center">중(SDK)</td><td class="center">상(앱 신규)</td></tr>
+          </tbody>
+        </table>
+        </div>
+        <div class="legend"><span><b>◎</b> 강함</span><span><b>○</b> 가능</span><span><b>△</b> 부분</span><span><b>✕</b> 불가/없음</span></div>
+      </section>
+
+      <!-- 6 -->
+      <section id="s6">
+        <h2><span class="num">6</span> 권장 전략 — 단계적 균형 로드맵</h2>
+        <p class="sub">Tier1을 저비용으로 즉시 도입, Tier2/3는 데이터로 효과를 검증한 뒤 게이트를 통과할 때만 확대</p>
+        <div class="timeline">
+          <div class="tl-item">
+            <div class="tl-phase">Phase A<br>Tier 1</div>
+            <div class="tl-body"><b>브라우저 스캔 모드</b> — 테두리·원근·자동촬영 + <b>한 기록당 최대 3페이지</b>. 비용 ≈ 개발 공수.<br><span class="g">진입: 즉시 착수 · 게이트: OCR 인식 만족도/재촬영율 측정</span></div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-phase b">Phase B<br>Tier 2</div>
+            <div class="tl-body"><b>클라우드 전처리</b> — 곡면/손가락이 인식률 저해의 핵심으로 확인되면 dewarp/finger-removal 추가.<br><span class="g">진입: A 측정에서 곡면/손가락 실패가 유의미할 때 · 게이트: 페이지당 추가비용 대비 개선폭</span></div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-phase c">Phase C<br>Tier 3</div>
+            <div class="tl-body"><b>상용 웹 SDK</b> — 캡처 품질이 핵심 KPI로 격상되면 무료 트라이얼로 벤치마크.<br><span class="g">진입: B로도 부족 + 품질이 전환·리텐션에 직결 · 게이트: 연 라이선스 ROI 판단</span></div>
+          </div>
+        </div>
+        <div class="note"><b>Tier 4(네이티브)</b>는 본 로드맵과 분리한 <b>별도 플랫폼 전략 의제</b>로 둔다(앱 출시·스토어 운영은 기능 1건의 범위를 초과).</div>
+      </section>
+
+      <!-- 7 -->
+      <section id="s7">
+        <h2><span class="num">7</span> 상세 적용 방법 — Phase A 구현 설계 (Tier 1)</h2>
+        <p class="sub">UX 흐름 · 신규/재사용 컴포넌트 · 기술 포인트 · 다중 페이지(≤3) 데이터 모델</p>
+        <h3>7.1 UX 흐름</h3>
+        <ul>
+          <li>기록 작성(RecordSheet 필사 단계)/노트 작성에 <b>"스캔" 진입점</b> 추가(기존 카메라/앨범 옆)</li>
+          <li>"스캔" → <b>라이브 카메라(getUserMedia)</b> 풀스크린 + <b>검출 테두리 가이드</b> 오버레이</li>
+          <li>안정 검출 시 <b>자동 촬영</b>(또는 수동 셔터) → 즉시 <b>원근 크롭 + 대비 향상</b> 미리보기</li>
+          <li><b>페이지 큐(최대 3페이지)</b>에 추가 — 페이지별 미리보기·재촬영·삭제</li>
+          <li>"완료" → 압축 → 업로드 → OCR → 추출 텍스트를 필사/발췌 편집기로 전달</li>
+        </ul>
+        <h3>7.2 신규 / 재사용 컴포넌트</h3>
+        <div class="table-wrap">
+        <table>
+          <thead><tr><th style="width:80px">구분</th><th>항목</th><th>비고</th></tr></thead>
+          <tbody>
+            <tr><td><span class="pill new">신규</span></td><td><code>components/records/book-page-scanner.tsx</code></td><td>getUserMedia + canvas + 검출 오버레이 + 자동촬영 + 3페이지 큐</td></tr>
+            <tr><td><span class="pill new">신규</span></td><td><code>lib/scan/document-detect.ts</code></td><td>jscanify/OpenCV.js <b>동적 import</b> 래퍼(검출·코너·<code>warpPerspective</code>)</td></tr>
+            <tr><td><span class="pill ok">재사용</span></td><td><code>lib/utils/image.ts#smartCompressImage</code></td><td>캡처본 압축(그대로)</td></tr>
+            <tr><td><span class="pill ok">재사용</span></td><td><code>app/api/upload/route.ts</code></td><td>업로드(그대로)</td></tr>
+            <tr><td><span class="pill ok">재사용</span></td><td><code>app/api/ocr/route.ts</code> + <code>/process</code></td><td>OCR(그대로, <code>{noteId, imageUrl}</code>)</td></tr>
+            <tr><td><span class="pill ok">재사용</span></td><td><code>lib/ai/ocr-correction.ts</code></td><td>AI 보정(그대로)</td></tr>
+            <tr><td><span class="pill ok">재사용</span></td><td><code>app/actions/ai/ocr.ts</code></td><td>통계 기록(그대로)</td></tr>
+            <tr><td><span class="pill ok">재사용</span></td><td><code>RecordPhotoStrip</code> 패턴</td><td>페이지 큐 썸네일 UI 참조</td></tr>
+          </tbody>
+        </table>
+        </div>
+        <h3>7.3 기술 포인트</h3>
+        <ul>
+          <li><b>검출 라이브러리</b>: <code>jscanify</code>(OpenCV.js 기반) 또는 OpenCV.js 직접. <b>동적 import + 지연 로드</b>로 ~8MB WASM이 초기 로딩을 막지 않게 — 스캔 진입 시에만 로드</li>
+          <li><b>자동 촬영 판정</b>: 최근 N프레임 코너가 임계값 내 안정 → 셔터. 코너 <code>undefined</code>(부분 가림)면 대기</li>
+          <li><b>대비 향상</b>: 그레이스케일 + 적응형 임계처리로 OCR 친화 이미지 생성(선택)</li>
+          <li><b>폴백</b>: getUserMedia 미지원/권한 거부/저사양 → <b>기존 file-input 모드로 자동 전환</b>(기능 손실 없음)</li>
+        </ul>
+        <h3>7.4 다중 페이지(최대 3) 데이터 모델 — 결정 필요</h3>
+        <div class="table-wrap">
+        <table>
+          <thead><tr><th style="width:150px">옵션</th><th>구조</th><th>장점</th><th>단점</th></tr></thead>
+          <tbody>
+            <tr><td><b>(a) 페이지당 노트</b></td><td>3p → 노트 3개(각 1:1)</td><td><b>스키마 무변경</b>, 단순</td><td>"1 기록=1 항목"과 어긋남, 분산</td></tr>
+            <tr><td><b>(b) 1노트+3이미지</b></td><td>노트 1 + 이미지 3 + <code>transcriptions</code> 1:N(<code>page_index</code>)</td><td>한 항목에 묶임(요청 부합)</td><td><b>마이그레이션</b>(UNIQUE 해제) + RLS 재점검</td></tr>
+            <tr><td>(c) 1노트+텍스트 결합</td><td>3p OCR 결과 합쳐 단일 <code>quote_content</code></td><td>스키마 최소 변경</td><td>페이지 경계·재OCR 추적 약함</td></tr>
+          </tbody>
+        </table>
+        </div>
+        <div class="note emerald"><b>권장:</b> 1차는 <b>(c) 또는 (a)</b>로 스키마 충격 없이 출시 → 사용 패턴 확인 후 필요 시 <b>(b)</b>로 정식 확장. (b) 채택 시 <code>doc/database/</code>에 <b>Idempotent 마이그레이션 + RLS 4종</b> 필수. <code>reading_logs.image_urls</code>(≤5 JSONB)는 스탬프 경로와 이미 정합.</div>
+      </section>
+
+      <!-- 8 -->
+      <section id="s8">
+        <h2><span class="num">8</span> 비용 분석</h2>
+        <p class="sub">단가 앵커 · 월 1만 페이지 시나리오 · "한 기록당 ≤3페이지"의 운영 영향</p>
+        <h3>8.1 단가 기준(앵커)</h3>
+        <div class="table-wrap">
+        <table>
+          <thead><tr><th>항목</th><th>단가</th><th>비고</th></tr></thead>
+          <tbody>
+            <tr><td>Google Vision DOCUMENT_TEXT_DETECTION</td><td>월 1,000 무료 → <b>$1.50/1,000</b> → 500만↑ <b>$0.60/1,000</b></td><td>Cloud Run이 래핑 가정, 컴퓨트 별도</td></tr>
+            <tr><td>AI 보정 — gemini-2.0-flash</td><td>입력 $0.075 / 출력 $0.30 (1M tok)</td><td>페이지당 수백 토큰 → 극소</td></tr>
+            <tr><td>AI 보정 — gpt-4o-mini</td><td>입력 $0.15 / 출력 $0.60</td><td>권장 경량 보정</td></tr>
+            <tr><td>AI 보정 — claude-haiku-4-5</td><td>입력 $1 / 출력 $5</td><td>폴백</td></tr>
+            <tr><td>Tier1 오픈소스(OpenCV.js/jscanify)</td><td><b>라이선스 $0</b></td><td>개발 공수 + 번들 ~8MB(1회)</td></tr>
+            <tr><td>Tier3 상용 SDK(Scanbot/Dynamsoft)</td><td><b>연 정액 라이선스(견적 필요)</b></td><td>통상 연 수천 USD↑, 무료 트라이얼 제공</td></tr>
+          </tbody>
+        </table>
+        </div>
+        <h3>8.2 월 1만 페이지 시나리오(추정)</h3>
+        <div class="kpis">
+          <div class="kpi"><div class="k">Tier 0/1 — OCR(Vision)</div><div class="v">≈ $13.5</div><div class="d">9,000건 × $0.0015</div></div>
+          <div class="kpi"><div class="k">Tier 0/1 — AI 보정</div><div class="v">≈ $2</div><div class="d">gemini-flash 기준</div></div>
+          <div class="kpi"><div class="k">Tier 0/1 — 월 합계</div><div class="v">≈ $15</div><div class="d">+ Cloud Run 컴퓨트</div></div>
+          <div class="kpi"><div class="k">Tier 3 — 라이선스</div><div class="v">지배적</div><div class="d">연 정액(견적 필요)</div></div>
+        </div>
+        <div class="note amber"><b>주의:</b> 위 OCR 단가는 "Vision 직접 호출" 기준. 실제는 <b>Cloud Run 함수가 OCR을 래핑</b>하므로 Cloud Run 실행 비용(요청·CPU·메모리)이 추가된다. 정확한 페이지당 원가는 현 Cloud Run 구현/요금 실측 필요(검토사항).</div>
+        <h3>8.3 "한 기록당 최대 3페이지"의 비용·운영 영향</h3>
+        <ul>
+          <li><b>OCR 호출 최대 3배</b> — 한 기록 저장 시 페이지 수만큼 <code>/api/ocr</code> 호출 → 비용·쿼터 ×(1~3)</li>
+          <li><b>레이트리밋(현 15/min)</b> — 단일 기록 3p는 무문제, 연속 다건 시 한도 근접 → 한도/메시지 재점검</li>
+          <li><b>구독/포인트 게이트</b> — 3p를 1회로 볼지 3회로 볼지 과금 정책 정합 필요</li>
+          <li><b>캐시</b> — 동일 이미지 해시 캐시(<code>ocr_cache</code>)가 재시도 비용 일부 흡수</li>
+        </ul>
+      </section>
+
+      <!-- 9 -->
+      <section id="s9">
+        <h2><span class="num">9</span> 도입 전 검토사항 (Risk &amp; Checklist)</h2>
+        <p class="sub">기술·UX·비용·법무·보안·데이터·운영 영역별 리스크와 완화책</p>
+        <div class="table-wrap">
+        <table>
+          <thead><tr><th style="width:70px">영역</th><th>항목</th><th>리스크</th><th>완화책</th><th class="center" style="width:90px">담당</th></tr></thead>
+          <tbody>
+            <tr><td>기술</td><td>getUserMedia 호환</td><td>iOS Safari 권한·자동재생 제약</td><td>권한 가이드 + file-input 폴백</td><td class="center">ai/records</td></tr>
+            <tr><td>기술</td><td>WASM 번들(~8MB)</td><td>초기 로딩 지연</td><td>스캔 진입 시 동적 import</td><td class="center">performance</td></tr>
+            <tr><td>기술</td><td>저사양 성능</td><td>발열·프레임 드랍</td><td>해상도 다운스케일·프레임 스킵</td><td class="center">performance</td></tr>
+            <tr><td>기술</td><td>복잡 배경 검출 실패</td><td>코너 미검출</td><td>수동 크롭 보조 + 폴백</td><td class="center">records</td></tr>
+            <tr><td>UX</td><td>자동촬영 오작동</td><td>흐릿/조기 촬영</td><td>N프레임 안정화 + 수동 셔터</td><td class="center">records</td></tr>
+            <tr><td>UX</td><td>접근성</td><td>카메라 미사용자</td><td>항상 앨범 업로드 경로 유지</td><td class="center">records</td></tr>
+            <tr><td>비용</td><td>OCR 호출 ×3</td><td>비용·한도 증가</td><td>페이지 과금정책·레이트리밋 재설계</td><td class="center">identity/engagement</td></tr>
+            <tr style="background:var(--rose-50)"><td><b>법무</b></td><td><b>책 본문 저장·OCR</b></td><td><b>저작권(본문 대량 복제)·개인정보</b></td><td><b>1차 범위 ≤3p 발췌 제한</b>, 약관·고지, Legal 체크리스트</td><td class="center"><b>legal</b></td></tr>
+            <tr><td>보안</td><td>업로드 검증</td><td>악성 파일</td><td>기존 <code>validateUploadFile</code>·RLS</td><td class="center">identity/admin</td></tr>
+            <tr><td>데이터</td><td>다중 페이지 모델</td><td>스키마/RLS 정합</td><td>(c)→(b) 단계 확장, Idempotent</td><td class="center">data</td></tr>
+            <tr><td>운영</td><td>실패율 모니터링</td><td>무음 실패</td><td>기존 <code>ocr_logs</code>·캐시 적중률</td><td class="center">monitoring</td></tr>
+          </tbody>
+        </table>
+        </div>
+        <div class="note rose"><b>법무 강조:</b> 책 본문을 페이지 단위로 대량 저장·텍스트화하면 <b>저작권 복제권</b> 이슈가 커진다. 1차 범위를 <b>발췌·소량(≤3p)</b>으로 제한하는 것은 UX 결정인 동시에 <b>법적 리스크 완화 장치</b>다. "전권 디지털화(대량 스캔)"는 의도적으로 1차 범위에서 제외 → <code>doc/legal/LEGAL_CHECKLIST.md</code> 연계.</div>
+      </section>
+
+      <!-- 10 -->
+      <section id="s10">
+        <h2><span class="num">10</span> 결론 &amp; 다음 단계</h2>
+        <p class="sub">저비용·저리스크로 핵심 UX를 확보하고, 데이터로 확대를 결정</p>
+        <ul>
+          <li><b>권장</b>: <span class="pill ok">Phase A(Tier1, ≤3p 스캔) 즉시 착수</span> — 비용 거의 0·낮은 리스크로 vFlat 핵심 UX(테두리·자동촬영·원근)를 상당 부분 확보하고 OCR 입력 품질을 끌어올림</li>
+          <li><b>검증 후 확대</b>: 곡면/손가락이 인식률을 유의미하게 저해하면 Tier2, 품질이 핵심 KPI가 되면 Tier3 무료 트라이얼 벤치마크 후 ROI 판단</li>
+          <li><b>분리</b>: Tier4(네이티브 전환)는 별도 플랫폼 전략 의제로</li>
+        </ul>
+        <h3>즉시 액션 3가지</h3>
+        <div class="table-wrap">
+        <table>
+          <thead><tr><th style="width:50px">#</th><th>액션</th><th class="center" style="width:80px">우선순위</th></tr></thead>
+          <tbody>
+            <tr><td>1</td><td>현 Cloud Run OCR <b>단가·요금 실측</b> — 8.2 추정의 Cloud Run 컴퓨트 부분 확인(페이지당 원가 산정)</td><td class="center"><span class="pill p0">P0</span></td></tr>
+            <tr><td>2</td><td><b>jscanify/OpenCV.js PoC</b> — BookPageScanner 프로토타입으로 테두리·자동촬영·원근 인식률을 모바일에서 측정</td><td class="center"><span class="pill p1">P1</span></td></tr>
+            <tr><td>3</td><td><b>다중 페이지 데이터 모델 결정</b> — (c)/(a)로 1차 출시할지, (b) 마이그레이션을 선행할지 확정</td><td class="center"><span class="pill p1">P1</span></td></tr>
+          </tbody>
+        </table>
+        </div>
+      </section>
+
+      <!-- Appendix -->
+      <section id="sa">
+        <h2><span class="num">＋</span> 부록 — 출처 · 관련 파일 · 용어</h2>
+        <h3>A. 참고 자료(출처)</h3>
+        <ul>
+          <li>vFlat 공식 — <a class="ext" href="https://www.vflat.com/en">vflat.com/en</a></li>
+          <li>vFlat (Google Play) — <a class="ext" href="https://play.google.com/store/apps/details?id=com.voyagerx.scanner">com.voyagerx.scanner</a></li>
+          <li>vFlat 기술(TFLite GPU delegate) — <a class="ext" href="https://blog.tensorflow.org/2019/08/how-vflat-used-tflite-gpu-delegate-for-realtime-interference-scan-books.html">tensorflow.org 블로그</a></li>
+          <li>Google Cloud Vision 요금 — <a class="ext" href="https://cloud.google.com/vision/pricing">cloud.google.com/vision/pricing</a></li>
+          <li>Scanbot JS Document Scanner — <a class="ext" href="https://scanbot.io/developer/javascript-document-scanner/">scanbot.io</a></li>
+          <li>Dynamsoft Document Scanner(JS) — <a class="ext" href="https://github.com/Dynamsoft/document-scanner-javascript">github.com/Dynamsoft</a></li>
+          <li>Google ML Kit Document Scanner — <a class="ext" href="https://developers.google.com/ml-kit/vision/doc-scanner">developers.google.com/ml-kit</a></li>
+          <li>jscanify(브라우저 스캐너) — <a class="ext" href="https://github.com/ColonelParrot/jscanify">github.com/ColonelParrot/jscanify</a></li>
+          <li>Aspose.OCR Cloud Dewarp — <a class="ext" href="https://tutorials.aspose.cloud/ocr/preprocess-image/dewarp-image/">tutorials.aspose.cloud</a></li>
+        </ul>
+        <h3>B. 관련 파일 경로(현 코드)</h3>
+        <ul>
+          <li>캡처 UI — <code>components/records/record-photo-strip.tsx</code></li>
+          <li>업로드 — <code>app/api/upload/route.ts</code>, <code>lib/utils/image.ts</code>, <code>lib/security/file-validation.ts</code></li>
+          <li>OCR 요청/처리 — <code>app/api/ocr/route.ts</code>, <code>app/api/ocr/process/route.ts</code></li>
+          <li>OCR 엔진/보정 — <code>lib/api/cloud-run-ocr.ts</code>, <code>lib/api/ocr.ts</code>, <code>lib/ai/ocr-correction.ts</code></li>
+          <li>OCR 통계/관리 — <code>app/actions/ai/ocr.ts</code>, <code>app/actions/admin/ocr.ts</code></li>
+          <li>데이터 — <code>types/note.ts</code>, <code>transcriptions</code>·<code>ocr_logs</code>·<code>ocr_usage_stats</code>·<code>ocr_cache</code></li>
+          <li>법무 — <code>doc/legal/LEGAL_CHECKLIST.md</code></li>
+        </ul>
+        <h3>C. 용어</h3>
+        <ul>
+          <li><b>dewarp(곡면 보정)</b> — 펼친 책의 휜 면을 평면으로 펴는 처리</li>
+          <li><b>deskew(기울기 보정)</b> — 비스듬한 페이지를 정면으로 펴는 원근 변환</li>
+          <li><b>getUserMedia</b> — 브라우저 카메라 라이브 스트림 Web API(HTTPS 필요)</li>
+          <li><b>Tier</b> — 본 문서의 적용 수준 구분(0 현행 ~ 4 네이티브)</li>
+        </ul>
+      </section>
+
+      <footer>
+        ReadTree · vFlat급 책페이지 캡처 고도화 타당성 검토 · 2026-06-13 · 본 문서는 검토/기획 자료이며 제품 코드는 변경하지 않음(Phase A 구현은 승인 후 별도 진행)
+      </footer>
+
+    </div><!-- /content -->
+  </div><!-- /layout -->
+</div><!-- /container -->
+</body>
+</html>
