@@ -390,6 +390,8 @@ export function NotesHubClient({
         <UnifiedRecordFeed
           initialRecords={unifiedRecords ?? []}
           initialNextCursor={unifiedNextCursor}
+          groupBy={activeView === "timeline" ? "month" : activeView === "book" ? "book" : "dateBook"}
+          sort={sort === "oldest" ? "oldest" : "latest"}
         />
       ) : notes.length > 0 ? (
         <>

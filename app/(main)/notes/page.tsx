@@ -153,12 +153,11 @@ async function NotesHubContent({
     );
   }
 
-  // 통합 기록 피드(기록 기획 13): "전체" 탭 + list 뷰 + 필터/검색 없음일 때만 승격.
-  // 필터·검색·다른 탭/뷰는 기존 searchNotes(notes-only)로 정확히 처리.
+  // 통합 기록 피드(기록 기획 13): "전체" 탭 + 필터/검색 없음일 때 승격(list/timeline/book 모든 뷰).
+  // 필터·검색·타입 탭은 기존 searchNotes(notes-only)로 정확히 처리.
   const useUnifiedFeed =
     isUnifiedFeedEnabled() &&
     tab === "all" &&
-    view === "list" &&
     !query &&
     !bookId &&
     !startDate &&
@@ -166,8 +165,9 @@ async function NotesHubContent({
     (!tags || tags.length === 0);
 
   if (useUnifiedFeed) {
+    const unifiedSort = sort === "oldest" ? "oldest" : "latest";
     const [unified, draftCount, userTags] = await Promise.all([
-      getUnifiedRecords({ limit: 20 }, user),
+      getUnifiedRecords({ limit: 20, sort: unifiedSort }, user),
       getDraftNotesCount(user),
       getUserTagsWithCount(user),
     ]);

@@ -19,6 +19,9 @@ import { BookMetaInfo } from "@/components/books/book-meta-info";
 import type { ReadingStatus } from "@/types/book";
 import { BookNotesTabs } from "@/components/books/book-notes-tabs";
 import { getNotes, getFreeNotesForBook } from "@/app/actions/notes";
+import { getUnifiedRecords } from "@/app/actions/records";
+import { isUnifiedFeedEnabled } from "@/lib/feature-flags";
+import type { UnifiedRecord } from "@/types/unified-record";
 import { getRelatedBooks } from "@/app/actions/book-relations";
 import { isValidUUID } from "@/lib/utils/validation";
 import { sanitizeErrorForLogging } from "@/lib/utils/validation";
@@ -125,6 +128,8 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
   let relatedBooks: Awaited<ReturnType<typeof getRelatedBooks>> = [];
   let savedReport: Awaited<ReturnType<typeof getSavedReport>> = null;
   let linkedFreeNotes: Awaited<ReturnType<typeof getFreeNotesForBook>> = [];
+  let unifiedRecords: UnifiedRecord[] | null = null;
+  let unifiedNextCursor: string | null = null;
 
   if (isGuest) {
     // 게스트: 샘플 사용자의 노트 데이터를 그대로 표시
@@ -135,16 +140,22 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
       notes = [];
     }
   } else {
-    const [notesResult, relatedBooksResult, savedReportResult, linkedFreeNotesResult] = await Promise.all([
-      getNotes(userBook.id, undefined, user),
-      getRelatedBooks(userBook.id, user).catch(() => []),
-      getSavedReport(userBook.id).catch(() => null),
-      getFreeNotesForBook(userBook.id, user).catch(() => []),
-    ]);
+    const [notesResult, relatedBooksResult, savedReportResult, linkedFreeNotesResult, unifiedResult] =
+      await Promise.all([
+        getNotes(userBook.id, undefined, user),
+        getRelatedBooks(userBook.id, user).catch(() => []),
+        getSavedReport(userBook.id).catch(() => null),
+        getFreeNotesForBook(userBook.id, user).catch(() => []),
+        isUnifiedFeedEnabled()
+          ? getUnifiedRecords({ bookId: userBook.id, limit: 30 }, user).catch(() => null)
+          : Promise.resolve(null),
+      ]);
     notes = notesResult;
     relatedBooks = relatedBooksResult;
     savedReport = savedReportResult;
     linkedFreeNotes = linkedFreeNotesResult;
+    unifiedRecords = unifiedResult?.records ?? null;
+    unifiedNextCursor = unifiedResult?.nextCursor ?? null;
   }
 
   // 완독 날짜 배열 계산
@@ -441,6 +452,8 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
             coverImageUrl: book.cover_image_url,
             totalPages: book.total_pages ?? null,
           }}
+          unifiedRecords={unifiedRecords}
+          unifiedNextCursor={unifiedNextCursor}
         />
       </div>
 

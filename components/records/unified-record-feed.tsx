@@ -12,21 +12,46 @@ import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { FileText, Loader2 } from "lucide-react";
 import { getUnifiedRecords } from "@/app/actions/records";
-import { groupUnifiedByDateBook, toKstDateKey } from "@/lib/reading/unified";
+import {
+  groupUnifiedByDateBook,
+  groupUnifiedByMonth,
+  groupUnifiedByBook,
+  toKstDateKey,
+} from "@/lib/reading/unified";
 import { useUnifiedRecordEdit } from "@/hooks/use-unified-record-edit";
 import { useRecordSheetStore } from "@/hooks/use-record-sheet";
 import { Lightbox } from "@/components/stamps/photo-gallery";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { UnifiedRecordCard } from "./unified-record-card";
-import type { UnifiedRecord } from "@/types/unified-record";
+import type { UnifiedRecord, UnifiedRecordKind } from "@/types/unified-record";
 
 interface UnifiedRecordFeedProps {
   initialRecords: UnifiedRecord[];
   initialNextCursor: string | null;
   /** 책 상세 스코프(user_books.id) — 미지정 = 전체 */
   bookId?: string;
+  /** 그룹핑 모드: dateBook(기본·list) | month(타임라인) | book(책별) */
+  groupBy?: "dateBook" | "month" | "book";
+  /** 정렬 — initial과 loadMore의 keyset 방향 일치 필요 */
+  sort?: "latest" | "oldest";
 }
+
+function formatMonthLabel(key: string): string {
+  const [y, m] = key.split("-");
+  return `${y}년 ${Number(m)}월`;
+}
+
+type KindFilter = "all" | UnifiedRecordKind;
+
+const KIND_SEGMENTS: { value: KindFilter; label: string }[] = [
+  { value: "all", label: "전체" },
+  { value: "time", label: "시간" },
+  { value: "progress", label: "진행" },
+  { value: "stamp", label: "스탬프" },
+  { value: "detail", label: "상세" },
+];
 
 function formatDateKeyLabel(dateKey: string, todayKey: string, yesterdayKey: string): string {
   if (dateKey === todayKey) return "오늘";
@@ -40,12 +65,15 @@ export function UnifiedRecordFeed({
   initialRecords,
   initialNextCursor,
   bookId,
+  groupBy = "dateBook",
+  sort = "latest",
 }: UnifiedRecordFeedProps) {
   const router = useRouter();
   const { editRecord } = useUnifiedRecordEdit();
 
   const [records, setRecords] = useState<UnifiedRecord[]>(initialRecords);
   const [cursor, setCursor] = useState<string | null>(initialNextCursor);
+  const [kindFilter, setKindFilter] = useState<KindFilter>("all");
   const [isPending, startTransition] = useTransition();
   const [lightbox, setLightbox] = useState<{ urls: string[]; index: number; alt: string } | null>(
     null,
@@ -77,14 +105,14 @@ export function UnifiedRecordFeed({
     if (!cursor) return;
     startTransition(async () => {
       try {
-        const res = await getUnifiedRecords({ cursor, bookId, limit: 20 });
+        const res = await getUnifiedRecords({ cursor, bookId, sort, limit: 20 });
         setRecords((prev) => [...prev, ...res.records]);
         setCursor(res.nextCursor);
       } catch {
         // 더 보기 실패 — 조용히 무시 (다음 시도 가능)
       }
     });
-  }, [cursor, bookId]);
+  }, [cursor, bookId, sort]);
 
   if (records.length === 0) {
     return (
@@ -98,18 +126,59 @@ export function UnifiedRecordFeed({
     );
   }
 
-  const groups = groupUnifiedByDateBook(records);
+  const filtered = kindFilter === "all" ? records : records.filter((r) => r.kind === kindFilter);
+  const displayGroups: { key: string; header: string; records: UnifiedRecord[] }[] =
+    groupBy === "month"
+      ? groupUnifiedByMonth(filtered).map((g) => ({
+          key: g.key,
+          header: formatMonthLabel(g.key),
+          records: g.records,
+        }))
+      : groupBy === "book"
+        ? groupUnifiedByBook(filtered).map((g) => ({
+            key: g.key,
+            header: g.book.title ?? "책 없음",
+            records: g.records,
+          }))
+        : groupUnifiedByDateBook(filtered).map((g) => ({
+            key: g.key,
+            header: `${formatDateKeyLabel(g.kstDateKey, todayKey, yesterdayKey)}${
+              g.book.title ? ` · ${g.book.title}` : ""
+            }`,
+            records: g.records,
+          }));
 
   return (
     <>
+      {/* 종류 필터 (전체/시간/진행/스탬프/상세) */}
+      <div className="flex gap-1.5 mb-4 overflow-x-auto pb-1">
+        {KIND_SEGMENTS.map((seg) => (
+          <button
+            key={seg.value}
+            type="button"
+            onClick={() => setKindFilter(seg.value)}
+            className={cn(
+              "px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors",
+              kindFilter === seg.value
+                ? "bg-primary text-primary-foreground"
+                : "bg-muted text-muted-foreground hover:bg-muted/80",
+            )}
+          >
+            {seg.label}
+          </button>
+        ))}
+      </div>
+
+      {displayGroups.length === 0 ? (
+        <p className="text-center text-sm text-muted-foreground py-10">
+          해당 종류의 기록이 없어요.
+        </p>
+      ) : (
       <div className="space-y-5">
-        {groups.map((g) => (
+        {displayGroups.map((g) => (
           <div key={g.key}>
             <p className="text-xs font-medium text-muted-foreground mb-2 px-1">
-              <span suppressHydrationWarning>
-                {formatDateKeyLabel(g.kstDateKey, todayKey, yesterdayKey)}
-              </span>
-              {g.book.title && <span> · {g.book.title}</span>}
+              <span suppressHydrationWarning>{g.header}</span>
             </p>
             <div className="space-y-1.5">
               {g.records.map((r) => (
@@ -139,6 +208,7 @@ export function UnifiedRecordFeed({
           </div>
         )}
       </div>
+      )}
 
       {lightbox && (
         <Lightbox

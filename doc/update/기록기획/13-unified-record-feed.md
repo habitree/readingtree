@@ -314,3 +314,38 @@ RecordSheet (attach 모드, 이미 존재)
 - [ ] dev 실기기 수동 확인(E2E §8): 시간만→attach 수렴, 진행율+시간 동일 그룹, 스탬프 이중표시 0, cursor 더보기, 플래그 OFF 폴백
 
 > **상태(2026-06-15):** Phase 0~6 구현 완료(마이그레이션 0). 통합 피드는 `NEXT_PUBLIC_UNIFIED_FEED` 기본 ON·킬 스위치 보존. 검증: `tsc` ✅ · ESLint ✅ · `next build` ✅ · 단위테스트 ✅. 실기기 수동 E2E와 데이터 모델 단일화(선택)는 후속. 브랜치 `feat/record-time-consolidation`. 로그: `doc/log/2026-06.md` 2026-06-15 엔트리.
+
+---
+
+## 11. 후속 단계 적용 (2026-06-15 2차) — ①④② 완료 / ③ 게이트
+
+사용자 선택(4개)에 따라 안전한 3개를 적용하고, ③(데이터 단일화)은 위험 감사 후 게이트.
+
+### ① 종류 필터 UI ✅
+- `unified-record-feed.tsx`에 세그먼트 필터(전체/시간/진행/스탬프/상세) — 클라이언트 측 kind 필터(로드된 기록에 적용, cursor 더보기와 양립).
+
+### ④ 타임라인/책별 뷰 통합 ✅
+- `lib/reading/unified.ts`에 `groupUnifiedByMonth`/`groupUnifiedByBook` 추가.
+- 피드 `groupBy`(dateBook/month/book) + `sort`(latest/oldest, keyset 방향 일치) prop.
+- `notes/page.tsx`: 전체 탭의 **모든 뷰**(list/timeline/book)에서 통합 피드 승격(필터/검색 없을 때). `notes-hub-client.tsx`가 activeView→groupBy 매핑.
+
+### ② 책 상세 통합 피드 ✅
+- `books/[id]/page.tsx`: `getUnifiedRecords({bookId})` 조회(플래그 ON·비게스트, Promise.all 병합).
+- `book-notes-tabs.tsx`: "기록" 탭을 책-스코프 통합 피드로 승격(플래그 ON), OFF면 기존 `NoteList` 폴백. 시간/여정 탭은 전문 렌즈로 유지.
+
+### ③ 진행율 기록 데이터 단일화 — ⛔ 게이트(미실행)
+**위험 감사 결과 HIGH(9/10).** `notes.type='progress'`가 다음의 SSOT라 reading_logs 이관 시 함께 깨짐:
+| 영향 | 위치 | 영향도 |
+|---|---|---|
+| 여정(회독 세션 시각화) | `lib/utils/reading-sessions.ts::deriveReadingSessions`, `reading-journey.tsx`, `book-notes-tabs.tsx`(progressNotes 필터) | HIGH |
+| 캘린더 일별 타입 집계 | `stats.ts::getDailyRecordsByType`, `activity-calendar.tsx` | MEDIUM |
+| 대시보드 최근 진행 | `stats.ts::getRecentProgressLogs` | MEDIUM |
+| 주간/스트릭 | `stats.ts::getWeeklyProgress`, `lib/utils/streak.ts` | MEDIUM |
+| 포인트 | `notes.ts::createNote`(`note_progress` 적립) | LOW |
+| DEC-6 집약 | `notes.ts::upsertDailyProgressNote`, `reading-progress.tsx` | (재구현 필요) |
+
+→ **부분 적용 불가**(forward-write만 바꿔도 여정/캘린더/대시보드 즉시 손상). 파괴적 백필 + ~11파일 동시 수정 + 실데이터 비교 검증이 필요한 **전용 마이그레이션**. 헤드리스 블라인드 실행은 부적절 → 사용자 명시 승인 + 실데이터 검증 환경에서 별도 진행.
+
+**권고 마이그레이션 순서(승인 시):** ⓐ `reading_logs`에 진행-체크 표현 확정(페이지-only 행=duration 0, kind 'progress' 파생) → ⓑ `reading-sessions.ts`를 reading_logs 기반으로 전환 → ⓒ 여정/캘린더/대시보드/주간 읽기 경로 전환 → ⓓ forward-write(`reading-progress.tsx`) 전환 + DEC-6 재구현 → ⓔ 기존 progress notes idempotent 백필 → ⓕ 포인트/검색 정리 → ⓖ 실데이터 전후 비교(여정 점·캘린더 카운트·포인트 이력).
+
+> **상태(2026-06-15 2차):** ①④② 적용·검증 완료(`tsc`·ESLint 0err·단위테스트·`next build`). ③은 위험 게이트로 미실행 — 승인 시 전용 마이그레이션으로 진행.

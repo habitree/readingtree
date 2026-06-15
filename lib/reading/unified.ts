@@ -195,3 +195,43 @@ export function groupUnifiedByDateBook(
 
   return order.map((k) => map.get(k)!);
 }
+
+/** 월별 그룹(타임라인 뷰). 입력 순서 보존 → 정렬 방향대로 월 나열. */
+export interface UnifiedMonthGroup {
+  /** "yyyy-MM" */
+  key: string;
+  records: UnifiedRecord[];
+}
+export function groupUnifiedByMonth(records: UnifiedRecord[]): UnifiedMonthGroup[] {
+  const map = new Map<string, UnifiedMonthGroup>();
+  const order: string[] = [];
+  for (const r of records) {
+    const key = r.kstDateKey.slice(0, 7);
+    let g = map.get(key);
+    if (!g) {
+      g = { key, records: [] };
+      map.set(key, g);
+      order.push(key);
+    }
+    g.records.push(r);
+  }
+  return order.map((k) => map.get(k)!);
+}
+
+/** 책별 그룹(책별 뷰). 날짜 무관, 책 단위로 묶음. 입력 순서 보존. */
+export function groupUnifiedByBook(records: UnifiedRecord[]): UnifiedRecordGroup[] {
+  const map = new Map<string, UnifiedRecordGroup>();
+  const order: string[] = [];
+  for (const r of records) {
+    const key = r.book.userBookId ?? "none";
+    let g = map.get(key);
+    if (!g) {
+      g = { key, kstDateKey: r.kstDateKey, book: r.book, records: [], latestAt: r.createdAt };
+      map.set(key, g);
+      order.push(key);
+    }
+    g.records.push(r);
+    if (r.createdAt > g.latestAt) g.latestAt = r.createdAt;
+  }
+  return order.map((k) => map.get(k)!);
+}
