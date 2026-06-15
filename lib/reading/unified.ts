@@ -80,6 +80,8 @@ export function readingLogToUnified(row: UnifiedReadingLogRow): UnifiedRecord {
     startPage != null && endPage != null && endPage - startPage > 0;
   const isStamp = imageUrls.length > 0 && row.promoted_at != null;
   const duration = row.reading_duration_seconds ?? 0;
+  // 진행 기록(데이터 단일화 §11 ③): 시간 0 + 사진 없음 + 끝 페이지 있음 = 페이지-only 진행 체크
+  const isProgressLog = !isStamp && imageUrls.length === 0 && duration <= 0 && endPage != null;
   const isTimeOnly = duration > 0 && !hasProgress && !isStamp;
 
   return {
@@ -91,7 +93,7 @@ export function readingLogToUnified(row: UnifiedReadingLogRow): UnifiedRecord {
     durationSeconds: duration > 0 ? duration : null,
     startPage,
     endPage,
-    pageLabel: null,
+    pageLabel: isProgressLog && endPage != null ? String(endPage) : null,
     memo: row.memo,
     imageUrls,
     bookmarkText: row.bookmark_text,
@@ -101,7 +103,7 @@ export function readingLogToUnified(row: UnifiedReadingLogRow): UnifiedRecord {
     detailKind: null,
     title: null,
     transcriptionText: null,
-    kind: isStamp ? "stamp" : "time",
+    kind: isStamp ? "stamp" : isProgressLog ? "progress" : "time",
     isStamp,
     isTimeOnly,
     editTarget: { kind: "reading_log", logId: row.id },

@@ -20,7 +20,8 @@ import type { ReadingStatus } from "@/types/book";
 import { BookNotesTabs } from "@/components/books/book-notes-tabs";
 import { getNotes, getFreeNotesForBook } from "@/app/actions/notes";
 import { getUnifiedRecords } from "@/app/actions/records";
-import { isUnifiedFeedEnabled } from "@/lib/feature-flags";
+import { getProgressLogsAsNotes } from "@/app/actions/progress";
+import { isUnifiedFeedEnabled, isProgressInLogsEnabled } from "@/lib/feature-flags";
 import type { UnifiedRecord } from "@/types/unified-record";
 import { getRelatedBooks } from "@/app/actions/book-relations";
 import { isValidUUID } from "@/lib/utils/validation";
@@ -156,6 +157,13 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
     linkedFreeNotes = linkedFreeNotesResult;
     unifiedRecords = unifiedResult?.records ?? null;
     unifiedNextCursor = unifiedResult?.nextCursor ?? null;
+
+    // 데이터 단일화(§11 ③): 진행 기록을 reading_logs에서도 읽어 여정/탭에 합류(dual-source).
+    // 레거시 notes(progress)와 분리(disjoint) — 새 진행은 logs, 기존은 notes.
+    if (isProgressInLogsEnabled()) {
+      const progressLogNotes = await getProgressLogsAsNotes(userBook.id, user).catch(() => []);
+      if (progressLogNotes.length > 0) notes = [...notes, ...progressLogNotes];
+    }
   }
 
   // 완독 날짜 배열 계산

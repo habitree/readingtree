@@ -112,6 +112,29 @@ describe("readingLogToUnified — 시간세션/스탬프 정규화", () => {
     expect(r.isStamp).toBe(false);
     expect(r.kind).toBe("time");
   });
+
+  it("페이지-only 로그(시간0·사진없음·끝페이지) → kind=progress, pageLabel=끝페이지 (데이터 단일화 §11 ③)", () => {
+    const r = readingLogToUnified(
+      logRow({ reading_duration_seconds: 0, end_page: 120, page_number: 120, start_page: null }),
+    );
+    expect(r.kind).toBe("progress");
+    expect(r.pageLabel).toBe("120");
+    expect(r.durationSeconds).toBeNull();
+    expect(r.isStamp).toBe(false);
+    expect(r.isTimeOnly).toBe(false);
+  });
+
+  it("시간0이어도 끝페이지 없으면 progress 아님", () => {
+    const r = readingLogToUnified(logRow({ reading_duration_seconds: 0, end_page: null, page_number: null }));
+    expect(r.kind).not.toBe("progress");
+  });
+
+  it("사진 있는 페이지 로그는 시간0이어도 스탬프 우선", () => {
+    const r = readingLogToUnified(
+      logRow({ reading_duration_seconds: 0, end_page: 50, image_url: "u.jpg", image_urls: ["u.jpg"], promoted_at: "2026-06-15T01:00:00.000Z" }),
+    );
+    expect(r.kind).toBe("stamp");
+  });
 });
 
 describe("noteToUnified — 진행율 메모 / 자유 상세 정규화", () => {

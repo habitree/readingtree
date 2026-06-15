@@ -333,19 +333,26 @@ RecordSheet (attach 모드, 이미 존재)
 - `books/[id]/page.tsx`: `getUnifiedRecords({bookId})` 조회(플래그 ON·비게스트, Promise.all 병합).
 - `book-notes-tabs.tsx`: "기록" 탭을 책-스코프 통합 피드로 승격(플래그 ON), OFF면 기존 `NoteList` 폴백. 시간/여정 탭은 전문 렌즈로 유지.
 
-### ③ 진행율 기록 데이터 단일화 — ⛔ 게이트(미실행)
-**위험 감사 결과 HIGH(9/10).** `notes.type='progress'`가 다음의 SSOT라 reading_logs 이관 시 함께 깨짐:
-| 영향 | 위치 | 영향도 |
+### ③ 진행율 기록 데이터 단일화 — ✅ 구현(플래그 기본 OFF · 백필 미적용)
+사용자 "위험 감수하고 진행" 승인. **위험도 HIGH(9/10)** 라 안전망으로 **피처플래그 `NEXT_PUBLIC_PROGRESS_IN_LOGS`(기본 OFF)** 뒤에 전체 구현하고, **파괴적 백필은 미적용(ready SQL만)**.
+
+**모델:** 진행 기록 = `reading_logs` 중 `reading_duration_seconds=0 AND image_url IS NULL AND end_page≠NULL`(페이지-only). 시간세션(duration>0)·스탬프(image)와 충돌 없음.
+
+**구현(플래그 ON일 때 동작):**
+- 쓰기: `progress.ts::recordProgressLog`(DEC-6 same-day 집약 on reading_logs) — `reading-progress.tsx`가 `createNote/upsertDailyProgressNote` 대신 호출.
+- 어댑터: `progress.ts::getProgressLogsAsNotes`(reading_logs→NoteWithBook 형) — 여정/탭 리더 무변경 재사용.
+- dual-source 리더(레거시 notes ⊕ 신규 logs, **disjoint → 이중 카운트 없음**): 책 상세 `books/[id]/page.tsx`(여정), `stats.ts::getDailyRecordsByType`·`getWeeklyProgress`(주간+스트릭)·`getRecentProgressLogs`. 헬퍼 `fetchProgressLogCreatedAts`.
+- 피드: `readingLogToUnified`가 페이지-only 로그를 kind 'progress'로 분류(플래그 무관, 무해).
+
+**위험 영향(플래그 OFF면 전부 기존 동작 유지):**
+| 영향 | 위치 | dual-source 처리 |
 |---|---|---|
-| 여정(회독 세션 시각화) | `lib/utils/reading-sessions.ts::deriveReadingSessions`, `reading-journey.tsx`, `book-notes-tabs.tsx`(progressNotes 필터) | HIGH |
-| 캘린더 일별 타입 집계 | `stats.ts::getDailyRecordsByType`, `activity-calendar.tsx` | MEDIUM |
-| 대시보드 최근 진행 | `stats.ts::getRecentProgressLogs` | MEDIUM |
-| 주간/스트릭 | `stats.ts::getWeeklyProgress`, `lib/utils/streak.ts` | MEDIUM |
-| 포인트 | `notes.ts::createNote`(`note_progress` 적립) | LOW |
-| DEC-6 집약 | `notes.ts::upsertDailyProgressNote`, `reading-progress.tsx` | (재구현 필요) |
+| 여정 회독 시각화 | `reading-sessions.ts`·`reading-journey.tsx`·`book-notes-tabs.tsx` | 책 페이지에서 logs를 note형으로 합류 |
+| 캘린더 일별 집계 | `stats.ts::getDailyRecordsByType` | logs progress 합산 |
+| 주간/스트릭 | `stats.ts::getWeeklyProgress` | 주간+30일 스트릭에 logs 합산 |
+| 대시보드 최근 진행 | `stats.ts::getRecentProgressLogs` | logs 병합·정렬·limit |
+| 포인트(`note_progress`) | `notes.ts::createNote` | recordProgressLog는 미적립(단순화) |
 
-→ **부분 적용 불가**(forward-write만 바꿔도 여정/캘린더/대시보드 즉시 손상). 파괴적 백필 + ~11파일 동시 수정 + 실데이터 비교 검증이 필요한 **전용 마이그레이션**. 헤드리스 블라인드 실행은 부적절 → 사용자 명시 승인 + 실데이터 검증 환경에서 별도 진행.
+**백필(파괴적, 미적용):** `doc/database/migration-202606151200__reading_logs__backfill_progress_notes.sql` — 1단계 비파괴 백필(idempotent) + 2단계 레거시 notes DELETE(주석, 검증 후 수동). 실데이터 검증 게이트.
 
-**권고 마이그레이션 순서(승인 시):** ⓐ `reading_logs`에 진행-체크 표현 확정(페이지-only 행=duration 0, kind 'progress' 파생) → ⓑ `reading-sessions.ts`를 reading_logs 기반으로 전환 → ⓒ 여정/캘린더/대시보드/주간 읽기 경로 전환 → ⓓ forward-write(`reading-progress.tsx`) 전환 + DEC-6 재구현 → ⓔ 기존 progress notes idempotent 백필 → ⓕ 포인트/검색 정리 → ⓖ 실데이터 전후 비교(여정 점·캘린더 카운트·포인트 이력).
-
-> **상태(2026-06-15 2차):** ①④② 적용·검증 완료(`tsc`·ESLint 0err·단위테스트·`next build`). ③은 위험 게이트로 미실행 — 승인 시 전용 마이그레이션으로 진행.
+> **상태(2026-06-15 2차):** ③ 코드 구현 완료(플래그 OFF). 검증 `tsc`·ESLint 0err·단위테스트(progress 분류 포함)·`next build`. **활성화 절차:** 프리뷰에서 `NEXT_PUBLIC_PROGRESS_IN_LOGS=1` → 실데이터로 여정·캘린더·스트릭·대시보드 확인 → 백필 1단계 → (재확인) 백필 2단계(notes 삭제) → 프로덕션 ON.

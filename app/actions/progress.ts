@@ -21,6 +21,8 @@ import type {
 import { READTREE_BOOK_ID } from "@/lib/constants/readtree";
 import { computeRobustPace, DEFAULT_PACE_CONSTANTS } from "@/lib/reading/pace";
 import { summarizeReadingTime } from "@/lib/reading/time-stats";
+import { getKSTToday } from "@/lib/utils/timezone";
+import type { NoteWithBook } from "@/types/note";
 import { earnPoints } from "./points";
 import { updateBookProgress } from "./books/progress";
 
@@ -1331,4 +1333,165 @@ export async function getRecentRecordsForAttach(
   }
 
   return (data ?? []) as ReadingLog[];
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// 진행율 기록 데이터 단일화 (기록 기획 13 §11 ③) — isProgressInLogsEnabled() 게이트 하에서만 사용
+//
+// "진행 기록" = reading_logs 중 reading_duration_seconds=0 AND image_url IS NULL AND end_page≠NULL.
+// (시간세션은 duration>0, 스탬프는 image_url≠NULL 이므로 충돌 없음)
+// ─────────────────────────────────────────────────────────────────────────
+
+/**
+ * 진행율 기록을 reading_logs(페이지-only, 시간 0)로 저장.
+ * DEC-6: 메모 없는 같은 날(KST) 진행 기록은 1점 집약(end_page 갱신), 메모 있으면 항상 새 행.
+ * 포인트 적립 없음(D4 — 세션 종료 1회 정책과 별개의 단순 진행 체크).
+ */
+export async function recordProgressLog(
+  userBookId: string,
+  page: number,
+  memo?: string,
+  user?: User | null,
+): Promise<{ id: string; action: "created" | "updated" }> {
+  const supabase = await createServerSupabaseClient();
+  let currentUser = user;
+  if (!currentUser) {
+    const {
+      data: { user: fetchedUser },
+      error: authError,
+    } = await supabase.auth.getUser();
+    if (authError || !fetchedUser) throw new Error("로그인이 필요합니다.");
+    currentUser = fetchedUser;
+  }
+
+  if (!isValidUUID(userBookId)) throw new Error("유효하지 않은 책 ID입니다.");
+  if (!Number.isFinite(page) || page < 0) throw new Error("페이지는 0 이상이어야 합니다.");
+  const trimmedMemo = memo?.trim() || null;
+  if (trimmedMemo && trimmedMemo.length > 200) throw new Error("메모는 200자 이하여야 합니다.");
+
+  // DEC-6: 메모 없으면 같은 날 진행 기록 집약(end_page 갱신)
+  if (!trimmedMemo) {
+    const todayKstMidnight = getKSTToday().toISOString();
+    const { data: existing } = await supabase
+      .from("reading_logs")
+      .select("id")
+      .eq("user_id", currentUser.id)
+      .eq("user_book_id", userBookId)
+      .eq("reading_duration_seconds", 0)
+      .is("image_url", null)
+      .is("memo", null)
+      .not("end_page", "is", null)
+      .gte("created_at", todayKstMidnight)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (existing) {
+      const { error: updateError } = await supabase
+        .from("reading_logs")
+        .update({ end_page: page, page_number: page })
+        .eq("id", existing.id)
+        .eq("user_id", currentUser.id);
+      if (updateError) throw new Error(sanitizeErrorMessage(updateError));
+      revalidatePath(`/books/${userBookId}`);
+      revalidatePath("/notes");
+      revalidatePath("/");
+      return { id: existing.id, action: "updated" };
+    }
+  }
+
+  const { data: inserted, error: insertError } = await supabase
+    .from("reading_logs")
+    .insert({
+      user_id: currentUser.id,
+      user_book_id: userBookId,
+      page_number: page,
+      end_page: page,
+      start_page: null,
+      reading_duration_seconds: 0,
+      memo: trimmedMemo,
+      is_public: true,
+      status: "completed",
+    })
+    .select("id")
+    .single();
+
+  if (insertError || !inserted) {
+    throw new Error(sanitizeErrorMessage(insertError ?? new Error("진행 기록 저장에 실패했습니다.")));
+  }
+
+  revalidatePath(`/books/${userBookId}`);
+  revalidatePath("/notes");
+  revalidatePath("/");
+  return { id: inserted.id, action: "created" };
+}
+
+/**
+ * 진행 기록(reading_logs)을 기존 readers(여정·book-notes-tabs)가 기대하는 NoteWithBook 형태로 어댑트.
+ * dual-source 시 notes(레거시 progress)와 합쳐 회독 시각화 등에 사용. type='progress'로 표기.
+ */
+export async function getProgressLogsAsNotes(
+  userBookId?: string,
+  user?: User | null,
+): Promise<NoteWithBook[]> {
+  const supabase = await createServerSupabaseClient();
+  let currentUser = user;
+  if (!currentUser) {
+    const {
+      data: { user: fetchedUser },
+    } = await supabase.auth.getUser();
+    if (!fetchedUser) return [];
+    currentUser = fetchedUser;
+  }
+
+  let query = supabase
+    .from("reading_logs")
+    .select(
+      `id, user_id, user_book_id, end_page, page_number, memo, created_at, updated_at, is_public,
+       user_books!inner ( id, book_id, books ( id, title, author, cover_image_url ) )`,
+    )
+    .eq("user_id", currentUser.id)
+    .eq("reading_duration_seconds", 0)
+    .is("image_url", null)
+    .not("end_page", "is", null)
+    .order("created_at", { ascending: false });
+
+  if (userBookId && isValidUUID(userBookId)) query = query.eq("user_book_id", userBookId);
+
+  const { data, error } = await query;
+  if (error || !data) return [];
+
+  return (data as unknown as Array<Record<string, unknown>>).map((row) => {
+    const ub = (Array.isArray(row.user_books) ? row.user_books[0] : row.user_books) as
+      | { book_id?: string; books?: { id: string; title: string; author: string | null; cover_image_url: string | null } | Array<{ id: string; title: string; author: string | null; cover_image_url: string | null }> }
+      | undefined;
+    const bookRaw = ub?.books;
+    const book = Array.isArray(bookRaw) ? bookRaw[0] : bookRaw;
+    const memo = (row.memo as string | null) ?? null;
+    const endPage = row.end_page as number | null;
+    return {
+      id: row.id as string,
+      user_id: row.user_id as string,
+      book_id: (ub?.book_id as string | null) ?? null,
+      title: null,
+      type: "progress",
+      content: memo ? JSON.stringify({ memo }) : null,
+      image_url: null,
+      page_number: endPage != null ? String(endPage) : null,
+      is_public: !!row.is_public,
+      tags: null,
+      related_user_book_ids: null,
+      source_type: null,
+      source_label: null,
+      status: "published",
+      reading_duration_seconds: null,
+      created_at: row.created_at as string,
+      updated_at: (row.updated_at as string) ?? (row.created_at as string),
+      reading_log_id: null,
+      detail_kind: null,
+      book: book
+        ? { id: book.id, title: book.title, author: book.author, cover_image_url: book.cover_image_url }
+        : undefined,
+    } as NoteWithBook;
+  });
 }
