@@ -353,6 +353,15 @@ RecordSheet (attach 모드, 이미 존재)
 | 대시보드 최근 진행 | `stats.ts::getRecentProgressLogs` | logs 병합·정렬·limit |
 | 포인트(`note_progress`) | `notes.ts::createNote` | recordProgressLog는 미적립(단순화) |
 
-**백필(파괴적, 미적용):** `doc/database/migration-202606151200__reading_logs__backfill_progress_notes.sql` — 1단계 비파괴 백필(idempotent) + 2단계 레거시 notes DELETE(주석, 검증 후 수동). 실데이터 검증 게이트.
+**백필(파괴적, 미적용):** `doc/database/migration-202606151200__reading_logs__backfill_progress_notes.sql` — **원자적(한 트랜잭션) 백필+삭제**. ⚠️ 백필과 삭제를 분리하면 그 사이 notes ⊕ logs 가 둘 다 읽혀 **이중 카운트/표시**가 되므로 반드시 같은 트랜잭션. 또 **플래그 ON 선행 필수**(OFF면 리더가 logs를 안 읽어 진행 기록이 사라짐). idempotent.
 
-> **상태(2026-06-15 2차):** ③ 코드 구현 완료(플래그 OFF). 검증 `tsc`·ESLint 0err·단위테스트(progress 분류 포함)·`next build`. **활성화 절차:** 프리뷰에서 `NEXT_PUBLIC_PROGRESS_IN_LOGS=1` → 실데이터로 여정·캘린더·스트릭·대시보드 확인 → 백필 1단계 → (재확인) 백필 2단계(notes 삭제) → 프로덕션 ON.
+> **상태(2026-06-15 2차):** ③ 코드 구현 완료(플래그 OFF, 현 사용자 무영향). 검증 `tsc`·ESLint 0err·단위테스트(progress 분류 포함)·`next build`.
+>
+> **활성화 런북(올바른 순서 — 1·2·5는 사람이 수행):**
+> 1. 프리뷰/스테이징에 `NEXT_PUBLIC_PROGRESS_IN_LOGS=1` 배포 (Vercel — 플래그 **먼저**).
+> 2. 진행율 기록 후 실데이터로 여정·캘린더·스트릭·대시보드 정상 표시 확인(신규 진행이 logs에서 보임 + 기존 progress notes도 함께 보임 = disjoint).
+> 3. 백필 마이그레이션 실행(원자적 백필+삭제). 대상 노트 수는 사전 카운트로 확인(2026-06-15 기준 194건).
+> 4. 백필 후 과거 진행 기록이 그대로 보이는지(이중표시 0, 누락 0) 재확인.
+> 5. 프로덕션 플래그 ON + (필요 시 프로덕션 백필).
+>
+> ⚠️ 절대 금지: 플래그 OFF에서 백필 실행(진행 기록 소실), 백필만 하고 삭제 생략(이중 표시).
