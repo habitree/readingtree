@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>통합 기록 피드 — 적용 화면·메뉴 가이드 (2026-06-15)</title>
+<style>
+  :root {
+    --emerald-50:#ecfdf5; --emerald-100:#d1fae5; --emerald-200:#a7f3d0; --emerald-300:#6ee7b7;
+    --emerald-500:#10b981; --emerald-600:#059669; --emerald-700:#047857; --emerald-900:#064e3b;
+    --teal-50:#f0fdfa; --teal-100:#ccfbf1; --teal-500:#14b8a6; --teal-700:#0f766e;
+    --rose-50:#fff1f2; --rose-100:#ffe4e6; --rose-500:#f43f5e; --rose-700:#be123c;
+    --amber-50:#fffbeb; --amber-100:#fef3c7; --amber-500:#f59e0b; --amber-700:#b45309;
+    --sky-50:#f0f9ff; --sky-100:#e0f2fe; --sky-700:#0369a1;
+    --slate-50:#f8fafc; --slate-100:#f1f5f9; --slate-200:#e2e8f0; --slate-300:#cbd5e1;
+    --slate-400:#94a3b8; --slate-500:#64748b; --slate-600:#475569; --slate-700:#334155;
+    --slate-800:#1e293b; --slate-900:#0f172a;
+  }
+  * { box-sizing: border-box; }
+  body { font-family:-apple-system,BlinkMacSystemFont,"Pretendard","Segoe UI",sans-serif; background:var(--slate-50); color:var(--slate-900); margin:0; padding:24px 16px; line-height:1.6; word-break:keep-all; }
+  .container { max-width:1060px; margin:0 auto; }
+
+  header.hero { background:linear-gradient(135deg,var(--emerald-700),var(--emerald-900)); color:#fff; border-radius:20px; padding:36px 30px; margin-bottom:24px; box-shadow:0 10px 30px rgba(5,150,105,.25); }
+  header.hero .badge { display:inline-block; padding:4px 12px; background:rgba(255,255,255,.18); border-radius:999px; font-size:12px; font-weight:600; margin-bottom:12px; }
+  header.hero h1 { margin:0 0 12px; font-size:28px; font-weight:800; line-height:1.25; }
+  header.hero p { margin:0; opacity:.92; font-size:14px; }
+  header.hero .chips { margin-top:16px; display:flex; flex-wrap:wrap; gap:8px; }
+  header.hero .chip { background:rgba(255,255,255,.14); border-radius:8px; padding:6px 12px; font-size:12px; font-weight:500; }
+
+  .toc { background:#fff; border:1px solid var(--slate-200); border-radius:14px; padding:16px 20px; margin-bottom:22px; display:flex; flex-wrap:wrap; gap:8px; }
+  .toc a { text-decoration:none; font-size:12px; font-weight:600; color:var(--slate-600); background:var(--slate-100); padding:6px 12px; border-radius:999px; }
+  .toc a:hover { background:var(--emerald-100); color:var(--emerald-700); }
+
+  section { background:#fff; border-radius:16px; border:1px solid var(--slate-200); padding:24px; margin-bottom:20px; }
+  section h2 { margin:0 0 6px; font-size:20px; display:flex; align-items:center; gap:10px; }
+  section h2 .num { background:var(--emerald-100); color:var(--emerald-700); width:30px; height:30px; border-radius:8px; display:inline-flex; align-items:center; justify-content:center; font-size:14px; font-weight:800; flex-shrink:0; }
+  section .sub { color:var(--slate-500); font-size:13px; margin:0 0 16px; padding-left:40px; }
+  table { width:100%; border-collapse:collapse; margin-top:8px; font-size:13px; }
+  th,td { border-bottom:1px solid var(--slate-200); padding:10px 8px; text-align:left; vertical-align:top; }
+  th { background:var(--slate-50); font-weight:700; font-size:12px; color:var(--slate-600); }
+  code { background:var(--slate-100); color:var(--slate-700); padding:1px 6px; border-radius:4px; font-size:12px; font-family:ui-monospace,monospace; }
+
+  .pill { display:inline-block; padding:2px 9px; border-radius:999px; font-size:11px; font-weight:600; }
+  .pill.new { background:var(--emerald-100); color:var(--emerald-700); }
+  .pill.chg { background:var(--amber-100); color:var(--amber-700); }
+  .pill.del { background:var(--rose-100); color:var(--rose-700); }
+
+  .grid2 { display:grid; grid-template-columns:1fr 360px; gap:18px; align-items:start; }
+  @media (max-width:760px){ .grid2 { grid-template-columns:1fr; } }
+  .what { min-width:0; }
+  .what ul { margin:0; padding-left:18px; }
+  .what li { font-size:13px; margin-bottom:6px; color:var(--slate-700); }
+  .what li b { color:var(--slate-900); }
+
+  /* phone mock */
+  .phone { background:var(--slate-900); border-radius:22px; padding:10px; box-shadow:0 8px 24px rgba(0,0,0,.18); }
+  .screen { background:#fff; border-radius:14px; overflow:hidden; }
+  .screen .bar { background:var(--slate-50); border-bottom:1px solid var(--slate-200); padding:8px 12px; font-size:11px; font-weight:700; color:var(--slate-600); display:flex; align-items:center; gap:6px; }
+  .screen .body { padding:12px; font-size:11px; }
+  .tabs { display:flex; gap:4px; flex-wrap:wrap; margin-bottom:10px; }
+  .tabs span { font-size:9px; padding:3px 9px; border-radius:999px; background:var(--slate-100); color:var(--slate-500); font-weight:600; }
+  .tabs span.on { background:var(--emerald-600); color:#fff; }
+  .daygroup { font-size:10px; font-weight:700; color:var(--slate-500); margin:10px 0 5px; }
+  .row { background:var(--slate-50); border-radius:8px; padding:8px 10px; margin-bottom:6px; display:flex; align-items:flex-start; gap:8px; }
+  .row .ico { width:24px; height:24px; border-radius:6px; background:var(--emerald-100); color:var(--emerald-700); display:flex; align-items:center; justify-content:center; font-size:12px; flex-shrink:0; }
+  .row .mid { flex:1; min-width:0; }
+  .row .mid .line { display:flex; gap:5px; align-items:center; flex-wrap:wrap; }
+  .row .mid .dur { font-weight:700; color:var(--slate-800); }
+  .row .mid .pg { color:var(--slate-500); font-size:10px; }
+  .row .mid .memo { color:var(--slate-500); font-size:10px; margin-top:2px; }
+  .row .edit { font-size:9px; color:var(--slate-500); border:1px solid var(--slate-200); background:#fff; border-radius:999px; padding:2px 8px; flex-shrink:0; }
+  .thumb { width:30px; height:30px; border-radius:7px; background:linear-gradient(135deg,var(--emerald-200),var(--emerald-500)); display:inline-flex; align-items:center; justify-content:center; color:#fff; font-size:12px; flex-shrink:0; }
+  .kb { display:inline-flex; align-items:center; gap:3px; border-radius:999px; padding:1px 7px; font-size:9px; font-weight:700; }
+  .kb.time { background:var(--emerald-100); color:var(--emerald-700); }
+  .kb.prog { background:var(--teal-100); color:var(--teal-700); }
+  .kb.stamp { background:var(--emerald-100); color:var(--emerald-700); }
+  .kb.detail { background:var(--slate-200); color:var(--slate-600); }
+  .field { background:var(--slate-50); border:1px solid var(--slate-200); border-radius:7px; padding:6px 8px; margin:5px 0; color:var(--slate-600); }
+  .btn { display:block; text-align:center; border-radius:8px; padding:8px; font-size:11px; font-weight:700; margin-top:6px; }
+  .btn.pri { background:var(--emerald-600); color:#fff; }
+  .cap { font-size:11px; color:var(--slate-500); margin-top:8px; text-align:center; }
+
+  .flow { display:flex; align-items:center; gap:8px; flex-wrap:wrap; font-size:12px; color:var(--slate-700); }
+  .flow .step { background:var(--slate-50); border:1px solid var(--slate-200); border-radius:8px; padding:8px 12px; }
+  .flow .arr { color:var(--slate-300); font-weight:800; }
+
+  .note { background:var(--sky-50); border:1px solid var(--sky-100); color:var(--sky-700); border-radius:10px; padding:12px 16px; font-size:13px; margin-top:14px; }
+  .note.amber { background:var(--amber-50); border-color:var(--amber-100); color:var(--amber-700); }
+  .note.emerald { background:var(--emerald-50); border-color:var(--emerald-100); color:var(--emerald-700); }
+  .legend { display:flex; gap:14px; flex-wrap:wrap; font-size:12px; color:var(--slate-600); margin-top:10px; }
+  .legend span { display:inline-flex; align-items:center; gap:5px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header class="hero">
+    <span class="badge">적용 화면·메뉴 가이드 · 2026.06.15 · 기록 기획 13</span>
+    <h1>통합 기록 피드 — 흩어진 기록이 한 곳에 모입니다</h1>
+    <p>시간 기록·진행율 메모·스탬프·자유 상세가 서로 다른 화면에 흩어져 있던 것을, <b>“내 기록(/notes)”의 “전체” 탭</b> 하나로 모았습니다. 입력 경로는 그대로지만 <b>모이는 곳은 한 곳, 편집도 한 곳</b>입니다. 저장 구조는 그대로(마이그레이션 0)이며 읽기 시점에만 합칩니다.</p>
+    <div class="chips">
+      <span class="chip">🟢 통합 피드 기본 ON</span>
+      <span class="chip">🆕 날짜·책 그룹 + 적응형 카드</span>
+      <span class="chip">🆕 카드 탭 = 한 곳에서 편집</span>
+      <span class="chip">↩︎ 롤백: NEXT_PUBLIC_UNIFIED_FEED=0</span>
+    </div>
+  </header>
+
+  <nav class="toc">
+    <a href="#sum">한눈에 보기</a>
+    <a href="#s1">① 전 / 후</a>
+    <a href="#s2">② 통합 피드 화면</a>
+    <a href="#s3">③ 카드 구성</a>
+    <a href="#s4">④ 한 곳에서 편집</a>
+    <a href="#s5">⑤ 진행 탭 정리</a>
+    <a href="#flag">플래그·롤백</a>
+  </nav>
+
+  <!-- 요약 -->
+  <section id="sum">
+    <h2><span class="num">✦</span> 한눈에 보기 — 무엇이 바뀌었나</h2>
+    <p class="sub">표시·편집만 통합(읽기 레이어). 저장 구조·생성 경로·검색/필터는 그대로.</p>
+    <table>
+      <thead><tr><th style="width:30%">메뉴 · 화면 (경로)</th><th>무엇이 바뀌었나</th><th style="width:80px">구분</th></tr></thead>
+      <tbody>
+        <tr><td><b>내 기록 · 전체 탭</b> <br><code>/notes</code> (list 뷰)</td><td>시간세션·진행율 메모·스탬프·자유 상세를 <b>하나의 시간순 피드</b>로 표시. “날짜 · 책” 그룹 헤더 아래 개별 카드.</td><td><span class="pill chg">승격</span></td></tr>
+        <tr><td><b>기록 카드</b></td><td>있는 슬롯만 적응형 표시(시간/페이지·진행%/메모/사진/북마크). 종류는 작은 배지로만 구분.</td><td><span class="pill new">신규</span></td></tr>
+        <tr><td><b>카드 편집</b></td><td>어떤 카드든 탭 → 동일 시트. 시간만 기록 → 나중에 페이지·메모·사진 추가(수렴)를 한 곳에서.</td><td><span class="pill new">신규</span></td></tr>
+        <tr><td><b>내 기록 · “진행” 탭</b></td><td>전용 탭 제거 — 진행율 기록이 전체 피드의 1차 카드로 흡수(분리감 제거). <code>?tab=progress</code>는 하위호환.</td><td><span class="pill del">정리</span></td></tr>
+        <tr><td>책 상세 시간탭 · 독서 속도 · 스탬프</td><td><b>그대로 유지</b> — 책-스코프/속도 분석/사진 컬렉션 전문 렌즈. 편집은 모두 같은 시트로 수렴.</td><td><span class="pill">유지</span></td></tr>
+      </tbody>
+    </table>
+    <div class="note">표시 통합은 <b>전체 탭(list 뷰)</b> 한 곳입니다. 검색어·날짜/책/태그 필터·타입 탭·타임라인/책별 뷰는 기존 동작(notes 기준)을 그대로 유지해 정확성을 보장합니다.</div>
+  </section>
+
+  <!-- 전/후 -->
+  <section id="s1">
+    <h2><span class="num">1</span> 무엇이 달라졌나 — 전 / 후</h2>
+    <p class="sub">같은 맥락의 기록이 다른 테이블·다른 화면에 갈라져 있던 문제를 해소</p>
+    <div class="grid2">
+      <div class="what">
+        <p style="font-size:13px;font-weight:700;margin:0 0 6px;color:var(--rose-700)">전 (분리)</p>
+        <ul>
+          <li>진행율 슬라이더 메모 → <code>notes</code> → <b>/notes에만</b> 노출</li>
+          <li>시간세션·스탬프 → <code>reading_logs</code> → <b>책 시간탭·독서속도·/stamps</b>에 흩어짐</li>
+          <li>독립 시간세션은 “내 기록”에 <b>아예 안 보임</b></li>
+          <li>“내가 입력한 게 이곳저곳 나눠져 있다”는 인식</li>
+        </ul>
+        <p style="font-size:13px;font-weight:700;margin:14px 0 6px;color:var(--emerald-700)">후 (통합)</p>
+        <ul>
+          <li>두 테이블을 <b>읽기 시점에 머지</b> → /notes 전체 탭 = 모이는 한 곳</li>
+          <li>같은 날·같은 책의 시간·진행·사진이 <b>한 그룹</b>에 나란히</li>
+          <li>어떤 카드든 같은 시트에서 편집 → <b>한 곳에서 수정</b></li>
+          <li>저장은 그대로 — <b>마이그레이션 0, 롤백 1줄</b></li>
+        </ul>
+      </div>
+      <div class="phone">
+        <div class="screen">
+          <div class="bar">📚 내 기록 · 전체</div>
+          <div class="body">
+            <div class="daygroup">오늘 · 미움받을 용기</div>
+            <div class="row">
+              <div class="ico">⏱</div>
+              <div class="mid"><div class="line"><span class="dur">32분</span><span class="pg">p.45→78</span><span class="kb time">시간</span></div></div>
+              <div class="edit">편집</div>
+            </div>
+            <div class="row">
+              <div class="ico" style="background:var(--teal-100);color:var(--teal-700)">📈</div>
+              <div class="mid"><div class="line"><span class="pg">62%</span><span class="kb prog">진행</span></div><div class="memo">“이 부분 인상 깊다”</div></div>
+              <div class="edit">편집</div>
+            </div>
+            <div class="row">
+              <div class="thumb">🖼</div>
+              <div class="mid"><div class="line"><span class="pg">p.80</span><span class="kb stamp">스탬프</span></div></div>
+              <div class="edit">편집</div>
+            </div>
+            <div class="daygroup">어제 · 데미안</div>
+            <div class="row">
+              <div class="ico" style="background:var(--slate-200);color:var(--slate-600)">✍</div>
+              <div class="mid"><div class="memo">“새는 알에서 나오려 투쟁한다”</div><div class="line"><span class="kb detail">구절</span></div></div>
+              <div class="edit">편집</div>
+            </div>
+          </div>
+        </div>
+        <p class="cap">전체 탭 — 입력 경로가 달라도 한 곳에서 같이 보인다</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 통합 피드 화면 -->
+  <section id="s2">
+    <h2><span class="num">2</span> 통합 피드 화면 — /notes 전체 탭</h2>
+    <p class="sub">탭/검색/헤더는 그대로 재사용. “전체” 탭 list 뷰에서만 피드로 승격.</p>
+    <div class="grid2">
+      <div class="what">
+        <ul>
+          <li><b>그룹 헤더</b>: “오늘 / 어제 / N월 N일 · 책제목” (KST 기준)</li>
+          <li><b>정렬·페이지네이션</b>: 최신순, <code>created_at</code> keyset “더 보기”(offset 미사용 → 누락/중복 없음)</li>
+          <li><b>중복 제거</b>: 세션에 달린 상세기록은 세션 카드 하위로 접어 <b>한 세션 = 카드 1개</b></li>
+          <li><b>다른 뷰로 전환</b>: 타임라인/책별/검색은 기존 notes 화면으로 자연 폴백</li>
+        </ul>
+        <div class="legend">
+          <span><span class="kb time">시간</span> 시간세션</span>
+          <span><span class="kb prog">진행</span> 진행율 메모</span>
+          <span><span class="kb stamp">스탬프</span> 사진 승격</span>
+          <span><span class="kb detail">구절</span> 자유 상세</span>
+        </div>
+      </div>
+      <div class="phone">
+        <div class="screen">
+          <div class="bar">📚 내 기록</div>
+          <div class="body">
+            <div class="field">🔎 검색…</div>
+            <div class="tabs"><span class="on">전체</span><span>인박스</span><span>구절</span><span>생각</span><span>사진</span><span>필사</span></div>
+            <div class="daygroup">오늘 · 미움받을 용기</div>
+            <div class="row"><div class="ico">⏱</div><div class="mid"><div class="line"><span class="dur">32분</span><span class="pg">p.45→78</span><span class="kb time">시간</span></div></div><div class="edit">편집</div></div>
+            <div class="row"><div class="ico" style="background:var(--teal-100);color:var(--teal-700)">📈</div><div class="mid"><div class="line"><span class="pg">62%</span><span class="kb prog">진행</span></div></div><div class="edit">편집</div></div>
+            <div class="btn" style="background:var(--slate-100);color:var(--slate-600)">더 보기</div>
+          </div>
+        </div>
+        <p class="cap">“진행” 전용 탭은 사라지고, 진행 기록은 전체에 함께</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 카드 구성 -->
+  <section id="s3">
+    <h2><span class="num">3</span> 카드 구성 — 있는 것만 보여준다</h2>
+    <p class="sub">골격은 모두 동일. 종류는 작은 배지로만 구분해 “별도 기록”으로 인식되지 않게.</p>
+    <table>
+      <thead><tr><th style="width:90px">종류</th><th>좌측</th><th>가운데(있는 슬롯만)</th><th style="width:80px">배지</th></tr></thead>
+      <tbody>
+        <tr><td><b>시간세션</b></td><td>⏱ 아이콘</td><td>독서시간 · p.시작→끝 · (메모)</td><td><span class="kb time">시간</span></td></tr>
+        <tr><td><b>진행율</b></td><td>📈 아이콘</td><td>진행% (또는 p.현재) · 메모</td><td><span class="kb prog">진행</span></td></tr>
+        <tr><td><b>스탬프</b></td><td>사진 썸네일(탭 → 라이트박스)</td><td>p.끝 · (메모) · 사진 N장</td><td><span class="kb stamp">스탬프</span></td></tr>
+        <tr><td><b>자유 상세</b></td><td>구절/생각/필사/사진 아이콘</td><td>제목 · 본문 미리보기</td><td><span class="kb detail">구절…</span></td></tr>
+      </tbody>
+    </table>
+    <div class="note emerald">북마크(다음 시작점)가 있으면 카드 하단에 칩으로 함께 노출됩니다. 사진이 여러 장이면 썸네일에 장수 배지가 붙습니다.</div>
+  </section>
+
+  <!-- 편집 -->
+  <section id="s4">
+    <h2><span class="num">4</span> 한 곳에서 편집 — “시간만 → 나중에 채우기”</h2>
+    <p class="sub">카드 탭 → 종류에 맞는 편집으로 자동 분기. 시간만 기록한 뒤 페이지·메모·사진을 더하면 같은 카드가 그 자리에서 갱신.</p>
+    <div class="grid2">
+      <div class="what">
+        <div class="flow">
+          <span class="step">시간만 카드 탭</span>
+          <span class="arr">→</span>
+          <span class="step">사진 추가 시트(attach)</span>
+          <span class="arr">→</span>
+          <span class="step">페이지·메모·사진 입력</span>
+          <span class="arr">→</span>
+          <span class="step">같은 카드 갱신</span>
+        </div>
+        <ul style="margin-top:14px">
+          <li><b>시간세션/스탬프</b> → 기존 <b>RecordSheet 사진 추가(attach)</b> 시트(이미 책 상세·독서속도에서 쓰던 그 시트)</li>
+          <li><b>진행율·자유 상세</b> → 기록 편집 페이지(<code>/notes/[id]/edit</code>)</li>
+          <li>포인트 추가 적립 없음(편집은 기존 저장 경로 재사용)</li>
+        </ul>
+      </div>
+      <div class="phone">
+        <div class="screen">
+          <div class="bar">✏️ 사진 추가 · 미움받을 용기</div>
+          <div class="body">
+            <div class="field">📷 사진 (최대 5장 · 추가하면 스탬프)</div>
+            <div class="line" style="display:flex;gap:5px;margin:6px 0">
+              <span class="pg">시작 45</span> <span class="arr" style="color:var(--slate-300)">→</span> <span class="dur">끝 78</span>
+            </div>
+            <div class="field">간단 메모…</div>
+            <div class="btn pri">저장</div>
+          </div>
+        </div>
+        <p class="cap">시간만 적은 기록을 나중에 한 곳에서 마저 채운다</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 진행 탭 정리 -->
+  <section id="s5">
+    <h2><span class="num">5</span> “진행” 탭 정리 — 분리감 제거</h2>
+    <p class="sub">진행율 기록이 전체 피드의 1차 카드가 되면서 전용 탭이 중복이 됨.</p>
+    <div class="what">
+      <ul>
+        <li>내 기록 탭에서 <b>“진행” 탭 제거</b> — 진행 기록은 전체 피드에서 다른 기록과 함께 보임</li>
+        <li>기존 링크/북마크 <code>/notes?tab=progress</code> 는 <b>하위호환 유지</b>(서버에서 계속 동작)</li>
+        <li>책 상세·독서 속도·스탬프 화면은 <b>역할 그대로</b> — 스코프/분석/컬렉션 전문 뷰</li>
+      </ul>
+    </div>
+    <div class="note">남은 정리(선택): 진행율 기록을 reading_logs로 합치는 데이터 모델 단일화는 여정·포인트 회귀 위험이 있어 <b>별도 게이트</b>로 보류. 현재는 표시·편집만 통합.</div>
+  </section>
+
+  <!-- 플래그 -->
+  <section id="flag">
+    <h2><span class="num">⚑</span> 플래그 · 롤백 · 검증</h2>
+    <p class="sub">표시 신규 추가라 기존 카나리(RECORD_V2)와 독립적으로 동작</p>
+    <table>
+      <tbody>
+        <tr><td style="width:38%"><code>NEXT_PUBLIC_UNIFIED_FEED</code></td><td>미지정/“1” = <b>통합 피드 ON</b>(기본). “0”/“false” = 기존 notes 화면으로 폴백(킬 스위치).</td></tr>
+        <tr><td><code>NEXT_PUBLIC_RECORD_V2</code></td><td>편집 진입(attach 시트) 카나리. 통합 피드와 독립.</td></tr>
+        <tr><td>검증</td><td><code>tsc</code> ✅ · ESLint ✅ · <code>next build</code> ✅ · 순수 로직 단위 테스트 ✅. 실기기 E2E는 수동 확인 권장.</td></tr>
+      </tbody>
+    </table>
+    <div class="note amber">실기기 수동 확인 권장: ① 시간만 세션 → 전체 탭 카드 → 탭 → 페이지·메모 추가(수렴) ② 진행율+시간이 같은 날·책 그룹에 함께 ③ 스탬프 이중 표시 0 ④ “더 보기” 누락/중복 0 ⑤ 플래그 OFF 시 기존 화면 폴백.</div>
+    <p style="font-size:12px;color:var(--slate-500);margin-top:14px">설계서: <code>doc/update/기록기획/13-unified-record-feed.md</code> · 브랜치 <code>feat/record-time-consolidation</code></p>
+  </section>
+
+</div>
+</body>
+</html>

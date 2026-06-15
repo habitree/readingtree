@@ -32,3 +32,15 @@ export function isRecordV2Enabled(): boolean {
   if (raw == null || raw.trim() === "") return true;
   return !FALSY.has(raw.trim().toLowerCase());
 }
+
+/**
+ * 통합 기록 피드(기록 기획 13) 활성화 여부. (기본 ON)
+ *
+ * /notes "전체" 탭(list 뷰)에서 reading_logs + notes 를 머지한 단일 피드를 노출.
+ * 표시 신규 추가라 RECORD_V2와 독립. 롤백은 NEXT_PUBLIC_UNIFIED_FEED=0.
+ */
+export function isUnifiedFeedEnabled(): boolean {
+  const raw = process.env.NEXT_PUBLIC_UNIFIED_FEED;
+  if (raw == null || raw.trim() === "") return true;
+  return !FALSY.has(raw.trim().toLowerCase());
+}
