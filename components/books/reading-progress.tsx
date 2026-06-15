@@ -14,6 +14,7 @@ import { TotalPagesEditor } from "./total-pages-editor";
 import { BookCompletionDialog } from "./book-completion-dialog";
 import { cn } from "@/lib/utils";
 import { computeProgressPercent } from "@/lib/reading/progress";
+import { isProgressInLogsEnabled } from "@/lib/feature-flags";
 import { useTranslation } from "@/lib/i18n";
 
 interface ReadingProgressProps {
@@ -144,8 +145,14 @@ export function ReadingProgress({
 
       // 진행 기록의 여정 편입 (DEC-6): 전진만 기록(후퇴/정정 제외) + 같은 날 1점 집약
       if (pendingPageUpdate > currentPage) {
-        const { upsertDailyProgressNote } = await import("@/app/actions/notes");
-        await upsertDailyProgressNote(userBookId, pendingPageUpdate);
+        if (isProgressInLogsEnabled()) {
+          // 데이터 단일화(§11 ③): 진행 기록을 reading_logs(페이지-only)로 저장
+          const { recordProgressLog } = await import("@/app/actions/progress");
+          await recordProgressLog(userBookId, pendingPageUpdate);
+        } else {
+          const { upsertDailyProgressNote } = await import("@/app/actions/notes");
+          await upsertDailyProgressNote(userBookId, pendingPageUpdate);
+        }
       }
 
       setCurrentPage(pendingPageUpdate);
@@ -168,7 +175,7 @@ export function ReadingProgress({
     } finally {
       setIsInlineSaving(false);
     }
-  }, [pendingPageUpdate, userBookId, onUpdate, onRecordCreated, t]);
+  }, [pendingPageUpdate, currentPage, userBookId, onUpdate, onRecordCreated, t]);
 
   // 인라인 메모와 함께 진행률 저장
   const handleSaveWithMemo = useCallback(async () => {
@@ -180,18 +187,24 @@ export function ReadingProgress({
       const result = await updateBookProgress(userBookId, pendingPageUpdate);
 
       // 진행 기록 생성 (메모 포함)
-      const { createNote } = await import("@/app/actions/notes");
-      const content = inlineMemo.trim()
-        ? JSON.stringify({ memo: inlineMemo.trim() })
-        : null;
+      if (isProgressInLogsEnabled()) {
+        // 데이터 단일화(§11 ③): reading_logs(페이지-only)로 저장
+        const { recordProgressLog } = await import("@/app/actions/progress");
+        await recordProgressLog(userBookId, pendingPageUpdate, inlineMemo.trim() || undefined);
+      } else {
+        const { createNote } = await import("@/app/actions/notes");
+        const content = inlineMemo.trim()
+          ? JSON.stringify({ memo: inlineMemo.trim() })
+          : null;
 
-      await createNote({
-        book_id: userBookId,
-        type: "progress",
-        content: content || undefined,
-        page_number: String(pendingPageUpdate),
-        is_public: true,
-      });
+        await createNote({
+          book_id: userBookId,
+          type: "progress",
+          content: content || undefined,
+          page_number: String(pendingPageUpdate),
+          is_public: true,
+        });
+      }
 
       setCurrentPage(pendingPageUpdate);
       setInputValue(String(pendingPageUpdate));

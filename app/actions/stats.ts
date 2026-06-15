@@ -15,8 +15,32 @@ import {
   kstMonthEnd,
 } from "@/lib/utils/timezone";
 import { computeCurrentStreak } from "@/lib/utils/streak";
+import { isProgressInLogsEnabled } from "@/lib/feature-flags";
 
 export type TimelineSortBy = "latest" | "oldest" | "book";
+
+/**
+ * 데이터 단일화(§11 ③) dual-source 헬퍼 — 진행 기록(reading_logs, 시간0·사진없음·끝페이지)의
+ * created_at 목록을 기간으로 조회. 플래그 OFF면 빈 배열(현재 동작 무영향).
+ */
+async function fetchProgressLogCreatedAts(
+  supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>,
+  userId: string,
+  startIso: string,
+  endIso: string,
+): Promise<string[]> {
+  if (!isProgressInLogsEnabled()) return [];
+  const { data } = await supabase
+    .from("reading_logs")
+    .select("created_at")
+    .eq("user_id", userId)
+    .eq("reading_duration_seconds", 0)
+    .is("image_url", null)
+    .not("end_page", "is", null)
+    .gte("created_at", startIso)
+    .lte("created_at", endIso);
+  return (data ?? []).map((r) => r.created_at as string);
+}
 
 /**
  * 샘플 사용자(관리자) ID를 동적으로 조회
@@ -758,6 +782,22 @@ export async function getDailyRecordsByType(
     dailyRecords[dateKey].total++;
   });
 
+  // 데이터 단일화(§11 ③): 진행 기록을 reading_logs에서도 합산(레거시 notes와 disjoint)
+  const progressLogDates = await fetchProgressLogCreatedAts(
+    supabase,
+    user.id,
+    startDate.toISOString(),
+    endDate.toISOString(),
+  );
+  for (const createdAt of progressLogDates) {
+    const dateKey = toKSTDateKey(new Date(createdAt));
+    if (!dailyRecords[dateKey]) {
+      dailyRecords[dateKey] = { transcription: 0, photo: 0, memo: 0, quote: 0, progress: 0, total: 0 };
+    }
+    dailyRecords[dateKey].progress++;
+    dailyRecords[dateKey].total++;
+  }
+
   return dailyRecords;
 }
 
@@ -834,6 +874,18 @@ export async function getWeeklyProgress(user: User | null): Promise<{
     });
   }
 
+  // §11 ③ dual-source: 주간 진행 기록(reading_logs)도 카운트
+  const weekProgressDates = await fetchProgressLogCreatedAts(
+    supabase,
+    user.id,
+    startOfWeek.toISOString(),
+    endOfWeek.toISOString(),
+  );
+  for (const createdAt of weekProgressDates) {
+    const dateKey = toKSTDateKey(new Date(createdAt));
+    dailyCounts[dateKey] = (dailyCounts[dateKey] || 0) + 1;
+  }
+
   // 주간 일별 데이터 생성 (KST 기준)
   const days = [];
   let recordedDays = 0;
@@ -869,6 +921,16 @@ export async function getWeeklyProgress(user: User | null): Promise<{
   // 스트릭 — 단일 출처(lib/utils/streak.ts). 홈(getStreakAndTodayData)·결산(compute)과 동일 계산 (B3-2)
   const recordedDates = new Set<string>();
   (streakNotes ?? []).forEach((note) => recordedDates.add(toKSTDateKey(new Date(note.created_at))));
+
+  // §11 ③ dual-source: 최근 30일 진행 기록(reading_logs)도 스트릭에 반영
+  const streakProgressDates = await fetchProgressLogCreatedAts(
+    supabase,
+    user.id,
+    thirtyDaysAgo.toISOString(),
+    new Date().toISOString(),
+  );
+  streakProgressDates.forEach((c) => recordedDates.add(toKSTDateKey(new Date(c))));
+
   const streak = computeCurrentStreak(recordedDates);
 
   // 스트릭 상태 결정
@@ -1028,7 +1090,7 @@ export async function getRecentProgressLogs(
     userBooksData.forEach((ub) => userBookIdMap.set(ub.book_id, ub.id));
   }
 
-  return notes.map((note: any) => {
+  const noteItems: ProgressLogItem[] = notes.map((note: any) => {
     const book = Array.isArray(note.books) ? note.books[0] : note.books;
     return {
       id: note.id,
@@ -1042,6 +1104,42 @@ export async function getRecentProgressLogs(
       createdAt: note.created_at,
     };
   });
+
+  if (!isProgressInLogsEnabled()) return noteItems;
+
+  // §11 ③ dual-source: reading_logs 진행 기록 병합(레거시 notes와 disjoint)
+  const { data: logs } = await supabase
+    .from("reading_logs")
+    .select(
+      `id, user_book_id, end_page, memo, created_at,
+       user_books!inner ( book_id, books ( id, title, author, cover_image_url ) )`,
+    )
+    .eq("user_id", user.id)
+    .eq("reading_duration_seconds", 0)
+    .is("image_url", null)
+    .not("end_page", "is", null)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  const logItems: ProgressLogItem[] = (logs ?? []).map((row: any) => {
+    const ub = Array.isArray(row.user_books) ? row.user_books[0] : row.user_books;
+    const book = ub ? (Array.isArray(ub.books) ? ub.books[0] : ub.books) : null;
+    return {
+      id: row.id,
+      bookId: ub?.book_id ?? row.user_book_id,
+      userBookId: row.user_book_id,
+      bookTitle: book?.title || "알 수 없는 책",
+      bookAuthor: book?.author || null,
+      bookCoverUrl: book?.cover_image_url || null,
+      pageNumber: row.end_page != null ? String(row.end_page) : null,
+      content: row.memo ? JSON.stringify({ memo: row.memo }) : null,
+      createdAt: row.created_at,
+    };
+  });
+
+  return [...noteItems, ...logItems]
+    .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))
+    .slice(0, limit);
 }
 
 /**

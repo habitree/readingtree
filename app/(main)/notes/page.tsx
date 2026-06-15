@@ -2,6 +2,8 @@ import { Suspense } from "react";
 import { Metadata } from "next";
 import { searchNotes } from "@/app/actions/search";
 import { getDraftNotesCount, getUserTagsWithCount } from "@/app/actions/notes";
+import { getUnifiedRecords } from "@/app/actions/records";
+import { isUnifiedFeedEnabled } from "@/lib/feature-flags";
 import { getCachedCurrentUser } from "@/lib/cached";
 import { getSampleAllNotes, getSampleUserTagsWithCount } from "@/app/actions/sample";
 import { NotesHubClient } from "@/components/notes/notes-hub-client";
@@ -147,6 +149,47 @@ async function NotesHubContent({
         activeStartDate={startDate}
         activeEndDate={endDate}
         activeTags={tags}
+      />
+    );
+  }
+
+  // 통합 기록 피드(기록 기획 13): "전체" 탭 + 필터/검색 없음일 때 승격(list/timeline/book 모든 뷰).
+  // 필터·검색·타입 탭은 기존 searchNotes(notes-only)로 정확히 처리.
+  const useUnifiedFeed =
+    isUnifiedFeedEnabled() &&
+    tab === "all" &&
+    !query &&
+    !bookId &&
+    !startDate &&
+    !endDate &&
+    (!tags || tags.length === 0);
+
+  if (useUnifiedFeed) {
+    const unifiedSort = sort === "oldest" ? "oldest" : "latest";
+    const [unified, draftCount, userTags] = await Promise.all([
+      getUnifiedRecords({ limit: 20, sort: unifiedSort }, user),
+      getDraftNotesCount(user),
+      getUserTagsWithCount(user),
+    ]);
+
+    return (
+      <NotesHubClient
+        notes={[]}
+        tags={userTags}
+        draftCount={draftCount}
+        activeTab={tab}
+        activeView={view as "list" | "timeline" | "book"}
+        sort={sort}
+        searchQuery={query}
+        total={0}
+        totalPages={0}
+        currentPage={1}
+        activeBookId={bookId}
+        activeStartDate={startDate}
+        activeEndDate={endDate}
+        activeTags={tags}
+        unifiedRecords={unified.records}
+        unifiedNextCursor={unified.nextCursor}
       />
     );
   }

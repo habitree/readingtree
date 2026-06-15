@@ -1,13 +1,12 @@
 "use client";
 
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
   FileText,
   Plus,
   Search,
-  LayoutGrid,
   ArrowUpDown,
   List,
   Clock,
@@ -24,12 +23,14 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import { NoteCard } from "@/components/notes/note-card";
+import { UnifiedRecordFeed } from "@/components/records/unified-record-feed";
 import { NotesGroupedView } from "@/components/notes/notes-grouped-view";
 import { TagCloud } from "@/components/notes/tag-cloud";
 import { DraftBanner } from "@/components/notes/draft-banner";
 import { TimelineGroup } from "@/components/timeline/timeline-group";
 import { useTranslation } from "@/lib/i18n";
 import type { NoteWithBook } from "@/types/note";
+import type { UnifiedRecord } from "@/types/unified-record";
 import { cn } from "@/lib/utils";
 
 interface TagWithCount {
@@ -54,10 +55,17 @@ interface NotesHubClientProps {
   activeStartDate?: string;
   activeEndDate?: string;
   activeTags?: string[];
+  /** 통합 기록 피드(기록 기획 13) — 제공되면 "전체" 탭 list 뷰를 피드로 승격 */
+  unifiedRecords?: UnifiedRecord[] | null;
+  unifiedNextCursor?: string | null;
 }
 
 /**
- * 메인 탭: 전체 | 인박스(N) | 구절 | 생각 | 사진 | 필사 | 진행
+ * 메인 탭: 전체 | 인박스(N) | 구절 | 생각 | 사진 | 필사
+ *
+ * "진행(progress)" 탭은 기록 기획 13에서 제거 — 진행율 기록이 "전체" 통합 피드의
+ * 1차 카드로 흡수되어 별도 종류로 인식될 필요가 없어졌다(분리감 제거).
+ * 라우트 `?tab=progress` 는 page.tsx에서 하위호환으로 계속 동작한다.
  */
 const MAIN_TABS = [
   { value: "all", labelKey: "notes.statusAll" },
@@ -66,7 +74,6 @@ const MAIN_TABS = [
   { value: "memo", labelKey: "notes.typeMemo" },
   { value: "photo", labelKey: "notes.typePhoto" },
   { value: "transcription", labelKey: "notes.typeTranscription" },
-  { value: "progress", labelKey: "notes.progressRecord" },
 ] as const;
 
 const VIEW_MODES = [
@@ -94,17 +101,22 @@ export function NotesHubClient({
   activeStartDate,
   activeEndDate,
   activeTags,
+  unifiedRecords = null,
+  unifiedNextCursor = null,
 }: NotesHubClientProps) {
   const { t } = useTranslation();
+  const showUnified = unifiedRecords != null;
   const router = useRouter();
   const searchParams = useSearchParams();
   const [localQuery, setLocalQuery] = useState(searchQuery || "");
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // URL 동기화
-  useEffect(() => {
+  // URL(searchQuery prop) 변경 시 입력값 동기화 — effect 대신 렌더 중 조정(React 19 권장 패턴)
+  const [prevSearchQuery, setPrevSearchQuery] = useState(searchQuery);
+  if (searchQuery !== prevSearchQuery) {
+    setPrevSearchQuery(searchQuery);
     setLocalQuery(searchQuery || "");
-  }, [searchQuery]);
+  }
 
   // URL 파라미터 업데이트 헬퍼
   const updateUrl = useCallback(
@@ -374,7 +386,14 @@ export function NotesHubClient({
       )}
 
       {/* 뷰 모드별 렌더링 */}
-      {notes.length > 0 ? (
+      {showUnified ? (
+        <UnifiedRecordFeed
+          initialRecords={unifiedRecords ?? []}
+          initialNextCursor={unifiedNextCursor}
+          groupBy={activeView === "timeline" ? "month" : activeView === "book" ? "book" : "dateBook"}
+          sort={sort === "oldest" ? "oldest" : "latest"}
+        />
+      ) : notes.length > 0 ? (
         <>
           {activeView === "timeline" ? (
             <div className="space-y-6">

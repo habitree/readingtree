@@ -2,12 +2,14 @@
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { NoteList } from "@/components/notes/note-list";
+import { UnifiedRecordFeed } from "@/components/records/unified-record-feed";
 import { ReadingJourney } from "./reading-journey";
 import { ReadingTimeTab } from "./reading-time-tab";
 import { ReadingOverviewPanel } from "./reading-overview-panel";
 import { BookEmptyOnboarding } from "./book-empty-onboarding";
 import { Map, FileText, Clock } from "lucide-react";
 import type { NoteWithBook } from "@/types/note";
+import type { UnifiedRecord } from "@/types/unified-record";
 
 interface BookNotesTabsProps {
   userBookId: string;
@@ -28,6 +30,9 @@ interface BookNotesTabsProps {
     coverImageUrl: string | null;
     totalPages: number | null;
   };
+  /** 통합 기록 피드(기록 기획 13) — 제공되면 "기록" 탭을 책-스코프 통합 피드로 승격 */
+  unifiedRecords?: UnifiedRecord[] | null;
+  unifiedNextCursor?: string | null;
 }
 
 /**
@@ -46,7 +51,10 @@ export function BookNotesTabs({
   currentPage,
   totalPages,
   bookInfo,
+  unifiedRecords = null,
+  unifiedNextCursor = null,
 }: BookNotesTabsProps) {
+  const showUnified = unifiedRecords != null;
   const progressNotes = notes.filter((n) => n.type === "progress");
   const detailNotesCount = notes.filter((n) => n.type !== "progress").length;
 
@@ -98,7 +106,15 @@ export function BookNotesTabs({
       </TabsContent>
 
       <TabsContent value="notes">
-        <NoteList notes={notes} excludeProgress={true} />
+        {showUnified ? (
+          <UnifiedRecordFeed
+            initialRecords={unifiedRecords ?? []}
+            initialNextCursor={unifiedNextCursor}
+            bookId={userBookId}
+          />
+        ) : (
+          <NoteList notes={notes} excludeProgress={true} />
+        )}
       </TabsContent>
 
       <TabsContent value="journey">
