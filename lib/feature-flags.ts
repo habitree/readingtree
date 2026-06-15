@@ -45,19 +45,16 @@ export function isUnifiedFeedEnabled(): boolean {
   return !FALSY.has(raw.trim().toLowerCase());
 }
 
-const TRUTHY = new Set(["1", "true", "yes", "on"]);
-
 /**
  * 진행율 기록을 reading_logs(페이지-only)에 저장 — 데이터 모델 단일화 (기록 기획 13 §11 ③).
- * **기본 OFF** (위험도 HIGH 9/10): 켜면 진행율 쓰기가 reading_logs로 가고,
- * 여정·캘린더·대시보드·주간/스트릭 리더가 reading_logs progress를 함께 읽는다(dual-source).
+ * **기본 ON** (사용자 "강제 진행" 결정으로 2026-06-15 OFF→ON 전환). 켜지면 진행율 쓰기가
+ * reading_logs로 가고, 여정·캘린더·대시보드·주간/스트릭 리더가 reading_logs progress를
+ * notes(레거시)와 함께 읽는다(dual-source, disjoint — 이중 카운트 없음).
  *
- * OFF면 기존 동작(notes type='progress') 그대로 — 현재 사용자 무영향.
- * 프리뷰/스테이징에서 켜고 실데이터(여정 점·캘린더·스트릭·포인트)를 검증한 뒤 프로덕션 활성화 권장.
- * 활성화: NEXT_PUBLIC_PROGRESS_IN_LOGS=1
+ * 롤백(킬 스위치): NEXT_PUBLIC_PROGRESS_IN_LOGS=0
  */
 export function isProgressInLogsEnabled(): boolean {
   const raw = process.env.NEXT_PUBLIC_PROGRESS_IN_LOGS;
-  if (raw == null || raw.trim() === "") return false;
-  return TRUTHY.has(raw.trim().toLowerCase());
+  if (raw == null || raw.trim() === "") return true;
+  return !FALSY.has(raw.trim().toLowerCase());
 }
