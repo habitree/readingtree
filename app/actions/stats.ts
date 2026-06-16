@@ -1286,6 +1286,58 @@ export async function getMonthlyBookActivities(
     }
   });
 
+  // 데이터 단일화(§11 ③) dual-source: 진행 기록을 reading_logs에서도 병합(레거시 notes와 disjoint).
+  // 백필 이후 notes.progress=0 이므로, 이 병합이 없으면 진행만 있는 날짜가 캘린더에서 누락됨.
+  // 진행만 있는 날도 책 표지·진행 카운트(amber)가 표시되도록 books[]와 noteTypes.progress를 함께 채운다.
+  if (isProgressInLogsEnabled()) {
+    const { data: progressLogs } = await supabase
+      .from("reading_logs")
+      .select(
+        `created_at, user_book_id,
+         user_books!inner ( book_id, books ( id, title, cover_image_url ) )`,
+      )
+      .eq("user_id", resolvedUser.id)
+      .eq("reading_duration_seconds", 0)
+      .is("image_url", null)
+      .not("end_page", "is", null)
+      .gte("created_at", startDate.toISOString())
+      .lte("created_at", endDate.toISOString());
+
+    (progressLogs ?? []).forEach((row: any) => {
+      const dateKey = toKSTDateKey(new Date(row.created_at));
+      const ub = Array.isArray(row.user_books) ? row.user_books[0] : row.user_books;
+      const book = ub ? (Array.isArray(ub.books) ? ub.books[0] : ub.books) : null;
+      const bookId = ub?.book_id ?? row.user_book_id;
+
+      if (!dailyActivities[dateKey]) {
+        dailyActivities[dateKey] = {
+          date: dateKey,
+          books: [],
+          noteTypes: {
+            transcription: 0,
+            photo: 0,
+            memo: 0,
+            quote: 0,
+            progress: 0,
+            total: 0,
+          },
+        };
+      }
+      dailyActivities[dateKey].noteTypes.progress++;
+      dailyActivities[dateKey].noteTypes.total++;
+
+      const existingBook = dailyActivities[dateKey].books.find((b) => b.bookId === bookId);
+      if (!existingBook && book) {
+        dailyActivities[dateKey].books.push({
+          bookId,
+          userBookId: row.user_book_id,
+          title: book.title || "알 수 없는 책",
+          coverImageUrl: book.cover_image_url || null,
+        });
+      }
+    });
+  }
+
   return dailyActivities;
 }
 

@@ -231,6 +231,12 @@ export interface MissionWithDetails {
 /**
  * 포인트 액션 기본값 (간소화 버전)
  *
+ * ★ 적립 SSoT(Single Source of Truth) ★
+ * 이 표가 적립 금액의 단일 기준이다. DB `point_action_configs.base_points` 는 이 값을 따라야 하며
+ * (동기화: migration-202606161400), `earn_points_atomic` 이 DB config 를 읽어 적립한다.
+ * 값을 바꾸면 DB config 도 함께 갱신할 것. 차감 단가는 아래 `POINT_SPEND_COSTS` 가 단일 기준이다.
+ * (*_spend 액션의 base_points 는 '적립값'이 아니므로 항상 0)
+ *
  * 심리학적 보상 설계 원칙:
  * - 노력-보상 균형 (Effort-Reward Balance)
  * - 즉각적 만족 (Immediate Gratification)
@@ -435,6 +441,10 @@ export type PointSpendType =
 
 /**
  * 포인트 소비 비용 설정
+ *
+ * ★ 차감 SSoT(Single Source of Truth) ★
+ * 이 표가 차감 단가의 단일 기준이다. `spend_points_atomic(p_cost)` 가 이 값을 p_cost 로 받아 차감하며,
+ * DB point_action_configs 의 *_spend 행 base_points 와는 무관(그쪽은 적립값=0). 적립은 위 POINT_ACTION_DEFAULTS.
  *
  * 비용 산정 기준: 일일 활동 수입(~80P) 대비 합리적 소비 균형
  * - AI 채팅: 40P (활성 사용자 1일 수입으로 ~2회 추가 가능)

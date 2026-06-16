@@ -27,9 +27,10 @@ export const AI_MODELS: Record<AIProvider, { id: string; name: string; descripti
     { id: "gemini-2.0-flash-thinking-exp-01-21", name: "Gemini 2.0 Flash Thinking", description: "향상된 추론 능력" },
   ],
   anthropic: [
-    { id: "claude-3-5-sonnet-latest", name: "Claude 3.5 Sonnet", description: "균형 잡힌 성능과 속도" },
-    { id: "claude-3-opus-latest", name: "Claude 3 Opus", description: "가장 강력한 추론 능력" },
-    { id: "claude-3-haiku-latest", name: "Claude 3 Haiku", description: "빠른 응답, 비용 효율적" },
+    { id: "claude-opus-4-8", name: "Claude Opus 4.8", description: "최상위 범용 — 고품질 추론과 자율 작업 (기본값)" },
+    { id: "claude-fable-5", name: "Claude Fable 5", description: "가장 강력한 모델 — 복잡한 추론·장기 에이전트 작업 (1M 컨텍스트, 고비용)" },
+    { id: "claude-sonnet-4-6", name: "Claude Sonnet 4.6", description: "성능·속도·비용의 균형" },
+    { id: "claude-haiku-4-5", name: "Claude Haiku 4.5", description: "가장 빠르고 비용 효율적" },
   ],
 };
 
@@ -37,7 +38,7 @@ export const AI_MODELS: Record<AIProvider, { id: string; name: string; descripti
 export const DEFAULT_MODELS: Record<AIProvider, string> = {
   openai: "gpt-4o-mini",
   google: "gemini-2.0-flash",
-  anthropic: "claude-3-5-sonnet-latest",
+  anthropic: "claude-opus-4-8",
 };
 
 // 제공자 표시 정보

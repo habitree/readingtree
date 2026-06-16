@@ -48,11 +48,20 @@ interface AnthropicResponse {
 }
 
 // 기본 모델 설정
-const DEFAULT_MODEL = "claude-3-5-sonnet-20241022";
+const DEFAULT_MODEL = "claude-opus-4-8";
 const DEFAULT_TEMPERATURE = 0.7;
 const DEFAULT_MAX_TOKENS = 1024;
 const ANTHROPIC_VERSION = "2023-06-01";
 const ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages";
+
+/**
+ * temperature/top_p/top_k 샘플링 파라미터를 거부하는 모델인지 판별.
+ * Fable 5 · Opus 4.8 · Opus 4.7 · Mythos 5는 어댑티브 사고만 지원하며,
+ * 샘플링 파라미터를 전송하면 400(invalid_request_error)을 반환한다.
+ */
+function rejectsSamplingParams(modelId: string): boolean {
+  return /claude-(fable-5|mythos-5|opus-4-8|opus-4-7)/.test(modelId);
+}
 
 /**
  * Anthropic API 키 가져오기
@@ -97,6 +106,18 @@ export async function callAnthropic(
     { role: "user", content: message },
   ];
 
+  // 최신 모델(Fable 5·Opus 4.8/4.7)은 temperature 미지원 → 조건부 포함.
+  const requestBody: Record<string, unknown> = {
+    model: modelId,
+    system: systemPrompt,
+    messages,
+    max_tokens: settings.maxOutputTokens,
+    stream: true,
+  };
+  if (!rejectsSamplingParams(modelId)) {
+    requestBody.temperature = settings.temperature;
+  }
+
   const response = await fetch(ANTHROPIC_API_URL, {
     method: "POST",
     headers: {
@@ -104,14 +125,7 @@ export async function callAnthropic(
       "x-api-key": apiKey,
       "anthropic-version": ANTHROPIC_VERSION,
     },
-    body: JSON.stringify({
-      model: modelId,
-      system: systemPrompt,
-      messages,
-      max_tokens: settings.maxOutputTokens,
-      temperature: settings.temperature,
-      stream: true,
-    }),
+    body: JSON.stringify(requestBody),
     signal,
   });
 
@@ -189,6 +203,22 @@ export async function generateWithAnthropic(
 ): Promise<string> {
   const apiKey = getAnthropicApiKey();
 
+  const model = options?.model || DEFAULT_MODEL;
+  // 최신 모델(Fable 5·Opus 4.8/4.7)은 temperature 미지원 → 조건부 포함.
+  const requestBody: Record<string, unknown> = {
+    model,
+    max_tokens: options?.maxTokens ?? DEFAULT_MAX_TOKENS,
+    messages: [
+      {
+        role: "user",
+        content: prompt,
+      },
+    ],
+  };
+  if (!rejectsSamplingParams(model)) {
+    requestBody.temperature = options?.temperature ?? DEFAULT_TEMPERATURE;
+  }
+
   const response = await fetch(ANTHROPIC_API_URL, {
     method: "POST",
     headers: {
@@ -196,17 +226,7 @@ export async function generateWithAnthropic(
       "x-api-key": apiKey,
       "anthropic-version": ANTHROPIC_VERSION,
     },
-    body: JSON.stringify({
-      model: options?.model || DEFAULT_MODEL,
-      max_tokens: options?.maxTokens ?? DEFAULT_MAX_TOKENS,
-      temperature: options?.temperature ?? DEFAULT_TEMPERATURE,
-      messages: [
-        {
-          role: "user",
-          content: prompt,
-        },
-      ],
-    }),
+    body: JSON.stringify(requestBody),
   });
 
   if (!response.ok) {

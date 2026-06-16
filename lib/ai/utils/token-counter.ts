@@ -36,9 +36,10 @@ const MODEL_PRICING: Record<string, ModelPricing> = {
   "gpt-3.5-turbo": { input: 0.5, output: 1.5 },
 
   // Anthropic Claude
-  "claude-3-opus-20240229": { input: 15, output: 75 },
-  "claude-3-5-sonnet-20241022": { input: 3, output: 15 },
-  "claude-3-haiku-20240307": { input: 0.25, output: 1.25 },
+  "claude-fable-5": { input: 10, output: 50 },
+  "claude-opus-4-8": { input: 5, output: 25 },
+  "claude-sonnet-4-6": { input: 3, output: 15 },
+  "claude-haiku-4-5": { input: 1, output: 5 },
 
   // Google Gemini
   "gemini-2.0-flash": { input: 0.075, output: 0.3 },
@@ -251,9 +252,10 @@ export const MODEL_CONTEXT_WINDOWS: Record<string, number> = {
   "gpt-3.5-turbo": 16385,
 
   // Anthropic Claude
-  "claude-3-opus-20240229": 200000,
-  "claude-3-5-sonnet-20241022": 200000,
-  "claude-3-haiku-20240307": 200000,
+  "claude-fable-5": 1000000,
+  "claude-opus-4-8": 1000000,
+  "claude-sonnet-4-6": 1000000,
+  "claude-haiku-4-5": 200000,
 
   // Google Gemini
   "gemini-2.0-flash": 1048576,

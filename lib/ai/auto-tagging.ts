@@ -165,7 +165,7 @@ async function tagWithAnthropic(
       "anthropic-version": "2023-06-01",
     },
     body: JSON.stringify({
-      model: "claude-3-haiku-20240307",
+      model: "claude-haiku-4-5",
       system: SYSTEM_PROMPT,
       messages: [{ role: "user", content: buildUserPrompt(content, existingTags) }],
       max_tokens: 200,
@@ -186,7 +186,7 @@ async function tagWithAnthropic(
   return {
     tags,
     provider: "anthropic",
-    modelId: "claude-3-haiku-20240307",
+    modelId: "claude-haiku-4-5",
     duration: Date.now() - startTime,
   };
 }
