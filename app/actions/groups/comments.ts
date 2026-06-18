@@ -2,7 +2,6 @@
 
 import { revalidatePath } from "next/cache";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
-import { createNotification } from "@/app/actions/notifications";
 
 /**
  * 댓글 추가
@@ -97,21 +96,6 @@ export async function addComment(
 
   if (insertError) {
     throw new Error(`댓글 작성 실패: ${insertError.message}`);
-  }
-
-  // 공유 기록 작성자에게 알림 (본인 댓글은 제외)
-  if (groupNote.shared_by && groupNote.shared_by !== user.id) {
-    const commenterName =
-      (comment.users as { name?: string } | null)?.name ?? "누군가";
-    const preview = content.trim().slice(0, 60);
-    await createNotification(groupNote.shared_by, "note_comment", {
-      title: `${commenterName}님이 내 기록에 댓글을 남겼어요`,
-      body: preview,
-      actionUrl: `/groups/${groupNote.group_id}`,
-      referenceId: groupNoteId,
-      referenceType: "group_note",
-      metadata: { commenter_id: user.id, parent_id: parentId ?? null },
-    }).catch(() => null);
   }
 
   revalidatePath(`/groups/${groupNote.group_id}`);

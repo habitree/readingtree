@@ -25,12 +25,11 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "@/lib/i18n";
 import { LanguageToggle } from "@/components/ui/language-toggle";
 import { MusicToggleButton } from "@/components/music/music-mini-player";
-import { NotificationBell } from "@/components/notifications/notification-bell";
 import { ActiveSessionIndicator } from "@/components/layout/active-session-indicator";
 
 /**
  * 헤더 컴포넌트
- * 로고, 테마 토글, 알림, 프로필 메뉴 포함
+ * 로고, 테마 토글, 프로필 메뉴 포함
  */
 export function Header() {
   const { user, profile, isLoading } = useAuth();
@@ -93,9 +92,6 @@ export function Header() {
                 <p>{t("search.search")} <kbd className="ml-1 text-xs opacity-60">⌘K</kbd></p>
               </TooltipContent>
             </Tooltip>
-
-            {/* 알림 벨 */}
-            <NotificationBell />
 
             {/* 배경음악 토글 */}
             <MusicToggleButton />

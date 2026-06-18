@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>스탬프 재통합 — 적용 화면·메뉴 가이드 (2026-06-10)</title>
+<style>
+  :root {
+    --emerald-50:#ecfdf5; --emerald-100:#d1fae5; --emerald-200:#a7f3d0; --emerald-300:#6ee7b7;
+    --emerald-500:#10b981; --emerald-600:#059669; --emerald-700:#047857; --emerald-900:#064e3b;
+    --rose-50:#fff1f2; --rose-100:#ffe4e6; --rose-500:#f43f5e; --rose-700:#be123c;
+    --amber-50:#fffbeb; --amber-100:#fef3c7; --amber-500:#f59e0b; --amber-700:#b45309;
+    --sky-50:#f0f9ff; --sky-100:#e0f2fe; --sky-700:#0369a1;
+    --slate-50:#f8fafc; --slate-100:#f1f5f9; --slate-200:#e2e8f0; --slate-300:#cbd5e1;
+    --slate-400:#94a3b8; --slate-500:#64748b; --slate-600:#475569; --slate-700:#334155;
+    --slate-800:#1e293b; --slate-900:#0f172a;
+  }
+  * { box-sizing: border-box; }
+  body { font-family:-apple-system,BlinkMacSystemFont,"Pretendard","Segoe UI",sans-serif; background:var(--slate-50); color:var(--slate-900); margin:0; padding:24px 16px; line-height:1.6; }
+  .container { max-width:1060px; margin:0 auto; }
+
+  header.hero { background:linear-gradient(135deg,var(--emerald-700),var(--emerald-900)); color:#fff; border-radius:20px; padding:36px 30px; margin-bottom:24px; box-shadow:0 10px 30px rgba(5,150,105,.25); }
+  header.hero .badge { display:inline-block; padding:4px 12px; background:rgba(255,255,255,.18); border-radius:999px; font-size:12px; font-weight:600; margin-bottom:12px; }
+  header.hero h1 { margin:0 0 12px; font-size:28px; font-weight:800; line-height:1.25; }
+  header.hero p { margin:0; opacity:.92; font-size:14px; }
+  header.hero .chips { margin-top:16px; display:flex; flex-wrap:wrap; gap:8px; }
+  header.hero .chip { background:rgba(255,255,255,.14); border-radius:8px; padding:6px 12px; font-size:12px; font-weight:500; }
+
+  .toc { background:#fff; border:1px solid var(--slate-200); border-radius:14px; padding:16px 20px; margin-bottom:22px; display:flex; flex-wrap:wrap; gap:8px; }
+  .toc a { text-decoration:none; font-size:12px; font-weight:600; color:var(--slate-600); background:var(--slate-100); padding:6px 12px; border-radius:999px; }
+  .toc a:hover { background:var(--emerald-100); color:var(--emerald-700); }
+
+  /* Summary table */
+  section { background:#fff; border-radius:16px; border:1px solid var(--slate-200); padding:24px; margin-bottom:20px; }
+  section h2 { margin:0 0 6px; font-size:20px; display:flex; align-items:center; gap:10px; }
+  section h2 .num { background:var(--emerald-100); color:var(--emerald-700); width:30px; height:30px; border-radius:8px; display:inline-flex; align-items:center; justify-content:center; font-size:14px; font-weight:800; flex-shrink:0; }
+  section .sub { color:var(--slate-500); font-size:13px; margin:0 0 16px; padding-left:40px; }
+  table { width:100%; border-collapse:collapse; margin-top:8px; font-size:13px; }
+  th,td { border-bottom:1px solid var(--slate-200); padding:10px 8px; text-align:left; vertical-align:top; }
+  th { background:var(--slate-50); font-weight:700; font-size:12px; color:var(--slate-600); }
+  code { background:var(--slate-100); color:var(--slate-700); padding:1px 6px; border-radius:4px; font-size:12px; font-family:ui-monospace,monospace; }
+
+  .pill { display:inline-block; padding:2px 9px; border-radius:999px; font-size:11px; font-weight:600; }
+  .pill.new { background:var(--emerald-100); color:var(--emerald-700); }
+  .pill.chg { background:var(--amber-100); color:var(--amber-700); }
+
+  /* breadcrumb */
+  .crumb { display:inline-flex; flex-wrap:wrap; align-items:center; gap:6px; font-size:12px; font-weight:600; color:var(--slate-600); background:var(--slate-50); border:1px solid var(--slate-200); border-radius:999px; padding:6px 14px; margin-bottom:14px; }
+  .crumb .sep { color:var(--slate-300); }
+  .crumb .here { color:var(--emerald-700); }
+
+  .grid2 { display:grid; grid-template-columns:1fr 360px; gap:18px; align-items:start; }
+  @media (max-width:760px){ .grid2 { grid-template-columns:1fr; } }
+  .what ul { margin:0; padding-left:18px; }
+  .what li { font-size:13px; margin-bottom:6px; color:var(--slate-700); }
+  .what li b { color:var(--slate-900); }
+
+  /* phone mock */
+  .phone { background:var(--slate-900); border-radius:22px; padding:10px; box-shadow:0 8px 24px rgba(0,0,0,.18); }
+  .screen { background:#fff; border-radius:14px; overflow:hidden; }
+  .screen .bar { background:var(--slate-50); border-bottom:1px solid var(--slate-200); padding:8px 12px; font-size:11px; font-weight:700; color:var(--slate-600); display:flex; align-items:center; gap:6px; }
+  .screen .body { padding:12px; font-size:11px; }
+  .row { background:var(--slate-50); border-radius:8px; padding:8px 10px; margin-bottom:6px; }
+  .row.stamp { background:var(--emerald-50); border:1px solid var(--emerald-100); }
+  .row .ttl { font-weight:700; color:var(--slate-800); }
+  .row .meta { color:var(--slate-500); font-size:10px; margin-top:2px; }
+  .badge-stamp { display:inline-flex; align-items:center; gap:3px; background:var(--emerald-100); color:var(--emerald-700); border-radius:999px; padding:1px 7px; font-size:9px; font-weight:700; }
+  .chip { display:inline-flex; align-items:center; gap:3px; border:1px dashed var(--emerald-300); color:var(--emerald-700); border-radius:999px; padding:1px 8px; font-size:9px; font-weight:700; }
+  .thumb { width:34px; height:34px; border-radius:7px; background:linear-gradient(135deg,var(--emerald-200),var(--emerald-500)); display:inline-flex; align-items:center; justify-content:center; color:#fff; font-size:13px; flex-shrink:0; }
+  .seg { display:inline-flex; gap:2px; background:var(--slate-100); border-radius:8px; padding:2px; margin-bottom:8px; }
+  .seg span { font-size:9px; padding:3px 9px; border-radius:6px; color:var(--slate-500); font-weight:600; }
+  .seg span.on { background:#fff; color:var(--emerald-700); box-shadow:0 1px 2px rgba(0,0,0,.08); }
+  .btn { display:block; text-align:center; border-radius:8px; padding:8px; font-size:11px; font-weight:700; margin-top:6px; }
+  .btn.pri { background:var(--emerald-600); color:#fff; }
+  .btn.sec { background:var(--slate-100); color:var(--slate-700); }
+  .toast { background:var(--slate-900); color:#fff; border-radius:9px; padding:8px 10px; font-size:10px; display:flex; justify-content:space-between; align-items:center; margin-top:8px; }
+  .toast .act { background:var(--emerald-500); color:#fff; padding:3px 9px; border-radius:6px; font-weight:700; }
+  .photostrip { display:flex; gap:5px; margin:6px 0; }
+  .photostrip .ph { width:38px; height:38px; border-radius:7px; border:2px dashed var(--slate-300); display:flex; align-items:center; justify-content:center; color:var(--slate-400); font-size:13px; }
+  .field { background:var(--slate-50); border:1px solid var(--slate-200); border-radius:7px; padding:6px 8px; margin:5px 0; color:var(--slate-600); }
+  .cap { font-size:11px; color:var(--slate-500); margin-top:8px; text-align:center; }
+
+  .note { background:var(--sky-50); border:1px solid var(--sky-100); color:var(--sky-700); border-radius:10px; padding:12px 16px; font-size:13px; margin-top:14px; }
+  .note.amber { background:var(--amber-50); border-color:var(--amber-100); color:var(--amber-700); }
+
+  .legend { display:flex; gap:14px; flex-wrap:wrap; font-size:12px; color:var(--slate-600); margin-top:8px; }
+  .legend span { display:inline-flex; align-items:center; gap:5px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header class="hero">
+    <span class="badge">적용 화면·메뉴 가이드 · 2026.06.10 · main 반영(PR #1)</span>
+    <h1>스탬프 재통합 — 어디가 어떻게 바뀌었나</h1>
+    <p>"시간을 기록한 뒤 사진을 더하면 스탬프가 된다." 카나리(<code>NEXT_PUBLIC_RECORD_V2</code>)가 <b>기본 ON</b>으로 바뀌어 모든 기록 진입점이 새 <b>RecordSheet</b>를 사용합니다. 아래는 실제로 바뀐 메뉴·화면을 진입점별로 정리한 것입니다.</p>
+    <div class="chips">
+      <span class="chip">🟢 카나리 기본 ON</span>
+      <span class="chip">🆕 사진 추가(attach) 시트</span>
+      <span class="chip">🆕 내 기록 통합 뷰 필터</span>
+      <span class="chip">↩︎ 롤백: NEXT_PUBLIC_RECORD_V2=0</span>
+    </div>
+  </header>
+
+  <nav class="toc">
+    <a href="#sum">한눈에 보기</a>
+    <a href="#s1">① 기록 진입점</a>
+    <a href="#s2">② 기록 종료 토스트</a>
+    <a href="#s3">③ 사진 추가 시트(신규)</a>
+    <a href="#s4">④ 책 상세 · 독서 시간 탭</a>
+    <a href="#s5">⑤ 내 독서 속도(통합 뷰)</a>
+    <a href="#flag">카나리·롤백</a>
+  </nav>
+
+  <!-- 요약 -->
+  <section id="sum">
+    <h2><span class="num">✦</span> 한눈에 보기 — 바뀐 메뉴·화면</h2>
+    <p class="sub">5개 터치포인트. 데이터/기록 정의는 그대로, 진입과 관리 동선만 통합·추가</p>
+    <table>
+      <thead><tr><th style="width:34%">메뉴 · 화면 (경로)</th><th>무엇이 바뀌었나</th><th style="width:90px">구분</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>모바일 하단 <code>+</code> · 사이드바 "기록하기" · 대시보드 퀵액션 · <code>/stamps</code> 캡처 버튼</td>
+          <td>카나리 ON → 모두 <b>새 RecordSheet(기록 시작)</b>로 진입(기존 StampCaptureSheet 대신)</td>
+          <td><span class="pill chg">변경</span></td>
+        </tr>
+        <tr>
+          <td>기록 종료 시트 → 저장 직후 <b>토스트</b></td>
+          <td>사진 없이 저장 시 <b>"사진 추가"</b> 액션 노출(→ 사진 추가 시트). 사진과 함께면 "공유"</td>
+          <td><span class="pill new">신규</span></td>
+        </tr>
+        <tr>
+          <td>사진 추가 시트 <code>RecordSheet · attach</code></td>
+          <td><b>신규 화면</b> — 기존 기록에 사진/페이지/메모 첨부 → 스탬프 승격</td>
+          <td><span class="pill new">신규</span></td>
+        </tr>
+        <tr>
+          <td><code>책 상세 › 독서 시간 탭</code> → 각 기록 "편집"</td>
+          <td>카나리 ON → 새 RecordSheet(사진 추가)로 진입(동선 통일)</td>
+          <td><span class="pill chg">변경</span></td>
+        </tr>
+        <tr>
+          <td><code>프로필 › 내 독서 속도</code> (<code>/profile/reading-speed</code>)</td>
+          <td><b>내 기록 통합 뷰</b> — <code>[전체/시간만/스탬프]</code> 필터 · 사진 썸네일 · 스탬프 배지 · "사진" 칩 · 메모 인라인 편집 · 사진 라이트박스</td>
+          <td><span class="pill new">신규</span></td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="legend">
+      <span>🏅 스탬프 = 사진이 붙은 기록(<code>image_url≠NULL</code>)</span>
+      <span>📷 사진 추가 = 기존 기록 승격</span>
+      <span>⏱ 시간만 = 페이지 진행 없는 기록</span>
+    </div>
+  </section>
+
+  <!-- ① -->
+  <section id="s1">
+    <h2><span class="num">1</span> 기록 진입점 — 새 RecordSheet로 통일</h2>
+    <p class="sub">"기록/스탬프" 버튼들이 모두 같은 시트로 모임 (카나리 ON 효과)</p>
+    <div class="crumb">모바일 <code>+</code> · 사이드바 · 퀵액션 · /stamps <span class="sep">→</span> <span class="here">기록 시작 시트</span></div>
+    <div class="grid2">
+      <div class="what">
+        <ul>
+          <li><b>변경 전:</b> 진입점마다 <code>NEXT_PUBLIC_RECORD_V2</code>가 OFF라 구형 <b>StampCaptureSheet</b>(사진 강조)로 열림.</li>
+          <li><b>변경 후:</b> 기본 ON → 모든 진입점이 <b>RecordSheet "기록 시작"</b>으로 통일. 책·시작 페이지 확인 후 시작 → 종료 시 페이지·메모·사진 입력.</li>
+          <li>대상 메뉴: <b>모바일 하단 + 버튼</b>, <b>사이드바 "기록하기"</b>, <b>대시보드 모바일 퀵액션</b>, <b><code>/stamps</code> 컬렉션 캡처 버튼</b>.</li>
+          <li>스탬프 컬렉션(<code>/stamps</code>)·공유 페이지(<code>/share/stamps/[id]</code>)는 <b>그대로</b>.</li>
+        </ul>
+      </div>
+      <div class="phone"><div class="screen">
+        <div class="bar">📖 기록 시작</div>
+        <div class="body">
+          <div class="row"><div class="ttl">데미안 · 헤르만 헤세</div><div class="meta">시작 페이지 152p (이어서)</div></div>
+          <div class="field">⏱ 목표 시간 · 15 / 25 / 45 / 무제한</div>
+          <div class="btn pri">기록 시작</div>
+          <div class="cap">하단 +, 사이드바, 퀵액션, /stamps 모두 동일 시트</div>
+        </div>
+      </div></div>
+    </div>
+  </section>
+
+  <!-- ② -->
+  <section id="s2">
+    <h2><span class="num">2</span> 기록 종료 토스트 — "사진 추가" 동선 신설</h2>
+    <p class="sub">시간만 저장해도 나중에 사진을 더해 스탬프로 만들 수 있게</p>
+    <div class="crumb">기록 종료 시트 <span class="sep">→</span> 저장 <span class="sep">→</span> <span class="here">토스트 액션</span></div>
+    <div class="grid2">
+      <div class="what">
+        <ul>
+          <li><b>사진 없이 저장</b> → 토스트에 <b>"사진 추가"</b> 버튼. 누르면 ③ 사진 추가 시트가 그 기록을 대상으로 열림.</li>
+          <li><b>사진과 함께 저장</b>(이미 스탬프) → 토스트에 <b>"공유"</b> 버튼.</li>
+          <li>포인트는 종료 시 1회만 적립(사후 사진 추가는 추가 적립 없음 · D4 불변).</li>
+        </ul>
+      </div>
+      <div class="phone"><div class="screen">
+        <div class="bar">📖 기록 종료 · 25분</div>
+        <div class="body">
+          <div class="field">끝 페이지 178 <span style="color:var(--slate-400)">(읽은 26p)</span></div>
+          <div class="field">간단 메모 (선택)</div>
+          <div class="btn sec">저장</div>
+          <div class="toast"><span>📌 기록 저장 · 25분 · 26p +5p</span><span class="act">사진 추가</span></div>
+          <div class="cap">사진 함께면 → "공유"</div>
+        </div>
+      </div></div>
+    </div>
+  </section>
+
+  <!-- ③ -->
+  <section id="s3">
+    <h2><span class="num">3</span> 사진 추가 시트 — 신규 화면</h2>
+    <p class="sub">기존 기록에 사진을 더해 스탬프로 승격 (페이지·메모도 같이 수정)</p>
+    <div class="crumb">토스트 "사진 추가" · 독서 시간 탭 · 내 독서 속도 <span class="sep">→</span> <span class="here">사진 추가 시트</span></div>
+    <div class="grid2">
+      <div class="what">
+        <ul>
+          <li>제목 <b>"사진 추가"</b> · "이 기록에 사진을 더하면 스탬프가 돼요. 페이지·메모도 함께 수정할 수 있어요."</li>
+          <li><b>사진 1장 이상</b> → 버튼 "스탬프 남기기" → 저장 시 그 기록이 <b>스탬프로 승격</b>(저장 후 "공유" 토스트).</li>
+          <li><b>사진 없이</b> 페이지·메모만 → 버튼 "저장"(단순 수정).</li>
+          <li>여러 진입점에서 같은 시트 재사용(토스트, 독서 시간 탭 편집, 내 독서 속도 "사진" 칩).</li>
+        </ul>
+      </div>
+      <div class="phone"><div class="screen">
+        <div class="bar">📷 사진 추가</div>
+        <div class="body">
+          <div class="row"><div class="ttl">데미안</div></div>
+          <div class="photostrip"><span class="ph">＋</span><span class="ph">📷</span></div>
+          <div class="field">페이지 · 152 → 178</div>
+          <div class="field">간단 메모 (선택)</div>
+          <div class="btn pri">🏅 스탬프 남기기</div>
+          <div class="cap">사진 없으면 버튼이 "저장"</div>
+        </div>
+      </div></div>
+    </div>
+  </section>
+
+  <!-- ④ -->
+  <section id="s4">
+    <h2><span class="num">4</span> 책 상세 · 독서 시간 탭 — 편집 동선 통일</h2>
+    <p class="sub">각 기록 행의 "편집"이 새 사진 추가 시트로 진입</p>
+    <div class="crumb">책 상세 <span class="sep">›</span> 독서 시간 탭 <span class="sep">›</span> 기록 행 <span class="here">편집</span></div>
+    <div class="grid2">
+      <div class="what">
+        <ul>
+          <li>카나리 ON → "편집" 클릭 시 <b>RecordSheet(사진 추가)</b>로 진입(OFF면 기존 시트).</li>
+          <li>시트 안에서 사진/페이지/메모 자유 수정 — 사진 없이도 저장 가능.</li>
+          <li>기록 목록·통계 표시 자체는 동일(동선만 새 시트로 통일).</li>
+        </ul>
+      </div>
+      <div class="phone"><div class="screen">
+        <div class="bar">📚 데미안 · 독서 시간</div>
+        <div class="body">
+          <div class="row"><div class="ttl">25분 · p.152→178</div><div class="meta">어제 · <span class="chip">📷 편집</span></div></div>
+          <div class="row stamp"><div class="ttl">35분 · p.105→150 <span class="badge-stamp">🏅 스탬프</span></div><div class="meta">3일 전 · 🖼️ 사진 있음</div></div>
+          <div class="cap">"편집" → 사진 추가 시트</div>
+        </div>
+      </div></div>
+    </div>
+  </section>
+
+  <!-- ⑤ -->
+  <section id="s5">
+    <h2><span class="num">5</span> 내 독서 속도 — 내 기록 통합 뷰 ⭐</h2>
+    <p class="sub">시간·페이지·스탬프·메모를 한 화면에서 관리 (요청 "내 기록 관리"의 핵심)</p>
+    <div class="crumb">프로필 <span class="sep">›</span> 내 독서 속도 <span class="here">(/profile/reading-speed)</span></div>
+    <div class="grid2">
+      <div class="what">
+        <ul>
+          <li><b>세그먼트 필터</b> <code>[전체 · 시간만 · 스탬프]</code> 신설 — 스탬프만 모아 보기 가능.</li>
+          <li>각 기록 카드에 <b>사진 썸네일 + "스탬프" 배지</b>. 사진 없으면 <b>"📷 사진" 칩</b> → 사진 추가 시트.</li>
+          <li><b>메모</b>가 카드에 표시되고, "수정" 폼에서 <b>인라인 편집</b>(페이지·시간과 함께).</li>
+          <li>썸네일 탭 → <b>라이트박스</b>(좌우/Esc). 사진 추가 후 목록 자동 갱신.</li>
+          <li>기존 기능(평균 속도·이상치 배지·속도 가이드 범위·"페이지 추가")은 그대로 유지.</li>
+        </ul>
+      </div>
+      <div class="phone"><div class="screen">
+        <div class="bar">📊 내 독서 기록 · 속도</div>
+        <div class="body">
+          <div class="seg"><span class="on">전체 12</span><span>시간만 3</span><span>🏅 스탬프 4</span></div>
+          <div class="row stamp" style="display:flex;gap:8px;align-items:center;">
+            <span class="thumb">🖼️</span>
+            <div style="flex:1;min-width:0;"><div class="ttl">페이지당 1분 12초 <span class="badge-stamp">🏅</span></div><div class="meta">p.150→178 · 28분 · “인상 깊은 구절”</div></div>
+          </div>
+          <div class="row" style="display:flex;gap:8px;align-items:center;">
+            <span class="chip">📷 사진</span>
+            <div style="flex:1;min-width:0;"><div class="ttl">35분</div><div class="meta">데미안 · 시간만 · 페이지 추가 가능</div></div>
+          </div>
+          <div class="cap">필터 · 썸네일 · 배지 · 사진 칩 · 메모</div>
+        </div>
+      </div></div>
+    </div>
+  </section>
+
+  <!-- 카나리 -->
+  <section id="flag">
+    <h2><span class="num">⚙</span> 카나리 · 롤백</h2>
+    <p class="sub">새 동선을 즉시 끄고 기존 화면으로 되돌리는 방법</p>
+    <table>
+      <thead><tr><th>설정값</th><th>동작</th></tr></thead>
+      <tbody>
+        <tr><td>미설정 / <code>1</code> / <code>true</code> (기본)</td><td>🟢 새 RecordSheet·사진 추가 시트·통합 뷰 활성 (현재 상태)</td></tr>
+        <tr><td><code>NEXT_PUBLIC_RECORD_V2=0</code></td><td>↩︎ 기존 StampCaptureSheet 경로로 즉시 폴백(킬 스위치)</td></tr>
+      </tbody>
+    </table>
+    <div class="note amber">
+      <b>점진 운영 메모</b> — 구형 <code>StampCaptureSheet</code>/<code>createReadingStamp</code>는 아직 <b>삭제하지 않고</b> 비활성(dormant)으로 남겨 둡니다. 카나리 ON 1주 검증 통과 후 별도 PR로 제거 예정 → 그동안 문제가 생기면 위 환경변수로 안전하게 롤백.
+    </div>
+    <div class="note">
+      📄 관련 문서 — 설계서 <code>doc/update/기록기획/12-stamp-reintegration.md</code> · 기획서 <code>doc/update/스탬프재통합_기록통합_기획_2026-06-10.html</code> · PR <a href="https://github.com/habitree/readingtree/pull/1" style="color:var(--sky-700)">#1 (merged)</a>
+    </div>
+  </section>
+
+</div>
+</body>
+</html>

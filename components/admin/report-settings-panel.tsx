@@ -84,8 +84,9 @@ const REPORT_MODELS: Record<string, { id: string; name: string }[]> = {
     { id: "gemini-1.5-pro", name: "Gemini 1.5 Pro" },
   ],
   anthropic: [
-    { id: "claude-3-5-sonnet-latest", name: "Claude 3.5 Sonnet" },
-    { id: "claude-3-haiku-latest", name: "Claude 3 Haiku" },
+    { id: "claude-opus-4-8", name: "Claude Opus 4.8" },
+    { id: "claude-sonnet-4-6", name: "Claude Sonnet 4.6" },
+    { id: "claude-haiku-4-5", name: "Claude Haiku 4.5" },
   ],
 };
 

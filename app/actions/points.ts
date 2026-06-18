@@ -226,40 +226,6 @@ export async function earnPoints(
         points_bonus: 0,
         icon: levels?.badge_icon || "Star",
       });
-
-      // 레벨업 알림 (인앱 벨 배지)
-      try {
-        const { createNotification } = await import("@/app/actions/notifications");
-        await createNotification(currentUser.id, "level_up", {
-          title: `레벨 ${newLevel} 달성!`,
-          body: levels?.title ? `${levels.title} 등급이 되었어요.` : "새로운 레벨에 도달했어요.",
-          actionUrl: "/points",
-          metadata: { level: newLevel },
-        });
-      } catch {
-        // 알림 실패해도 포인트 적립에는 영향 없음
-      }
-    }
-
-    // 포인트 마일스톤 알림 (1000P 배수)
-    if (newTotal > 0) {
-      const prevTotal = newTotal - finalPoints;
-      const milestone = 1000;
-      const crossed = Math.floor(newTotal / milestone) - Math.floor(prevTotal / milestone);
-      if (crossed > 0) {
-        try {
-          const reached = Math.floor(newTotal / milestone) * milestone;
-          const { createNotification } = await import("@/app/actions/notifications");
-          await createNotification(currentUser.id, "points_milestone", {
-            title: `${reached.toLocaleString()}P 돌파!`,
-            body: "꾸준한 독서를 응원해요. 포인트로 AI 기능도 써보세요.",
-            actionUrl: "/points",
-            metadata: { milestone: reached },
-          });
-        } catch {
-          // 알림 실패해도 포인트 적립에는 영향 없음
-        }
-      }
     }
 
     revalidatePath("/");

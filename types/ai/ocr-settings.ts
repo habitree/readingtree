@@ -34,8 +34,8 @@ export const OCR_CORRECTION_MODELS: Record<AIProvider, OcrCorrectionModelInfo[]>
     { id: "gemini-1.5-pro", name: "Gemini 1.5 Pro", recommended: false, cost: { input: 1.25, output: 5 } },
   ],
   anthropic: [
-    { id: "claude-3-haiku-latest", name: "Claude 3 Haiku", recommended: true, cost: { input: 0.25, output: 1.25 } },
-    { id: "claude-3-5-sonnet-latest", name: "Claude 3.5 Sonnet", recommended: false, cost: { input: 3, output: 15 } },
+    { id: "claude-haiku-4-5", name: "Claude Haiku 4.5", recommended: true, cost: { input: 1, output: 5 } },
+    { id: "claude-sonnet-4-6", name: "Claude Sonnet 4.6", recommended: false, cost: { input: 3, output: 15 } },
   ],
 };
 

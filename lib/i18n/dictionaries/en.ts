@@ -122,7 +122,6 @@ export const en: Dictionary = {
     bookshelf: "Books",
     notes: "Notes",
     community: "Groups",
-    notificationCount: "{count} notifications",
     mobileNav: "Mobile navigation",
     exploringReadTree: "Exploring ReadTree",
     writeNote: "Note",
@@ -1494,10 +1493,9 @@ export const en: Dictionary = {
 
   settings: {
     pageTitle: "Settings",
-    pageDesc: "Manage your account, notifications, and privacy",
+    pageDesc: "Manage your account and privacy",
     account: "Account",
     reading: "Reading Goals",
-    notifications: "Notifications",
     privacy: "Privacy",
     exportData: "Export",
     navigation: "Navigation",
@@ -1527,7 +1525,6 @@ export const en: Dictionary = {
     publicNotes: "Public notes",
     savedBooks: "Saved books",
     accountSettings: "Account settings",
-    notifications: "Notifications",
     privacy: "Privacy settings",
     deleteAccount: "Delete account",
     profileImage: "Profile Image",

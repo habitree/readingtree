@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>독서 속도(페이지당 시간) — 화면 노출 가이드 · PC/모바일</title>
+<style>
+  :root{
+    --bg:#0f1115; --panel:#171a21; --panel2:#1e222b; --line:#2a2f3a;
+    --txt:#e7e9ee; --mut:#9aa3b2; --mut2:#6b7280;
+    --rose:#e11d48; --rose-bg:#3a1320; --rose-soft:#fb7185;
+    --emerald:#10b981; --emerald-bg:#0e2a22; --emerald-line:#1f5a47;
+    --amber:#f59e0b; --blue:#3b82f6; --indigo:#6366f1; --cyan:#06b6d4; --purple:#a855f7; --orange:#f97316;
+    --radius:14px;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:linear-gradient(180deg,#0c0e12,#0f1115);color:var(--txt);
+    font-family:'Pretendard',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;
+    line-height:1.6;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1180px;margin:0 auto;padding:40px 22px 80px}
+  header.top{text-align:center;margin-bottom:14px}
+  header.top h1{font-size:30px;margin:0 0 8px;letter-spacing:-.5px}
+  header.top p{color:var(--mut);margin:0;font-size:15px}
+  .meta{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:18px 0 36px}
+  .chip{font-size:12px;color:var(--mut);background:var(--panel2);border:1px solid var(--line);
+    padding:5px 11px;border-radius:999px}
+  .chip b{color:var(--rose-soft)}
+
+  /* 요약 3블록 */
+  .summary{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:46px}
+  .sum{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px}
+  .sum .n{display:inline-flex;width:26px;height:26px;border-radius:8px;align-items:center;justify-content:center;
+    background:var(--rose-bg);color:var(--rose-soft);font-weight:700;font-size:13px;margin-bottom:8px;border:1px solid #5b2233}
+  .sum h3{margin:0 0 4px;font-size:15px}
+  .sum p{margin:0;font-size:13px;color:var(--mut)}
+  .sum .path{margin-top:9px;font-size:11.5px;color:var(--mut2);font-family:ui-monospace,Menlo,Consolas,monospace}
+
+  section.feat{margin:0 0 56px}
+  .feat-head{display:flex;align-items:center;gap:12px;margin-bottom:6px}
+  .feat-head .badge{font-size:12px;font-weight:700;padding:4px 10px;border-radius:8px;
+    background:var(--rose-bg);color:var(--rose-soft);border:1px solid #5b2233;white-space:nowrap}
+  .feat-head h2{font-size:21px;margin:0;letter-spacing:-.3px}
+  .feat-sub{color:var(--mut);font-size:14px;margin:0 0 18px}
+  .breadcrumbs{display:flex;gap:18px;flex-wrap:wrap;margin:0 0 20px}
+  .bc{font-size:12.5px;color:var(--mut);background:var(--panel2);border:1px solid var(--line);
+    padding:7px 12px;border-radius:10px}
+  .bc b{color:var(--txt)}
+  .bc .pc{color:var(--blue)} .bc .mo{color:var(--emerald)}
+
+  .devices{display:grid;grid-template-columns:1.55fr 1fr;gap:22px;align-items:start}
+  @media(max-width:880px){.devices{grid-template-columns:1fr}.summary{grid-template-columns:1fr}}
+
+  .device-label{font-size:12px;color:var(--mut);margin:0 0 8px;display:flex;align-items:center;gap:7px}
+  .device-label .dot{width:8px;height:8px;border-radius:50%}
+  .device-label.pc .dot{background:var(--blue)}
+  .device-label.mo .dot{background:var(--emerald)}
+
+  /* ===== PC 브라우저 프레임 ===== */
+  .browser{background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden;box-shadow:0 18px 40px rgba(0,0,0,.35)}
+  .browser .bar{display:flex;align-items:center;gap:7px;padding:9px 12px;background:#11141a;border-bottom:1px solid var(--line)}
+  .browser .bar i{width:11px;height:11px;border-radius:50%;display:inline-block}
+  .browser .bar .r{background:#ff5f56}.browser .bar .y{background:#ffbd2e}.browser .bar .g{background:#27c93f}
+  .browser .url{margin-left:10px;font-size:11.5px;color:var(--mut2);background:#0c0e12;border:1px solid var(--line);
+    padding:3px 10px;border-radius:6px;font-family:ui-monospace,monospace}
+  .app{display:grid;grid-template-columns:168px 1fr;min-height:300px}
+  .sidebar{background:#12151c;border-right:1px solid var(--line);padding:12px 8px}
+  .logo{font-size:13px;font-weight:800;color:var(--emerald);padding:6px 10px 12px}
+  .nav-i{display:flex;align-items:center;gap:9px;padding:7px 10px;border-radius:8px;font-size:12.5px;color:var(--mut);margin-bottom:2px}
+  .nav-i .ic{width:15px;text-align:center;opacity:.85}
+  .nav-i.active{background:var(--rose-bg);color:var(--rose-soft);font-weight:600}
+  .nav-i.active.em{background:var(--emerald-bg);color:#6ee7b7}
+  .nav-group{font-size:10.5px;color:var(--mut2);padding:10px 10px 4px;letter-spacing:.5px}
+  .main{padding:16px 18px;min-width:0}
+  .page-h{font-size:15px;font-weight:700;margin:0 0 3px}
+  .page-d{font-size:11.5px;color:var(--mut);margin:0 0 14px}
+
+  /* 통계 카드 그리드 */
+  .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+  .cards.m2{grid-template-columns:repeat(2,1fr)}
+  .card{background:var(--panel2);border:1px solid var(--line);border-radius:11px;padding:11px 12px}
+  .card .ch{display:flex;align-items:center;gap:6px;margin-bottom:8px}
+  .card .ico{width:24px;height:24px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:12px}
+  .card .lbl{font-size:10.5px;color:var(--mut)}
+  .card .val{font-size:19px;font-weight:800;letter-spacing:-.5px}
+  .card .val small{font-size:11px;color:var(--mut);font-weight:600;margin-left:2px}
+  .card .sub{font-size:9.5px;color:var(--mut2);margin-top:2px}
+  .ico.blue{background:#11233f;color:#7dabff}
+  .ico.emerald{background:#0e2a22;color:#6ee7b7}
+  .ico.orange{background:#3a230f;color:#fdba74}
+  .ico.purple{background:#2a163f;color:#d8b4fe}
+  .ico.cyan{background:#0c2a30;color:#67e8f9}
+  .ico.rose{background:var(--rose-bg);color:var(--rose-soft)}
+  .card.is-new{border-color:var(--rose);box-shadow:0 0 0 1px var(--rose),0 8px 22px rgba(225,29,72,.18);position:relative}
+  .card.is-new::after{content:"NEW";position:absolute;top:-9px;right:-7px;background:var(--rose);color:#fff;
+    font-size:9px;font-weight:800;padding:2px 6px;border-radius:6px;letter-spacing:.5px}
+
+  /* 독서 페이스 패널 (emerald) */
+  .pace{background:var(--emerald-bg);border:1px solid var(--emerald-line);border-radius:12px;padding:13px}
+  .pace .ph{display:flex;align-items:center;gap:6px;margin-bottom:11px;font-size:12.5px;font-weight:700;color:#6ee7b7}
+  .pace .row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center}
+  .pace .row .v{font-size:15px;font-weight:800}
+  .pace .row .k{font-size:9.5px;color:var(--mut);margin-top:2px}
+  .pace .cmp{margin-top:11px;border-top:1px solid var(--emerald-line);padding-top:9px;text-align:center;
+    font-size:11.5px;font-weight:600;color:#6ee7b7;display:flex;align-items:center;justify-content:center;gap:5px}
+  .pace .cmp.is-new{position:relative}
+  .pace .cmp.is-new::after{content:"NEW";background:var(--rose);color:#fff;font-size:8px;font-weight:800;
+    padding:1px 5px;border-radius:5px;margin-left:4px}
+
+  .tabs{display:flex;gap:4px;margin:0 0 12px;border-bottom:1px solid var(--line)}
+  .tab{font-size:11.5px;padding:6px 10px;color:var(--mut)}
+  .tab.active{color:var(--txt);border-bottom:2px solid var(--emerald);font-weight:600}
+
+  /* 프로필 속도 카드 */
+  .speed{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:13px 15px;
+    display:flex;align-items:center;gap:13px}
+  .speed .ico{width:38px;height:38px;border-radius:11px;background:var(--rose-bg);color:var(--rose-soft);
+    display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+  .speed .lbl{font-size:11px;color:var(--mut)}
+  .speed .val{font-size:18px;font-weight:800;letter-spacing:-.4px}
+  .speed .right{margin-left:auto;text-align:right;font-size:10.5px;color:var(--mut)}
+  .speed.is-new{border-color:var(--rose);box-shadow:0 0 0 1px var(--rose),0 8px 22px rgba(225,29,72,.16);position:relative}
+  .speed.is-new::after{content:"NEW";position:absolute;top:-9px;left:14px;background:var(--rose);color:#fff;
+    font-size:9px;font-weight:800;padding:2px 6px;border-radius:6px}
+  .ghost{background:var(--panel2);border:1px dashed var(--line);border-radius:11px;padding:13px;
+    font-size:11px;color:var(--mut2)}
+  .ghost.cta{border-style:solid;background:#101620;border-color:#1d2a3a;color:#8fb3e6}
+
+  /* ===== 모바일 폰 프레임 ===== */
+  .phone{width:280px;margin:0 auto;background:#0c0e12;border:9px solid #20242e;border-radius:34px;
+    overflow:hidden;box-shadow:0 18px 40px rgba(0,0,0,.4);position:relative}
+  .phone .notch{height:22px;background:#0c0e12;display:flex;align-items:center;justify-content:center}
+  .phone .notch::after{content:"";width:80px;height:6px;background:#20242e;border-radius:99px}
+  .phone .pscreen{background:var(--bg);min-height:430px;padding:12px 12px 0;position:relative}
+  .ph-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+  .ph-top .t{font-size:13px;font-weight:700}
+  .ph-top .m{font-size:16px;color:var(--mut)}
+  .botnav{position:absolute;left:0;right:0;bottom:0;height:50px;background:#12151c;border-top:1px solid var(--line);
+    display:flex;align-items:center;justify-content:space-around;padding:0 6px}
+  .botnav .bi{font-size:9px;color:var(--mut2);text-align:center;display:flex;flex-direction:column;align-items:center;gap:2px}
+  .botnav .bi .bic{font-size:14px}
+  .botnav .bi.active{color:var(--rose-soft)}
+  .botnav .fab{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#10b981,#059669);
+    color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;margin-top:-14px;
+    box-shadow:0 6px 14px rgba(16,185,129,.4)}
+
+  /* 모바일 더보기 시트 */
+  .sheet{position:absolute;left:0;right:0;bottom:0;background:var(--panel);border-top-left-radius:18px;
+    border-top-right-radius:18px;border-top:1px solid var(--line);padding:10px 12px 16px;box-shadow:0 -10px 30px rgba(0,0,0,.4)}
+  .sheet .grab{width:36px;height:4px;background:#3a3f4b;border-radius:99px;margin:2px auto 12px}
+  .sheet .si{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:9px;font-size:13px;color:var(--mut)}
+  .sheet .si .ic{width:17px;text-align:center}
+  .sheet .si.active{background:var(--rose-bg);color:var(--rose-soft);font-weight:600}
+  .sheet .si.active.em{background:var(--emerald-bg);color:#6ee7b7}
+
+  .note{display:flex;gap:9px;align-items:flex-start;margin-top:14px;background:#101620;border:1px solid #1d2a3a;
+    border-radius:10px;padding:11px 13px;font-size:12.5px;color:#a9c4ea}
+  .note b{color:#cfe0fb}
+  .legend{display:flex;gap:14px;flex-wrap:wrap;margin:30px 0 0;justify-content:center;font-size:12px;color:var(--mut)}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .legend i{width:11px;height:11px;border-radius:3px;display:inline-block}
+  footer{margin-top:48px;text-align:center;color:var(--mut2);font-size:12px;border-top:1px solid var(--line);padding-top:20px}
+  code{background:var(--panel2);border:1px solid var(--line);border-radius:5px;padding:1px 6px;font-size:12px;color:#c7d2e0}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <h1>독서 속도 — 화면 노출 가이드</h1>
+    <p>“페이지당 몇 분” 독서 속도 기능이 <b>PC·모바일</b>의 어떤 메뉴에 어떻게 보이는지</p>
+  </header>
+  <div class="meta">
+    <span class="chip">2026-06-08</span>
+    <span class="chip">커밋 <b>29a72f2</b></span>
+    <span class="chip">브랜치 feat/record-time-consolidation</span>
+    <span class="chip"><b>NEW</b> = 이번에 추가/변경된 부분</span>
+  </div>
+
+  <!-- 요약 -->
+  <div class="summary">
+    <div class="sum">
+      <span class="n">1</span>
+      <h3>통계 — 페이지당 평균 카드</h3>
+      <p>전체 평균 독서 속도를 요약 카드 1개로 표시 <b style="color:var(--rose-soft)">(신규)</b></p>
+      <div class="path">PC 사이드바 ▸ 더보기 ▸ 독서 성향 · /stats</div>
+    </div>
+    <div class="sum">
+      <span class="n">2</span>
+      <h3>책 상세 — 내 평균 대비</h3>
+      <p>책별 페이스 패널에 “내 평균보다 N% 빠르게/천천히” 비교 줄 <b style="color:var(--rose-soft)">(신규)</b></p>
+      <div class="path">내 서재 ▸ 책 ▸ 시간탭 · /books/[id]</div>
+    </div>
+    <div class="sum">
+      <span class="n">3</span>
+      <h3>프로필 — 내 독서 속도</h3>
+      <p>“페이지당 N분 M초” 카드 신설 <b style="color:var(--rose-soft)">(신규)</b></p>
+      <div class="path">PC 사이드바 ▸ 프로필 · /profile</div>
+    </div>
+  </div>
+
+  <!-- ============ 1. 통계 ============ -->
+  <section class="feat">
+    <div class="feat-head">
+      <span class="badge">노출 ①</span>
+      <h2>통계(독서 성향) — “페이지당 평균” 요약 카드</h2>
+    </div>
+    <p class="feat-sub">기존 요약 카드(완독·기록·연속·목표·독서시간) 옆에 <b>6번째 카드</b>로 추가됩니다. 기록이 없으면 카드는 표시되지 않습니다.</p>
+    <div class="breadcrumbs">
+      <div class="bc"><span class="pc">● PC</span> &nbsp;사이드바 ▸ <b>더보기</b> ▸ <b>독서 성향</b> ▸ 요약 카드</div>
+      <div class="bc"><span class="mo">● 모바일</span> &nbsp;하단 <b>더보기</b> ▸ 시트 ▸ <b>독서 성향</b> ▸ 요약 카드</div>
+    </div>
+
+    <div class="devices">
+      <!-- PC -->
+      <div>
+        <p class="device-label pc"><span class="dot"></span>PC · 데스크톱 사이드바</p>
+        <div class="browser">
+          <div class="bar"><i class="r"></i><i class="y"></i><i class="g"></i>
+            <span class="url">readtree.app/stats</span></div>
+          <div class="app">
+            <div class="sidebar">
+              <div class="logo">🌳 ReadTree</div>
+              <div class="nav-i"><span class="ic">🏠</span>홈</div>
+              <div class="nav-i"><span class="ic">📚</span>내 서재</div>
+              <div class="nav-i"><span class="ic">✏️</span>기록</div>
+              <div class="nav-i"><span class="ic">📖</span>독서</div>
+              <div class="nav-i"><span class="ic">📄</span>내 기록</div>
+              <div class="nav-i"><span class="ic">👤</span>프로필</div>
+              <div class="nav-group">더보기</div>
+              <div class="nav-i"><span class="ic">🏷️</span>스탬프</div>
+              <div class="nav-i"><span class="ic">👥</span>독서모임</div>
+              <div class="nav-i active"><span class="ic">✨</span>독서 성향</div>
+            </div>
+            <div class="main">
+              <p class="page-h">독서 성향</p>
+              <p class="page-d">독서 기록을 분석하여 나만의 독서 성향을 파악해보세요.</p>
+              <div class="cards">
+                <div class="card"><div class="ch"><span class="ico blue">📘</span><span class="lbl">완독한 책</span></div><div class="val">12<small>권</small></div></div>
+                <div class="card"><div class="ch"><span class="ico emerald">✒️</span><span class="lbl">기록 수</span></div><div class="val">86<small>개</small></div></div>
+                <div class="card"><div class="ch"><span class="ico orange">🔥</span><span class="lbl">연속</span></div><div class="val">7<small>일</small></div></div>
+                <div class="card"><div class="ch"><span class="ico purple">🎯</span><span class="lbl">목표</span></div><div class="val">60<small>%</small></div></div>
+                <div class="card"><div class="ch"><span class="ico cyan">⏱️</span><span class="lbl">독서 시간</span></div><div class="val">5.2<small>시간</small></div></div>
+                <div class="card is-new"><div class="ch"><span class="ico rose">⏲️</span><span class="lbl">페이지당 평균</span></div><div class="val">1분 18초</div><div class="sub">240p 기준</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Mobile -->
+      <div>
+        <p class="device-label mo"><span class="dot"></span>모바일 · 더보기 시트 → 독서 성향</p>
+        <div class="phone">
+          <div class="notch"></div>
+          <div class="pscreen">
+            <div class="ph-top"><span class="t">독서 성향</span><span class="m">⋯</span></div>
+            <div class="cards m2">
+              <div class="card"><div class="ch"><span class="ico blue">📘</span><span class="lbl">완독한 책</span></div><div class="val">12<small>권</small></div></div>
+              <div class="card"><div class="ch"><span class="ico emerald">✒️</span><span class="lbl">기록 수</span></div><div class="val">86<small>개</small></div></div>
+              <div class="card"><div class="ch"><span class="ico orange">🔥</span><span class="lbl">연속</span></div><div class="val">7<small>일</small></div></div>
+              <div class="card"><div class="ch"><span class="ico purple">🎯</span><span class="lbl">목표</span></div><div class="val">60<small>%</small></div></div>
+              <div class="card"><div class="ch"><span class="ico cyan">⏱️</span><span class="lbl">독서 시간</span></div><div class="val">5.2<small>시간</small></div></div>
+              <div class="card is-new"><div class="ch"><span class="ico rose">⏲️</span><span class="lbl">페이지당 평균</span></div><div class="val">1분 18초</div><div class="sub">240p 기준</div></div>
+            </div>
+            <div class="botnav">
+              <div class="bi"><span class="bic">🏠</span>홈</div>
+              <div class="bi"><span class="bic">📚</span>책장</div>
+              <div class="bi"><span class="fab">＋</span></div>
+              <div class="bi"><span class="bic">📄</span>내 기록</div>
+              <div class="bi active"><span class="bic">☰</span>더보기</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 2. 책 상세 ============ -->
+  <section class="feat">
+    <div class="feat-head">
+      <span class="badge">노출 ②</span>
+      <h2>책 상세 “시간탭” — 내 평균 대비 비교</h2>
+    </div>
+    <p class="feat-sub">이미 있던 <b>독서 페이스 패널</b>(페이지당 평균·읽은 분량·남은 예상) 하단에 <b>비교 줄 한 줄</b>이 추가됩니다. PC·모바일 동일 컴포넌트입니다.</p>
+    <div class="breadcrumbs">
+      <div class="bc"><span class="pc">● PC</span> &nbsp;사이드바 ▸ <b>내 서재</b> ▸ 책 선택 ▸ <b>시간</b> 탭</div>
+      <div class="bc"><span class="mo">● 모바일</span> &nbsp;하단 <b>책장</b> ▸ 책 선택 ▸ <b>시간</b> 탭</div>
+      <div class="bc">비교 기준: 이 책 페이스 vs 내 전체 평균 · <b>±10%</b> 이내면 “비슷”</div>
+    </div>
+
+    <div class="devices">
+      <!-- PC -->
+      <div>
+        <p class="device-label pc"><span class="dot"></span>PC · 책 상세 시간탭</p>
+        <div class="browser">
+          <div class="bar"><i class="r"></i><i class="y"></i><i class="g"></i>
+            <span class="url">readtree.app/books/…</span></div>
+          <div class="app">
+            <div class="sidebar">
+              <div class="logo">🌳 ReadTree</div>
+              <div class="nav-i"><span class="ic">🏠</span>홈</div>
+              <div class="nav-i active em"><span class="ic">📚</span>내 서재</div>
+              <div class="nav-i"><span class="ic">✏️</span>기록</div>
+              <div class="nav-i"><span class="ic">📖</span>독서</div>
+              <div class="nav-i"><span class="ic">📄</span>내 기록</div>
+              <div class="nav-i"><span class="ic">👤</span>프로필</div>
+            </div>
+            <div class="main">
+              <p class="page-h">미움받을 용기</p>
+              <div class="tabs"><span class="tab">기록</span><span class="tab active">시간</span><span class="tab">메모</span></div>
+              <div class="cards" style="margin-bottom:11px">
+                <div class="card"><div class="ch"><span class="ico cyan">⏱️</span><span class="lbl">총 독서 시간</span></div><div class="val" style="font-size:15px">3시간 12분</div></div>
+                <div class="card"><div class="ch"><span class="ico emerald">📅</span><span class="lbl">세션</span></div><div class="val" style="font-size:15px">9</div></div>
+                <div class="card"><div class="ch"><span class="ico blue">📈</span><span class="lbl">평균/회</span></div><div class="val" style="font-size:15px">21분</div></div>
+              </div>
+              <div class="pace">
+                <div class="ph">🎛️ 독서 페이스</div>
+                <div class="row">
+                  <div><div class="v">1분 04초</div><div class="k">페이지당 평균</div></div>
+                  <div><div class="v">148p</div><div class="k">읽은 분량 · 2시간 38분</div></div>
+                  <div><div class="v">92p</div><div class="k">남음 · 예상 1시간 38분</div></div>
+                </div>
+                <div class="cmp is-new">🐇 내 평균보다 18% 빠르게 읽고 있어요</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Mobile -->
+      <div>
+        <p class="device-label mo"><span class="dot"></span>모바일 · 책 상세 시간탭</p>
+        <div class="phone">
+          <div class="notch"></div>
+          <div class="pscreen">
+            <div class="ph-top"><span class="t">미움받을 용기</span><span class="m">⋯</span></div>
+            <div class="tabs"><span class="tab">기록</span><span class="tab active">시간</span><span class="tab">메모</span></div>
+            <div class="pace">
+              <div class="ph">🎛️ 독서 페이스</div>
+              <div class="row">
+                <div><div class="v">1분 04초</div><div class="k">페이지당 평균</div></div>
+                <div><div class="v">148p</div><div class="k">읽은 분량</div></div>
+                <div><div class="v">92p</div><div class="k">남음 · 1시간 38분</div></div>
+              </div>
+              <div class="cmp is-new">🐇 내 평균보다 18% 빠르게</div>
+            </div>
+            <div style="font-size:10.5px;color:var(--mut2);margin-top:12px;padding-left:2px">오늘</div>
+            <div class="ghost" style="margin-top:6px">⏱️ 24분 · 18p · 14:20~14:44</div>
+            <div class="botnav">
+              <div class="bi"><span class="bic">🏠</span>홈</div>
+              <div class="bi active"><span class="bic">📚</span>책장</div>
+              <div class="bi"><span class="fab">＋</span></div>
+              <div class="bi"><span class="bic">📄</span>내 기록</div>
+              <div class="bi"><span class="bic">☰</span>더보기</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="note">
+      <span>💡</span>
+      <div><b>비교 줄 3가지 상태</b> — 🐇 <b style="color:#6ee7b7">빠르게</b>(emerald) / 🐢 <b style="color:#fdba74">천천히</b>(amber) / 🎛️ <b style="color:var(--mut)">비슷해요</b>(회색). 적격 세션(페이지+시간 기록)이 없으면 패널 자체가 표시되지 않습니다.</div>
+    </div>
+  </section>
+
+  <!-- ============ 3. 프로필 ============ -->
+  <section class="feat">
+    <div class="feat-head">
+      <span class="badge">노출 ③</span>
+      <h2>프로필 — “내 독서 속도” 카드</h2>
+    </div>
+    <p class="feat-sub">프로필 상단(구독 안내 카드 아래, 프로필 정보 위)에 <b>속도 카드</b>가 신설됩니다. 기록이 없는 신규 계정에는 표시되지 않습니다.</p>
+    <div class="breadcrumbs">
+      <div class="bc"><span class="pc">● PC</span> &nbsp;사이드바 ▸ <b>프로필</b></div>
+      <div class="bc"><span class="mo">● 모바일</span> &nbsp;하단 <b>더보기</b> ▸ 시트 ▸ <b>프로필</b></div>
+    </div>
+
+    <div class="devices">
+      <!-- PC -->
+      <div>
+        <p class="device-label pc"><span class="dot"></span>PC · 프로필</p>
+        <div class="browser">
+          <div class="bar"><i class="r"></i><i class="y"></i><i class="g"></i>
+            <span class="url">readtree.app/profile</span></div>
+          <div class="app">
+            <div class="sidebar">
+              <div class="logo">🌳 ReadTree</div>
+              <div class="nav-i"><span class="ic">🏠</span>홈</div>
+              <div class="nav-i"><span class="ic">📚</span>내 서재</div>
+              <div class="nav-i"><span class="ic">✏️</span>기록</div>
+              <div class="nav-i"><span class="ic">📖</span>독서</div>
+              <div class="nav-i"><span class="ic">📄</span>내 기록</div>
+              <div class="nav-i active"><span class="ic">👤</span>프로필</div>
+            </div>
+            <div class="main">
+              <p class="page-h">프로필</p>
+              <p class="page-d">프로필 정보를 수정하고 관리하세요</p>
+              <div class="ghost cta" style="margin-bottom:9px">⭐ 프리미엄 구독 · 1,200P 보유</div>
+              <div class="speed is-new">
+                <div class="ico">🎛️</div>
+                <div><div class="lbl">내 독서 속도</div><div class="val">페이지당 1분 18초</div></div>
+                <div class="right">📖 240p<br>총 5시간 12분</div>
+              </div>
+              <div class="ghost" style="margin-top:9px">👤 닉네임 · 한 줄 소개 · 인생책 · 좋아하는 문구 …</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Mobile -->
+      <div>
+        <p class="device-label mo"><span class="dot"></span>모바일 · 더보기 시트 → 프로필</p>
+        <div class="phone">
+          <div class="notch"></div>
+          <div class="pscreen">
+            <div class="ph-top"><span class="t">프로필</span><span class="m">⋯</span></div>
+            <div class="ghost cta" style="margin-bottom:9px">⭐ 프리미엄 구독 · 1,200P</div>
+            <div class="speed is-new">
+              <div class="ico">🎛️</div>
+              <div><div class="lbl">내 독서 속도</div><div class="val" style="font-size:15px">페이지당 1분 18초</div></div>
+              <div class="right">📖 240p</div>
+            </div>
+            <div class="ghost" style="margin-top:9px">👤 닉네임 · 소개 · 인생책 …</div>
+
+            <!-- 더보기 시트 오버레이 -->
+            <div class="sheet">
+              <div class="grab"></div>
+              <div class="si active"><span class="ic">👤</span>프로필</div>
+              <div class="si"><span class="ic">🏷️</span>스탬프</div>
+              <div class="si"><span class="ic">👥</span>독서모임</div>
+              <div class="si em"><span class="ic">✨</span>독서 성향</div>
+              <div class="si"><span class="ic">🤖</span>AI 챗</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="note">
+      <span>🧭</span>
+      <div>모바일에서 <b>프로필·독서 성향</b>은 하단 탭에 직접 노출되지 않고, <b>더보기(☰)</b> 시트를 통해 진입합니다. 위 모바일 목업의 하단 시트가 그 진입 메뉴입니다.</div>
+    </div>
+  </section>
+
+  <div class="legend">
+    <span><i style="background:var(--rose)"></i>NEW · 이번 추가/변경</span>
+    <span><i style="background:#6ee7b7"></i>빠르게(emerald)</span>
+    <span><i style="background:#fdba74"></i>천천히(amber)</span>
+    <span><i style="background:var(--blue)"></i>PC 동선</span>
+    <span><i style="background:var(--emerald)"></i>모바일 동선</span>
+  </div>
+
+  <footer>
+    독서 속도(페이지당 시간) 측정 · 화면 노출 가이드 · 2026-06-08<br>
+    데이터는 <code>reading_logs</code> 세션 행을 실시간 가중 집계(<code>Σ시간 / Σ읽은페이지</code>) — 새 테이블·컬럼 없음.<br>
+    관련: <code>lib/reading/pace.ts</code> · <code>components/stats/stats-content.tsx</code> · <code>components/books/reading-pace-panel.tsx</code> · <code>components/profile/reading-speed-card.tsx</code>
+  </footer>
+
+</div>
+</body>
+</html>

@@ -333,8 +333,13 @@ RecordSheet (attach 모드, 이미 존재)
 - `books/[id]/page.tsx`: `getUnifiedRecords({bookId})` 조회(플래그 ON·비게스트, Promise.all 병합).
 - `book-notes-tabs.tsx`: "기록" 탭을 책-스코프 통합 피드로 승격(플래그 ON), OFF면 기존 `NoteList` 폴백. 시간/여정 탭은 전문 렌즈로 유지.
 
-### ③ 진행율 기록 데이터 단일화 — ✅ 구현(플래그 기본 OFF · 백필 미적용)
-사용자 "위험 감수하고 진행" 승인. **위험도 HIGH(9/10)** 라 안전망으로 **피처플래그 `NEXT_PUBLIC_PROGRESS_IN_LOGS`(기본 OFF)** 뒤에 전체 구현하고, **파괴적 백필은 미적용(ready SQL만)**.
+### ③ 진행율 기록 데이터 단일화 — ✅✅ 활성화 완료(2026-06-15, 플래그 기본 ON · 백필 적용)
+사용자 "강제 진행(B)" 결정으로 **프로덕션 활성화 완료**. 플래그 `NEXT_PUBLIC_PROGRESS_IN_LOGS` **기본 ON** 전환 + 프로덕션 배포(READY, `dpl_HQjK…`) + **원자적 백필 실행**: progress 노트 **196 → reading_logs 196**(손실·중복·고아 0, 메모 31건·created_at 보존). 이후 진행 기록은 reading_logs에 저장되고 모든 리더가 dual-source(notes 0 ⊕ logs 196)로 단일 출처처럼 읽음.
+**미검증(수용된 위험, option B):** 로그인 UI(여정·캘린더·스트릭) 실표시는 자동 검증 불가 — 사용자 육안 확인 권장. **롤백:** `NEXT_PUBLIC_PROGRESS_IN_LOGS=0`(쓰기 OFF) + 필요 시 logs→notes 역마이그(데이터는 logs에 보존).
+
+<details><summary>구현 상세(아카이브)</summary>
+
+위험도 HIGH(9/10)라 안전망으로 **피처플래그 뒤에** 전체 구현 후 단계적 활성화.
 
 **모델:** 진행 기록 = `reading_logs` 중 `reading_duration_seconds=0 AND image_url IS NULL AND end_page≠NULL`(페이지-only). 시간세션(duration>0)·스탬프(image)와 충돌 없음.
 
@@ -353,18 +358,10 @@ RecordSheet (attach 모드, 이미 존재)
 | 대시보드 최근 진행 | `stats.ts::getRecentProgressLogs` | logs 병합·정렬·limit |
 | 포인트(`note_progress`) | `notes.ts::createNote` | recordProgressLog는 미적립(단순화) |
 
-**백필(파괴적, 미적용):** `doc/database/migration-202606151200__reading_logs__backfill_progress_notes.sql` — **원자적(한 트랜잭션) 백필+삭제**. ⚠️ 백필과 삭제를 분리하면 그 사이 notes ⊕ logs 가 둘 다 읽혀 **이중 카운트/표시**가 되므로 반드시 같은 트랜잭션. 또 **플래그 ON 선행 필수**(OFF면 리더가 logs를 안 읽어 진행 기록이 사라짐). idempotent.
+**백필 SQL:** `doc/database/migration-202606151200__reading_logs__backfill_progress_notes.sql` — 원자적 백필+삭제(idempotent). **2026-06-15 Supabase MCP로 실행 완료**(DO 블록 단일 트랜잭션, notes→logs 복사 후 progress notes 삭제).
 
-> **상태(2026-06-15 2차):** ③ 코드 구현 완료(플래그 OFF, 현 사용자 무영향). 검증 `tsc`·ESLint 0err·단위테스트(progress 분류 포함)·`next build`.
+</details>
+
+> **상태(2026-06-15, 활성화 완료):** 플래그 기본 ON 배포(`3b0040d`, prod READY) + 백필 적용. 검증: `tsc`·ESLint 0err·단위테스트·`next build` · 백필 후 데이터(notes progress 0 / logs 196 / orphan 0) · prod `/notes` 게스트 로드 콘솔 에러 0.
 >
-> **활성화 런북(올바른 순서 — 1·2·5는 사람이 수행):**
->
-> ⚠️ **단일 DB 주의:** 프리뷰/프로덕션이 **같은 Supabase(prod)** 를 공유하면, 프리뷰에서만 플래그 ON 해도 백필은 공유 DB(prod)를 바꾼다. 그 상태에서 **프로덕션 배포는 플래그 OFF**라 prod 리더가 notes(삭제됨)를 읽어 **실사용자 진행 기록이 사라진다.** 별도 스테이징 DB가 없다면 **프로덕션에 플래그 ON을 먼저** 해야 한다(플래그 ON 자체는 비파괴·되돌림 가능: 새 진행→logs, 기존→notes, 양쪽 표시).
->
-> 1. `NEXT_PUBLIC_PROGRESS_IN_LOGS=1` 를 **백필이 바꿀 DB를 읽는 모든 배포**(별도 스테이징 DB 없으면 = 프로덕션)에 설정 + **재배포**(NEXT_PUBLIC_은 빌드 인라인이라 redeploy 필요).
-> 2. 본인 계정으로 진행율 1건 기록 → 여정·캘린더·스트릭·대시보드·피드에 정상 표시 + 기존 진행도 함께 보임 확인. 문제 있으면 `=0` + 재배포로 즉시 원복(데이터 무변경).
-> 3. (검증 통과 후 "go") 원자적 백필+삭제 마이그레이션 실행. 대상 노트 수 사전 카운트(2026-06-15 기준 194건).
-> 4. 과거 진행 기록 그대로 보이는지(이중표시 0, 누락 0) 재확인.
-> 5. (프리뷰로 먼저 했다면) 프로덕션 플래그 ON 마무리.
->
-> ⚠️ 절대 금지: 플래그 OFF인 배포가 백필 대상 DB를 읽는 상태에서 백필 실행(진행 기록 소실), 백필만 하고 삭제 생략(이중 표시).
+> **남은 확인(사용자):** 로그인 상태에서 여정·캘린더·스트릭·대시보드·피드에 진행 기록이 정상 표시되는지 육안 확인. 이상 시 `NEXT_PUBLIC_PROGRESS_IN_LOGS=0` + 재배포로 쓰기 OFF(데이터는 logs 보존, 필요 시 logs→notes 역마이그).
