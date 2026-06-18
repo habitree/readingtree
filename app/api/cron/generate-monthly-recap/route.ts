@@ -8,7 +8,6 @@
  * 동작:
  *   1) 전월에 활동(notes/reading_logs/완독) 있던 유저 수집
  *   2) 각 유저: computeRecapForUser → upsertRecapSnapshot (admin 클라이언트, RLS 우회)
- *   3) 빈 결산이 아니면 report_ready 알림 발송 (notification_prefs 존중은 createNotification 내부 처리)
  *
  * 스케일 주의: 유저 수가 많아지면 타임아웃(maxDuration) 내 배치 처리 또는
  * Vercel Queues 분할이 필요. 현재는 단순 순차 처리 + 유저별 에러 격리.
@@ -18,7 +17,6 @@ import { NextResponse } from "next/server";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { computeRecapForUser } from "@/app/actions/recap/compute";
 import { upsertRecapSnapshot } from "@/app/actions/recap/generate";
-import { createNotification } from "@/app/actions/notifications";
 import { kstMonthStart, kstMonthEnd } from "@/lib/utils/timezone";
 
 export const dynamic = "force-dynamic";
@@ -69,7 +67,6 @@ export async function GET(request: Request) {
   }
 
   let generated = 0;
-  let notified = 0;
   let failed = 0;
 
   for (const userId of userIds) {
@@ -81,17 +78,6 @@ export async function GET(request: Request) {
         continue;
       }
       generated += 1;
-
-      if (!computed.isEmpty) {
-        const res = await createNotification(userId, "report_ready", {
-          title: `${month}월 독서결산이 도착했어요`,
-          body: `${computed.highlights.personaTitle} · 완독 ${computed.stats.completedBooks}권`,
-          actionUrl: `/stats?tab=recap&m=${year}-${String(month).padStart(2, "0")}`,
-          referenceId: record.shareId,
-          referenceType: "monthly_recap",
-        });
-        if (res.success) notified += 1;
-      }
     } catch (e) {
       failed += 1;
       console.error(`[cron/recap] user ${userId} 처리 실패:`, e);
@@ -103,7 +89,6 @@ export async function GET(request: Request) {
     period: `${year}-${String(month).padStart(2, "0")}`,
     users: userIds.size,
     generated,
-    notified,
     failed,
   });
 }

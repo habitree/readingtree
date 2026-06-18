@@ -7,7 +7,7 @@ import { SettingsNav } from "@/components/settings/settings-nav";
 
 export const metadata: Metadata = {
   title: "설정 | ReadTree",
-  description: "계정과 알림, 프라이버시를 관리해요.",
+  description: "계정과 프라이버시를 관리해요.",
 };
 
 export default async function SettingsLayout({

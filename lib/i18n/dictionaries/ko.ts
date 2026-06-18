@@ -120,7 +120,6 @@ export const ko = {
     bookshelf: "책장",
     notes: "기록",
     community: "모임",
-    notificationCount: "{count}개의 알림",
     mobileNav: "모바일 네비게이션",
     exploringReadTree: "ReadTree를 체험 중이에요",
     writeNote: "기록",
@@ -1495,10 +1494,9 @@ export const ko = {
 
   settings: {
     pageTitle: "설정",
-    pageDesc: "계정과 알림, 프라이버시를 관리해요",
+    pageDesc: "계정과 프라이버시를 관리해요",
     account: "계정",
     reading: "독서 목표",
-    notifications: "알림",
     privacy: "프라이버시",
     exportData: "내보내기",
     navigation: "네비게이션",
@@ -1528,7 +1526,6 @@ export const ko = {
     publicNotes: "공개 기록",
     savedBooks: "저장한 책",
     accountSettings: "계정 설정",
-    notifications: "알림 설정",
     privacy: "개인정보 설정",
     deleteAccount: "계정 삭제",
     profileImage: "프로필 이미지",

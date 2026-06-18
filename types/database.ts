@@ -1290,56 +1290,6 @@ export type Database = {
           },
         ]
       }
-      notifications: {
-        Row: {
-          action_url: string | null
-          body: string | null
-          created_at: string
-          id: string
-          kind: string
-          metadata: Json | null
-          read_at: string | null
-          reference_id: string | null
-          reference_type: string | null
-          title: string
-          user_id: string
-        }
-        Insert: {
-          action_url?: string | null
-          body?: string | null
-          created_at?: string
-          id?: string
-          kind: string
-          metadata?: Json | null
-          read_at?: string | null
-          reference_id?: string | null
-          reference_type?: string | null
-          title: string
-          user_id: string
-        }
-        Update: {
-          action_url?: string | null
-          body?: string | null
-          created_at?: string
-          id?: string
-          kind?: string
-          metadata?: Json | null
-          read_at?: string | null
-          reference_id?: string | null
-          reference_type?: string | null
-          title?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "notifications_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       ocr_cache: {
         Row: {
           created_at: string
@@ -2509,7 +2459,6 @@ export type Database = {
           is_admin: boolean | null
           is_profile_public: boolean
           name: string
-          notification_prefs: Json
           onboarding_checklist: Json | null
           privacy_agreed: boolean | null
           reading_goal: number | null
@@ -2531,7 +2480,6 @@ export type Database = {
           is_admin?: boolean | null
           is_profile_public?: boolean
           name: string
-          notification_prefs?: Json
           onboarding_checklist?: Json | null
           privacy_agreed?: boolean | null
           reading_goal?: number | null
@@ -2553,7 +2501,6 @@ export type Database = {
           is_admin?: boolean | null
           is_profile_public?: boolean
           name?: string
-          notification_prefs?: Json
           onboarding_checklist?: Json | null
           privacy_agreed?: boolean | null
           reading_goal?: number | null

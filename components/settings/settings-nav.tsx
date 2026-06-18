@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  Bell,
   BookOpen,
   Download,
   Lock,
@@ -24,7 +23,6 @@ interface SettingsNavItem {
 const ITEMS: SettingsNavItem[] = [
   { href: "/settings", label: "계정", description: "이메일·비밀번호", icon: User },
   { href: "/settings/reading", label: "독서 목표", description: "연간/월간 목표", icon: BookOpen },
-  { href: "/settings/notifications", label: "알림", description: "알림 수신 토글", icon: Bell },
   { href: "/settings/privacy", label: "프라이버시", description: "공개/비공개", icon: Lock },
   { href: "/settings/export", label: "내보내기", description: "Markdown 일괄", icon: Download },
   { href: "/settings/navigation", label: "네비게이션", description: "모바일 탭 고정", icon: Navigation },
