@@ -1,0 +1,14 @@
+# 폰트는 바이너리로 취급 (autocrlf로 인한 손상 방지)
+*.otf binary
+*.ttf binary
+*.woff binary
+*.woff2 binary
+*.eot binary
+
+# 이미지 바이너리
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary

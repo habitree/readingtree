@@ -11,11 +11,11 @@ function isValidFontBuffer(buf: ArrayBuffer): boolean {
 }
 
 /**
- * 한글 폰트 로드 (로컬 번들). 유효한 폰트 시그니처가 아니면 null.
+ * 한글 폰트 로드. 시그니처 검증을 통과한 유효 폰트만 반환(손상 데이터는 Satori 크래시 유발).
  *
- * 주의: 현재 번들 폰트(public/fonts/NotoSansKR-SemiBold.otf)는 손상 상태(404 HTML)라
- * null 이 반환되며, 이 경우 ImageResponse 기본 폰트로 graceful 렌더된다(한글은 미표시 가능).
- * 유효한 한글 폰트 교체는 별도 작업으로 처리. 손상 데이터를 Satori에 넘기지 않아 크래시는 방지된다.
+ * 1) `new URL(import.meta.url)` fetch — Next가 함수 번들에 폰트를 추적·포함(prod 신뢰).
+ * 2) fs 폴백 — dev 등에서 URL 미해결 시 public/fonts 직접 읽기(nodejs 런타임 한정, edge-safe 동적 import).
+ * 모두 실패하면 null → ImageResponse 기본 폰트로 graceful 렌더.
  */
 export async function loadKoreanFont(
   localUrl: URL
@@ -27,7 +27,16 @@ export async function loadKoreanFont(
       if (isValidFontBuffer(buf)) return buf;
     }
   } catch {
-    // 무시 → null
+    // URL 미해결 → fs 폴백
+  }
+  try {
+    const { readFile } = await import("fs/promises");
+    const { join } = await import("path");
+    const buf = await readFile(join(process.cwd(), "public", "fonts", "NotoSansKR-SemiBold.otf"));
+    const ab = buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength) as ArrayBuffer;
+    if (isValidFontBuffer(ab)) return ab;
+  } catch {
+    // edge 런타임/파일 부재 → null
   }
   return null;
 }
