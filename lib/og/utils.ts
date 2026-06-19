@@ -1,25 +1,35 @@
 import { createClient } from "@supabase/supabase-js";
-import { FONT_FAMILY } from "./constants";
 
-/** 한글 폰트 로드 (로컬 파일 우선, 실패 시 외부 fetch) */
+/**
+ * 폰트 시그니처 검증 — 손상/HTML(404) 파일을 Satori에 넘겨 렌더가 깨지는 것을 방지.
+ * 유효: TTF(00010000) · OTF/OTTO(4F54544F) · 'true' · WOFF(wOFF) · WOFF2(wOF2)
+ */
+const FONT_SIGNATURES = new Set([0x00010000, 0x4f54544f, 0x74727565, 0x774f4646, 0x774f4632]);
+function isValidFontBuffer(buf: ArrayBuffer): boolean {
+  if (buf.byteLength < 4) return false;
+  return FONT_SIGNATURES.has(new DataView(buf).getUint32(0, false));
+}
+
+/**
+ * 한글 폰트 로드 (로컬 번들). 유효한 폰트 시그니처가 아니면 null.
+ *
+ * 주의: 현재 번들 폰트(public/fonts/NotoSansKR-SemiBold.otf)는 손상 상태(404 HTML)라
+ * null 이 반환되며, 이 경우 ImageResponse 기본 폰트로 graceful 렌더된다(한글은 미표시 가능).
+ * 유효한 한글 폰트 교체는 별도 작업으로 처리. 손상 데이터를 Satori에 넘기지 않아 크래시는 방지된다.
+ */
 export async function loadKoreanFont(
   localUrl: URL
 ): Promise<ArrayBuffer | null> {
   try {
     const res = await fetch(localUrl);
-    if (res.ok) return res.arrayBuffer();
+    if (res.ok) {
+      const buf = await res.arrayBuffer();
+      if (isValidFontBuffer(buf)) return buf;
+    }
   } catch {
-    // 로컬 실패 시 CDN fallback
+    // 무시 → null
   }
-  try {
-    const res = await fetch(
-      "https://github.com/google/fonts/raw/main/ofl/notosanskr/NotoSansKR-SemiBold.otf"
-    );
-    if (!res.ok) throw new Error("Failed to fetch font");
-    return res.arrayBuffer();
-  } catch {
-    return null;
-  }
+  return null;
 }
 
 /**

@@ -1,62 +1,47 @@
 import { ImageResponse } from "next/og";
 import { isValidUUID } from "@/lib/utils/validation";
-import {
-  OG_SIZE,
-  OG_TEXT_LIMITS,
-  FONT_FAMILY,
-} from "@/lib/og/constants";
+import { OG_SIZE, OG_TEXT_LIMITS, FONT_FAMILY, OG_BRAND } from "@/lib/og/constants";
 import {
   loadKoreanFont,
-  loadBrandIcon,
-  loadBrandIconFromUrl,
   prefetchImageAsDataUri,
   truncateText,
   buildFontOptions,
   createOgAnonSupabaseClient,
 } from "@/lib/og/utils";
-import {
-  OgBrandMark,
-  OgFallbackContent,
-  OgEarthAccentBar,
-  OgAuroraBackground,
-  OgGrainTexture,
-  OgSparkleIcon,
-  OgLeafDecoration,
-  OgDotPattern,
-  OgBookCoverFrame,
-  OgSparkleScatter,
-} from "@/lib/og/components";
-import { getOgConfig } from "@/lib/og/settings";
 
-export const alt = "ReadTree AI 독서 리포트";
+export const alt = "ReadTree Reading Review — AI 독서 리포트";
 export const size = OG_SIZE;
 export const contentType = "image/png";
 export const runtime = "nodejs";
 export const revalidate = 3600;
+
+/* 매거진(ReadTree Reading Review) 팔레트 */
+const M = {
+  ink: "#0C1F12",
+  ink2: "#08160C",
+  gold: "#E8C77E",
+  gold2: "#C68A2E",
+  goldSoft: "#C6A86A",
+  cream: "#F6F1E4",
+  body: "#E8F0E5",
+  green: "#9FBF9C",
+  green2: "#7FA17C",
+};
 
 export default async function OgImage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const [fontData, config] = await Promise.all([
-    loadKoreanFont(
-      new URL("../../../../public/fonts/NotoSansKR-SemiBold.otf", import.meta.url)
-    ),
-    getOgConfig(),
-  ]);
+  const fontData = await loadKoreanFont(
+    new URL("../../../../public/fonts/NotoSansKR-SemiBold.otf", import.meta.url)
+  );
   const fontOptions = buildFontOptions(fontData);
-  const { brand, colors } = config;
-
-  const brandIconSrc = config.brandIconUrl
-    ? await loadBrandIconFromUrl(config.brandIconUrl)
-    : await loadBrandIcon(new URL("../../../icon.png", import.meta.url));
 
   try {
     const { id: shareId } = await params;
-
     if (!shareId || typeof shareId !== "string" || !isValidUUID(shareId)) {
-      return fallbackImageResponse(fontOptions, brandIconSrc, brand, colors);
+      return fallbackImageResponse(fontOptions);
     }
 
     const supabase = createOgAnonSupabaseClient();
@@ -68,24 +53,21 @@ export default async function OgImage({
       .single();
 
     if (!report || error) {
-      return fallbackImageResponse(fontOptions, brandIconSrc, brand, colors);
+      return fallbackImageResponse(fontOptions);
     }
 
-    const bookTitle = truncateText(
-      report.book_title || "제목 없음",
-      OG_TEXT_LIMITS.bookTitle
-    );
+    const bookTitle = truncateText(report.book_title || "제목 없음", OG_TEXT_LIMITS.bookTitle);
     const bookAuthor = report.book_author || "저자 미상";
 
-    // 리포트에서 첫 번째 인사이트 추출
+    // 첫 번째 핵심 인사이트 추출
     const insightMatch = report.report_markdown?.match(
-      /##\s*(?:핵심|인사이트|key|insight)[^\n]*\n([\s\S]*?)(?=\n##|$)/i
+      /##\s*(?:[\d.\s]*)?(?:핵심|인사이트|key|insight)[^\n]*\n([\s\S]*?)(?=\n##|$)/i
     );
     let insightPreview = insightMatch
-      ? insightMatch[1].replace(/[#*\->\n]/g, " ").trim()
+      ? insightMatch[1].replace(/[#*\->`]/g, " ").replace(/\s+/g, " ").trim()
       : "";
     if (insightPreview.length > OG_TEXT_LIMITS.insightPreview) {
-      insightPreview = insightPreview.slice(0, OG_TEXT_LIMITS.insightPreview - 3) + "...";
+      insightPreview = insightPreview.slice(0, OG_TEXT_LIMITS.insightPreview - 1) + "…";
     }
     if (!insightPreview) {
       insightPreview = `기록 ${report.note_count}개를 분석한 AI 독서 리포트`;
@@ -102,235 +84,142 @@ export default async function OgImage({
             width: "100%",
             height: "100%",
             display: "flex",
-            flexDirection: "column",
+            position: "relative",
             fontFamily: FONT_FAMILY,
-            backgroundColor: colors.background,
+            background: `linear-gradient(155deg, ${M.ink} 0%, ${M.ink2} 100%)`,
           }}
         >
-          {/* 상단 어스 톤 바 (8px + 글로우) */}
-          <OgEarthAccentBar colors={colors} />
-
-          {/* 오로라 배경 (earth+forest 혼합) */}
-          <OgAuroraBackground colors={colors} variant="report" />
-          <OgGrainTexture />
-
-          {/* 장식 나뭇잎 */}
-          <OgLeafDecoration color={colors.earthLight} position="bottom-right" opacity={0.07} leafSize="md" />
-
-          {/* 메인 영역 */}
+          {/* 글로우 */}
           <div
             style={{
+              position: "absolute",
+              inset: 0,
               display: "flex",
-              flex: 1,
+              background:
+                "radial-gradient(60% 85% at 78% 8%, rgba(122,168,120,0.16), transparent 60%)",
+            }}
+          />
+          {/* 골드 인셋 프레임 */}
+          <div
+            style={{
+              position: "absolute",
+              top: 26,
+              left: 26,
+              right: 26,
+              bottom: 26,
+              border: "1px solid rgba(232,199,126,0.30)",
+              borderRadius: 4,
+            }}
+          />
+
+          {/* 콘텐츠 */}
+          <div
+            style={{
+              position: "relative",
+              display: "flex",
+              flexDirection: "row",
+              width: "100%",
+              height: "100%",
+              padding: "60px 76px",
               alignItems: "center",
-              justifyContent: "center",
-              padding: "30px 60px 20px",
+              gap: 56,
             }}
           >
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "row",
-                width: "100%",
-                height: 480,
-                backgroundColor: colors.cardBackground,
-                borderRadius: 20,
-                boxShadow:
-                  "0 20px 60px -15px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.05)",
-                overflow: "hidden",
-              }}
-            >
-              {/* 좌측: 책 표지 + 제목 (warm 오로라) */}
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  padding: "36px 32px",
-                  background: `linear-gradient(160deg, rgba(196, 147, 90, 0.08) 0%, rgba(224, 180, 122, 0.05) 50%, rgba(250, 245, 238, 0.9) 100%), linear-gradient(180deg, #faf5ee 0%, #fdf9f3 100%)`,
-                  width: 320,
-                  gap: 20,
-                }}
-              >
-                <OgBookCoverFrame coverSrc={coverDataUri} width={160} height={240} accentColor={colors.earth} />
+            {/* 좌: 책 표지 */}
+            <div style={{ display: "flex", flexShrink: 0 }}>
+              {coverDataUri ? (
+                <img
+                  src={coverDataUri}
+                  alt=""
+                  width={232}
+                  height={344}
+                  style={{
+                    objectFit: "cover",
+                    borderRadius: 4,
+                    boxShadow: "0 24px 50px rgba(0,0,0,0.5)",
+                    border: "1px solid rgba(156,101,18,0.35)",
+                  }}
+                />
+              ) : (
                 <div
                   style={{
-                    fontSize: 20,
+                    width: 232,
+                    height: 344,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    borderRadius: 4,
+                    background: "linear-gradient(150deg,#F7F1E2,#E4D9BF)",
+                    color: "#143420",
+                    fontSize: 30,
                     fontWeight: 800,
-                    color: "#0f172a",
-                    lineHeight: 1.3,
                     textAlign: "center",
-                    fontFamily: FONT_FAMILY,
-                    maxWidth: 260,
+                    padding: 24,
+                    boxShadow: "0 24px 50px rgba(0,0,0,0.5)",
                   }}
                 >
                   {bookTitle}
                 </div>
-                <div
-                  style={{
-                    fontSize: 15,
-                    fontWeight: 600,
-                    color: "#64748b",
-                    fontFamily: FONT_FAMILY,
-                  }}
-                >
-                  {bookAuthor}
-                </div>
-              </div>
-
-              {/* 우측: AI 리포트 미리보기 */}
-              <div
-                style={{
-                  flex: 1,
-                  display: "flex",
-                  flexDirection: "column",
-                  padding: "40px 44px",
-                  justifyContent: "space-between",
-                  position: "relative",
-                }}
-              >
-                <OgDotPattern color="rgba(196,147,90,0.08)" opacity={0.02} />
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: 16,
-                  }}
-                >
-                  {/* AI 리포트 라벨 (스파클 아이콘) */}
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 10,
-                    }}
-                  >
-                    <div
-                      style={{
-                        position: "relative",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
-                    >
-                      <div
-                        style={{
-                          width: 36,
-                          height: 36,
-                          borderRadius: 10,
-                          background: `linear-gradient(135deg, ${colors.earth}, ${colors.earthLight})`,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          boxShadow: `0 4px 12px rgba(196, 147, 90, 0.2)`,
-                        }}
-                      >
-                        <OgSparkleIcon size={18} color="white" />
-                      </div>
-                      <OgSparkleScatter color={colors.earthLight} opacity={0.2} />
-                    </div>
-                    <span
-                      style={{
-                        fontSize: 26,
-                        fontWeight: 800,
-                        color: "#44403c",
-                        fontFamily: FONT_FAMILY,
-                      }}
-                    >
-                      AI 독서 리포트
-                    </span>
-                  </div>
-
-                  {/* 기록 수 */}
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 6,
-                      fontSize: 14,
-                      color: "#78716c",
-                      fontWeight: 600,
-                      fontFamily: FONT_FAMILY,
-                    }}
-                  >
-                    기록 {report.note_count}개 기반 AI 분석
-                  </div>
-
-                  {/* 인사이트 미리보기 */}
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "row",
-                    }}
-                  >
-                    <div
-                      style={{
-                        width: 5,
-                        borderRadius: 3,
-                        backgroundColor: colors.earthLight,
-                        marginRight: 20,
-                        flexShrink: 0,
-                      }}
-                    />
-                    <div
-                      style={{
-                        fontSize: 20,
-                        lineHeight: 1.7,
-                        color: "#44403c",
-                        fontFamily: FONT_FAMILY,
-                        fontWeight: 600,
-                      }}
-                    >
-                      {insightPreview}
-                    </div>
-                  </div>
-                </div>
-
-                {/* 구분선 */}
-                <div
-                  style={{
-                    width: "100%",
-                    height: 1,
-                    backgroundColor: "#e5e7eb",
-                    marginBottom: 20,
-                  }}
-                />
-
-                {/* 브랜딩 */}
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "row",
-                    alignItems: "center",
-                    justifyContent: "flex-end",
-                  }}
-                >
-                  <OgBrandMark iconSrc={brandIconSrc} size="md" brand={brand} colors={colors} />
-                </div>
-              </div>
+              )}
             </div>
-          </div>
 
-          {/* 하단 도메인 */}
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "center",
-              paddingBottom: 16,
-            }}
-          >
-            <span
+            {/* 우: 마스트헤드 + 타이틀 + 인사이트 */}
+            <div
               style={{
-                fontSize: 14,
-                color: colors.textMuted,
-                fontWeight: 500,
-                fontFamily: FONT_FAMILY,
-                letterSpacing: "0.08em",
+                display: "flex",
+                flexDirection: "column",
+                flex: 1,
+                height: "100%",
+                justifyContent: "center",
+                gap: 16,
               }}
             >
-              {brand.domain}
-            </span>
+              {/* 마스트헤드 */}
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                <div style={{ fontSize: 30, fontWeight: 800, color: M.gold, letterSpacing: "0.12em" }}>
+                  READTREE
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <div style={{ display: "flex", width: 40, height: 1, backgroundColor: "rgba(232,199,126,0.6)" }} />
+                  <span style={{ fontSize: 14, fontWeight: 700, color: M.goldSoft, letterSpacing: "0.3em" }}>
+                    READING REVIEW
+                  </span>
+                </div>
+              </div>
+
+              {/* 책 제목 */}
+              <div style={{ fontSize: 50, fontWeight: 800, color: M.cream, lineHeight: 1.12, maxWidth: 620 }}>
+                {bookTitle}
+              </div>
+              {/* 저자 */}
+              <div style={{ fontSize: 22, fontWeight: 600, color: M.green }}>{bookAuthor}</div>
+
+              {/* 인사이트 한 줄 */}
+              <div style={{ display: "flex", flexDirection: "row", marginTop: 8 }}>
+                <div
+                  style={{
+                    display: "flex",
+                    width: 4,
+                    borderRadius: 3,
+                    background: `linear-gradient(180deg, #E0B65E, ${M.gold2})`,
+                    marginRight: 18,
+                    flexShrink: 0,
+                  }}
+                />
+                <div style={{ fontSize: 21, lineHeight: 1.6, color: M.body, fontWeight: 600, maxWidth: 560 }}>
+                  {insightPreview}
+                </div>
+              </div>
+
+              {/* 푸터 */}
+              <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 18 }}>
+                <span style={{ fontSize: 15, fontWeight: 600, color: M.green2 }}>
+                  {`기록 ${report.note_count}개 기반 · 기록하는 만큼 자라는 독서`}
+                </span>
+                <span style={{ color: "rgba(232,199,126,0.4)" }}>·</span>
+                <span style={{ fontSize: 15, fontWeight: 600, color: M.goldSoft }}>{OG_BRAND.domain}</span>
+              </div>
+            </div>
           </div>
         </div>
       ),
@@ -338,23 +227,37 @@ export default async function OgImage({
     );
   } catch (e) {
     console.error("[OG Image] Unexpected error:", e);
-    return fallbackImageResponse(fontOptions, brandIconSrc, brand, colors);
+    return fallbackImageResponse(fontOptions);
   }
 }
 
-function fallbackImageResponse(
-  fontOptions: Record<string, unknown> = {},
-  iconSrc?: string | null,
-  brand?: { name: string; tagline: string; keywords: string; domain: string; description: string },
-  colors?: Record<string, string>
-) {
+function fallbackImageResponse(fontOptions: Record<string, unknown> = {}) {
   return new ImageResponse(
-    <OgFallbackContent
-      message="이 리포트를 찾을 수 없거나 비공개입니다."
-      iconSrc={iconSrc}
-      brand={brand}
-      colors={colors as never}
-    />,
+    (
+      <div
+        style={{
+          width: "100%",
+          height: "100%",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          fontFamily: FONT_FAMILY,
+          background: `linear-gradient(155deg, ${M.ink} 0%, ${M.ink2} 100%)`,
+          gap: 16,
+        }}
+      >
+        <div style={{ fontSize: 40, fontWeight: 800, color: M.gold, letterSpacing: "0.12em" }}>
+          READTREE
+        </div>
+        <div style={{ fontSize: 15, fontWeight: 700, color: M.goldSoft, letterSpacing: "0.3em" }}>
+          READING REVIEW
+        </div>
+        <div style={{ fontSize: 22, color: M.green, marginTop: 8 }}>
+          이 리포트를 찾을 수 없거나 비공개입니다.
+        </div>
+      </div>
+    ),
     { ...size, ...fontOptions }
   );
 }
