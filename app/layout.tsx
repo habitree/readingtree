@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Noto_Serif_KR } from "next/font/google";
+import { Inter, Noto_Serif_KR, Noto_Sans_KR, Cormorant_Garamond } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
@@ -13,8 +13,22 @@ const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
 const notoSerifKr = Noto_Serif_KR({
   subsets: ["latin"],
-  weight: ["400", "700"],
+  weight: ["400", "700", "900"],
   variable: "--font-noto-serif-kr",
+  display: "swap",
+});
+// AI 독서 리포트(매거진형) 전용 서체
+const notoSansKr = Noto_Sans_KR({
+  subsets: ["latin"],
+  weight: ["400", "500", "700", "900"],
+  variable: "--font-noto-sans-kr",
+  display: "swap",
+});
+const cormorant = Cormorant_Garamond({
+  subsets: ["latin"],
+  weight: ["500", "600"],
+  style: ["normal", "italic"],
+  variable: "--font-cormorant",
   display: "swap",
 });
 
@@ -137,7 +151,7 @@ export default async function RootLayout({
           </Script>
         </head>
       )}
-      <body className={`${inter.variable} ${notoSerifKr.variable} font-sans`} suppressHydrationWarning>
+      <body className={`${inter.variable} ${notoSerifKr.variable} ${notoSansKr.variable} ${cormorant.variable} font-sans`} suppressHydrationWarning>
         <ThemeProvider
           attribute="class"
           defaultTheme="dark"

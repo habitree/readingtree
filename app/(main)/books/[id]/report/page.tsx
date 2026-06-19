@@ -5,6 +5,7 @@ import { getNotes } from "@/app/actions/notes";
 import { getSavedReport } from "@/app/actions/ai/report";
 import { ReadingReportContent } from "@/components/books/reading-report-content";
 import { parseCompletedDates } from "@/lib/utils/multi-reading";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
 import type { Metadata } from "next";
 import type { BookInfoForReport, NoteSummary } from "@/types/ai/report";
 
@@ -85,6 +86,30 @@ export default async function ReportPage({ params, searchParams }: ReportPagePro
   );
   const completedCount = completedDates.length;
 
+  // 나의 N번째 책 (완독 순번) — 매거진 표지 Vol. 표기용. 실패해도 리포트는 정상.
+  let bookOrdinal: number | null = null;
+  try {
+    const supabase = await createServerSupabaseClient();
+    const { data: completedBooks } = await supabase
+      .from("user_books")
+      .select("completed_at")
+      .eq("user_id", user.id)
+      .eq("status", "completed");
+    const total = completedBooks?.length ?? 0;
+    if (bookInfo.status === "completed" && bookInfo.completedAt) {
+      const at = bookInfo.completedAt;
+      bookOrdinal =
+        (completedBooks ?? []).filter((b) => b.completed_at && b.completed_at <= at).length ||
+        total ||
+        1;
+    } else {
+      // 진행 중 책은 완독 순번을 단정하지 않음
+      bookOrdinal = null;
+    }
+  } catch {
+    bookOrdinal = null;
+  }
+
   return (
     <ReadingReportContent
       userBookId={userBookId}
@@ -94,6 +119,7 @@ export default async function ReportPage({ params, searchParams }: ReportPagePro
       noteSummaries={noteSummaries}
       initialSavedReport={initialSavedReport}
       completedCount={completedCount}
+      bookOrdinal={bookOrdinal}
     />
   );
 }
