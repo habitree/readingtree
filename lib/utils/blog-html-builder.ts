@@ -1,15 +1,16 @@
 /**
- * AI 독서 리포트를 네이버 블로그용 인라인 스타일 HTML로 변환
- * 네이버 스마트에디터는 외부 CSS class를 무시하므로 모든 스타일을 인라인으로 적용
+ * AI 독서 리포트를 블로그용 인라인 스타일 HTML로 변환 (ReadTree Reading Review 매거진 톤)
  *
- * v2 — "사람이 쓴 느낌" 고도화
- *   - 섹션별 차별화 (6가지 스타일)
- *   - 4종 구분선 패턴
- *   - 이모지 헤더 + 감성 인용구
- *   - 리포트 링크 배너
+ * 네이버 스마트에디터는 외부 CSS class/일부 속성을 무시하므로:
+ *   - 모든 스타일 인라인
+ *   - 다단 레이아웃은 <table>
+ *   - 그라데이션 대신 솔리드 컬러 (에디터가 그라데이션을 종종 제거)
+ *
+ * v3 — 인앱 매거진 디자인과 통일. 파싱은 report-magazine 유틸을 공유한다.
  */
 
 import { parseReportSections } from "./report-parser";
+import { parseBlocks, parseInsightItems, firstQuote, mdToPlain } from "./report-magazine";
 import type { BookInfoForReport, NoteSummary } from "@/types/ai/report";
 
 interface BuildBlogHtmlOptions {
@@ -19,9 +20,9 @@ interface BuildBlogHtmlOptions {
   noteSummaries?: NoteSummary[];
   includeNotes?: boolean;
   generatedAt?: string;
-  /** 사이트 origin (e.g. https://readtree.app) — 노트/리포트 링크 생성용 */
+  /** 사이트 origin — 노트/리포트 링크 생성용 */
   baseUrl?: string;
-  /** 저장된 리포트 공유 ID — 리포트 링크 생성용 */
+  /** 저장된 리포트 공유 ID */
   shareId?: string | null;
 }
 
@@ -33,527 +34,302 @@ const NOTE_TYPE_LABELS: Record<string, string> = {
   transcription: "필사",
   progress: "독서 여정",
 };
-
-/** 링크 가능한 노트 타입 (사진, 필사) */
 const LINKABLE_NOTE_TYPES = new Set(["photo", "transcription"]);
-
-/** 노트 타입 표시 순서 (필사 → 사진 → 인용구 → 메모 → 독서여정) */
 const NOTE_TYPE_ORDER: string[] = ["transcription", "photo", "quote", "memo", "progress"];
 
-// ─── 공통 스타일 상수 ─────────────────────────────────────────
-
-const FONT_FAMILY = "'Pretendard','Noto Sans KR','Malgun Gothic',sans-serif";
-const COLOR_BODY = "#333";
-const COLOR_HEADING = "#222";
-const COLOR_SUB = "#666";
-const COLOR_META = "#999";
-const COLOR_LINK = "#2b6cb0";
-const FONT_SIZE_BODY = "16px";
-const LINE_HEIGHT_BODY = "1.9";
-
-// ─── 섹션별 스타일 정의 ───────────────────────────────────────
-
-interface SectionStyle {
-  emoji: string;
-  accentColor: string;
-  bgColor: string;
-  borderStyle: string;
-}
-
-const SECTION_STYLES: Record<string, SectionStyle> = {
-  "book-overview": {
-    emoji: "📖",
-    accentColor: "#A8B5A0",
-    bgColor: "#faf8f3",
-    borderStyle: "border-left:4px solid #A8B5A0;",
-  },
-  "key-insights": {
-    emoji: "💡",
-    accentColor: "#C4A265",
-    bgColor: "#fdf8ef",
-    borderStyle: "border-top:4px solid #C4A265;",
-  },
-  "memorable-quotes": {
-    emoji: "✏️",
-    accentColor: "#7B9E87",
-    bgColor: "transparent",
-    borderStyle: "border-left:4px solid #7B9E87;",
-  },
-  "my-thoughts": {
-    emoji: "💭",
-    accentColor: "#8B7EC8",
-    bgColor: "#f8f5fd",
-    borderStyle: "border-left:4px solid #8B7EC8;",
-  },
-  "reading-journey": {
-    emoji: "🌿",
-    accentColor: "#C4704F",
-    bgColor: "#fdf5f2",
-    borderStyle: "",
-  },
-  summary: {
-    emoji: "⭐",
-    accentColor: "#2D6A4F",
-    bgColor: "#f3f8f5",
-    borderStyle: "",
-  },
+// ─── 매거진 팔레트 / 서체 ─────────────────────────────────────
+const C = {
+  ink: "#0C1F12",
+  green: "#1E4023",
+  greenText: "#2A5A32",
+  gold: "#C68A2E",
+  goldLight: "#E8C77E",
+  goldSoft: "#C6A86A",
+  goldDeep: "#A9803A",
+  cream: "#F6F1E4",
+  paper: "#FBF8EF",
+  paper2: "#F4EEDF",
+  line: "#E7DEC8",
+  ink2text: "#1C2B22",
+  body: "#3A3830",
+  sub: "#5C5A4F",
+  meta: "#8A8275",
+  green200: "#9FBF9C",
 };
+const SERIF_LAT = "Georgia,'Times New Roman',serif";
+const SERIF_KR = "'Noto Serif KR','Nanum Myeongjo',serif";
+const SANS = "'Pretendard','Noto Sans KR','Malgun Gothic',sans-serif";
+const ROMAN = ["", "I", "II", "III", "IV", "V", "VI", "VII", "VIII"];
 
-const DEFAULT_SECTION_STYLE: SectionStyle = {
-  emoji: "📝",
-  accentColor: "#A8B5A0",
-  bgColor: "#faf8f3",
-  borderStyle: "border-left:4px solid #A8B5A0;",
-};
+const P_STYLE = `margin:0 0 14px 0;color:${C.body};font-size:16px;line-height:1.95;font-family:${SANS};`;
 
-// ─── 구분선 헬퍼 ─────────────────────────────────────────────
-
-type DividerStyle = "double" | "dashed" | "short-center" | "solid-thin";
-
-function buildDivider(style: DividerStyle): string {
-  switch (style) {
-    case "double":
-      return `<div style="margin:32px 0;border-top:3px double #ddd;"></div>`;
-    case "dashed":
-      return `<div style="margin:28px 0;border-top:1px dashed #ccc;"></div>`;
-    case "short-center":
-      return `<div style="text-align:center;margin:30px 0;"><span style="display:inline-block;width:60px;border-top:2px solid #bbb;vertical-align:middle;"></span><span style="display:inline-block;margin:0 12px;color:#bbb;font-size:12px;">●</span><span style="display:inline-block;width:60px;border-top:2px solid #bbb;vertical-align:middle;"></span></div>`;
-    case "solid-thin":
-      return `<div style="margin:24px 0;border-top:1px solid #e5e5e5;"></div>`;
-  }
-}
-
-/** 섹션 순서에 따라 구분선 스타일 결정 */
-const SECTION_DIVIDER_SEQUENCE: DividerStyle[] = [
-  "dashed",
-  "short-center",
-  "dashed",
-  "dashed",
-];
-
-// ─── 마크다운 → 인라인 HTML 변환 ───────────────────────────────
-
-/** 인라인 마크다운(볼드, 이탤릭)을 HTML로 변환 */
-function convertInlineMarkdown(text: string): string {
-  return text
-    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
-    .replace(/\*(.+?)\*/g, "<em>$1</em>");
-}
-
-/** 마크다운 텍스트를 인라인 스타일 HTML로 변환 (sectionId로 blockquote 분기) */
-function markdownToInlineHtml(
-  markdown: string,
-  sectionId?: string
-): string {
-  const lines = markdown.split("\n");
-  const htmlParts: string[] = [];
-  let inList: "ul" | "ol" | null = null;
-  let inBlockquote = false;
-
-  const isQuoteSection = sectionId === "memorable-quotes";
-
-  const flushList = () => {
-    if (inList === "ul") htmlParts.push("</ul>");
-    if (inList === "ol") htmlParts.push("</ol>");
-    inList = null;
-  };
-
-  const flushBlockquote = () => {
-    if (inBlockquote) {
-      htmlParts.push("</blockquote>");
-      inBlockquote = false;
-    }
-  };
-
-  for (const line of lines) {
-    const trimmed = line.trim();
-
-    // 빈 줄 → 현재 블록 닫기
-    if (!trimmed) {
-      flushList();
-      flushBlockquote();
-      continue;
-    }
-
-    // ### 소제목
-    const h3Match = trimmed.match(/^###\s+(.+)$/);
-    if (h3Match) {
-      flushList();
-      flushBlockquote();
-      htmlParts.push(
-        `<h3 style="font-size:17px;font-weight:700;margin:22px 0 10px 0;color:${COLOR_HEADING};line-height:1.5;">${convertInlineMarkdown(h3Match[1])}</h3>`
-      );
-      continue;
-    }
-
-    // > 인용구 — 섹션별 분기
-    if (trimmed.startsWith("> ")) {
-      flushList();
-      if (!inBlockquote) {
-        if (isQuoteSection) {
-          // memorable-quotes: 에메랄드 강화
-          htmlParts.push(
-            `<blockquote style="border-left:4px solid #7B9E87;background:#f0f7f2;padding:18px 22px;margin:18px 0;color:#3a5a40;font-style:italic;border-radius:0 8px 8px 0;font-size:16px;line-height:1.9;">`
-          );
-        } else {
-          // 기타: 어스톤 스타일
-          htmlParts.push(
-            `<blockquote style="border-left:3px solid #d4a574;background:#faf6f1;padding:14px 18px;margin:16px 0;color:${COLOR_SUB};font-style:italic;border-radius:0 8px 8px 0;">`
-          );
-        }
-        inBlockquote = true;
-      }
-      const content = trimmed.slice(2);
-      htmlParts.push(
-        `<p style="margin:4px 0;font-size:${FONT_SIZE_BODY};line-height:${LINE_HEIGHT_BODY};">${convertInlineMarkdown(content)}</p>`
-      );
-      continue;
-    } else if (inBlockquote) {
-      flushBlockquote();
-    }
-
-    // - 비순서 리스트
-    const ulMatch = trimmed.match(/^[-*]\s+(.+)$/);
-    if (ulMatch) {
-      if (inList === "ol") flushList();
-      if (inList !== "ul") {
-        htmlParts.push(`<ul style="margin:10px 0;padding-left:24px;">`);
-        inList = "ul";
-      }
-      htmlParts.push(
-        `<li style="margin:5px 0;color:${COLOR_BODY};line-height:${LINE_HEIGHT_BODY};font-size:${FONT_SIZE_BODY};">${convertInlineMarkdown(ulMatch[1])}</li>`
-      );
-      continue;
-    }
-
-    // 1. 순서 리스트
-    const olMatch = trimmed.match(/^\d+\.\s+(.+)$/);
-    if (olMatch) {
-      if (inList === "ul") flushList();
-      if (inList !== "ol") {
-        htmlParts.push(`<ol style="margin:10px 0;padding-left:24px;">`);
-        inList = "ol";
-      }
-      htmlParts.push(
-        `<li style="margin:5px 0;color:${COLOR_BODY};line-height:${LINE_HEIGHT_BODY};font-size:${FONT_SIZE_BODY};">${convertInlineMarkdown(olMatch[1])}</li>`
-      );
-      continue;
-    }
-
-    // 일반 텍스트 → p 태그
-    flushList();
-    htmlParts.push(
-      `<p style="margin:10px 0;color:${COLOR_BODY};line-height:${LINE_HEIGHT_BODY};font-size:${FONT_SIZE_BODY};">${convertInlineMarkdown(trimmed)}</p>`
-    );
-  }
-
-  flushList();
-  flushBlockquote();
-
-  return htmlParts.join("\n");
-}
-
-// ─── HTML 빌더 ───────────────────────────────────────────────
-
-/** 상단 리포트 링크 배너 (shareId 있을 때만) */
-function buildReportBanner(baseUrl: string, shareId: string): string {
-  const reportUrl = `${baseUrl}/share/reports/${shareId}`;
-  return [
-    `<div style="background:#eef8f4;border:1px solid #c6e4d4;border-radius:10px;padding:14px 20px;margin-bottom:28px;text-align:center;">`,
-    `<a href="${reportUrl}" style="color:#2D6A4F;text-decoration:none;font-size:15px;font-weight:600;" target="_blank">📄 이 글의 원본 AI 독서 리포트 보기 →</a>`,
-    `</div>`,
-  ].join("\n");
-}
-
-/** 책 정보 헤더 HTML (표지 이미지 + 뱃지형 메타) */
-function buildBookHeader(bookInfo: BookInfoForReport, noteCount: number): string {
-  const parts: string[] = [];
-
-  parts.push('<div style="margin-bottom:28px;">');
-
-  // AI 독서 리포트 뱃지
-  parts.push(
-    `<div style="margin-bottom:14px;"><span style="display:inline-block;background:#eef8f4;color:#2D6A4F;font-size:12px;font-weight:700;padding:4px 12px;border-radius:12px;letter-spacing:0.02em;">AI 독서 리포트</span></div>`
-  );
-
-  // 표지 이미지 + 제목/저자 영역
-  if (bookInfo.coverImageUrl) {
-    // 이미지가 있으면 테이블 레이아웃 (네이버 호환)
-    parts.push(
-      `<table style="border:none;border-collapse:collapse;margin:0 0 16px 0;"><tr>`
-    );
-    parts.push(
-      `<td style="vertical-align:top;padding:0 20px 0 0;width:100px;"><img src="${escapeHtml(bookInfo.coverImageUrl)}" alt="${escapeHtml(bookInfo.title)}" style="width:100px;border-radius:6px;box-shadow:0 2px 8px rgba(0,0,0,0.1);" /></td>`
-    );
-    parts.push(`<td style="vertical-align:top;padding:0;">`);
-    parts.push(
-      `<h1 style="font-size:24px;font-weight:800;color:${COLOR_HEADING};margin:0 0 8px 0;line-height:1.4;">${escapeHtml(bookInfo.title)}</h1>`
-    );
-    if (bookInfo.author) {
-      parts.push(
-        `<p style="font-size:15px;color:${COLOR_SUB};margin:0 0 12px 0;">${escapeHtml(bookInfo.author)}</p>`
-      );
-    }
-    // 메타 뱃지 (테이블 안)
-    parts.push(buildMetaBadges(bookInfo, noteCount));
-    parts.push(`</td></tr></table>`);
-  } else {
-    // 이미지 없으면 기존 블록형
-    parts.push(
-      `<h1 style="font-size:24px;font-weight:800;color:${COLOR_HEADING};margin:0 0 8px 0;line-height:1.4;">${escapeHtml(bookInfo.title)}</h1>`
-    );
-    if (bookInfo.author) {
-      parts.push(
-        `<p style="font-size:15px;color:${COLOR_SUB};margin:0 0 12px 0;">${escapeHtml(bookInfo.author)}</p>`
-      );
-    }
-    parts.push(buildMetaBadges(bookInfo, noteCount));
-  }
-
-  parts.push("</div>");
-  return parts.join("\n");
-}
-
-/** 이모지 뱃지형 메타 정보 */
-function buildMetaBadges(bookInfo: BookInfoForReport, noteCount: number): string {
-  const badges: string[] = [];
-  const badgeStyle =
-    "display:inline-block;background:#f5f5f0;color:#666;font-size:13px;padding:3px 10px;border-radius:10px;margin-right:8px;margin-bottom:4px;";
-
-  if (bookInfo.startedAt) {
-    const start = new Date(bookInfo.startedAt).toLocaleDateString("ko-KR");
-    const end = bookInfo.completedAt
-      ? new Date(bookInfo.completedAt).toLocaleDateString("ko-KR")
-      : "진행 중";
-    badges.push(`<span style="${badgeStyle}">📅 ${start} ~ ${end}</span>`);
-  }
-  badges.push(`<span style="${badgeStyle}">📝 기록 ${noteCount}개</span>`);
-
-  return `<div style="margin:0;">${badges.join("")}</div>`;
-}
-
-/** 섹션별 차별화 HTML 래퍼 */
-function buildStyledSection(
-  sectionId: string,
-  title: string,
-  contentHtml: string
-): string {
-  const style = SECTION_STYLES[sectionId] || DEFAULT_SECTION_STYLE;
-  const parts: string[] = [];
-
-  switch (sectionId) {
-    case "book-overview":
-      // 크림 배경 + 왼쪽 스톤바
-      parts.push(
-        `<div style="background:${style.bgColor};${style.borderStyle}padding:20px 24px;margin:0;border-radius:0 10px 10px 0;">`
-      );
-      parts.push(
-        `<h2 style="font-size:19px;font-weight:700;color:${COLOR_HEADING};margin:0 0 14px 0;line-height:1.5;">${style.emoji} ${escapeHtml(title)}</h2>`
-      );
-      parts.push(contentHtml);
-      parts.push(`</div>`);
-      break;
-
-    case "key-insights":
-      // 앰버 배경 + 상단 바
-      parts.push(
-        `<div style="background:${style.bgColor};${style.borderStyle}padding:20px 24px;margin:0;border-radius:0 0 10px 10px;">`
-      );
-      parts.push(
-        `<h2 style="font-size:19px;font-weight:700;color:${COLOR_HEADING};margin:0 0 14px 0;line-height:1.5;">${style.emoji} ${escapeHtml(title)}</h2>`
-      );
-      parts.push(contentHtml);
-      parts.push(`</div>`);
-      break;
-
-    case "memorable-quotes":
-      // 왼쪽 세이지 바 (배경 없음, 인용구 자체가 강화됨)
-      parts.push(
-        `<div style="padding:8px 0;margin:0;">`
-      );
-      parts.push(
-        `<h2 style="font-size:19px;font-weight:700;color:${COLOR_HEADING};margin:0 0 14px 0;line-height:1.5;">${style.emoji} ${escapeHtml(title)}</h2>`
-      );
-      parts.push(contentHtml);
-      parts.push(`</div>`);
-      break;
-
-    case "my-thoughts":
-      // 라벤더 배경 + 왼쪽 바
-      parts.push(
-        `<div style="background:${style.bgColor};${style.borderStyle}padding:20px 24px;margin:0;border-radius:0 10px 10px 0;">`
-      );
-      parts.push(
-        `<h2 style="font-size:19px;font-weight:700;color:${COLOR_HEADING};margin:0 0 14px 0;line-height:1.5;">${style.emoji} ${escapeHtml(title)}</h2>`
-      );
-      parts.push(contentHtml);
-      parts.push(`</div>`);
-      break;
-
-    case "reading-journey":
-      // 로즈 배경 박스
-      parts.push(
-        `<div style="background:${style.bgColor};padding:20px 24px;margin:0;border-radius:10px;">`
-      );
-      parts.push(
-        `<h2 style="font-size:19px;font-weight:700;color:${COLOR_HEADING};margin:0 0 14px 0;line-height:1.5;border-bottom:2px solid ${style.accentColor};padding-bottom:10px;">${style.emoji} ${escapeHtml(title)}</h2>`
-      );
-      parts.push(contentHtml);
-      parts.push(`</div>`);
-      break;
-
-    case "summary":
-      // 세이지 전체 박스 + 중앙 정렬 헤더
-      parts.push(
-        `<div style="background:${style.bgColor};border:1px solid #d0e4d5;padding:24px 28px;margin:0;border-radius:12px;">`
-      );
-      parts.push(
-        `<h2 style="font-size:19px;font-weight:700;color:${style.accentColor};margin:0 0 16px 0;line-height:1.5;text-align:center;">${style.emoji} ${escapeHtml(title)}</h2>`
-      );
-      parts.push(contentHtml);
-      parts.push(`</div>`);
-      break;
-
-    default:
-      // fallback: 기본 스타일
-      parts.push(
-        `<div style="background:${style.bgColor};${style.borderStyle}padding:20px 24px;margin:0;border-radius:0 10px 10px 0;">`
-      );
-      parts.push(
-        `<h2 style="font-size:19px;font-weight:700;color:${COLOR_HEADING};margin:0 0 14px 0;line-height:1.5;">${style.emoji} ${escapeHtml(title)}</h2>`
-      );
-      parts.push(contentHtml);
-      parts.push(`</div>`);
-      break;
-  }
-
-  return parts.join("\n");
-}
-
-/** 노트 요약 섹션 HTML — 카드형 (사진/필사에 링크 포함) */
-function buildNoteSection(noteSummaries: NoteSummary[], baseUrl: string): string {
-  if (noteSummaries.length === 0) return "";
-
-  const parts: string[] = [];
-
-  // 카드 래퍼
-  parts.push(
-    `<div style="background:#faf8f3;border:1px solid #e8e4da;border-radius:12px;padding:24px;margin:0;">`
-  );
-  parts.push(
-    `<h2 style="font-size:19px;font-weight:700;color:${COLOR_HEADING};margin:0 0 16px 0;line-height:1.5;">📚 독서 기록 요약</h2>`
-  );
-
-  // 타입별 그룹화
-  const grouped = noteSummaries.reduce<Record<string, NoteSummary[]>>((acc, note) => {
-    const key = note.type;
-    if (!acc[key]) acc[key] = [];
-    acc[key].push(note);
-    return acc;
-  }, {});
-
-  const entries = Object.entries(grouped).sort(
-    ([a], [b]) => (NOTE_TYPE_ORDER.indexOf(a) === -1 ? 999 : NOTE_TYPE_ORDER.indexOf(a)) - (NOTE_TYPE_ORDER.indexOf(b) === -1 ? 999 : NOTE_TYPE_ORDER.indexOf(b))
-  );
-  entries.forEach(([type, notes], groupIdx) => {
-    const label = NOTE_TYPE_LABELS[type] || type;
-    const isLinkable = LINKABLE_NOTE_TYPES.has(type);
-
-    if (type === "progress") {
-      parts.push(
-        `<div style="padding:10px 0;${groupIdx < entries.length - 1 ? "border-bottom:1px solid #e8e4da;" : ""}">` +
-          `<span style="display:inline-block;background:#e8f4fd;color:#2b6cb0;font-size:12px;font-weight:600;padding:2px 8px;border-radius:10px;margin-right:8px;">${label}</span>` +
-          `<span style="color:${COLOR_BODY};font-size:${FONT_SIZE_BODY};">${notes.length}건의 진행 기록</span>` +
-          `</div>`
-      );
-    } else {
-      for (let i = 0; i < notes.length; i++) {
-        const note = notes[i];
-        const title = note.title || `${label} 기록`;
-        const page = note.pageNumber
-          ? ` <span style="color:${COLOR_META};font-size:13px;">(p.${note.pageNumber})</span>`
-          : "";
-        const noteUrl = `${baseUrl}/share/notes/${note.id}`;
-        const isLast = groupIdx === entries.length - 1 && i === notes.length - 1;
-
-        // 타입 뱃지
-        const badge = `<span style="display:inline-block;background:${isLinkable ? "#fef3e2" : "#f3f4f6"};color:${isLinkable ? "#b45309" : COLOR_SUB};font-size:12px;font-weight:600;padding:2px 8px;border-radius:10px;margin-right:8px;">${label}</span>`;
-
-        // 사진/필사는 링크, 나머지는 텍스트
-        const titleHtml = isLinkable
-          ? `<a href="${noteUrl}" style="color:${COLOR_LINK};text-decoration:none;font-weight:500;" target="_blank">${escapeHtml(title)}</a>`
-          : escapeHtml(title);
-
-        parts.push(
-          `<div style="padding:10px 0;${!isLast ? "border-bottom:1px solid #e8e4da;" : ""}">${badge}${titleHtml}${page}</div>`
-        );
-      }
-    }
-  });
-
-  parts.push("</div>");
-  return parts.join("\n");
-}
-
-/** 하단 마무리 — 장식 + 워터마크 + 리포트 링크 */
-function buildFooter(options: {
-  generatedAt?: string;
-  baseUrl?: string;
-  shareId?: string | null;
-}): string {
-  const { generatedAt, baseUrl, shareId } = options;
-
-  const date = generatedAt
-    ? new Date(generatedAt).toLocaleDateString("ko-KR", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      })
-    : new Date().toLocaleDateString("ko-KR", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      });
-
-  const parts: string[] = [];
-
-  // 장식선
-  parts.push(
-    `<div style="text-align:center;margin:36px 0 20px 0;"><span style="color:#bbb;font-size:14px;">🌿</span><span style="display:inline-block;width:80px;border-top:1px solid #ddd;vertical-align:middle;margin:0 10px;"></span><span style="color:#bbb;font-size:14px;">🌿</span></div>`
-  );
-
-  // 하단 박스
-  parts.push(
-    `<div style="background:#f8f8f4;border-radius:10px;padding:18px 24px;text-align:center;">`
-  );
-
-  if (baseUrl && shareId) {
-    const reportUrl = `${baseUrl}/share/reports/${shareId}`;
-    parts.push(
-      `<p style="font-size:14px;color:${COLOR_BODY};margin:0 0 10px 0;"><a href="${reportUrl}" style="color:${COLOR_LINK};text-decoration:none;font-weight:600;" target="_blank">📄 AI 독서 리포트 전문 보기 →</a></p>`
-    );
-  }
-
-  parts.push(
-    `<p style="font-size:12px;color:#bbb;margin:0;">AI 독서 리포트 by ReadTree&nbsp;&nbsp;|&nbsp;&nbsp;${date}</p>`
-  );
-  parts.push("</div>");
-
-  return parts.join("\n");
-}
-
-/** HTML 특수문자 이스케이프 */
+// ─── 공통 헬퍼 ───────────────────────────────────────────────
 function escapeHtml(text: string): string {
-  return text
+  return (text || "")
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
 }
+const esc = escapeHtml;
 
-// ─── 메인 export 함수 ───────────────────────────────────────
+function cleanKicker(t: string): string {
+  return (t || "").replace(/^\s*\d+\s*[.)]\s*/, "").trim();
+}
 
-/** 블로그용 인라인 스타일 HTML 생성 */
+/** 로마숫자 + 키커 섹션 헤더 (중앙) */
+function sectionHeader(numeral: string, kicker: string): string {
+  return [
+    `<div style="text-align:center;margin:0 0 22px 0;">`,
+    `<div style="font-family:${SERIF_LAT};font-style:italic;font-size:26px;color:${C.gold};line-height:1;">${numeral}</div>`,
+    `<div style="font-size:12px;font-weight:700;letter-spacing:0.25em;color:${C.goldDeep};margin-top:6px;">${esc(cleanKicker(kicker))}</div>`,
+    `</div>`,
+  ].join("");
+}
+
+/** 골드 ✦ 디바이더 */
+function divider(): string {
+  return `<div style="text-align:center;margin:30px 0;"><span style="color:${C.gold};font-size:11px;letter-spacing:0.3em;">✦ ✦ ✦</span></div>`;
+}
+
+/** 다크그린 인상 깊은 구절 블록 */
+function featureQuote(text: string, attribution?: string | null): string {
+  const parts = [
+    `<div style="background:${C.green};border:1px solid rgba(232,199,126,0.28);border-radius:8px;padding:30px 26px;margin:18px 0;text-align:center;">`,
+    `<div style="color:rgba(232,199,126,0.4);font-family:${SERIF_LAT};font-size:44px;line-height:0.4;">&ldquo;</div>`,
+    `<p style="color:${C.cream};font-family:${SERIF_KR};font-size:20px;line-height:1.6;font-weight:600;margin:10px 0 0 0;">${esc(text)}</p>`,
+  ];
+  if (attribution) {
+    parts.push(
+      `<p style="color:${C.goldSoft};font-size:13px;letter-spacing:0.08em;margin:16px 0 0 0;">&mdash; ${esc(attribution)}</p>`
+    );
+  }
+  parts.push(`</div>`);
+  return parts.join("");
+}
+
+/** 본문 블록(문단/리스트/인용) → 매거진 톤 HTML. dropcap=첫 문단 대문자 강조 */
+function renderBlocks(content: string, dropcap = false): string {
+  const blocks = parseBlocks(content);
+  const dropIdx = dropcap ? blocks.findIndex((b) => b.kind === "p" && b.text) : -1;
+  const out: string[] = [];
+  blocks.forEach((b, i) => {
+    if (b.kind === "p") {
+      if (i === dropIdx && b.text) {
+        const first = esc(b.text.charAt(0));
+        const rest = esc(b.text.slice(1));
+        out.push(
+          `<p style="${P_STYLE}"><span style="float:left;font-family:${SERIF_KR};font-size:60px;line-height:0.78;font-weight:800;color:${C.greenText};margin:6px 14px 0 0;">${first}</span>${rest}</p>`
+        );
+      } else {
+        out.push(`<p style="${P_STYLE}">${esc(b.text)}</p>`);
+      }
+    } else if (b.kind === "list") {
+      b.items.forEach((it) => {
+        const title = it.title
+          ? `<strong style="font-family:${SERIF_KR};color:${C.ink2text};">${esc(it.title)}</strong>`
+          : "";
+        const sep = it.title && it.body ? " &mdash; " : "";
+        out.push(
+          `<p style="margin:9px 0;padding-left:20px;text-indent:-20px;color:${C.sub};font-size:15.5px;line-height:1.9;font-family:${SANS};"><span style="color:${C.gold};">&mdash; </span>${title}${sep}${esc(it.body)}</p>`
+        );
+      });
+    } else {
+      out.push(featureQuote(b.text, b.attribution));
+    }
+  });
+  return out.join("\n");
+}
+
+/** 핵심 인사이트 → 01·02·03 테이블 행 */
+function renderInsights(content: string): string {
+  const items = parseInsightItems(content);
+  if (!items.length) return renderBlocks(content);
+  const rows = items.map((it, i) => {
+    const num = String(i + 1).padStart(2, "0");
+    const isLast = i === items.length - 1;
+    const border = `border-top:1px solid ${C.line};${isLast ? `border-bottom:1px solid ${C.line};` : ""}`;
+    const body = it.body
+      ? `<p style="font-size:15px;color:${C.sub};margin:6px 0 0 0;line-height:1.8;font-family:${SANS};">${esc(it.body)}</p>`
+      : "";
+    return [
+      `<table style="width:100%;border-collapse:collapse;${border}"><tr>`,
+      `<td style="vertical-align:top;width:58px;padding:18px 0;"><span style="font-family:${SERIF_LAT};font-size:38px;font-weight:600;color:${C.gold};">${num}</span></td>`,
+      `<td style="vertical-align:top;padding:18px 0;">`,
+      `<div style="font-family:${SERIF_KR};font-size:19px;font-weight:700;color:${C.ink2text};line-height:1.35;">${esc(it.title)}</div>`,
+      body,
+      `</td></tr></table>`,
+    ].join("");
+  });
+  return rows.join("\n");
+}
+
+/** 다크그린 마무리(종합) 블록 */
+function renderClosing(numeral: string, kicker: string, content: string): string {
+  const text = mdToPlain(content).replace(/\s+/g, " ").trim();
+  return [
+    `<div style="background:${C.ink};border-radius:10px;padding:38px 30px;text-align:center;">`,
+    `<div style="font-family:${SERIF_LAT};font-style:italic;font-size:26px;color:${C.goldLight};line-height:1;">${numeral}</div>`,
+    `<div style="font-size:12px;font-weight:700;letter-spacing:0.25em;color:${C.goldSoft};margin:8px 0 18px 0;">${esc(cleanKicker(kicker))}</div>`,
+    `<p style="color:${C.cream};font-family:${SERIF_KR};font-size:19px;line-height:1.65;font-weight:500;margin:0;">${esc(text)}</p>`,
+    `</div>`,
+  ].join("");
+}
+
+/** 상단 리포트 링크 배너 */
+function reportBanner(baseUrl: string, shareId: string): string {
+  const url = `${baseUrl}/share/reports/${shareId}`;
+  return [
+    `<div style="background:${C.paper2};border:1px solid ${C.line};border-radius:8px;padding:12px 20px;margin-bottom:24px;text-align:center;">`,
+    `<a href="${url}" style="color:${C.greenText};text-decoration:none;font-size:14px;font-weight:600;font-family:${SANS};" target="_blank">&#128196; 이 글의 원본 AI 독서 리포트 보기 &rarr;</a>`,
+    `</div>`,
+  ].join("");
+}
+
+/** 다크그린 매거진 마스트헤드(표지) */
+function masthead(bookInfo: BookInfoForReport, noteCount: number): string {
+  const parts: string[] = [];
+  parts.push(
+    `<div style="background:${C.ink};border-radius:12px;padding:40px 32px;text-align:center;margin-bottom:8px;">`
+  );
+  // 마스트헤드
+  parts.push(
+    `<div style="color:${C.green200};font-size:11px;font-weight:700;letter-spacing:0.4em;">EST. 2026 &mdash; 기록하는 만큼 자라는 독서</div>`
+  );
+  parts.push(
+    `<div style="font-family:${SERIF_LAT};color:${C.goldLight};font-size:38px;font-weight:700;letter-spacing:0.12em;margin:12px 0 8px 0;">READTREE</div>`
+  );
+  parts.push(
+    `<div style="color:${C.goldSoft};font-size:12px;font-weight:700;letter-spacing:0.34em;">&mdash;&nbsp;&nbsp;READING REVIEW&nbsp;&nbsp;&mdash;</div>`
+  );
+  // 표지
+  if (bookInfo.coverImageUrl) {
+    parts.push(
+      `<div style="margin:30px 0 22px 0;"><img src="${esc(bookInfo.coverImageUrl)}" alt="${esc(bookInfo.title)}" style="width:150px;border-radius:4px;box-shadow:0 16px 36px rgba(0,0,0,0.5);" /></div>`
+    );
+  } else {
+    parts.push(`<div style="height:24px;"></div>`);
+  }
+  // 타이틀
+  parts.push(
+    `<div style="font-family:${SERIF_LAT};font-style:italic;color:${C.goldSoft};font-size:16px;margin-bottom:10px;">a reading on</div>`
+  );
+  parts.push(
+    `<h1 style="font-family:${SERIF_KR};color:${C.cream};font-size:30px;font-weight:800;line-height:1.25;margin:0;">${esc(bookInfo.title)}</h1>`
+  );
+  if (bookInfo.author) {
+    parts.push(
+      `<div style="font-family:${SERIF_KR};color:${C.green200};font-size:15px;margin-top:12px;">${esc(bookInfo.author)}</div>`
+    );
+  }
+  // 지표 밴드
+  parts.push(metricBand(bookInfo, noteCount));
+  parts.push(`</div>`);
+  return parts.join("\n");
+}
+
+/** 지표 밴드 (기록 / 독서일 / 쪽수) */
+function metricBand(bookInfo: BookInfoForReport, noteCount: number): string {
+  const cells: { value: string; label: string }[] = [{ value: String(noteCount), label: "기록" }];
+  if (bookInfo.startedAt && bookInfo.completedAt) {
+    const s = new Date(bookInfo.startedAt).getTime();
+    const e = new Date(bookInfo.completedAt).getTime();
+    const days = Math.max(1, Math.round((e - s) / 86400000) + 1);
+    if (Number.isFinite(days)) cells.push({ value: String(days), label: "독서일" });
+  }
+  if (bookInfo.totalPages) {
+    cells.push({ value: bookInfo.totalPages.toLocaleString(), label: "쪽수" });
+  }
+  const tds = cells
+    .map(
+      (c) =>
+        `<td style="text-align:center;padding:0 14px;"><div style="font-family:${SERIF_LAT};font-size:30px;font-weight:600;color:${C.goldLight};line-height:1;">${esc(c.value)}</div><div style="font-size:10px;letter-spacing:0.14em;color:${C.green200};margin-top:7px;">${esc(c.label)}</div></td>`
+    )
+    .join(
+      `<td style="width:1px;background:rgba(255,255,255,0.12);"></td>`
+    );
+  return [
+    `<table style="border-collapse:collapse;margin:30px auto 0 auto;border-top:1px solid rgba(232,199,126,0.22);border-bottom:1px solid rgba(232,199,126,0.22);"><tr>`,
+    `<td style="padding:16px 0;"><table style="border-collapse:collapse;"><tr>${tds}</tr></table></td>`,
+    `</tr></table>`,
+  ].join("");
+}
+
+/** 독서 기록 요약 (옵션) — 매거진 톤 카드 */
+function buildNoteSection(noteSummaries: NoteSummary[], baseUrl: string): string {
+  if (noteSummaries.length === 0) return "";
+  const parts: string[] = [];
+  parts.push(
+    `<div style="background:${C.paper2};border:1px solid ${C.line};border-radius:10px;padding:24px;">`
+  );
+  parts.push(
+    `<div style="font-family:${SERIF_KR};font-size:17px;font-weight:700;color:${C.ink2text};margin:0 0 16px 0;">독서 기록 요약</div>`
+  );
+
+  const grouped = noteSummaries.reduce<Record<string, NoteSummary[]>>((acc, n) => {
+    (acc[n.type] ||= []).push(n);
+    return acc;
+  }, {});
+  const entries = Object.entries(grouped).sort(
+    ([a], [b]) =>
+      (NOTE_TYPE_ORDER.indexOf(a) === -1 ? 999 : NOTE_TYPE_ORDER.indexOf(a)) -
+      (NOTE_TYPE_ORDER.indexOf(b) === -1 ? 999 : NOTE_TYPE_ORDER.indexOf(b))
+  );
+  const badge = (label: string) =>
+    `<span style="display:inline-block;background:${C.paper};color:${C.goldDeep};border:1px solid ${C.line};font-size:12px;font-weight:600;padding:2px 9px;border-radius:10px;margin-right:8px;">${esc(label)}</span>`;
+
+  entries.forEach(([type, notes], gi) => {
+    const label = NOTE_TYPE_LABELS[type] || type;
+    const linkable = LINKABLE_NOTE_TYPES.has(type);
+    if (type === "progress") {
+      parts.push(
+        `<div style="padding:10px 0;${gi < entries.length - 1 ? `border-bottom:1px solid ${C.line};` : ""}">${badge(label)}<span style="color:${C.body};font-size:15px;">${notes.length}건의 진행 기록</span></div>`
+      );
+    } else {
+      notes.forEach((note, i) => {
+        const title = note.title || `${label} 기록`;
+        const page = note.pageNumber
+          ? ` <span style="color:${C.meta};font-size:13px;">(p.${esc(note.pageNumber)})</span>`
+          : "";
+        const isLast = gi === entries.length - 1 && i === notes.length - 1;
+        const titleHtml = linkable
+          ? `<a href="${baseUrl}/share/notes/${note.id}" style="color:${C.greenText};text-decoration:none;font-weight:500;" target="_blank">${esc(title)}</a>`
+          : `<span style="color:${C.body};">${esc(title)}</span>`;
+        parts.push(
+          `<div style="padding:10px 0;${!isLast ? `border-bottom:1px solid ${C.line};` : ""}font-size:15px;font-family:${SANS};">${badge(label)}${titleHtml}${page}</div>`
+        );
+      });
+    }
+  });
+  parts.push(`</div>`);
+  return parts.join("\n");
+}
+
+/** 하단 푸터 */
+function buildFooter(generatedAt?: string, baseUrl?: string, shareId?: string | null): string {
+  const date = (generatedAt ? new Date(generatedAt) : new Date()).toLocaleDateString("ko-KR", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+  const parts: string[] = [];
+  parts.push(divider());
+  parts.push(`<div style="text-align:center;">`);
+  if (baseUrl && shareId) {
+    parts.push(
+      `<p style="font-size:14px;margin:0 0 10px 0;font-family:${SANS};"><a href="${baseUrl}/share/reports/${shareId}" style="color:${C.greenText};text-decoration:none;font-weight:600;" target="_blank">&#128196; AI 독서 리포트 전문 보기 &rarr;</a></p>`
+    );
+  }
+  parts.push(
+    `<p style="font-family:${SERIF_LAT};font-style:italic;font-size:13px;color:${C.meta};margin:0;">발행 ${esc(date)} &middot; ReadTree Reading Review</p>`
+  );
+  parts.push(`</div>`);
+  return parts.join("\n");
+}
+
+// ─── 메인 export ─────────────────────────────────────────────
+
+/** 블로그용 인라인 스타일 HTML 생성 (매거진 톤) */
 export function buildBlogHtml(options: BuildBlogHtmlOptions): string {
   const {
     reportMarkdown,
@@ -566,57 +342,121 @@ export function buildBlogHtml(options: BuildBlogHtmlOptions): string {
     shareId,
   } = options;
 
-  const parts: string[] = [];
+  const sections = parseReportSections(reportMarkdown);
+  const byId = (id: string) => sections.find((s) => s.id === id);
+  const overview = byId("book-overview");
+  const insights = byId("key-insights");
+  const quotes = byId("memorable-quotes");
+  const thoughts = byId("my-thoughts");
+  const journey = byId("reading-journey");
+  const summary = byId("summary");
+  const known = new Set([
+    "book-overview",
+    "key-insights",
+    "memorable-quotes",
+    "my-thoughts",
+    "reading-journey",
+    "summary",
+  ]);
+  const extras = sections.filter((s) => !known.has(s.id));
 
-  // 최상위 wrapper — 크림 배경
+  // 로마숫자 부여 (인용은 비넘버 피처)
+  const order: string[] = [];
+  if (overview) order.push("book-overview");
+  if (insights) order.push("key-insights");
+  if (thoughts) order.push("my-thoughts");
+  if (journey) order.push("reading-journey");
+  extras.forEach((s) => order.push(s.id));
+  if (summary) order.push("summary");
+  const numeral: Record<string, string> = {};
+  order.forEach((k, i) => (numeral[k] = ROMAN[i + 1] || String(i + 1)));
+
+  const featQuote = quotes ? firstQuote(quotes.content) : null;
+
+  const parts: string[] = [];
   parts.push(
-    `<div style="max-width:720px;margin:0 auto;padding:24px;background:#fefdfb;font-family:${FONT_FAMILY};color:${COLOR_BODY};letter-spacing:-0.01em;">`
+    `<div style="max-width:720px;margin:0 auto;padding:24px;background:${C.paper};font-family:${SANS};color:${C.body};letter-spacing:-0.01em;">`
   );
 
-  // 1. 리포트 링크 배너 (shareId 있을 때)
-  if (baseUrl && shareId) {
-    parts.push(buildReportBanner(baseUrl, shareId));
+  if (baseUrl && shareId) parts.push(reportBanner(baseUrl, shareId));
+
+  // 표지(마스트헤드)
+  parts.push(masthead(bookInfo, noteCount));
+
+  // 본문 컨테이너
+  parts.push(`<div style="padding:8px 4px;">`);
+
+  // I 개요
+  if (overview) {
+    parts.push(`<div style="padding:32px 4px 8px 4px;">`);
+    parts.push(sectionHeader(numeral["book-overview"], overview.title));
+    parts.push(renderBlocks(overview.content, true));
+    parts.push(`</div>`);
   }
 
-  // 2. 책 정보 헤더
-  parts.push(buildBookHeader(bookInfo, noteCount));
+  if (overview && insights) parts.push(divider());
 
-  // 3. 이중선 구분
-  parts.push(buildDivider("double"));
-
-  // 4. 리포트 섹션 — 섹션별 차별화 + 구분선 패턴
-  const sections = parseReportSections(reportMarkdown);
-  for (let i = 0; i < sections.length; i++) {
-    const section = sections[i];
-
-    // 섹션 콘텐츠 (sectionId 전달로 blockquote 분기)
-    const contentHtml = markdownToInlineHtml(section.content, section.id);
-    parts.push(buildStyledSection(section.id, section.title, contentHtml));
-
-    // 섹션 간 구분선 (마지막 섹션 뒤에는 넣지 않음)
-    if (i < sections.length - 1) {
-      const dividerIdx = i % SECTION_DIVIDER_SEQUENCE.length;
-      parts.push(SECTION_DIVIDER_SEQUENCE[dividerIdx] !== undefined
-        ? buildDivider(SECTION_DIVIDER_SEQUENCE[dividerIdx])
-        : buildDivider("dashed"));
-    }
+  // II 핵심 인사이트
+  if (insights) {
+    parts.push(`<div style="padding:24px 4px;">`);
+    parts.push(sectionHeader(numeral["key-insights"], insights.title));
+    parts.push(renderInsights(insights.content));
+    parts.push(`</div>`);
   }
 
-  // 5. 이중선 구분
-  parts.push(buildDivider("double"));
+  // 인상 깊은 구절 (피처)
+  if (featQuote) {
+    parts.push(`<div style="padding:8px 0;">`);
+    parts.push(featureQuote(featQuote.text, featQuote.attribution));
+    parts.push(`</div>`);
+  }
 
-  // 6. 노트 (옵션)
+  // III 나의 기록에서
+  if (thoughts) {
+    parts.push(`<div style="padding:24px 4px;">`);
+    parts.push(sectionHeader(numeral["my-thoughts"], thoughts.title));
+    parts.push(renderBlocks(thoughts.content));
+    parts.push(`</div>`);
+  }
+
+  if (thoughts && journey) parts.push(divider());
+
+  // IV 독서 여정
+  if (journey) {
+    parts.push(`<div style="padding:24px 4px;">`);
+    parts.push(sectionHeader(numeral["reading-journey"], journey.title));
+    parts.push(renderBlocks(journey.content));
+    parts.push(`</div>`);
+  }
+
+  // 추가 섹션
+  extras.forEach((s) => {
+    parts.push(`<div style="padding:24px 4px;">`);
+    parts.push(sectionHeader(numeral[s.id], s.title));
+    parts.push(renderBlocks(s.content));
+    parts.push(`</div>`);
+  });
+
+  parts.push(`</div>`); // 본문 컨테이너 닫기
+
+  // V 종합 (다시 덮으며)
+  if (summary) {
+    parts.push(`<div style="padding:8px 0 4px 0;">`);
+    parts.push(renderClosing(numeral["summary"], summary.title, summary.content));
+    parts.push(`</div>`);
+  }
+
+  // 노트 (옵션)
   if (includeNotes && noteSummaries && noteSummaries.length > 0) {
+    parts.push(`<div style="padding:24px 4px 4px 4px;">`);
     parts.push(buildNoteSection(noteSummaries, baseUrl));
-    parts.push(buildDivider("solid-thin"));
+    parts.push(`</div>`);
   }
 
-  // 7. 하단 마무리
-  parts.push(buildFooter({ generatedAt, baseUrl, shareId }));
+  // 푸터
+  parts.push(buildFooter(generatedAt, baseUrl, shareId));
 
-  // wrapper 닫기
-  parts.push("</div>");
-
+  parts.push(`</div>`);
   return parts.join("\n");
 }
 
@@ -633,48 +473,58 @@ export function buildBlogPlainText(options: BuildBlogHtmlOptions): string {
   } = options;
 
   const lines: string[] = [];
-
-  // 헤더
-  lines.push(`AI 독서 리포트 — ${bookInfo.title}`);
+  lines.push("READTREE · READING REVIEW");
+  lines.push(`a reading on — ${bookInfo.title}`);
   if (bookInfo.author) lines.push(bookInfo.author);
   lines.push(`기록 ${noteCount}개 기반`);
   lines.push("");
   lines.push("─".repeat(40));
   lines.push("");
 
-  // 섹션
   const sections = parseReportSections(reportMarkdown);
+  const known = new Set([
+    "book-overview",
+    "key-insights",
+    "memorable-quotes",
+    "my-thoughts",
+    "reading-journey",
+    "summary",
+  ]);
+  let n = 0;
   for (const section of sections) {
-    lines.push(`## ${section.title}`);
+    const numbered = section.id !== "memorable-quotes";
+    const head =
+      numbered && known.has(section.id) ? `${ROMAN[++n] || n}. ${cleanKicker(section.title)}` : cleanKicker(section.title);
+    lines.push(`## ${head}`);
     lines.push("");
-    lines.push(section.content);
+    lines.push(mdToPlain(section.content));
     lines.push("");
   }
 
-  // 노트
   if (includeNotes && noteSummaries && noteSummaries.length > 0) {
     lines.push("─".repeat(40));
     lines.push("");
     lines.push("## 독서 기록 요약");
     lines.push("");
     const grouped = noteSummaries.reduce<Record<string, NoteSummary[]>>((acc, note) => {
-      if (!acc[note.type]) acc[note.type] = [];
-      acc[note.type].push(note);
+      (acc[note.type] ||= []).push(note);
       return acc;
     }, {});
-    const sortedEntries = Object.entries(grouped).sort(
-      ([a], [b]) => (NOTE_TYPE_ORDER.indexOf(a) === -1 ? 999 : NOTE_TYPE_ORDER.indexOf(a)) - (NOTE_TYPE_ORDER.indexOf(b) === -1 ? 999 : NOTE_TYPE_ORDER.indexOf(b))
+    const sorted = Object.entries(grouped).sort(
+      ([a], [b]) =>
+        (NOTE_TYPE_ORDER.indexOf(a) === -1 ? 999 : NOTE_TYPE_ORDER.indexOf(a)) -
+        (NOTE_TYPE_ORDER.indexOf(b) === -1 ? 999 : NOTE_TYPE_ORDER.indexOf(b))
     );
-    for (const [type, notes] of sortedEntries) {
+    for (const [type, notes] of sorted) {
       const label = NOTE_TYPE_LABELS[type] || type;
       if (type === "progress") {
         lines.push(`- ${label} ${notes.length}건`);
       } else {
-        const isLinkable = LINKABLE_NOTE_TYPES.has(type);
+        const linkable = LINKABLE_NOTE_TYPES.has(type);
         for (const note of notes) {
           const title = note.title || `${label} 기록`;
           const page = note.pageNumber ? ` (p.${note.pageNumber})` : "";
-          const link = isLinkable && baseUrl ? ` → ${baseUrl}/share/notes/${note.id}` : "";
+          const link = linkable && baseUrl ? ` → ${baseUrl}/share/notes/${note.id}` : "";
           lines.push(`- [${label}] ${title}${page}${link}`);
         }
       }
@@ -682,12 +532,11 @@ export function buildBlogPlainText(options: BuildBlogHtmlOptions): string {
     lines.push("");
   }
 
-  // 워터마크 + 리포트 링크
   lines.push("─".repeat(40));
   if (baseUrl && shareId) {
     lines.push(`AI 독서 리포트 전문: ${baseUrl}/share/reports/${shareId}`);
   }
-  lines.push("AI 독서 리포트 by ReadTree");
+  lines.push("ReadTree Reading Review");
 
   return lines.join("\n");
 }
