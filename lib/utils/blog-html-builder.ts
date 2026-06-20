@@ -92,16 +92,16 @@ function divider(): string {
   return `<div style="text-align:center;margin:30px 0;"><span style="color:${C.gold};font-size:11px;letter-spacing:0.3em;">✦ ✦ ✦</span></div>`;
 }
 
-/** 다크그린 인상 깊은 구절 블록 */
+/** 인상 깊은 구절 — 라이트 풀쿼트(배경 없음, 골드 인용부호 + 다크 세리프) */
 function featureQuote(text: string, attribution?: string | null): string {
   const parts = [
-    `<div style="background:${C.green};border:1px solid rgba(232,199,126,0.28);border-radius:8px;padding:30px 26px;margin:18px 0;text-align:center;">`,
-    `<div style="color:rgba(232,199,126,0.4);font-family:${SERIF_LAT};font-size:44px;line-height:0.4;">&ldquo;</div>`,
-    `<p style="color:${C.cream};font-family:${SERIF_KR};font-size:20px;line-height:1.6;font-weight:600;margin:10px 0 0 0;">${esc(text)}</p>`,
+    `<div style="text-align:center;margin:28px 0;padding:6px 16px;">`,
+    `<div style="color:${C.gold};font-family:${SERIF_LAT};font-size:50px;line-height:0.4;">&ldquo;</div>`,
+    `<p style="color:${C.greenText};font-family:${SERIF_KR};font-size:21px;line-height:1.6;font-weight:600;font-style:italic;margin:12px auto 0 auto;max-width:560px;">${esc(text)}</p>`,
   ];
   if (attribution) {
     parts.push(
-      `<p style="color:${C.goldSoft};font-size:13px;letter-spacing:0.08em;margin:16px 0 0 0;">&mdash; ${esc(attribution)}</p>`
+      `<div style="margin:16px 0 0 0;"><span style="display:inline-block;width:24px;border-top:1px solid ${C.gold};vertical-align:middle;"></span><span style="color:${C.goldDeep};font-size:13px;letter-spacing:0.08em;margin:0 12px;vertical-align:middle;">${esc(attribution)}</span><span style="display:inline-block;width:24px;border-top:1px solid ${C.gold};vertical-align:middle;"></span></div>`
     );
   }
   parts.push(`</div>`);
@@ -164,14 +164,14 @@ function renderInsights(content: string): string {
   return rows.join("\n");
 }
 
-/** 다크그린 마무리(종합) 블록 */
+/** 마무리(종합) — 라이트 강조 블록(연한 크림 + 골드 상하 보더, 다크 텍스트) */
 function renderClosing(numeral: string, kicker: string, content: string): string {
   const text = mdToPlain(content).replace(/\s+/g, " ").trim();
   return [
-    `<div style="background:${C.ink};border-radius:10px;padding:38px 30px;text-align:center;">`,
-    `<div style="font-family:${SERIF_LAT};font-style:italic;font-size:26px;color:${C.goldLight};line-height:1;">${numeral}</div>`,
-    `<div style="font-size:12px;font-weight:700;letter-spacing:0.25em;color:${C.goldSoft};margin:8px 0 18px 0;">${esc(cleanKicker(kicker))}</div>`,
-    `<p style="color:${C.cream};font-family:${SERIF_KR};font-size:19px;line-height:1.65;font-weight:500;margin:0;">${esc(text)}</p>`,
+    `<div style="background:${C.paper2};border-top:2px solid ${C.gold};border-bottom:2px solid ${C.gold};padding:32px 28px;text-align:center;margin:8px 0;">`,
+    `<div style="font-family:${SERIF_LAT};font-style:italic;font-size:26px;color:${C.gold};line-height:1;">${numeral}</div>`,
+    `<div style="font-size:12px;font-weight:700;letter-spacing:0.25em;color:${C.goldDeep};margin:8px 0 18px 0;">${esc(cleanKicker(kicker))}</div>`,
+    `<p style="color:${C.ink2text};font-family:${SERIF_KR};font-size:19px;line-height:1.65;font-weight:500;margin:0;">${esc(text)}</p>`,
     `</div>`,
   ].join("");
 }
@@ -186,43 +186,38 @@ function reportBanner(baseUrl: string, shareId: string): string {
   ].join("");
 }
 
-/** 다크그린 매거진 마스트헤드(표지) */
+/** 라이트 매거진 헤더(표지) — 배경 없이 골드 악센트 + 다크 텍스트로 자연스럽게 */
 function masthead(bookInfo: BookInfoForReport, noteCount: number): string {
   const parts: string[] = [];
+  parts.push(`<div style="text-align:center;padding:8px 0 4px 0;">`);
+  // 브랜드 라벨 (골드, 다크 배경 없음)
   parts.push(
-    `<div style="background:${C.ink};border-radius:12px;padding:40px 32px;text-align:center;margin-bottom:8px;">`
-  );
-  // 마스트헤드
-  parts.push(
-    `<div style="color:${C.green200};font-size:11px;font-weight:700;letter-spacing:0.4em;">EST. 2026 &mdash; 기록하는 만큼 자라는 독서</div>`
+    `<div style="font-family:${SERIF_LAT};color:${C.gold};font-size:22px;font-weight:700;letter-spacing:0.3em;">READTREE</div>`
   );
   parts.push(
-    `<div style="font-family:${SERIF_LAT};color:${C.goldLight};font-size:38px;font-weight:700;letter-spacing:0.12em;margin:12px 0 8px 0;">READTREE</div>`
-  );
-  parts.push(
-    `<div style="color:${C.goldSoft};font-size:12px;font-weight:700;letter-spacing:0.34em;">&mdash;&nbsp;&nbsp;READING REVIEW&nbsp;&nbsp;&mdash;</div>`
+    `<div style="color:${C.goldDeep};font-size:10px;font-weight:700;letter-spacing:0.34em;margin-top:8px;">&mdash;&nbsp;&nbsp;READING REVIEW&nbsp;&nbsp;&mdash;</div>`
   );
   // 표지
   if (bookInfo.coverImageUrl) {
     parts.push(
-      `<div style="margin:30px 0 22px 0;"><img src="${esc(bookInfo.coverImageUrl)}" alt="${esc(bookInfo.title)}" style="width:150px;border-radius:4px;box-shadow:0 16px 36px rgba(0,0,0,0.5);" /></div>`
+      `<div style="margin:26px 0 18px 0;"><img src="${esc(bookInfo.coverImageUrl)}" alt="${esc(bookInfo.title)}" style="width:150px;border-radius:4px;box-shadow:0 6px 20px rgba(0,0,0,0.18);border:1px solid ${C.line};" /></div>`
     );
   } else {
-    parts.push(`<div style="height:24px;"></div>`);
+    parts.push(`<div style="height:18px;"></div>`);
   }
-  // 타이틀
+  // 타이틀 (다크)
   parts.push(
-    `<div style="font-family:${SERIF_LAT};font-style:italic;color:${C.goldSoft};font-size:16px;margin-bottom:10px;">a reading on</div>`
+    `<div style="font-family:${SERIF_LAT};font-style:italic;color:${C.goldDeep};font-size:16px;margin-bottom:10px;">a reading on</div>`
   );
   parts.push(
-    `<h1 style="font-family:${SERIF_KR};color:${C.cream};font-size:30px;font-weight:800;line-height:1.25;margin:0;">${esc(bookInfo.title)}</h1>`
+    `<h1 style="font-family:${SERIF_KR};color:${C.ink2text};font-size:28px;font-weight:800;line-height:1.3;margin:0;">${esc(bookInfo.title)}</h1>`
   );
   if (bookInfo.author) {
     parts.push(
-      `<div style="font-family:${SERIF_KR};color:${C.green200};font-size:15px;margin-top:12px;">${esc(bookInfo.author)}</div>`
+      `<div style="font-family:${SERIF_KR};color:${C.sub};font-size:15px;margin-top:10px;">${esc(bookInfo.author)}</div>`
     );
   }
-  // 지표 밴드
+  // 지표 밴드 (라이트)
   parts.push(metricBand(bookInfo, noteCount));
   parts.push(`</div>`);
   return parts.join("\n");
@@ -243,14 +238,12 @@ function metricBand(bookInfo: BookInfoForReport, noteCount: number): string {
   const tds = cells
     .map(
       (c) =>
-        `<td style="text-align:center;padding:0 14px;"><div style="font-family:${SERIF_LAT};font-size:30px;font-weight:600;color:${C.goldLight};line-height:1;">${esc(c.value)}</div><div style="font-size:10px;letter-spacing:0.14em;color:${C.green200};margin-top:7px;">${esc(c.label)}</div></td>`
+        `<td style="text-align:center;padding:0 16px;"><div style="font-family:${SERIF_LAT};font-size:26px;font-weight:600;color:${C.gold};line-height:1;">${esc(c.value)}</div><div style="font-size:10px;letter-spacing:0.14em;color:${C.meta};margin-top:7px;">${esc(c.label)}</div></td>`
     )
-    .join(
-      `<td style="width:1px;background:rgba(255,255,255,0.12);"></td>`
-    );
+    .join(`<td style="width:1px;background:${C.line};"></td>`);
   return [
-    `<table style="border-collapse:collapse;margin:30px auto 0 auto;border-top:1px solid rgba(232,199,126,0.22);border-bottom:1px solid rgba(232,199,126,0.22);"><tr>`,
-    `<td style="padding:16px 0;"><table style="border-collapse:collapse;"><tr>${tds}</tr></table></td>`,
+    `<table style="border-collapse:collapse;margin:24px auto 0 auto;border-top:1px solid ${C.line};border-bottom:1px solid ${C.line};"><tr>`,
+    `<td style="padding:14px 0;"><table style="border-collapse:collapse;"><tr>${tds}</tr></table></td>`,
     `</tr></table>`,
   ].join("");
 }
@@ -374,8 +367,9 @@ export function buildBlogHtml(options: BuildBlogHtmlOptions): string {
   const featQuote = quotes ? firstQuote(quotes.content) : null;
 
   const parts: string[] = [];
+  // 배경 없음(투명) — 블로그 본문 배경에 자연스럽게 녹아들고, 에디터가 배경을 제거해도 안전
   parts.push(
-    `<div style="max-width:720px;margin:0 auto;padding:24px;background:${C.paper};font-family:${SANS};color:${C.body};letter-spacing:-0.01em;">`
+    `<div style="max-width:720px;margin:0 auto;padding:8px 4px;font-family:${SANS};color:${C.body};letter-spacing:-0.01em;">`
   );
 
   if (baseUrl && shareId) parts.push(reportBanner(baseUrl, shareId));
