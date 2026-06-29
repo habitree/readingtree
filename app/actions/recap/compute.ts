@@ -20,6 +20,7 @@ import {
   kstHour,
 } from "@/lib/utils/timezone";
 import { computeReadingMetrics } from "@/lib/reading/metrics";
+import { isProgressInLogsEnabled } from "@/lib/feature-flags";
 import type {
   RecapComputed,
   RecapNotesByType,
@@ -92,6 +93,8 @@ export async function computeRecapForUser(
     goalRowRes,
     completedYTDRes,
     streakNotesRes,
+    logActivityRes,
+    streakLogsRes,
   ] = await Promise.all([
     supabase
       .from("notes")
@@ -143,12 +146,39 @@ export async function computeRecapForUser(
       .select("created_at")
       .eq("user_id", userId)
       .gte("created_at", streakSince.toISOString()),
+    // 독서 활동(reading_logs 완료분 — 타이머 세션 포함). 페이지-only progress 는 started_at 이 NULL 이라
+    // logsRes(started_at 기반)에선 빠지므로, activeDays/스트릭용으로 created_at 기준 별도 조회한다.
+    supabase
+      .from("reading_logs")
+      .select("created_at")
+      .eq("user_id", userId)
+      .eq("status", "completed")
+      .gte("created_at", start.toISOString())
+      .lte("created_at", end.toISOString()),
+    supabase
+      .from("reading_logs")
+      .select("created_at")
+      .eq("user_id", userId)
+      .eq("status", "completed")
+      .gte("created_at", streakSince.toISOString()),
   ]);
 
   const notes = (notesRes.data ?? []) as unknown as NoteRow[];
   const logs = (logsRes.data ?? []) as unknown as LogRow[];
   const completed = (completedRes.data ?? []) as unknown as CompletedRow[];
   const streakNotes = (streakNotesRes.data ?? []) as unknown as { created_at: string }[];
+
+  // §11 ③ dual-source: 독서 활동(reading_logs 완료분 — 타이머 세션 포함)을 활동일/스트릭에 반영.
+  // 대시보드(stats.ts)와 동일 정의로 화면 간 숫자를 일치시킨다. 킬스위치 OFF면 notes-only 폴백.
+  const progressInLogs = isProgressInLogsEnabled();
+  const logActivity = (logActivityRes.data ?? []) as unknown as { created_at: string }[];
+  const streakLogs = (streakLogsRes.data ?? []) as unknown as { created_at: string }[];
+  const logActivityDateKeys = progressInLogs
+    ? logActivity.map((r) => toKSTDateKey(new Date(r.created_at)))
+    : [];
+  const streakLogKeys = progressInLogs
+    ? streakLogs.map((r) => toKSTDateKey(new Date(r.created_at)))
+    : [];
 
   // ── 집계 코어(A3) — 일반 메트릭의 단일 출처. 하이라이트는 아래에서 별도 계산 ──
   const metrics = computeReadingMetrics({
@@ -164,7 +194,11 @@ export async function computeRecapForUser(
     })),
     completedCount: completed.length,
     range: { start, end },
-    streakDateKeys: streakNotes.map((n) => toKSTDateKey(new Date(n.created_at))),
+    streakDateKeys: [
+      ...streakNotes.map((n) => toKSTDateKey(new Date(n.created_at))),
+      ...streakLogKeys,
+    ],
+    logActivityDateKeys,
   });
 
   // ── notes 집계 ──────────────────────────────────────────────
@@ -291,7 +325,7 @@ export async function computeRecapForUser(
     activeDays,
   });
 
-  const isEmpty = totalNotes === 0 && sessionCount === 0 && completedBooks === 0;
+  const isEmpty = totalNotes === 0 && sessionCount === 0 && completedBooks === 0 && activeDays === 0;
 
   return {
     year,

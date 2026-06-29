@@ -40,6 +40,13 @@ export interface MetricsInput {
    * 날짜키를 전달해야 한다(compute.ts는 streakNotes를 별도 조회해 전달).
    */
   streakDateKeys?: string[];
+  /**
+   * 범위 내 reading_logs "독서 활동"의 KST 날짜키 — 타이머 세션 포함.
+   * activeDays·maxStreak 가 notes 뿐 아니라 독서 활동일도 포함하도록 병합한다.
+   * 대시보드 캘린더/스트릭과 동일 정의(status='completed' reading_log)로 화면 간 숫자를 일치시킨다.
+   * 미지정/빈배열이면 기존(notes-only) 동작.
+   */
+  logActivityDateKeys?: string[];
 }
 
 /** 기간 집계 — notes/logs/completed 행을 받아 공통 메트릭을 산출 */
@@ -53,6 +60,12 @@ export function computeReadingMetrics(input: MetricsInput): ReadingMetrics {
     const key = toKSTDateKey(new Date(n.created_at));
     dayCounts.set(key, (dayCounts.get(key) ?? 0) + 1);
     if (n.bookId) touchedBooks.add(n.bookId);
+  }
+
+  // 독서 활동일(reading_logs 완료분 — 타이머 세션 포함) 병합 → activeDays·maxStreak 에 반영.
+  // notesByType/booksTouched 는 노트 전용 메트릭이므로 건드리지 않는다. 날짜 단위 union 이라 이중 카운트 없음.
+  for (const key of input.logActivityDateKeys ?? []) {
+    dayCounts.set(key, (dayCounts.get(key) ?? 0) + 1);
   }
 
   let totalSeconds = 0;
