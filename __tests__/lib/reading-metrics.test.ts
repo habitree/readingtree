@@ -115,4 +115,30 @@ describe("computeReadingMetrics — 레퍼런스 동등성", () => {
     // 명시 날짜키가 비면 0
     expect(computeReadingMetrics({ notes, logs, completedCount: 0, range, streakDateKeys: [] }).currentStreak).toBe(0);
   });
+
+  it("logActivityDateKeys — 독서 활동일이 activeDays·maxStreak 에 병합(타이머 세션 포함)", () => {
+    // 노트 0개여도 독서 활동일(reading_logs)이 활동일로 잡혀야 한다.
+    const onlyLogs = computeReadingMetrics({
+      notes: [],
+      logs,
+      completedCount: 0,
+      range,
+      logActivityDateKeys: ["2026-05-10", "2026-05-11", "2026-05-12"],
+    });
+    expect(onlyLogs.notes).toBe(0); // 노트 메트릭은 그대로
+    expect(onlyLogs.activeDays).toBe(3); // 독서 활동 3일
+    expect(onlyLogs.maxStreak).toBe(3); // 5/10→5/11→5/12 연속
+
+    // notes 날짜와 union(중복 날짜는 1일로). notes = 5/1,5/2,5/3 (3일) + 로그 5/3(중복),5/4 → 4일
+    const merged = computeReadingMetrics({
+      notes,
+      logs,
+      completedCount: 0,
+      range,
+      logActivityDateKeys: ["2026-05-03", "2026-05-04"],
+    });
+    expect(merged.activeDays).toBe(4); // 5/1,5/2,5/3,5/4
+    expect(merged.maxStreak).toBe(4); // 5/1→5/4 연속
+    expect(merged.notesByType).toEqual({ quote: 2, memo: 2, transcription: 1 }); // 노트 전용 메트릭 불변
+  });
 });

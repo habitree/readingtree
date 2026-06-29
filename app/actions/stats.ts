@@ -20,10 +20,20 @@ import { isProgressInLogsEnabled } from "@/lib/feature-flags";
 export type TimelineSortBy = "latest" | "oldest" | "book";
 
 /**
- * 데이터 단일화(§11 ③) dual-source 헬퍼 — 진행 기록(reading_logs, 시간0·사진없음·끝페이지)의
- * created_at 목록을 기간으로 조회. 플래그 OFF면 빈 배열(현재 동작 무영향).
+ * 데이터 단일화(§11 ③) dual-source 헬퍼 — reading_logs 의 "독서 활동" created_at 목록을
+ * 기간으로 조회. 플래그 OFF면 빈 배열(레거시 notes-only 동작으로 폴백).
+ *
+ * "독서 활동" = status='completed' 인 모든 reading_log:
+ *   - 타이머 독서 세션(reading_duration_seconds > 0) — 시간만 있고 페이지/노트가 없어도 활동.
+ *   - 페이지-only 진행 기록(reading_duration_seconds = 0, end_page 있음).
+ *   - 스탬프(image_url 있음).
+ * 과거엔 `reading_duration_seconds = 0` 페이지-only 행만 셌기 때문에, 타이머로만 읽고
+ * 별도 진행/노트를 남기지 않은 날이 캘린더·주간·스트릭에서 통째로 누락됐다(버그). 완료된
+ * reading_log 는 모두 실제 독서 활동이므로 status='completed' 전체를 활동으로 집계한다.
+ * (in_progress=진행 중, abandoned=취소/12h orphan 은 제외.)
+ * 레거시 notes 와 disjoint — reading_log 는 notes 와 다른 레코드라 이중 카운트 없음.
  */
-async function fetchProgressLogCreatedAts(
+async function fetchReadingLogActivityDates(
   supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>,
   userId: string,
   startIso: string,
@@ -34,9 +44,7 @@ async function fetchProgressLogCreatedAts(
     .from("reading_logs")
     .select("created_at")
     .eq("user_id", userId)
-    .eq("reading_duration_seconds", 0)
-    .is("image_url", null)
-    .not("end_page", "is", null)
+    .eq("status", "completed")
     .gte("created_at", startIso)
     .lte("created_at", endIso);
   return (data ?? []).map((r) => r.created_at as string);
@@ -782,14 +790,14 @@ export async function getDailyRecordsByType(
     dailyRecords[dateKey].total++;
   });
 
-  // 데이터 단일화(§11 ③): 진행 기록을 reading_logs에서도 합산(레거시 notes와 disjoint)
-  const progressLogDates = await fetchProgressLogCreatedAts(
+  // 데이터 단일화(§11 ③): 독서 활동(reading_logs 완료분 — 타이머 세션 포함)을 합산(레거시 notes와 disjoint)
+  const activityLogDates = await fetchReadingLogActivityDates(
     supabase,
     user.id,
     startDate.toISOString(),
     endDate.toISOString(),
   );
-  for (const createdAt of progressLogDates) {
+  for (const createdAt of activityLogDates) {
     const dateKey = toKSTDateKey(new Date(createdAt));
     if (!dailyRecords[dateKey]) {
       dailyRecords[dateKey] = { transcription: 0, photo: 0, memo: 0, quote: 0, progress: 0, total: 0 };
@@ -874,14 +882,14 @@ export async function getWeeklyProgress(user: User | null): Promise<{
     });
   }
 
-  // §11 ③ dual-source: 주간 진행 기록(reading_logs)도 카운트
-  const weekProgressDates = await fetchProgressLogCreatedAts(
+  // §11 ③ dual-source: 주간 독서 활동(reading_logs 완료분 — 타이머 세션 포함)도 카운트
+  const weekActivityDates = await fetchReadingLogActivityDates(
     supabase,
     user.id,
     startOfWeek.toISOString(),
     endOfWeek.toISOString(),
   );
-  for (const createdAt of weekProgressDates) {
+  for (const createdAt of weekActivityDates) {
     const dateKey = toKSTDateKey(new Date(createdAt));
     dailyCounts[dateKey] = (dailyCounts[dateKey] || 0) + 1;
   }
@@ -922,14 +930,14 @@ export async function getWeeklyProgress(user: User | null): Promise<{
   const recordedDates = new Set<string>();
   (streakNotes ?? []).forEach((note) => recordedDates.add(toKSTDateKey(new Date(note.created_at))));
 
-  // §11 ③ dual-source: 최근 30일 진행 기록(reading_logs)도 스트릭에 반영
-  const streakProgressDates = await fetchProgressLogCreatedAts(
+  // §11 ③ dual-source: 최근 30일 독서 활동(reading_logs 완료분 — 타이머 세션 포함)도 스트릭에 반영
+  const streakActivityDates = await fetchReadingLogActivityDates(
     supabase,
     user.id,
     thirtyDaysAgo.toISOString(),
     new Date().toISOString(),
   );
-  streakProgressDates.forEach((c) => recordedDates.add(toKSTDateKey(new Date(c))));
+  streakActivityDates.forEach((c) => recordedDates.add(toKSTDateKey(new Date(c))));
 
   const streak = computeCurrentStreak(recordedDates);
 
@@ -1286,9 +1294,11 @@ export async function getMonthlyBookActivities(
     }
   });
 
-  // 데이터 단일화(§11 ③) dual-source: 진행 기록을 reading_logs에서도 병합(레거시 notes와 disjoint).
-  // 백필 이후 notes.progress=0 이므로, 이 병합이 없으면 진행만 있는 날짜가 캘린더에서 누락됨.
-  // 진행만 있는 날도 책 표지·진행 카운트(amber)가 표시되도록 books[]와 noteTypes.progress를 함께 채운다.
+  // 데이터 단일화(§11 ③) dual-source: 독서 활동(reading_logs 완료분)을 병합(레거시 notes와 disjoint).
+  // 백필 이후 notes.progress=0 이고, 타이머 세션은 애초에 notes 에 없으므로, 이 병합이 없으면
+  // 진행/타이머 세션만 있는 날짜가 캘린더에서 누락됨. 완료된 reading_log(타이머 세션 포함)는 모두
+  // 독서 활동이므로 status='completed' 전체를 활동으로 본다. 책 표지·진행 카운트(amber)가
+  // 표시되도록 books[]와 noteTypes.progress를 함께 채운다.
   if (isProgressInLogsEnabled()) {
     const { data: progressLogs } = await supabase
       .from("reading_logs")
@@ -1297,9 +1307,7 @@ export async function getMonthlyBookActivities(
          user_books!inner ( book_id, books ( id, title, cover_image_url ) )`,
       )
       .eq("user_id", resolvedUser.id)
-      .eq("reading_duration_seconds", 0)
-      .is("image_url", null)
-      .not("end_page", "is", null)
+      .eq("status", "completed")
       .gte("created_at", startDate.toISOString())
       .lte("created_at", endDate.toISOString());
 
@@ -1401,23 +1409,36 @@ export async function getStreakAndTodayData(userId: string): Promise<{ streak: n
     // 최근 30일간의 기록 날짜 조회
     const thirtyDaysAgo = new Date(kstTodayMidnight.getTime() - 30 * 24 * 60 * 60 * 1000);
 
-    const { data: notes, error } = await supabase
+    const { data: notes } = await supabase
       .from("notes")
       .select("created_at")
       .eq("user_id", userId)
       .gte("created_at", thirtyDaysAgo.toISOString())
       .order("created_at", { ascending: false });
 
-    if (error || !notes || notes.length === 0) {
-      return { streak: 0, todayNotes: 0 };
-    }
+    // §11 ③ dual-source: 독서 활동(reading_logs 완료분 — 타이머 세션 포함)도 스트릭/오늘 기록에 반영.
+    // 노트 없이 타이머로만 읽은 날도 활동으로 인정해야 하므로, notes 가 비어도 조기 반환하지 않는다.
+    const activityLogDates = await fetchReadingLogActivityDates(
+      supabase,
+      userId,
+      thirtyDaysAgo.toISOString(),
+      new Date().toISOString(),
+    );
 
-    // 날짜키 수집 및 오늘 기록 수 계산 (KST 기준)
+    // 날짜키 수집 및 오늘 기록 수 계산 (KST 기준, notes ⊕ reading_logs)
     const dateKeys: string[] = [];
     let todayNotes = 0;
 
-    notes.forEach((note) => {
+    (notes ?? []).forEach((note) => {
       const dateKey = toKSTDateKey(new Date(note.created_at));
+      if (dateKey === kstTodayKey) {
+        todayNotes++;
+      }
+      dateKeys.push(dateKey);
+    });
+
+    activityLogDates.forEach((createdAt) => {
+      const dateKey = toKSTDateKey(new Date(createdAt));
       if (dateKey === kstTodayKey) {
         todayNotes++;
       }
