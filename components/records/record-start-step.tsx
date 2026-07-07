@@ -38,6 +38,32 @@ const TARGET_PRESETS = [
   { label: "무제한", seconds: 0 },
 ] as const;
 
+const DEFAULT_TARGET_SECONDS = 25 * 60;
+const MAX_TARGET_MINUTES = 600; // 10시간
+const LAST_TARGET_SECONDS_KEY = "readtree:last-target-seconds";
+
+/** 마지막으로 선택했던 예상 시간(초). 없거나 손상 시 null. */
+function readLastTargetSeconds(): number | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(LAST_TARGET_SECONDS_KEY);
+    if (raw == null) return null;
+    const v = Number(raw);
+    if (!Number.isFinite(v) || v < 0) return null;
+    return Math.min(Math.floor(v), MAX_TARGET_MINUTES * 60);
+  } catch {
+    return null;
+  }
+}
+
+function saveLastTargetSeconds(seconds: number): void {
+  try {
+    window.localStorage.setItem(LAST_TARGET_SECONDS_KEY, String(seconds));
+  } catch {
+    // 저장 실패(시크릿 모드 등) 시 무시 — 기능 자체는 정상 동작
+  }
+}
+
 interface Props {
   selectedBook: RecordSheetBook | null;
   prefillTargetSeconds: number | null;
@@ -46,7 +72,15 @@ interface Props {
 
 export function RecordStartStep({ selectedBook, prefillTargetSeconds, prefillStartPage }: Props) {
   const [startPage, setStartPage] = useState<number>(prefillStartPage ?? 0);
-  const [targetSeconds, setTargetSeconds] = useState<number>(prefillTargetSeconds ?? 25 * 60);
+  // 우선순위: 명시적 prefill > 마지막 선택값(자동 저장) > 기본 25분
+  const [targetSeconds, setTargetSeconds] = useState<number>(
+    () => prefillTargetSeconds ?? readLastTargetSeconds() ?? DEFAULT_TARGET_SECONDS,
+  );
+  // 직접 입력 필드 표시용 문자열 (무제한=빈칸)
+  const [customMinutes, setCustomMinutes] = useState<string>(() => {
+    const initial = prefillTargetSeconds ?? readLastTargetSeconds() ?? DEFAULT_TARGET_SECONDS;
+    return initial > 0 ? String(Math.round(initial / 60)) : "";
+  });
   const [isPending, startTransition] = useTransition();
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const { setPendingClientSessionId } = useReadingSessionStore();
@@ -86,6 +120,7 @@ export function RecordStartStep({ selectedBook, prefillTargetSeconds, prefillSta
           target_seconds: targetSeconds || undefined,
           client_session_id: clientSessionId,
         });
+        saveLastTargetSeconds(targetSeconds); // 다음 시작 시 자동 반영
         broadcastSessionStarted(result.sessionId);
         toast.success(result.isResumed ? "이전 기록을 이어갑니다" : "기록을 시작했어요");
         close();
@@ -217,8 +252,10 @@ export function RecordStartStep({ selectedBook, prefillTargetSeconds, prefillSta
 
       {/* 시간 옵션 */}
       <div className="space-y-2">
-        <Label className="text-sm font-medium">예상 시간 (선택)</Label>
-        <div className="flex flex-wrap gap-2">
+        <Label htmlFor="record-target-minutes" className="text-sm font-medium">
+          예상 시간 (선택)
+        </Label>
+        <div className="flex flex-wrap items-center gap-2">
           {TARGET_PRESETS.map((p) => (
             <Button
               key={p.label}
@@ -228,15 +265,44 @@ export function RecordStartStep({ selectedBook, prefillTargetSeconds, prefillSta
               className={cn(
                 targetSeconds === p.seconds && "bg-emerald-600 text-white hover:bg-emerald-700",
               )}
-              onClick={() => setTargetSeconds(p.seconds)}
+              onClick={() => {
+                setTargetSeconds(p.seconds);
+                setCustomMinutes(p.seconds > 0 ? String(Math.round(p.seconds / 60)) : "");
+              }}
               disabled={isPending}
             >
               {p.label}
             </Button>
           ))}
+          <div className="flex items-center gap-1">
+            <Input
+              id="record-target-minutes"
+              type="number"
+              inputMode="numeric"
+              min={1}
+              max={MAX_TARGET_MINUTES}
+              placeholder="직접"
+              value={customMinutes}
+              onChange={(e) => {
+                const raw = e.target.value;
+                setCustomMinutes(raw);
+                const v = Number(raw);
+                if (raw.trim() === "" || !Number.isFinite(v) || v <= 0) {
+                  setTargetSeconds(0); // 빈칸/잘못된 값 → 무제한 취급
+                  return;
+                }
+                setTargetSeconds(Math.min(Math.floor(v), MAX_TARGET_MINUTES) * 60);
+              }}
+              disabled={isPending}
+              className="h-9 w-20 text-center"
+              aria-label="예상 시간 직접 입력(분)"
+            />
+            <span className="text-xs text-slate-500">분</span>
+          </div>
         </div>
         <p className="text-xs text-slate-400">
-          시간은 안내용이에요. 실제 기록 시간은 종료 시점까지 자동으로 측정됩니다.
+          분 단위로 직접 입력할 수도 있어요. 마지막에 선택한 시간이 다음 시작 때 자동으로
+          적용됩니다. 실제 기록 시간은 종료 시점까지 자동으로 측정돼요.
         </p>
       </div>
 

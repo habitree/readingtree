@@ -9,22 +9,48 @@
  *
  * "별도 스탬프"가 아니라 "시간 기록 이후 사진을 더해 스탬프가 된다"는
  * 단일 흐름의 사후 진입점. 포인트는 추가 적립하지 않음(D4).
+ *
+ * 마운트 시 기존 로그(메모·사진·페이지)를 불러와 프리필한다 — 시간만 남긴
+ * 기록에 상세를 "추가"할 때 기존 값이 빈 폼으로 덮어써지지 않도록.
  */
 
-import { useState, useTransition } from "react";
-import { Camera, Loader2, Save, Stamp as StampIcon, X } from "lucide-react";
+import { useEffect, useState, useTransition } from "react";
+import { Camera, Clock, Loader2, Save, Stamp as StampIcon, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { attachStampToLog, updateReadingLogEntry } from "@/app/actions/progress";
+import {
+  attachStampToLog,
+  getReadingLogForEdit,
+  updateReadingLogEntry,
+} from "@/app/actions/progress";
 import { useRecordSheetStore, type RecordSheetBook } from "@/hooks/use-record-sheet";
 import { useStampShareStore } from "@/hooks/use-stamp-share";
 import { RecordPhotoStrip } from "./record-photo-strip";
 
 const MEMO_MAX = 200;
 const PAGE_PRESETS = [5, 10, 20, 30] as const;
+
+/** "1시간 5분" / "32분" / "1분 미만" */
+function formatDuration(seconds: number): string {
+  const total = Math.max(0, Math.floor(seconds));
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  if (h > 0 && m > 0) return `${h}시간 ${m}분`;
+  if (h > 0) return `${h}시간`;
+  if (m > 0) return `${m}분`;
+  return "1분 미만";
+}
+
+function formatDateLabel(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(
+    d.getDate(),
+  ).padStart(2, "0")}`;
+}
 
 interface Props {
   logId: string;
@@ -42,9 +68,54 @@ export function RecordAttachStep({ logId, selectedBook, prefillStartPage, prefil
   const [endPage, setEndPage] = useState<number>(prefillEndPage ?? prefillStartPage ?? 0);
   const [memo, setMemo] = useState("");
   const [isPending, startTransition] = useTransition();
+  /** 기존 로그 요약 (독서 시간·날짜 표시용) */
+  const [existingInfo, setExistingInfo] = useState<{
+    durationSeconds: number;
+    createdAt: string;
+  } | null>(null);
 
   // prefill은 마운트 시 초기값으로만 사용. 대상 로그가 바뀌면 RecordSheet가
   // key={targetLogId}로 본 컴포넌트를 재마운트하므로 effect 동기화 불필요.
+
+  // 기존 로그 로드 — 메모·사진·페이지 프리필. 사용자가 이미 입력한 값은 보존.
+  useEffect(() => {
+    let cancelled = false;
+    getReadingLogForEdit(logId)
+      .then((log) => {
+        if (cancelled || !log) return;
+        setExistingInfo({
+          durationSeconds: log.reading_duration_seconds ?? 0,
+          createdAt: log.created_at,
+        });
+        if (log.memo) {
+          setMemo((prev) => (prev === "" ? log.memo!.slice(0, MEMO_MAX) : prev));
+        }
+        const existingImages = Array.isArray(log.image_urls) && log.image_urls.length > 0
+          ? log.image_urls
+          : log.image_url
+            ? [log.image_url]
+            : [];
+        if (existingImages.length > 0) {
+          setImageUrls((prev) => (prev.length === 0 ? existingImages : prev));
+        }
+        if (prefillStartPage == null && typeof log.start_page === "number") {
+          setStartPage((prev) => (prev === 0 ? (log.start_page ?? 0) : prev));
+        }
+        if (prefillEndPage == null) {
+          const existingEnd = log.end_page ?? log.page_number ?? null;
+          const initialEnd = prefillStartPage ?? 0;
+          if (typeof existingEnd === "number" && existingEnd > 0) {
+            setEndPage((prev) => (prev === initialEnd ? existingEnd : prev));
+          }
+        }
+      })
+      .catch(() => {
+        // 로드 실패 시 빈 폼으로 진행 (저장은 여전히 가능)
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [logId, prefillStartPage, prefillEndPage]);
 
   const hasImage = imageUrls.length > 0;
   const pagesRead = Math.max(0, endPage - startPage);
@@ -107,6 +178,19 @@ export function RecordAttachStep({ logId, selectedBook, prefillStartPage, prefil
               </p>
             )}
           </div>
+        </div>
+      )}
+
+      {/* 편집 대상 기록 요약 — 어떤 기록에 상세를 더하는지 표시 */}
+      {existingInfo && (
+        <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+          <Clock className="h-3.5 w-3.5 text-emerald-600" />
+          <span>
+            {existingInfo.durationSeconds > 0
+              ? `독서 시간 ${formatDuration(existingInfo.durationSeconds)}`
+              : "시간 기록 없음"}
+            {existingInfo.createdAt && ` · ${formatDateLabel(existingInfo.createdAt)}`}
+          </span>
         </div>
       )}
 

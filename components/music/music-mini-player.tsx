@@ -18,57 +18,10 @@ import { useRef, useEffect, useCallback } from "react";
 import { useMusicPlayer } from "@/hooks/use-music-player";
 import { findCueAt, findCueIndexAt, findPartIndexAt } from "@/lib/music";
 import type { MusicGenre } from "@/types/music";
+import { getMusicController, setMusicController } from "./music-controller";
 import { MusicOnlySheet } from "./music-only-sheet";
-import { Pause, Play, SkipForward, Volume2, VolumeX, Music2, X } from "lucide-react";
+import { Pause, Play, SkipForward, Volume2, VolumeX, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-/** 사용자 클릭 컨텍스트에서 재생을 시작/제어하기 위한 컨트롤러 */
-interface MusicController {
-  startGenre: (genre: MusicGenre) => void;
-  resume: () => void;
-  pauseAudio: () => void;
-}
-let controller: MusicController | null = null;
-export function getMusicController() {
-  return controller;
-}
-
-/** 헤더 음악 버튼 — 단순 idle/playing 분기 */
-export function MusicToggleButton() {
-  const { isPlaying, currentGenre, openMusicSheet } = useMusicPlayer();
-
-  function handleClick() {
-    const ctrl = getMusicController();
-    if (isPlaying) {
-      ctrl?.pauseAudio();
-    } else if (ctrl && currentGenre) {
-      ctrl.resume();
-    } else {
-      openMusicSheet();
-    }
-  }
-
-  return (
-    <button
-      onClick={handleClick}
-      className={cn(
-        "group relative flex items-center justify-center transition-all duration-300",
-        "w-9 h-9 sm:w-10 sm:h-10 rounded-xl",
-        isPlaying
-          ? "bg-amber-500/10 text-amber-700 dark:text-amber-400 ring-1 ring-amber-500/20"
-          : "text-muted-foreground hover:bg-amber-500/8 hover:text-amber-700 dark:hover:text-amber-400",
-      )}
-      title={isPlaying ? "음악 일시정지" : "배경음악"}
-      aria-label={isPlaying ? "음악 일시정지" : "배경음악"}
-    >
-      {isPlaying ? (
-        <Music2 className="w-4 h-4 sm:w-5 sm:h-5 animate-pulse" />
-      ) : (
-        <Music2 className="w-[18px] h-[18px] sm:w-5 sm:h-5 transition-transform duration-200 group-hover:scale-110" />
-      )}
-    </button>
-  );
-}
 
 /** 미니 플레이어 (음악만) */
 export function MusicMiniPlayer() {
@@ -225,7 +178,7 @@ export function MusicMiniPlayer() {
 
   // 컨트롤러 등록 (사용자 제스처용)
   useEffect(() => {
-    controller = {
+    setMusicController({
       startGenre: (genre) => {
         useMusicPlayer.getState().selectGenre(genre);
         beginAt(genre, useMusicPlayer.getState().startAt, true);
@@ -244,9 +197,9 @@ export function MusicMiniPlayer() {
         getActive()?.pause();
         useMusicPlayer.getState().pause();
       },
-    };
+    });
     return () => {
-      controller = null;
+      setMusicController(null);
     };
   }, [beginAt, getActive]);
 

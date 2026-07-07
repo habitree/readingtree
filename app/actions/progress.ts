@@ -1287,6 +1287,46 @@ export async function attachStampToLog(
 }
 
 /**
+ * 편집(attach) 대상 reading_log 단건 조회 — 본인 소유만.
+ *
+ * RecordAttachStep이 기존 메모·사진·페이지를 프리필해, 시간만 등록한 기록에
+ * 상세 정보를 "추가"할 때 기존 값이 덮어써지지 않도록 한다.
+ */
+export async function getReadingLogForEdit(
+  logId: string,
+  user?: User | null,
+): Promise<ReadingLog | null> {
+  const supabase = await createServerSupabaseClient();
+
+  let currentUser = user;
+  if (!currentUser) {
+    const {
+      data: { user: fetchedUser },
+      error: authError,
+    } = await supabase.auth.getUser();
+    if (authError || !fetchedUser) throw new Error("로그인이 필요합니다.");
+    currentUser = fetchedUser;
+  }
+
+  if (!isValidUUID(logId)) {
+    throw new Error("유효하지 않은 로그 ID입니다.");
+  }
+
+  const { data, error } = await supabase
+    .from("reading_logs")
+    .select("*")
+    .eq("id", logId)
+    .eq("user_id", currentUser.id)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(sanitizeErrorMessage(error));
+  }
+
+  return (data as ReadingLog | null) ?? null;
+}
+
+/**
  * 사진 첨부 가능한 최근 reading_log 목록 (image_url IS NULL).
  * 사후 첨부 진입 화면(예: 토스트 클릭, 책 상세 행 칩)에서 사용.
  */

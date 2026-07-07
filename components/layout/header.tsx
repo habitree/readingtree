@@ -24,7 +24,7 @@ import { signOut } from "@/app/actions/auth";
 import { useEffect, useState } from "react";
 import { useTranslation } from "@/lib/i18n";
 import { LanguageToggle } from "@/components/ui/language-toggle";
-import { MusicToggleButton } from "@/components/music/music-mini-player";
+import { MusicToggleButton } from "@/components/music/music-toggle-button";
 import { ActiveSessionIndicator } from "@/components/layout/active-session-indicator";
 
 /**

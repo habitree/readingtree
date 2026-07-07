@@ -112,6 +112,20 @@ export function LazyOverlays() {
   const [paletteSeen, setPaletteSeen] = useState(false);
   if (paletteOpen && !paletteSeen) setPaletteSeen(true);
 
+  // RecordSheet는 가장 자주 쓰는 오버레이 — 첫 페인트를 막지 않도록 idle 시점에
+  // 청크만 미리 받아 두면 "독서" 첫 탭의 fetch+파싱 지연(100~300ms)이 사라진다.
+  useEffect(() => {
+    const preload = () => {
+      import("@/components/records/record-sheet").catch(() => {});
+    };
+    if ("requestIdleCallback" in window) {
+      const id = window.requestIdleCallback(preload, { timeout: 3000 });
+      return () => window.cancelIdleCallback(id);
+    }
+    const t = setTimeout(preload, 1500); // Safari 폴백
+    return () => clearTimeout(t);
+  }, []);
+
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {

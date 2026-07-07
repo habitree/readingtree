@@ -101,7 +101,7 @@ export function StampShareCard({ data, className, captureRef }: StampShareCardPr
         )}
       </div>
 
-      {/* 중앙 사진 */}
+      {/* 중앙 사진 — 없으면 표지→타이포그래피 순 자연스러운 폴백 */}
       <div className="relative mx-5 mt-3 flex-1 overflow-hidden rounded-xl bg-stone-200">
         {photoUrl ? (
           <Image
@@ -115,22 +115,40 @@ export function StampShareCard({ data, className, captureRef }: StampShareCardPr
           />
         ) : data.book?.coverImageUrl ? (
           <>
+            {/* 배경: 표지 확대 블러 + 어두운 오버레이 (캡처 시 블러 미적용이어도 톤 유지) */}
             <Image
               src={data.book.coverImageUrl}
               alt=""
               fill
               sizes="(max-width: 768px) 100vw, 600px"
-              className="scale-110 object-cover blur-2xl"
+              className="scale-110 object-cover blur-xl"
               unoptimized
             />
-            <div className="absolute inset-0 bg-gradient-to-br from-emerald-700/70 via-emerald-500/50 to-stone-700/60" />
-            <div className="absolute inset-0 flex items-center justify-center text-white/90">
-              <BookOpen className="h-12 w-12" />
+            <div className="absolute inset-0 bg-stone-900/45" />
+            {/* 전경: 실제 책 표지를 책처럼 보여줌 — 아이콘 대신 자연스러운 연출 */}
+            <div className="absolute inset-0 flex items-center justify-center py-6">
+              <div className="relative aspect-[2/3] h-4/5 overflow-hidden rounded-lg shadow-2xl ring-1 ring-white/25">
+                <Image
+                  src={data.book.coverImageUrl}
+                  alt={data.book.title ?? ""}
+                  fill
+                  sizes="240px"
+                  className="object-cover"
+                  priority
+                  unoptimized
+                />
+              </div>
             </div>
           </>
         ) : (
-          <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-emerald-600 via-emerald-500 to-stone-500">
-            <BookOpen className="h-14 w-14 text-white/90" />
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-gradient-to-br from-emerald-700 via-emerald-600 to-teal-700 px-8 text-center">
+            <BookOpen className="h-8 w-8 text-white/80" />
+            <p className="line-clamp-3 text-lg font-bold leading-snug text-white">
+              {data.book?.title ?? "나의 독서 기록"}
+            </p>
+            {data.book?.author && (
+              <p className="line-clamp-1 text-xs text-white/75">{data.book.author}</p>
+            )}
           </div>
         )}
       </div>

@@ -24,6 +24,7 @@ import { Label } from "@/components/ui/label";
 import { Loader2, LinkIcon, ImageIcon, MessageCircle, Share2, Check, Globe } from "lucide-react";
 import { toast } from "sonner";
 import { copyImageToClipboard } from "@/lib/utils/clipboard";
+import { captureElementToPngBlob } from "@/lib/utils/capture-card";
 import { downloadImage, isMobile } from "@/lib/utils/device";
 import {
   copyShareLink,
@@ -152,39 +153,9 @@ export function RecapShareDialog() {
     if (!captureRef.current || isCapturing || !data) return;
     setIsCapturing(true);
     try {
-      const html2canvasModule = await import("html2canvas");
-      const html2canvas = html2canvasModule.default;
-      const target = captureRef.current;
-
-      const images = target.querySelectorAll("img");
-      await Promise.all(
-        Array.from(images).map((img) => {
-          if (img.complete && img.naturalWidth > 0) return Promise.resolve();
-          return new Promise<void>((resolve) => {
-            const t = setTimeout(() => resolve(), 5000);
-            img.onload = () => {
-              clearTimeout(t);
-              resolve();
-            };
-            img.onerror = () => {
-              clearTimeout(t);
-              resolve();
-            };
-          });
-        }),
-      );
-
-      const canvas = await html2canvas(target, {
-        background: "#fafaf9",
-        useCORS: true,
-        logging: false,
-      });
-
-      const blob: Blob = await new Promise((resolve, reject) => {
-        canvas.toBlob((b) => {
-          if (b) resolve(b);
-          else reject(new Error("Canvas to blob failed"));
-        }, "image/png");
+      // 공통 캡처 유틸 — 폰트/이미지 대기 + 1080px 폭 고해상도 + 스크롤 잘림 방지
+      const blob = await captureElementToPngBlob(captureRef.current, {
+        backgroundColor: "#fafaf9", // stone-50
       });
 
       const filename = `readtree-recap-${data.year}-${data.month}.png`;

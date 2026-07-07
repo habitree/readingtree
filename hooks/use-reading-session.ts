@@ -17,6 +17,34 @@ import type { ReadingLogActive } from "@/types/progress";
 
 const CHANNEL_NAME = "readtree-session";
 const POLL_INTERVAL_MS = 30_000;
+const DEDUPE_TTL_MS = 10_000;
+
+// =============================================================================
+// getActiveSession 공유 fetch — 훅 인스턴스 간 디둡
+//
+// 사이드바·모바일 내비·인디케이터 등 레이아웃 상주 소비자가 각자 마운트/폴링해도
+// 같은 시점의 요청은 서버로 1회만 나간다. (in-flight 공유 + 짧은 TTL 캐시)
+// 세션 시작/종료 브로드캐스트·수동 refresh는 force로 TTL을 무시해 즉시 신선한 값을 가져온다.
+// =============================================================================
+
+let inflightFetch: Promise<ReadingLogActive | null> | null = null;
+let lastFetch: { at: number; value: ReadingLogActive | null } | null = null;
+
+async function fetchActiveSessionShared(force = false): Promise<ReadingLogActive | null> {
+  if (!force && lastFetch && Date.now() - lastFetch.at < DEDUPE_TTL_MS) {
+    return lastFetch.value;
+  }
+  if (inflightFetch) return inflightFetch;
+  inflightFetch = getActiveSession()
+    .then((value) => {
+      lastFetch = { at: Date.now(), value };
+      return value;
+    })
+    .finally(() => {
+      inflightFetch = null;
+    });
+  return inflightFetch;
+}
 
 // =============================================================================
 // Zustand store — optimistic 캐시 (다른 탭 메시지·취소·종료 직후 즉시 반영)
@@ -59,17 +87,20 @@ export function useReadingSession(): UseReadingSessionResult {
   const channelRef = useRef<BroadcastChannel | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const fetchSession = useCallback(async () => {
-    try {
-      const s = await getActiveSession();
-      setServerSession(s);
-      setOptimisticSession(s);
-    } catch {
-      // 실패 시 기존 값 유지
-    } finally {
-      setIsLoading(false);
-    }
-  }, [setOptimisticSession]);
+  const fetchSession = useCallback(
+    async (force = false) => {
+      try {
+        const s = await fetchActiveSessionShared(force);
+        setServerSession(s);
+        setOptimisticSession(s);
+      } catch {
+        // 실패 시 기존 값 유지
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [setOptimisticSession],
+  );
 
   // 마운트 + 폴링
   useEffect(() => {
@@ -102,9 +133,9 @@ export function useReadingSession(): UseReadingSessionResult {
       if (msg?.type === "session-ended" || msg?.type === "session-cancelled") {
         setOptimisticSession(null);
         setServerSession(null);
-        void fetchSession();
+        void fetchSession(true);
       } else if (msg?.type === "session-started") {
-        void fetchSession();
+        void fetchSession(true);
       }
     };
 
@@ -122,16 +153,18 @@ export function useReadingSession(): UseReadingSessionResult {
       setOptimisticSession(null);
       setServerSession(null);
       channelRef.current?.postMessage({ type: "session-ended", sessionId });
-      void fetchSession();
+      void fetchSession(true);
     },
     [fetchSession, setOptimisticSession],
   );
+
+  const refresh = useCallback(() => fetchSession(true), [fetchSession]);
 
   return {
     session,
     elapsedSeconds,
     broadcastEnd,
-    refresh: fetchSession,
+    refresh,
     isLoading,
   };
 }

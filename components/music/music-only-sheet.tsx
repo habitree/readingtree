@@ -20,7 +20,7 @@ import { cn } from "@/lib/utils";
 import { useMusicPlayer } from "@/hooks/use-music-player";
 import { MUSIC_GENRES } from "@/lib/music";
 import type { MusicGenre } from "@/types/music";
-import { getMusicController } from "./music-mini-player";
+import { getMusicController } from "./music-controller";
 
 export function MusicOnlySheet() {
   const {

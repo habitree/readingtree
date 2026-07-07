@@ -58,7 +58,7 @@ export function RecordSheet() {
       : store.mode === "end"
         ? "기록 종료"
         : store.mode === "attach"
-          ? "사진 추가"
+          ? "기록 상세 추가"
           : "상세 기록";
 
   const description =
@@ -67,7 +67,7 @@ export function RecordSheet() {
       : store.mode === "end"
         ? "끝 페이지와 메모, 사진을 남기고 저장하세요."
         : store.mode === "attach"
-          ? "이 기록에 사진을 더하면 스탬프가 돼요. 페이지·메모도 함께 수정할 수 있어요."
+          ? "시간만 남긴 기록에도 사진·페이지·메모를 더할 수 있어요. 사진을 더하면 스탬프가 돼요."
           : "구절·생각·필사를 자유롭게 남길 수 있어요.";
 
   return (
