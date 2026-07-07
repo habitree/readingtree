@@ -1,13 +1,13 @@
 "use client";
 
 /**
- * 책 상세 페이지 URL 링크 공유 버튼.
+ * 책 상세 페이지 URL 링크 복사 버튼.
  *
- * 동작:
- *   - Web Share API 가능 시 시스템 공유 시트 (모바일/일부 PC)
- *   - 폴백: 클립보드 복사 + toast
+ * 동작: 클릭 즉시 클립보드 복사 (공유 시트 없이 "바로 복사" — 2026-07-07 개편).
+ *   - 1차: navigator.clipboard.writeText
+ *   - 폴백: hidden textarea + execCommand("copy") (구형/인앱 브라우저)
  *
- * ReadingTimeTab 통계 영역 우측에 ReadingTimeShareButton(이미지 공유) 옆에 배치.
+ * ReadingTimeTab 통계 영역 우측에 ReadingTimeShareButton(이미지 복사) 옆에 배치.
  */
 
 import { useCallback, useState } from "react";
@@ -21,34 +21,49 @@ interface ReadingTimeLinkShareProps {
   className?: string;
 }
 
+/** 구형/인앱 브라우저용 execCommand 폴백 */
+function copyTextLegacy(text: string): boolean {
+  try {
+    const textarea = document.createElement("textarea");
+    textarea.value = text;
+    textarea.style.position = "fixed";
+    textarea.style.left = "-9999px";
+    textarea.style.opacity = "0";
+    document.body.appendChild(textarea);
+    textarea.focus();
+    textarea.select();
+    const ok = document.execCommand("copy");
+    document.body.removeChild(textarea);
+    return ok;
+  } catch {
+    return false;
+  }
+}
+
 export function ReadingTimeLinkShare({ bookTitle, className }: ReadingTimeLinkShareProps) {
   const [copied, setCopied] = useState(false);
 
-  const handleShare = useCallback(async () => {
+  const handleCopy = useCallback(async () => {
     if (typeof window === "undefined") return;
     const url = window.location.href;
-    const title = bookTitle ? `${bookTitle} 독서 기록` : "독서 기록";
-    const text = bookTitle ? `${bookTitle}의 독서 기록을 공유합니다.` : "독서 기록을 공유합니다.";
 
-    // Web Share API — 모바일에서 시스템 공유 시트 (카카오·인스타·메시지 등)
-    if (typeof navigator !== "undefined" && navigator.share) {
-      try {
-        await navigator.share({ title, text, url });
-        return;
-      } catch (err) {
-        // 사용자가 공유 취소한 경우 — 더 이상 처리 안 함
-        if (err instanceof Error && err.name === "AbortError") return;
-        // 그 외 에러는 클립보드 폴백으로 진행
-      }
-    }
-
-    // 폴백 — 클립보드 복사
+    let ok = false;
     try {
       await navigator.clipboard.writeText(url);
-      setCopied(true);
-      toast.success("링크를 복사했어요.");
-      setTimeout(() => setCopied(false), 2500);
+      ok = true;
     } catch {
+      ok = copyTextLegacy(url);
+    }
+
+    if (ok) {
+      setCopied(true);
+      toast.success(
+        bookTitle
+          ? `${bookTitle} 독서 기록 링크를 복사했어요.`
+          : "독서 기록 링크를 복사했어요.",
+      );
+      setTimeout(() => setCopied(false), 2500);
+    } else {
       toast.error("링크 복사에 실패했어요.");
     }
   }, [bookTitle]);
@@ -58,9 +73,9 @@ export function ReadingTimeLinkShare({ bookTitle, className }: ReadingTimeLinkSh
       type="button"
       variant="outline"
       size="sm"
-      onClick={handleShare}
+      onClick={handleCopy}
       className={cn("h-8 px-3 text-xs", className)}
-      aria-label="링크 공유"
+      aria-label="링크 복사"
     >
       {copied ? (
         <>
@@ -70,7 +85,7 @@ export function ReadingTimeLinkShare({ bookTitle, className }: ReadingTimeLinkSh
       ) : (
         <>
           <Link2 className="mr-1 h-3.5 w-3.5" />
-          링크 공유
+          링크 복사
         </>
       )}
     </Button>

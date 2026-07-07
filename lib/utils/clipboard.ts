@@ -42,8 +42,49 @@ export async function copyImageToClipboard(
 }
 
 /**
- * 모바일에서 클립보드 복사 지원 여부 확인
+ * 이미지 Blob "Promise"를 클립보드에 복사 — 사용자 제스처 동기 호출용.
+ *
+ * Safari/iOS 는 클릭 핸들러와 동기 시점에 clipboard.write 가 호출돼야 한다.
+ * 캡처(html2canvas 등)가 오래 걸리면 제스처 컨텍스트가 만료되어 복사가 거부되므로,
+ * ClipboardItem 에 Promise<Blob> 을 넘겨 쓰기를 즉시 시작하고 캡처를 기다리게 한다.
+ *
+ * 반환: 복사 성공 여부. 캡처 자체가 실패한 경우(원본 Promise reject)는 throw —
+ * 호출부가 클립보드 미지원(다운로드 폴백)과 캡처 실패(에러 토스트)를 구분할 수 있다.
  */
+export async function copyImagePromiseToClipboard(
+  blobPromise: Promise<Blob>,
+): Promise<boolean> {
+  if (
+    typeof navigator === "undefined" ||
+    !("clipboard" in navigator) ||
+    !("write" in navigator.clipboard) ||
+    typeof ClipboardItem === "undefined"
+  ) {
+    await blobPromise; // 캡처 실패면 여기서 throw
+    return false;
+  }
+
+  const pngPromise = blobPromise.then(
+    (b) => new Blob([b], { type: "image/png" }),
+  );
+  try {
+    const item = new ClipboardItem({ "image/png": pngPromise });
+    await navigator.clipboard.write([item]);
+    return true;
+  } catch (error) {
+    // 캡처 실패가 원인이면 그대로 전파, 클립보드 거부/미지원이면 false
+    let captureFailed = false;
+    let captureError: unknown = error;
+    await pngPromise.catch((e) => {
+      captureFailed = true;
+      captureError = e;
+    });
+    if (captureFailed) throw captureError;
+    console.error("클립보드 이미지 복사 실패:", error);
+    return false;
+  }
+}
+
 /**
  * HTML 리치 텍스트를 클립보드에 복사 (text/html + text/plain)
  * 네이버 블로그 에디터에서 서식 유지 붙여넣기 지원
