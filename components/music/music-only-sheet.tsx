@@ -1,10 +1,10 @@
 "use client";
 
 /**
- * MusicOnlySheet (단일파일 병합 재구성 — 2026-06-08)
+ * MusicOnlySheet (4채널 + 셔플 재생 개편 — 2026-07-07)
  *
- * 클래식/재즈 2장르 카드 + 재생/정지만. 플레이리스트·곡목록·스킵 전부 제거.
- * 장르 선택 시 병합된 단일 MP3 를 랜덤 위치에서 재생한다(끊김 없음).
+ * 피아노/클래식/활기찬 클래식/재즈 4채널 카드 + 재생/정지.
+ * 채널 선택 시 곡 단위 셔플 큐로 매번 다른 순서로 재생한다(끊김 없음).
  */
 
 import { Music2, Pause, Play } from "lucide-react";
@@ -32,7 +32,7 @@ export function MusicOnlySheet() {
   } = useMusicPlayer();
 
   const handlePlay = (genre: MusicGenre) => {
-    // 사용자 클릭 컨텍스트 — 컨트롤러가 랜덤 시작 위치부터 파트 로드 + play() 호출(autoplay 정책).
+    // 사용자 클릭 컨텍스트 — 컨트롤러가 셔플 큐 첫 곡부터 파트 로드 + play() 호출(autoplay 정책).
     const ctrl = getMusicController();
     if (ctrl) ctrl.startGenre(genre);
     else selectGenre(genre); // 폴백 (미니플레이어 미마운트 시)
@@ -58,11 +58,11 @@ export function MusicOnlySheet() {
               배경음악
             </SheetTitle>
             <SheetDescription>
-              종류를 선택하면 끊김 없이 이어서 재생됩니다.
+              채널을 선택하면 매번 새로운 순서로 끊김 없이 재생됩니다.
             </SheetDescription>
           </SheetHeader>
 
-          {/* 2장르 카드 */}
+          {/* 4채널 카드 */}
           <div className="mb-4 grid grid-cols-2 gap-3">
             {MUSIC_GENRES.map((genre) => {
               const isActive = isPlaying && currentGenre?.id === genre.id;

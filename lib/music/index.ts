@@ -25,6 +25,24 @@ export function findCueAt(cues: MusicCue[], time: number): MusicCue | null {
 }
 
 /**
+ * 장르 전체 재생 위치(초)에 해당하는 곡(큐) 인덱스 반환.
+ * 범위 밖이면 가장 가까운 큐로 클램프.
+ */
+export function findCueIndexAt(cues: MusicCue[], time: number): number {
+  if (cues.length === 0) return -1;
+  let lo = 0;
+  let hi = cues.length - 1;
+  while (lo <= hi) {
+    const mid = (lo + hi) >> 1;
+    const c = cues[mid];
+    if (time < c.start) hi = mid - 1;
+    else if (time >= c.start + c.duration) lo = mid + 1;
+    else return mid;
+  }
+  return Math.min(cues.length - 1, Math.max(0, lo - 1));
+}
+
+/**
  * 장르 전체 재생 위치(초)에 해당하는 파트 인덱스 반환.
  * 범위 밖이면 가장 가까운 파트로 클램프.
  */

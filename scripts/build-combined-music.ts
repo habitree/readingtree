@@ -1,10 +1,17 @@
 /**
- * 장르별 음원 병합 + 파트 분할 빌드 스크립트 (1회성)
+ * 채널별 음원 병합 + 파트 분할 빌드 스크립트 (v2 — 2026-07-07)
  *
- * 목적: 클래식/재즈 음원을 각각 "연속된 하나의 스트림"으로 병합하되,
- *       Supabase 스토리지 파일 크기 한도(50MB) 안에 들어가도록
+ * 목적: 4채널(피아노/클래식/활기찬 클래식/재즈) 음원을 각각 "연속된 하나의 스트림"으로
+ *       병합하되, Supabase 스토리지 파일 크기 한도(50MB) 안에 들어가도록
  *       곡 경계 기준 ≤45MB 파트로 분할 업로드한다.
- *       런타임은 파트를 이중 버퍼로 끊김 없이 이어 붙여 단일 음원처럼 재생한다.
+ *       런타임은 파트를 이중 버퍼로 끊김 없이 이어 붙여 셔플 재생한다.
+ *
+ * v2 품질 개선:
+ *   - 160kbps CBR (기존 128k, 원본 대부분 160~320k)
+ *   - EBU R128 측정(loudnorm 1-pass) 기반 선형 게인 정규화 — 목표 -16 LUFS,
+ *     트루피크 -1.5dBTP 상한. volume 필터만 적용하므로 다이내믹 압축 없음.
+ *   - 앞뒤 무음 트리밍(-50dB, 앞 0.5s/뒤 0.8s 여유) — 곡 사이 죽은 공백 제거
+ *   - 업로드 경로 v2/{channel}-{n}.mp3 (기존 객체는 CDN 1년 캐시라 이름 재사용 금지)
  *
  * 실행: npx tsx scripts/build-combined-music.ts
  *
@@ -26,30 +33,30 @@ import { mkdir, writeFile, readFile, stat } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { MUSIC_TRACKS, type SourceTrack } from "../lib/music/tracks";
+import { MUSIC_TRACKS, type MusicChannelId, type SourceTrack } from "../lib/music/tracks";
 
 const execFileAsync = promisify(execFile);
 
 const BUCKET = "jazz-music"; // 기존 public 버킷 재사용 (한도 50MB)
+const OBJECT_PREFIX = "v2"; // CDN immutable 캐시 회피용 신규 경로
 const MAX_PART_BYTES = 45 * 1024 * 1024; // 파트당 최대 45MB (50MB 한도 안전 여유)
-const NORMALIZE_ARGS = [
-  "-c:a", "libmp3lame",
-  "-b:a", "128k",       // CBR — 바이트오프셋 seek 정확도
-  "-ar", "44100",
-  "-ac", "2",
-  "-map_metadata", "-1", // ID3 제거
-  "-write_xing", "0",    // Xing 헤더 제거 → concat 시 곡 사이 클릭/갭 방지
-];
+const BITRATE = "160k"; // CBR — 바이트오프셋 seek 정확도 (무료 티어 스토리지/에그레스 고려 상한)
+const TARGET_LUFS = -16; // 곡 간 라우드니스 목표
+const TP_LIMIT_DB = -1.5; // 트루피크 상한
+// 앞뒤 무음 트리밍 — 여유를 남겨 자연스러운 호흡 유지
+const TRIM_FILTERS =
+  "silenceremove=start_periods=1:start_threshold=-50dB:start_silence=0.5," +
+  "areverse,silenceremove=start_periods=1:start_threshold=-50dB:start_silence=0.8,areverse";
 const CONCURRENCY = 4;
 
 interface Cue {
   title: string;
   composer: string;
-  start: number; // 장르 전체 타임라인 기준(초)
+  start: number; // 채널 전체 타임라인 기준(초)
   duration: number;
 }
 interface Part {
-  start: number; // 장르 전체 타임라인 기준 시작(초)
+  start: number; // 채널 전체 타임라인 기준 시작(초)
   duration: number;
   file: string; // 로컬 병합 파일 경로
 }
@@ -73,7 +80,36 @@ async function ffprobeDuration(file: string): Promise<number> {
   return d;
 }
 
-/** 단일 트랙을 정규화 mp3 로 인코딩(캐시) 후 실제 길이 반환 */
+/** EBU R128 측정 (loudnorm 1-pass JSON) → 통합 라우드니스/트루피크 */
+async function measureLoudness(
+  input: string,
+): Promise<{ inputI: number; inputTp: number }> {
+  const { stderr } = await execFileAsync(
+    "ffmpeg",
+    [
+      "-hide_banner", "-nostats",
+      "-i", input,
+      "-af", `loudnorm=I=${TARGET_LUFS}:TP=${TP_LIMIT_DB}:print_format=json`,
+      "-f", "null", "-",
+    ],
+    { maxBuffer: 64 * 1024 * 1024 },
+  );
+  // loudnorm JSON 블록 뒤에 muxer 로그가 이어지므로 블록 자체를 매칭
+  const jsonMatch = stderr.match(/\{[^{}]*"input_i"[\s\S]*?\}/);
+  if (!jsonMatch) throw new Error(`loudnorm 측정 실패: ${input}`);
+  const parsed = JSON.parse(jsonMatch[0]) as { input_i: string; input_tp: string };
+  const inputI = parseFloat(parsed.input_i);
+  const inputTp = parseFloat(parsed.input_tp);
+  if (!Number.isFinite(inputI) || !Number.isFinite(inputTp)) {
+    throw new Error(`loudnorm 측정값 파싱 실패: ${input}`);
+  }
+  return { inputI, inputTp };
+}
+
+/**
+ * 단일 트랙을 정규화 mp3 로 인코딩(캐시) 후 실제 길이 반환.
+ * 무음 트리밍 + 선형 게인(목표 LUFS, 트루피크 상한 캡) + 160k CBR.
+ */
 async function normalize(track: SourceTrack, outFile: string): Promise<number> {
   if (existsSync(outFile) && (await stat(outFile)).size > 0) {
     return ffprobeDuration(outFile);
@@ -82,10 +118,29 @@ async function normalize(track: SourceTrack, outFile: string): Promise<number> {
   if (track.sourceUrl.startsWith("/") && !existsSync(input)) {
     throw new Error(`로컬 음원 없음: ${input}`);
   }
+
+  const { inputI, inputTp } = await measureLoudness(input);
+  // 선형 게인 — 목표 LUFS 까지 올리되 트루피크가 상한을 넘지 않도록 캡
+  const gainDb = Math.min(TARGET_LUFS - inputI, TP_LIMIT_DB - inputTp);
+  const gain = Math.round(gainDb * 100) / 100;
+
   await execFileAsync(
     "ffmpeg",
-    ["-y", "-i", input, ...NORMALIZE_ARGS, outFile],
+    [
+      "-y", "-i", input,
+      "-af", `${TRIM_FILTERS},volume=${gain}dB`,
+      "-c:a", "libmp3lame",
+      "-b:a", BITRATE,
+      "-ar", "44100",
+      "-ac", "2",
+      "-map_metadata", "-1", // ID3 제거
+      "-write_xing", "0",    // Xing 헤더 제거 → concat 시 곡 사이 클릭/갭 방지
+      outFile,
+    ],
     { maxBuffer: 64 * 1024 * 1024 },
+  );
+  process.stdout.write(
+    `    · ${track.title} — ${inputI.toFixed(1)} LUFS → gain ${gain >= 0 ? "+" : ""}${gain}dB\n`,
   );
   return ffprobeDuration(outFile);
 }
@@ -107,8 +162,8 @@ async function mapLimit<T, R>(
   return results;
 }
 
-interface GenreBuild {
-  id: "classic" | "jazz";
+interface ChannelBuild {
+  id: MusicChannelId;
   name: string;
   emoji: string;
   tracks: SourceTrack[];
@@ -128,26 +183,26 @@ async function concatTo(segFiles: string[], listFile: string, outFile: string) {
   );
 }
 
-/** 장르 1개 → cues(전체) + parts(≤45MB 분할) */
-async function buildGenre(
-  genre: GenreBuild,
+/** 채널 1개 → cues(전체) + parts(≤45MB 분할) */
+async function buildChannel(
+  channel: ChannelBuild,
   workDir: string,
 ): Promise<{ parts: Part[]; cues: Cue[]; total: number }> {
-  console.log(`\n[${genre.id}] ${genre.tracks.length}곡 정규화 시작...`);
+  console.log(`\n[${channel.id}] ${channel.tracks.length}곡 정규화 시작...`);
 
   const segFiles: string[] = [];
-  const durations = await mapLimit(genre.tracks, CONCURRENCY, async (track, i) => {
-    const out = path.join(workDir, `${genre.id}-seg-${String(i).padStart(3, "0")}.mp3`);
+  const durations = await mapLimit(channel.tracks, CONCURRENCY, async (track, i) => {
+    const out = path.join(workDir, `${channel.id}-seg-${String(i).padStart(3, "0")}.mp3`);
     const dur = await normalize(track, out);
     segFiles[i] = out;
-    process.stdout.write(`  ✓ ${i + 1}/${genre.tracks.length} ${track.title}\n`);
+    process.stdout.write(`  ✓ ${i + 1}/${channel.tracks.length} ${track.title}\n`);
     return dur;
   });
 
-  // cues — 장르 전체 타임라인 누적
+  // cues — 채널 전체 타임라인 누적
   const cues: Cue[] = [];
   let acc = 0;
-  genre.tracks.forEach((t, i) => {
+  channel.tracks.forEach((t, i) => {
     cues.push({
       title: t.title,
       composer: t.composer,
@@ -181,9 +236,9 @@ async function buildGenre(
     const idxs = groups[p];
     const partSegs = idxs.map((i) => segFiles[i]);
     const partDur = idxs.reduce((s, i) => s + durations[i], 0);
-    const listFile = path.join(workDir, `${genre.id}-part-${p + 1}-list.txt`);
-    const outFile = path.join(workDir, `${genre.id}-${p + 1}.mp3`);
-    console.log(`[${genre.id}] 파트 ${p + 1}/${groups.length} concat (${idxs.length}곡)...`);
+    const listFile = path.join(workDir, `${channel.id}-part-${p + 1}-list.txt`);
+    const outFile = path.join(workDir, `${channel.id}-${p + 1}.mp3`);
+    console.log(`[${channel.id}] 파트 ${p + 1}/${groups.length} concat (${idxs.length}곡)...`);
     await concatTo(partSegs, listFile, outFile);
     const sizeMb = (await stat(outFile)).size / (1024 * 1024);
     console.log(`  → ${(partDur / 60).toFixed(1)}분, ${sizeMb.toFixed(1)}MB`);
@@ -195,7 +250,7 @@ async function buildGenre(
     partStart += partDur;
   }
 
-  console.log(`[${genre.id}] 완료 — ${(total / 60).toFixed(1)}분, ${parts.length}개 파트`);
+  console.log(`[${channel.id}] 완료 — ${(total / 60).toFixed(1)}분, ${parts.length}개 파트`);
   return { parts, cues, total };
 }
 
@@ -203,38 +258,45 @@ async function main() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_MUSIC_URL;
   const serviceKey = process.env.SUPABASE_MUSIC_SERVICE_ROLE_KEY;
 
-  const classicTracks = MUSIC_TRACKS.filter((t) => t.era !== "jazz");
-  const jazzTracks = MUSIC_TRACKS.filter((t) => t.era === "jazz");
+  const channels: ChannelBuild[] = [
+    { id: "piano", name: "피아노", emoji: "🎹", tracks: [] },
+    { id: "classic", name: "클래식", emoji: "🎻", tracks: [] },
+    { id: "energetic", name: "활기찬 클래식", emoji: "🎺", tracks: [] },
+    { id: "jazz", name: "재즈", emoji: "🎷", tracks: [] },
+  ];
+  for (const t of MUSIC_TRACKS) {
+    const ch = channels.find((c) => c.id === t.channel);
+    if (!ch) throw new Error(`알 수 없는 채널: ${t.channel} (${t.id})`);
+    ch.tracks.push(t);
+  }
 
-  console.log("=== 장르별 병합 + 파트 분할 빌드 ===");
-  console.log(`클래식 ${classicTracks.length}곡 / 재즈 ${jazzTracks.length}곡`);
+  console.log("=== 채널별 병합 + 파트 분할 빌드 (v2) ===");
+  console.log(channels.map((c) => `${c.name} ${c.tracks.length}곡`).join(" / "));
 
-  const workDir = path.join(tmpdir(), "rt-music-build");
+  const workDir = path.join(tmpdir(), "rt-music-build-v2");
   await mkdir(workDir, { recursive: true });
   console.log(`작업 캐시: ${workDir}`);
 
-  const genres: GenreBuild[] = [
-    { id: "classic", name: "클래식", emoji: "🎻", tracks: classicTracks },
-    { id: "jazz", name: "재즈", emoji: "🎷", tracks: jazzTracks },
-  ];
-
-  const built = await Promise.all(genres.map((g) => buildGenre(g, workDir)));
+  const built: { parts: Part[]; cues: Cue[]; total: number }[] = [];
+  for (const ch of channels) {
+    built.push(await buildChannel(ch, workDir));
+  }
 
   const publicBase = `${url}/storage/v1/object/public/${BUCKET}`;
-  const partUrls: string[][] = genres.map(() => []);
+  const partUrls: string[][] = channels.map(() => []);
 
   if (url && serviceKey) {
     const supabase = createClient(url, serviceKey);
-    for (let gi = 0; gi < genres.length; gi++) {
-      const g = genres[gi];
+    for (let gi = 0; gi < channels.length; gi++) {
+      const g = channels[gi];
       const parts = built[gi].parts;
       for (let p = 0; p < parts.length; p++) {
-        const objectName = `${g.id}-${p + 1}.mp3`;
+        const objectName = `${OBJECT_PREFIX}/${g.id}-${p + 1}.mp3`;
         const buf = await readFile(parts[p].file);
         console.log(`\n[업로드] ${objectName} (${(buf.length / 1024 / 1024).toFixed(1)}MB)...`);
         const { error } = await supabase.storage
           .from(BUCKET)
-          // cacheControl: 1년 immutable — 파일명({genre}-{n}.mp3)이 고정이라
+          // cacheControl: 1년 immutable — 객체 경로(v2/{channel}-{n}.mp3)가 고정이라
           // CDN(Cloudflare) 엣지 캐시로 Range 스트리밍을 안정화(재생 중 끊김 방지).
           .upload(objectName, buf, {
             contentType: "audio/mpeg",
@@ -248,15 +310,15 @@ async function main() {
     }
   } else {
     console.warn("\n[경고] 업로드 자격 미설정 — URL만 추정해 genres.ts 생성");
-    genres.forEach((g, gi) => {
+    channels.forEach((g, gi) => {
       built[gi].parts.forEach((_, p) => {
-        partUrls[gi][p] = `${publicBase}/${g.id}-${p + 1}.mp3`;
+        partUrls[gi][p] = `${publicBase}/${OBJECT_PREFIX}/${g.id}-${p + 1}.mp3`;
       });
     });
   }
 
   // genres.ts 출력
-  const genreObjs = genres.map((g, gi) => ({
+  const genreObjs = channels.map((g, gi) => ({
     id: g.id,
     name: g.name,
     emoji: g.emoji,
