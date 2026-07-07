@@ -4,45 +4,30 @@ import type { MusicGenre } from "@/types/music";
 
 export const MUSIC_GENRES: MusicGenre[] = [
   {
-    "id": "classic",
-    "name": "클래식",
-    "emoji": "🎻",
-    "durationSeconds": 16775.627,
+    "id": "piano",
+    "name": "피아노",
+    "emoji": "🎹",
+    "durationSeconds": 8280.242,
     "parts": [
       {
-        "url": "https://amqywfemuxghcosexqct.supabase.co/storage/v1/object/public/jazz-music/classic-1.mp3",
+        "url": "https://amqywfemuxghcosexqct.supabase.co/storage/v1/object/public/jazz-music/v2/piano-1.mp3",
         "start": 0,
-        "duration": 2705.371
+        "duration": 2325.551
       },
       {
-        "url": "https://amqywfemuxghcosexqct.supabase.co/storage/v1/object/public/jazz-music/classic-2.mp3",
-        "start": 2705.371,
-        "duration": 2451.984
+        "url": "https://amqywfemuxghcosexqct.supabase.co/storage/v1/object/public/jazz-music/v2/piano-2.mp3",
+        "start": 2325.551,
+        "duration": 2109.336
       },
       {
-        "url": "https://amqywfemuxghcosexqct.supabase.co/storage/v1/object/public/jazz-music/classic-3.mp3",
-        "start": 5157.355,
-        "duration": 2646.23
+        "url": "https://amqywfemuxghcosexqct.supabase.co/storage/v1/object/public/jazz-music/v2/piano-3.mp3",
+        "start": 4434.887,
+        "duration": 2255.464
       },
       {
-        "url": "https://amqywfemuxghcosexqct.supabase.co/storage/v1/object/public/jazz-music/classic-4.mp3",
-        "start": 7803.585,
-        "duration": 2877.727
-      },
-      {
-        "url": "https://amqywfemuxghcosexqct.supabase.co/storage/v1/object/public/jazz-music/classic-5.mp3",
-        "start": 10681.312,
-        "duration": 2691.291
-      },
-      {
-        "url": "https://amqywfemuxghcosexqct.supabase.co/storage/v1/object/public/jazz-music/classic-6.mp3",
-        "start": 13372.603,
-        "duration": 2916.676
-      },
-      {
-        "url": "https://amqywfemuxghcosexqct.supabase.co/storage/v1/object/public/jazz-music/classic-7.mp3",
-        "start": 16289.279,
-        "duration": 486.348
+        "url": "https://amqywfemuxghcosexqct.supabase.co/storage/v1/object/public/jazz-music/v2/piano-4.mp3",
+        "start": 6690.351,
+        "duration": 1589.891
       }
     ],
     "cues": [
@@ -50,295 +35,469 @@ export const MUSIC_GENRES: MusicGenre[] = [
         "title": "골드베르크 변주곡 - Aria",
         "composer": "바흐",
         "start": 0,
-        "duration": 292.467
+        "duration": 287.19
       },
       {
         "title": "골드베르크 변주곡 - Var.25",
         "composer": "바흐",
-        "start": 292.467,
+        "start": 287.19,
         "duration": 410.54
       },
       {
         "title": "평균율 1권 프렐류드 C장조 BWV 846",
         "composer": "바흐",
-        "start": 703.007,
-        "duration": 318.38
+        "start": 697.731,
+        "duration": 309.708
       },
       {
-        "title": "무반주 첼로 모음곡 1번 - 프렐류드",
+        "title": "프랑스 모음곡 5번 - 사라방드",
         "composer": "바흐",
-        "start": 1021.388,
-        "duration": 150.465
+        "start": 1007.438,
+        "duration": 226.325
       },
       {
-        "title": "캐논 D장조",
-        "composer": "파헬벨",
-        "start": 1171.853,
-        "duration": 462.08
-      },
-      {
-        "title": "양은 풀을 뜯고 (BWV 208)",
+        "title": "인벤션 1번 C장조",
         "composer": "바흐",
-        "start": 1633.933,
-        "duration": 301.427
+        "start": 1233.763,
+        "duration": 64.105
       },
       {
-        "title": "수상음악 - 알라 호른파이프",
-        "composer": "헨델",
-        "start": 1935.36,
-        "duration": 222.616
+        "title": "인벤션 8번 F장조",
+        "composer": "바흐",
+        "start": 1297.868,
+        "duration": 54.622
       },
       {
-        "title": "라르고 (옴브라 마이 푸)",
-        "composer": "헨델",
-        "start": 2157.975,
-        "duration": 219.35
+        "title": "소나타 K.380",
+        "composer": "스카를라티",
+        "start": 1352.49,
+        "duration": 327.497
       },
       {
         "title": "월광 소나타 - 1악장",
         "composer": "베토벤",
-        "start": 2377.326,
-        "duration": 328.046
+        "start": 1679.987,
+        "duration": 320.105
+      },
+      {
+        "title": "비창 소나타 - 2악장 Adagio",
+        "composer": "베토벤",
+        "start": 2000.091,
+        "duration": 325.46
+      },
+      {
+        "title": "소나타 K.545 - 2악장 Andante",
+        "composer": "모차르트",
+        "start": 2325.551,
+        "duration": 196.284
+      },
+      {
+        "title": "소나타 D.664 - 1악장",
+        "composer": "슈베르트",
+        "start": 2521.835,
+        "duration": 464.327
+      },
+      {
+        "title": "소나타 D.664 - 2악장",
+        "composer": "슈베르트",
+        "start": 2986.162,
+        "duration": 289.228
+      },
+      {
+        "title": "녹턴 Op.9 No.2",
+        "composer": "쇼팽",
+        "start": 3275.389,
+        "duration": 269.976
+      },
+      {
+        "title": "녹턴 Op.27 No.2",
+        "composer": "쇼팽",
+        "start": 3545.365,
+        "duration": 366.602
+      },
+      {
+        "title": "녹턴 Op.15 No.2",
+        "composer": "쇼팽",
+        "start": 3911.967,
+        "duration": 127.713
+      },
+      {
+        "title": "녹턴 Op.55 No.1",
+        "composer": "쇼팽",
+        "start": 4039.68,
+        "duration": 211.017
+      },
+      {
+        "title": "녹턴 Op.48 No.1",
+        "composer": "쇼팽",
+        "start": 4250.697,
+        "duration": 184.189
+      },
+      {
+        "title": "발라드 1번 Op.23",
+        "composer": "쇼팽",
+        "start": 4434.887,
+        "duration": 611.683
+      },
+      {
+        "title": "왈츠 Op.64 No.2",
+        "composer": "쇼팽",
+        "start": 5046.57,
+        "duration": 227.84
+      },
+      {
+        "title": "프렐류드 Op.28 No.4",
+        "composer": "쇼팽",
+        "start": 5274.41,
+        "duration": 144.013
+      },
+      {
+        "title": "프렐류드 Op.28 No.15 \"빗방울\"",
+        "composer": "쇼팽",
+        "start": 5418.423,
+        "duration": 291.788
+      },
+      {
+        "title": "아베 마리아",
+        "composer": "슈베르트",
+        "start": 5710.211,
+        "duration": 249.548
+      },
+      {
+        "title": "즉흥곡 Op.90 No.3",
+        "composer": "슈베르트",
+        "start": 5959.758,
+        "duration": 403.2
+      },
+      {
+        "title": "트로이메라이 (꿈)",
+        "composer": "슈만",
+        "start": 6362.958,
+        "duration": 152.895
+      },
+      {
+        "title": "꿈 후에 (Après un rêve)",
+        "composer": "포레",
+        "start": 6515.853,
+        "duration": 174.498
+      },
+      {
+        "title": "위안 3번",
+        "composer": "리스트",
+        "start": 6690.351,
+        "duration": 283.167
+      },
+      {
+        "title": "아라베스크 1번",
+        "composer": "드뷔시",
+        "start": 6973.518,
+        "duration": 465.058
+      },
+      {
+        "title": "달빛 (베르가마스크 모음곡)",
+        "composer": "드뷔시",
+        "start": 7438.576,
+        "duration": 363.964
+      },
+      {
+        "title": "짐노페디 1번",
+        "composer": "사티",
+        "start": 7802.54,
+        "duration": 212.297
+      },
+      {
+        "title": "뇨시엔느 1번",
+        "composer": "사티",
+        "start": 8014.838,
+        "duration": 265.404
+      }
+    ]
+  },
+  {
+    "id": "classic",
+    "name": "클래식",
+    "emoji": "🎻",
+    "durationSeconds": 9119.478,
+    "parts": [
+      {
+        "url": "https://amqywfemuxghcosexqct.supabase.co/storage/v1/object/public/jazz-music/v2/classic-1.mp3",
+        "start": 0,
+        "duration": 2161.502
+      },
+      {
+        "url": "https://amqywfemuxghcosexqct.supabase.co/storage/v1/object/public/jazz-music/v2/classic-2.mp3",
+        "start": 2161.502,
+        "duration": 1898.214
+      },
+      {
+        "url": "https://amqywfemuxghcosexqct.supabase.co/storage/v1/object/public/jazz-music/v2/classic-3.mp3",
+        "start": 4059.716,
+        "duration": 1910.491
+      },
+      {
+        "url": "https://amqywfemuxghcosexqct.supabase.co/storage/v1/object/public/jazz-music/v2/classic-4.mp3",
+        "start": 5970.207,
+        "duration": 2172.578
+      },
+      {
+        "url": "https://amqywfemuxghcosexqct.supabase.co/storage/v1/object/public/jazz-music/v2/classic-5.mp3",
+        "start": 8142.785,
+        "duration": 976.692
+      }
+    ],
+    "cues": [
+      {
+        "title": "무반주 첼로 모음곡 1번 - 프렐류드",
+        "composer": "바흐",
+        "start": 0,
+        "duration": 146.521
+      },
+      {
+        "title": "캐논 D장조",
+        "composer": "파헬벨",
+        "start": 146.521,
+        "duration": 457.979
+      },
+      {
+        "title": "양은 풀을 뜯고 (BWV 208)",
+        "composer": "바흐",
+        "start": 604.5,
+        "duration": 290.534
+      },
+      {
+        "title": "예수, 인간 소망의 기쁨",
+        "composer": "바흐",
+        "start": 895.034,
+        "duration": 204.539
+      },
+      {
+        "title": "아다지오 G단조",
+        "composer": "알비노니",
+        "start": 1099.572,
+        "duration": 703.922
+      },
+      {
+        "title": "라르고 (옴브라 마이 푸)",
+        "composer": "헨델",
+        "start": 1803.494,
+        "duration": 212.663
+      },
+      {
+        "title": "수상음악 - 에어",
+        "composer": "헨델",
+        "start": 2016.157,
+        "duration": 145.345
+      },
+      {
+        "title": "무반주 플루트 환상곡 1번",
+        "composer": "텔레만",
+        "start": 2161.502,
+        "duration": 462.838
+      },
+      {
+        "title": "정령들의 춤",
+        "composer": "글루크",
+        "start": 2624.34,
+        "duration": 382.851
+      },
+      {
+        "title": "세레나데 (현악 사중주 Op.3-5)",
+        "composer": "하이든",
+        "start": 3007.19,
+        "duration": 233.169
       },
       {
         "title": "아이네 클라이네 - 2악장 Romance",
         "composer": "모차르트",
-        "start": 2705.371,
+        "start": 3240.359,
         "duration": 364.513
       },
       {
         "title": "교향곡 40번 - 2악장 Andante",
         "composer": "모차르트",
-        "start": 3069.884,
-        "duration": 456.202
+        "start": 3604.872,
+        "duration": 454.844
+      },
+      {
+        "title": "피아노 협주곡 21번 - 2악장 Andante",
+        "composer": "모차르트",
+        "start": 4059.716,
+        "duration": 495.647
       },
       {
         "title": "교향곡 3번 에로이카 - 2악장",
         "composer": "베토벤",
-        "start": 3526.086,
-        "duration": 928.549
+        "start": 4555.363,
+        "duration": 925.205
+      },
+      {
+        "title": "교향곡 7번 - 2악장 Allegretto",
+        "composer": "베토벤",
+        "start": 5480.568,
+        "duration": 489.639
+      },
+      {
+        "title": "현악 사중주 2번 - 녹턴",
+        "composer": "보로딘",
+        "start": 5970.207,
+        "duration": 546.612
+      },
+      {
+        "title": "아메리칸 사중주 - Lento",
+        "composer": "드보르작",
+        "start": 6516.82,
+        "duration": 469.185
+      },
+      {
+        "title": "명상곡",
+        "composer": "수크",
+        "start": 6986.005,
+        "duration": 404.402
+      },
+      {
+        "title": "페르 귄트 - 아침 기분",
+        "composer": "그리그",
+        "start": 7390.407,
+        "duration": 227.553
+      },
+      {
+        "title": "페르 귄트 - 오세의 죽음",
+        "composer": "그리그",
+        "start": 7617.959,
+        "duration": 268.983
+      },
+      {
+        "title": "타이스의 명상곡",
+        "composer": "마스네",
+        "start": 7886.942,
+        "duration": 255.843
+      },
+      {
+        "title": "백조 (동물의 사육제)",
+        "composer": "생상스",
+        "start": 8142.785,
+        "duration": 204.8
+      },
+      {
+        "title": "파반",
+        "composer": "포레",
+        "start": 8347.585,
+        "duration": 427.52
+      },
+      {
+        "title": "보칼리제",
+        "composer": "라흐마니노프",
+        "start": 8775.105,
+        "duration": 344.372
+      }
+    ]
+  },
+  {
+    "id": "energetic",
+    "name": "활기찬 클래식",
+    "emoji": "🎺",
+    "durationSeconds": 4768,
+    "parts": [
+      {
+        "url": "https://amqywfemuxghcosexqct.supabase.co/storage/v1/object/public/jazz-music/v2/energetic-1.mp3",
+        "start": 0,
+        "duration": 2244.101
+      },
+      {
+        "url": "https://amqywfemuxghcosexqct.supabase.co/storage/v1/object/public/jazz-music/v2/energetic-2.mp3",
+        "start": 2244.101,
+        "duration": 2125.74
+      },
+      {
+        "url": "https://amqywfemuxghcosexqct.supabase.co/storage/v1/object/public/jazz-music/v2/energetic-3.mp3",
+        "start": 4369.842,
+        "duration": 398.158
+      }
+    ],
+    "cues": [
+      {
+        "title": "브란덴부르크 협주곡 3번 - 1악장",
+        "composer": "바흐",
+        "start": 0,
+        "duration": 335.621
+      },
+      {
+        "title": "토카타와 푸가 D단조",
+        "composer": "바흐",
+        "start": 335.621,
+        "duration": 520.62
+      },
+      {
+        "title": "수상음악 - 알라 호른파이프",
+        "composer": "헨델",
+        "start": 856.242,
+        "duration": 216.451
       },
       {
         "title": "아이네 클라이네 나흐트무지크 - 1악장 Allegro",
         "composer": "모차르트",
-        "start": 4454.635,
+        "start": 1072.692,
         "duration": 343.876
       },
       {
         "title": "교향곡 40번 - 1악장 Molto Allegro",
         "composer": "모차르트",
-        "start": 4798.511,
-        "duration": 358.844
+        "start": 1416.568,
+        "duration": 358.4
+      },
+      {
+        "title": "교향곡 25번 - 1악장",
+        "composer": "모차르트",
+        "start": 1774.968,
+        "duration": 469.133
+      },
+      {
+        "title": "터키 행진곡",
+        "composer": "모차르트",
+        "start": 2244.101,
+        "duration": 229.329
       },
       {
         "title": "교향곡 5번 - 1악장 운명",
         "composer": "베토벤",
-        "start": 5157.355,
+        "start": 2473.43,
         "duration": 500.114
       },
       {
         "title": "교향곡 7번 - 4악장 Allegro con brio",
         "composer": "베토벤",
-        "start": 5657.469,
-        "duration": 390.661
-      },
-      {
-        "title": "피아노 협주곡 21번 - 2악장 Andante",
-        "composer": "모차르트",
-        "start": 6048.13,
-        "duration": 498.233
+        "start": 2973.545,
+        "duration": 390.191
       },
       {
         "title": "세빌리아의 이발사 서곡",
         "composer": "로시니",
-        "start": 6546.364,
-        "duration": 440.555
-      },
-      {
-        "title": "교향곡 7번 - 2악장 Allegretto",
-        "composer": "베토벤",
-        "start": 6986.919,
-        "duration": 489.744
-      },
-      {
-        "title": "비창 소나타 - 2악장 Adagio",
-        "composer": "베토벤",
-        "start": 7476.662,
-        "duration": 326.922
-      },
-      {
-        "title": "교향곡 25번 - 1악장",
-        "composer": "모차르트",
-        "start": 7803.585,
-        "duration": 475.089
-      },
-      {
-        "title": "소나타 D.664 - 1악장",
-        "composer": "슈베르트",
-        "start": 8278.674,
-        "duration": 466.207
-      },
-      {
-        "title": "소나타 D.664 - 2악장",
-        "composer": "슈베르트",
-        "start": 8744.881,
-        "duration": 290.873
-      },
-      {
-        "title": "녹턴 Op.9 No.2",
-        "composer": "쇼팽",
-        "start": 9035.755,
-        "duration": 276.637
-      },
-      {
-        "title": "녹턴 Op.27 No.2",
-        "composer": "쇼팽",
-        "start": 9312.391,
-        "duration": 377.809
-      },
-      {
-        "title": "발라드 1번 Op.23",
-        "composer": "쇼팽",
-        "start": 9690.2,
-        "duration": 613.616
-      },
-      {
-        "title": "왈츠 Op.64 No.2",
-        "composer": "쇼팽",
-        "start": 10303.816,
-        "duration": 230.087
-      },
-      {
-        "title": "프렐류드 Op.28 No.4",
-        "composer": "쇼팽",
-        "start": 10533.903,
-        "duration": 147.409
-      },
-      {
-        "title": "프렐류드 Op.28 No.15 \"빗방울\"",
-        "composer": "쇼팽",
-        "start": 10681.312,
-        "duration": 295.288
-      },
-      {
-        "title": "현악 사중주 2번 - 녹턴",
-        "composer": "보로딘",
-        "start": 10976.6,
-        "duration": 547.396
-      },
-      {
-        "title": "아메리칸 사중주 - Lento",
-        "composer": "드보르작",
-        "start": 11523.996,
-        "duration": 471.51
-      },
-      {
-        "title": "명상곡",
-        "composer": "수크",
-        "start": 11995.506,
-        "duration": 405.499
-      },
-      {
-        "title": "페르 귄트 - 아침 기분",
-        "composer": "그리그",
-        "start": 12401.005,
-        "duration": 229.224
-      },
-      {
-        "title": "페르 귄트 - 오세의 죽음",
-        "composer": "그리그",
-        "start": 12630.229,
-        "duration": 273.842
-      },
-      {
-        "title": "타이스의 명상곡",
-        "composer": "마스네",
-        "start": 12904.071,
-        "duration": 257.123
-      },
-      {
-        "title": "백조 (동물의 사육제)",
-        "composer": "생상스",
-        "start": 13161.194,
-        "duration": 211.409
-      },
-      {
-        "title": "아베 마리아",
-        "composer": "슈베르트",
-        "start": 13372.603,
-        "duration": 260.807
-      },
-      {
-        "title": "녹턴 Op.15 No.2",
-        "composer": "쇼팽",
-        "start": 13633.41,
-        "duration": 136.02
-      },
-      {
-        "title": "녹턴 Op.55 No.1",
-        "composer": "쇼팽",
-        "start": 13769.429,
-        "duration": 216.816
-      },
-      {
-        "title": "트로이메라이 (꿈)",
-        "composer": "슈만",
-        "start": 13986.245,
-        "duration": 152.869
-      },
-      {
-        "title": "꿈 후에 (Après un rêve)",
-        "composer": "포레",
-        "start": 14139.114,
-        "duration": 174.472
+        "start": 3363.736,
+        "duration": 439.092
       },
       {
         "title": "헝가리 무곡 5번",
         "composer": "브람스",
-        "start": 14313.586,
-        "duration": 172.565
+        "start": 3802.828,
+        "duration": 172.539
       },
       {
         "title": "꽃의 왈츠 (호두까기 인형)",
         "composer": "차이콥스키",
-        "start": 14486.151,
-        "duration": 405.368
+        "start": 3975.367,
+        "duration": 394.475
+      },
+      {
+        "title": "현을 위한 세레나데 - 왈츠",
+        "composer": "차이콥스키",
+        "start": 4369.842,
+        "duration": 243.069
       },
       {
         "title": "산왕의 궁전에서 (페르 귄트)",
         "composer": "그리그",
-        "start": 14891.519,
-        "duration": 155.063
-      },
-      {
-        "title": "즉흥곡 Op.90 No.3",
-        "composer": "슈베르트",
-        "start": 15046.582,
-        "duration": 404.48
-      },
-      {
-        "title": "아라베스크 1번",
-        "composer": "드뷔시",
-        "start": 15451.062,
-        "duration": 469.734
-      },
-      {
-        "title": "달빛 (베르가마스크 모음곡)",
-        "composer": "드뷔시",
-        "start": 15920.796,
-        "duration": 368.483
-      },
-      {
-        "title": "짐노페디 1번",
-        "composer": "사티",
-        "start": 16289.279,
-        "duration": 216.947
-      },
-      {
-        "title": "뇨시엔느 1번",
-        "composer": "사티",
-        "start": 16506.226,
-        "duration": 269.401
+        "start": 4612.911,
+        "duration": 155.089
       }
     ]
   },
@@ -346,17 +505,17 @@ export const MUSIC_GENRES: MusicGenre[] = [
     "id": "jazz",
     "name": "재즈",
     "emoji": "🎷",
-    "durationSeconds": 4085.837,
+    "durationSeconds": 4026.149,
     "parts": [
       {
-        "url": "https://amqywfemuxghcosexqct.supabase.co/storage/v1/object/public/jazz-music/jazz-1.mp3",
+        "url": "https://amqywfemuxghcosexqct.supabase.co/storage/v1/object/public/jazz-music/v2/jazz-1.mp3",
         "start": 0,
-        "duration": 2921.325
+        "duration": 2272.366
       },
       {
-        "url": "https://amqywfemuxghcosexqct.supabase.co/storage/v1/object/public/jazz-music/jazz-2.mp3",
-        "start": 2921.325,
-        "duration": 1164.512
+        "url": "https://amqywfemuxghcosexqct.supabase.co/storage/v1/object/public/jazz-music/v2/jazz-2.mp3",
+        "start": 2272.366,
+        "duration": 1753.783
       }
     ],
     "cues": [
@@ -364,211 +523,211 @@ export const MUSIC_GENRES: MusicGenre[] = [
         "title": "Beautiful Dream",
         "composer": "Diego Nava",
         "start": 0,
-        "duration": 97.045
+        "duration": 96.078
       },
       {
         "title": "Latin Lovers",
         "composer": "Ahjay Stelino",
-        "start": 97.045,
-        "duration": 95.138
+        "start": 96.078,
+        "duration": 94.093
       },
       {
         "title": "Romantic 01",
         "composer": "Lily J",
-        "start": 192.183,
-        "duration": 98.717
+        "start": 190.171,
+        "duration": 98.508
       },
       {
         "title": "Romantic Vacation",
         "composer": "Ahjay Stelino",
-        "start": 290.9,
-        "duration": 111.752
+        "start": 288.679,
+        "duration": 111.621
       },
       {
         "title": "Smooth Like Jazz",
         "composer": "Ahjay Stelino",
-        "start": 402.651,
-        "duration": 158.302
+        "start": 400.3,
+        "duration": 154.54
       },
       {
         "title": "Chill Bro",
         "composer": "Diego Nava",
-        "start": 560.953,
-        "duration": 99.892
+        "start": 554.841,
+        "duration": 98.377
       },
       {
         "title": "Lounging By Moonlight",
         "composer": "Ahjay Stelino",
-        "start": 660.846,
-        "duration": 94.328
+        "start": 653.218,
+        "duration": 93.414
       },
       {
         "title": "Soul Jazz",
         "composer": "Francisco Alvear",
-        "start": 755.174,
-        "duration": 134.687
+        "start": 746.632,
+        "duration": 133.016
       },
       {
         "title": "Lonely in the Bar",
         "composer": "Diego Nava",
-        "start": 889.861,
-        "duration": 91.925
+        "start": 879.647,
+        "duration": 91.899
       },
       {
         "title": "Winter Wind",
         "composer": "Diego Nava",
-        "start": 981.786,
-        "duration": 91.899
+        "start": 971.546,
+        "duration": 87.197
       },
       {
         "title": "Jazz 1",
         "composer": "Francisco Alvear",
-        "start": 1073.685,
-        "duration": 133.982
+        "start": 1058.743,
+        "duration": 132.31
       },
       {
         "title": "Nostalgic Night",
         "composer": "Michael Ramir C.",
-        "start": 1207.667,
-        "duration": 124.865
+        "start": 1191.053,
+        "duration": 123.533
       },
       {
         "title": "Lo-Fi 03",
         "composer": "Lily J",
-        "start": 1332.532,
-        "duration": 113.371
+        "start": 1314.586,
+        "duration": 113.189
       },
       {
         "title": "Swing is the Answer",
         "composer": "Diego Nava",
-        "start": 1445.903,
-        "duration": 108.8
+        "start": 1427.775,
+        "duration": 106.083
       },
       {
         "title": "Where Are My Boots",
         "composer": "Michael Ramir C.",
-        "start": 1554.703,
-        "duration": 161.489
+        "start": 1533.858,
+        "duration": 158.929
       },
       {
         "title": "Lost in a Dream",
         "composer": "Michael Ramir C.",
-        "start": 1716.192,
-        "duration": 111.491
+        "start": 1692.787,
+        "duration": 108.408
       },
       {
         "title": "Papa",
         "composer": "Michael Ramir C.",
-        "start": 1827.683,
+        "start": 1801.195,
         "duration": 96.627
       },
       {
         "title": "You Got Jazz",
         "composer": "Diego Nava",
-        "start": 1924.31,
-        "duration": 99.736
+        "start": 1897.822,
+        "duration": 98.038
       },
       {
         "title": "Pop 03",
         "composer": "Grigoriy Nuzhny",
-        "start": 2024.045,
-        "duration": 171.363
+        "start": 1995.86,
+        "duration": 168.438
       },
       {
         "title": "Upbeat Jazz",
         "composer": "Francisco Alvear",
-        "start": 2195.408,
-        "duration": 110.263
+        "start": 2164.297,
+        "duration": 108.069
       },
       {
         "title": "Fun Jazz",
         "composer": "Francisco Alvear",
-        "start": 2305.671,
-        "duration": 140.643
+        "start": 2272.366,
+        "duration": 137.613
       },
       {
         "title": "Slow Walk",
         "composer": "Michael Ramir C.",
-        "start": 2446.314,
-        "duration": 102.583
+        "start": 2409.979,
+        "duration": 102.165
       },
       {
         "title": "Feeling Good",
         "composer": "Diego Nava",
-        "start": 2548.897,
+        "start": 2512.144,
         "duration": 99.553
       },
       {
         "title": "Groovy Jazz",
         "composer": "Francisco Alvear",
-        "start": 2648.45,
-        "duration": 136.438
+        "start": 2611.696,
+        "duration": 132.232
       },
       {
         "title": "Dreamy Jazz",
         "composer": "Francisco Alvear",
-        "start": 2784.887,
-        "duration": 136.438
+        "start": 2743.928,
+        "duration": 132.232
       },
       {
         "title": "Close the Lights",
         "composer": "Michael Ramir C.",
-        "start": 2921.325,
-        "duration": 116.506
+        "start": 2876.16,
+        "duration": 112.379
       },
       {
         "title": "Space Bird",
         "composer": "Diego Nava",
-        "start": 3037.831,
-        "duration": 109.453
+        "start": 2988.539,
+        "duration": 109.087
       },
       {
         "title": "Funk Jazz",
         "composer": "Francisco Alvear",
-        "start": 3147.284,
-        "duration": 136.49
+        "start": 3097.626,
+        "duration": 135.262
       },
       {
         "title": "Romantic 02",
         "composer": "Lily J",
-        "start": 3283.774,
-        "duration": 103.68
+        "start": 3232.888,
+        "duration": 102.922
       },
       {
         "title": "Lost in Dreams",
         "composer": "Ahjay Stelino",
-        "start": 3387.454,
-        "duration": 124.108
+        "start": 3335.811,
+        "duration": 123.455
       },
       {
         "title": "Red Moon",
         "composer": "Diego Nava",
-        "start": 3511.562,
-        "duration": 104.516
+        "start": 3459.265,
+        "duration": 103.576
       },
       {
         "title": "Majestic",
         "composer": "Diego Nava",
-        "start": 3616.077,
-        "duration": 108.748
+        "start": 3562.841,
+        "duration": 108.669
       },
       {
         "title": "Im Hungry",
         "composer": "Michael Ramir C.",
-        "start": 3724.825,
-        "duration": 110.002
+        "start": 3671.51,
+        "duration": 108.173
       },
       {
         "title": "Yo Chucky",
         "composer": "Michael Ramir C.",
-        "start": 3834.827,
-        "duration": 96.862
+        "start": 3779.683,
+        "duration": 95.478
       },
       {
         "title": "Pop 05",
         "composer": "Grigoriy Nuzhny",
-        "start": 3931.689,
-        "duration": 154.149
+        "start": 3875.161,
+        "duration": 150.988
       }
     ]
   }

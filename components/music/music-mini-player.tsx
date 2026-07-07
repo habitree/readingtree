@@ -1,13 +1,14 @@
 "use client";
 
 /**
- * MusicMiniPlayer (병합 + 파트 분할 재구성 — 2026-06-08)
+ * MusicMiniPlayer (4채널 + 셔플 재생 개편 — 2026-07-07)
  *
- * 장르(클래식/재즈)별로 분할된 파트를 두 개의 audio 엘리먼트로 이중 버퍼링하여
- * 끊김 없이 이어 붙여 "하나의 연속 음원"처럼 재생한다.
- * 재생 시 장르 전체 타임라인에서 랜덤 위치(startAt)부터 시작하고, 끝에 도달하면 처음으로 순환.
+ * 채널(피아노/클래식/활기찬 클래식/재즈)별 분할 파트를 두 개의 audio 엘리먼트로
+ * 이중 버퍼링하되, 재생 순서는 스토어의 곡(큐) 단위 셔플 큐가 결정한다.
+ * 곡이 끝나면 다음 셔플 곡의 (파트, 오프셋)을 미리 로드한 비활성 엘리먼트로
+ * 전환해 들을 때마다 다른 순서로, 끊김 없이 재생한다.
  *
- * 컨트롤: 재생/일시정지 · 볼륨 · 종료 만. 스킵/곡목록 제거.
+ * 컨트롤: 재생/일시정지 · 다음 곡 · 볼륨 · 종료.
  * 현재 곡 제목은 (현재 파트.start + audio.currentTime) + cues 로 계산해 표시.
  *
  * audio 안정화 로직(safePlay·재시도·버퍼링·네트워크·visibility 복구·fade-in·Media Session) 보존.
@@ -15,10 +16,10 @@
 
 import { useRef, useEffect, useCallback } from "react";
 import { useMusicPlayer } from "@/hooks/use-music-player";
-import { findCueAt, findPartIndexAt } from "@/lib/music";
+import { findCueAt, findCueIndexAt, findPartIndexAt } from "@/lib/music";
 import type { MusicGenre } from "@/types/music";
 import { MusicOnlySheet } from "./music-only-sheet";
-import { Pause, Play, Volume2, VolumeX, Music2, X } from "lucide-react";
+import { Pause, Play, SkipForward, Volume2, VolumeX, Music2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /** 사용자 클릭 컨텍스트에서 재생을 시작/제어하기 위한 컨트롤러 */
@@ -75,13 +76,19 @@ export function MusicMiniPlayer() {
   const bRef = useRef<HTMLAudioElement>(null);
   const activeIdx = useRef<0 | 1>(0);
   const partIdx = useRef(0);
-  const preloadedFor = useRef<number | null>(null);
+  /** 현재 재생 중인 곡(큐) 인덱스 — 셔플 전환 경계 판정용 */
+  const currentCueIdx = useRef(0);
+  /** 비활성 엘리먼트에 프리로드된 다음 곡 정보 */
+  const preloadCue = useRef<{ cueIdx: number; ready: boolean } | null>(null);
+  /** 곡 전환 진행 중 — 새 곡의 playing 이벤트까지 경계 재판정 억제(이중 스킵 방지) */
+  const isTransitioning = useRef(false);
   const retryCount = useRef(0);
   const retryTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isBuffering = useRef(false);
   const fadeTimer = useRef<ReturnType<typeof setInterval> | null>(null);
   const FADE_IN_MS = 500;
-  const PRELOAD_LEAD_S = 30; // 파트 끝 N초 전 다음 파트 프리로드(느린 회선 여유)
+  const CUE_FADE_MS = 250; // 곡 전환 시 짧은 페이드인 — 클릭/튐 방지
+  const PRELOAD_LEAD_S = 30; // 곡 끝 N초 전 다음 곡 프리로드(느린 회선 여유)
   const MAX_RETRIES = 3;
 
   const {
@@ -124,10 +131,10 @@ export function MusicMiniPlayer() {
   }, []);
 
   const startFadeIn = useCallback(
-    (audio: HTMLAudioElement) => {
+    (audio: HTMLAudioElement, ms: number = FADE_IN_MS) => {
       clearFade();
       const STEPS = 20;
-      const interval = FADE_IN_MS / STEPS;
+      const interval = ms / STEPS;
       audio.volume = 0;
       let step = 0;
       fadeTimer.current = setInterval(() => {
@@ -166,7 +173,7 @@ export function MusicMiniPlayer() {
     });
   }, [getActive]);
 
-  /** 장르 전체 타임라인 globalT 위치부터 재생 시작 (현재 활성 엘리먼트 사용) */
+  /** 채널 전체 타임라인 globalT 위치부터 재생 시작 (현재 활성 엘리먼트 사용) */
   const beginAt = useCallback(
     (genre: MusicGenre, globalT: number, fade: boolean) => {
       const audio = getActive();
@@ -174,11 +181,12 @@ export function MusicMiniPlayer() {
       clearFade();
       const inactive = getInactive();
       inactive?.pause();
-      preloadedFor.current = null;
+      preloadCue.current = null;
       retryCount.current = 0;
 
       const pIdx = findPartIndexAt(genre.parts, globalT);
       partIdx.current = pIdx;
+      currentCueIdx.current = findCueIndexAt(genre.cues, globalT);
       const part = genre.parts[pIdx];
       const offset = Math.max(0, globalT - part.start);
 
@@ -257,24 +265,76 @@ export function MusicMiniPlayer() {
     if (bRef.current) bRef.current.volume = volume;
   }, [volume]);
 
-  /** 파트 끝 근처에서 다음 파트 프리로드 (이중 버퍼) */
-  const maybePreloadNext = useCallback((audio: HTMLAudioElement) => {
-    const genre = useMusicPlayer.getState().currentGenre;
-    if (!genre || genre.parts.length < 2) return;
-    if (!Number.isFinite(audio.duration)) return;
-    const remaining = audio.duration - audio.currentTime;
-    if (remaining > 0 && remaining < PRELOAD_LEAD_S) {
-      const nextPart = (partIdx.current + 1) % genre.parts.length;
-      if (preloadedFor.current !== nextPart) {
-        const inactive = getInactive();
-        if (inactive) {
-          inactive.src = genre.parts[nextPart].url;
-          inactive.load();
-          preloadedFor.current = nextPart;
-        }
+  /** 곡 끝 근처에서 다음 셔플 곡의 (파트, 오프셋) 프리로드 (이중 버퍼) */
+  const maybePreloadNextCue = useCallback(() => {
+    const state = useMusicPlayer.getState();
+    const genre = state.currentGenre;
+    if (!genre || genre.cues.length < 2) return;
+    const nextCueIdx = state.peekNextCue();
+    if (nextCueIdx < 0 || preloadCue.current?.cueIdx === nextCueIdx) return;
+    const inactive = getInactive();
+    if (!inactive) return;
+
+    const nextCue = genre.cues[nextCueIdx];
+    const part = genre.parts[findPartIndexAt(genre.parts, nextCue.start)];
+    const offset = Math.max(0, nextCue.start - part.start);
+    const target = { cueIdx: nextCueIdx, ready: false };
+    preloadCue.current = target;
+
+    inactive.src = part.url;
+    inactive.load();
+    inactive.addEventListener("loadedmetadata", function onMeta() {
+      inactive.removeEventListener("loadedmetadata", onMeta);
+      if (preloadCue.current !== target) return; // 프리로드 대상이 바뀜
+      if (offset > 0 && Number.isFinite(inactive.duration)) {
+        try {
+          inactive.currentTime = Math.min(offset, Math.max(0, inactive.duration - 0.3));
+        } catch { /* noop */ }
       }
-    }
+      inactive.addEventListener("canplay", function onCp() {
+        inactive.removeEventListener("canplay", onCp);
+        if (preloadCue.current === target) target.ready = true;
+      });
+    });
   }, [getInactive]);
+
+  /**
+   * 다음 셔플 곡으로 전환 — 프리로드된 비활성 엘리먼트로 스왑(끊김 없음),
+   * 준비 안 됐으면 활성 엘리먼트에 직접 로드(폴백). 스킵 버튼도 이 경로 사용.
+   */
+  const transitionToNextCue = useCallback(() => {
+    const state = useMusicPlayer.getState();
+    const genre = state.currentGenre;
+    if (!genre || genre.cues.length === 0) return;
+    const nextCueIdx = state.advanceCue();
+    if (nextCueIdx < 0) return;
+    isTransitioning.current = true;
+    const nextCue = genre.cues[nextCueIdx];
+    const inactive = getInactive();
+    const active = getActive();
+
+    if (
+      inactive &&
+      preloadCue.current?.cueIdx === nextCueIdx &&
+      preloadCue.current.ready &&
+      inactive.readyState >= 3
+    ) {
+      clearFade();
+      currentCueIdx.current = nextCueIdx;
+      partIdx.current = findPartIndexAt(genre.parts, nextCue.start);
+      preloadCue.current = null;
+      retryCount.current = 0;
+      startFadeIn(inactive, CUE_FADE_MS);
+      inactive.play().catch(() => {});
+      active?.pause();
+      activeIdx.current = activeIdx.current === 0 ? 1 : 0;
+      updateTime(nextCue.start, genre.durationSeconds);
+    } else {
+      // 폴백: 프리로드 미완 — 활성 엘리먼트에 직접 로드
+      beginAt(genre, nextCue.start, true);
+      updateTime(nextCue.start, genre.durationSeconds);
+    }
+  }, [getActive, getInactive, clearFade, startFadeIn, beginAt, updateTime]);
 
   const handleTimeUpdate = useCallback(
     (e: React.SyntheticEvent<HTMLAudioElement>) => {
@@ -284,48 +344,28 @@ export function MusicMiniPlayer() {
       if (!genre) return;
       const part = genre.parts[partIdx.current];
       if (!part) return;
-      updateTime(part.start + audio.currentTime, genre.durationSeconds);
-      maybePreloadNext(audio);
-    },
-    [getActive, updateTime, maybePreloadNext],
-  );
+      const globalT = part.start + audio.currentTime;
+      updateTime(globalT, genre.durationSeconds);
 
-  // 파트 끝 → 다음 파트로 끊김 없이 전환 (loop 순환)
-  const handleEnded = useCallback(
-    (e: React.SyntheticEvent<HTMLAudioElement>) => {
-      const ended = e.currentTarget;
-      if (ended !== getActive()) return;
-      const genre = useMusicPlayer.getState().currentGenre;
-      if (!genre) return;
-      const nextPart = (partIdx.current + 1) % genre.parts.length;
-      const vol = useMusicPlayer.getState().volume;
-      const inactive = getInactive();
-
-      if (inactive && preloadedFor.current === nextPart && inactive.readyState >= 3) {
-        // 프리로드 충분(HAVE_FUTURE_DATA 이상) → 즉시 전환(끊김 없음)
-        try { inactive.currentTime = 0; } catch { /* noop */ }
-        inactive.volume = vol;
-        inactive.play().catch(() => {});
-        ended.pause();
-        activeIdx.current = activeIdx.current === 0 ? 1 : 0;
-        partIdx.current = nextPart;
-        preloadedFor.current = null;
-      } else {
-        // 폴백: 활성 엘리먼트에 다음 파트 로드
-        partIdx.current = nextPart;
-        const audio = getActive();
-        if (!audio) return;
-        audio.src = genre.parts[nextPart].url;
-        audio.volume = vol;
-        const onCp = () => {
-          audio.removeEventListener("canplay", onCp);
-          if (useMusicPlayer.getState().isPlaying) safePlay(audio);
-        };
-        audio.addEventListener("canplay", onCp);
-        audio.load();
+      // 곡(큐) 경계 판정 — 끝 근처 프리로드, 경계 도달 시 다음 셔플 곡으로 전환
+      if (isTransitioning.current) return;
+      const cue = genre.cues[currentCueIdx.current];
+      if (cue) {
+        const remaining = cue.start + cue.duration - globalT;
+        if (remaining < PRELOAD_LEAD_S) maybePreloadNextCue();
+        if (remaining <= 0.05) transitionToNextCue();
       }
     },
-    [getActive, getInactive, safePlay],
+    [getActive, updateTime, maybePreloadNextCue, transitionToNextCue],
+  );
+
+  // 파트 끝 도달(곡이 파트의 마지막 트랙) → 다음 셔플 곡으로 전환
+  const handleEnded = useCallback(
+    (e: React.SyntheticEvent<HTMLAudioElement>) => {
+      if (e.currentTarget !== getActive()) return;
+      transitionToNextCue();
+    },
+    [getActive, transitionToNextCue],
   );
 
   const handleError = useCallback(
@@ -365,6 +405,7 @@ export function MusicMiniPlayer() {
       if (e.target !== getActive()) return;
       isBuffering.current = false;
       retryCount.current = 0;
+      isTransitioning.current = false; // 새 곡 재생 시작 — 경계 판정 재개
     }
     audios.forEach((a) => {
       a.addEventListener("waiting", handleWaiting);
@@ -456,7 +497,8 @@ export function MusicMiniPlayer() {
     });
     navigator.mediaSession.setActionHandler("play", () => getMusicController()?.resume());
     navigator.mediaSession.setActionHandler("pause", () => getMusicController()?.pauseAudio());
-  }, [currentGenre, currentCue?.title, currentCue?.composer]);
+    navigator.mediaSession.setActionHandler("nexttrack", () => transitionToNextCue());
+  }, [currentGenre, currentCue?.title, currentCue?.composer, transitionToNextCue]);
 
   function handlePlayToggle() {
     const ctrl = getMusicController();
@@ -548,6 +590,15 @@ export function MusicMiniPlayer() {
               title={isPlaying ? "일시정지" : "재생"}
             >
               {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 ml-0.5" />}
+            </button>
+
+            <button
+              onClick={() => transitionToNextCue()}
+              className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
+              title="다음 곡"
+              aria-label="다음 곡"
+            >
+              <SkipForward className="w-3.5 h-3.5 text-muted-foreground" />
             </button>
 
             <button

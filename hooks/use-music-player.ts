@@ -1,17 +1,32 @@
 "use client";
 
 /**
- * useMusicPlayer (병합 + 파트 분할 재구성 — 2026-06-08)
+ * useMusicPlayer (4채널 + 셔플 재생 개편 — 2026-07-07)
  *
- * 장르(클래식/재즈)별로 분할된 파트를 이중 버퍼로 이어 붙여 단일 음원처럼 재생한다.
- * 곡/플레이리스트/인덱스/스킵 개념 제거 — 장르 선택 + 재생/정지/종료 + 볼륨만.
+ * 채널(피아노/클래식/활기찬 클래식/재즈)별 분할 파트를 이중 버퍼로 이어 붙이되,
+ * 재생 순서는 곡(큐) 단위 셔플 큐가 결정한다 — 들을 때마다 다른 순서.
+ * 컨트롤: 채널 선택 + 재생/정지/종료 + 다음 곡 + 볼륨.
  *
- * currentTime 은 "장르 전체 타임라인" 기준(초). 현재 곡 제목은
+ * currentTime 은 "채널 전체 타임라인" 기준(초). 현재 곡 제목은
  * currentTime + currentGenre.cues 로 컴포넌트에서 계산한다.
  */
 
 import { create } from "zustand";
 import type { MusicGenre } from "@/types/music";
+
+/** Fisher-Yates 셔플 — avoidFirst 가 선두에 오면 임의 위치와 교환(연속 중복 방지) */
+function shuffledIndices(n: number, avoidFirst?: number): number[] {
+  const arr = Array.from({ length: n }, (_, i) => i);
+  for (let i = n - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  if (n > 1 && avoidFirst !== undefined && arr[0] === avoidFirst) {
+    const k = 1 + Math.floor(Math.random() * (n - 1));
+    [arr[0], arr[k]] = [arr[k], arr[0]];
+  }
+  return arr;
+}
 
 interface MusicPlayerState {
   // ── 재생 상태 ──
@@ -19,17 +34,21 @@ interface MusicPlayerState {
   isPlaying: boolean;
   currentGenre: MusicGenre | null;
   volume: number;
-  /** 장르 전체 타임라인 기준 현재 재생 위치(초) */
+  /** 채널 전체 타임라인 기준 현재 재생 위치(초) */
   currentTime: number;
-  /** 장르 전체 길이(초) */
+  /** 채널 전체 길이(초) */
   duration: number;
-  /** 장르 선택 시 정해지는 랜덤 시작 위치(초) — 컴포넌트가 적용 */
+  /** 채널 선택 시 정해지는 시작 위치(초) — 셔플 큐 첫 곡의 시작 */
   startAt: number;
   /**
-   * 장르 선택 시 증가하는 토큰. 컴포넌트는 변경을 감지해
-   * 파트 로드 + 랜덤 시작 위치 적용을 1회 수행한다.
+   * 채널 선택 시 증가하는 토큰. 컴포넌트는 변경을 감지해
+   * 파트 로드 + 시작 위치 적용을 1회 수행한다.
    */
   loadToken: number;
+
+  // ── 셔플 큐 (cue 인덱스 순서, 소진 임박 시 자동 연장) ──
+  queue: number[];
+  queueIndex: number;
 
   // ── 시트 토글 ──
   isMusicSheetOpen: boolean;
@@ -42,6 +61,10 @@ interface MusicPlayerState {
   toggle: () => void;
   setVolume: (vol: number) => void;
   updateTime: (current: number, dur?: number) => void;
+  /** 다음에 재생할 cue 인덱스 미리보기 (필요 시 큐 연장) */
+  peekNextCue: () => number;
+  /** 큐를 한 칸 진행하고 새 cue 인덱스 반환 */
+  advanceCue: () => number;
 
   openMusicSheet: () => void;
   closeMusicSheet: () => void;
@@ -51,7 +74,7 @@ interface MusicPlayerState {
   close: () => void;
 }
 
-export const useMusicPlayer = create<MusicPlayerState>((set) => ({
+export const useMusicPlayer = create<MusicPlayerState>((set, get) => ({
   isVisible: false,
   isPlaying: false,
   currentGenre: null,
@@ -60,20 +83,28 @@ export const useMusicPlayer = create<MusicPlayerState>((set) => ({
   duration: 0,
   startAt: 0,
   loadToken: 0,
+  queue: [],
+  queueIndex: 0,
   isMusicSheetOpen: false,
   isVolumeOpen: false,
 
   selectGenre: (genre) =>
-    set((s) => ({
-      currentGenre: genre,
-      isVisible: true,
-      isPlaying: true,
-      // 끝부분 8% 여유 두고 랜덤 시작 → 랜덤 재생처럼 느껴지게
-      startAt: Math.random() * genre.durationSeconds * 0.92,
-      currentTime: 0,
-      duration: genre.durationSeconds,
-      loadToken: s.loadToken + 1,
-    })),
+    set((s) => {
+      // 곡 단위 셔플 큐 — 들을 때마다 다른 순서로 재생
+      const queue = shuffledIndices(genre.cues.length);
+      const firstStart = genre.cues[queue[0]]?.start ?? 0;
+      return {
+        currentGenre: genre,
+        isVisible: true,
+        isPlaying: true,
+        queue,
+        queueIndex: 0,
+        startAt: firstStart,
+        currentTime: firstStart,
+        duration: genre.durationSeconds,
+        loadToken: s.loadToken + 1,
+      };
+    }),
 
   play: () => set({ isPlaying: true }),
   pause: () => set({ isPlaying: false }),
@@ -81,6 +112,26 @@ export const useMusicPlayer = create<MusicPlayerState>((set) => ({
   setVolume: (vol) => set({ volume: Math.max(0, Math.min(1, vol)) }),
   updateTime: (current, dur) =>
     set((s) => ({ currentTime: current, duration: dur ?? s.duration })),
+
+  peekNextCue: () => {
+    const s = get();
+    const n = s.currentGenre?.cues.length ?? 0;
+    if (n === 0) return -1;
+    let queue = s.queue;
+    if (s.queueIndex + 1 >= queue.length) {
+      // 소진 임박 — 직전 곡과 연속 중복을 피해 셔플 블록 연장
+      queue = [...queue, ...shuffledIndices(n, queue[queue.length - 1])];
+      set({ queue });
+    }
+    return queue[s.queueIndex + 1];
+  },
+
+  advanceCue: () => {
+    const next = get().peekNextCue();
+    if (next < 0) return -1;
+    set((s) => ({ queueIndex: s.queueIndex + 1 }));
+    return next;
+  },
 
   openMusicSheet: () => set({ isMusicSheetOpen: true }),
   closeMusicSheet: () => set({ isMusicSheetOpen: false }),
@@ -93,6 +144,8 @@ export const useMusicPlayer = create<MusicPlayerState>((set) => ({
       currentGenre: null,
       currentTime: 0,
       duration: 0,
+      queue: [],
+      queueIndex: 0,
       isVolumeOpen: false,
     }),
 }));
