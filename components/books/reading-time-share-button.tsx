@@ -1,14 +1,16 @@
 "use client";
 
 /**
- * 독서 시간 탭 이미지 복사 버튼 (v2 디자인 개편 — 2026-07-07).
+ * 독서 시간 탭 이미지 복사 버튼 (v3 디자인 개편 — 2026-07-08).
  *
  * 동작:
  *   - hidden 1080×1080 카드를 캡처(html2canvas)
  *   - 캡처 Promise를 ClipboardItem 에 즉시 넘겨 "바로 복사" (Safari/iOS 제스처 유지)
  *   - 클립보드 미지원 브라우저만 PNG 다운로드 폴백
  *
- * 카드 디자인: 다크 오로라 그라데이션 + 벤토 타일 + 오버사이즈 히어로 숫자.
+ * 카드 디자인(v3 "Reading Rhythm"): 다크 오로라 그라데이션 + 상단 브랜드 워드마크 +
+ * 오버사이즈 히어로 숫자 + "최근 7일 독서 리듬" 미니 바 차트(Wrapped형 데이터 스토리) +
+ * 글래스 벤토 타일 + SNS 해시태그 푸터.
  * html2canvas 제약(box-shadow·filter·backdrop-blur 미지원)을 피해
  * 그라데이션/보더/투명 레이어만 사용한다.
  */
@@ -48,10 +50,12 @@ interface ReadingTimeShareButtonProps {
 const CARD_PX = 540; // 화면(hidden) 사이즈
 const TARGET_PX = 1080; // 출력(인스타 정사각)
 
+const WEEKDAY_KO = ["일", "월", "화", "수", "목", "금", "토"] as const;
+
 /** 유리 타일 공통 스타일 — backdrop-blur 없이 투명 레이어로 표현 */
 const TILE_STYLE: React.CSSProperties = {
-  backgroundColor: "rgba(255,255,255,0.06)",
-  border: "1px solid rgba(255,255,255,0.10)",
+  backgroundColor: "rgba(255,255,255,0.05)",
+  border: "1px solid rgba(255,255,255,0.09)",
 };
 
 function fmtDuration(s: number): string {
@@ -77,16 +81,37 @@ function heroParts(s: number): { num: string; unit: string }[] {
   return [{ num: "1", unit: "분 미만" }];
 }
 
-function fmtDate(iso: string): string {
-  const d = new Date(iso);
-  return `${d.getMonth() + 1}/${d.getDate()}`;
-}
-
 function fmtToday(): string {
   const d = new Date();
   const mm = String(d.getMonth() + 1).padStart(2, "0");
   const dd = String(d.getDate()).padStart(2, "0");
   return `${d.getFullYear()}.${mm}.${dd}`;
+}
+
+interface DayBar {
+  label: string;
+  seconds: number;
+  isToday: boolean;
+}
+
+/** 오늘 기준 최근 7일 독서량 집계 (로컬 날짜 기준) — 리듬 바 차트용 */
+function weeklyActivity(logs: ReadingLog[]): DayBar[] {
+  const now = new Date();
+  const days: DayBar[] = [];
+  const indexByKey = new Map<string, number>();
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
+    const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+    indexByKey.set(key, days.length);
+    days.push({ label: WEEKDAY_KO[d.getDay()], seconds: 0, isToday: i === 0 });
+  }
+  for (const log of logs) {
+    const d = new Date(log.created_at);
+    const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+    const idx = indexByKey.get(key);
+    if (idx !== undefined) days[idx].seconds += log.reading_duration_seconds || 0;
+  }
+  return days;
 }
 
 /** hidden 카드 → 1080px PNG Blob (이미지 로딩 대기 + html2canvas) */
@@ -151,7 +176,6 @@ export function ReadingTimeShareButton({
   const [isCapturing, setIsCapturing] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  const recent = logs.slice(0, 2);
   const totalPagesRead = logs.reduce((sum, l) => {
     const sp = typeof l.start_page === "number" ? l.start_page : 0;
     const ep = typeof l.end_page === "number" ? l.end_page : sp;
@@ -163,6 +187,9 @@ export function ReadingTimeShareButton({
       ? Math.min(100, Math.round((totalPagesRead / bookInfo.totalPages) * 100))
       : null;
   const hero = heroParts(stats.totalSeconds);
+  const week = weeklyActivity(logs);
+  const weekSeconds = week.reduce((s, d) => s + d.seconds, 0);
+  const weekMax = Math.max(...week.map((d) => d.seconds), 1);
 
   const handleShare = async () => {
     if (!captureRef.current || isCapturing) return;
@@ -203,70 +230,80 @@ export function ReadingTimeShareButton({
           style={{
             width: CARD_PX,
             height: CARD_PX,
-            backgroundColor: "#0a1614",
+            backgroundColor: "#081311",
             backgroundImage:
-              "radial-gradient(520px 420px at 88% -12%, rgba(16,185,129,0.30), transparent 65%)," +
-              "radial-gradient(460px 400px at -10% 112%, rgba(245,158,11,0.14), transparent 62%)," +
-              "radial-gradient(340px 300px at 55% 62%, rgba(45,212,191,0.07), transparent 70%)," +
-              "linear-gradient(158deg, #0c1b17 0%, #0a1120 52%, #0b1a15 100%)",
+              "radial-gradient(560px 440px at 86% -14%, rgba(16,185,129,0.32), transparent 62%)," +
+              "radial-gradient(420px 380px at -8% 108%, rgba(45,212,191,0.12), transparent 60%)," +
+              "radial-gradient(360px 320px at 58% 66%, rgba(251,191,36,0.05), transparent 72%)," +
+              "linear-gradient(160deg, #0b1a16 0%, #091320 54%, #0a1815 100%)",
             border: "1px solid rgba(255,255,255,0.08)",
           }}
-          className="relative overflow-hidden rounded-[32px] text-white"
+          className="relative overflow-hidden rounded-[34px] text-white"
         >
-          <div className="relative flex h-full flex-col p-9">
-            {/* 아이브로 — 라벨 + 날짜 */}
+          <div className="relative flex h-full flex-col p-[30px]">
+            {/* 헤더 — 브랜드 워드마크 + 날짜 칩 */}
             <div className="flex items-center justify-between">
-              <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-emerald-300">
-                Reading Record
-              </p>
-              <p className="text-[11px] tabular-nums text-slate-400">{fmtToday()}</p>
+              <span className="text-[15px] font-bold tracking-tight">
+                🌳 Read<span className="text-emerald-300">Tree</span>
+              </span>
+              <span
+                className="rounded-full px-2.5 py-1 text-[11px] tabular-nums text-slate-300"
+                style={TILE_STYLE}
+              >
+                {fmtToday()}
+              </span>
             </div>
 
             {/* 책 정보 */}
-            <div className="mt-4 flex items-center gap-5">
+            <div className="mt-4 flex items-center gap-4">
               <div className="relative shrink-0">
                 {/* 커버 뒤 은은한 글로우 (radial-gradient — filter 미사용) */}
                 <div
                   className="absolute -inset-5"
                   style={{
                     background:
-                      "radial-gradient(closest-side, rgba(16,185,129,0.32), transparent)",
+                      "radial-gradient(closest-side, rgba(16,185,129,0.34), transparent)",
                   }}
                 />
                 {bookInfo?.coverImageUrl ? (
                   <div
-                    className="relative h-[104px] w-[76px] overflow-hidden rounded-xl"
+                    className="relative h-[90px] w-[66px] overflow-hidden rounded-2xl"
                     style={{ border: "1px solid rgba(255,255,255,0.18)" }}
                   >
                     <Image
                       src={bookInfo.coverImageUrl}
                       alt={bookInfo.title}
                       fill
-                      sizes="76px"
+                      sizes="66px"
                       className="object-cover"
                       unoptimized
                     />
                   </div>
                 ) : (
                   <div
-                    className="relative flex h-[104px] w-[76px] items-center justify-center rounded-xl"
+                    className="relative flex h-[90px] w-[66px] items-center justify-center rounded-2xl"
                     style={{ ...TILE_STYLE }}
                   >
-                    <BookOpen className="h-8 w-8 text-emerald-300" />
+                    <BookOpen className="h-7 w-7 text-emerald-300" />
                   </div>
                 )}
               </div>
               <div className="min-w-0 flex-1">
-                <p className="line-clamp-2 text-[21px] font-bold leading-snug text-white">
+                {bookInfo?.title && (
+                  <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-300">
+                    Now Reading
+                  </p>
+                )}
+                <p className="mt-1 line-clamp-2 text-[19px] font-bold leading-snug text-white">
                   {bookInfo?.title ?? "독서 기록"}
                 </p>
                 {bookInfo?.author && (
-                  <p className="mt-1 line-clamp-1 text-[13px] text-slate-400">
+                  <p className="mt-0.5 line-clamp-1 text-[12px] text-slate-400">
                     {bookInfo.author}
                   </p>
                 )}
                 {progressPct !== null && (
-                  <div className="mt-3">
+                  <div className="mt-2.5">
                     <div className="flex items-center justify-between text-[10px] font-medium text-slate-400">
                       <span>읽기 진행률</span>
                       <span className="tabular-nums text-emerald-300">{progressPct}%</span>
@@ -291,11 +328,13 @@ export function ReadingTimeShareButton({
 
             {/* 히어로 — 총 독서 시간 */}
             <div className="mt-5">
-              <p className="text-[12px] font-semibold text-slate-400">총 독서 시간</p>
-              <div className="mt-0.5 flex items-baseline">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                총 독서 시간
+              </p>
+              <div className="mt-1 flex items-baseline">
                 {hero.map((part, i) => (
                   <span key={i} className="flex items-baseline">
-                    <span className="text-[42px] font-extrabold leading-none tracking-tight text-white tabular-nums">
+                    <span className="text-[48px] font-extrabold leading-none tracking-tighter text-white tabular-nums">
                       {part.num}
                     </span>
                     <span
@@ -308,6 +347,54 @@ export function ReadingTimeShareButton({
                     </span>
                   </span>
                 ))}
+              </div>
+            </div>
+
+            {/* 최근 7일 독서 리듬 — 미니 바 차트 (Wrapped형 데이터 스토리) */}
+            <div className="mt-5">
+              <div className="flex items-baseline justify-between">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                  최근 7일 리듬
+                </p>
+                <p className="text-[10px] tabular-nums text-slate-500">
+                  {weekSeconds > 0 ? fmtDuration(weekSeconds) : "이번 주 기록 없음"}
+                </p>
+              </div>
+              <div className="mt-2.5 grid grid-cols-7 gap-2">
+                {week.map((d, i) => {
+                  const h =
+                    d.seconds > 0
+                      ? Math.max(16, Math.round((d.seconds / weekMax) * 100))
+                      : 0;
+                  return (
+                    <div key={i} className="flex flex-col items-center gap-1.5">
+                      <div
+                        className="relative flex h-[48px] w-[14px] items-end overflow-hidden rounded-full"
+                        style={{ backgroundColor: "rgba(255,255,255,0.05)" }}
+                      >
+                        {h > 0 && (
+                          <div
+                            className="w-full rounded-full"
+                            style={{
+                              height: `${h}%`,
+                              backgroundImage: d.isToday
+                                ? "linear-gradient(180deg, #a7f3d0 0%, #34d399 100%)"
+                                : "linear-gradient(180deg, #6ee7b7 0%, #2dd4bf 100%)",
+                            }}
+                          />
+                        )}
+                      </div>
+                      <span
+                        className={cn(
+                          "text-[9px] font-semibold",
+                          d.isToday ? "text-emerald-300" : "text-slate-500",
+                        )}
+                      >
+                        {d.label}
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
@@ -348,51 +435,12 @@ export function ReadingTimeShareButton({
               )}
             </div>
 
-            {/* 최근 기록 */}
-            <div className="mt-4 flex-1 overflow-hidden">
-              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">
-                Recent
-              </p>
-              <div className="mt-1.5 space-y-1.5">
-                {recent.map((log) => {
-                  const sp = typeof log.start_page === "number" ? log.start_page : 0;
-                  const ep = typeof log.end_page === "number" ? log.end_page : sp;
-                  const pages = Math.max(0, ep - sp);
-                  return (
-                    <div
-                      key={log.id}
-                      className="flex items-center gap-2.5 rounded-xl px-3 py-1.5"
-                      style={TILE_STYLE}
-                    >
-                      <span
-                        className={cn(
-                          "h-1.5 w-1.5 shrink-0 rounded-full",
-                          log.image_url ? "bg-amber-300" : "bg-emerald-300",
-                        )}
-                      />
-                      <div className="min-w-0 flex-1 text-[12px]">
-                        <span className="font-semibold text-white">
-                          {fmtDuration(log.reading_duration_seconds)}
-                        </span>
-                        {pages > 0 && (
-                          <span className="ml-2 tabular-nums text-slate-400">{pages}p</span>
-                        )}
-                      </div>
-                      <span className="shrink-0 text-[10px] tabular-nums text-slate-500">
-                        {fmtDate(log.created_at)}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* 푸터 — 워드마크 */}
-            <div className="mt-3 flex items-center justify-between">
-              <span className="text-[13px] font-bold">
-                🌳 Read<span className="text-emerald-300">Tree</span>
-              </span>
+            {/* 푸터 — 태그라인 + SNS 해시태그 */}
+            <div className="mt-auto flex items-center justify-between pt-4">
               <span className="text-[11px] text-slate-500">매일의 독서가 나무가 됩니다</span>
+              <span className="text-[10px] font-medium tracking-tight text-emerald-300/80">
+                #독서기록 #ReadTree
+              </span>
             </div>
           </div>
         </div>
