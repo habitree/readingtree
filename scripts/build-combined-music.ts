@@ -6,12 +6,19 @@
  *       곡 경계 기준 ≤45MB 파트로 분할 업로드한다.
  *       런타임은 파트를 이중 버퍼로 끊김 없이 이어 붙여 셔플 재생한다.
  *
- * v2 품질 개선:
- *   - 160kbps CBR (기존 128k, 원본 대부분 160~320k)
- *   - EBU R128 측정(loudnorm 1-pass) 기반 선형 게인 정규화 — 목표 -16 LUFS,
- *     트루피크 -1.5dBTP 상한. volume 필터만 적용하므로 다이내믹 압축 없음.
+ * v3 품질 개선(2026-07-08 — 지지직/음질 개편):
+ *   - 256kbps CBR (기존 160k) — 원본 대부분 192~320k라 다운그레이드를 최소화.
+ *     CBR 유지 이유: 런타임이 파트 내 바이트오프셋 seek로 곡 위치를 잡음(VBR 불가).
+ *   - EBU R128 측정(loudnorm 1-pass) 기반 선형 게인 정규화 — 목표 -18 LUFS,
+ *     트루피크 -2.0dBTP 상한. volume 필터만 적용하므로 다이내믹 압축 없음.
+ *     · -2.0dBTP: lossy MP3 재인코딩은 소스에 없던 인터샘플 피크를 더하므로
+ *       -1.5dBTP로는 디코딩 시 0dBFS를 넘겨 클리핑(지지직) 위험 → 여유 확대.
+ *     · -18 LUFS: 부스트 감소로 저비트레이트 곡의 잡음 증폭 완화 + 채널 간 일관성.
  *   - 앞뒤 무음 트리밍(-50dB, 앞 0.5s/뒤 0.8s 여유) — 곡 사이 죽은 공백 제거
- *   - 업로드 경로 v2/{channel}-{n}.mp3 (기존 객체는 CDN 1년 캐시라 이름 재사용 금지)
+ *   - 업로드 경로 v2/{channel}-{n}.mp3 를 그대로 '덮어쓰기'.
+ *     (검증: 이 음악 버킷은 cacheControl을 무시하고 항상 no-cache로 서빙 —
+ *      fix-music-cache-headers.ts 참조 — 이므로 CDN immutable 캐시가 없어 재사용 안전.
+ *      단 파트 경계가 바뀌므로 재인코딩 직후 genres.ts와 함께 즉시 배포해야 한다.)
  *
  * 실행: npx tsx scripts/build-combined-music.ts
  *
@@ -38,11 +45,11 @@ import { MUSIC_TRACKS, type MusicChannelId, type SourceTrack } from "../lib/musi
 const execFileAsync = promisify(execFile);
 
 const BUCKET = "jazz-music"; // 기존 public 버킷 재사용 (한도 50MB)
-const OBJECT_PREFIX = "v2"; // CDN immutable 캐시 회피용 신규 경로
+const OBJECT_PREFIX = "v2"; // 기존 경로 덮어쓰기(버킷이 no-cache 서빙이라 안전)
 const MAX_PART_BYTES = 45 * 1024 * 1024; // 파트당 최대 45MB (50MB 한도 안전 여유)
-const BITRATE = "160k"; // CBR — 바이트오프셋 seek 정확도 (무료 티어 스토리지/에그레스 고려 상한)
-const TARGET_LUFS = -16; // 곡 간 라우드니스 목표
-const TP_LIMIT_DB = -1.5; // 트루피크 상한
+const BITRATE = "256k"; // CBR — 바이트오프셋 seek 정확도 + 원본(192~320k) 다운그레이드 최소화
+const TARGET_LUFS = -18; // 곡 간 라우드니스 목표(부스트 감소 → 잡음 완화)
+const TP_LIMIT_DB = -2.0; // 트루피크 상한(MP3 인터샘플 피크 여유 → 지지직 방지)
 // 앞뒤 무음 트리밍 — 여유를 남겨 자연스러운 호흡 유지
 const TRIM_FILTERS =
   "silenceremove=start_periods=1:start_threshold=-50dB:start_silence=0.5," +
@@ -273,7 +280,9 @@ async function main() {
   console.log("=== 채널별 병합 + 파트 분할 빌드 (v2) ===");
   console.log(channels.map((c) => `${c.name} ${c.tracks.length}곡`).join(" / "));
 
-  const workDir = path.join(tmpdir(), "rt-music-build-v2");
+  // 인코딩 파라미터(비트레이트/LUFS/TP)가 바뀌면 캐시를 재사용하면 안 되므로
+  // 파라미터를 반영한 디렉터리명 사용 — 자동으로 fresh 재인코딩.
+  const workDir = path.join(tmpdir(), `rt-music-build-256k-l18-tp20`);
   await mkdir(workDir, { recursive: true });
   console.log(`작업 캐시: ${workDir}`);
 
@@ -285,7 +294,12 @@ async function main() {
   const publicBase = `${url}/storage/v1/object/public/${BUCKET}`;
   const partUrls: string[][] = channels.map(() => []);
 
-  if (url && serviceKey) {
+  // SKIP_UPLOAD=1 : 인코딩·genres.ts 생성만 하고 업로드는 건너뜀(프로덕션 무영향).
+  //   덮어쓰기(v2 재사용)는 배포 전까지 라이브를 깨므로, 무거운 인코딩은 미리 캐시에
+  //   만들어 두고 실제 업로드는 배포 직전에 별도 실행(캐시 히트로 빠름)하기 위함.
+  const skipUpload = process.env.SKIP_UPLOAD === "1";
+
+  if (url && serviceKey && !skipUpload) {
     const supabase = createClient(url, serviceKey);
     for (let gi = 0; gi < channels.length; gi++) {
       const g = channels[gi];
@@ -296,8 +310,9 @@ async function main() {
         console.log(`\n[업로드] ${objectName} (${(buf.length / 1024 / 1024).toFixed(1)}MB)...`);
         const { error } = await supabase.storage
           .from(BUCKET)
-          // cacheControl: 1년 immutable — 객체 경로(v2/{channel}-{n}.mp3)가 고정이라
-          // CDN(Cloudflare) 엣지 캐시로 Range 스트리밍을 안정화(재생 중 끊김 방지).
+          // cacheControl 1년을 요청하되, 이 버킷은 실제로 이를 무시하고 no-cache 로
+          // 서빙한다(fix-music-cache-headers.ts 검증). 그래서 같은 v2 이름 덮어쓰기가
+          // 안전하다(브라우저가 ETag 로 재검증 → 새 파일 즉시 반영).
           .upload(objectName, buf, {
             contentType: "audio/mpeg",
             upsert: true,
@@ -309,7 +324,11 @@ async function main() {
       }
     }
   } else {
-    console.warn("\n[경고] 업로드 자격 미설정 — URL만 추정해 genres.ts 생성");
+    console.warn(
+      skipUpload
+        ? "\n[SKIP_UPLOAD] 업로드 생략 — 인코딩 캐시 + genres.ts 만 생성(배포 직전 재실행으로 업로드)"
+        : "\n[경고] 업로드 자격 미설정 — URL만 추정해 genres.ts 생성",
+    );
     channels.forEach((g, gi) => {
       built[gi].parts.forEach((_, p) => {
         partUrls[gi][p] = `${publicBase}/${OBJECT_PREFIX}/${g.id}-${p + 1}.mp3`;

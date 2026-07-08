@@ -7,27 +7,42 @@ export const MUSIC_GENRES: MusicGenre[] = [
     "id": "piano",
     "name": "피아노",
     "emoji": "🎹",
-    "durationSeconds": 8280.242,
+    "durationSeconds": 8280.241,
     "parts": [
       {
         "url": "https://amqywfemuxghcosexqct.supabase.co/storage/v1/object/public/jazz-music/v2/piano-1.mp3",
         "start": 0,
-        "duration": 2325.551
+        "duration": 1352.49
       },
       {
         "url": "https://amqywfemuxghcosexqct.supabase.co/storage/v1/object/public/jazz-music/v2/piano-2.mp3",
-        "start": 2325.551,
-        "duration": 2109.336
+        "start": 1352.49,
+        "duration": 1169.345
       },
       {
         "url": "https://amqywfemuxghcosexqct.supabase.co/storage/v1/object/public/jazz-music/v2/piano-3.mp3",
-        "start": 4434.887,
-        "duration": 2255.464
+        "start": 2521.835,
+        "duration": 1390.132
       },
       {
         "url": "https://amqywfemuxghcosexqct.supabase.co/storage/v1/object/public/jazz-music/v2/piano-4.mp3",
+        "start": 3911.967,
+        "duration": 1362.442
+      },
+      {
+        "url": "https://amqywfemuxghcosexqct.supabase.co/storage/v1/object/public/jazz-music/v2/piano-5.mp3",
+        "start": 5274.41,
+        "duration": 1415.941
+      },
+      {
+        "url": "https://amqywfemuxghcosexqct.supabase.co/storage/v1/object/public/jazz-music/v2/piano-6.mp3",
         "start": 6690.351,
-        "duration": 1589.891
+        "duration": 1324.486
+      },
+      {
+        "url": "https://amqywfemuxghcosexqct.supabase.co/storage/v1/object/public/jazz-music/v2/piano-7.mp3",
+        "start": 8014.837,
+        "duration": 265.404
       }
     ],
     "cues": [
@@ -59,7 +74,7 @@ export const MUSIC_GENRES: MusicGenre[] = [
         "title": "인벤션 1번 C장조",
         "composer": "바흐",
         "start": 1233.763,
-        "duration": 64.105
+        "duration": 64.104
       },
       {
         "title": "인벤션 8번 F장조",
@@ -77,7 +92,7 @@ export const MUSIC_GENRES: MusicGenre[] = [
         "title": "월광 소나타 - 1악장",
         "composer": "베토벤",
         "start": 1679.987,
-        "duration": 320.105
+        "duration": 320.104
       },
       {
         "title": "비창 소나타 - 2악장 Adagio",
@@ -136,7 +151,7 @@ export const MUSIC_GENRES: MusicGenre[] = [
       {
         "title": "발라드 1번 Op.23",
         "composer": "쇼팽",
-        "start": 4434.887,
+        "start": 4434.886,
         "duration": 611.683
       },
       {
@@ -160,7 +175,7 @@ export const MUSIC_GENRES: MusicGenre[] = [
       {
         "title": "아베 마리아",
         "composer": "슈베르트",
-        "start": 5710.211,
+        "start": 5710.21,
         "duration": 249.548
       },
       {
@@ -208,7 +223,7 @@ export const MUSIC_GENRES: MusicGenre[] = [
       {
         "title": "뇨시엔느 1번",
         "composer": "사티",
-        "start": 8014.838,
+        "start": 8014.837,
         "duration": 265.404
       }
     ]
@@ -217,32 +232,47 @@ export const MUSIC_GENRES: MusicGenre[] = [
     "id": "classic",
     "name": "클래식",
     "emoji": "🎻",
-    "durationSeconds": 9119.478,
+    "durationSeconds": 9119.477,
     "parts": [
       {
         "url": "https://amqywfemuxghcosexqct.supabase.co/storage/v1/object/public/jazz-music/v2/classic-1.mp3",
         "start": 0,
-        "duration": 2161.502
+        "duration": 1099.572
       },
       {
         "url": "https://amqywfemuxghcosexqct.supabase.co/storage/v1/object/public/jazz-music/v2/classic-2.mp3",
-        "start": 2161.502,
-        "duration": 1898.214
+        "start": 1099.572,
+        "duration": 1061.93
       },
       {
         "url": "https://amqywfemuxghcosexqct.supabase.co/storage/v1/object/public/jazz-music/v2/classic-3.mp3",
-        "start": 4059.716,
-        "duration": 1910.491
+        "start": 2161.502,
+        "duration": 1078.857
       },
       {
         "url": "https://amqywfemuxghcosexqct.supabase.co/storage/v1/object/public/jazz-music/v2/classic-4.mp3",
-        "start": 5970.207,
-        "duration": 2172.578
+        "start": 3240.359,
+        "duration": 1315.004
       },
       {
         "url": "https://amqywfemuxghcosexqct.supabase.co/storage/v1/object/public/jazz-music/v2/classic-5.mp3",
-        "start": 8142.785,
-        "duration": 976.692
+        "start": 4555.363,
+        "duration": 1414.844
+      },
+      {
+        "url": "https://amqywfemuxghcosexqct.supabase.co/storage/v1/object/public/jazz-music/v2/classic-6.mp3",
+        "start": 5970.207,
+        "duration": 1420.199
+      },
+      {
+        "url": "https://amqywfemuxghcosexqct.supabase.co/storage/v1/object/public/jazz-music/v2/classic-7.mp3",
+        "start": 7390.406,
+        "duration": 1384.699
+      },
+      {
+        "url": "https://amqywfemuxghcosexqct.supabase.co/storage/v1/object/public/jazz-music/v2/classic-8.mp3",
+        "start": 8775.105,
+        "duration": 344.372
       }
     ],
     "cues": [
@@ -267,7 +297,7 @@ export const MUSIC_GENRES: MusicGenre[] = [
       {
         "title": "예수, 인간 소망의 기쁨",
         "composer": "바흐",
-        "start": 895.034,
+        "start": 895.033,
         "duration": 204.539
       },
       {
@@ -297,7 +327,7 @@ export const MUSIC_GENRES: MusicGenre[] = [
       {
         "title": "정령들의 춤",
         "composer": "글루크",
-        "start": 2624.34,
+        "start": 2624.339,
         "duration": 382.851
       },
       {
@@ -345,7 +375,7 @@ export const MUSIC_GENRES: MusicGenre[] = [
       {
         "title": "아메리칸 사중주 - Lento",
         "composer": "드보르작",
-        "start": 6516.82,
+        "start": 6516.819,
         "duration": 469.185
       },
       {
@@ -357,7 +387,7 @@ export const MUSIC_GENRES: MusicGenre[] = [
       {
         "title": "페르 귄트 - 아침 기분",
         "composer": "그리그",
-        "start": 7390.407,
+        "start": 7390.406,
         "duration": 227.553
       },
       {
@@ -396,22 +426,27 @@ export const MUSIC_GENRES: MusicGenre[] = [
     "id": "energetic",
     "name": "활기찬 클래식",
     "emoji": "🎺",
-    "durationSeconds": 4768,
+    "durationSeconds": 4918.726,
     "parts": [
       {
         "url": "https://amqywfemuxghcosexqct.supabase.co/storage/v1/object/public/jazz-music/v2/energetic-1.mp3",
         "start": 0,
-        "duration": 2244.101
+        "duration": 1416.568
       },
       {
         "url": "https://amqywfemuxghcosexqct.supabase.co/storage/v1/object/public/jazz-music/v2/energetic-2.mp3",
-        "start": 2244.101,
-        "duration": 2125.74
+        "start": 1416.568,
+        "duration": 1056.862
       },
       {
         "url": "https://amqywfemuxghcosexqct.supabase.co/storage/v1/object/public/jazz-music/v2/energetic-3.mp3",
-        "start": 4369.842,
-        "duration": 398.158
+        "start": 2473.43,
+        "duration": 1041.032
+      },
+      {
+        "url": "https://amqywfemuxghcosexqct.supabase.co/storage/v1/object/public/jazz-music/v2/energetic-4.mp3",
+        "start": 3514.462,
+        "duration": 1404.264
       }
     ],
     "cues": [
@@ -464,39 +499,39 @@ export const MUSIC_GENRES: MusicGenre[] = [
         "duration": 500.114
       },
       {
-        "title": "교향곡 7번 - 4악장 Allegro con brio",
+        "title": "에그몬트 서곡",
         "composer": "베토벤",
-        "start": 2973.545,
-        "duration": 390.191
+        "start": 2973.544,
+        "duration": 540.918
       },
       {
         "title": "세빌리아의 이발사 서곡",
         "composer": "로시니",
-        "start": 3363.736,
+        "start": 3514.462,
         "duration": 439.092
       },
       {
         "title": "헝가리 무곡 5번",
         "composer": "브람스",
-        "start": 3802.828,
+        "start": 3953.554,
         "duration": 172.539
       },
       {
         "title": "꽃의 왈츠 (호두까기 인형)",
         "composer": "차이콥스키",
-        "start": 3975.367,
+        "start": 4126.093,
         "duration": 394.475
       },
       {
         "title": "현을 위한 세레나데 - 왈츠",
         "composer": "차이콥스키",
-        "start": 4369.842,
+        "start": 4520.568,
         "duration": 243.069
       },
       {
         "title": "산왕의 궁전에서 (페르 귄트)",
         "composer": "그리그",
-        "start": 4612.911,
+        "start": 4763.637,
         "duration": 155.089
       }
     ]
@@ -505,17 +540,22 @@ export const MUSIC_GENRES: MusicGenre[] = [
     "id": "jazz",
     "name": "재즈",
     "emoji": "🎷",
-    "durationSeconds": 4026.149,
+    "durationSeconds": 4026.148,
     "parts": [
       {
         "url": "https://amqywfemuxghcosexqct.supabase.co/storage/v1/object/public/jazz-music/v2/jazz-1.mp3",
         "start": 0,
-        "duration": 2272.366
+        "duration": 1427.775
       },
       {
         "url": "https://amqywfemuxghcosexqct.supabase.co/storage/v1/object/public/jazz-music/v2/jazz-2.mp3",
-        "start": 2272.366,
-        "duration": 1753.783
+        "start": 1427.775,
+        "duration": 1448.385
+      },
+      {
+        "url": "https://amqywfemuxghcosexqct.supabase.co/storage/v1/object/public/jazz-music/v2/jazz-3.mp3",
+        "start": 2876.16,
+        "duration": 1149.988
       }
     ],
     "cues": [
@@ -630,7 +670,7 @@ export const MUSIC_GENRES: MusicGenre[] = [
       {
         "title": "Pop 03",
         "composer": "Grigoriy Nuzhny",
-        "start": 1995.86,
+        "start": 1995.859,
         "duration": 168.438
       },
       {
@@ -654,7 +694,7 @@ export const MUSIC_GENRES: MusicGenre[] = [
       {
         "title": "Feeling Good",
         "composer": "Diego Nava",
-        "start": 2512.144,
+        "start": 2512.143,
         "duration": 99.553
       },
       {
@@ -678,7 +718,7 @@ export const MUSIC_GENRES: MusicGenre[] = [
       {
         "title": "Space Bird",
         "composer": "Diego Nava",
-        "start": 2988.539,
+        "start": 2988.538,
         "duration": 109.087
       },
       {
@@ -696,7 +736,7 @@ export const MUSIC_GENRES: MusicGenre[] = [
       {
         "title": "Lost in Dreams",
         "composer": "Ahjay Stelino",
-        "start": 3335.811,
+        "start": 3335.81,
         "duration": 123.455
       },
       {
@@ -708,7 +748,7 @@ export const MUSIC_GENRES: MusicGenre[] = [
       {
         "title": "Majestic",
         "composer": "Diego Nava",
-        "start": 3562.841,
+        "start": 3562.84,
         "duration": 108.669
       },
       {
@@ -726,7 +766,7 @@ export const MUSIC_GENRES: MusicGenre[] = [
       {
         "title": "Pop 05",
         "composer": "Grigoriy Nuzhny",
-        "start": 3875.161,
+        "start": 3875.16,
         "duration": 150.988
       }
     ]

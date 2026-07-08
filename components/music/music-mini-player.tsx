@@ -35,12 +35,20 @@ export function MusicMiniPlayer() {
   const preloadCue = useRef<{ cueIdx: number; ready: boolean } | null>(null);
   /** 곡 전환 진행 중 — 새 곡의 playing 이벤트까지 경계 재판정 억제(이중 스킵 방지) */
   const isTransitioning = useRef(false);
+  /**
+   * 곡 경계에 도달했으나 다음 곡 프리로드가 아직 안 끝난 상태.
+   * 이때 활성 스트림을 무음으로 끊지 않고 그대로 흘려보내며(=파일상 다음 곡이
+   * 잠깐 이어짐, 무음보다 자연스러움) 프리로드 완료 즉시 교차페이드한다.
+   */
+  const pendingSwap = useRef(false);
   const retryCount = useRef(0);
   const retryTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isBuffering = useRef(false);
   const fadeTimer = useRef<ReturnType<typeof setInterval> | null>(null);
   const FADE_IN_MS = 500;
-  const CUE_FADE_MS = 250; // 곡 전환 시 짧은 페이드인 — 클릭/튐 방지
+  const CUE_FADE_MS = 300; // 스킵(수동 전환) 시 교차페이드 길이
+  const CROSSFADE_MS = 450; // 곡 자동 전환 교차페이드 — 튐/공백 없이 부드럽게
+  const CROSSFADE_LEAD_S = 0.55; // 곡 끝 N초 전 교차페이드 시작(4Hz timeupdate 지터 흡수)
   const PRELOAD_LEAD_S = 30; // 곡 끝 N초 전 다음 곡 프리로드(느린 회선 여유)
   const MAX_RETRIES = 3;
 
@@ -252,73 +260,158 @@ export function MusicMiniPlayer() {
   }, [getInactive]);
 
   /**
-   * 다음 셔플 곡으로 전환 — 프리로드된 비활성 엘리먼트로 스왑(끊김 없음),
-   * 준비 안 됐으면 활성 엘리먼트에 직접 로드(폴백). 스킵 버튼도 이 경로 사용.
+   * 두 엘리먼트 볼륨을 동시에 교차 램프(등청감 근사) — 활성→0, 대상→목표볼륨.
+   * 곡 자동 전환·스킵 시 튐이나 공백 없이 부드럽게 이어 붙인다.
    */
-  const transitionToNextCue = useCallback(() => {
+  const crossfade = useCallback(
+    (
+      fromEl: HTMLAudioElement | null,
+      toEl: HTMLAudioElement,
+      ms: number,
+      onDone: () => void,
+    ) => {
+      clearFade();
+      const STEPS = Math.max(8, Math.round(ms / 20));
+      const interval = ms / STEPS;
+      let step = 0;
+      toEl.volume = 0;
+      fadeTimer.current = setInterval(() => {
+        step++;
+        const t = step / STEPS;
+        const target = useMusicPlayer.getState().volume;
+        // equal-power 교차페이드 — 합산 라우드니스 일정(중간 볼륨 꺼짐/튐 방지)
+        toEl.volume = Math.max(0, Math.min(1, target * Math.sin((t * Math.PI) / 2)));
+        if (fromEl) {
+          fromEl.volume = Math.max(0, Math.min(1, target * Math.cos((t * Math.PI) / 2)));
+        }
+        if (step >= STEPS) {
+          toEl.volume = target;
+          if (fromEl) fromEl.volume = 0;
+          clearFade();
+          onDone();
+        }
+      }, interval);
+    },
+    [clearFade],
+  );
+
+  /**
+   * 프리로드된 비활성 엘리먼트로 교차페이드 전환(준비 완료 전제).
+   * nextCueIdx 는 호출 측이 이미 advanceCue() 로 확정한 값.
+   */
+  const swapToPreloaded = useCallback(
+    (nextCueIdx: number, ms: number) => {
+      const genre = useMusicPlayer.getState().currentGenre;
+      const inactive = getInactive();
+      const active = getActive();
+      if (!genre || !inactive) return;
+      isTransitioning.current = true;
+      pendingSwap.current = false;
+      isBuffering.current = false;
+      retryCount.current = 0;
+      const nextCue = genre.cues[nextCueIdx];
+      currentCueIdx.current = nextCueIdx;
+      partIdx.current = findPartIndexAt(genre.parts, nextCue.start);
+      preloadCue.current = null;
+      inactive.play().catch(() => {});
+      updateTime(nextCue.start, genre.durationSeconds);
+      crossfade(active, inactive, ms, () => {
+        active?.pause();
+        activeIdx.current = activeIdx.current === 0 ? 1 : 0;
+        isTransitioning.current = false;
+        // 교차페이드 중 사용자가 일시정지했을 수 있음 — 새 활성도 정지 보장
+        if (!useMusicPlayer.getState().isPlaying) inactive.pause();
+      });
+    },
+    [getActive, getInactive, crossfade, updateTime],
+  );
+
+  /**
+   * 다음 셔플 곡으로 즉시 전환 — 스킵 버튼 / Media Session / 파트 끝 도달용.
+   * 프리로드 준비 시 교차페이드, 아니면 활성 엘리먼트에 직접 로드(짧은 로딩 허용).
+   */
+  const skipToNextCue = useCallback(() => {
     const state = useMusicPlayer.getState();
     const genre = state.currentGenre;
     if (!genre || genre.cues.length === 0) return;
     const nextCueIdx = state.advanceCue();
     if (nextCueIdx < 0) return;
-    isTransitioning.current = true;
-    const nextCue = genre.cues[nextCueIdx];
     const inactive = getInactive();
-    const active = getActive();
-
     if (
-      inactive &&
+      inactive != null &&
+      inactive.readyState >= 3 &&
       preloadCue.current?.cueIdx === nextCueIdx &&
-      preloadCue.current.ready &&
-      inactive.readyState >= 3
+      preloadCue.current?.ready === true
     ) {
-      clearFade();
-      currentCueIdx.current = nextCueIdx;
-      partIdx.current = findPartIndexAt(genre.parts, nextCue.start);
-      preloadCue.current = null;
-      retryCount.current = 0;
-      startFadeIn(inactive, CUE_FADE_MS);
-      inactive.play().catch(() => {});
-      active?.pause();
-      activeIdx.current = activeIdx.current === 0 ? 1 : 0;
-      updateTime(nextCue.start, genre.durationSeconds);
+      swapToPreloaded(nextCueIdx, CUE_FADE_MS);
     } else {
-      // 폴백: 프리로드 미완 — 활성 엘리먼트에 직접 로드
-      beginAt(genre, nextCue.start, true);
-      updateTime(nextCue.start, genre.durationSeconds);
+      isTransitioning.current = true;
+      pendingSwap.current = false;
+      beginAt(genre, genre.cues[nextCueIdx].start, true);
+      updateTime(genre.cues[nextCueIdx].start, genre.durationSeconds);
     }
-  }, [getActive, getInactive, clearFade, startFadeIn, beginAt, updateTime]);
+  }, [getInactive, swapToPreloaded, beginAt, updateTime]);
 
   const handleTimeUpdate = useCallback(
     (e: React.SyntheticEvent<HTMLAudioElement>) => {
       const audio = e.currentTarget;
       if (audio !== getActive()) return;
-      const genre = useMusicPlayer.getState().currentGenre;
+      // 교차페이드 진행 중에는 경계 재판정·시간 갱신 정지(구 활성 엘리먼트가
+      // 파일상 다음 곡으로 새고 있어 globalT 가 어긋날 수 있으므로).
+      if (isTransitioning.current) return;
+      const state = useMusicPlayer.getState();
+      const genre = state.currentGenre;
       if (!genre) return;
       const part = genre.parts[partIdx.current];
       if (!part) return;
       const globalT = part.start + audio.currentTime;
       updateTime(globalT, genre.durationSeconds);
 
-      // 곡(큐) 경계 판정 — 끝 근처 프리로드, 경계 도달 시 다음 셔플 곡으로 전환
-      if (isTransitioning.current) return;
       const cue = genre.cues[currentCueIdx.current];
-      if (cue) {
-        const remaining = cue.start + cue.duration - globalT;
-        if (remaining < PRELOAD_LEAD_S) maybePreloadNextCue();
-        if (remaining <= 0.05) transitionToNextCue();
+      if (!cue) return;
+      const remaining = cue.start + cue.duration - globalT;
+      if (remaining < PRELOAD_LEAD_S) maybePreloadNextCue();
+
+      // 곡 경계 근처 — 프리로드가 준비됐으면 경계 '전에' 교차페이드를 시작해
+      // (구곡 페이드아웃 + 신곡 페이드인) 파일상 다음 곡이 새는 것을 원천 차단한다.
+      // 준비가 안 됐으면 무음으로 끊지 말고 pendingSwap 로 표시 후 계속 흘려보낸다.
+      if (remaining > CROSSFADE_LEAD_S && !pendingSwap.current) return;
+
+      const nextCueIdx = state.peekNextCue();
+      const inactive = getInactive();
+      const ready =
+        nextCueIdx >= 0 &&
+        inactive != null &&
+        inactive.readyState >= 3 &&
+        preloadCue.current?.cueIdx === nextCueIdx &&
+        preloadCue.current?.ready === true;
+
+      if (ready) {
+        const advanced = state.advanceCue();
+        if (advanced >= 0) {
+          // 경계까지 남은 시간에 맞춰 교차페이드 길이 산정(지터가 있어도 경계 즈음 완료)
+          const dur = pendingSwap.current
+            ? CROSSFADE_MS
+            : Math.min(CROSSFADE_MS, Math.max(150, remaining * 1000));
+          swapToPreloaded(advanced, dur);
+        }
+      } else {
+        // 프리로드 미완 — 무음 컷 금지. 계속 재생하며 프리로드를 재촉하고,
+        // 준비되는 다음 timeupdate 에서 즉시 교차페이드.
+        pendingSwap.current = true;
+        maybePreloadNextCue();
       }
     },
-    [getActive, updateTime, maybePreloadNextCue, transitionToNextCue],
+    [getActive, getInactive, updateTime, maybePreloadNextCue, swapToPreloaded],
   );
 
   // 파트 끝 도달(곡이 파트의 마지막 트랙) → 다음 셔플 곡으로 전환
   const handleEnded = useCallback(
     (e: React.SyntheticEvent<HTMLAudioElement>) => {
       if (e.currentTarget !== getActive()) return;
-      transitionToNextCue();
+      skipToNextCue();
     },
-    [getActive, transitionToNextCue],
+    [getActive, skipToNextCue],
   );
 
   const handleError = useCallback(
@@ -450,8 +543,8 @@ export function MusicMiniPlayer() {
     });
     navigator.mediaSession.setActionHandler("play", () => getMusicController()?.resume());
     navigator.mediaSession.setActionHandler("pause", () => getMusicController()?.pauseAudio());
-    navigator.mediaSession.setActionHandler("nexttrack", () => transitionToNextCue());
-  }, [currentGenre, currentCue?.title, currentCue?.composer, transitionToNextCue]);
+    navigator.mediaSession.setActionHandler("nexttrack", () => skipToNextCue());
+  }, [currentGenre, currentCue?.title, currentCue?.composer, skipToNextCue]);
 
   function handlePlayToggle() {
     const ctrl = getMusicController();
@@ -546,7 +639,7 @@ export function MusicMiniPlayer() {
             </button>
 
             <button
-              onClick={() => transitionToNextCue()}
+              onClick={() => skipToNextCue()}
               className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
               title="다음 곡"
               aria-label="다음 곡"
