@@ -1,7 +1,7 @@
 import { getCachedCurrentUser, getCachedPersonaDashboardData } from "@/lib/cached";
 import { getKSTYearMonth } from "@/lib/utils/timezone";
 import { getMonthlyBookActivities } from "@/app/actions/stats";
-import { getSampleMonthlyActivities } from "@/app/actions/sample";
+import { getSampleFilledMonthlyActivities } from "@/app/actions/sample";
 import { generateDemoMonthlyActivities } from "@/lib/demo-calendar-data";
 import { TertiaryZoneClient } from "./tertiary-zone-client";
 import type { ReadingStats } from "@/types/persona";
@@ -17,10 +17,14 @@ export async function TertiaryZoneWrapper() {
   const { year: currentYear, month: currentMonth } = getKSTYearMonth();
 
   if (!user) {
-    // 게스트 사용자: 샘플 월별 활동 데이터 조회
-    let sampleActivities = await getSampleMonthlyActivities(currentYear, currentMonth).catch(() => ({}));
+    // 게스트 사용자: 관리자(샘플)의 실제 데이터를 당월 날짜에 리매핑해 최대한 채운다.
+    // 당월에 작성된 노트만 보던 기존 방식은 관리자가 이번 달 기록이 적으면 비어
+    // 일반 데모로 떨어졌다. 실제 책·표지로 채운 뒤, 데이터가 전혀 없을 때만 데모 폴백.
+    let sampleActivities = await getSampleFilledMonthlyActivities(
+      currentYear,
+      currentMonth,
+    ).catch(() => ({}));
 
-    // 샘플 데이터가 없으면 데모 데이터로 대체
     const hasActivityData = Object.keys(sampleActivities || {}).length > 0;
     if (!hasActivityData) {
       sampleActivities = generateDemoMonthlyActivities(currentYear, currentMonth);

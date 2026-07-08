@@ -7,7 +7,14 @@ import type { BookWithNotes, BookStats } from "@/app/actions/books";
 import type { BookshelfWithStats } from "@/types/bookshelf";
 import type { NoteWithBook } from "@/types/note";
 import type { UserPersona } from "@/types/persona";
+import type { DailyBookActivity } from "@/app/actions/stats";
 import { sanitizeSearchQuery } from "@/lib/utils/validation";
+import {
+  toKSTDateKey,
+  getKSTComponents,
+  getKSTYearMonth,
+  isFutureKSTMonth,
+} from "@/lib/utils/timezone";
 
 /**
  * 샘플 사용자 ID를 동적으로 조회
@@ -958,103 +965,145 @@ export async function getSampleContinueReadingBooks(maxCount: number = 6): Promi
 }
 
 /**
- * 샘플 사용자의 월별 독서 활동 조회 (게스트 Tertiary Zone용)
- * DailyBookActivity 형식으로 반환하여 MonthlyBookCalendar와 호환
+ * 게스트 홈 달력 채우기용 — 관리자(샘플)의 실제 독서 데이터를 당월 날짜에 리매핑.
+ *
+ * 이전에는 "그 달에 작성된" 노트만 조회해, 당월에 관리자 기록이 적으면 달력이 비어
+ * 일반 데모(기본 표지)로 떨어졌다. 본 함수는 관리자의 실제 노트 전체(실제
+ * 책·표지·기록 타입)를 하루 단위 번들로 묶어, 대상 월의 날짜
+ * (현재 월이면 1~오늘, 과거 월이면 1~말일)에 최근 순으로 채워 넣는다.
+ * → 비로그인 사용자도 실제 데이터로 최대한 채워진 달력을 첫 화면에서 보게 된다.
+ *
+ * 반환은 `DailyBookActivity` 형식이라 `MonthlyBookCalendar` 와 그대로 호환.
+ * 관리자 데이터가 전혀 없으면 `{}` 를 반환해 호출부가 데모로 폴백하도록 한다.
  */
-export async function getSampleMonthlyActivities(
+interface SampleNoteRow {
+  created_at: string;
+  type: string;
+  book_id: string | null;
+  books:
+    | { id: string; title: string | null; cover_image_url: string | null }
+    | Array<{ id: string; title: string | null; cover_image_url: string | null }>
+    | null;
+}
+
+export async function getSampleFilledMonthlyActivities(
   year: number,
-  month: number
-): Promise<Record<string, any>> {
+  month: number,
+): Promise<Record<string, DailyBookActivity>> {
+  // 미래 월은 채우지 않음 (달력이 미래 이동을 막지만 방어적으로 재확인)
+  if (isFutureKSTMonth(year, month)) return {};
+
   try {
     const sampleUserId = await getSampleUserId();
     const supabase = createAdminSupabaseClient();
 
-    // 월 시작/끝 계산 (KST 기준)
-    const startDate = new Date(Date.UTC(year, month - 1, 1) - 9 * 60 * 60 * 1000);
-    const endDate = new Date(Date.UTC(year, month, 0, 23, 59, 59) - 9 * 60 * 60 * 1000);
-
-    // 해당 월의 노트 조회 (표지 이미지 포함)
-    const { data: notes, error: notesError } = await supabase
+    // 관리자의 실제 노트 전체(최근 500개) — 기간 제한 없이 조회해 최대한 확보
+    const { data: notes, error } = await supabase
       .from("notes")
       .select("created_at, type, book_id, books(id, title, cover_image_url)")
       .eq("user_id", sampleUserId)
-      .gte("created_at", startDate.toISOString())
-      .lte("created_at", endDate.toISOString())
-      .order("created_at", { ascending: true });
+      .order("created_at", { ascending: false })
+      .limit(500);
 
-    if (notesError) {
-      console.error("[getSampleMonthlyActivities] notes 조회 오류:", notesError.message, { sampleUserId, start: startDate.toISOString(), end: endDate.toISOString() });
+    if (error || !notes || notes.length === 0) {
       return {};
     }
 
-    if (!notes || notes.length === 0) {
-      console.warn("[getSampleMonthlyActivities] 해당 월에 노트 없음:", { sampleUserId, year, month });
-      return {};
-    }
+    const rows = notes as unknown as SampleNoteRow[];
 
-    // user_books ID 매핑 조회 (null book_id 제외)
-    const bookIds = [...new Set(notes.map((n) => n.book_id).filter((id): id is string => id != null))];
-    const { data: userBooksData } = bookIds.length > 0
-      ? await supabase
-          .from("user_books")
-          .select("id, book_id")
-          .eq("user_id", sampleUserId)
-          .in("book_id", bookIds)
-      : { data: [] };
-
+    // user_books ID 매핑 (표지 클릭 대비, 없으면 book_id 폴백)
+    const bookIds = [
+      ...new Set(rows.map((n) => n.book_id).filter((id): id is string => id != null)),
+    ];
+    const { data: userBooksData } =
+      bookIds.length > 0
+        ? await supabase
+            .from("user_books")
+            .select("id, book_id")
+            .eq("user_id", sampleUserId)
+            .in("book_id", bookIds)
+        : { data: [] };
     const userBookIdMap = new Map<string, string>();
-    if (userBooksData) {
-      userBooksData.forEach((ub) => userBookIdMap.set(ub.book_id, ub.id));
-    }
+    userBooksData?.forEach((ub) => userBookIdMap.set(ub.book_id, ub.id));
 
-    // DailyBookActivity 형식으로 날짜별 그룹화
-    const dailyActivities: Record<string, any> = {};
+    // 관리자의 "하루 단위 실제 활동 번들"을 최근 순으로 그룹화
+    //  - notes 가 created_at DESC 이므로 날짜키 최초 등장 순 = 최근 날짜 순
+    type Bundle = Pick<DailyBookActivity, "books" | "noteTypes">;
+    const bundleByDate = new Map<string, Bundle>();
+    const orderedDateKeys: string[] = [];
 
-    for (const note of notes) {
-      const noteKst = new Date(new Date(note.created_at).getTime() + 9 * 60 * 60 * 1000);
-      const dateKey = `${noteKst.getUTCFullYear()}-${String(noteKst.getUTCMonth() + 1).padStart(2, "0")}-${String(noteKst.getUTCDate()).padStart(2, "0")}`;
-
-      if (!dailyActivities[dateKey]) {
-        dailyActivities[dateKey] = {
-          date: dateKey,
+    for (const note of rows) {
+      const realKey = toKSTDateKey(new Date(note.created_at));
+      let bundle = bundleByDate.get(realKey);
+      if (!bundle) {
+        bundle = {
           books: [],
-          noteTypes: {
-            transcription: 0,
-            photo: 0,
-            memo: 0,
-            quote: 0,
-            progress: 0,
-            total: 0,
-          },
+          noteTypes: { transcription: 0, photo: 0, memo: 0, quote: 0, progress: 0, total: 0 },
         };
+        bundleByDate.set(realKey, bundle);
+        orderedDateKeys.push(realKey);
       }
 
-      // 기록 타입별 카운트
-      const noteType = note.type as string;
-      if (noteType in dailyActivities[dateKey].noteTypes && noteType !== "total") {
-        dailyActivities[dateKey].noteTypes[noteType]++;
+      const type = note.type;
+      if (
+        type === "transcription" ||
+        type === "photo" ||
+        type === "memo" ||
+        type === "quote" ||
+        type === "progress"
+      ) {
+        bundle.noteTypes[type]++;
       }
-      dailyActivities[dateKey].noteTypes.total++;
+      bundle.noteTypes.total++;
 
-      // 같은 날짜에 같은 책 중복 방지
       const book = Array.isArray(note.books) ? note.books[0] : note.books;
-      const existingBook = dailyActivities[dateKey].books.find(
-        (b: any) => b.bookId === note.book_id
-      );
-
-      if (!existingBook && book) {
-        dailyActivities[dateKey].books.push({
-          bookId: note.book_id,
-          userBookId: userBookIdMap.get(note.book_id) || note.book_id,
-          title: (book as any)?.title || "알 수 없는 책",
-          coverImageUrl: (book as any)?.cover_image_url || null,
-        });
+      if (book && note.book_id && bundle.books.length < 4) {
+        const dup = bundle.books.some((b) => b.bookId === note.book_id);
+        if (!dup) {
+          bundle.books.push({
+            bookId: note.book_id,
+            userBookId: userBookIdMap.get(note.book_id) ?? note.book_id,
+            title: book.title ?? "알 수 없는 책",
+            coverImageUrl: book.cover_image_url ?? null,
+          });
+        }
       }
     }
 
-    return dailyActivities;
+    const bundles = orderedDateKeys
+      .map((k) => bundleByDate.get(k))
+      .filter((b): b is Bundle => b != null && b.books.length > 0);
+    if (bundles.length === 0) return {};
+
+    // 대상 월에서 채울 마지막 날짜: 현재 월이면 오늘, 과거 월이면 말일
+    const daysInMonth = new Date(year, month, 0).getDate();
+    const cur = getKSTYearMonth();
+    const isCurrentMonth = cur.year === year && cur.month === month;
+    const todayDay = getKSTComponents(new Date()).day;
+    const lastDay = isCurrentMonth ? Math.min(todayDay, daysInMonth) : daysInMonth;
+    if (lastDay < 1) return {};
+
+    // 실제 번들 수와 채울 날짜 수 중 작은 만큼만 채움(가짜 복제 없이 실제 데이터로)
+    const numToFill = Math.min(bundles.length, lastDay);
+    const activities: Record<string, DailyBookActivity> = {};
+
+    for (let i = 0; i < numToFill; i++) {
+      const day = lastDay - i; // 최근 날짜부터 최근 번들 배치
+      const dateKey = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+      const bundle = bundles[i];
+      activities[dateKey] = {
+        date: dateKey,
+        books: bundle.books,
+        noteTypes: bundle.noteTypes,
+      };
+    }
+
+    return activities;
   } catch (error) {
-    console.error("[getSampleMonthlyActivities] 예외 발생:", error instanceof Error ? error.message : error);
+    console.error(
+      "[getSampleFilledMonthlyActivities] 예외 발생:",
+      error instanceof Error ? error.message : error,
+    );
     return {};
   }
 }

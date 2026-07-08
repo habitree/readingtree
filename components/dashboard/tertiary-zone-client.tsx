@@ -18,7 +18,7 @@ const MonthlyBookCalendar = dynamic(
   }
 );
 import { getMonthlyBookActivities } from "@/app/actions/stats";
-import { getSampleMonthlyActivities } from "@/app/actions/sample";
+import { getSampleFilledMonthlyActivities } from "@/app/actions/sample";
 import { generateDemoMonthlyActivities } from "@/lib/demo-calendar-data";
 import type { DailyBookActivity } from "@/app/actions/stats";
 import type { UserPersona, ReadingStats } from "@/types/persona";
@@ -201,8 +201,8 @@ export function TertiaryZoneClient({
         setIsLoading(false);
         return;
       } else if (isGuest) {
-        const sampleData = await getSampleMonthlyActivities(newYear, newMonth);
-        // 샘플 데이터가 없으면 데모 데이터로 대체
+        // 게스트 월 이동: 관리자 실제 데이터를 해당 월에 리매핑, 없으면 데모 폴백
+        const sampleData = await getSampleFilledMonthlyActivities(newYear, newMonth);
         newActivities = Object.keys(sampleData || {}).length > 0
           ? sampleData
           : generateDemoMonthlyActivities(newYear, newMonth);
