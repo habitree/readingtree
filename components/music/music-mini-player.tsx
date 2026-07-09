@@ -143,6 +143,7 @@ export function MusicMiniPlayer() {
       const inactive = getInactive();
       inactive?.pause();
       preloadCue.current = null;
+      pendingSwap.current = false;
       retryCount.current = 0;
 
       const pIdx = findPartIndexAt(genre.parts, globalT);
@@ -252,10 +253,21 @@ export function MusicMiniPlayer() {
           inactive.currentTime = Math.min(offset, Math.max(0, inactive.duration - 0.3));
         } catch { /* noop */ }
       }
-      inactive.addEventListener("canplay", function onCp() {
-        inactive.removeEventListener("canplay", onCp);
+      // 준비 완료(readyState>=3) 감지 — canplay/canplaythrough/seeked 중 하나면 충분.
+      // 여러 신호를 듣고 즉시 한 번 확인해, 이벤트가 리스너 등록 전에 이미 발생한
+      // 경우에도 ready 가 영영 false 로 남지 않게 한다(무음 갭 대신 교차페이드 유지).
+      const el = inactive;
+      function markReady() {
+        if (el.readyState < 3) return;
+        el.removeEventListener("canplay", markReady);
+        el.removeEventListener("canplaythrough", markReady);
+        el.removeEventListener("seeked", markReady);
         if (preloadCue.current === target) target.ready = true;
-      });
+      }
+      el.addEventListener("canplay", markReady);
+      el.addEventListener("canplaythrough", markReady);
+      el.addEventListener("seeked", markReady);
+      markReady();
     });
   }, [getInactive]);
 
@@ -300,7 +312,7 @@ export function MusicMiniPlayer() {
    * nextCueIdx 는 호출 측이 이미 advanceCue() 로 확정한 값.
    */
   const swapToPreloaded = useCallback(
-    (nextCueIdx: number, ms: number) => {
+    (nextCueIdx: number, ms: number, fadeFromActive: boolean = true) => {
       const genre = useMusicPlayer.getState().currentGenre;
       const inactive = getInactive();
       const active = getActive();
@@ -313,9 +325,13 @@ export function MusicMiniPlayer() {
       currentCueIdx.current = nextCueIdx;
       partIdx.current = findPartIndexAt(genre.parts, nextCue.start);
       preloadCue.current = null;
+      // fadeFromActive=false: 활성 스트림이 이미 곡 경계를 넘겨 '파일상 다음 곡'을
+      // (음소거로) 흘리고 있는 상태 → 교차페이드로 되살리지 말고 즉시 끊고 신곡만 페이드인.
+      const from = fadeFromActive ? active : null;
+      if (!fadeFromActive) active?.pause();
       inactive.play().catch(() => {});
       updateTime(nextCue.start, genre.durationSeconds);
-      crossfade(active, inactive, ms, () => {
+      crossfade(from, inactive, ms, () => {
         active?.pause();
         activeIdx.current = activeIdx.current === 0 ? 1 : 0;
         isTransitioning.current = false;
@@ -343,7 +359,9 @@ export function MusicMiniPlayer() {
       preloadCue.current?.cueIdx === nextCueIdx &&
       preloadCue.current?.ready === true
     ) {
-      swapToPreloaded(nextCueIdx, CUE_FADE_MS);
+      // 경계를 넘겨 음소거 대기(pendingSwap) 중이었다면 구 스트림(파일-다음 곡)을
+      // 되살리지 말고 신곡만 페이드인. 아니면 등청감 교차페이드.
+      swapToPreloaded(nextCueIdx, CUE_FADE_MS, !pendingSwap.current);
     } else {
       isTransitioning.current = true;
       pendingSwap.current = false;
@@ -359,6 +377,15 @@ export function MusicMiniPlayer() {
       // 교차페이드 진행 중에는 경계 재판정·시간 갱신 정지(구 활성 엘리먼트가
       // 파일상 다음 곡으로 새고 있어 globalT 가 어긋날 수 있으므로).
       if (isTransitioning.current) return;
+
+      // 이중 재생 방지 레퍼리 — 전환 중이 아니면 비활성 엘리먼트는 반드시 정지 상태여야 한다.
+      // 중단된 크로스페이드 등으로 소리가 새어도 다음 timeupdate(≤250ms)에 회수해 곡 겹침을 차단.
+      const idleEl = getInactive();
+      if (idleEl && !idleEl.paused) {
+        idleEl.pause();
+        idleEl.volume = 0;
+      }
+
       const state = useMusicPlayer.getState();
       const genre = state.currentGenre;
       if (!genre) return;
@@ -374,31 +401,32 @@ export function MusicMiniPlayer() {
 
       // 곡 경계 근처 — 프리로드가 준비됐으면 경계 '전에' 교차페이드를 시작해
       // (구곡 페이드아웃 + 신곡 페이드인) 파일상 다음 곡이 새는 것을 원천 차단한다.
-      // 준비가 안 됐으면 무음으로 끊지 말고 pendingSwap 로 표시 후 계속 흘려보낸다.
+      // 준비가 안 됐으면 무음 컷 없이 대기하되, 경계를 '넘어선' 뒤에는 활성 스트림을
+      // 음소거해 '파일상 다음 곡'(셔플과 다른 곡)이 새어 겹쳐 들리는 것을 막는다.
       if (remaining > CROSSFADE_LEAD_S && !pendingSwap.current) return;
 
       const nextCueIdx = state.peekNextCue();
-      const inactive = getInactive();
       const ready =
         nextCueIdx >= 0 &&
-        inactive != null &&
-        inactive.readyState >= 3 &&
+        idleEl != null &&
+        idleEl.readyState >= 3 &&
         preloadCue.current?.cueIdx === nextCueIdx &&
         preloadCue.current?.ready === true;
 
       if (ready) {
+        const bled = pendingSwap.current;
         const advanced = state.advanceCue();
         if (advanced >= 0) {
-          // 경계까지 남은 시간에 맞춰 교차페이드 길이 산정(지터가 있어도 경계 즈음 완료)
-          const dur = pendingSwap.current
-            ? CROSSFADE_MS
-            : Math.min(CROSSFADE_MS, Math.max(150, remaining * 1000));
-          swapToPreloaded(advanced, dur);
+          // 경계 전 준비: 등청감 교차페이드(구곡 꼬리 + 신곡 머리). 이미 경계를 넘겨
+          // 음소거 대기 중이었다면 신곡만 페이드인(구 스트림은 파일-다음 곡이라 되살리지 않음).
+          const dur = bled ? CROSSFADE_MS : Math.min(CROSSFADE_MS, Math.max(150, remaining * 1000));
+          swapToPreloaded(advanced, dur, !bled);
         }
       } else {
-        // 프리로드 미완 — 무음 컷 금지. 계속 재생하며 프리로드를 재촉하고,
-        // 준비되는 다음 timeupdate 에서 즉시 교차페이드.
+        // 프리로드 미완 — 무음 컷 금지. 계속 재생하며 프리로드를 재촉하되,
+        // 곡 경계를 넘어선 순간부터는 활성 스트림을 음소거(파일-다음 곡 누출 차단).
         pendingSwap.current = true;
+        if (remaining <= 0) audio.volume = 0;
         maybePreloadNextCue();
       }
     },
@@ -409,6 +437,9 @@ export function MusicMiniPlayer() {
   const handleEnded = useCallback(
     (e: React.SyntheticEvent<HTMLAudioElement>) => {
       if (e.currentTarget !== getActive()) return;
+      // 전환(크로스페이드) 중 구 엘리먼트의 ended 는 무시 — 이미 신곡이 인계 중.
+      // 그대로 두면 큐가 이중 진행되고 진행 중 전환이 끊겨 두 곡이 겹칠 수 있다.
+      if (isTransitioning.current) return;
       skipToNextCue();
     },
     [getActive, skipToNextCue],
