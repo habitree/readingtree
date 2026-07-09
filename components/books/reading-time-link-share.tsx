@@ -1,11 +1,16 @@
 "use client";
 
 /**
- * 책 상세 페이지 독서 기록 공유 버튼 (v3 — 2026-07-08).
+ * 책 상세 페이지 독서 기록 공유 버튼 (v4 — 2026-07-09).
+ *
+ * 공유 대상 URL을 "로그인 없이 열람 가능한 공개 공유 페이지"
+ * (`/share/reading-time/[userBookId]`)로 지정한다. 이전(v3)에는
+ * `window.location.href`(로그인 필수 책 상세 페이지)를 공유해 받은 사람이
+ * 로그인 벽에 막히는 문제가 있었다.
  *
  * 동작:
  *   - 1차: Web Share API(navigator.share) — 모바일 네이티브 공유 시트로
- *          인스타·카카오·문자 등 SNS에 바로 전송 (제목·문구·URL 포함)
+ *          인스타·카카오·문자 등 SNS에 바로 전송 (제목·문구·공개 URL 포함)
  *   - 2차: 클립보드 복사 (navigator.clipboard.writeText)
  *   - 3차: hidden textarea + execCommand("copy") (구형/인앱 브라우저)
  *
@@ -19,6 +24,8 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 interface ReadingTimeLinkShareProps {
+  /** user_books.id — 공개 공유 페이지 경로 구성용 */
+  userBookId: string;
   bookTitle?: string | null;
   className?: string;
 }
@@ -42,12 +49,17 @@ function copyTextLegacy(text: string): boolean {
   }
 }
 
-export function ReadingTimeLinkShare({ bookTitle, className }: ReadingTimeLinkShareProps) {
+export function ReadingTimeLinkShare({
+  userBookId,
+  bookTitle,
+  className,
+}: ReadingTimeLinkShareProps) {
   const [copied, setCopied] = useState(false);
 
   const handleShare = useCallback(async () => {
     if (typeof window === "undefined") return;
-    const url = window.location.href;
+    // 로그인 없이 볼 수 있는 공개 공유 페이지로 링크 구성
+    const url = `${window.location.origin}/share/reading-time/${userBookId}`;
     const title = bookTitle ? `《${bookTitle}》 독서 기록` : "독서 기록";
     const text = bookTitle
       ? `📖 《${bookTitle}》 읽고 있어요 — ReadTree에서 독서 기록 중 🌳`
@@ -78,14 +90,14 @@ export function ReadingTimeLinkShare({ bookTitle, className }: ReadingTimeLinkSh
       setCopied(true);
       toast.success(
         bookTitle
-          ? `${bookTitle} 독서 기록 링크를 복사했어요.`
-          : "독서 기록 링크를 복사했어요.",
+          ? `${bookTitle} 공유 링크를 복사했어요. 누구나 열어볼 수 있어요.`
+          : "공유 링크를 복사했어요. 누구나 열어볼 수 있어요.",
       );
       setTimeout(() => setCopied(false), 2500);
     } else {
       toast.error("공유에 실패했어요.");
     }
-  }, [bookTitle]);
+  }, [userBookId, bookTitle]);
 
   return (
     <Button

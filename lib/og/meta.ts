@@ -2,7 +2,14 @@ import type { Metadata } from "next";
 import { OG_BRAND, OG_TEXT_LIMITS, OG_SIZE } from "./constants";
 import { getAppUrl } from "@/lib/utils/url";
 
-export type ShareMetaKind = "note" | "stamp" | "bookshelf" | "completion" | "report" | "recap";
+export type ShareMetaKind =
+  | "note"
+  | "stamp"
+  | "bookshelf"
+  | "completion"
+  | "report"
+  | "recap"
+  | "reading-time";
 
 const KIND_LABEL: Record<ShareMetaKind, string> = {
   note: "독서 기록",
@@ -11,6 +18,7 @@ const KIND_LABEL: Record<ShareMetaKind, string> = {
   completion: "완독",
   report: "독서 리포트",
   recap: "월간 독서결산",
+  "reading-time": "독서 시간",
 };
 
 interface BuildShareMetadataInput {

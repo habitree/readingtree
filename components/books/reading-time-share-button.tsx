@@ -16,12 +16,12 @@
  */
 
 import { useRef, useState } from "react";
-import Image from "next/image";
 import { BookOpen, Check, ImageDown, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { copyImagePromiseToClipboard } from "@/lib/utils/clipboard";
 import { downloadImage, isMobile } from "@/lib/utils/device";
+import { getProxiedImageUrl } from "@/lib/utils/image";
 import type { ReadingLog } from "@/types/progress";
 import { cn } from "@/lib/utils";
 
@@ -254,62 +254,80 @@ export function ReadingTimeShareButton({
               </span>
             </div>
 
-            {/* 책 정보 */}
-            <div className="mt-4 flex items-center gap-4">
+            {/* 책 정보 — 표지를 히어로급으로 확대해 가시성 강화 */}
+            <div className="mt-5 flex items-start gap-[18px]">
               <div className="relative shrink-0">
                 {/* 커버 뒤 은은한 글로우 (radial-gradient — filter 미사용) */}
                 <div
-                  className="absolute -inset-5"
+                  className="absolute -inset-6"
                   style={{
                     background:
-                      "radial-gradient(closest-side, rgba(16,185,129,0.34), transparent)",
+                      "radial-gradient(closest-side, rgba(16,185,129,0.38), transparent)",
                   }}
                 />
                 {bookInfo?.coverImageUrl ? (
                   <div
-                    className="relative h-[90px] w-[66px] overflow-hidden rounded-2xl"
-                    style={{ border: "1px solid rgba(255,255,255,0.18)" }}
+                    className="relative h-[128px] w-[88px] overflow-hidden rounded-xl"
+                    style={{
+                      border: "1px solid rgba(255,255,255,0.22)",
+                      backgroundColor: "rgba(255,255,255,0.04)",
+                    }}
                   >
-                    <Image
-                      src={bookInfo.coverImageUrl}
+                    {/* CORS 회피: 원본 URL 대신 same-origin 프록시로 로드해야
+                        html2canvas 가 표지를 정상 캡처한다 (외부 표지 빈칸 방지) */}
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={getProxiedImageUrl(bookInfo.coverImageUrl)}
                       alt={bookInfo.title}
-                      fill
-                      sizes="66px"
-                      className="object-cover"
-                      unoptimized
+                      crossOrigin="anonymous"
+                      className="absolute inset-0 h-full w-full object-cover"
+                    />
+                    {/* 책 표지 광택 — 프리미엄 질감 */}
+                    <div
+                      className="absolute inset-0"
+                      style={{
+                        backgroundImage:
+                          "linear-gradient(125deg, rgba(255,255,255,0.16) 0%, transparent 42%, rgba(0,0,0,0.14) 100%)",
+                      }}
+                    />
+                    {/* 책등(spine) 음영 */}
+                    <div
+                      className="absolute inset-y-0 left-0 w-[6px]"
+                      style={{
+                        backgroundImage:
+                          "linear-gradient(90deg, rgba(0,0,0,0.28) 0%, transparent 100%)",
+                      }}
                     />
                   </div>
                 ) : (
                   <div
-                    className="relative flex h-[90px] w-[66px] items-center justify-center rounded-2xl"
+                    className="relative flex h-[128px] w-[88px] items-center justify-center rounded-xl"
                     style={{ ...TILE_STYLE }}
                   >
-                    <BookOpen className="h-7 w-7 text-emerald-300" />
+                    <BookOpen className="h-9 w-9 text-emerald-300" />
                   </div>
                 )}
               </div>
-              <div className="min-w-0 flex-1">
-                {bookInfo?.title && (
-                  <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-300">
-                    Now Reading
-                  </p>
-                )}
-                <p className="mt-1 line-clamp-2 text-[19px] font-bold leading-snug text-white">
+              <div className="min-w-0 flex-1 pt-0.5">
+                <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-emerald-300">
+                  Now Reading
+                </p>
+                <p className="mt-1.5 line-clamp-2 text-[20px] font-bold leading-snug text-white">
                   {bookInfo?.title ?? "독서 기록"}
                 </p>
                 {bookInfo?.author && (
-                  <p className="mt-0.5 line-clamp-1 text-[12px] text-slate-400">
+                  <p className="mt-1 line-clamp-1 text-[12px] text-slate-400">
                     {bookInfo.author}
                   </p>
                 )}
                 {progressPct !== null && (
-                  <div className="mt-2.5">
+                  <div className="mt-3.5">
                     <div className="flex items-center justify-between text-[10px] font-medium text-slate-400">
                       <span>읽기 진행률</span>
                       <span className="tabular-nums text-emerald-300">{progressPct}%</span>
                     </div>
                     <div
-                      className="mt-1 h-1.5 w-full overflow-hidden rounded-full"
+                      className="mt-1.5 h-2 w-full overflow-hidden rounded-full"
                       style={{ backgroundColor: "rgba(255,255,255,0.10)" }}
                     >
                       <div
@@ -327,7 +345,7 @@ export function ReadingTimeShareButton({
             </div>
 
             {/* 히어로 — 총 독서 시간 */}
-            <div className="mt-5">
+            <div className="mt-[18px]">
               <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
                 총 독서 시간
               </p>
@@ -351,7 +369,7 @@ export function ReadingTimeShareButton({
             </div>
 
             {/* 최근 7일 독서 리듬 — 미니 바 차트 (Wrapped형 데이터 스토리) */}
-            <div className="mt-5">
+            <div className="mt-[18px]">
               <div className="flex items-baseline justify-between">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
                   최근 7일 리듬

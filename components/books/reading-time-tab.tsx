@@ -225,7 +225,10 @@ export function ReadingTimeTab({ userBookId, bookInfo }: ReadingTimeTabProps) {
         {/* 통계 카드 + 공유 버튼들 (링크 / 이미지) */}
         <div className="space-y-2.5">
           <div className="flex items-center justify-end gap-2">
-            <ReadingTimeLinkShare bookTitle={bookInfo?.title ?? null} />
+            <ReadingTimeLinkShare
+              userBookId={userBookId}
+              bookTitle={bookInfo?.title ?? null}
+            />
             <ReadingTimeShareButton
               bookInfo={bookInfo ?? null}
               stats={stats}
