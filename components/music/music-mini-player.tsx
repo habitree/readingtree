@@ -46,9 +46,11 @@ export function MusicMiniPlayer() {
   const isBuffering = useRef(false);
   const fadeTimer = useRef<ReturnType<typeof setInterval> | null>(null);
   const FADE_IN_MS = 500;
-  const CUE_FADE_MS = 300; // 스킵(수동 전환) 시 교차페이드 길이
-  const CROSSFADE_MS = 450; // 곡 자동 전환 교차페이드 — 튐/공백 없이 부드럽게
-  const CROSSFADE_LEAD_S = 0.55; // 곡 끝 N초 전 교차페이드 시작(4Hz timeupdate 지터 흡수)
+  // 곡 전환은 "구곡을 무음까지 내린 뒤(→정지) 신곡을 올리는" 순차 딥(dip)으로 한다.
+  // 두 곡의 '음악'이 동시에 들리지 않게 해 겹침(중복 재생)을 원천 차단.
+  const DIP_OUT_MS = 280; // 구곡 페이드아웃(→무음) 길이
+  const DIP_IN_MS = 380; // 신곡 페이드인 길이(구곡이 무음이 된 뒤 시작)
+  const CROSSFADE_LEAD_S = 0.45; // 경계 N초 전 전환 시작 → 구곡이 경계 즈음 무음 도달(4Hz 지터 흡수)
   const PRELOAD_LEAD_S = 30; // 곡 끝 N초 전 다음 곡 프리로드(느린 회선 여유)
   const MAX_RETRIES = 3;
 
@@ -272,47 +274,67 @@ export function MusicMiniPlayer() {
   }, [getInactive]);
 
   /**
-   * 두 엘리먼트 볼륨을 동시에 교차 램프(등청감 근사) — 활성→0, 대상→목표볼륨.
-   * 곡 자동 전환·스킵 시 튐이나 공백 없이 부드럽게 이어 붙인다.
+   * 곡 전환 딥(dip) — 구곡(fromEl)을 무음까지 내려 정지시킨 뒤, 신곡(toEl)을 올린다.
+   * 두 곡의 '음악'이 동시에 들리지 않도록 순차 진행(교차 겹침 원천 차단).
+   * 대부분의 곡은 앞/뒤에 트림 여유(무음)가 있어 이 딥이 공백 없이 자연스럽게 이어진다.
+   * fromEl=null 이면(이미 정지/음소거된 상태) 신곡 페이드인만 수행.
+   *
+   * toEl 은 t=0 에 '무음으로' 재생 시작 → fromEl 페이드아웃 동안 신곡 도입부(대개 무음)를
+   * 흘려보내고, fromEl 정지 시점(OUT)에 맞춰 서서히 올려 공백을 최소화한다.
    */
-  const crossfade = useCallback(
+  const dipTransition = useCallback(
     (
       fromEl: HTMLAudioElement | null,
       toEl: HTMLAudioElement,
-      ms: number,
       onDone: () => void,
     ) => {
       clearFade();
-      const STEPS = Math.max(8, Math.round(ms / 20));
-      const interval = ms / STEPS;
-      let step = 0;
+      const OUT = fromEl ? DIP_OUT_MS : 0; // fromEl 없으면 페이드아웃 단계 생략
+      const IN = DIP_IN_MS;
+      const total = OUT + IN;
+      const STEPS = Math.max(12, Math.round(total / 20));
+      const dt = total / STEPS;
+      let elapsed = 0;
+      let outDone = OUT === 0;
       toEl.volume = 0;
+      toEl.play().catch(() => {}); // t=0 무음 재생 시작(도입부 소진 → 공백 최소화)
       fadeTimer.current = setInterval(() => {
-        step++;
-        const t = step / STEPS;
+        elapsed += dt;
         const target = useMusicPlayer.getState().volume;
-        // equal-power 교차페이드 — 합산 라우드니스 일정(중간 볼륨 꺼짐/튐 방지)
-        toEl.volume = Math.max(0, Math.min(1, target * Math.sin((t * Math.PI) / 2)));
-        if (fromEl) {
-          fromEl.volume = Math.max(0, Math.min(1, target * Math.cos((t * Math.PI) / 2)));
+        // 1단계: 구곡 target→0 (겹침 방지의 핵심 — 신곡은 아직 무음)
+        if (fromEl && elapsed < OUT) {
+          fromEl.volume = Math.max(0, Math.min(1, target * (1 - elapsed / OUT)));
         }
-        if (step >= STEPS) {
-          toEl.volume = target;
+        // 경계: 구곡 완전 정지
+        if (!outDone && elapsed >= OUT) {
+          outDone = true;
+          if (fromEl) {
+            fromEl.volume = 0;
+            fromEl.pause();
+          }
+        }
+        // 2단계: 신곡 0→target (구곡이 무음/정지된 뒤에만 올린다)
+        if (outDone) {
+          const t = OUT === 0 ? elapsed / IN : (elapsed - OUT) / IN;
+          toEl.volume = Math.max(0, Math.min(1, target * Math.min(1, t)));
+        }
+        if (elapsed >= total) {
           if (fromEl) fromEl.volume = 0;
+          toEl.volume = target;
           clearFade();
           onDone();
         }
-      }, interval);
+      }, dt);
     },
     [clearFade],
   );
 
   /**
-   * 프리로드된 비활성 엘리먼트로 교차페이드 전환(준비 완료 전제).
+   * 프리로드된 비활성 엘리먼트로 딥(dip) 전환(준비 완료 전제).
    * nextCueIdx 는 호출 측이 이미 advanceCue() 로 확정한 값.
    */
   const swapToPreloaded = useCallback(
-    (nextCueIdx: number, ms: number, fadeFromActive: boolean = true) => {
+    (nextCueIdx: number, fadeFromActive: boolean = true) => {
       const genre = useMusicPlayer.getState().currentGenre;
       const inactive = getInactive();
       const active = getActive();
@@ -326,20 +348,19 @@ export function MusicMiniPlayer() {
       partIdx.current = findPartIndexAt(genre.parts, nextCue.start);
       preloadCue.current = null;
       // fadeFromActive=false: 활성 스트림이 이미 곡 경계를 넘겨 '파일상 다음 곡'을
-      // (음소거로) 흘리고 있는 상태 → 교차페이드로 되살리지 말고 즉시 끊고 신곡만 페이드인.
+      // (음소거로) 흘리고 있는 상태 → 페이드아웃으로 되살리지 말고 즉시 끊고 신곡만 페이드인.
       const from = fadeFromActive ? active : null;
       if (!fadeFromActive) active?.pause();
-      inactive.play().catch(() => {});
       updateTime(nextCue.start, genre.durationSeconds);
-      crossfade(from, inactive, ms, () => {
+      dipTransition(from, inactive, () => {
         active?.pause();
         activeIdx.current = activeIdx.current === 0 ? 1 : 0;
         isTransitioning.current = false;
-        // 교차페이드 중 사용자가 일시정지했을 수 있음 — 새 활성도 정지 보장
+        // 전환 중 사용자가 일시정지했을 수 있음 — 새 활성도 정지 보장
         if (!useMusicPlayer.getState().isPlaying) inactive.pause();
       });
     },
-    [getActive, getInactive, crossfade, updateTime],
+    [getActive, getInactive, dipTransition, updateTime],
   );
 
   /**
@@ -360,8 +381,8 @@ export function MusicMiniPlayer() {
       preloadCue.current?.ready === true
     ) {
       // 경계를 넘겨 음소거 대기(pendingSwap) 중이었다면 구 스트림(파일-다음 곡)을
-      // 되살리지 말고 신곡만 페이드인. 아니면 등청감 교차페이드.
-      swapToPreloaded(nextCueIdx, CUE_FADE_MS, !pendingSwap.current);
+      // 되살리지 말고 신곡만 페이드인. 아니면 구곡 페이드아웃 후 신곡 페이드인(딥).
+      swapToPreloaded(nextCueIdx, !pendingSwap.current);
     } else {
       isTransitioning.current = true;
       pendingSwap.current = false;
@@ -399,8 +420,8 @@ export function MusicMiniPlayer() {
       const remaining = cue.start + cue.duration - globalT;
       if (remaining < PRELOAD_LEAD_S) maybePreloadNextCue();
 
-      // 곡 경계 근처 — 프리로드가 준비됐으면 경계 '전에' 교차페이드를 시작해
-      // (구곡 페이드아웃 + 신곡 페이드인) 파일상 다음 곡이 새는 것을 원천 차단한다.
+      // 곡 경계 근처 — 프리로드가 준비됐으면 경계 '전에' 딥 전환을 시작해
+      // (구곡 페이드아웃 → 신곡 페이드인) 두 곡이 동시에 들리지 않게 한다.
       // 준비가 안 됐으면 무음 컷 없이 대기하되, 경계를 '넘어선' 뒤에는 활성 스트림을
       // 음소거해 '파일상 다음 곡'(셔플과 다른 곡)이 새어 겹쳐 들리는 것을 막는다.
       if (remaining > CROSSFADE_LEAD_S && !pendingSwap.current) return;
@@ -417,10 +438,9 @@ export function MusicMiniPlayer() {
         const bled = pendingSwap.current;
         const advanced = state.advanceCue();
         if (advanced >= 0) {
-          // 경계 전 준비: 등청감 교차페이드(구곡 꼬리 + 신곡 머리). 이미 경계를 넘겨
-          // 음소거 대기 중이었다면 신곡만 페이드인(구 스트림은 파일-다음 곡이라 되살리지 않음).
-          const dur = bled ? CROSSFADE_MS : Math.min(CROSSFADE_MS, Math.max(150, remaining * 1000));
-          swapToPreloaded(advanced, dur, !bled);
+          // 경계 전 준비: 구곡 페이드아웃 후 신곡 페이드인. 이미 경계를 넘겨 음소거
+          // 대기 중이었다면 신곡만 페이드인(구 스트림은 파일-다음 곡이라 되살리지 않음).
+          swapToPreloaded(advanced, !bled);
         }
       } else {
         // 프리로드 미완 — 무음 컷 금지. 계속 재생하며 프리로드를 재촉하되,
