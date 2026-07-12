@@ -15,14 +15,25 @@
  */
 
 import { useEffect, useState, useTransition } from "react";
-import { Camera, Clock, Loader2, Save, Stamp as StampIcon, X } from "lucide-react";
+import { Camera, Clock, Loader2, Save, Stamp as StampIcon, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   attachStampToLog,
+  deleteProgressLog,
   getReadingLogForEdit,
   updateReadingLogEntry,
 } from "@/app/actions/progress";
@@ -68,6 +79,7 @@ export function RecordAttachStep({ logId, selectedBook, prefillStartPage, prefil
   const [endPage, setEndPage] = useState<number>(prefillEndPage ?? prefillStartPage ?? 0);
   const [memo, setMemo] = useState("");
   const [isPending, startTransition] = useTransition();
+  const [confirmDelete, setConfirmDelete] = useState(false);
   /** 기존 로그 요약 (독서 시간·날짜 표시용) */
   const [existingInfo, setExistingInfo] = useState<{
     durationSeconds: number;
@@ -159,6 +171,20 @@ export function RecordAttachStep({ logId, selectedBook, prefillStartPage, prefil
         reset();
       } catch (err) {
         toast.error(err instanceof Error ? err.message : "저장에 실패했어요.");
+      }
+    });
+  };
+
+  // 편집 화면에서 바로 삭제 — 확인 후 reading_log 삭제, 시트 닫힘 → 피드 갱신
+  const handleDelete = () => {
+    startTransition(async () => {
+      try {
+        await deleteProgressLog(logId);
+        toast.success("기록을 삭제했어요.");
+        setConfirmDelete(false);
+        reset();
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "삭제에 실패했어요.");
       }
     });
   };
@@ -304,6 +330,57 @@ export function RecordAttachStep({ logId, selectedBook, prefillStartPage, prefil
           {hasImage ? "스탬프 남기기" : "저장"}
         </Button>
       </div>
+
+      {/* 삭제 — 편집 화면에서 바로 이 기록을 지울 수 있음 */}
+      <div className="flex justify-center pb-2">
+        <button
+          type="button"
+          onClick={() => setConfirmDelete(true)}
+          disabled={isPending}
+          className="inline-flex items-center gap-1.5 text-xs font-medium text-red-600 transition-colors hover:text-red-700 disabled:opacity-50 dark:text-red-400 dark:hover:text-red-300"
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+          이 기록 삭제
+        </button>
+      </div>
+
+      <AlertDialog
+        open={confirmDelete}
+        onOpenChange={(open) => {
+          if (!open && !isPending) setConfirmDelete(false);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>이 기록을 삭제할까요?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {hasImage
+                ? "사진이 첨부된 기록도 함께 삭제됩니다. 되돌릴 수 없어요."
+                : "삭제한 기록은 되돌릴 수 없어요."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isPending}>취소</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              onClick={(e) => {
+                e.preventDefault();
+                handleDelete();
+              }}
+              disabled={isPending}
+            >
+              {isPending ? (
+                <>
+                  <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+                  삭제 중...
+                </>
+              ) : (
+                "삭제"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

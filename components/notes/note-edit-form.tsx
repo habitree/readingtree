@@ -34,6 +34,7 @@ import { validateImageSize, validateImageType } from "@/lib/utils/image";
 import { parseNoteContentFields } from "@/lib/utils/note";
 import type { NoteWithBook } from "@/types/note";
 import { TagInput } from "./tag-input";
+import { NoteDeleteButton } from "./note-delete-button";
 import { BookMentionTextarea } from "./book-mention-textarea";
 import { RelatedBooksManager } from "./related-books-manager";
 import { RelatedBooksPreview } from "./related-books-preview";
@@ -477,6 +478,16 @@ export function NoteEditForm({ note }: NoteEditFormProps) {
             id="isPublic"
             checked={isPublic}
             onCheckedChange={(checked) => setValue("isPublic", checked)}
+          />
+        </div>
+
+        {/* 이 기록 삭제 — 편집 화면에서 바로 삭제 */}
+        <div className="pt-2">
+          <NoteDeleteButton
+            noteId={note.id}
+            label={t("notes.deleteNote")}
+            triggerVariant="outline"
+            triggerClassName="w-full h-11 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950/40 dark:hover:text-red-300"
           />
         </div>
 

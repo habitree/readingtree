@@ -21,13 +21,24 @@ import { useTranslation } from "@/lib/i18n";
 
 interface NoteDeleteButtonProps {
   noteId: string;
+  /** 라벨 표시 (편집 화면 등 아이콘만으로 부족한 경우) — 미지정 시 아이콘만 */
+  label?: string;
+  /** 트리거 버튼 variant (기본 destructive) */
+  triggerVariant?: "destructive" | "outline" | "ghost";
+  /** 트리거 버튼 추가 클래스 (전체 너비 등) */
+  triggerClassName?: string;
 }
 
 /**
  * 기록 삭제 버튼 컴포넌트
  * 확인 후 기록을 삭제합니다
  */
-export function NoteDeleteButton({ noteId }: NoteDeleteButtonProps) {
+export function NoteDeleteButton({
+  noteId,
+  label,
+  triggerVariant = "destructive",
+  triggerClassName,
+}: NoteDeleteButtonProps) {
   const { t } = useTranslation();
   const router = useRouter();
   const [isDeleting, setIsDeleting] = useState(false);
@@ -53,12 +64,13 @@ export function NoteDeleteButton({ noteId }: NoteDeleteButtonProps) {
   return (
     <AlertDialog open={isOpen} onOpenChange={setIsOpen}>
       <AlertDialogTrigger asChild>
-        <Button variant="destructive" size="sm" disabled={isDeleting}>
+        <Button variant={triggerVariant} size="sm" disabled={isDeleting} className={triggerClassName}>
           {isDeleting ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
+            <Loader2 className={label ? "mr-2 h-4 w-4 animate-spin" : "h-4 w-4 animate-spin"} />
           ) : (
-            <Trash2 className="h-4 w-4" />
+            <Trash2 className={label ? "mr-2 h-4 w-4" : "h-4 w-4"} />
           )}
+          {label}
         </Button>
       </AlertDialogTrigger>
       <AlertDialogContent>

@@ -11,7 +11,20 @@
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { FileText, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import { getUnifiedRecords } from "@/app/actions/records";
+import { deleteProgressLog } from "@/app/actions/progress";
+import { deleteNote } from "@/app/actions/notes";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   groupUnifiedByDateBook,
   groupUnifiedByMonth,
@@ -75,6 +88,8 @@ export function UnifiedRecordFeed({
   const [cursor, setCursor] = useState<string | null>(initialNextCursor);
   const [kindFilter, setKindFilter] = useState<KindFilter>("all");
   const [isPending, startTransition] = useTransition();
+  const [pendingDelete, setPendingDelete] = useState<UnifiedRecord | null>(null);
+  const [isDeleting, startDeleteTransition] = useTransition();
   const [lightbox, setLightbox] = useState<{ urls: string[]; index: number; alt: string } | null>(
     null,
   );
@@ -113,6 +128,31 @@ export function UnifiedRecordFeed({
       }
     });
   }, [cursor, bookId, sort]);
+
+  // 삭제 확정 — source 별 액션 분기(reading_log / note) + 낙관적 제거
+  const handleConfirmDelete = useCallback(() => {
+    const target = pendingDelete;
+    if (!target) return;
+    startDeleteTransition(async () => {
+      try {
+        if (target.source === "reading_log") {
+          await deleteProgressLog(target.sourceId);
+        } else {
+          await deleteNote(target.sourceId);
+        }
+        setRecords((prev) =>
+          prev.filter(
+            (r) => !(r.source === target.source && r.sourceId === target.sourceId),
+          ),
+        );
+        toast.success("기록을 삭제했어요.");
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "삭제에 실패했어요.");
+      } finally {
+        setPendingDelete(null);
+      }
+    });
+  }, [pendingDelete]);
 
   if (records.length === 0) {
     return (
@@ -186,6 +226,7 @@ export function UnifiedRecordFeed({
                   key={`${r.source}-${r.sourceId}`}
                   record={r}
                   onEdit={editRecord}
+                  onDelete={setPendingDelete}
                   onOpenLightbox={(urls, alt) => setLightbox({ urls, index: 0, alt })}
                 />
               ))}
@@ -219,6 +260,44 @@ export function UnifiedRecordFeed({
           onClose={() => setLightbox(null)}
         />
       )}
+
+      <AlertDialog
+        open={!!pendingDelete}
+        onOpenChange={(open) => {
+          if (!open && !isDeleting) setPendingDelete(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>이 기록을 삭제할까요?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {pendingDelete && pendingDelete.imageUrls.length > 0
+                ? "사진이 첨부된 기록도 함께 삭제됩니다. 되돌릴 수 없어요."
+                : "삭제한 기록은 되돌릴 수 없어요."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>취소</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              onClick={(e) => {
+                e.preventDefault();
+                handleConfirmDelete();
+              }}
+              disabled={isDeleting}
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+                  삭제 중...
+                </>
+              ) : (
+                "삭제"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

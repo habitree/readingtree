@@ -20,6 +20,7 @@ import {
   Camera,
   Images,
   Pencil,
+  Trash2,
   BookOpen,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -34,6 +35,8 @@ import type { UnifiedRecord } from "@/types/unified-record";
 interface UnifiedRecordCardProps {
   record: UnifiedRecord;
   onEdit: (record: UnifiedRecord) => void;
+  /** 삭제 요청 (피드가 확인 다이얼로그를 띄움) — 미지정 시 삭제 버튼 숨김 */
+  onDelete?: (record: UnifiedRecord) => void;
   onOpenLightbox?: (urls: string[], alt: string) => void;
 }
 
@@ -78,7 +81,7 @@ function getKindBadge(record: UnifiedRecord): { label: string; cls: string } {
   }
 }
 
-export function UnifiedRecordCard({ record, onEdit, onOpenLightbox }: UnifiedRecordCardProps) {
+export function UnifiedRecordCard({ record, onEdit, onDelete, onOpenLightbox }: UnifiedRecordCardProps) {
   const Icon: LucideIcon =
     record.kind === "time"
       ? Timer
@@ -209,19 +212,34 @@ export function UnifiedRecordCard({ record, onEdit, onOpenLightbox }: UnifiedRec
         )}
       </div>
 
-      {/* 우측: 편집 */}
-      <button
-        type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          onEdit(record);
-        }}
-        className="inline-flex items-center gap-1 rounded-full border border-border bg-background px-2.5 py-1 text-[11px] font-medium text-muted-foreground shrink-0 transition-colors hover:bg-muted hover:text-foreground"
-        aria-label="기록 편집"
-      >
-        <Pencil className="h-3 w-3" />
-        편집
-      </button>
+      {/* 우측: 편집 / 삭제 */}
+      <div className="flex items-center gap-1 shrink-0">
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onEdit(record);
+          }}
+          className="inline-flex items-center gap-1 rounded-full border border-border bg-background px-2.5 py-1 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          aria-label="기록 편집"
+        >
+          <Pencil className="h-3 w-3" />
+          편집
+        </button>
+        {onDelete && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete(record);
+            }}
+            className="inline-flex h-7 w-7 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/40"
+            aria-label="기록 삭제"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </button>
+        )}
+      </div>
     </div>
   );
 }
