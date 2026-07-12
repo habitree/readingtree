@@ -1,7 +1,8 @@
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { getAppUrl } from "@/lib/utils/url";
 import { copySocialAvatarToStorage } from "@/lib/supabase/copy-social-avatar";
@@ -29,7 +30,56 @@ export async function GET(request: NextRequest) {
   const ipAddress = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? request.headers.get("x-real-ip") ?? null;
   const userAgent = request.headers.get("user-agent") ?? null;
 
-  const supabase = await createServerSupabaseClient();
+  const baseUrl = getAppUrl();
+
+  // 세션 쿠키를 리다이렉트 응답에 "직접" 실어 보내기 위한 처리.
+  // Next.js 16 라우트 핸들러에서는 next/headers의 cookies() 스토어 변경분이
+  // 손수 만든 NextResponse.redirect에 안정적으로 병합되지 않는다.
+  // → 미들웨어와 동일하게, setAll에서 쿠키 변경분을 수집하고 응답 객체에 직접 심는다.
+  //   (세션은 서버에 생성됐는데 브라우저에 쿠키가 안 실려 로그인 화면이 다시 뜨는 문제 방지)
+  const cookiesToSet: { name: string; value: string; options?: CookieOptions }[] = [];
+
+  const buildRedirect = (target: string | URL) => {
+    const url = typeof target === "string" ? new URL(target, baseUrl) : target;
+    const response = NextResponse.redirect(url);
+    cookiesToSet.forEach(({ name, value, options }) =>
+      response.cookies.set(name, value, options)
+    );
+    return response;
+  };
+
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (!supabaseUrl || !supabaseAnonKey) {
+    console.error("OAuth 콜백: Supabase 환경 변수가 설정되지 않았습니다.");
+    return NextResponse.redirect(
+      new URL("/login?error=서버 설정 오류가 발생했습니다. 잠시 후 다시 시도해주세요.", baseUrl)
+    );
+  }
+
+  // 세션 저장소는 기존과 동일하게 next/headers 쿠키 스토어를 사용한다.
+  // (같은 요청에서 호출되는 다른 서버 액션 — 웰컴 보너스/레퍼럴 등 — 이
+  //  세션을 읽을 수 있도록 유지). 여기에 더해 setAll에서 변경분을 cookiesToSet에
+  //  모아 두었다가 리다이렉트 응답(buildRedirect)에 직접 실어 브라우저 전달을 보장한다.
+  const cookieStore = await cookies();
+  const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
+    cookies: {
+      getAll() {
+        return cookieStore.getAll();
+      },
+      setAll(list) {
+        try {
+          list.forEach(({ name, value, options }) =>
+            cookieStore.set(name, value, options)
+          );
+        } catch {
+          // 라우트 핸들러에서는 정상 동작 (예외 상황 대비 방어)
+        }
+        cookiesToSet.push(...list);
+      },
+    },
+  });
 
   try {
     // 이메일 인증 토큰 처리
@@ -51,18 +101,16 @@ export async function GET(request: NextRequest) {
           errorMessage = "인증 링크가 만료되었거나 유효하지 않습니다. 다시 시도해주세요.";
         }
 
-        const baseUrl = getAppUrl();
         const redirectPath = type === "recovery" ? "/reset-password" : "/login";
-        return NextResponse.redirect(
-          new URL(`${redirectPath}?error=${encodeURIComponent(errorMessage)}`, baseUrl)
+        return buildRedirect(
+          `${redirectPath}?error=${encodeURIComponent(errorMessage)}`
         );
       }
 
       // 비밀번호 재설정 플로우: 세션 생성 직후 /update-password로 이동
       if (type === "recovery") {
-        const baseUrl = getAppUrl();
         const target = next && next.startsWith("/") ? next : "/update-password";
-        return NextResponse.redirect(new URL(target, baseUrl));
+        return buildRedirect(target);
       }
 
       // 이메일 인증 성공, 세션 생성됨
@@ -88,16 +136,11 @@ export async function GET(request: NextRequest) {
           errorMessage = "로그인 제공자 설정에 문제가 있습니다. 관리자에게 문의해주세요.";
         }
         
-        // getAppUrl()을 사용하여 올바른 프로덕션 URL로 리다이렉트
-        const baseUrl = getAppUrl();
-        return NextResponse.redirect(
-          new URL(`/login?error=${encodeURIComponent(errorMessage)}`, baseUrl)
-        );
+        return buildRedirect(`/login?error=${encodeURIComponent(errorMessage)}`);
       }
     } else {
       // 코드도 토큰도 없으면 로그인 페이지로 리다이렉트
-      const baseUrl = getAppUrl();
-      return NextResponse.redirect(new URL("/login", baseUrl));
+      return buildRedirect("/login");
     }
 
     // 사용자 정보 확인
@@ -119,11 +162,7 @@ export async function GET(request: NextRequest) {
         success: false,
         errorMessage: userError?.message ?? "사용자 정보 조회 실패",
       });
-      // getAppUrl()을 사용하여 올바른 프로덕션 URL로 리다이렉트
-      const baseUrl = getAppUrl();
-      return NextResponse.redirect(
-        new URL("/login?error=사용자 정보를 가져올 수 없습니다. 다시 로그인해주세요.", baseUrl)
-      );
+      return buildRedirect("/login?error=사용자 정보를 가져올 수 없습니다. 다시 로그인해주세요.");
     }
 
     // OAuth 로그인 성공 기록 (await로 로그 완료 보장)
@@ -199,10 +238,7 @@ export async function GET(request: NextRequest) {
           success: false,
           errorMessage: `프로필 생성 실패: ${insertError.message}`,
         });
-        const baseUrl = getAppUrl();
-        return NextResponse.redirect(
-          new URL("/login?error=계정 생성에 실패했습니다. 다시 시도해주세요.", baseUrl)
-        );
+        return buildRedirect("/login?error=계정 생성에 실패했습니다. 다시 시도해주세요.");
       } else {
         // 프로필 생성 성공, 다시 조회
         const { data: newProfile } = await adminClient
@@ -222,16 +258,13 @@ export async function GET(request: NextRequest) {
     // 약관 동의 여부 확인 (최우선)
     // 약관 동의가 완료되지 않았으면 약관 동의 페이지로 리다이렉트
     if (!profile || !profile.terms_agreed || !profile.privacy_agreed) {
-      const baseUrl = getAppUrl();
-      return NextResponse.redirect(new URL("/onboarding/consent", baseUrl));
+      return buildRedirect("/onboarding/consent");
     }
 
     // 온보딩 완료 여부 확인
     // 목표가 설정되지 않았으면 온보딩으로 리다이렉트
     if (!profile || !profile.reading_goal || profile.reading_goal === 0) {
-      // getAppUrl()을 사용하여 올바른 프로덕션 URL로 리다이렉트
-      const baseUrl = getAppUrl();
-      return NextResponse.redirect(new URL("/onboarding/goal", baseUrl));
+      return buildRedirect("/onboarding/goal");
     }
 
     // 온보딩 완료 시 웰컴 보너스 지급 (첫 가입 시 200P, 이미 지급된 경우 무시)
@@ -246,12 +279,10 @@ export async function GET(request: NextRequest) {
     }
 
     // 온보딩 완료 시 메인으로 리다이렉트 (캐시 무효화 후)
-    // getAppUrl()을 사용하여 올바른 프로덕션 URL로 리다이렉트
-    const baseUrl = getAppUrl();
     const redirectUrl = new URL(next, baseUrl);
     redirectUrl.searchParams.set("refreshed", "true"); // 클라이언트에서 새로고침 유도
     redirectUrl.searchParams.set("login", "success"); // 로그인 성공 표시
-    return NextResponse.redirect(redirectUrl);
+    return buildRedirect(redirectUrl);
   } catch (error) {
     // NEXT_REDIRECT는 Next.js의 정상적인 리다이렉트 메커니즘이므로 re-throw
     if (error instanceof Error && error.message.includes("NEXT_REDIRECT")) {
@@ -268,11 +299,7 @@ export async function GET(request: NextRequest) {
       ? "로그인 처리 중 오류가 발생했습니다. 다시 시도해주세요."
       : "알 수 없는 오류가 발생했습니다. 다시 시도해주세요.";
 
-    // getAppUrl()을 사용하여 올바른 프로덕션 URL로 리다이렉트
-    const baseUrl = getAppUrl();
-    return NextResponse.redirect(
-      new URL(`/login?error=${encodeURIComponent(errorMessage)}`, baseUrl)
-    );
+    return buildRedirect(`/login?error=${encodeURIComponent(errorMessage)}`);
   }
 }
 
