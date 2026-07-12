@@ -8,11 +8,16 @@
  *   - 캡처 Promise를 ClipboardItem 에 즉시 넘겨 "바로 복사" (Safari/iOS 제스처 유지)
  *   - 클립보드 미지원 브라우저만 PNG 다운로드 폴백
  *
- * 카드 디자인(v3 "Reading Rhythm"): 다크 오로라 그라데이션 + 상단 브랜드 워드마크 +
- * 오버사이즈 히어로 숫자 + "최근 7일 독서 리듬" 미니 바 차트(Wrapped형 데이터 스토리) +
+ * 카드 디자인(v3.1 "Reading Rhythm" — 2026-07-12 정제): 다크 오로라 그라데이션 +
+ * 상단 서비스 로고(Trees 마크 + ReadTree 워드마크) + 오버사이즈 히어로 숫자 +
+ * "최근 7일 독서 리듬" 미니 바 차트(Wrapped형 데이터 스토리) +
  * 글래스 벤토 타일 + SNS 해시태그 푸터.
  * html2canvas 제약(box-shadow·filter·backdrop-blur 미지원)을 피해
  * 그라데이션/보더/투명 레이어만 사용한다.
+ *
+ * 텍스트 잘림 주의: 캡처 DOM 안에서는 CSS line-clamp(-webkit-box + overflow
+ * hidden)를 쓰면 html2canvas가 글자를 위로 밀어 그려 상단이 잘린다.
+ * 반드시 truncateText()로 JS 절단할 것.
  */
 
 import { useRef, useState } from "react";
@@ -57,6 +62,15 @@ const TILE_STYLE: React.CSSProperties = {
   backgroundColor: "rgba(255,255,255,0.05)",
   border: "1px solid rgba(255,255,255,0.09)",
 };
+
+/**
+ * CSS line-clamp 대체용 JS 절단.
+ * html2canvas가 -webkit-line-clamp(overflow hidden) 텍스트를 위로 밀어 그려
+ * 글자 상단이 잘리는 문제를 피하기 위해 캡처 DOM의 텍스트는 여기서 자른다.
+ */
+function truncateText(text: string, max: number): string {
+  return text.length > max ? `${text.slice(0, max - 1).trimEnd()}…` : text;
+}
 
 function fmtDuration(s: number): string {
   const h = Math.floor(s / 3600);
@@ -232,19 +246,47 @@ export function ReadingTimeShareButton({
             height: CARD_PX,
             backgroundColor: "#081311",
             backgroundImage:
-              "radial-gradient(560px 440px at 86% -14%, rgba(16,185,129,0.32), transparent 62%)," +
-              "radial-gradient(420px 380px at -8% 108%, rgba(45,212,191,0.12), transparent 60%)," +
-              "radial-gradient(360px 320px at 58% 66%, rgba(251,191,36,0.05), transparent 72%)," +
+              "radial-gradient(600px 480px at 86% -14%, rgba(16,185,129,0.26), transparent 68%)," +
+              "radial-gradient(460px 400px at -8% 108%, rgba(45,212,191,0.14), transparent 64%)," +
+              "radial-gradient(360px 320px at 58% 66%, rgba(251,191,36,0.04), transparent 72%)," +
               "linear-gradient(160deg, #0b1a16 0%, #091320 54%, #0a1815 100%)",
             border: "1px solid rgba(255,255,255,0.08)",
           }}
           className="relative overflow-hidden rounded-[34px] text-white"
         >
+          {/* 상단 셴(sheen) — 유리 카드 질감. filter 없이 투명 그라데이션만 사용 */}
+          <div
+            className="pointer-events-none absolute inset-x-0 top-0 h-[150px]"
+            style={{
+              backgroundImage:
+                "linear-gradient(180deg, rgba(255,255,255,0.05), transparent)",
+            }}
+          />
           <div className="relative flex h-full flex-col p-[30px]">
-            {/* 헤더 — 브랜드 워드마크 + 날짜 칩 */}
+            {/* 헤더 — 서비스 로고(사이드바와 동일한 Trees 마크 + 워드마크) + 날짜 칩 */}
             <div className="flex items-center justify-between">
-              <span className="text-[15px] font-bold tracking-tight">
-                🌳 Read<span className="text-emerald-300">Tree</span>
+              <span className="flex items-center gap-[7px]">
+                {/* lucide Trees 마크 (scripts/export-trees-icon-png.mjs 와 동일 패스).
+                    html2canvas 캡처 안정성을 위해 currentColor 대신 stroke 직접 지정 */}
+                <svg
+                  width={21}
+                  height={21}
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="#5ec496"
+                  strokeWidth={2}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M10 10v.2A3 3 0 0 1 8.9 16H5a3 3 0 0 1-1-5.8V10a3 3 0 0 1 6 0Z" />
+                  <path d="M7 16v6" />
+                  <path d="M13 19v3" />
+                  <path d="M12 19h8.3a1 1 0 0 0 .7-1.7L18 14h.3a1 1 0 0 0 .7-1.7L16 9h.2a1 1 0 0 0 .8-1.7L13 3l-1.4 1.5" />
+                </svg>
+                <span className="text-[17px] font-bold leading-none tracking-tight text-white">
+                  ReadTree
+                </span>
               </span>
               <span
                 className="rounded-full px-2.5 py-1 text-[11px] tabular-nums text-slate-300"
@@ -312,12 +354,13 @@ export function ReadingTimeShareButton({
                 <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-emerald-300">
                   Now Reading
                 </p>
-                <p className="mt-1.5 line-clamp-2 text-[20px] font-bold leading-snug text-white">
-                  {bookInfo?.title ?? "독서 기록"}
+                {/* line-clamp 금지(캡처 시 글자 상단 잘림) — truncateText 로 JS 절단 */}
+                <p className="mt-1.5 text-[20px] font-bold leading-[1.4] tracking-[-0.01em] text-white">
+                  {truncateText(bookInfo?.title ?? "독서 기록", 34)}
                 </p>
                 {bookInfo?.author && (
-                  <p className="mt-1 line-clamp-1 text-[12px] text-slate-400">
-                    {bookInfo.author}
+                  <p className="mt-1 text-[12px] leading-normal text-slate-400">
+                    {truncateText(bookInfo.author, 26)}
                   </p>
                 )}
                 {progressPct !== null && (
@@ -387,7 +430,7 @@ export function ReadingTimeShareButton({
                   return (
                     <div key={i} className="flex flex-col items-center gap-1.5">
                       <div
-                        className="relative flex h-[48px] w-[14px] items-end overflow-hidden rounded-full"
+                        className="relative flex h-[48px] w-[18px] items-end overflow-hidden rounded-full"
                         style={{ backgroundColor: "rgba(255,255,255,0.05)" }}
                       >
                         {h > 0 && (
