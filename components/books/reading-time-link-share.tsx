@@ -9,10 +9,13 @@
  * 로그인 벽에 막히는 문제가 있었다.
  *
  * 동작:
- *   - 1차: Web Share API(navigator.share) — 모바일 네이티브 공유 시트로
- *          인스타·카카오·문자 등 SNS에 바로 전송 (제목·문구·공개 URL 포함)
- *   - 2차: 클립보드 복사 (navigator.clipboard.writeText)
- *   - 3차: hidden textarea + execCommand("copy") (구형/인앱 브라우저)
+ *   - 모바일: Web Share API(navigator.share) — 네이티브 공유 시트로
+ *            인스타·카카오·문자 등 SNS에 바로 전송 (제목·문구·공개 URL 포함)
+ *   - PC(Windows/Mac/Linux): OS 공유 시트를 건너뛰고 바로 링크 복사.
+ *            Windows에서 navigator.share가 OS 공유 다이얼로그를 띄운 뒤
+ *            "다시 시도하세요"로 실패하는 문제 회피 (2026-07-12)
+ *   - 클립보드 폴백: navigator.clipboard.writeText → hidden textarea +
+ *            execCommand("copy") (구형/인앱 브라우저)
  *
  * ReadingTimeTab 통계 영역 우측에 ReadingTimeShareButton(이미지 복사) 옆에 배치.
  */
@@ -22,6 +25,7 @@ import { Check, Share2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { isMobile } from "@/lib/utils/device";
 
 interface ReadingTimeLinkShareProps {
   /** user_books.id — 공개 공유 페이지 경로 구성용 */
@@ -65,8 +69,13 @@ export function ReadingTimeLinkShare({
       ? `📖 《${bookTitle}》 읽고 있어요 — ReadTree에서 독서 기록 중 🌳`
       : "📖 ReadTree에서 독서 기록 중 🌳";
 
-    // 1차: 네이티브 공유 시트 (모바일 SNS 바로 공유)
-    if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
+    // 모바일만 네이티브 공유 시트 사용 — PC는 OS 무관하게 바로 링크 복사
+    // (Windows의 navigator.share는 OS 공유 다이얼로그가 뜬 뒤 실패하는 경우가 있음)
+    if (
+      isMobile() &&
+      typeof navigator !== "undefined" &&
+      typeof navigator.share === "function"
+    ) {
       try {
         await navigator.share({ title, text, url });
         return; // 공유 성공 또는 사용자 취소 — 조용히 종료
