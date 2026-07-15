@@ -17,6 +17,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { getImageUrl } from "@/lib/utils/image";
+import { getAppUrl } from "@/lib/utils/url";
 import { isClipboardSupported, isMobile, isIOS, downloadImage } from "@/lib/utils/device";
 import { copyImageToClipboard, isMobileClipboardSupported } from "@/lib/utils/clipboard";
 import { ShareNoteCard, type RelatedBookInfo } from "./share-note-card";
@@ -150,9 +151,9 @@ export function SimpleShareDialog({ note }: SimpleShareDialogProps) {
     (note.type === "transcription" || note.type === "photo") &&
     !!note.image_url;
 
-  // 공유 링크 생성 (ref 파라미터 포함)
+  // 공유 링크 생성 (ref 파라미터 포함) — 항상 정식 도메인 사용
   const getShareUrl = () => {
-    const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
+    const baseUrl = getAppUrl();
     if (note.is_public) {
       const url = `${baseUrl}/share/notes/${note.id}`;
       return currentUser ? `${url}?ref=${currentUser.id}` : url;
@@ -472,7 +473,7 @@ export function SimpleShareDialog({ note }: SimpleShareDialogProps) {
         return;
       }
 
-      const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
+      const baseUrl = getAppUrl();
       const shareUrlBase = `${baseUrl}/share/notes/${note.id}`;
       const shareUrl = currentUser ? `${shareUrlBase}?ref=${currentUser.id}` : shareUrlBase;
 

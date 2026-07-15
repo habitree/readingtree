@@ -35,6 +35,7 @@ import { ArrowLeft, Loader2, Trash2, AlertTriangle, Copy, Check, Link as LinkIco
 import { useTranslation } from "@/lib/i18n";
 import { InviteLinkDialog } from "@/components/groups/invite-link-dialog";
 import { typography, spacing } from "@/lib/design-tokens";
+import { getAppUrl } from "@/lib/utils/url";
 import type { JoinType } from "@/types/group";
 
 const JOIN_TYPE_OPTIONS: Array<{
@@ -134,7 +135,7 @@ export default function GroupSettingsPage({ params }: PageProps) {
   const handleCopyLink = async () => {
     if (!groupId) return;
 
-    const inviteLink = `${window.location.origin}/groups/${groupId}`;
+    const inviteLink = `${getAppUrl()}/groups/${groupId}`;
     try {
       await navigator.clipboard.writeText(inviteLink);
       setIsCopied(true);
@@ -331,7 +332,7 @@ export default function GroupSettingsPage({ params }: PageProps) {
           <div className="flex gap-2">
             <Input
               readOnly
-              value={groupId ? `${typeof window !== "undefined" ? window.location.origin : ""}/groups/${groupId}` : ""}
+              value={groupId ? `${getAppUrl()}/groups/${groupId}` : ""}
               className="font-mono text-sm"
             />
             <Button

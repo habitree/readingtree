@@ -20,6 +20,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Link2, Copy, Check, Loader2, Trash2, RefreshCw } from "lucide-react";
 import { createInviteToken, revokeInviteToken, getInviteTokens } from "@/app/actions/groups";
+import { getAppUrl } from "@/lib/utils/url";
 import { toast } from "sonner";
 
 interface InviteLinkDialogProps {
@@ -95,8 +96,7 @@ export function InviteLinkDialog({ groupId }: InviteLinkDialogProps) {
   };
 
   const handleCopy = async (token: string, tokenId: string) => {
-    const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
-    const url = `${baseUrl}/groups/invite/${token}`;
+    const url = `${getAppUrl()}/groups/invite/${token}`;
     await navigator.clipboard.writeText(url);
     setCopiedId(tokenId);
     toast.success("초대 링크가 복사되었습니다.");

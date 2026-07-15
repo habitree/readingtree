@@ -19,7 +19,7 @@ const ROOT = join(__dirname, "..");
 const IMG_DIR = join(ROOT, "img", "payment-flow");
 const DOC_DIR = join(ROOT, "doc", "legal");
 
-const BASE_URL = "https://readingtree-tan.vercel.app";
+const BASE_URL = "https://read.habitree.io";
 const DEMO_EMAIL = "demo@readtree.app";
 const DEMO_PW = "readtree";
 

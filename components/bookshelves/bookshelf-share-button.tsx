@@ -14,6 +14,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { updateBookshelf } from "@/app/actions/bookshelves";
+import { getAppUrl } from "@/lib/utils/url";
 import { toast } from "sonner";
 import { useTranslation } from "@/lib/i18n";
 
@@ -33,7 +34,7 @@ export function BookshelfShareButton({
   const [isUpdating, setIsUpdating] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
 
-  const shareUrl = `${typeof window !== "undefined" ? window.location.origin : ""}/share/bookshelves/${bookshelfId}`;
+  const shareUrl = `${getAppUrl()}/share/bookshelves/${bookshelfId}`;
 
   const handleTogglePublic = useCallback(async (checked: boolean) => {
     setIsUpdating(true);

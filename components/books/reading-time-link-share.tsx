@@ -26,6 +26,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { isMobile } from "@/lib/utils/device";
+import { getAppUrl } from "@/lib/utils/url";
 
 interface ReadingTimeLinkShareProps {
   /** user_books.id — 공개 공유 페이지 경로 구성용 */
@@ -62,8 +63,10 @@ export function ReadingTimeLinkShare({
 
   const handleShare = useCallback(async () => {
     if (typeof window === "undefined") return;
-    // 로그인 없이 볼 수 있는 공개 공유 페이지로 링크 구성
-    const url = `${window.location.origin}/share/reading-time/${userBookId}`;
+    // 로그인 없이 볼 수 있는 공개 공유 페이지로 링크 구성.
+    // window.location.origin 대신 getAppUrl(): 구 도메인 접속 중에도
+    // 항상 정식 도메인(read.habitree.io) 링크를 공유한다.
+    const url = `${getAppUrl()}/share/reading-time/${userBookId}`;
     const title = bookTitle ? `《${bookTitle}》 독서 기록` : "독서 기록";
     const text = bookTitle
       ? `📖 《${bookTitle}》 읽고 있어요 — ReadTree에서 독서 기록 중 🌳`

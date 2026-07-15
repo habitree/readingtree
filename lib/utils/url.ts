@@ -1,40 +1,66 @@
 /**
  * 애플리케이션 기본 URL 가져오기
  * 프로덕션 URL을 우선적으로 처리하고, Preview URL과 구분합니다.
- * 
+ *
  * 우선순위:
- * 1. NEXT_PUBLIC_APP_URL (수동 설정된 프로덕션 도메인 - 최우선)
+ * 1. NEXT_PUBLIC_APP_URL (수동 설정된 프로덕션 도메인 - 최우선, 단 레거시 도메인은 무시)
  * 2. VERCEL 환경 감지 (VERCEL 환경 변수 존재 여부)
- * 3. VERCEL_ENV가 production인 경우 프로덕션 URL 사용
- * 4. NEXT_PUBLIC_VERCEL_URL (빌드 타임에 Vercel이 자동 주입, 프로덕션 도메인인 경우)
- * 5. VERCEL_URL (런타임에 Vercel이 제공, 프로덕션 도메인인 경우)
- * 6. 기본값 (개발/프로덕션)
+ *    - production: 항상 정식 도메인(CANONICAL_APP_URL) — VERCEL_URL은 배포별
+ *      생성 URL이라 공유 링크/OAuth 리다이렉트에 부적합
+ *    - preview: VERCEL_URL (프리뷰 자체 URL)
+ * 3. NEXT_PUBLIC_VERCEL_URL / VERCEL_URL (Vercel 감지 실패 시 보조)
+ * 4. 로컬 개발: localhost, 그 외: 정식 도메인
  */
+
+/** 정식 프로덕션 도메인 (2026-07-12: read.habitree.io 로 이전) */
+export const CANONICAL_APP_URL = "https://read.habitree.io";
+
+/**
+ * 과거 프로덕션 도메인 목록.
+ * - getAppUrl(): NEXT_PUBLIC_APP_URL 이 여기 남아 있으면 무시하고 정식 도메인 사용
+ *   (Vercel 환경변수 갱신 누락에 대한 안전망)
+ * - proxy.ts: 이 도메인으로 들어온 요청을 정식 도메인으로 308 리다이렉트
+ */
+const LEGACY_PROD_HOSTS = ["readingtree-tan.vercel.app"];
+
+/** 요청 host 가 과거 프로덕션 도메인인지 (포트 무시) */
+export function isLegacyProdHost(host: string | null | undefined): boolean {
+  if (!host) return false;
+  const bare = host.toLowerCase().split(":")[0];
+  return LEGACY_PROD_HOSTS.includes(bare);
+}
+
+/** URL 문자열이 과거 프로덕션 도메인을 가리키는지 */
+function isLegacyUrl(url: string): boolean {
+  try {
+    return isLegacyProdHost(new URL(url).host);
+  } catch {
+    return false;
+  }
+}
+
 export function getAppUrl(): string {
   return _getAppUrl().replace(/\/+$/, "");
 }
 
 function _getAppUrl(): string {
-  // 강화된 디버깅 로그 (프로덕션에서만)
-  if (process.env.VERCEL || process.env.VERCEL_ENV === "production") {
-    console.log("[getAppUrl] 환경 변수 확인:", {
-      NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
-      VERCEL: process.env.VERCEL,
-      VERCEL_ENV: process.env.VERCEL_ENV,
-      VERCEL_URL: process.env.VERCEL_URL,
-      NEXT_PUBLIC_VERCEL_URL: process.env.NEXT_PUBLIC_VERCEL_URL,
-      NODE_ENV: process.env.NODE_ENV,
-    });
-  }
-
   // 1. 수동 설정된 프로덕션 도메인 (최우선)
   if (process.env.NEXT_PUBLIC_APP_URL) {
     const url = process.env.NEXT_PUBLIC_APP_URL.trim();
+    if (isLegacyUrl(url)) {
+      // 환경변수가 구 도메인으로 남아 있는 경우 — 무시하고 정식 도메인 사용
+      if (process.env.VERCEL || process.env.VERCEL_ENV === "production") {
+        console.warn(
+          "[getAppUrl] NEXT_PUBLIC_APP_URL이 레거시 도메인입니다. 정식 도메인으로 대체:",
+          url,
+          "→",
+          CANONICAL_APP_URL,
+        );
+      }
+      return CANONICAL_APP_URL;
+    }
     // localhost가 포함되어 있으면 무시하고 다음 단계로
     if (!url.includes("localhost") && url.startsWith("https://")) {
-      if (process.env.VERCEL || process.env.VERCEL_ENV === "production") {
-        console.log("[getAppUrl] NEXT_PUBLIC_APP_URL 사용:", url);
-      }
       return url;
     }
     // localhost이거나 http인 경우 경고
@@ -43,87 +69,66 @@ function _getAppUrl(): string {
     }
   }
 
+  // 1.5 브라우저 프로덕션 번들 안전망:
+  // 클라이언트에는 VERCEL/VERCEL_ENV가 노출되지 않으므로 NEXT_PUBLIC_APP_URL이
+  // 비어 있으면 배포별 URL(NEXT_PUBLIC_VERCEL_URL)로 빠질 수 있다 → 정식 도메인 고정
+  if (typeof window !== "undefined" && process.env.NODE_ENV === "production") {
+    return CANONICAL_APP_URL;
+  }
+
   // 2. VERCEL 환경 감지 (가장 확실한 방법)
-  // Vercel 환경에서는 process.env.VERCEL이 자동으로 설정됨
   // VERCEL 환경에서는 절대 localhost를 반환하지 않음
   if (process.env.VERCEL) {
-    // NEXT_PUBLIC_APP_URL이 localhost가 아니고 https이면 사용
-    if (process.env.NEXT_PUBLIC_APP_URL) {
-      const url = process.env.NEXT_PUBLIC_APP_URL.trim();
-      if (!url.includes("localhost") && url.startsWith("https://")) {
-        console.log("[getAppUrl] VERCEL 환경에서 NEXT_PUBLIC_APP_URL 사용:", url);
-        return url;
-      }
+    // production 배포는 항상 정식 도메인 사용.
+    // (VERCEL_URL은 `<deployment>.vercel.app` 형태의 배포별 생성 URL이라
+    //  공유 링크·OAuth 리다이렉트 대상으로 부적합)
+    if (process.env.VERCEL_ENV === "production") {
+      return CANONICAL_APP_URL;
     }
-    
-    // VERCEL_URL이 있으면 사용 (Preview든 Production이든)
+
+    // Preview 는 자체 배포 URL 사용
     if (process.env.VERCEL_URL) {
       const vercelUrl = process.env.VERCEL_URL.trim();
       if (!vercelUrl.includes("localhost")) {
-        const url = `https://${vercelUrl}`;
-        console.log("[getAppUrl] VERCEL 환경에서 VERCEL_URL 사용:", url);
-        return url;
+        return `https://${vercelUrl}`;
       }
     }
-    
-    // VERCEL_ENV가 production이면 프로덕션 URL 사용
-    if (process.env.VERCEL_ENV === "production") {
-      console.log("[getAppUrl] VERCEL_ENV=production, 프로덕션 URL 사용");
-      return "https://readingtree-tan.vercel.app";
-    }
-    
-    // Preview 환경이어도 프로덕션 URL 사용 (OAuth 리다이렉트를 위해)
-    console.log("[getAppUrl] VERCEL 환경 (Preview), 프로덕션 URL 사용");
-    return "https://readingtree-tan.vercel.app";
+
+    return CANONICAL_APP_URL;
   }
 
-  // 3. VERCEL_ENV가 production이면 무조건 프로덕션 URL 사용 (이중 체크)
+  // 3. VERCEL_ENV가 production이면 무조건 정식 도메인 (이중 체크)
   if (process.env.VERCEL_ENV === "production") {
-    console.log("[getAppUrl] VERCEL_ENV=production (이중 체크), 프로덕션 URL 사용");
-    return "https://readingtree-tan.vercel.app";
+    return CANONICAL_APP_URL;
   }
 
   // 4. 빌드 타임에 주입되는 Vercel URL
   if (process.env.NEXT_PUBLIC_VERCEL_URL) {
     const vercelUrl = process.env.NEXT_PUBLIC_VERCEL_URL.trim();
-    // localhost가 아니면 사용
     if (!vercelUrl.includes("localhost")) {
-      const url = `https://${vercelUrl}`;
-      console.log("[getAppUrl] NEXT_PUBLIC_VERCEL_URL 사용:", url);
-      return url;
+      return `https://${vercelUrl}`;
     }
   }
 
   // 5. 런타임 Vercel URL (서버 사이드에서만 사용 가능)
   if (process.env.VERCEL_URL) {
     const vercelUrl = process.env.VERCEL_URL.trim();
-    // localhost가 아니면 사용
     if (!vercelUrl.includes("localhost")) {
-      const url = `https://${vercelUrl}`;
-      console.log("[getAppUrl] VERCEL_URL 사용:", url);
-      return url;
+      return `https://${vercelUrl}`;
     }
   }
 
-  // 6. 기본값
-  // 로컬 개발 환경에서만 localhost 사용
-  // 명확하게 로컬 개발 환경인지 확인
-  // VERCEL 환경 변수가 없고, NODE_ENV가 development인 경우에만 localhost 사용
-  const isLocalDev = 
-    process.env.NODE_ENV === "development" && 
-    !process.env.VERCEL && 
+  // 6. 기본값 — 명확한 로컬 개발 환경에서만 localhost 사용
+  const isLocalDev =
+    process.env.NODE_ENV === "development" &&
+    !process.env.VERCEL &&
     !process.env.VERCEL_URL &&
     !process.env.NEXT_PUBLIC_VERCEL_URL;
-  
+
   if (isLocalDev) {
-    console.log("[getAppUrl] 로컬 개발 환경, localhost 사용");
     return "http://localhost:3000";
   }
-  
-  // 그 외의 모든 경우 (Vercel 환경, 프로덕션 환경 등) 프로덕션 도메인 사용
-  // 안전을 위해 localhost 대신 프로덕션 도메인을 기본값으로 사용
-  // 이렇게 하면 Vercel 환경에서 환경 변수가 없어도 프로덕션 URL을 반환
-  console.log("[getAppUrl] 기본값 사용 (프로덕션 URL)");
-  return "https://readingtree-tan.vercel.app";
-}
 
+  // 그 외의 모든 경우 (Vercel 환경, 프로덕션 환경 등) 정식 도메인 사용
+  return CANONICAL_APP_URL;
+}

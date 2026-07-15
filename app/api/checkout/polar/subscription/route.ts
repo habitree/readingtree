@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createPolarClient } from "@/lib/polar";
 import { SUBSCRIPTION_PLANS, type SubscriptionTierName } from "@/lib/subscription/pricing-data";
+import { getAppUrl } from "@/lib/utils/url";
 
 /**
  * POST /api/checkout/polar/subscription
@@ -67,9 +68,7 @@ export async function POST(request: Request) {
   // Polar 체크아웃 세션 생성
   try {
     const polar = createPolarClient();
-    const appUrl =
-      process.env.NEXT_PUBLIC_APP_URL ||
-      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
+    const appUrl = getAppUrl();
 
     const checkout = await polar.checkouts.create({
       products: [productId],

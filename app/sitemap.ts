@@ -1,7 +1,8 @@
 import type { MetadataRoute } from "next";
 import { createAdminSupabaseClient } from "@/lib/supabase/server";
+import { getAppUrl } from "@/lib/utils/url";
 
-const BASE_URL = "https://readingtree-tan.vercel.app";
+const BASE_URL = getAppUrl();
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // 정적 페이지

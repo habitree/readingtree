@@ -31,6 +31,7 @@ import { loadKakaoSdk, isKakaoShareAvailable } from "@/lib/kakao/sdk";
 import { useAuth } from "@/contexts/auth-context";
 import { buildBlogHtml, buildBlogPlainText } from "@/lib/utils/blog-html-builder";
 import { copyHtmlToClipboard } from "@/lib/utils/clipboard";
+import { getAppUrl } from "@/lib/utils/url";
 import type { BookInfoForReport, NoteSummary } from "@/types/ai/report";
 
 interface ReportShareDialogProps {
@@ -138,7 +139,7 @@ export function ReportShareDialog({
       toast.error(t("books.aiReportMakePublicFirst"));
       return;
     }
-    const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
+    const baseUrl = getAppUrl();
     const urlBase = `${baseUrl}/share/reports/${shareId}`;
     const url = currentUser ? `${urlBase}?ref=${currentUser.id}` : urlBase;
     try {
@@ -153,7 +154,7 @@ export function ReportShareDialog({
 
   // 블로그용 복사
   const handleBlogCopy = useCallback(async () => {
-    const origin = typeof window !== "undefined" ? window.location.origin : "";
+    const origin = getAppUrl();
     const blogOptions = {
       reportMarkdown,
       bookInfo,
@@ -189,7 +190,7 @@ export function ReportShareDialog({
         toast.error(t("common.retry"));
         return;
       }
-      const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
+      const baseUrl = getAppUrl();
       const shareUrlBase = `${baseUrl}/share/reports/${shareId}`;
       const shareUrl = currentUser ? `${shareUrlBase}?ref=${currentUser.id}` : shareUrlBase;
       const ogImageUrl = `${baseUrl}/share/reports/${shareId}/opengraph-image`;

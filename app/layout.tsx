@@ -7,6 +7,7 @@ import { AuthProvider } from "@/contexts/auth-context";
 import { ThemeProvider } from "@/components/theme/theme-provider";
 import { LanguageInitializer } from "@/components/language-initializer";
 import { getCachedCurrentUser, getCachedCurrentUserProfile } from "@/lib/cached";
+import { getAppUrl } from "@/lib/utils/url";
 
 const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
 
@@ -33,7 +34,7 @@ const cormorant = Cormorant_Garamond({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://readingtree-tan.vercel.app"),
+  metadataBase: new URL(getAppUrl()),
   title: {
     default: "Habitree - 읽는 습관이 자라는 곳",
     template: "%s | Habitree",
@@ -55,7 +56,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "ko_KR",
-    url: "https://readingtree-tan.vercel.app",
+    url: getAppUrl(),
     siteName: "Habitree",
     title: "Habitree - 읽는 습관이 자라는 곳",
     description: "독서 기록, AI 도우미, 독서 모임과 함께하는 나만의 독서 여정",

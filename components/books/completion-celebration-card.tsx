@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/auth-context";
 import { notify } from "@/lib/toast";
+import { getAppUrl } from "@/lib/utils/url";
 import {
   copyShareLink,
   isKakaoShareAvailable,
@@ -60,7 +61,8 @@ export function CompletionCelebrationCard({
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    setBaseUrl(window.location.origin);
+    // 항상 정식 도메인으로 공유 (구 도메인 접속 중이어도)
+    setBaseUrl(getAppUrl());
     setKakaoAvailable(isKakaoShareAvailable());
     setNativeAvailable(isNativeShareAvailable());
   }, []);

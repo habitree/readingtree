@@ -4,6 +4,15 @@
 
 ---
 
+### 2026-07-12 — 정식 도메인 read.habitree.io 이전
+- **카테고리:** #도메인 #인프라 #브랜딩
+- **중요도:** P0
+- **지시:** Vercel에 설정한 새 도메인 read.habitree.io를 공유 링크·사용자 접속 전체에 안정 적용
+- **결과:** `CANONICAL_APP_URL` 단일 소유(`lib/utils/url.ts`) + 레거시 env 가드, 구 도메인(readingtree-tan.vercel.app) → 정식 도메인 308 리다이렉트(proxy.ts), 공유 진입점 7곳 `window.location.origin` → `getAppUrl()` 통일, sitemap/robots/metadataBase/OG 도메인·DB og_settings 갱신, Polar successUrl 정식 도메인화. 상세: `doc/log/2026-07.md`
+- **인사이트:** 도메인은 코드 여러 곳(공유·SEO·OAuth·결제)에 흩어지기 쉬우므로 상수 1곳 소유 + 미들웨어 리다이렉트 + "환경변수가 낡아도 코드가 이긴다"는 레거시 가드 3중 구조가 이전 안정성의 핵심. 남은 축은 대시보드 3종(Vercel env, Supabase Auth 허용목록, Kakao 플랫폼 도메인)
+
+---
+
 ### 2026-05-04 — 기록(Record) 기능 전면 개편 v2 — 7-Phase 전면 완료
 - **카테고리:** #릴리스 #리팩토링 #UX
 - **중요도:** P0

@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { getAppUrl } from "@/lib/utils/url";
 
 export default function robots(): MetadataRoute.Robots {
   return {
@@ -9,6 +10,6 @@ export default function robots(): MetadataRoute.Robots {
         disallow: ["/api/", "/admin/"],
       },
     ],
-    sitemap: "https://readingtree-tan.vercel.app/sitemap.xml",
+    sitemap: `${getAppUrl()}/sitemap.xml`,
   };
 }

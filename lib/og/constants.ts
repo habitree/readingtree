@@ -4,7 +4,7 @@ export const OG_BRAND = {
   name: "ReadTree",
   tagline: "읽는 습관이 자라는 곳",
   keywords: "독서 기록 · AI 도우미 · 독서 모임",
-  domain: "readingtree-tan.vercel.app",
+  domain: "read.habitree.io",
   description: "읽는 습관이 자라는 곳 - 독서 기록, AI 도우미, 독서 모임",
 } as const;
 
