@@ -36,9 +36,14 @@ export function MusicMiniPlayer() {
   /** 곡 전환 진행 중 — 새 곡의 playing 이벤트까지 경계 재판정 억제(이중 스킵 방지) */
   const isTransitioning = useRef(false);
   /**
+   * 전환 중 '신곡'을 재생 중인 엘리먼트. 구 엘리먼트가 버퍼링 복귀 등으로 발한
+   * playing 이벤트가 전환 상태를 조기 해제해 레퍼리가 신곡을 정지시키는 것을 막는다.
+   */
+  const transitionTarget = useRef<HTMLAudioElement | null>(null);
+  /**
    * 곡 경계에 도달했으나 다음 곡 프리로드가 아직 안 끝난 상태.
    * 이때 활성 스트림을 무음으로 끊지 않고 그대로 흘려보내며(=파일상 다음 곡이
-   * 잠깐 이어짐, 무음보다 자연스러움) 프리로드 완료 즉시 교차페이드한다.
+   * 잠깐 이어짐, 무음보다 자연스러움) 프리로드 완료 즉시 딥 전환한다.
    */
   const pendingSwap = useRef(false);
   const retryCount = useRef(0);
@@ -50,7 +55,7 @@ export function MusicMiniPlayer() {
   // 두 곡의 '음악'이 동시에 들리지 않게 해 겹침(중복 재생)을 원천 차단.
   const DIP_OUT_MS = 280; // 구곡 페이드아웃(→무음) 길이
   const DIP_IN_MS = 380; // 신곡 페이드인 길이(구곡이 무음이 된 뒤 시작)
-  const CROSSFADE_LEAD_S = 0.45; // 경계 N초 전 전환 시작 → 구곡이 경계 즈음 무음 도달(4Hz 지터 흡수)
+  const DIP_LEAD_S = 0.45; // 경계 N초 전 딥 시작 → 구곡이 경계 즈음 무음 도달(4Hz 지터 흡수)
   const PRELOAD_LEAD_S = 30; // 곡 끝 N초 전 다음 곡 프리로드(느린 회선 여유)
   const MAX_RETRIES = 3;
 
@@ -142,6 +147,12 @@ export function MusicMiniPlayer() {
       const audio = getActive();
       if (!audio) return;
       clearFade();
+      // beginAt 은 활성 엘리먼트를 처음부터 다시 세팅한다 — 진행 중이던 딥은 위 clearFade
+      // 로 끝나므로(onDone 미실행) 전환 상태의 소유권을 여기서 가져온다. 그러지 않으면
+      // 채널 변경·resume 이 딥 중간에 끼어들 때 isTransitioning 이 영영 true 로 남아
+      // 경계 판정이 멈춘다. 아래 audio.play() → playing 이벤트에서 해제된다.
+      isTransitioning.current = true;
+      transitionTarget.current = audio;
       const inactive = getInactive();
       inactive?.pause();
       preloadCue.current = null;
@@ -167,6 +178,10 @@ export function MusicMiniPlayer() {
         }
         const proceed = () => {
           if (!useMusicPlayer.getState().isPlaying) return;
+          // 로드/seek 를 기다리는 동안 딥 전환이 활성 엘리먼트를 바꿨을 수 있다.
+          // 그대로 재생하면 비활성 엘리먼트가 풀볼륨으로 울려 두 곡이 겹치고,
+          // startFadeIn 의 clearFade 가 진행 중인 딥까지 죽인다.
+          if (audio !== getActive()) return;
           if (fade) startFadeIn(audio);
           else audio.volume = useMusicPlayer.getState().volume;
           safePlay(audio);
@@ -340,6 +355,7 @@ export function MusicMiniPlayer() {
       const active = getActive();
       if (!genre || !inactive) return;
       isTransitioning.current = true;
+      transitionTarget.current = inactive;
       pendingSwap.current = false;
       isBuffering.current = false;
       retryCount.current = 0;
@@ -356,6 +372,7 @@ export function MusicMiniPlayer() {
         active?.pause();
         activeIdx.current = activeIdx.current === 0 ? 1 : 0;
         isTransitioning.current = false;
+        transitionTarget.current = null;
         // 전환 중 사용자가 일시정지했을 수 있음 — 새 활성도 정지 보장
         if (!useMusicPlayer.getState().isPlaying) inactive.pause();
       });
@@ -384,8 +401,7 @@ export function MusicMiniPlayer() {
       // 되살리지 말고 신곡만 페이드인. 아니면 구곡 페이드아웃 후 신곡 페이드인(딥).
       swapToPreloaded(nextCueIdx, !pendingSwap.current);
     } else {
-      isTransitioning.current = true;
-      pendingSwap.current = false;
+      // 전환 상태는 beginAt 이 세팅한다(활성 엘리먼트에 직접 로드).
       beginAt(genre, genre.cues[nextCueIdx].start, true);
       updateTime(genre.cues[nextCueIdx].start, genre.durationSeconds);
     }
@@ -395,12 +411,12 @@ export function MusicMiniPlayer() {
     (e: React.SyntheticEvent<HTMLAudioElement>) => {
       const audio = e.currentTarget;
       if (audio !== getActive()) return;
-      // 교차페이드 진행 중에는 경계 재판정·시간 갱신 정지(구 활성 엘리먼트가
+      // 딥 전환 진행 중에는 경계 재판정·시간 갱신 정지(구 활성 엘리먼트가
       // 파일상 다음 곡으로 새고 있어 globalT 가 어긋날 수 있으므로).
       if (isTransitioning.current) return;
 
       // 이중 재생 방지 레퍼리 — 전환 중이 아니면 비활성 엘리먼트는 반드시 정지 상태여야 한다.
-      // 중단된 크로스페이드 등으로 소리가 새어도 다음 timeupdate(≤250ms)에 회수해 곡 겹침을 차단.
+      // 중단된 딥 등으로 소리가 새어도 다음 timeupdate(≤250ms)에 회수해 곡 겹침을 차단.
       const idleEl = getInactive();
       if (idleEl && !idleEl.paused) {
         idleEl.pause();
@@ -424,7 +440,7 @@ export function MusicMiniPlayer() {
       // (구곡 페이드아웃 → 신곡 페이드인) 두 곡이 동시에 들리지 않게 한다.
       // 준비가 안 됐으면 무음 컷 없이 대기하되, 경계를 '넘어선' 뒤에는 활성 스트림을
       // 음소거해 '파일상 다음 곡'(셔플과 다른 곡)이 새어 겹쳐 들리는 것을 막는다.
-      if (remaining > CROSSFADE_LEAD_S && !pendingSwap.current) return;
+      if (remaining > DIP_LEAD_S && !pendingSwap.current) return;
 
       const nextCueIdx = state.peekNextCue();
       const ready =
@@ -456,13 +472,25 @@ export function MusicMiniPlayer() {
   // 파트 끝 도달(곡이 파트의 마지막 트랙) → 다음 셔플 곡으로 전환
   const handleEnded = useCallback(
     (e: React.SyntheticEvent<HTMLAudioElement>) => {
-      if (e.currentTarget !== getActive()) return;
-      // 전환(크로스페이드) 중 구 엘리먼트의 ended 는 무시 — 이미 신곡이 인계 중.
-      // 그대로 두면 큐가 이중 진행되고 진행 중 전환이 끊겨 두 곡이 겹칠 수 있다.
-      if (isTransitioning.current) return;
+      const el = e.currentTarget;
+      if (isTransitioning.current) {
+        // 딥 진행 중 '신곡' 엘리먼트가 곧바로 끝나버린 경우(파트 끝으로 잘못 seek 등).
+        // 그대로 두면 딥 완료 후 활성 엘리먼트가 ended 상태로 남아 timeupdate 도
+        // ended 도 오지 않고 재생이 영구 정지한다 → 즉시 다음 곡으로 회수.
+        if (el === transitionTarget.current) {
+          clearFade();
+          isTransitioning.current = false;
+          transitionTarget.current = null;
+          skipToNextCue();
+        }
+        // 구 엘리먼트의 ended 는 무시 — 이미 신곡이 인계 중.
+        // 그대로 두면 큐가 이중 진행되고 진행 중 전환이 끊겨 두 곡이 겹칠 수 있다.
+        return;
+      }
+      if (el !== getActive()) return;
       skipToNextCue();
     },
-    [getActive, skipToNextCue],
+    [getActive, clearFade, skipToNextCue],
   );
 
   const handleError = useCallback(
@@ -479,6 +507,8 @@ export function MusicMiniPlayer() {
             audio.load();
             audio.addEventListener("canplay", function onRetry() {
               audio.removeEventListener("canplay", onRetry);
+              // 재로드를 기다리는 사이 딥 전환이 활성을 바꿨을 수 있다 — 재확인 필수.
+              if (audio !== getActive()) return;
               if (useMusicPlayer.getState().isPlaying) safePlay(audio);
             });
           }
@@ -499,10 +529,25 @@ export function MusicMiniPlayer() {
       if (e.target === getActive()) isBuffering.current = true;
     }
     function handlePlaying(e: Event) {
-      if (e.target !== getActive()) return;
+      const el = e.target as HTMLAudioElement;
+      if (isTransitioning.current) {
+        // 전환 중에는 '신곡' 엘리먼트의 playing 만 의미가 있다. 구 엘리먼트가
+        // 버퍼링 복귀 등으로 playing 을 쏘면 전환이 조기 해제되고, 레퍼리가
+        // 신곡(=비활성)을 정지시켜 딥 완료 후 재생이 멎는다.
+        if (el !== transitionTarget.current) return;
+        isBuffering.current = false;
+        retryCount.current = 0;
+        // 딥(swapToPreloaded)은 activeIdx 스왑과 함께 onDone 에서 해제한다.
+        // beginAt 경로는 신곡이 곧 활성 엘리먼트이므로 여기서 해제.
+        if (el === getActive()) {
+          isTransitioning.current = false;
+          transitionTarget.current = null;
+        }
+        return;
+      }
+      if (el !== getActive()) return;
       isBuffering.current = false;
       retryCount.current = 0;
-      isTransitioning.current = false; // 새 곡 재생 시작 — 경계 판정 재개
     }
     audios.forEach((a) => {
       a.addEventListener("waiting", handleWaiting);
@@ -527,6 +572,9 @@ export function MusicMiniPlayer() {
       const audio = getActive();
       const state = useMusicPlayer.getState();
       if (!audio || !state.isPlaying || !state.currentGenre) return;
+      // 딥 진행 중엔 개입 금지 — 구 엘리먼트는 딥이 의도적으로 페이드아웃/정지시킨
+      // 것이므로 여기서 되살리면 신곡과 겹치고, playing 이벤트가 전환을 조기 해제한다.
+      if (isTransitioning.current) return;
       if (!audio.paused) return; // 버퍼링 중이면 브라우저 자동 회복에 맡김
       audio.play().catch(() => hardRecover());
     }
@@ -535,12 +583,16 @@ export function MusicMiniPlayer() {
       const audio = getActive();
       const state = useMusicPlayer.getState();
       if (!audio || !state.isPlaying || !state.currentGenre) return;
+      if (isTransitioning.current) return;
       const savedTime = audio.currentTime;
       retryCount.current = 0;
       isBuffering.current = false;
       audio.load();
       audio.addEventListener("canplay", function onRecover() {
         audio.removeEventListener("canplay", onRecover);
+        // 43MB 파트 재다운로드라 canplay 까지 수 초 — 그 사이 딥이 활성을 바꿨으면
+        // 이 엘리먼트는 이미 비활성이다. 재생하면 두 곡이 동시에 울린다.
+        if (audio !== getActive() || isTransitioning.current) return;
         if (savedTime > 0) {
           try { audio.currentTime = savedTime; } catch { /* noop */ }
         }
