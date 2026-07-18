@@ -198,13 +198,15 @@ export function NotesHubClient({
 
       {/* 헤더 */}
       <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <FileText className="h-5 w-5 text-primary shrink-0" />
-          <div>
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary ring-1 ring-inset ring-primary/15">
+            <FileText className="h-[18px] w-[18px]" />
+          </div>
+          <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <h1 className="text-xl font-bold">{t("notes.myNotes")}</h1>
+              <h1 className="text-xl font-bold tracking-tight">{t("notes.myNotes")}</h1>
               {total > 0 && (
-                <span className="text-xs font-medium text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+                <span className="text-[11px] font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded-full tabular-nums">
                   {total}
                 </span>
               )}
@@ -249,9 +251,9 @@ export function NotesHubClient({
             key={tab.value}
             onClick={() => updateUrl({ tab: tab.value })}
             className={cn(
-              "px-3 py-1.5 rounded-full text-xs font-medium transition-colors",
+              "px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200",
               activeTab === tab.value
-                ? "bg-primary text-primary-foreground"
+                ? "bg-primary text-primary-foreground shadow-sm"
                 : "bg-muted text-muted-foreground hover:bg-muted/80"
             )}
           >

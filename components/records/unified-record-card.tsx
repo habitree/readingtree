@@ -49,23 +49,66 @@ const NOTE_TYPE_ICON: Record<string, LucideIcon> = {
   progress: TrendingUp,
 };
 
-function getKindBadge(record: UnifiedRecord): { label: string; cls: string } {
+/**
+ * 종류별 색조(tone) — 앱 전반의 노트 타입 색상 컨벤션(design-tokens `backgrounds`)을 재사용.
+ * 아이콘 칩 / 배지 / dot 을 한 팔레트로 묶어 감성 일관성을 확보한다.
+ */
+type Tone = "primary" | "teal" | "emerald" | "blue" | "amber" | "purple" | "neutral";
+
+const TONE: Record<Tone, { chip: string; badge: string; dot: string }> = {
+  primary: {
+    chip: "bg-primary/10 text-primary ring-primary/15",
+    badge: "bg-primary/10 text-primary",
+    dot: "bg-primary",
+  },
+  teal: {
+    chip: "bg-teal-50 text-teal-600 ring-teal-200/70 dark:bg-teal-950/40 dark:text-teal-400 dark:ring-teal-900/60",
+    badge: "bg-teal-100 text-teal-700 dark:bg-teal-950/40 dark:text-teal-400",
+    dot: "bg-teal-500",
+  },
+  emerald: {
+    chip: "bg-emerald-50 text-emerald-600 ring-emerald-200/70 dark:bg-emerald-950/40 dark:text-emerald-400 dark:ring-emerald-900/60",
+    badge: "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400",
+    dot: "bg-emerald-500",
+  },
+  blue: {
+    chip: "bg-blue-50 text-blue-600 ring-blue-200/70 dark:bg-blue-950/40 dark:text-blue-400 dark:ring-blue-900/60",
+    badge: "bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400",
+    dot: "bg-blue-500",
+  },
+  amber: {
+    chip: "bg-amber-50 text-amber-600 ring-amber-200/70 dark:bg-amber-950/40 dark:text-amber-400 dark:ring-amber-900/60",
+    badge: "bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400",
+    dot: "bg-amber-500",
+  },
+  purple: {
+    chip: "bg-purple-50 text-purple-600 ring-purple-200/70 dark:bg-purple-950/40 dark:text-purple-400 dark:ring-purple-900/60",
+    badge: "bg-purple-100 text-purple-700 dark:bg-purple-950/40 dark:text-purple-400",
+    dot: "bg-purple-500",
+  },
+  neutral: {
+    chip: "bg-muted text-muted-foreground ring-border/60",
+    badge: "bg-muted text-muted-foreground",
+    dot: "bg-muted-foreground/40",
+  },
+};
+
+const NOTE_TYPE_TONE: Record<string, Tone> = {
+  quote: "blue",
+  memo: "amber",
+  transcription: "purple",
+  photo: "emerald",
+  progress: "teal",
+};
+
+function getKindStyle(record: UnifiedRecord): { label: string; tone: Tone } {
   switch (record.kind) {
     case "stamp":
-      return {
-        label: "스탬프",
-        cls: "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400",
-      };
+      return { label: "스탬프", tone: "emerald" };
     case "progress":
-      return {
-        label: "진행",
-        cls: "bg-teal-100 text-teal-700 dark:bg-teal-950/40 dark:text-teal-400",
-      };
+      return { label: "진행", tone: "teal" };
     case "time":
-      return {
-        label: "시간",
-        cls: "bg-primary/10 text-primary",
-      };
+      return { label: "시간", tone: "primary" };
     default: {
       const map: Record<string, string> = {
         quote: "구절",
@@ -73,10 +116,8 @@ function getKindBadge(record: UnifiedRecord): { label: string; cls: string } {
         transcription: "필사",
         photo: "사진",
       };
-      return {
-        label: (record.noteType && map[record.noteType]) || "기록",
-        cls: "bg-muted text-muted-foreground",
-      };
+      const nt = record.noteType ?? "";
+      return { label: map[nt] || "기록", tone: NOTE_TYPE_TONE[nt] ?? "neutral" };
     }
   }
 }
@@ -90,7 +131,8 @@ export function UnifiedRecordCard({ record, onEdit, onDelete, onOpenLightbox }: 
         : record.kind === "stamp"
           ? Camera
           : NOTE_TYPE_ICON[record.noteType ?? "memo"] ?? BookOpen;
-  const badge = getKindBadge(record);
+  const { label: kindLabel, tone } = getKindStyle(record);
+  const toneStyle = TONE[tone];
   const hasImage = record.imageUrls.length > 0;
   const photoCount = record.imageUrls.length;
 
@@ -126,7 +168,13 @@ export function UnifiedRecordCard({ record, onEdit, onDelete, onOpenLightbox }: 
           onEdit(record);
         }
       }}
-      className="group flex items-start gap-3 p-3 rounded-xl bg-muted/30 border border-transparent hover:border-border focus-visible:border-border focus-visible:outline-none transition-colors cursor-pointer"
+      className={cn(
+        "group flex items-start gap-3 p-3 rounded-xl bg-muted/30 border border-transparent cursor-pointer",
+        "transition-[transform,box-shadow,background-color,border-color] duration-200 ease-out",
+        "hover:-translate-y-0.5 hover:bg-muted/50 hover:border-border/50 hover:shadow-sm",
+        "active:translate-y-0 active:shadow-none",
+        "focus-visible:outline-none focus-visible:border-border/50 focus-visible:ring-2 focus-visible:ring-primary/25",
+      )}
     >
       {/* 좌측: 사진 썸네일(라이트박스) 또는 종류 아이콘 */}
       {hasImage ? (
@@ -155,8 +203,13 @@ export function UnifiedRecordCard({ record, onEdit, onDelete, onOpenLightbox }: 
           )}
         </button>
       ) : (
-        <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5 bg-primary/10">
-          <Icon className="w-3.5 h-3.5 text-primary" />
+        <div
+          className={cn(
+            "w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ring-1 ring-inset transition-transform duration-200 group-hover:scale-105",
+            toneStyle.chip,
+          )}
+        >
+          <Icon className="w-3.5 h-3.5" />
         </div>
       )}
 
@@ -171,11 +224,12 @@ export function UnifiedRecordCard({ record, onEdit, onDelete, onOpenLightbox }: 
           )}
           <span
             className={cn(
-              "inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-medium",
-              badge.cls,
+              "inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-medium",
+              toneStyle.badge,
             )}
           >
-            {badge.label}
+            <span className={cn("h-1 w-1 rounded-full", toneStyle.dot)} aria-hidden />
+            {kindLabel}
           </span>
           <span className="ml-auto text-[11px] text-muted-foreground/50 shrink-0" suppressHydrationWarning>
             {formatSmartDate(record.createdAt)}

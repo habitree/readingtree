@@ -198,9 +198,9 @@ export function UnifiedRecordFeed({
             type="button"
             onClick={() => setKindFilter(seg.value)}
             className={cn(
-              "px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors",
+              "px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all duration-200",
               kindFilter === seg.value
-                ? "bg-primary text-primary-foreground"
+                ? "bg-primary text-primary-foreground shadow-sm"
                 : "bg-muted text-muted-foreground hover:bg-muted/80",
             )}
           >
@@ -217,9 +217,15 @@ export function UnifiedRecordFeed({
       <div className="space-y-5">
         {displayGroups.map((g) => (
           <div key={g.key}>
-            <p className="text-xs font-medium text-muted-foreground mb-2 px-1">
-              <span suppressHydrationWarning>{g.header}</span>
-            </p>
+            <div className="mb-2 flex items-center gap-2 px-0.5">
+              <span
+                className="inline-flex items-center rounded-full bg-muted/60 px-2.5 py-1 text-[11px] font-semibold text-foreground/65"
+                suppressHydrationWarning
+              >
+                {g.header}
+              </span>
+              <span aria-hidden className="h-px flex-1 bg-gradient-to-r from-border/60 to-transparent" />
+            </div>
             <div className="space-y-1.5">
               {g.records.map((r) => (
                 <UnifiedRecordCard

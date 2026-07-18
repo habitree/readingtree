@@ -88,7 +88,7 @@ export function NoteCard({ note, showDeleteButton = false, onDelete }: NoteCardP
       }}
     >
       <Card className={cn(
-        "hover:shadow-md active:scale-[0.99] transition-shadow cursor-pointer h-full relative group overflow-hidden border-border/40",
+        "hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.99] transition-[transform,box-shadow] duration-200 cursor-pointer h-full relative group overflow-hidden border-border/40",
         isDraft && "border-dashed border-amber-300/40 dark:border-amber-700/30"
       )}>
         <CardContent className="p-0">
