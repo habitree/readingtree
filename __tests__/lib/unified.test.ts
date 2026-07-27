@@ -57,6 +57,7 @@ function noteRow(over: Partial<UnifiedNoteRow> = {}): UnifiedNoteRow {
     image_url: null,
     reading_duration_seconds: null,
     transcription_text: null,
+    is_public: false,
     book,
     ...over,
   };
@@ -162,6 +163,13 @@ describe("noteToUnified — 진행율 메모 / 자유 상세 정규화", () => {
     expect(r.noteType).toBe("quote");
     expect(r.content).toContain("구절");
     expect(r.title).toBe("제목");
+  });
+
+  // 보기 시트가 "공유 시 공개 전환" 여부를 판단하는 근거 필드
+  it("isPublic — note는 원본 공개여부, reading_log는 null", () => {
+    expect(noteToUnified(noteRow({ is_public: true })).isPublic).toBe(true);
+    expect(noteToUnified(noteRow({ is_public: false })).isPublic).toBe(false);
+    expect(readingLogToUnified(logRow()).isPublic).toBeNull();
   });
 });
 

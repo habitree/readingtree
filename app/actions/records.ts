@@ -118,7 +118,7 @@ export async function getUnifiedRecords(
     .from("notes")
     .select(
       `
-      id, created_at, type, detail_kind, title, content, page_number, image_url,
+      id, created_at, type, detail_kind, title, content, page_number, image_url, is_public,
       books ( id, title, author, cover_image_url, total_pages ),
       transcriptions ( extracted_text, status )
     `,
@@ -228,6 +228,7 @@ export async function getUnifiedRecords(
       image_url: (row.image_url as string | null) ?? null,
       reading_duration_seconds: null,
       transcription_text: transcription?.extracted_text ?? null,
+      is_public: (row.is_public as boolean | null) ?? null,
       book: normalizedBook,
     };
     return noteToUnified(noteRow);

@@ -67,6 +67,8 @@ export interface UnifiedRecord {
   title: string | null;
   /** 필사 OCR 텍스트 (있을 때) */
   transcriptionText: string | null;
+  /** notes.is_public — 보기 시트의 공유 가능 여부 판단용. reading_log는 null */
+  isPublic: boolean | null;
 
   // ── 파생 배지 (정의 불변 — 00-master.md와 동일) ──
   kind: UnifiedRecordKind;

@@ -4,7 +4,9 @@
  * 통합 기록 피드 — 기록 기획 13 Phase 2
  *
  * 모든 입력 경로의 기록을 "날짜 · 책" 그룹 헤더 + 개별 카드로 시간순 표시(D2).
- * cursor "더 보기" 페이지네이션. 카드 탭 → 단일 편집(useUnifiedRecordEdit).
+ * cursor "더 보기" 페이지네이션.
+ * 카드 탭 → 읽기 전용 보기 시트(RecordViewSheet) → 거기서 공유/편집/삭제.
+ * 카드 우측 [편집] 버튼은 기존대로 바로 편집(useUnifiedRecordEdit).
  * 편집 시트가 닫히면 router.refresh()로 최신 데이터 반영.
  */
 
@@ -38,6 +40,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { UnifiedRecordCard } from "./unified-record-card";
+import { RecordViewSheet } from "./record-view-sheet";
 import type { UnifiedRecord, UnifiedRecordKind } from "@/types/unified-record";
 
 interface UnifiedRecordFeedProps {
@@ -89,6 +92,7 @@ export function UnifiedRecordFeed({
   const [kindFilter, setKindFilter] = useState<KindFilter>("all");
   const [isPending, startTransition] = useTransition();
   const [pendingDelete, setPendingDelete] = useState<UnifiedRecord | null>(null);
+  const [viewing, setViewing] = useState<UnifiedRecord | null>(null);
   const [isDeleting, startDeleteTransition] = useTransition();
   const [lightbox, setLightbox] = useState<{ urls: string[]; index: number; alt: string } | null>(
     null,
@@ -231,6 +235,7 @@ export function UnifiedRecordFeed({
                 <UnifiedRecordCard
                   key={`${r.source}-${r.sourceId}`}
                   record={r}
+                  onView={setViewing}
                   onEdit={editRecord}
                   onDelete={setPendingDelete}
                   onOpenLightbox={(urls, alt) => setLightbox({ urls, index: 0, alt })}
@@ -256,6 +261,14 @@ export function UnifiedRecordFeed({
         )}
       </div>
       )}
+
+      <RecordViewSheet
+        record={viewing}
+        onClose={() => setViewing(null)}
+        onEdit={editRecord}
+        onDelete={setPendingDelete}
+        onOpenLightbox={(urls, alt) => setLightbox({ urls, index: 0, alt })}
+      />
 
       {lightbox && (
         <Lightbox

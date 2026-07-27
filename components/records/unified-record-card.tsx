@@ -5,7 +5,8 @@
  *
  * 모든 입력 경로(시간세션·진행율 메모·스탬프·자유 상세)를 "있는 슬롯만" 적응형으로
  * 보여주는 단일 카드. 골격은 동일하고 종류는 작은 배지로만 구분(요구 4).
- * 카드 탭 = 해당 기록 편집(onEdit) — 단일 편집 경로로 수렴(요구 3).
+ * 카드 탭 = 해당 기록 "보기"(onView) — 과거 기록 열람·공유가 먼저, 편집은 보기에서 이어짐.
+ * 우측 [편집] 버튼은 바로 편집으로 가는 지름길로 유지.
  *
  * reading-time-tab 의 행 레이아웃을 차용(책은 그룹 헤더에 있으므로 표지 대신 컴팩트 행).
  */
@@ -34,6 +35,8 @@ import type { UnifiedRecord } from "@/types/unified-record";
 
 interface UnifiedRecordCardProps {
   record: UnifiedRecord;
+  /** 카드 본문 탭 — 읽기 전용 보기 시트 열기 */
+  onView: (record: UnifiedRecord) => void;
   onEdit: (record: UnifiedRecord) => void;
   /** 삭제 요청 (피드가 확인 다이얼로그를 띄움) — 미지정 시 삭제 버튼 숨김 */
   onDelete?: (record: UnifiedRecord) => void;
@@ -53,9 +56,9 @@ const NOTE_TYPE_ICON: Record<string, LucideIcon> = {
  * 종류별 색조(tone) — 앱 전반의 노트 타입 색상 컨벤션(design-tokens `backgrounds`)을 재사용.
  * 아이콘 칩 / 배지 / dot 을 한 팔레트로 묶어 감성 일관성을 확보한다.
  */
-type Tone = "primary" | "teal" | "emerald" | "blue" | "amber" | "purple" | "neutral";
+export type Tone = "primary" | "teal" | "emerald" | "blue" | "amber" | "purple" | "neutral";
 
-const TONE: Record<Tone, { chip: string; badge: string; dot: string }> = {
+export const TONE: Record<Tone, { chip: string; badge: string; dot: string }> = {
   primary: {
     chip: "bg-primary/10 text-primary ring-primary/15",
     badge: "bg-primary/10 text-primary",
@@ -101,7 +104,7 @@ const NOTE_TYPE_TONE: Record<string, Tone> = {
   progress: "teal",
 };
 
-function getKindStyle(record: UnifiedRecord): { label: string; tone: Tone } {
+export function getKindStyle(record: UnifiedRecord): { label: string; tone: Tone } {
   switch (record.kind) {
     case "stamp":
       return { label: "스탬프", tone: "emerald" };
@@ -122,7 +125,19 @@ function getKindStyle(record: UnifiedRecord): { label: string; tone: Tone } {
   }
 }
 
-export function UnifiedRecordCard({ record, onEdit, onDelete, onOpenLightbox }: UnifiedRecordCardProps) {
+/**
+ * 종류별 아이콘 — 보기 시트(RecordViewSheet)와 공유.
+ * 카드 본문은 아래처럼 식(expression)으로 인라인한다. 렌더 중 이 함수를 호출하면
+ * react-hooks/static-components 규칙이 "컴포넌트를 렌더 중 생성"으로 잡기 때문.
+ */
+export function getKindIcon(record: UnifiedRecord): LucideIcon {
+  if (record.kind === "time") return Timer;
+  if (record.kind === "progress") return TrendingUp;
+  if (record.kind === "stamp") return Camera;
+  return NOTE_TYPE_ICON[record.noteType ?? "memo"] ?? BookOpen;
+}
+
+export function UnifiedRecordCard({ record, onView, onEdit, onDelete, onOpenLightbox }: UnifiedRecordCardProps) {
   const Icon: LucideIcon =
     record.kind === "time"
       ? Timer
@@ -161,13 +176,14 @@ export function UnifiedRecordCard({ record, onEdit, onDelete, onOpenLightbox }: 
     <div
       role="button"
       tabIndex={0}
-      onClick={() => onEdit(record)}
+      onClick={() => onView(record)}
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
-          onEdit(record);
+          onView(record);
         }
       }}
+      aria-label="기록 자세히 보기"
       className={cn(
         "group flex items-start gap-3 p-3 rounded-xl bg-muted/30 border border-transparent cursor-pointer",
         "transition-[transform,box-shadow,background-color,border-color] duration-200 ease-out",

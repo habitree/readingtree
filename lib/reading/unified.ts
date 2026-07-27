@@ -47,6 +47,7 @@ export interface UnifiedNoteRow {
   image_url: string | null;
   reading_duration_seconds: number | null;
   transcription_text: string | null;
+  is_public: boolean | null;
   book: UnifiedRecordBook;
 }
 
@@ -103,6 +104,7 @@ export function readingLogToUnified(row: UnifiedReadingLogRow): UnifiedRecord {
     detailKind: null,
     title: null,
     transcriptionText: null,
+    isPublic: null,
     kind: isStamp ? "stamp" : isProgressLog ? "progress" : "time",
     isStamp,
     isTimeOnly,
@@ -138,6 +140,7 @@ export function noteToUnified(row: UnifiedNoteRow): UnifiedRecord {
     detailKind: row.detail_kind,
     title: row.title,
     transcriptionText: row.transcription_text,
+    isPublic: row.is_public,
     kind: isProgress ? "progress" : "detail",
     isStamp: false,
     isTimeOnly: false,
