@@ -1,56 +1,86 @@
 import { describe, expect, it } from "vitest";
 
-import { MUSIC_GENRES, findCueAt, findCueIndexAt, findPartIndexAt } from "@/lib/music";
+import { AMBIENCE_GENRES, MUSIC_GENRES, getGenreById } from "@/lib/music";
 
 /**
- * 회귀 방지 — 곡/파트 경계 매칭 (2026-07-15)
+ * 곡 데이터 무결성 (개별 곡 재생 — 2026-07-24)
  *
- * genres.ts 는 start 와 duration 을 각각 ms 로 반올림해 생성하므로 start+duration 이
- * 다음 구간의 start 와 ±0.001s 어긋난다. 이를 경계로 쓰던 시절 103곡 중 15곡이 앞 곡으로,
- * 2곡이 앞 파트(=파일 끝)로 매칭되어 재생이 끊기고 곡이 겹쳤다.
- * 실데이터로 전수 검증한다 — 음원을 재빌드해도 이 성질은 유지돼야 한다.
+ * 병합 스트림을 폐기하고 곡=파일 구조로 전환했다. 곡 겹침·끊김의 근본 원인이던
+ * 타임라인 seek/파트 경계 매칭이 사라졌으므로, 회귀 검증 대상도 "곡 데이터가
+ * 런타임에서 안전하게 재생 가능한 형태인지"로 바뀐다.
+ *
+ * 2026-07-31: 활기찬 클래식을 클래식으로 통합(3채널), 백색소음 4채널 추가.
  */
-describe("music timeline lookup", () => {
-  it("채널 데이터가 존재한다", () => {
-    expect(MUSIC_GENRES.length).toBeGreaterThan(0);
-    for (const genre of MUSIC_GENRES) {
-      expect(genre.cues.length).toBeGreaterThan(0);
-      expect(genre.parts.length).toBeGreaterThan(0);
+describe("music genre data", () => {
+  it("음악 3채널 + 백색소음 4채널이 모두 존재한다", () => {
+    expect(MUSIC_GENRES.map((g) => g.id).sort()).toEqual([
+      "classic",
+      "fire",
+      "forest",
+      "jazz",
+      "piano",
+      "rain",
+      "waves",
+    ]);
+  });
+
+  it("활기찬 클래식 곡들이 클래식 채널에 통합되었다", () => {
+    const classic = getGenreById("classic");
+    const titles = classic?.tracks.map((t) => t.title) ?? [];
+    expect(titles).toContain("보칼리제"); // 기존 클래식
+    expect(titles).toContain("터키 행진곡"); // 기존 활기찬 클래식
+    expect(classic?.tracks.length).toBe(38); // 24 + 14
+  });
+
+  it("백색소음 채널은 ambience 플래그와 단일 곡을 가진다", () => {
+    expect(AMBIENCE_GENRES.map((g) => g.id).sort()).toEqual([
+      "fire",
+      "forest",
+      "rain",
+      "waves",
+    ]);
+    for (const g of AMBIENCE_GENRES) {
+      expect(g.ambience).toBe(true);
+      expect(g.tracks.length).toBe(1);
     }
   });
 
+  it("음악 채널에는 ambience 플래그가 없다", () => {
+    for (const id of ["piano", "classic", "jazz"] as const) {
+      expect(getGenreById(id)?.ambience).toBeFalsy();
+    }
+  });
+
+  it("getGenreById 로 채널을 조회할 수 있다", () => {
+    expect(getGenreById("piano")?.name).toBe("피아노");
+    expect(getGenreById("rain")?.name).toBe("빗소리");
+    expect(getGenreById("nope")).toBeUndefined();
+  });
+
   describe.each(MUSIC_GENRES.map((g) => [g.id, g] as const))("%s", (_id, genre) => {
-    it("모든 곡의 시작점이 자기 자신으로 매칭된다", () => {
-      const wrong = genre.cues
-        .map((cue, i) => ({ i, title: cue.title, got: findCueIndexAt(genre.cues, cue.start) }))
-        .filter((r) => r.got !== r.i);
-      expect(wrong).toEqual([]);
+    it("곡이 하나 이상 있다", () => {
+      expect(genre.tracks.length).toBeGreaterThan(0);
     });
 
-    it("모든 파트의 시작점이 자기 자신으로 매칭된다", () => {
-      const wrong = genre.parts
-        .map((part, i) => ({ i, got: findPartIndexAt(genre.parts, part.start) }))
-        .filter((r) => r.got !== r.i);
-      expect(wrong).toEqual([]);
+    it("모든 곡이 유효한 필드를 가진다", () => {
+      const bad = genre.tracks.filter(
+        (t) =>
+          !t.title ||
+          !t.composer ||
+          !/^\/music\/.+\.mp3$/.test(t.url) ||
+          !(t.duration > 0),
+      );
+      expect(bad).toEqual([]);
     });
 
-    it("모든 곡이 해석된 파트 안에서 끝까지 재생 가능하다", () => {
-      // 곡 시작점이 앞 파트로 매칭되면 offset 이 파일 길이에 닿아 파일 끝으로 seek 되고,
-      // 재생이 0초 만에 ended → 딥 전환 후 플레이어가 영구 정지한다.
-      const truncated = genre.cues
-        .map((cue) => {
-          const part = genre.parts[findPartIndexAt(genre.parts, cue.start)];
-          const playable = part.duration - Math.max(0, cue.start - part.start);
-          return { title: cue.title, playable, needed: cue.duration };
-        })
-        .filter((r) => r.playable < r.needed - 0.05);
-      expect(truncated).toEqual([]);
+    it("곡 파일 URL 이 채널 내에서 유일하다", () => {
+      const urls = genre.tracks.map((t) => t.url);
+      expect(new Set(urls).size).toBe(urls.length);
     });
+  });
 
-    it("곡 중간 위치가 해당 곡으로 매칭된다", () => {
-      for (const cue of genre.cues) {
-        expect(findCueAt(genre.cues, cue.start + cue.duration / 2)?.title).toBe(cue.title);
-      }
-    });
+  it("전체 곡 파일 URL 이 전 채널에서 유일하다(파일명 충돌 없음)", () => {
+    const urls = MUSIC_GENRES.flatMap((g) => g.tracks.map((t) => t.url));
+    expect(new Set(urls).size).toBe(urls.length);
   });
 });

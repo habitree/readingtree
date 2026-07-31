@@ -111,6 +111,13 @@ const nextConfig = {
           { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
         ],
       },
+      // 배경음악 곡 파일(개별 곡) — CDN immutable 캐시로 재다운로드 방지
+      {
+        source: '/music/:path*',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
+        ],
+      },
       // OG 이미지 캐싱 (카카오톡/SNS 스크래퍼 최적화)
       {
         source: '/opengraph-image',

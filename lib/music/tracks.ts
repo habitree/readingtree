@@ -1,13 +1,14 @@
 /**
  * 병합 빌드 전용 원본 트랙 목록 (scripts/build-combined-music.ts 에서만 사용).
  *
- * 4채널(피아노/클래식/활기찬 클래식/재즈) 음원의 순서·메타데이터 소스.
+ * 3채널(피아노/클래식/재즈) 음원의 순서·메타데이터 소스.
+ * (2026-07-31: 활기찬 클래식 채널을 클래식으로 통합 — energetic 곡들은 클래식 후반부에 위치)
  * 런타임 앱은 이 파일을 import 하지 않으며 병합된 lib/music/genres.ts(자동 생성)만 사용한다.
  *
  * 품질 기준: 원본 128kbps 이상만 포함 (병합 인코딩은 160kbps CBR + EBU R128 정규화).
  * 채널 분류: channel 필드가 단일 기준 (era 는 메타데이터).
  */
-export type MusicChannelId = "piano" | "classic" | "energetic" | "jazz";
+export type MusicChannelId = "piano" | "classic" | "jazz";
 
 export interface SourceTrack {
   id: string;
@@ -84,26 +85,26 @@ export const MUSIC_TRACKS: SourceTrack[] = [
   { id: "track-214", title: "파반", composer: "포레", performer: "Public Domain", sourceUrl: "/music/faure-pavane.mp3", isExternal: false, durationSeconds: 434, moods: ["peaceful", "contemplative"], era: "romantic", instruments: ["orchestra"], intensity: 1, channel: "classic" },
   { id: "track-215", title: "보칼리제", composer: "라흐마니노프", performer: "Public Domain", sourceUrl: "/music/rachmaninoff-vocalise.mp3", isExternal: false, durationSeconds: 350, moods: ["emotional", "contemplative"], era: "romantic", instruments: ["orchestra"], intensity: 1, channel: "classic" },
 
-  // ════ 🎺 활기찬 클래식 (에너지·밝음) ════
-  { id: "track-216", title: "브란덴부르크 협주곡 3번 - 1악장", composer: "바흐", performer: "Public Domain", sourceUrl: "/music/bach-brandenburg-3-allegro.mp3", isExternal: false, durationSeconds: 336, moods: ["energetic", "bright"], era: "baroque", instruments: ["orchestra"], intensity: 3, channel: "energetic" },
-  { id: "track-217", title: "토카타와 푸가 D단조", composer: "바흐", performer: "Public Domain", sourceUrl: "/music/bach-toccata-fugue-d-minor.mp3", isExternal: false, durationSeconds: 522, moods: ["energetic", "emotional"], era: "baroque", instruments: ["organ"], intensity: 3, channel: "energetic" },
-  { id: "track-094", title: "수상음악 - 알라 호른파이프", composer: "헨델", performer: "Public Domain", sourceUrl: "/music/handel-water-music-alla-hornpipe.mp3", isExternal: false, durationSeconds: 222, moods: ["energetic", "bright"], era: "baroque", instruments: ["orchestra"], intensity: 3, channel: "energetic" },
-  { id: "track-063", title: "아이네 클라이네 나흐트무지크 - 1악장 Allegro", composer: "모차르트", performer: "Collegium Aureum", sourceUrl: "/music/mozart-eine-kleine-1-allegro.mp3", isExternal: false, durationSeconds: 330, moods: ["energetic", "bright"], era: "classical", instruments: ["strings"], intensity: 3, channel: "energetic" },
-  { id: "track-064", title: "교향곡 40번 - 1악장 Molto Allegro", composer: "모차르트", performer: "Musopen", sourceUrl: "/music/mozart-symphony40-1.mp3", isExternal: false, durationSeconds: 480, moods: ["energetic", "emotional"], era: "classical", instruments: ["orchestra"], intensity: 3, channel: "energetic" },
-  { id: "track-098", title: "교향곡 25번 - 1악장", composer: "모차르트", performer: "Public Domain", sourceUrl: "/music/mozart-symphony25-1.mp3", isExternal: false, durationSeconds: 475, moods: ["energetic", "emotional"], era: "classical", instruments: ["orchestra"], intensity: 3, channel: "energetic" },
-  { id: "track-218", title: "터키 행진곡", composer: "모차르트", performer: "Public Domain", sourceUrl: "/music/mozart-turkish-march.mp3", isExternal: false, durationSeconds: 232, moods: ["energetic", "bright"], era: "classical", instruments: ["piano"], intensity: 3, channel: "energetic" },
+  // ──── 舊 활기찬 클래식 (에너지·밝음) — 2026-07-31 클래식 채널로 통합 ────
+  { id: "track-216", title: "브란덴부르크 협주곡 3번 - 1악장", composer: "바흐", performer: "Public Domain", sourceUrl: "/music/bach-brandenburg-3-allegro.mp3", isExternal: false, durationSeconds: 336, moods: ["energetic", "bright"], era: "baroque", instruments: ["orchestra"], intensity: 3, channel: "classic" },
+  { id: "track-217", title: "토카타와 푸가 D단조", composer: "바흐", performer: "Public Domain", sourceUrl: "/music/bach-toccata-fugue-d-minor.mp3", isExternal: false, durationSeconds: 522, moods: ["energetic", "emotional"], era: "baroque", instruments: ["organ"], intensity: 3, channel: "classic" },
+  { id: "track-094", title: "수상음악 - 알라 호른파이프", composer: "헨델", performer: "Public Domain", sourceUrl: "/music/handel-water-music-alla-hornpipe.mp3", isExternal: false, durationSeconds: 222, moods: ["energetic", "bright"], era: "baroque", instruments: ["orchestra"], intensity: 3, channel: "classic" },
+  { id: "track-063", title: "아이네 클라이네 나흐트무지크 - 1악장 Allegro", composer: "모차르트", performer: "Collegium Aureum", sourceUrl: "/music/mozart-eine-kleine-1-allegro.mp3", isExternal: false, durationSeconds: 330, moods: ["energetic", "bright"], era: "classical", instruments: ["strings"], intensity: 3, channel: "classic" },
+  { id: "track-064", title: "교향곡 40번 - 1악장 Molto Allegro", composer: "모차르트", performer: "Musopen", sourceUrl: "/music/mozart-symphony40-1.mp3", isExternal: false, durationSeconds: 480, moods: ["energetic", "emotional"], era: "classical", instruments: ["orchestra"], intensity: 3, channel: "classic" },
+  { id: "track-098", title: "교향곡 25번 - 1악장", composer: "모차르트", performer: "Public Domain", sourceUrl: "/music/mozart-symphony25-1.mp3", isExternal: false, durationSeconds: 475, moods: ["energetic", "emotional"], era: "classical", instruments: ["orchestra"], intensity: 3, channel: "classic" },
+  { id: "track-218", title: "터키 행진곡", composer: "모차르트", performer: "Public Domain", sourceUrl: "/music/mozart-turkish-march.mp3", isExternal: false, durationSeconds: 232, moods: ["energetic", "bright"], era: "classical", instruments: ["piano"], intensity: 3, channel: "classic" },
   // 2026-07-08 소스 교체: 기존 Toscanini/Philadelphia 녹음은 1930~50년대 역사 음원이라
   // 표면 잡음(지지직)이 심했음. 잡음 없는 현대 퍼블릭도메인 녹음으로 교체.
   //   · 교향곡 5번 1악장 — Wikimedia Commons, Public Domain (Musopen 녹음), .ogg
   //   · 교향곡 7번 4악장(잡음) → 에그몬트 서곡으로 교체 — Wikimedia Commons "Musopen Symphony",
   //     Public Domain, 원본 무손실 FLAC을 320k로 트랜스코딩(리포 용량). 둘 다 상업·개작 허용.
-  { id: "track-065", title: "교향곡 5번 - 1악장 운명", composer: "베토벤", performer: "Musopen", sourceUrl: "/music/beethoven-symphony5-1.ogg", isExternal: false, durationSeconds: 500, moods: ["energetic", "emotional"], era: "classical", instruments: ["orchestra"], intensity: 3, channel: "energetic" },
-  { id: "track-066", title: "에그몬트 서곡", composer: "베토벤", performer: "Musopen", sourceUrl: "/music/beethoven-egmont-overture.mp3", isExternal: false, durationSeconds: 541, moods: ["energetic", "emotional"], era: "classical", instruments: ["orchestra"], intensity: 3, channel: "energetic" },
-  { id: "track-092", title: "세빌리아의 이발사 서곡", composer: "로시니", performer: "Public Domain", sourceUrl: "/music/rossini-barber-seville-overture.mp3", isExternal: false, durationSeconds: 440, moods: ["energetic", "bright"], era: "classical", instruments: ["orchestra"], intensity: 3, channel: "energetic" },
-  { id: "track-091", title: "헝가리 무곡 5번", composer: "브람스", performer: "Public Domain", sourceUrl: "/music/brahms-hungarian-dance-5.mp3", isExternal: false, durationSeconds: 172, moods: ["energetic", "bright"], era: "romantic", instruments: ["orchestra"], intensity: 3, channel: "energetic" },
-  { id: "track-093", title: "꽃의 왈츠 (호두까기 인형)", composer: "차이콥스키", performer: "Public Domain", sourceUrl: "/music/tchaikovsky-waltz-of-flowers.mp3", isExternal: false, durationSeconds: 405, moods: ["energetic", "bright"], era: "romantic", instruments: ["orchestra"], intensity: 3, channel: "energetic" },
-  { id: "track-219", title: "현을 위한 세레나데 - 왈츠", composer: "차이콥스키", performer: "Public Domain", sourceUrl: "/music/tchaikovsky-serenade-waltz.mp3", isExternal: false, durationSeconds: 246, moods: ["bright", "energetic"], era: "romantic", instruments: ["strings"], intensity: 2, channel: "energetic" },
-  { id: "track-095", title: "산왕의 궁전에서 (페르 귄트)", composer: "그리그", performer: "Public Domain", sourceUrl: "/music/grieg-hall-mountain-king.mp3", isExternal: false, durationSeconds: 155, moods: ["energetic", "bright"], era: "romantic", instruments: ["orchestra"], intensity: 3, channel: "energetic" },
+  { id: "track-065", title: "교향곡 5번 - 1악장 운명", composer: "베토벤", performer: "Musopen", sourceUrl: "/music/beethoven-symphony5-1.ogg", isExternal: false, durationSeconds: 500, moods: ["energetic", "emotional"], era: "classical", instruments: ["orchestra"], intensity: 3, channel: "classic" },
+  { id: "track-066", title: "에그몬트 서곡", composer: "베토벤", performer: "Musopen", sourceUrl: "/music/beethoven-egmont-overture.mp3", isExternal: false, durationSeconds: 541, moods: ["energetic", "emotional"], era: "classical", instruments: ["orchestra"], intensity: 3, channel: "classic" },
+  { id: "track-092", title: "세빌리아의 이발사 서곡", composer: "로시니", performer: "Public Domain", sourceUrl: "/music/rossini-barber-seville-overture.mp3", isExternal: false, durationSeconds: 440, moods: ["energetic", "bright"], era: "classical", instruments: ["orchestra"], intensity: 3, channel: "classic" },
+  { id: "track-091", title: "헝가리 무곡 5번", composer: "브람스", performer: "Public Domain", sourceUrl: "/music/brahms-hungarian-dance-5.mp3", isExternal: false, durationSeconds: 172, moods: ["energetic", "bright"], era: "romantic", instruments: ["orchestra"], intensity: 3, channel: "classic" },
+  { id: "track-093", title: "꽃의 왈츠 (호두까기 인형)", composer: "차이콥스키", performer: "Public Domain", sourceUrl: "/music/tchaikovsky-waltz-of-flowers.mp3", isExternal: false, durationSeconds: 405, moods: ["energetic", "bright"], era: "romantic", instruments: ["orchestra"], intensity: 3, channel: "classic" },
+  { id: "track-219", title: "현을 위한 세레나데 - 왈츠", composer: "차이콥스키", performer: "Public Domain", sourceUrl: "/music/tchaikovsky-serenade-waltz.mp3", isExternal: false, durationSeconds: 246, moods: ["bright", "energetic"], era: "romantic", instruments: ["strings"], intensity: 2, channel: "classic" },
+  { id: "track-095", title: "산왕의 궁전에서 (페르 귄트)", composer: "그리그", performer: "Public Domain", sourceUrl: "/music/grieg-hall-mountain-king.mp3", isExternal: false, durationSeconds: 155, moods: ["energetic", "bright"], era: "romantic", instruments: ["orchestra"], intensity: 3, channel: "classic" },
 
   // ════ 🎷 재즈 (35곡, Supabase Storage) ════
   { id: "track-147", title: "Beautiful Dream", composer: "Diego Nava", performer: "Diego Nava", sourceUrl: "https://amqywfemuxghcosexqct.supabase.co/storage/v1/object/public/jazz-music/beautiful-dream.mp3", isExternal: true, durationSeconds: 97, moods: ["peaceful", "relaxing"], era: "jazz", instruments: ["piano", "upright_bass"], intensity: 1, channel: "jazz" },

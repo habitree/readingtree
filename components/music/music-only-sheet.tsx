@@ -1,10 +1,11 @@
 "use client";
 
 /**
- * MusicOnlySheet (4채널 + 셔플 재생 개편 — 2026-07-07)
+ * MusicOnlySheet (음악 3채널 + 백색소음 4채널 — 2026-07-31)
  *
- * 피아노/클래식/활기찬 클래식/재즈 4채널 카드 + 재생/정지.
- * 채널 선택 시 곡 단위 셔플 큐로 매번 다른 순서로 재생한다(끊김 없음).
+ * 음악(피아노/클래식/재즈) 카드 + 백색소음(빗소리/숲속/파도/모닥불) 카드 + 재생/정지.
+ * 음악은 곡 단위 셔플 큐로 매번 다른 순서, 백색소음은 단일 음원을 이어 반복한다.
+ * 백색소음 출처(CC 표기 의무)는 섹션 하단 문구 + 미니플레이어 녹음자명으로 표기.
  */
 
 import { Music2, Pause, Play } from "lucide-react";
@@ -58,37 +59,41 @@ export function MusicOnlySheet() {
               배경음악
             </SheetTitle>
             <SheetDescription>
-              채널을 선택하면 매번 새로운 순서로 끊김 없이 재생됩니다.
+              음악은 매번 새로운 순서로, 백색소음은 끊김 없이 반복 재생됩니다.
             </SheetDescription>
           </SheetHeader>
 
-          {/* 4채널 카드 */}
+          {/* 음악 채널 카드 */}
           <div className="mb-4 grid grid-cols-2 gap-3">
-            {MUSIC_GENRES.map((genre) => {
-              const isActive = isPlaying && currentGenre?.id === genre.id;
-              return (
-                <button
-                  key={genre.id}
-                  type="button"
-                  onClick={() => handlePlay(genre)}
-                  className={cn(
-                    "flex flex-col items-center justify-center gap-2 rounded-2xl py-7 text-center transition-all",
-                    isActive
-                      ? "bg-emerald-500/10 text-emerald-700 ring-2 ring-emerald-500/40 dark:text-emerald-400"
-                      : "bg-muted/50 text-foreground hover:bg-muted ring-1 ring-border",
-                  )}
-                >
-                  <span className="text-4xl">{genre.emoji}</span>
-                  <span className="text-sm font-semibold">{genre.name}</span>
-                  {isActive && (
-                    <span className="text-[11px] text-emerald-600 dark:text-emerald-400">
-                      재생 중
-                    </span>
-                  )}
-                </button>
-              );
-            })}
+            {MUSIC_GENRES.filter((g) => !g.ambience).map((genre) => (
+              <GenreCard
+                key={genre.id}
+                genre={genre}
+                isActive={isPlaying && currentGenre?.id === genre.id}
+                onPlay={handlePlay}
+              />
+            ))}
           </div>
+
+          {/* 백색소음 채널 카드 */}
+          <p className="mb-2 text-xs font-medium text-muted-foreground">
+            백색소음 — 자연의 소리를 이어서 반복 재생합니다
+          </p>
+          <div className="mb-2 grid grid-cols-2 gap-3">
+            {MUSIC_GENRES.filter((g) => g.ambience).map((genre) => (
+              <GenreCard
+                key={genre.id}
+                genre={genre}
+                isActive={isPlaying && currentGenre?.id === genre.id}
+                onPlay={handlePlay}
+              />
+            ))}
+          </div>
+          <p className="mb-4 text-[10px] leading-relaxed text-muted-foreground/70">
+            자연음 출처: Wikimedia Commons — Zuvji(빗소리, CC BY-SA 4.0) ·
+            Silas S. Brown(숲속, PD) · Andrew Migneault(파도, CC BY-SA 4.0) ·
+            Glaneur de sons(모닥불, CC BY 3.0)
+          </p>
 
           {/* 정지 (재생 중일 때만) */}
           {isPlaying && (
@@ -120,5 +125,36 @@ export function MusicOnlySheet() {
         </div>
       </SheetContent>
     </Sheet>
+  );
+}
+
+function GenreCard({
+  genre,
+  isActive,
+  onPlay,
+}: {
+  genre: MusicGenre;
+  isActive: boolean;
+  onPlay: (genre: MusicGenre) => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={() => onPlay(genre)}
+      className={cn(
+        "flex flex-col items-center justify-center gap-2 rounded-2xl py-7 text-center transition-all",
+        isActive
+          ? "bg-emerald-500/10 text-emerald-700 ring-2 ring-emerald-500/40 dark:text-emerald-400"
+          : "bg-muted/50 text-foreground hover:bg-muted ring-1 ring-border",
+      )}
+    >
+      <span className="text-4xl">{genre.emoji}</span>
+      <span className="text-sm font-semibold">{genre.name}</span>
+      {isActive && (
+        <span className="text-[11px] text-emerald-600 dark:text-emerald-400">
+          재생 중
+        </span>
+      )}
+    </button>
   );
 }
