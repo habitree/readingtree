@@ -39,12 +39,17 @@ export function MusicMiniPlayer() {
   const retryTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isBuffering = useRef(false);
   const fadeTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+  /** 딥(페이드아웃) 후 신곡 시작 예약 — 볼륨 램프와 분리해 램프가 취소돼도 전환은 진행 */
+  const dipTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /** 전환 시작 시각 — 전환이 끝나지 않고 고착되는 것을 워치독이 감지하는 기준 */
+  const transitionStartedAt = useRef(0);
 
   const FADE_IN_MS = 500; // 채널 시작 페이드인
   const DIP_OUT_MS = 260; // 스킵 시 구곡 페이드아웃
   const XFADE_IN_MS = 400; // 신곡 페이드인
   const PRELOAD_LEAD_S = 15; // 곡 끝 N초 전 다음 곡 프리로드
   const MAX_RETRIES = 3;
+  const TRANSITION_TIMEOUT_MS = 5000; // 이 시간을 넘겨 끝나지 않는 전환은 고착으로 간주
 
   const {
     isVisible,
@@ -87,24 +92,27 @@ export function MusicMiniPlayer() {
     }
   }, []);
 
-  /** 부드러운 볼륨 램프(지퍼노이즈 억제 — 촘촘한 스텝). from→target 을 ms 동안. */
+  /**
+   * 부드러운 볼륨 램프(지퍼노이즈 억제 — 촘촘한 스텝). from→target 을 ms 동안.
+   *
+   * 진행도는 **틱 횟수가 아니라 경과 시간**으로 계산한다. 백그라운드 탭에서 setInterval 이
+   * 1초까지 throttle 되면 틱 기반 램프는 400ms 페이드가 수십 초로 늘어나 그동안 사실상
+   * 무음이 된다(= "소리가 끊긴다"). 경과 시간 기반이면 틱이 늦어도 첫 틱에 목표까지 도달한다.
+   */
   const rampVolume = useCallback(
     (audio: HTMLAudioElement, from: number, to: number, ms: number, onDone?: () => void) => {
       clearFade();
-      const STEPS = Math.max(24, Math.round(ms / 12));
-      const dt = ms / STEPS;
-      let step = 0;
-      audio.volume = Math.max(0, Math.min(1, from));
+      const clamp = (v: number) => Math.max(0, Math.min(1, v));
+      const startedAt = performance.now();
+      audio.volume = clamp(from);
       fadeTimer.current = setInterval(() => {
-        step++;
-        const t = step / STEPS;
-        audio.volume = Math.max(0, Math.min(1, from + (to - from) * t));
-        if (step >= STEPS) {
-          audio.volume = Math.max(0, Math.min(1, to));
+        const t = Math.min(1, (performance.now() - startedAt) / ms);
+        audio.volume = clamp(from + (to - from) * t);
+        if (t >= 1) {
           clearFade();
           onDone?.();
         }
-      }, dt);
+      }, 12);
     },
     [clearFade],
   );
@@ -117,7 +125,22 @@ export function MusicMiniPlayer() {
     [rampVolume],
   );
 
-  useEffect(() => () => clearFade(), [clearFade]);
+  useEffect(
+    () => () => {
+      clearFade();
+      if (dipTimer.current) clearTimeout(dipTimer.current);
+    },
+    [clearFade],
+  );
+
+  /** 딥 길이만큼 기다렸다 전환을 실행한다(볼륨 램프와 독립 — 램프가 취소돼도 반드시 실행). */
+  const scheduleAfterDip = useCallback((run: () => void) => {
+    if (dipTimer.current) clearTimeout(dipTimer.current);
+    dipTimer.current = setTimeout(() => {
+      dipTimer.current = null;
+      run();
+    }, DIP_OUT_MS);
+  }, []);
 
   const safePlay = useCallback((audio: HTMLAudioElement) => {
     audio.play().catch((err: DOMException) => {
@@ -259,6 +282,7 @@ export function MusicMiniPlayer() {
       const active = getActive();
       const inactive = getInactive();
       isTransitioning.current = true;
+      transitionStartedAt.current = Date.now();
       retryCount.current = 0;
       isBuffering.current = false;
 
@@ -277,15 +301,28 @@ export function MusicMiniPlayer() {
         const target = useMusicPlayer.getState().volume;
         el.play()
           .then(() => rampVolume(el, 0, target, XFADE_IN_MS))
-          .catch(() => {});
+          .catch(() => {
+            // 전환 재생이 거부되면(AbortError 등) 볼륨 0 인 채로 멈춰 영구 무음이 된다.
+            // 이 엘리먼트는 이미 활성이라 timeupdate·ended 가 오지 않아 스스로 복구되지 못하므로
+            // 볼륨을 되돌리고 재시도 경로(safePlay)로 넘긴다.
+            el.volume = target;
+            if (useMusicPlayer.getState().isPlaying) safePlay(el);
+          });
         if (becomeActive) activeIdx.current = activeIdx.current === 0 ? 1 : 0;
         isTransitioning.current = false;
         if (!useMusicPlayer.getState().isPlaying) el.pause();
       };
 
+      /**
+       * 구곡을 딥(페이드아웃)한 뒤 신곡 시작.
+       * 시작 시점을 볼륨 램프의 완료 콜백이 아니라 **독립 타이머**로 잡는다 — 램프는 다른
+       * 페이드가 끼어들면 clearFade() 로 취소될 수 있고, 그 경우 완료 콜백이 영영 실행되지
+       * 않아 isTransitioning 이 true 로 고착된다(= ended·timeupdate 가 모두 무시되어 영구 정지).
+       */
       const dipThenStart = (el: HTMLAudioElement, becomeActive: boolean) => {
         if (fromPlaying && active && !active.paused) {
-          rampVolume(active, active.volume, 0, DIP_OUT_MS, () => {
+          rampVolume(active, active.volume, 0, DIP_OUT_MS);
+          scheduleAfterDip(() => {
             active.pause();
             startNew(el, becomeActive);
           });
@@ -300,15 +337,14 @@ export function MusicMiniPlayer() {
       } else {
         // 프리로드 미완 — 활성 엘리먼트에 직접 로드(짧은 로딩 허용).
         if (fromPlaying && active && !active.paused) {
-          rampVolume(active, active.volume, 0, DIP_OUT_MS, () => {
-            beginTrack(genre, nextIdx, true);
-          });
+          rampVolume(active, active.volume, 0, DIP_OUT_MS);
+          scheduleAfterDip(() => beginTrack(genre, nextIdx, true));
         } else {
           beginTrack(genre, nextIdx, true);
         }
       }
     },
-    [getActive, getInactive, rampVolume, beginTrack, updateTime],
+    [getActive, getInactive, rampVolume, beginTrack, updateTime, safePlay, scheduleAfterDip],
   );
 
   /** 다음 셔플 곡으로 즉시 전환 — 스킵 버튼 / Media Session. */
@@ -402,6 +438,37 @@ export function MusicMiniPlayer() {
       });
     };
   }, [getActive]);
+
+  /**
+   * 재생 워치독 — 재생 중이어야 하는데 소리가 나지 않는 상태를 주기적으로 되살린다.
+   *
+   * 곡 전환은 play() 거부·페이드 취소 등으로 실패할 수 있고, 그때 활성 엘리먼트는
+   * 정지(또는 볼륨 0)인 채로 남아 timeupdate·ended 가 오지 않아 스스로 회복하지 못한다.
+   * UI 는 계속 "재생 중"이므로 사용자에게는 음악이 그냥 멈춘 것으로 보인다.
+   * 곡이 짧아 전환이 잦은 백색소음 채널에서 특히 자주 드러난다.
+   */
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const state = useMusicPlayer.getState();
+      if (!state.isPlaying || !state.currentGenre) return;
+      if (isTransitioning.current) {
+        // 전환이 제때 끝나지 않으면 고착으로 보고 해제 — ended/timeupdate 를 다시 살린다.
+        if (Date.now() - transitionStartedAt.current < TRANSITION_TIMEOUT_MS) return;
+        isTransitioning.current = false;
+      }
+      const audio = getActive();
+      if (!audio || !audio.src) return;
+      if (audio.paused) {
+        safePlay(audio);
+        return;
+      }
+      // 페이드 중이 아닌데 볼륨이 목표와 다르면(전환 실패로 0 고착) 되돌린다.
+      if (!fadeTimer.current && Math.abs(audio.volume - state.volume) > 0.01) {
+        audio.volume = state.volume;
+      }
+    }, 2000);
+    return () => clearInterval(timer);
+  }, [getActive, safePlay]);
 
   // 네트워크 복구 + 모바일 백그라운드 복귀
   //
