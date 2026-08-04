@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
-import { searchBooks, transformNaverBookItem } from "@/lib/api/naver";
+import { searchBooks, transformBookItem } from "@/lib/api/book-search";
 import { checkRateLimit } from "@/lib/middleware/rate-limit";
 
 /**
  * 책 검색 API Route
- * 네이버 검색 API를 통해 책을 검색합니다.
+ * 알라딘 검색 API(0건이면 Google Books 폴백)를 통해 책을 검색합니다.
  */
 export async function GET(request: Request) {
   // Rate limiting 체크 (분당 60회 제한)
@@ -62,13 +62,13 @@ export async function GET(request: Request) {
 
     const response = await searchBooks({ query: query.trim(), display, start });
 
-    // 네이버 API 응답 검증
+    // 검색 API 응답 검증
     if (!response || !Array.isArray(response.items)) {
-      throw new Error("네이버 API 응답 형식이 올바르지 않습니다.");
+      throw new Error("검색 API 응답 형식이 올바르지 않습니다.");
     }
 
-    // 네이버 API 응답을 앱 내부 형식으로 변환
-    const books = response.items.map(transformNaverBookItem);
+    // 검색 API 응답을 앱 내부 형식으로 변환
+    const books = response.items.map(transformBookItem);
 
     return NextResponse.json(
       {
@@ -96,10 +96,7 @@ export async function GET(request: Request) {
     if (error instanceof Error) {
       const errorMessage = error.message;
       
-      if (errorMessage.includes("네이버 API 키")) {
-        userFriendlyMessage = "검색 서비스 설정에 문제가 있습니다. 관리자에게 문의해주세요.";
-        statusCode = 500;
-      } else if (errorMessage.includes("네이버 API 호출 실패")) {
+      if (errorMessage.includes("API 호출 실패") || errorMessage.includes("일시적인 문제")) {
         userFriendlyMessage = "검색 서비스에 일시적인 문제가 발생했습니다. 잠시 후 다시 시도해주세요.";
         statusCode = 503;
       } else if (errorMessage.includes("응답 형식")) {

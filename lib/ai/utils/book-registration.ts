@@ -2,11 +2,11 @@
  * AI 추천 책 자동 등록 유틸리티
  *
  * AI 응답에서 [[recommend:「제목」:저자명]] 패턴을 파싱하여
- * 네이버 API 검색 → books + user_books 등록 → [[book:userBookId:「제목」]] 치환
+ * 책 검색 API → books + user_books 등록 → [[book:userBookId:「제목」]] 치환
  */
 
 import { createServerSupabaseClient } from "@/lib/supabase/server";
-import { searchBooks, transformNaverBookItem } from "@/lib/api/naver";
+import { searchBooks, transformBookItem } from "@/lib/api/book-search";
 
 const RECOMMEND_PATTERN = /\[\[recommend:「([^」]+)」:([^\]]+)\]\]/g;
 
@@ -71,7 +71,7 @@ export async function processRecommendedBooks(
 
   for (const { full, title, author } of matches) {
     try {
-      // 1. 네이버 API 검색
+      // 1. 책 검색 API 조회
       const searchResult = await searchBooks({
         query: `${title} ${author}`,
         display: 1,
@@ -83,7 +83,7 @@ export async function processRecommendedBooks(
         continue;
       }
 
-      const bookData = transformNaverBookItem(searchResult.items[0]);
+      const bookData = transformBookItem(searchResult.items[0]);
 
       // 2. books 테이블에 등록 (ISBN 중복 체크)
       let bookId: string;

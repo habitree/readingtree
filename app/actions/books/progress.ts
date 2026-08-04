@@ -3,7 +3,7 @@
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/app/actions/auth";
 import { revalidatePath } from "next/cache";
-import { searchBooks, transformNaverBookItem } from "@/lib/api/naver";
+import { searchBooks, transformBookItem } from "@/lib/api/book-search";
 import { fetchBookPageCount } from "@/lib/api/book-page-count";
 import { resolveOpenLibraryCoverUrl } from "@/lib/api/open-library-covers";
 import type { ReadingStatus } from "@/types/book";
@@ -487,10 +487,10 @@ export async function getBooksWithoutPageCount(
 }
 
 /**
- * ISBN으로 책표지 URL 조회 (네이버 API -> Open Library 폴백)
+ * ISBN으로 책표지 URL 조회 (책 검색 API -> Open Library 폴백)
  * 인기도서 카드에서 표지가 없거나 로드 실패 시 사용
  * @param isbn ISBN-13 또는 ISBN-10
- * @param title 책 제목 (네이버 검색 보조용)
+ * @param title 책 제목 (검색 보조용)
  */
 export async function getBookCoverByIsbn(
   isbn: string,
@@ -500,19 +500,19 @@ export async function getBookCoverByIsbn(
     return { coverUrl: null, source: null };
   }
 
-  // 1. 네이버 API로 시도
+  // 1. 책 검색 API(알라딘 → Google Books)로 시도
   try {
     const searchQuery = isbn || title || "";
-    const naverResponse = await searchBooks({ query: searchQuery, display: 1 });
+    const searchResponse = await searchBooks({ query: searchQuery, display: 1 });
 
-    if (naverResponse.items && naverResponse.items.length > 0) {
-      const naverBook = transformNaverBookItem(naverResponse.items[0]);
-      if (naverBook.cover_image_url) {
-        return { coverUrl: naverBook.cover_image_url, source: "naver" };
+    if (searchResponse.items && searchResponse.items.length > 0) {
+      const book = transformBookItem(searchResponse.items[0]);
+      if (book.cover_image_url) {
+        return { coverUrl: book.cover_image_url, source: searchResponse.source };
       }
     }
   } catch (error) {
-    console.warn(`[getBookCoverByIsbn] 네이버 API 실패 (ISBN: ${isbn}):`, error);
+    console.warn(`[getBookCoverByIsbn] 책 검색 API 실패 (ISBN: ${isbn}):`, error);
   }
 
   // 2. Open Library Covers 폴백

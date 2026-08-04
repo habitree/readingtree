@@ -35,6 +35,11 @@ const nextConfig = {
         hostname: 'image.aladin.co.kr',
       },
       {
+        // 책 검색 Google Books 폴백의 표지 (알라딘에 없는 해외 도서)
+        protocol: 'https',
+        hostname: 'books.google.com',
+      },
+      {
         protocol: 'https',
         hostname: '**.kakaocdn.net',
       },

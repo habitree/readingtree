@@ -2,7 +2,7 @@
 
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/app/actions/auth";
-import { searchBooks, transformNaverBookItem } from "@/lib/api/naver";
+import { searchBooks, transformBookItem } from "@/lib/api/book-search";
 import { resolveOpenLibraryCoverUrl } from "@/lib/api/open-library-covers";
 import type { ReadingStatus } from "@/types/book";
 import type { User } from "@supabase/supabase-js";
@@ -134,20 +134,20 @@ export async function getUserBooks(
       Promise.all(
         booksWithoutImages.slice(0, OPEN_LIBRARY_COVER_BATCH_LIMIT).map(async (book) => {
           try {
-            // 네이버 API 시도
+            // 책 검색 API 시도
             const searchQuery = `${book.title} ${book.author || ""}`.trim();
-            const naverResponse = await searchBooks({ query: searchQuery, display: 1 });
-            if (naverResponse.items && naverResponse.items.length > 0) {
-              const naverBook = transformNaverBookItem(naverResponse.items[0]);
-              if (naverBook.cover_image_url) {
+            const searchResponse = await searchBooks({ query: searchQuery, display: 1 });
+            if (searchResponse.items && searchResponse.items.length > 0) {
+              const foundBook = transformBookItem(searchResponse.items[0]);
+              if (foundBook.cover_image_url) {
                 await supabase
                   .from("books")
-                  .update({ cover_image_url: naverBook.cover_image_url })
+                  .update({ cover_image_url: foundBook.cover_image_url })
                   .eq("id", book.id);
                 return;
               }
             }
-            // 네이버 실패 시 Open Library 폴백
+            // 검색 실패 시 Open Library 폴백
             const coverUrl = await resolveOpenLibraryCoverUrl(book.isbn!, {
               timeoutMs: OPEN_LIBRARY_COVER_TIMEOUT_MS,
             });
@@ -713,25 +713,25 @@ export async function getBookDetail(userBookId: string, user?: User | null) {
         throw new Error("샘플 책을 찾을 수 없습니다.");
       }
 
-      // 이미지 URL이 없으면 네이버 API로 동적 검색
+      // 이미지 URL이 없으면 책 검색 API로 동적 검색
       let finalCoverImageUrl = sampleBook.cover_image_url;
       if (!finalCoverImageUrl && sampleBook.isbn) {
         try {
-          const { searchBooks: searchNaver } = await import("@/lib/api/naver");
-          const naverResponse = await searchNaver({ query: sampleBook.isbn, display: 1 });
-          if (naverResponse.items && naverResponse.items.length > 0) {
-            finalCoverImageUrl = naverResponse.items[0].image;
+          const { searchBooks: searchByIsbn } = await import("@/lib/api/book-search");
+          const searchResponse = await searchByIsbn({ query: sampleBook.isbn, display: 1 });
+          if (searchResponse.items && searchResponse.items.length > 0) {
+            finalCoverImageUrl = searchResponse.items[0].image;
             await supabase
               .from("books")
               .update({ cover_image_url: finalCoverImageUrl })
               .eq("id", sampleBook.id);
           }
-        } catch (naverApiError) {
+        } catch (searchApiError) {
           if (process.env.NODE_ENV === "development") {
-            console.warn(`네이버 API 이미지 검색 실패 (ISBN: ${sampleBook.isbn}):`, naverApiError);
+            console.warn(`책 검색 API 이미지 검색 실패 (ISBN: ${sampleBook.isbn}):`, searchApiError);
           }
         }
-        // 네이버에서도 없으면 Open Library Covers 폴백 (타임아웃으로 응답 지연 제한)
+        // 검색에서도 없으면 Open Library Covers 폴백 (타임아웃으로 응답 지연 제한)
         if (!finalCoverImageUrl && sampleBook.isbn) {
           try {
             const openLibUrl = await resolveOpenLibraryCoverUrl(sampleBook.isbn, {

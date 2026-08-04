@@ -1,7 +1,7 @@
 "use server";
 
 import { createServerSupabaseClient } from "@/lib/supabase/server";
-import { searchBooks } from "@/lib/api/naver";
+import { searchBooks } from "@/lib/api/book-search";
 import { summarizeWithGemini } from "@/lib/ai/providers/gemini";
 
 /**
@@ -82,13 +82,13 @@ export async function getBookDescriptionSummary(
 
     // Naver API로 책 검색
     const query = isbn || title || "";
-    const naverResponse = await searchBooks({ query, display: 1 });
+    const searchResponse = await searchBooks({ query, display: 1 });
 
-    if (!naverResponse.items || naverResponse.items.length === 0) {
+    if (!searchResponse.items || searchResponse.items.length === 0) {
       return "";
     }
 
-    const description = naverResponse.items[0].description;
+    const description = searchResponse.items[0].description;
     if (!description || description.trim().length === 0) {
       return "";
     }

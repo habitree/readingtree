@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { searchBooks, transformNaverBookItem } from "@/lib/api/naver";
+import { searchBooks, transformBookItem } from "@/lib/api/book-search";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import type { BulkBookRow } from "@/app/actions/books/_shared";
 import type { AddBookInput } from "@/app/actions/books/_shared";
@@ -14,7 +14,7 @@ function sleep(ms: number) {
 /**
  * 일괄 책 검색 API
  * POST /api/books/search/batch
- * 여러 책을 순차적으로 네이버 API로 검색
+ * 여러 책을 순차적으로 책 검색 API로 검색
  */
 export async function POST(request: Request) {
   try {
@@ -68,7 +68,7 @@ export async function POST(request: Request) {
         }
 
         const response = await searchBooks({ query: searchQuery, display: 5 });
-        const matches = (response.items || []).map(transformNaverBookItem);
+        const matches = (response.items || []).map(transformBookItem);
 
         results.push({ rowIndex: row.rowIndex, matches });
       } catch (error) {
@@ -79,7 +79,7 @@ export async function POST(request: Request) {
         });
       }
 
-      // 네이버 API rate limit 방지를 위한 딜레이
+      // 검색 API rate limit 방지를 위한 딜레이
       if (i < queries.length - 1) {
         await sleep(DELAY_MS);
       }
