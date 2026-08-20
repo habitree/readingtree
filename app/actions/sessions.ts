@@ -11,7 +11,7 @@
  * 스탬프 정의(image_url IS NOT NULL AND promoted_at IS NOT NULL)는 불변.
  * 본 파일은 새 진입점이며, legacy 함수(saveReadingSession 등)는 Phase 5에서 위임.
  *
- * 관련 문서: doc/update/기록기획/{01-data-model.md, phases/phase-2-actions.md}
+ * 관련 문서: doc/archive/2026/update/기록기획/{01-data-model.md, phases/phase-2-actions.md}
  */
 
 import type { User } from "@supabase/supabase-js";

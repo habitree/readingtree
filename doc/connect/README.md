@@ -72,6 +72,6 @@ flowchart TB
 
 ## 관련 문서
 
-- 카카오 앱 키 상세: [doc/question/authentication/kakao-app-key-guide.md](../question/authentication/kakao-app-key-guide.md)
+- 카카오 앱 키 상세: [doc/archive/2026/question/authentication/kakao-app-key-guide.md](../archive/2026/question/authentication/kakao-app-key-guide.md)
 - Vercel 배포 가이드: [doc/setup/vercel-deployment-guide.md](../setup/vercel-deployment-guide.md)
 - GitHub Actions 워크플로우: [.github/workflows/README.md](../../.github/workflows/README.md)

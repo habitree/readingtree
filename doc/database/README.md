@@ -335,7 +335,7 @@ RLS 정책이 올바르게 설정되지 않은 경우:
 - [Supabase 공식 문서](https://supabase.com/docs)
 - [PostgreSQL 공식 문서](https://www.postgresql.org/docs/)
 - `doc/software_design.md` (4.2, 4.3 섹션)
-- `doc/tasks/backend/00-bkend-database-schema-plan.md`
+- `doc/archive/2026/tasks/backend/00-bkend-database-schema-plan.md`
 
 ---
 

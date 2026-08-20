@@ -9,7 +9,7 @@
 - 매일 정해진 시간(예: 한국 시간 오전 9시)에:
   - **GitHub**: 하루 동안 머지된 PR/커밋, 주요 변경 파일
   - **Linear**: 상태가 바뀐 이슈, 새로 생성된 이슈
-  - (선택) `doc/user_stories.md`, `doc/tasks/**` 등 문서 변경
+  - (선택) `doc/user_stories.md`, `doc/archive/2026/tasks/**` 등 문서 변경
 - 위 정보를 **Gemini로 요약**해서
   - Linear `AI Features` 또는 별도 `Progress` 프로젝트 아래에  
     `Daily Progress YYYY-MM-DD` 이슈를 자동 생성/갱신합니다.

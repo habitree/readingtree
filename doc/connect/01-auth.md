@@ -80,4 +80,4 @@
    - `NEXT_PUBLIC_APP_URL` 을 새 도메인으로 변경 (로컬·Vercel·GitHub Secrets)  
    - Supabase Redirect URL, 카카오/구글 Redirect URI를 새 도메인에 맞게 수정
 
-자세한 카카오 앱 키 설정: [doc/question/authentication/kakao-app-key-guide.md](../question/authentication/kakao-app-key-guide.md)
+자세한 카카오 앱 키 설정: [doc/archive/2026/question/authentication/kakao-app-key-guide.md](../archive/2026/question/authentication/kakao-app-key-guide.md)

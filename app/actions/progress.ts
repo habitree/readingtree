@@ -33,7 +33,7 @@ import { updateBookProgress } from "./books/progress";
  *
  * @deprecated Phase 5 — 새 진입점은 `endReadingSession` (즉석 완결 세션 패턴).
  *   현재 호출처는 기존 동작 유지를 위해 보존. Phase 6에서 호출처 정리 후 thin wrapper로 축소 예정.
- *   문서: doc/update/기록기획/phases/phase-5-integration.md
+ *   문서: doc/archive/2026/update/기록기획/phases/phase-5-integration.md
  */
 export async function createProgressLog(
   data: CreateReadingLogInput,
