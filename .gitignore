@@ -63,3 +63,12 @@ nul.*
 .playwright-mcp/
 
 
+
+# Request backlog (local only)
+.backlog/
+
+# 로컬 작업 산출물 (프로젝트 코드 아님 — 저장소에 넣지 않는다)
+/2_SKILL.md
+/backlog-guide-share_1.html
+/cost-dashboard-full.jpeg
+/fix-claude-code-install.ps1

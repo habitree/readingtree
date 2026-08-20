@@ -116,6 +116,16 @@ components/ → hooks/ → app/actions/ → Supabase
 - 데이터 모델: `doc/database/DATA_MODEL.md`
 - 타입 정의: `types/database.ts`
 - 프롬프트 로그 가이드: `doc/log/README.md`
+- 인프라 과금 현황·점검: `doc/cost/README.md` (실제 청구서 / 포인트·구독 원가는 `doc/business/`)
+
+---
+
+## 작업 요청 관리
+
+- 신규 요청·기획은 **`.backlog/`** 에서 REQ 문서로 관리한다 (운영 방식은 backlog Skill).
+- 완료·폐기된 과거 기획 문서는 `doc/archive/2026/` 에 있다. **현행 코드와 다를 수 있으므로
+  이 문서들을 근거로 코드를 고치지 않는다** — 배경 확인용으로만 읽는다.
+- `doc/` 에 새 기획 문서를 만들지 않는다. `.backlog/` 를 쓴다.
 
 ---
 
