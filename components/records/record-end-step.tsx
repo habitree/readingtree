@@ -9,7 +9,6 @@ import { useState, useTransition } from "react";
 import { Loader2, Save, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { cancelActiveSession, endReadingSession } from "@/app/actions/sessions";
@@ -17,6 +16,7 @@ import { broadcastSessionCancelled, broadcastSessionEnded, useReadingSession } f
 import { useRecordSheetStore, type RecordSheetBook } from "@/hooks/use-record-sheet";
 import { useStampShareStore } from "@/hooks/use-stamp-share";
 import { RecordBookmarkToggle } from "./record-bookmark-toggle";
+import { RecordPageInput } from "./record-page-input";
 import { RecordPhotoStrip } from "./record-photo-strip";
 
 const MEMO_MAX = 200;
@@ -40,13 +40,19 @@ export function RecordEndStep({ sessionId, selectedBook, prefillEndPage, onSaved
   const [imageUrls, setImageUrls] = useState<string[]>([]);
   const [isPending, startTransition] = useTransition();
   const [isCancelling, startCancel] = useTransition();
-  const { close, openAttach } = useRecordSheetStore();
+  const { close, openAttach, selectBook } = useRecordSheetStore();
   const openStampShare = useStampShareStore((s) => s.openShare);
 
   const startPage = session?.start_page ?? 0;
   const defaultEndPage =
     prefillEndPage ?? session?.end_page ?? session?.start_page ?? 0;
   const endPage = endPageOverride ?? defaultEndPage;
+
+  // % 입력을 위해 총 페이지를 즉석에서 등록한 경우, 선택된 책 정보에 반영
+  const handleTotalPagesChange = (next: number | null) => {
+    if (!selectedBook) return;
+    selectBook({ ...selectedBook, totalPages: next });
+  };
 
   const handleSave = (afterSave: "close" | "detail") => {
     if (endPage < startPage) {
@@ -165,26 +171,25 @@ export function RecordEndStep({ sessionId, selectedBook, prefillEndPage, onSaved
       )}
 
       {/* 끝 페이지 */}
-      <div className="space-y-2">
-        <Label htmlFor="record-end-page" className="text-sm font-medium">
-          끝 페이지 <span className="text-xs text-slate-400">(시작: {startPage}p)</span>
-        </Label>
-        <Input
-          id="record-end-page"
-          type="number"
-          inputMode="numeric"
-          min={startPage}
-          max={selectedBook?.totalPages ?? undefined}
-          value={endPage}
-          onChange={(e) => {
-            const v = Number(e.target.value);
-            setEndPageOverride(Number.isFinite(v) ? v : startPage);
-          }}
-          disabled={isPending || isCancelling}
-          className="text-lg font-semibold"
-        />
-        <p className="text-xs text-slate-400">읽은 페이지: {Math.max(0, endPage - startPage)}p</p>
-      </div>
+      <RecordPageInput
+        id="record-end-page"
+        label={
+          <>
+            끝 페이지 <span className="text-xs text-slate-400">(시작: {startPage}p)</span>
+          </>
+        }
+        value={endPage}
+        onChange={setEndPageOverride}
+        totalPages={selectedBook?.totalPages ?? null}
+        fallback={startPage}
+        min={startPage}
+        bookId={selectedBook?.bookId ?? null}
+        onTotalPagesChange={handleTotalPagesChange}
+        disabled={isPending || isCancelling}
+        hint={
+          <p className="text-xs text-slate-400">읽은 페이지: {Math.max(0, endPage - startPage)}p</p>
+        }
+      />
 
       {/* 간단 메모 */}
       <div className="space-y-2">

@@ -30,6 +30,7 @@ import {
   useReadingSessionStore,
 } from "@/hooks/use-reading-session";
 import { useRecordSheetStore, type RecordSheetBook } from "@/hooks/use-record-sheet";
+import { RecordPageInput } from "./record-page-input";
 
 const TARGET_PRESETS = [
   { label: "15분", seconds: 15 * 60 },
@@ -108,6 +109,12 @@ export function RecordStartStep({ selectedBook, prefillTargetSeconds, prefillSta
       cancelled = true;
     };
   }, [selectedBook, prefillStartPage]);
+
+  // % 입력을 위해 총 페이지를 즉석에서 등록한 경우, 선택된 책 정보에 반영
+  const handleTotalPagesChange = (next: number | null) => {
+    if (!selectedBook) return;
+    selectBook({ ...selectedBook, totalPages: next });
+  };
 
   const handleStart = () => {
     startTransition(async () => {
@@ -228,27 +235,21 @@ export function RecordStartStep({ selectedBook, prefillTargetSeconds, prefillSta
       </Dialog>
 
       {/* 시작 페이지 */}
-      <div className="space-y-2">
-        <Label htmlFor="record-start-page" className="text-sm font-medium">
-          시작 페이지
-        </Label>
-        <Input
-          id="record-start-page"
-          type="number"
-          inputMode="numeric"
-          min={0}
-          max={selectedBook?.totalPages ?? undefined}
-          value={startPage}
-          onChange={(e) => {
-            const v = Number(e.target.value);
-            setStartPage(Number.isFinite(v) && v >= 0 ? v : 0);
-          }}
-          disabled={isPending}
-        />
-        <p className="text-xs text-slate-400">
-          이전 기록의 끝 페이지가 자동으로 채워집니다. 다르게 시작하려면 수정하세요.
-        </p>
-      </div>
+      <RecordPageInput
+        id="record-start-page"
+        label="시작 페이지"
+        value={startPage}
+        onChange={setStartPage}
+        totalPages={selectedBook?.totalPages ?? null}
+        bookId={selectedBook?.bookId ?? null}
+        onTotalPagesChange={handleTotalPagesChange}
+        disabled={isPending}
+        hint={
+          <p className="text-xs text-slate-400">
+            이전 기록의 끝 페이지가 자동으로 채워집니다. 다르게 시작하려면 수정하세요.
+          </p>
+        }
+      />
 
       {/* 시간 옵션 */}
       <div className="space-y-2">
