@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ReadTree 과금 대시보드 — 2026-07</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --surface: #1e293b;
+      --surface-2: #334155;
+      --border: #475569;
+      --text: #e2e8f0;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      --accent: #38bdf8;
+      --accent-2: #818cf8;
+      --green: #4ade80;
+      --yellow: #fbbf24;
+      --red: #f87171;
+      --orange: #fb923c;
+      --cyan: #22d3ee;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ---------- Hero ---------- */
+    .hero {
+      background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 56px 40px 48px;
+      text-align: center;
+    }
+    .hero h1 {
+      font-size: 2.4rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 10px;
+      letter-spacing: -0.02em;
+    }
+    .hero .subtitle {
+      font-size: 1.05rem;
+      color: var(--text-muted);
+      max-width: 640px;
+      margin: 0 auto;
+    }
+    .hero .meta {
+      margin-top: 22px;
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(148, 163, 184, 0.12);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 5px 14px;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+    }
+    .chip.ok { color: var(--green); border-color: rgba(74, 222, 128, 0.35); background: rgba(74, 222, 128, 0.08); }
+    .chip.warn { color: var(--yellow); border-color: rgba(251, 191, 36, 0.35); background: rgba(251, 191, 36, 0.08); }
+
+    /* ---------- Layout ---------- */
+    .wrap { max-width: 1120px; margin: 0 auto; padding: 48px 32px 80px; }
+    section { margin-bottom: 56px; }
+    h2 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    h2 .num {
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--bg);
+      background: var(--accent);
+      border-radius: 6px;
+      padding: 2px 8px;
+      letter-spacing: 0.04em;
+    }
+    .section-desc {
+      color: var(--text-muted);
+      font-size: 0.94rem;
+      margin-bottom: 22px;
+    }
+
+    /* ---------- Stat tiles ---------- */
+    .tiles {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 16px;
+    }
+    .tile {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 22px 20px;
+    }
+    .tile .label {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+    .tile .value {
+      font-size: 2rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+    }
+    .tile .value.strike { color: var(--text-dim); text-decoration: line-through; font-size: 1.15rem; font-weight: 600; }
+    .tile .note { font-size: 0.8rem; color: var(--text-dim); margin-top: 6px; }
+    .tile.danger .value { color: var(--red); }
+    .tile.good .value { color: var(--green); }
+    .tile.accent .value { color: var(--accent); }
+
+    /* ---------- Chart: vertical bars ---------- */
+    .chart {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 26px 24px 20px;
+      overflow-x: auto;
+    }
+    .chart-title { font-size: 1rem; font-weight: 700; margin-bottom: 4px; }
+    .chart-sub { font-size: 0.84rem; color: var(--text-muted); margin-bottom: 24px; }
+
+    .vbars {
+      display: flex;
+      align-items: flex-end;
+      gap: 14px;
+      height: 220px;
+      border-bottom: 1px solid var(--surface-2);
+      padding-bottom: 0;
+      min-width: 560px;
+    }
+    .vbar-col {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      align-items: center;
+      height: 100%;
+      position: relative;
+    }
+    .vbar-val {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+    .vbar {
+      width: 100%;
+      max-width: 54px;
+      background: var(--accent);
+      border-radius: 4px 4px 0 0;
+      transition: filter 0.15s ease;
+      min-height: 2px;
+    }
+    .vbar-col:hover .vbar { filter: brightness(1.25); }
+    .vbar-col:hover .vbar-val { color: var(--text); }
+    .vbar.zero {
+      background: repeating-linear-gradient(
+        45deg, rgba(248, 113, 113, 0.32), rgba(248, 113, 113, 0.32) 4px,
+        transparent 4px, transparent 8px
+      );
+      border: 1px dashed rgba(248, 113, 113, 0.55);
+      border-bottom: none;
+      border-radius: 4px 4px 0 0;
+      height: 26px;
+    }
+    .vbar-val.zero-val { color: var(--red); }
+    .vlabels {
+      display: flex;
+      gap: 14px;
+      margin-top: 10px;
+      min-width: 560px;
+    }
+    .vlabel {
+      flex: 1;
+      text-align: center;
+      font-size: 0.78rem;
+      color: var(--text-dim);
+    }
+    .vlabel.alert { color: var(--red); font-weight: 700; }
+
+    /* ---------- Chart: horizontal bars ---------- */
+    .hbars { display: flex; flex-direction: column; gap: 18px; }
+    .hbar-row { display: grid; grid-template-columns: 190px 1fr 100px; align-items: center; gap: 14px; }
+    .hbar-label { font-size: 0.88rem; color: var(--text-muted); }
+    .hbar-track { background: rgba(148, 163, 184, 0.1); border-radius: 5px; height: 26px; position: relative; }
+    .hbar-fill { height: 100%; border-radius: 5px; min-width: 3px; transition: filter 0.15s ease; }
+    .hbar-row:hover .hbar-fill { filter: brightness(1.2); }
+    .hbar-fill.idle-1 { background: var(--red); }
+    .hbar-fill.idle-2 { background: var(--orange); }
+    .hbar-fill.real { background: var(--green); }
+    .hbar-value { font-size: 0.9rem; font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; }
+    .legend { display: flex; gap: 18px; flex-wrap: wrap; margin-top: 22px; padding-top: 16px; border-top: 1px solid var(--surface-2); }
+    .legend-item { display: flex; align-items: center; gap: 7px; font-size: 0.82rem; color: var(--text-muted); }
+    .swatch { width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0; }
+
+    /* ---------- Table ---------- */
+    table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+    .table-wrap {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      overflow-x: auto;
+    }
+    th {
+      background: rgba(148, 163, 184, 0.08);
+      text-align: left;
+      padding: 13px 18px;
+      font-weight: 600;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      white-space: nowrap;
+      border-bottom: 1px solid var(--border);
+    }
+    td { padding: 13px 18px; border-bottom: 1px solid rgba(71, 85, 105, 0.4); }
+    tr:last-child td { border-bottom: none; }
+    tbody tr:hover { background: rgba(148, 163, 184, 0.05); }
+    td.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .status { display: inline-flex; align-items: center; gap: 6px; font-size: 0.84rem; white-space: nowrap; }
+    .status.ok { color: var(--green); }
+    .status.warn { color: var(--yellow); }
+    .status.info { color: var(--text-muted); }
+    .muted { color: var(--text-dim); }
+    .strike { text-decoration: line-through; color: var(--text-dim); }
+
+    /* ---------- Callout ---------- */
+    .callout {
+      background: rgba(251, 191, 36, 0.07);
+      border: 1px solid rgba(251, 191, 36, 0.3);
+      border-left: 3px solid var(--yellow);
+      border-radius: 10px;
+      padding: 20px 22px;
+    }
+    .callout.danger { background: rgba(248, 113, 113, 0.07); border-color: rgba(248, 113, 113, 0.3); border-left-color: var(--red); }
+    .callout h3 { font-size: 1rem; margin-bottom: 10px; color: var(--yellow); }
+    .callout.danger h3 { color: var(--red); }
+    .callout p { font-size: 0.92rem; color: var(--text-muted); }
+    .callout p + p { margin-top: 10px; }
+    .callout strong { color: var(--text); }
+
+    code {
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid var(--surface-2);
+      border-radius: 5px;
+      padding: 1px 7px;
+      font-family: 'JetBrains Mono', ui-monospace, 'Cascadia Code', Consolas, monospace;
+      font-size: 0.85em;
+      color: var(--cyan);
+    }
+    pre {
+      background: #0b1220;
+      border: 1px solid var(--surface-2);
+      border-radius: 10px;
+      padding: 16px 18px;
+      overflow-x: auto;
+      font-family: 'JetBrains Mono', ui-monospace, Consolas, monospace;
+      font-size: 0.84rem;
+      line-height: 1.6;
+      color: var(--text-muted);
+    }
+    pre .hl { color: var(--red); font-weight: 700; }
+    pre .ok { color: var(--green); font-weight: 700; }
+
+    /* ---------- Cards ---------- */
+    .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 22px;
+    }
+    .card h3 { font-size: 0.98rem; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+    .card ul { list-style: none; }
+    .card li {
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      padding: 5px 0 5px 18px;
+      position: relative;
+    }
+    .card li::before { content: "·"; position: absolute; left: 6px; color: var(--accent); font-weight: 700; }
+    .card ol { padding-left: 20px; }
+    .card ol li { padding-left: 2px; }
+    .card ol li::before { content: none; }
+
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 32px 40px 48px;
+      text-align: center;
+      color: var(--text-dim);
+      font-size: 0.85rem;
+    }
+    footer a { color: var(--accent); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+
+    @media (max-width: 720px) {
+      .hero { padding: 40px 20px 36px; }
+      .hero h1 { font-size: 1.7rem; }
+      .wrap { padding: 32px 18px 60px; }
+      .hbar-row { grid-template-columns: 130px 1fr 84px; gap: 10px; }
+      .hbar-label { font-size: 0.8rem; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="hero">
+  <h1>ReadTree 과금 대시보드</h1>
+  <p class="subtitle">외부 서비스에 실제로 청구되는 비용의 현황과 원인. 사업 모델(포인트·구독)이 아닌 <strong>인프라 청구서</strong>를 다룬다.</p>
+  <div class="meta">
+    <span class="chip">📅 최종 갱신 2026-07-24</span>
+    <span class="chip ok">✅ Cloud Run 조치 완료</span>
+    <span class="chip warn">⚠️ Vercel 플랜 미확인</span>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- 1. 핵심 지표 -->
+  <section>
+    <h2><span class="num">01</span> 핵심 지표</h2>
+    <p class="section-desc">2026년 1~7월 GCP Cloud Run 실측 기준. 모든 값은 결제 콘솔에서 직접 읽은 수치다.</p>
+    <div class="tiles">
+      <div class="tile danger">
+        <div class="label">유휴 비용 비중</div>
+        <div class="value">99.99%</div>
+        <div class="note">요청 처리 비용은 연 ₩4</div>
+      </div>
+      <div class="tile danger">
+        <div class="label">요청 1건당 실질 단가</div>
+        <div class="value">₩111</div>
+        <div class="note">₩37,969 ÷ 342건</div>
+      </div>
+      <div class="tile accent">
+        <div class="label">올해 누적 청구액</div>
+        <div class="value">₩37,969</div>
+        <div class="note">무료 크레딧 -₩53,810 차감 후</div>
+      </div>
+      <div class="tile good">
+        <div class="label">조치 후 월 비용</div>
+        <div class="value strike">₩6,940</div>
+        <div class="value">₩0</div>
+        <div class="note">min-instance 1 → 0 (2026-07-24)</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. 사용량 추이 -->
+  <section>
+    <h2><span class="num">02</span> 기능은 이미 죽어 있었다</h2>
+    <p class="section-desc">Cloud Run이 떠받치던 관리자 OCR 기능의 실제 호출 수. 청구서가 아니라 이 표가 낭비를 드러냈다.</p>
+    <div class="chart">
+      <div class="chart-title">OCR 월별 실제 사용량 (ocr_logs)</div>
+      <div class="chart-sub">단위: 건 · 2026-05부터 3개월 연속 0건, 그럼에도 과금은 동일하게 지속</div>
+      <div class="vbars">
+        <div class="vbar-col"><span class="vbar-val">2</span><div class="vbar" style="height: 0.65%"></div></div>
+        <div class="vbar-col"><span class="vbar-val">308</span><div class="vbar" style="height: 100%"></div></div>
+        <div class="vbar-col"><span class="vbar-val">13</span><div class="vbar" style="height: 4.22%"></div></div>
+        <div class="vbar-col"><span class="vbar-val">6</span><div class="vbar" style="height: 1.95%"></div></div>
+        <div class="vbar-col"><span class="vbar-val">2</span><div class="vbar" style="height: 0.65%"></div></div>
+        <div class="vbar-col"><span class="vbar-val zero-val">0</span><div class="vbar zero"></div></div>
+        <div class="vbar-col"><span class="vbar-val zero-val">0</span><div class="vbar zero"></div></div>
+        <div class="vbar-col"><span class="vbar-val zero-val">0</span><div class="vbar zero"></div></div>
+      </div>
+      <div class="vlabels">
+        <div class="vlabel">2025-12</div>
+        <div class="vlabel">2026-01</div>
+        <div class="vlabel">02</div>
+        <div class="vlabel">03</div>
+        <div class="vlabel">04</div>
+        <div class="vlabel alert">05</div>
+        <div class="vlabel alert">06</div>
+        <div class="vlabel alert">07</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. 비용 구성 -->
+  <section>
+    <h2><span class="num">03</span> 청구액의 정체</h2>
+    <p class="section-desc">2026년 1~7월 누적 ₩37,969의 SKU별 구성. 실제 요청을 처리한 대가는 막대가 보이지 않을 만큼 작다.</p>
+    <div class="chart">
+      <div class="chart-title">SKU별 누적 청구액 (2026-01 ~ 07)</div>
+      <div class="chart-sub">단위: 원 · 무료 크레딧 차감 후 실청구 기준</div>
+      <div class="hbars">
+        <div class="hbar-row">
+          <div class="hbar-label">유휴 · Min Instance 메모리</div>
+          <div class="hbar-track"><div class="hbar-fill idle-1" style="width: 100%"></div></div>
+          <div class="hbar-value">₩21,310</div>
+        </div>
+        <div class="hbar-row">
+          <div class="hbar-label">유휴 · Min Instance CPU</div>
+          <div class="hbar-track"><div class="hbar-fill idle-2" style="width: 78.2%"></div></div>
+          <div class="hbar-value">₩16,655</div>
+        </div>
+        <div class="hbar-row">
+          <div class="hbar-label">실제 요청 처리 (342건)</div>
+          <div class="hbar-track"><div class="hbar-fill real" style="width: 0.02%"></div></div>
+          <div class="hbar-value">₩4</div>
+        </div>
+      </div>
+      <div class="legend">
+        <span class="legend-item"><span class="swatch" style="background: var(--red)"></span>유휴 메모리 — 아무 일도 하지 않는 인스턴스의 512MiB</span>
+        <span class="legend-item"><span class="swatch" style="background: var(--orange)"></span>유휴 CPU — 아무 일도 하지 않는 인스턴스의 1 vCPU</span>
+        <span class="legend-item"><span class="swatch" style="background: var(--green)"></span>실제 처리 — 요청을 받아 일한 시간</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. 원인 -->
+  <section>
+    <h2><span class="num">04</span> 원인과 함정</h2>
+    <p class="section-desc">왜 생겼고, 왜 6개월간 아무도 몰랐는가.</p>
+
+    <div class="callout danger" style="margin-bottom: 18px">
+      <h3>⚠️ 리비전 설정과 서비스 설정은 별개다</h3>
+      <p>Cloud Run의 최소 인스턴스는 <strong>두 군데</strong>에 있다. 배포 페이지의 "버전 확장"은 이미 <code>0</code>이었고, 진짜 범인은 서비스 상세 헤더 우측 <strong>연필 아이콘</strong>(툴팁 "서비스 수준 확장 설정 수정") 안에 숨은 <strong>서비스 수준 설정 <code>1</code></strong>이었다.</p>
+      <p>새 리비전을 배포해도 이 값은 바뀌지 않는다. 배포 페이지만 보면 "최소 0인데 왜 과금되지?"에서 막힌다.</p>
+    </div>
+
+    <div class="cards">
+      <div class="card">
+        <h3>🔍 산술 검증</h3>
+        <pre>1,927,221 vCPU-초 ÷ 22일
+  = <span class="hl">87,601초/일</span>
+
+1 vCPU × 24시간
+  = 86,400초/일
+
+→ 오차 1.4%
+→ 인스턴스 1개 상시 기동 확정</pre>
+      </div>
+      <div class="card">
+        <h3>🛠️ 조치</h3>
+        <pre>gcloud run services update \
+  extracttextfromimage \
+  --region us-central1 \
+  --project gen-lang-client-0287655743 \
+  <span class="ok">--min-instances 0</span></pre>
+        <ul style="margin-top: 12px">
+          <li>콜드스타트 수 초 발생 (관리자 기능이라 허용)</li>
+          <li>코드·기능 변경 없음</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="callout" style="margin-top: 18px">
+      <h3>💡 요청 기반 과금이어도 min-instance는 예외</h3>
+      <p>"요청이 없으면 0원"이라는 인식이 이 사고를 6개월간 가렸다. <strong>min-instance는 idle 상태에도 CPU·메모리가 청구된다.</strong> 무료 티어 월 180,000 vCPU-초를, 상시 인스턴스 1개는 약 2,592,000초로 <strong>14배 초과</strong> 소진한다.</p>
+    </div>
+  </section>
+
+  <!-- 5. 서비스별 현황 -->
+  <section>
+    <h2><span class="num">05</span> 서비스별 현황</h2>
+    <p class="section-desc">2026-07-24 기준 전수 점검 결과. Cloud Run 외에는 실질 과금이 없다.</p>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>서비스</th>
+            <th>플랜</th>
+            <th class="num">월 비용</th>
+            <th>상태</th>
+            <th>근거</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>GCP Cloud Run</strong> (OCR)</td>
+            <td>종량제</td>
+            <td class="num"><span class="strike">₩6,940</span> <strong style="color: var(--green)">₩0</strong></td>
+            <td><span class="status ok">✅ 조치 완료</span></td>
+            <td class="muted">min-instance 1 → 0</td>
+          </tr>
+          <tr>
+            <td><strong>Vercel</strong></td>
+            <td class="muted">미확인</td>
+            <td class="num muted">₩0 또는 $20</td>
+            <td><span class="status warn">⚠️ 확인 필요</span></td>
+            <td class="muted">Pro면 최대 고정비</td>
+          </tr>
+          <tr>
+            <td><strong>Supabase</strong> ×3 조직</td>
+            <td>Free</td>
+            <td class="num">₩0</td>
+            <td><span class="status ok">✅ 정상</span></td>
+            <td class="muted">전 조직 Free Plan 확인</td>
+          </tr>
+          <tr>
+            <td>OpenAI (gpt-4o-mini, dall-e-3)</td>
+            <td>종량제</td>
+            <td class="num">₩0</td>
+            <td><span class="status ok">✅ 미사용</span></td>
+            <td class="muted">chat_messages 04월 이후 0건</td>
+          </tr>
+          <tr>
+            <td>Gemini API</td>
+            <td>무료 티어</td>
+            <td class="num">₩0</td>
+            <td><span class="status ok">✅ 정상</span></td>
+            <td class="muted">사용량 1 count</td>
+          </tr>
+          <tr>
+            <td>Anthropic</td>
+            <td class="muted">미설정</td>
+            <td class="num">₩0</td>
+            <td><span class="status info">— 키 미등록</span></td>
+            <td class="muted">기본 모델이 고가 — 활성화 전 재검토</td>
+          </tr>
+          <tr>
+            <td>Polar 결제</td>
+            <td>sandbox</td>
+            <td class="num">₩0</td>
+            <td><span class="status ok">✅ 정상</span></td>
+            <td class="muted">payment_orders 0행</td>
+          </tr>
+          <tr>
+            <td>토스페이먼츠</td>
+            <td class="muted">비활성</td>
+            <td class="num">₩0</td>
+            <td><span class="status info">— 비활성</span></td>
+            <td class="muted">IS_TOSS_ENABLED = false</td>
+          </tr>
+          <tr>
+            <td>GCP <em>Firebase 결제</em> 계정</td>
+            <td>종량제</td>
+            <td class="num">₩10</td>
+            <td><span class="status warn">🔸 정리 대기</span></td>
+            <td class="muted">Storage 1.16GB + Firestore PITR</td>
+          </tr>
+          <tr>
+            <td>무료 API 5종 <span class="muted">(네이버·알라딘·국중도·카카오·GA4)</span></td>
+            <td>무료</td>
+            <td class="num">₩0</td>
+            <td><span class="status ok">✅ 정상</span></td>
+            <td class="muted">—</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 6. 운영 -->
+  <section>
+    <h2><span class="num">06</span> 앞으로 이렇게 관리한다</h2>
+    <p class="section-desc">비용 자료는 전부 <code>doc/cost/</code>에 모은다. 매월 10분이면 끝난다.</p>
+    <div class="cards">
+      <div class="card">
+        <h3>🗓️ 월간 점검 절차</h3>
+        <ol>
+          <li>템플릿을 <code>reviews/YYYY-MM.md</code>로 복사</li>
+          <li>각 콘솔에서 청구액 기입 <strong>(GCP는 그룹화=SKU)</strong></li>
+          <li>DB 사용량 쿼리로 교차 검증</li>
+          <li>사용량 0인데 과금 → <code>incidents/</code>에 기록·조치</li>
+          <li><code>COST_OVERVIEW.md</code>와 이 대시보드 갱신</li>
+        </ol>
+      </div>
+      <div class="card">
+        <h3>🚨 즉시 조치 신호</h3>
+        <ul>
+          <li>사용량 0인데 청구액 &gt; 0 → <strong>100% 낭비</strong></li>
+          <li>전월 대비 20% 이상 증가</li>
+          <li>무료 티어 소진율 80% 초과</li>
+          <li>Cloud Run 최소 인스턴스가 1 이상</li>
+          <li>Supabase Storage 1GB 근접 (현재 약 660MB)</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>✅ 새 유료 서비스 도입 시</h3>
+        <ul>
+          <li>무료 티어 한도·초과 단가 기록</li>
+          <li><strong>상시 기동 설정 유무 확인</strong></li>
+          <li>사용량 추적 경로(DB·로그) 확보</li>
+          <li>예산 알림 설정</li>
+          <li>미사용 시 정리 담당·시점 지정</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7. 미해결 -->
+  <section>
+    <h2><span class="num">07</span> 미해결 과제</h2>
+    <p class="section-desc">다음 점검까지 처리할 것.</p>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>항목</th><th>내용</th><th>영향</th><th>상태</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Vercel 플랜 확인</strong></td>
+            <td class="muted">Hobby면 ₩0, Pro면 월 $20 — 확정 시 현재 최대 고정비</td>
+            <td class="num">~₩28,000/월</td>
+            <td><span class="status warn">⬜ 미확인</span></td>
+          </tr>
+          <tr>
+            <td><strong>GCP 예산 알림 설정</strong></td>
+            <td class="muted">미설정 상태 — 6개월간 유휴 과금이 감지되지 않은 근본 원인</td>
+            <td class="num">재발 방지</td>
+            <td><span class="status warn">⬜ 미설정</span></td>
+          </tr>
+          <tr>
+            <td>Firebase 잔여 리소스 정리</td>
+            <td class="muted">Cloud Storage 1.16GB + Firestore PITR, ReadTree와 무관</td>
+            <td class="num">연 ₩73</td>
+            <td><span class="status info">⬜ 대기</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+</div>
+
+<footer>
+  <p>
+    📁 <strong>doc/cost/</strong> —
+    <a href="README.md">README</a> ·
+    <a href="COST_OVERVIEW.md">COST_OVERVIEW.md</a> ·
+    <a href="incidents/2026-07-24-cloudrun-idle-min-instance.md">인시던트 기록</a> ·
+    <a href="templates/monthly-review-template.md">월간 점검 템플릿</a>
+  </p>
+  <p style="margin-top: 10px">
+    사업 모델(포인트·구독 원가)은 <code>doc/business/</code> 참조 — 이 폴더는 <strong>실제로 나가는 돈</strong>만 다룬다.
+  </p>
+</footer>
+
+</body>
+</html>
