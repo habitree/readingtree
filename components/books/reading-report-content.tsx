@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { ReadingReportSkeleton } from "./reading-report-skeleton";
 import { ReportSaveButton } from "./report-save-button";
 import { ReportShareDialog } from "./report-share-dialog";
+import { ShareCardDialog } from "./share-card/share-card-dialog";
 import { ReadingReportMagazine } from "./reading-report-magazine";
 import { generateReadingReport } from "@/app/actions/ai/report";
 import { useTranslation } from "@/lib/i18n";
@@ -165,6 +166,14 @@ export function ReadingReportContent({
                       noteIds={noteSummaries?.map((n) => n.id) || []}
                       initialShareId={savedShareId}
                       onSaved={(id) => setSavedShareId(id)}
+                    />
+                    <ShareCardDialog
+                      reportMarkdown={result.report}
+                      bookInfo={bookInfo}
+                      noteCount={result.noteCount ?? noteCount}
+                      noteTypeCounts={noteTypeCounts}
+                      readingDays={readingDays}
+                      generatedAt={result.generatedAt}
                     />
                     <ReportShareDialog
                       userBookId={userBookId}
