@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { ArrowLeft, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,8 @@ import { ReadingReportSkeleton } from "./reading-report-skeleton";
 import { ReportSaveButton } from "./report-save-button";
 import { ReportShareDialog } from "./report-share-dialog";
 import { ShareCardDialog } from "./share-card/share-card-dialog";
+import { ReportStylePicker } from "./share-card/report-style-picker";
+import { SHARE_CARD_TEMPLATES } from "./share-card/templates";
 import { ReadingReportMagazine } from "./reading-report-magazine";
 import { generateReadingReport } from "@/app/actions/ai/report";
 import { useTranslation } from "@/lib/i18n";
@@ -65,6 +67,8 @@ export function ReadingReportContent({
   const [savedShareId, setSavedShareId] = useState<string | null>(
     initialSavedReport?.shareId ?? null
   );
+  // 생성 전 선택한 이미지 카드 스타일 — 이미지 카드 다이얼로그의 초기 템플릿
+  const [styleId, setStyleId] = useState(SHARE_CARD_TEMPLATES[0].id);
 
   const fetchReport = () => {
     startTransition(async () => {
@@ -76,13 +80,6 @@ export function ReadingReportContent({
       setResult(res);
     });
   };
-
-  useEffect(() => {
-    // 저장된 리포트가 있으면 자동 생성 건너뜀
-    if (initialSavedReport) return;
-    fetchReport();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userBookId]);
 
   // 기록 통계
   const noteTypeCounts = (noteSummaries ?? []).reduce<Record<string, number>>((acc, n) => {
@@ -109,6 +106,16 @@ export function ReadingReportContent({
           {t("books.aiReportTitle")}
         </span>
       </div>
+
+      {/* 생성 전: 스타일 선택 (기존 진입 즉시 자동 생성 → 명시적 선택 후 생성) */}
+      {!isPending && !result && (
+        <ReportStylePicker
+          noteCount={noteCount}
+          selectedId={styleId}
+          onSelect={setStyleId}
+          onGenerate={fetchReport}
+        />
+      )}
 
       {/* 로딩 */}
       {isPending && <ReadingReportSkeleton />}
@@ -174,6 +181,7 @@ export function ReadingReportContent({
                       noteTypeCounts={noteTypeCounts}
                       readingDays={readingDays}
                       generatedAt={result.generatedAt}
+                      initialTemplateId={styleId}
                     />
                     <ReportShareDialog
                       userBookId={userBookId}

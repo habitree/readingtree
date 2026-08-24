@@ -39,6 +39,8 @@ interface ShareCardDialogProps {
   noteTypeCounts: Record<string, number>;
   readingDays: number;
   generatedAt?: string;
+  /** 생성 전 스타일 선택에서 고른 템플릿 — 다이얼로그 초기 선택값 */
+  initialTemplateId?: string;
 }
 
 export function ShareCardDialog({
@@ -48,9 +50,14 @@ export function ShareCardDialog({
   noteTypeCounts,
   readingDays,
   generatedAt,
+  initialTemplateId,
 }: ShareCardDialogProps) {
   const [open, setOpen] = useState(false);
-  const [templateId, setTemplateId] = useState(SHARE_CARD_TEMPLATES[0].id);
+  const [templateId, setTemplateId] = useState(() =>
+    initialTemplateId && SHARE_CARD_TEMPLATES.some((t) => t.id === initialTemplateId)
+      ? initialTemplateId
+      : SHARE_CARD_TEMPLATES[0].id
+  );
   const [busy, setBusy] = useState<"copy" | "download" | null>(null);
   const captureRef = useRef<HTMLDivElement>(null);
   // 다이얼로그는 포털로 늦게 마운트되므로 callback ref로 실제 노드를 잡아 관찰한다

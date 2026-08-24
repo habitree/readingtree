@@ -395,7 +395,7 @@ function WatercolorCard({ data }: { data: ShareCardData }) {
 export const watercolorTemplate: ShareCardTemplateDef = {
   id: "watercolor",
   name: "사월의 수채",
-  tagline: "봄의 한강을 달리며 읽은 책 — 계절을 물들여 남기는 수채 독서 리포트",
+  tagline: "책을 읽은 계절을 물들여 남기는 수채 독서 리포트",
   fonts: ["Gowun Batang", "Noto Sans KR", "Nanum Pen Script", "Cormorant Garamond"],
   captureBg: "#FBF7F0",
   Component: WatercolorCard,
