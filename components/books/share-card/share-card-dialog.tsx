@@ -80,6 +80,15 @@ export function ShareCardDialog({
     [reportMarkdown, bookInfo, noteCount, noteTypeCounts, readingDays, generatedAt]
   );
 
+  // 페이지에서 스타일을 바꾸면 다이얼로그 기본 선택도 따라간다 (렌더 중 파생 상태 보정)
+  const [lastInitialId, setLastInitialId] = useState(initialTemplateId);
+  if (initialTemplateId !== lastInitialId) {
+    setLastInitialId(initialTemplateId);
+    if (initialTemplateId && SHARE_CARD_TEMPLATES.some((t) => t.id === initialTemplateId)) {
+      setTemplateId(initialTemplateId);
+    }
+  }
+
   // 선택된 템플릿의 서체 온디맨드 로드
   useEffect(() => {
     if (open) ensureShareCardFonts(selected.fonts);

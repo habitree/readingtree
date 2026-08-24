@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { ArrowLeft, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,9 @@ import { ReportShareDialog } from "./report-share-dialog";
 import { ShareCardDialog } from "./share-card/share-card-dialog";
 import { ReportStylePicker } from "./share-card/report-style-picker";
 import { SHARE_CARD_TEMPLATES } from "./share-card/templates";
+import { TemplateScaledView } from "./share-card/template-scaled-view";
+import { buildShareCardData } from "./share-card/share-card-data";
+import { ensureShareCardFonts } from "./share-card/share-card-fonts";
 import { ReadingReportMagazine } from "./reading-report-magazine";
 import { generateReadingReport } from "@/app/actions/ai/report";
 import { useTranslation } from "@/lib/i18n";
@@ -93,6 +96,88 @@ export function ReadingReportContent({
   const sections =
     result?.success && result.report ? parseReportSections(result.report) : [];
 
+  // 선택된 템플릿 + 리포트 카드 데이터
+  const selectedTemplate =
+    SHARE_CARD_TEMPLATES.find((tpl) => tpl.id === styleId) ?? SHARE_CARD_TEMPLATES[0];
+  const shareData =
+    bookInfo && result?.success && result.report
+      ? buildShareCardData({
+          reportMarkdown: result.report,
+          bookInfo,
+          noteCount: result.noteCount ?? noteCount,
+          noteTypeCounts,
+          readingDays,
+          generatedAt: result.generatedAt,
+        })
+      : null;
+  // 생성 전 스타일 미리보기용 (책 정보·통계만 채워진 상태)
+  const pickerPreviewData = bookInfo
+    ? buildShareCardData({
+        reportMarkdown: "",
+        bookInfo,
+        noteCount,
+        noteTypeCounts,
+        readingDays,
+      })
+    : null;
+
+  // 본문 렌더 서체 로드 — view=saved처럼 피커를 거치지 않는 진입 대비
+  useEffect(() => {
+    if (result?.success) ensureShareCardFonts(selectedTemplate.fonts);
+  }, [result, selectedTemplate]);
+
+  // 공통 액션 바 (스타일 뷰·매거진 폴백 양쪽에서 사용)
+  const actionBar =
+    result?.success && result.report ? (
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <Button asChild variant="ghost" size="sm">
+          <Link href={`/books/${userBookId}`}>
+            <ArrowLeft className="h-3.5 w-3.5 mr-1.5" />
+            책으로
+          </Link>
+        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={fetchReport} disabled={isPending}>
+            <RefreshCw className={cn("h-3.5 w-3.5 mr-1.5", isPending && "animate-spin")} />
+            {initialSavedReport ? "새로 생성" : t("books.aiReportRegenerate")}
+          </Button>
+          {bookInfo && (
+            <>
+              <ReportSaveButton
+                userBookId={userBookId}
+                reportMarkdown={result.report}
+                bookInfo={bookInfo}
+                noteCount={result.noteCount ?? noteCount}
+                noteIds={noteSummaries?.map((n) => n.id) || []}
+                initialShareId={savedShareId}
+                onSaved={(id) => setSavedShareId(id)}
+              />
+              <ShareCardDialog
+                reportMarkdown={result.report}
+                bookInfo={bookInfo}
+                noteCount={result.noteCount ?? noteCount}
+                noteTypeCounts={noteTypeCounts}
+                readingDays={readingDays}
+                generatedAt={result.generatedAt}
+                initialTemplateId={styleId}
+              />
+              <ReportShareDialog
+                userBookId={userBookId}
+                reportMarkdown={result.report}
+                bookInfo={bookInfo}
+                noteCount={result.noteCount ?? noteCount}
+                noteIds={noteSummaries?.map((n) => n.id) || []}
+                noteSummaries={noteSummaries}
+                generatedAt={result.generatedAt}
+                initialShareId={savedShareId}
+                onSaved={(id) => setSavedShareId(id)}
+              />
+            </>
+          )}
+        </div>
+      </div>
+    ) : null;
+
   return (
     <div className="pb-20 lg:pb-8">
       {/* 슬림 상단 바 (탈출용) */}
@@ -114,6 +199,7 @@ export function ReadingReportContent({
           selectedId={styleId}
           onSelect={setStyleId}
           onGenerate={fetchReport}
+          previewData={pickerPreviewData}
         />
       )}
 
@@ -133,8 +219,37 @@ export function ReadingReportContent({
         </div>
       )}
 
-      {/* 성공: 매거진 리포트 */}
-      {!isPending && result?.success && result.report && (
+      {/* 성공: 선택한 스타일 양식으로 리포트 렌더 (+ 스타일 전환 칩) */}
+      {!isPending && result?.success && result.report && shareData && (
+        <div className="mx-auto max-w-[800px] space-y-3">
+          <div className="flex flex-wrap items-center gap-1.5">
+            {SHARE_CARD_TEMPLATES.map((tpl) => (
+              <button
+                key={tpl.id}
+                type="button"
+                onClick={() => setStyleId(tpl.id)}
+                className={cn(
+                  "rounded-full border px-3 py-1 text-xs transition-colors",
+                  tpl.id === selectedTemplate.id
+                    ? "border-primary bg-primary/10 font-medium text-primary"
+                    : "text-muted-foreground hover:bg-muted/60"
+                )}
+              >
+                {tpl.name}
+              </button>
+            ))}
+          </div>
+          <TemplateScaledView
+            template={selectedTemplate}
+            data={shareData}
+            className="overflow-hidden rounded-lg border shadow-sm"
+          />
+          {actionBar}
+        </div>
+      )}
+
+      {/* 성공(폴백): 책 정보가 없으면 기존 매거진 뷰 */}
+      {!isPending && result?.success && result.report && !shareData && (
         <ReadingReportMagazine
           bookTitle={bookInfo?.title || bookTitle}
           author={bookInfo?.author}
@@ -150,55 +265,7 @@ export function ReadingReportContent({
           bookOrdinal={bookOrdinal}
           publishedAt={result.generatedAt}
           sections={sections}
-          actionSlot={
-            <div className="flex items-center justify-between gap-2 flex-wrap">
-              <Button asChild variant="ghost" size="sm">
-                <Link href={`/books/${userBookId}`}>
-                  <ArrowLeft className="h-3.5 w-3.5 mr-1.5" />
-                  책으로
-                </Link>
-              </Button>
-              <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" onClick={fetchReport} disabled={isPending}>
-                  <RefreshCw className={cn("h-3.5 w-3.5 mr-1.5", isPending && "animate-spin")} />
-                  {initialSavedReport ? "새로 생성" : t("books.aiReportRegenerate")}
-                </Button>
-                {bookInfo && (
-                  <>
-                    <ReportSaveButton
-                      userBookId={userBookId}
-                      reportMarkdown={result.report}
-                      bookInfo={bookInfo}
-                      noteCount={result.noteCount ?? noteCount}
-                      noteIds={noteSummaries?.map((n) => n.id) || []}
-                      initialShareId={savedShareId}
-                      onSaved={(id) => setSavedShareId(id)}
-                    />
-                    <ShareCardDialog
-                      reportMarkdown={result.report}
-                      bookInfo={bookInfo}
-                      noteCount={result.noteCount ?? noteCount}
-                      noteTypeCounts={noteTypeCounts}
-                      readingDays={readingDays}
-                      generatedAt={result.generatedAt}
-                      initialTemplateId={styleId}
-                    />
-                    <ReportShareDialog
-                      userBookId={userBookId}
-                      reportMarkdown={result.report}
-                      bookInfo={bookInfo}
-                      noteCount={result.noteCount ?? noteCount}
-                      noteIds={noteSummaries?.map((n) => n.id) || []}
-                      noteSummaries={noteSummaries}
-                      generatedAt={result.generatedAt}
-                      initialShareId={savedShareId}
-                      onSaved={(id) => setSavedShareId(id)}
-                    />
-                  </>
-                )}
-              </div>
-            </div>
-          }
+          actionSlot={actionBar ?? undefined}
         />
       )}
     </div>
