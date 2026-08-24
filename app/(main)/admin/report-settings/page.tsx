@@ -11,7 +11,7 @@ import { ArrowLeft } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "AI 리포트 설정 | 관리자",
-  description: "AI 독서 리포트 생성 설정 및 템플릿 관리",
+  description: "AI 독서 리포트 양식 미리보기, 생성 설정 및 템플릿 관리",
 };
 
 export default async function ReportSettingsPage() {

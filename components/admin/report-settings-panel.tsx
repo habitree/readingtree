@@ -2,7 +2,7 @@
 
 /**
  * AI 리포트 설정 관리 패널 v2
- * 스타일 미리보기 + 모델 설정 + 템플릿 관리 + 생성 설정 + 통계
+ * 양식 미리보기(매거진 본문 + 이미지 카드 5종) + 템플릿 관리 + 모델 설정 + 생성 설정 + 통계
  */
 
 import { useState } from "react";
@@ -73,6 +73,7 @@ import {
   STYLE_DESCRIPTIONS,
 } from "@/types/ai/report-template";
 import { ReportTemplateEditor } from "./report-template-editor";
+import { ReportPreviewPanel } from "./report-preview-panel";
 
 const REPORT_MODELS: Record<string, { id: string; name: string }[]> = {
   openai: [
@@ -209,12 +210,16 @@ export function ReportSettingsPanel({
       <div>
         <h1 className="text-2xl font-bold">AI 리포트 설정</h1>
         <p className="text-muted-foreground mt-1">
-          리포트 스타일, 모델, 템플릿을 관리합니다
+          업데이트된 리포트 양식을 확인하고 모델·템플릿·생성 설정을 관리합니다
         </p>
       </div>
 
-      <Tabs defaultValue="templates" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+      <Tabs defaultValue="preview" className="w-full">
+        <TabsList className="grid w-full grid-cols-5">
+          <TabsTrigger value="preview" className="flex items-center gap-1.5">
+            <Eye className="h-4 w-4" />
+            <span className="hidden sm:inline">양식 미리보기</span>
+          </TabsTrigger>
           <TabsTrigger value="templates" className="flex items-center gap-1.5">
             <Layout className="h-4 w-4" />
             <span className="hidden sm:inline">템플릿</span>
@@ -233,7 +238,12 @@ export function ReportSettingsPanel({
           </TabsTrigger>
         </TabsList>
 
-        {/* ═══ 탭 1: 템플릿 (기본 탭) ═══ */}
+        {/* ═══ 탭 1: 양식 미리보기 (기본 탭) — 매거진 본문 + 이미지 카드 5종 ═══ */}
+        <TabsContent value="preview" className="mt-4">
+          <ReportPreviewPanel />
+        </TabsContent>
+
+        {/* ═══ 탭 2: 템플릿 ═══ */}
         <TabsContent value="templates" className="space-y-5 mt-4">
           {/* 스타일 필터 */}
           <div className="flex items-center justify-between">
@@ -345,7 +355,7 @@ export function ReportSettingsPanel({
           )}
         </TabsContent>
 
-        {/* ═══ 탭 2: 모델 설정 ═══ */}
+        {/* ═══ 탭 3: 모델 설정 ═══ */}
         <TabsContent value="model" className="space-y-4 mt-4">
           <Card>
             <CardHeader>
@@ -401,7 +411,7 @@ export function ReportSettingsPanel({
           </Card>
         </TabsContent>
 
-        {/* ═══ 탭 3: 생성 설정 ═══ */}
+        {/* ═══ 탭 4: 생성 설정 ═══ */}
         <TabsContent value="generation" className="space-y-4 mt-4">
           <Card>
             <CardHeader>
@@ -452,7 +462,7 @@ export function ReportSettingsPanel({
           </Card>
         </TabsContent>
 
-        {/* ═══ 탭 4: 통계 ═══ */}
+        {/* ═══ 탭 5: 통계 ═══ */}
         <TabsContent value="stats" className="space-y-4 mt-4">
           <div className="grid gap-4 sm:grid-cols-3">
             <Card><CardHeader className="pb-2"><CardDescription>총 리포트</CardDescription><CardTitle className="text-2xl">{stats?.totalReports ?? 0}건</CardTitle></CardHeader></Card>
