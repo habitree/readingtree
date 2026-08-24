@@ -69,6 +69,8 @@ export interface SavedReport {
   viewCount: number;
   currentPage: number | null;
   totalPages: number | null;
+  /** 이미지 카드 템플릿 슬러그 — null이면 구 저장분(매거진 뷰 폴백) */
+  cardTemplate: string | null;
 }
 
 // ─── 이모지 반응 ────────────────────────────────────────────────────

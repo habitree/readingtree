@@ -2,7 +2,11 @@ import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getAppUrl } from "@/lib/utils/url";
 import { isValidUUID } from "@/lib/utils/validation";
-import { getPublicReport, getPublicReportNotes } from "@/app/actions/ai/report";
+import {
+  getPublicReport,
+  getPublicReportNotes,
+  getReportNoteStats,
+} from "@/app/actions/ai/report";
 import { getReportReactionCounts } from "@/app/actions/ai/report-reactions";
 import { ShareCtaSection } from "@/components/share/share-cta-section";
 import { ReferralTracker } from "@/components/share/referral-tracker";
@@ -88,6 +92,9 @@ export default async function ShareReportPage({
   // 이모지 반응 집계 (서버에서 초기값 로드)
   const reactionCounts = await getReportReactionCounts(report.id);
 
+  // 기록 통계 (공개 여부와 무관한 집계 — 카드 템플릿 지표 슬롯용)
+  const noteStats = await getReportNoteStats(report.noteIds);
+
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 selection:bg-primary/20">
       <div className="container mx-auto px-4 py-12 md:py-20 max-w-4xl">
@@ -111,7 +118,12 @@ export default async function ShareReportPage({
         </div>
 
         {/* 리포트 렌더링 */}
-        <SharedReportView report={report} publicNotes={publicNotes} reactionCounts={reactionCounts} />
+        <SharedReportView
+          report={report}
+          publicNotes={publicNotes}
+          reactionCounts={reactionCounts}
+          noteStats={noteStats}
+        />
 
         {/* 레퍼럴 트래커 */}
         <ReferralTracker />

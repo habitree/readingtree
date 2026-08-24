@@ -24,9 +24,7 @@ import { Button } from "@/components/ui/button";
 import { Copy, Download, ImageDown, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { captureElementToPngBlob } from "@/lib/utils/capture-card";
-import { copyImagePromiseToClipboard } from "@/lib/utils/clipboard";
-import { downloadImage } from "@/lib/utils/device";
+import { copyCardImageWithFallback, downloadCardImage } from "./card-image-actions";
 import { buildShareCardData } from "./share-card-data";
 import { ensureShareCardFonts } from "./share-card-fonts";
 import { SHARE_CARD_TEMPLATES } from "./templates";
@@ -109,16 +107,11 @@ export function ShareCardDialog({
     if (!node || busy) return;
     setBusy("copy");
     // Safari: 클릭 제스처와 동기 시점에 clipboard.write가 시작되어야 한다
-    const blobPromise = captureElementToPngBlob(node, {
-      targetWidth: 1600,
-      backgroundColor: selected.captureBg,
-    });
-    copyImagePromiseToClipboard(blobPromise)
-      .then(async (copied) => {
-        if (copied) {
+    copyCardImageWithFallback(node, selected)
+      .then((result) => {
+        if (result === "copied") {
           toast.success("카드 이미지가 복사되었습니다. 블로그 본문에 붙여넣으세요.");
         } else {
-          downloadImage(await blobPromise, `readtree-report-${selected.id}.png`);
           toast.info("이 브라우저는 이미지 복사를 지원하지 않아 파일로 저장했어요.");
         }
       })
@@ -132,9 +125,8 @@ export function ShareCardDialog({
     const node = captureRef.current;
     if (!node || busy) return;
     setBusy("download");
-    captureElementToPngBlob(node, { targetWidth: 1600, backgroundColor: selected.captureBg })
-      .then((blob) => {
-        downloadImage(blob, `readtree-report-${selected.id}.png`);
+    downloadCardImage(node, selected)
+      .then(() => {
         toast.success("카드 이미지를 저장했습니다.");
       })
       .catch(() => {

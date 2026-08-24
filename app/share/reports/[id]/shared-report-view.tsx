@@ -5,6 +5,10 @@ import { StickyNote, Eye, Info } from "lucide-react";
 import Link from "next/link";
 import { parseReportSections } from "@/lib/utils/report-parser";
 import { ReadingReportMagazine } from "@/components/books/reading-report-magazine";
+import { SHARE_CARD_TEMPLATES } from "@/components/books/share-card/templates";
+import { TemplateScaledView } from "@/components/books/share-card/template-scaled-view";
+import { buildShareCardData } from "@/components/books/share-card/share-card-data";
+import { ensureShareCardFonts } from "@/components/books/share-card/share-card-fonts";
 import { cn } from "@/lib/utils";
 import { incrementReportViewCount } from "@/app/actions/ai/report";
 import { ReportReactions } from "@/components/share/report-reactions";
@@ -35,16 +39,23 @@ interface SharedReportViewProps {
   report: SavedReport;
   publicNotes?: PublicNoteSummary[];
   reactionCounts: ReportReactionCounts;
+  /** 공개 여부와 무관한 기록 집계 (카드 템플릿 지표 슬롯용) */
+  noteStats?: { noteTypeCounts: Record<string, number>; readingDays: number };
 }
 
 export function SharedReportView({
   report,
   publicNotes,
   reactionCounts,
+  noteStats,
 }: SharedReportViewProps) {
   const { t } = useTranslation();
   const sections = parseReportSections(report.reportMarkdown);
   const hasIncrementedRef = useRef(false);
+
+  // 저장 시 선택한 이미지 카드 템플릿 — 없으면(구 저장분) 매거진 뷰 폴백
+  const cardTemplate =
+    SHARE_CARD_TEMPLATES.find((tpl) => tpl.id === report.cardTemplate) ?? null;
 
   // 조회수 증가 (마운트 시 1회만)
   useEffect(() => {
@@ -54,32 +65,65 @@ export function SharedReportView({
     }
   }, [report.shareId]);
 
-  // 기록 통계 (공개 노트 기반)
-  const noteTypeCounts = (publicNotes ?? []).reduce<Record<string, number>>((acc, n) => {
-    acc[n.type] = (acc[n.type] || 0) + 1;
-    return acc;
-  }, {});
-  const readingDays = new Set(
-    (publicNotes ?? []).map((n) => (n.createdAt || "").slice(0, 10)).filter(Boolean)
-  ).size;
+  // 카드 템플릿 서체 로드
+  useEffect(() => {
+    if (cardTemplate) ensureShareCardFonts(cardTemplate.fonts);
+  }, [cardTemplate]);
+
+  // 기록 통계 (전체 집계 우선, 없으면 공개 노트 기반)
+  const noteTypeCounts =
+    noteStats?.noteTypeCounts ??
+    (publicNotes ?? []).reduce<Record<string, number>>((acc, n) => {
+      acc[n.type] = (acc[n.type] || 0) + 1;
+      return acc;
+    }, {});
+  const readingDays =
+    noteStats?.readingDays ??
+    new Set(
+      (publicNotes ?? []).map((n) => (n.createdAt || "").slice(0, 10)).filter(Boolean)
+    ).size;
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      {/* 매거진 리포트 (읽기 전용) */}
-      <ReadingReportMagazine
-        bookTitle={report.bookTitle}
-        author={report.bookAuthor}
-        coverImageUrl={report.coverImageUrl}
-        startedAt={report.startedAt}
-        completedAt={report.completedAt}
-        status={report.completedAt ? "completed" : "reading"}
-        totalPages={report.totalPages}
-        noteCount={report.noteCount}
-        noteTypeCounts={noteTypeCounts}
-        readingDays={readingDays}
-        publishedAt={report.createdAt}
-        sections={sections}
-      />
+      {/* 리포트 본문 — 저장된 카드 템플릿 스타일 (구 저장분은 매거진 뷰) */}
+      {cardTemplate ? (
+        <TemplateScaledView
+          template={cardTemplate}
+          data={buildShareCardData({
+            reportMarkdown: report.reportMarkdown,
+            bookInfo: {
+              title: report.bookTitle,
+              author: report.bookAuthor,
+              coverImageUrl: report.coverImageUrl,
+              startedAt: report.startedAt,
+              completedAt: report.completedAt,
+              status: report.completedAt ? "completed" : "reading",
+              currentPage: report.currentPage,
+              totalPages: report.totalPages,
+            },
+            noteCount: report.noteCount,
+            noteTypeCounts,
+            readingDays,
+            generatedAt: report.createdAt,
+          })}
+          className="mx-auto max-w-[800px] overflow-hidden rounded-lg border shadow-sm"
+        />
+      ) : (
+        <ReadingReportMagazine
+          bookTitle={report.bookTitle}
+          author={report.bookAuthor}
+          coverImageUrl={report.coverImageUrl}
+          startedAt={report.startedAt}
+          completedAt={report.completedAt}
+          status={report.completedAt ? "completed" : "reading"}
+          totalPages={report.totalPages}
+          noteCount={report.noteCount}
+          noteTypeCounts={noteTypeCounts}
+          readingDays={readingDays}
+          publishedAt={report.createdAt}
+          sections={sections}
+        />
+      )}
 
       {/* 설명 + 조회수 */}
       <div className="flex items-center gap-2 px-1 text-xs text-muted-foreground">

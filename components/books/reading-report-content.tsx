@@ -27,6 +27,8 @@ interface InitialSavedReport {
   shareId: string;
   isPublic: boolean;
   noteCount: number;
+  /** 저장 시 선택했던 이미지 카드 템플릿 (구 저장분은 null) */
+  cardTemplate?: string | null;
 }
 
 interface ReadingReportContentProps {
@@ -70,8 +72,14 @@ export function ReadingReportContent({
   const [savedShareId, setSavedShareId] = useState<string | null>(
     initialSavedReport?.shareId ?? null
   );
-  // 생성 전 선택한 이미지 카드 스타일 — 이미지 카드 다이얼로그의 초기 템플릿
-  const [styleId, setStyleId] = useState(SHARE_CARD_TEMPLATES[0].id);
+  // 생성 전 선택한 이미지 카드 스타일 — 본문 렌더·저장·공유에 함께 쓰인다
+  // (저장 리포트 열람 시에는 저장 당시 선택했던 스타일 복원)
+  const [styleId, setStyleId] = useState(() => {
+    const saved = initialSavedReport?.cardTemplate;
+    return saved && SHARE_CARD_TEMPLATES.some((tpl) => tpl.id === saved)
+      ? saved
+      : SHARE_CARD_TEMPLATES[0].id;
+  });
 
   const fetchReport = () => {
     startTransition(async () => {
@@ -149,6 +157,7 @@ export function ReadingReportContent({
                 bookInfo={bookInfo}
                 noteCount={result.noteCount ?? noteCount}
                 noteIds={noteSummaries?.map((n) => n.id) || []}
+                cardTemplate={styleId}
                 initialShareId={savedShareId}
                 onSaved={(id) => setSavedShareId(id)}
               />
@@ -167,7 +176,9 @@ export function ReadingReportContent({
                 bookInfo={bookInfo}
                 noteCount={result.noteCount ?? noteCount}
                 noteIds={noteSummaries?.map((n) => n.id) || []}
-                noteSummaries={noteSummaries}
+                noteTypeCounts={noteTypeCounts}
+                readingDays={readingDays}
+                cardTemplate={styleId}
                 generatedAt={result.generatedAt}
                 initialShareId={savedShareId}
                 onSaved={(id) => setSavedShareId(id)}

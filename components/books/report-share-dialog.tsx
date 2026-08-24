@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import {
   Dialog,
   DialogContent,
@@ -19,20 +19,23 @@ import {
   Globe,
   Loader2,
   StickyNote,
-  FileText,
+  ImageDown,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "@/lib/i18n";
 import {
   saveReadingReport,
   toggleReportPublic,
+  updateReportCardTemplate,
 } from "@/app/actions/ai/report";
 import { loadKakaoSdk, isKakaoShareAvailable } from "@/lib/kakao/sdk";
 import { useAuth } from "@/contexts/auth-context";
-import { buildBlogHtml, buildBlogPlainText } from "@/lib/utils/blog-html-builder";
-import { copyHtmlToClipboard } from "@/lib/utils/clipboard";
 import { getAppUrl } from "@/lib/utils/url";
-import type { BookInfoForReport, NoteSummary } from "@/types/ai/report";
+import { buildShareCardData } from "./share-card/share-card-data";
+import { ensureShareCardFonts } from "./share-card/share-card-fonts";
+import { copyCardImageWithFallback } from "./share-card/card-image-actions";
+import { SHARE_CARD_TEMPLATES } from "./share-card/templates";
+import type { BookInfoForReport } from "@/types/ai/report";
 
 interface ReportShareDialogProps {
   userBookId: string;
@@ -40,7 +43,10 @@ interface ReportShareDialogProps {
   bookInfo: BookInfoForReport;
   noteCount: number;
   noteIds: string[];
-  noteSummaries?: NoteSummary[];
+  noteTypeCounts: Record<string, number>;
+  readingDays: number;
+  /** 현재 선택된 이미지 카드 템플릿 — 블로그용 복사가 이 스타일로 캡처된다 */
+  cardTemplate: string;
   generatedAt?: string;
   /** 이미 저장된 경우 초기 shareId */
   initialShareId?: string | null;
@@ -53,7 +59,9 @@ export function ReportShareDialog({
   bookInfo,
   noteCount,
   noteIds,
-  noteSummaries,
+  noteTypeCounts,
+  readingDays,
+  cardTemplate,
   generatedAt,
   initialShareId,
   onSaved,
@@ -80,7 +88,8 @@ export function ReportShareDialog({
           reportMarkdown,
           bookInfo,
           noteCount,
-          noteIds
+          noteIds,
+          { cardTemplate }
         );
         if (result.success && result.shareId) {
           setShareId(result.shareId);
@@ -104,6 +113,10 @@ export function ReportShareDialog({
       }
     } else {
       setOpen(next);
+      // 이미 저장된 리포트: 현재 선택 스타일을 공유 페이지에 동기화 (실패해도 무시)
+      if (next && shareId) {
+        void updateReportCardTemplate(userBookId, cardTemplate);
+      }
     }
   };
 
@@ -152,30 +165,49 @@ export function ReportShareDialog({
     }
   };
 
-  // 블로그용 복사
-  const handleBlogCopy = useCallback(async () => {
-    const origin = getAppUrl();
-    const blogOptions = {
-      reportMarkdown,
-      bookInfo,
-      noteCount,
-      noteSummaries,
-      includeNotes,
-      generatedAt,
-      baseUrl: origin,
-      shareId,
-    };
-    const html = buildBlogHtml(blogOptions);
-    const plain = buildBlogPlainText(blogOptions);
-    const success = await copyHtmlToClipboard(html, plain);
-    if (success) {
-      setBlogCopied(true);
-      toast.success(t("books.blogCopyToast"));
-      setTimeout(() => setBlogCopied(false), 2000);
-    } else {
-      toast.error(t("common.retry"));
-    }
-  }, [reportMarkdown, bookInfo, noteCount, noteSummaries, includeNotes, generatedAt, shareId, t]);
+  // 블로그용 복사 — 선택한 이미지 카드 템플릿의 완성 이미지를 클립보드에 복사
+  const selectedTemplate =
+    SHARE_CARD_TEMPLATES.find((tpl) => tpl.id === cardTemplate) ?? SHARE_CARD_TEMPLATES[0];
+  const cardData = useMemo(
+    () =>
+      buildShareCardData({
+        reportMarkdown,
+        bookInfo,
+        noteCount,
+        noteTypeCounts,
+        readingDays,
+        generatedAt,
+      }),
+    [reportMarkdown, bookInfo, noteCount, noteTypeCounts, readingDays, generatedAt]
+  );
+  const blogCaptureRef = useRef<HTMLDivElement>(null);
+  const [blogBusy, setBlogBusy] = useState(false);
+
+  // 캡처용 서체 로드
+  useEffect(() => {
+    if (open) ensureShareCardFonts(selectedTemplate.fonts);
+  }, [open, selectedTemplate]);
+
+  const handleBlogCopy = () => {
+    const node = blogCaptureRef.current;
+    if (!node || blogBusy) return;
+    setBlogBusy(true);
+    // Safari: 클릭 제스처와 동기 시점에 clipboard.write가 시작되어야 한다
+    copyCardImageWithFallback(node, selectedTemplate)
+      .then((result) => {
+        setBlogCopied(true);
+        setTimeout(() => setBlogCopied(false), 2000);
+        toast.success(
+          result === "copied"
+            ? t("books.blogCopyToast")
+            : "이미지 복사가 지원되지 않아 파일로 저장했어요."
+        );
+      })
+      .catch(() => {
+        toast.error(t("common.retry"));
+      })
+      .finally(() => setBlogBusy(false));
+  };
 
   // 카카오 공유
   const showKakao = isKakaoShareAvailable();
@@ -217,7 +249,7 @@ export function ReportShareDialog({
     } catch {
       toast.error(t("common.retry"));
     }
-  }, [shareId, isPublic, bookInfo, noteCount, t]);
+  }, [shareId, isPublic, bookInfo, noteCount, currentUser, t]);
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -297,24 +329,32 @@ export function ReportShareDialog({
             )}
           </Button>
 
-          {/* 블로그용 복사 */}
-          <Button
-            onClick={handleBlogCopy}
-            variant={blogCopied ? "success" : "outline"}
-            className="w-full gap-2"
-          >
-            {blogCopied ? (
-              <>
-                <Check className="h-4 w-4" />
-                {t("books.blogCopied")}
-              </>
-            ) : (
-              <>
-                <FileText className="h-4 w-4" />
-                {t("books.blogCopy")}
-              </>
-            )}
-          </Button>
+          {/* 블로그용 복사 — 선택한 스타일의 완성 이미지 */}
+          <div className="space-y-1">
+            <Button
+              onClick={handleBlogCopy}
+              variant={blogCopied ? "success" : "outline"}
+              disabled={blogBusy}
+              className="w-full gap-2"
+            >
+              {blogBusy ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : blogCopied ? (
+                <>
+                  <Check className="h-4 w-4" />
+                  {t("books.blogCopied")}
+                </>
+              ) : (
+                <>
+                  <ImageDown className="h-4 w-4" />
+                  {t("books.blogCopy")}
+                </>
+              )}
+            </Button>
+            <p className="text-[11px] text-muted-foreground text-center">
+              ‘{selectedTemplate.name}’ 스타일의 완성 이미지가 복사됩니다
+            </p>
+          </div>
 
           {/* 카카오 공유 */}
           {showKakao && (
@@ -356,6 +396,27 @@ export function ReportShareDialog({
             </p>
           )}
         </div>
+
+        {/* 블로그용 이미지 캡처 노드 (화면 밖, 800px 원본 크기) */}
+        {open && (
+          <div
+            aria-hidden
+            className="pointer-events-none"
+            style={{
+              position: "fixed",
+              left: -10000,
+              top: 0,
+              width: 800,
+              // 전역 max-width:100% 가 다이얼로그 기준으로 카드를 줄이는 것 방지
+              maxWidth: "none",
+              zIndex: -10,
+            }}
+          >
+            <div ref={blogCaptureRef}>
+              <selectedTemplate.Component data={cardData} />
+            </div>
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );

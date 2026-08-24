@@ -13,6 +13,8 @@ interface ReportSaveButtonProps {
   bookInfo: BookInfoForReport;
   noteCount: number;
   noteIds: string[];
+  /** 현재 선택된 이미지 카드 템플릿 — 저장 시 함께 기록되어 공유 페이지에 반영 */
+  cardTemplate?: string;
   onSaved?: (shareId: string) => void;
   /** 이미 저장된 경우 초기 shareId */
   initialShareId?: string | null;
@@ -24,6 +26,7 @@ export function ReportSaveButton({
   bookInfo,
   noteCount,
   noteIds,
+  cardTemplate,
   onSaved,
   initialShareId,
 }: ReportSaveButtonProps) {
@@ -41,7 +44,8 @@ export function ReportSaveButton({
         reportMarkdown,
         bookInfo,
         noteCount,
-        noteIds
+        noteIds,
+        cardTemplate ? { cardTemplate } : undefined
       );
       if (result.success && result.shareId) {
         setShareId(result.shareId);

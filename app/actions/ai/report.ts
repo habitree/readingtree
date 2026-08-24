@@ -185,7 +185,7 @@ export async function saveReadingReport(
   bookInfo: BookInfoForReport,
   noteCount: number,
   noteIds: string[],
-  extra?: { templateId?: string; generationTimeMs?: number }
+  extra?: { templateId?: string; generationTimeMs?: number; cardTemplate?: string }
 ): Promise<{ success: boolean; shareId?: string; error?: string }> {
   try {
     const user = await getCurrentUser();
@@ -219,6 +219,7 @@ export async function saveReadingReport(
       };
       if (extra?.templateId) updateData.template_id = extra.templateId;
       if (extra?.generationTimeMs) updateData.generation_time_ms = extra.generationTimeMs;
+      if (extra?.cardTemplate) updateData.card_template = extra.cardTemplate;
 
       const { error } = await supabase
         .from("ai_generated_reports")
@@ -245,6 +246,7 @@ export async function saveReadingReport(
       };
       if (extra?.templateId) insertData.template_id = extra.templateId;
       if (extra?.generationTimeMs) insertData.generation_time_ms = extra.generationTimeMs;
+      if (extra?.cardTemplate) insertData.card_template = extra.cardTemplate;
 
       const { data, error } = await supabase
         .from("ai_generated_reports")
@@ -261,6 +263,30 @@ export async function saveReadingReport(
       success: false,
       error: error instanceof Error ? error.message : "리포트 저장 중 오류가 발생했습니다.",
     };
+  }
+}
+
+/**
+ * 저장된 리포트의 이미지 카드 템플릿만 갱신
+ * (이미 저장된 리포트에서 스타일을 바꾼 뒤 공유할 때 공유 페이지에 반영되도록)
+ */
+export async function updateReportCardTemplate(
+  userBookId: string,
+  cardTemplate: string
+): Promise<void> {
+  try {
+    const user = await getCurrentUser();
+    if (!user) return;
+
+    const supabase = await createServerSupabaseClient();
+    await supabase
+      .from("ai_generated_reports")
+      .update({ card_template: cardTemplate })
+      .eq("user_id", user.id)
+      .eq("user_book_id", userBookId);
+  } catch (error) {
+    // 스타일 동기화 실패는 공유 흐름을 막지 않는다
+    console.error("카드 템플릿 갱신 실패:", error);
   }
 }
 
@@ -350,10 +376,45 @@ export async function getPublicReport(
       viewCount: data.view_count ?? 0,
       currentPage: data.current_page ?? null,
       totalPages: data.total_pages ?? null,
+      cardTemplate: data.card_template ?? null,
     };
   } catch (error) {
     console.error("공유 리포트 조회 실패:", error);
     return null;
+  }
+}
+
+/**
+ * 리포트 노트 통계 (공개 여부와 무관한 집계 — 타입 분포·기록한 날 수만, 내용 미포함)
+ * 공유 페이지 카드 템플릿의 지표 슬롯을 채우는 용도
+ */
+export async function getReportNoteStats(noteIds: string[]): Promise<{
+  noteTypeCounts: Record<string, number>;
+  readingDays: number;
+}> {
+  if (!noteIds || noteIds.length === 0) {
+    return { noteTypeCounts: {}, readingDays: 0 };
+  }
+  try {
+    const supabase = createAdminSupabaseClient();
+    const { data, error } = await supabase
+      .from("notes")
+      .select("type, created_at")
+      .in("id", noteIds);
+
+    if (error || !data) return { noteTypeCounts: {}, readingDays: 0 };
+
+    const noteTypeCounts = data.reduce<Record<string, number>>((acc, n) => {
+      acc[n.type] = (acc[n.type] || 0) + 1;
+      return acc;
+    }, {});
+    const readingDays = new Set(
+      data.map((n) => (n.created_at || "").slice(0, 10)).filter(Boolean)
+    ).size;
+    return { noteTypeCounts, readingDays };
+  } catch (error) {
+    console.error("리포트 노트 통계 조회 실패:", error);
+    return { noteTypeCounts: {}, readingDays: 0 };
   }
 }
 
@@ -399,6 +460,7 @@ export async function getSavedReport(userBookId: string): Promise<{
   reportMarkdown: string;
   savedAt: string;
   noteCount: number;
+  cardTemplate: string | null;
 } | null> {
   try {
     const user = await getCurrentUser();
@@ -407,7 +469,7 @@ export async function getSavedReport(userBookId: string): Promise<{
     const supabase = await createServerSupabaseClient();
     const { data, error } = await supabase
       .from("ai_generated_reports")
-      .select("share_id, is_public, report_markdown, updated_at, note_count")
+      .select("share_id, is_public, report_markdown, updated_at, note_count, card_template")
       .eq("user_id", user.id)
       .eq("user_book_id", userBookId)
       .single();
@@ -420,6 +482,7 @@ export async function getSavedReport(userBookId: string): Promise<{
       reportMarkdown: data.report_markdown,
       savedAt: data.updated_at,
       noteCount: data.note_count,
+      cardTemplate: data.card_template ?? null,
     };
   } catch {
     return null;

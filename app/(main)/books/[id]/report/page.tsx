@@ -77,6 +77,7 @@ export default async function ReportPage({ params, searchParams }: ReportPagePro
           shareId: savedReport.shareId,
           isPublic: savedReport.isPublic,
           noteCount: savedReport.noteCount,
+          cardTemplate: savedReport.cardTemplate,
         }
       : undefined;
 
