@@ -2,6 +2,7 @@
 
 import { createAdminSupabaseClient } from "@/lib/supabase/server";
 import { requireAdmin } from "./_shared";
+import { getPageLabel } from "@/lib/constants/page-labels";
 
 // ============================================================
 // 관리자 ID 조회 (통계에서 제외용)
@@ -514,26 +515,6 @@ export interface MenuUsageItem {
   totalViews: number;
 }
 
-// 주요 메뉴 경로 매핑
-const MENU_LABELS: Record<string, string> = {
-  "/": "홈(대시보드)",
-  "/books": "내 서재",
-  "/bookshelves": "책장",
-  "/notes": "독서 노트",
-  "/timeline": "타임라인",
-  "/stats": "통계",
-  "/groups": "독서 모임",
-  "/profile": "프로필",
-  "/pricing": "요금제",
-  "/feature-requests": "기능 요청",
-  "/sample": "샘플 체험",
-  "/about": "서비스 소개",
-  "/terms": "이용약관",
-  "/privacy": "개인정보처리방침",
-  "/login": "로그인",
-  "/signup": "회원가입",
-};
-
 export async function getMenuUsageAnalysis(): Promise<MenuUsageItem[]> {
   await requireAdmin();
   const admin = createAdminSupabaseClient();
@@ -575,9 +556,72 @@ export async function getMenuUsageAnalysis(): Promise<MenuUsageItem[]> {
   return [...menuMap.entries()]
     .map(([menu, entry]) => ({
       menu,
-      label: MENU_LABELS[menu] ?? menu,
+      label: getPageLabel(menu) ?? menu,
       uniqueUsers: entry.users.size,
       totalViews: entry.views,
     }))
     .sort((a, b) => b.totalViews - a.totalViews);
+}
+
+// ============================================================
+// 회원별 접속기록 조회 (회원 관리 상세)
+// ============================================================
+
+export interface MemberAccessHistory {
+  summary: {
+    totalPageViews: number;
+    totalLogins: number;
+    lastAccessAt: string | null;
+  };
+  loginLogs: LoginLogEntry[];
+  accessLogs: AccessLogEntry[];
+}
+
+export async function getMemberAccessHistory(userId: string): Promise<MemberAccessHistory> {
+  await requireAdmin();
+  const admin = createAdminSupabaseClient();
+
+  const [loginRes, accessRes, loginCountRes, accessCountRes] = await Promise.all([
+    admin
+      .from("login_logs")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(50),
+    admin
+      .from("access_logs")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(100),
+    admin
+      .from("login_logs")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .eq("success", true),
+    admin
+      .from("access_logs")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId),
+  ]);
+
+  const loginLogs = (loginRes.data ?? []) as LoginLogEntry[];
+  const accessLogs = (accessRes.data ?? []) as AccessLogEntry[];
+
+  const latestAccess = accessLogs[0]?.created_at ?? null;
+  const latestLogin = loginLogs[0]?.created_at ?? null;
+  const lastAccessAt =
+    latestAccess && latestLogin
+      ? (latestAccess > latestLogin ? latestAccess : latestLogin)
+      : latestAccess ?? latestLogin;
+
+  return {
+    summary: {
+      totalPageViews: accessCountRes.count ?? 0,
+      totalLogins: loginCountRes.count ?? 0,
+      lastAccessAt,
+    },
+    loginLogs,
+    accessLogs,
+  };
 }

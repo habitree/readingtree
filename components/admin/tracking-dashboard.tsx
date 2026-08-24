@@ -9,6 +9,7 @@ import { Globe, Wifi, Eye, LogIn, UserPlus, BarChart3, TrendingUp, Menu } from "
 import { formatDistanceToNow, format } from "date-fns";
 import { ko } from "date-fns/locale";
 import { useTranslation } from "@/lib/i18n";
+import { PathLabel } from "./path-label";
 import type {
   TrackingSummary,
   LoginLogEntry,
@@ -337,7 +338,9 @@ export function TrackingDashboard({
                   {pageRanking.map((item, i) => (
                     <TableRow key={item.path}>
                       <TableCell className="font-medium text-sm">{i + 1}</TableCell>
-                      <TableCell className="text-sm font-mono">{item.path}</TableCell>
+                      <TableCell>
+                        <PathLabel path={item.path} />
+                      </TableCell>
                       <TableCell className="text-sm text-right font-semibold">
                         {item.count.toLocaleString()}
                       </TableCell>
@@ -552,7 +555,9 @@ export function TrackingDashboard({
                           locale: ko,
                         })}
                       </TableCell>
-                      <TableCell className="text-sm font-mono">{log.path}</TableCell>
+                      <TableCell>
+                        <PathLabel path={log.path} />
+                      </TableCell>
                       <TableCell className="text-xs font-mono">
                         {log.ip_address ?? "-"}
                       </TableCell>

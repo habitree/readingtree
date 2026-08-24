@@ -10,6 +10,7 @@ import { Users, Search, BookOpen, FileText, Shield } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ko } from "date-fns/locale";
 import type { MemberEntry } from "@/app/actions/admin/stats";
+import { MemberAccessDialog } from "./member-access-dialog";
 
 interface MembersListProps {
   members: MemberEntry[];
@@ -36,6 +37,7 @@ export function MembersList({ members }: MembersListProps) {
   const [search, setSearch] = useState("");
   const [sortKey, setSortKey] = useState<"created_at" | "bookCount" | "noteCount" | "lastLoginAt">("created_at");
   const [sortAsc, setSortAsc] = useState(false);
+  const [selectedMember, setSelectedMember] = useState<MemberEntry | null>(null);
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim();
@@ -146,7 +148,7 @@ export function MembersList({ members }: MembersListProps) {
             <Users className="h-5 w-5" />
             회원 목록 ({filtered.length}명)
           </CardTitle>
-          <CardDescription>전체 가입 회원 현황 (데모 계정 제외)</CardDescription>
+          <CardDescription>전체 가입 회원 현황 (데모 계정 제외) · 회원을 클릭하면 접속기록을 확인할 수 있습니다</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
@@ -192,7 +194,11 @@ export function MembersList({ members }: MembersListProps) {
                   </TableRow>
                 ) : (
                   filtered.map((member, i) => (
-                    <TableRow key={member.id}>
+                    <TableRow
+                      key={member.id}
+                      className="cursor-pointer hover:bg-muted/50"
+                      onClick={() => setSelectedMember(member)}
+                    >
                       <TableCell className="text-xs text-muted-foreground">{i + 1}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-3">
@@ -261,6 +267,13 @@ export function MembersList({ members }: MembersListProps) {
           </div>
         </CardContent>
       </Card>
+
+      <MemberAccessDialog
+        member={selectedMember}
+        onOpenChange={(open) => {
+          if (!open) setSelectedMember(null);
+        }}
+      />
     </div>
   );
 }
