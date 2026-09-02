@@ -12,7 +12,7 @@ export const MUSIC_GENRES: MusicGenre[] = [
         "title": "골드베르크 변주곡 - Aria",
         "composer": "바흐",
         "url": "/music/bach-goldberg-aria.mp3",
-        "duration": 287.161
+        "duration": 297.581
       },
       {
         "title": "골드베르크 변주곡 - Var.25",
@@ -24,25 +24,25 @@ export const MUSIC_GENRES: MusicGenre[] = [
         "title": "평균율 1권 프렐류드 C장조 BWV 846",
         "composer": "바흐",
         "url": "/music/bach-wtc-prelude-c.mp3",
-        "duration": 309.655
+        "duration": 161.974
       },
       {
         "title": "프랑스 모음곡 5번 - 사라방드",
         "composer": "바흐",
         "url": "/music/bach-french-suite-5-sarabande.mp3",
-        "duration": 226.27
+        "duration": 226.274
       },
       {
         "title": "인벤션 1번 C장조",
         "composer": "바흐",
         "url": "/music/bach-invention-1-c-major.mp3",
-        "duration": 64.069
+        "duration": 64.07
       },
       {
         "title": "인벤션 8번 F장조",
         "composer": "바흐",
         "url": "/music/bach-invention-8-f-major.mp3",
-        "duration": 54.57
+        "duration": 54.574
       },
       {
         "title": "소나타 K.380",
@@ -60,7 +60,7 @@ export const MUSIC_GENRES: MusicGenre[] = [
         "title": "비창 소나타 - 2악장 Adagio",
         "composer": "베토벤",
         "url": "/music/beethoven-pathetique-2-adagio.mp3",
-        "duration": 325.421
+        "duration": 321.046
       },
       {
         "title": "소나타 K.545 - 2악장 Andante",
@@ -84,37 +84,37 @@ export const MUSIC_GENRES: MusicGenre[] = [
         "title": "녹턴 Op.9 No.2",
         "composer": "쇼팽",
         "url": "/music/chopin-nocturne-op9-2.mp3",
-        "duration": 269.923
+        "duration": 268.57
       },
       {
         "title": "녹턴 Op.27 No.2",
         "composer": "쇼팽",
         "url": "/music/chopin-nocturne-op27-2.mp3",
-        "duration": 366.553
+        "duration": 366.552
       },
       {
         "title": "녹턴 Op.15 No.2",
         "composer": "쇼팽",
         "url": "/music/chopin-nocturne-op15-2.mp3",
-        "duration": 126.925
+        "duration": 230.331
       },
       {
         "title": "녹턴 Op.55 No.1",
         "composer": "쇼팽",
         "url": "/music/chopin-nocturne-op55-1.mp3",
-        "duration": 210.753
+        "duration": 310.918
       },
       {
         "title": "녹턴 Op.48 No.1",
         "composer": "쇼팽",
         "url": "/music/chopin-nocturne-op48-1.mp3",
-        "duration": 183.837
+        "duration": 367.616
       },
       {
         "title": "발라드 1번 Op.23",
         "composer": "쇼팽",
         "url": "/music/chopin-ballade-1.mp3",
-        "duration": 611.626
+        "duration": 611.639
       },
       {
         "title": "왈츠 Op.64 No.2",
@@ -126,19 +126,19 @@ export const MUSIC_GENRES: MusicGenre[] = [
         "title": "프렐류드 Op.28 No.4",
         "composer": "쇼팽",
         "url": "/music/chopin-prelude-op28-4.mp3",
-        "duration": 143.969
+        "duration": 112.303
       },
       {
         "title": "프렐류드 Op.28 No.15 \"빗방울\"",
         "composer": "쇼팽",
         "url": "/music/chopin-prelude-op28-15.mp3",
-        "duration": 291.753
+        "duration": 312.669
       },
       {
         "title": "아베 마리아",
         "composer": "슈베르트",
         "url": "/music/schubert-ave-maria.mp3",
-        "duration": 249.507
+        "duration": 249.511
       },
       {
         "title": "즉흥곡 Op.90 No.3",
@@ -168,25 +168,25 @@ export const MUSIC_GENRES: MusicGenre[] = [
         "title": "아라베스크 1번",
         "composer": "드뷔시",
         "url": "/music/debussy-arabesque-1.mp3",
-        "duration": 465.015
+        "duration": 255.344
       },
       {
         "title": "달빛 (베르가마스크 모음곡)",
         "composer": "드뷔시",
         "url": "/music/debussy-clair-de-lune.mp3",
-        "duration": 363.929
+        "duration": 300.544
       },
       {
         "title": "짐노페디 1번",
         "composer": "사티",
         "url": "/music/satie-gymnopedie-1.mp3",
-        "duration": 212.246
+        "duration": 212.247
       },
       {
         "title": "뇨시엔느 1번",
         "composer": "사티",
         "url": "/music/satie-gnossienne-1.mp3",
-        "duration": 265.364
+        "duration": 265.375
       }
     ]
   },
@@ -199,7 +199,7 @@ export const MUSIC_GENRES: MusicGenre[] = [
         "title": "무반주 첼로 모음곡 1번 - 프렐류드",
         "composer": "바흐",
         "url": "/music/bach-cello-suite-1-prelude.mp3",
-        "duration": 146.291
+        "duration": 146.491
       },
       {
         "title": "캐논 D장조",
@@ -235,7 +235,7 @@ export const MUSIC_GENRES: MusicGenre[] = [
         "title": "수상음악 - 에어",
         "composer": "헨델",
         "url": "/music/handel-water-music-air.mp3",
-        "duration": 145.313
+        "duration": 145.317
       },
       {
         "title": "무반주 플루트 환상곡 1번",
@@ -301,7 +301,7 @@ export const MUSIC_GENRES: MusicGenre[] = [
         "title": "명상곡",
         "composer": "수크",
         "url": "/music/suk-meditation.mp3",
-        "duration": 404.356
+        "duration": 404.355
       },
       {
         "title": "페르 귄트 - 아침 기분",
@@ -319,7 +319,7 @@ export const MUSIC_GENRES: MusicGenre[] = [
         "title": "타이스의 명상곡",
         "composer": "마스네",
         "url": "/music/massenet-thais-meditation.mp3",
-        "duration": 255.562
+        "duration": 255.815
       },
       {
         "title": "백조 (동물의 사육제)",
@@ -337,31 +337,31 @@ export const MUSIC_GENRES: MusicGenre[] = [
         "title": "보칼리제",
         "composer": "라흐마니노프",
         "url": "/music/rachmaninoff-vocalise.mp3",
-        "duration": 344.345
+        "duration": 333.345
       },
       {
         "title": "브란덴부르크 협주곡 3번 - 1악장",
         "composer": "바흐",
         "url": "/music/bach-brandenburg-3-allegro.mp3",
-        "duration": 335.591
+        "duration": 315.46
       },
       {
         "title": "토카타와 푸가 D단조",
         "composer": "바흐",
         "url": "/music/bach-toccata-fugue-d-minor.mp3",
-        "duration": 520.563
+        "duration": 520.571
       },
       {
         "title": "수상음악 - 알라 호른파이프",
         "composer": "헨델",
         "url": "/music/handel-water-music-alla-hornpipe.mp3",
-        "duration": 216.408
+        "duration": 226.384
       },
       {
         "title": "아이네 클라이네 나흐트무지크 - 1악장 Allegro",
         "composer": "모차르트",
         "url": "/music/mozart-eine-kleine-1-allegro.mp3",
-        "duration": 343.841
+        "duration": 348.499
       },
       {
         "title": "교향곡 40번 - 1악장 Molto Allegro",
@@ -373,13 +373,13 @@ export const MUSIC_GENRES: MusicGenre[] = [
         "title": "교향곡 25번 - 1악장",
         "composer": "모차르트",
         "url": "/music/mozart-symphony25-1.mp3",
-        "duration": 469.084
+        "duration": 469.088
       },
       {
         "title": "터키 행진곡",
         "composer": "모차르트",
         "url": "/music/mozart-turkish-march.mp3",
-        "duration": 229.278
+        "duration": 229.282
       },
       {
         "title": "교향곡 5번 - 1악장 운명",
@@ -391,7 +391,7 @@ export const MUSIC_GENRES: MusicGenre[] = [
         "title": "에그몬트 서곡",
         "composer": "베토벤",
         "url": "/music/beethoven-egmont-overture.mp3",
-        "duration": 540.865
+        "duration": 540.876
       },
       {
         "title": "세빌리아의 이발사 서곡",
@@ -403,25 +403,25 @@ export const MUSIC_GENRES: MusicGenre[] = [
         "title": "헝가리 무곡 5번",
         "composer": "브람스",
         "url": "/music/brahms-hungarian-dance-5.mp3",
-        "duration": 172.488
+        "duration": 172.493
       },
       {
         "title": "꽃의 왈츠 (호두까기 인형)",
         "composer": "차이콥스키",
         "url": "/music/tchaikovsky-waltz-of-flowers.mp3",
-        "duration": 394.424
+        "duration": 394.429
       },
       {
         "title": "현을 위한 세레나데 - 왈츠",
         "composer": "차이콥스키",
         "url": "/music/tchaikovsky-serenade-waltz.mp3",
-        "duration": 242.709
+        "duration": 243.019
       },
       {
         "title": "산왕의 궁전에서 (페르 귄트)",
         "composer": "그리그",
         "url": "/music/grieg-hall-mountain-king.mp3",
-        "duration": 155.038
+        "duration": 152.389
       }
     ]
   },
@@ -494,7 +494,7 @@ export const MUSIC_GENRES: MusicGenre[] = [
         "title": "Jazz 1",
         "composer": "Francisco Alvear",
         "url": "/music/jazz-1-track.mp3",
-        "duration": 132.26
+        "duration": 132.233
       },
       {
         "title": "Nostalgic Night",
@@ -572,12 +572,6 @@ export const MUSIC_GENRES: MusicGenre[] = [
         "title": "Groovy Jazz",
         "composer": "Francisco Alvear",
         "url": "/music/groovy-jazz.mp3",
-        "duration": 132.189
-      },
-      {
-        "title": "Dreamy Jazz",
-        "composer": "Francisco Alvear",
-        "url": "/music/dreamy-jazz.mp3",
         "duration": 132.189
       },
       {

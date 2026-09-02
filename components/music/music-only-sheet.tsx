@@ -6,6 +6,7 @@
  * 음악(피아노/클래식/재즈) 카드 + 백색소음(빗소리/숲속/파도/모닥불) 카드 + 재생/정지.
  * 음악은 곡 단위 셔플 큐로 매번 다른 순서, 백색소음은 단일 음원을 이어 반복한다.
  * 백색소음 출처(CC 표기 의무)는 섹션 하단 문구 + 미니플레이어 녹음자명으로 표기.
+ * 음악 출처(Musopen·Commons·Mixkit, CC BY-SA 2곡)도 같은 문구에 표기 — 2026-09-03.
  */
 
 import { Music2, Pause, Play } from "lucide-react";
@@ -93,6 +94,9 @@ export function MusicOnlySheet() {
             자연음 출처: Wikimedia Commons — Zuvji(빗소리, CC BY-SA 4.0) ·
             Silas S. Brown(숲속, PD) · Andrew Migneault(파도, CC BY-SA 4.0) ·
             Glaneur de sons(모닥불, CC BY 3.0)
+            <br />
+            음악 출처: Musopen · Wikimedia Commons(PD/CC0) · Mixkit(재즈) ·
+            Advent Chamber Orchestra(아이네 클라이네 1악장·브란덴부르크 3번, CC BY-SA 2.0)
           </p>
 
           {/* 정지 (재생 중일 때만) */}

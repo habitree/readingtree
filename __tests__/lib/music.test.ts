@@ -32,6 +32,14 @@ describe("music genre data", () => {
     expect(classic?.tracks.length).toBe(38); // 24 + 14
   });
 
+  it("재즈 중복 음원(Dreamy Jazz = Groovy Jazz)이 제거되어 34곡이다", () => {
+    const jazz = getGenreById("jazz");
+    const titles = jazz?.tracks.map((t) => t.title) ?? [];
+    expect(titles).toContain("Groovy Jazz");
+    expect(titles).not.toContain("Dreamy Jazz");
+    expect(jazz?.tracks.length).toBe(34);
+  });
+
   it("백색소음 채널은 ambience 플래그와 단일 곡을 가진다", () => {
     expect(AMBIENCE_GENRES.map((g) => g.id).sort()).toEqual([
       "fire",

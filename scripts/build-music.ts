@@ -1,38 +1,38 @@
 /**
- * 개별 곡 정규화 빌드 스크립트 (v4 — 병합 스트림 폐기, 2026-07-24)
+ * 개별 곡 정규화 빌드 스크립트 (v5 — 출처 재다운로드 + 320k CBR, 2026-09-03)
  *
- * 목적: 3채널(피아노/클래식/재즈)의 모든 곡을 **개별 파일**로
- *       정규화해 public/music/ 에 배치한다. 병합(concat)·파트 분할·byte-offset seek 를
- *       전면 폐기 — 곡 하나가 독립 파일이므로 런타임에 "파일상 다음 곡" 이 존재하지 않아
- *       곡 겹침이 원천 불가능하다. public/ 은 Vercel CDN(immutable)으로 서빙된다.
+ * 목적: 3채널(피아노/클래식/재즈) 전 곡을 **기록된 출처에서 다시 받아** 검수·정규화하고
+ *       public/music/ 에 개별 파일로 배치한다. (병합·파트 분할·byte-offset seek 은 v4에서 폐기.)
+ *
+ * v5 변경(2026-09-03) — 전수 실측에서 드러난 결함 교정:
+ *   · 출처 기반 재다운로드: tracks.ts 의 sourceUrl 이 실제 원본(https: Musopen FLAC / Wikimedia
+ *     Commons / Mixkit, 또는 git:<commit>:<path> = 이 저장소 이력의 최초 원본)을 가리킨다.
+ *     v4 까지는 sourceUrl 이 산출물(/music/…)을 가리켜 재현이 불가능했다.
+ *   · clip: 한 파일에 두 곡이 이어 붙은 원본(아라베스크 1+2 등)은 구간을 잘라 한 곡만 남긴다.
+ *   · 트루피크 캡 정상화: v4 의 `alimiter=limit=-1.5dB` 는 dB 접미사가 파싱되지 않아 무효였고
+ *     약 50곡이 0 dBTP 를 넘었다. 이제 선형 게인 뒤 4x 오버샘플 리미터(선형값)로 -2 dBTP 캡,
+ *     리미터 부담이 MAX_LIMIT_DB 를 넘으면 게인을 그만큼 낮춘다(과한 리미팅 방지).
+ *   · 320 kbps CBR MP3(v4 VBR V2 ≈190k 에서 상향). 앨범아트·ID3 제거.
+ *   · 산출물 검증: 곡별 트루피크 재측정(≤ -1.0 dBTP), md5 중복 0 — 위반 시 빌드 실패.
  *
  * 파이프라인(곡별):
- *   1. 앞뒤 무음 트리밍(-50dB) — 곡 사이 죽은 공백 제거
- *   2. (히스 곡만) afftdn 디노이즈 — 원본 표면잡음(지지직) 제거
- *      · 15kHz+ 노이즈 플로어 실측으로 재생 히스 > -62dB 인 6곡만 대상(음악 손상 방지)
- *   3. 선형 게인 + 트루피크 리미터(alimiter) — 목표 -18 LUFS / 트루피크 -1.5dBTP
- *      · volume 으로 목표까지 선형 게인(모든 구간 동일 비율) + alimiter 로 피크만 순간 제한.
- *        loudnorm 의 dynamic 정규화와 달리 구간별 압축이 없어 다이내믹 레인지(LRA)를
- *        완전 보존하고, 조용한 구간의 표면 히스를 증폭하지 않는다.
- *        실측: schubert-andante LRA 9.6→9.5 / bach-jesu-joy 는 dynamic 대비 히스 억제.
- *      · 감쇠 곡에도 트루피크 캡을 잘못 적용하던 구(舊) 선형게인 버그(편차 6.2dB) 해소.
- *   4. VBR V2 MP3 인코딩(-vn: 앨범아트 스트림 제거) → public/music/<파일명>
- *      · 개별 곡이라 byte-offset seek 이 없으므로 CBR 불필요 → VBR 로 음질 유지+용량 절감
- *
- * 재즈: 원본이 Supabase(외부 https)에 있으므로 먼저 로컬로 받아 동일 파이프라인 적용,
- *       public 으로 이전(전 채널 public 통일 → Supabase Storage 부담 해소).
+ *   0. 출처 다운로드(캐시) → 1. clip(선택) → 2. 앞뒤 무음 트리밍(-50dB)
+ *   → 3. (히스 곡만) afftdn 디노이즈 → 4. 선형 게인(-18 LUFS 목표) + 트루피크 리미터(-2 dBTP)
+ *   → 5. libmp3lame 320k CBR 44.1kHz 스테레오 → public/music/<file>
  *
  * 실행: npx tsx scripts/build-music.ts
- *   환경변수 불필요(재즈 URL 은 tracks.ts 에 이미 https 절대경로).
- * 전제: ffmpeg / ffprobe 가 PATH 에 존재.
+ *   환경변수 불필요. 전제: ffmpeg / ffprobe / git 이 PATH 에 존재.
+ *   캐시: %TEMP%/rt-music-v5/src (원본), %TEMP%/rt-music-v5/out-320k-l18-tp20 (산출물)
  *
- * 안전: 모든 처리는 임시 폴더에서 수행하고, 전 곡 성공 시에만 public/music 을 덮어쓴다.
- *       (실패 시 원본 보존.) genres.ts 는 마지막에 한 번에 생성한다.
+ * 안전: 모든 처리는 임시 폴더에서 수행하고, 전 곡 성공·검증 통과 시에만 public/music 의
+ *       음악 파일을 전량 교체한다(ambience-*.mp3 는 build-ambience.ts 소관이라 건드리지 않는다).
+ *       genres.ts 는 마지막에 한 번에 생성한다.
  */
 
 import { execFile } from "node:child_process";
+import { createHash } from "node:crypto";
 import { promisify } from "node:util";
-import { mkdir, writeFile, copyFile, stat } from "node:fs/promises";
+import { mkdir, writeFile, copyFile, stat, readdir, unlink, readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -41,46 +41,65 @@ import { MUSIC_TRACKS, type MusicChannelId, type SourceTrack } from "../lib/musi
 const execFileAsync = promisify(execFile);
 
 const TARGET_LUFS = -18; // 곡 간 라우드니스 목표
-const TP_CEIL_DB = -1.5; // 트루피크 상한(dBTP)
-const VBR_QUALITY = "2"; // libmp3lame VBR V2(~190k) — 개별 곡이라 seek 불필요 → VBR 로 용량 절감
+const TP_CEIL_DB = -2.0; // 리미터 캡(dBTP). MP3 인코딩 오버슈트 여유를 두고 검증 기준은 -1.0
+const VERIFY_TP_MAX = -1.0; // 산출물 트루피크 상한(검증)
+const MAX_LIMIT_DB = 3; // 리미터가 깎아도 되는 최대 dB — 넘으면 게인을 낮춘다
+const MP3_BITRATE = "320k";
+const CONCURRENCY = 3;
+const USER_AGENT = "readingtree-music-build/5.0 (contact: cdhrich@gmail.com)";
 // 앞뒤 무음 트리밍 — 여유를 남겨 자연스러운 호흡 유지
 const TRIM_FILTERS =
   "silenceremove=start_periods=1:start_threshold=-50dB:start_silence=0.5," +
   "areverse,silenceremove=start_periods=1:start_threshold=-50dB:start_silence=0.8,areverse";
 // 디노이즈(afftdn) — 진짜 표면 히스가 있는 곡에만.
 const DENOISE_FILTER = "afftdn=nr=12:nf=-45:tn=1";
-const CONCURRENCY = 3;
 
 /**
  * 진짜 표면 히스(지지직)가 있는 곡 — 스펙트로그램 + "afftdn 전후 조용한 구간 15kHz+ 변화량"
- * 으로 확진. bach-jesu-joy 만 균일 노이즈 띠(Δ17dB)를 보였고, 후보였던 다른 곡들
- * (telemann·massenet·faure 등)은 음악 배음(15kHz 컷, 무음시 고역 소멸, Δ<3dB)이라 제외.
- * 이 목록에 없는 곡은 afftdn 을 걸지 않는다(음악 고주파 보존 — 디노이즈는 무효하고 유해).
+ * 으로 확진(v4). 이 목록에 없는 곡은 afftdn 을 걸지 않는다(음악 고주파 보존).
  */
-const HISS_TRACKS = new Set([
-  "bach-jesu-joy-bwv147.mp3",
-]);
+const HISS_TRACKS = new Set(["bach-jesu-joy-bwv147.mp3"]);
 
-/**
- * 곡의 출력 파일명(basename). 항상 .mp3 로 강제한다 — 원본이 .ogg(beethoven-symphony5-1)여도
- * 출력은 mp3 컨테이너이므로 확장자가 어긋나면 인코딩이 실패한다.
- */
-function outputBasename(track: SourceTrack): string {
-  const seg = track.sourceUrl.split("/").pop() ?? `${track.id}.mp3`;
-  return seg.replace(/\.[^.]+$/, ".mp3");
+const WORK_DIR = path.join(tmpdir(), "rt-music-v5");
+const SRC_DIR = path.join(WORK_DIR, "src");
+const OUT_DIR = path.join(WORK_DIR, "out-320k-l18-tp20");
+
+function sourceExt(track: SourceTrack): string {
+  const m = /\.([a-z0-9]{2,5})(?:$|\?)/i.exec(decodeURIComponent(track.sourceUrl));
+  return (m?.[1] ?? "bin").toLowerCase();
 }
 
-/** 재즈 다운로드 저장 파일명 — 원본 확장자 유지(입력용). */
-function jazzDownloadName(track: SourceTrack): string {
-  return track.sourceUrl.split("/").pop() ?? `${track.id}.mp3`;
-}
+/** 원본을 캐시에 확보한다: https → 다운로드, git:<commit>:<path> → 이력에서 추출. */
+async function fetchSource(track: SourceTrack): Promise<string> {
+  const dest = path.join(SRC_DIR, `${track.file.replace(/\.mp3$/, "")}.${sourceExt(track)}`);
+  if (existsSync(dest) && (await stat(dest)).size > 0) return dest;
 
-function localInputPath(track: SourceTrack, jazzDir: string): string {
-  if (track.sourceUrl.startsWith("/")) {
-    return path.join(process.cwd(), "public", track.sourceUrl);
+  if (track.sourceUrl.startsWith("git:")) {
+    const [, commit, ...rest] = track.sourceUrl.split(":");
+    const gitPath = rest.join(":");
+    const { stdout } = await execFileAsync("git", ["cat-file", "-p", `${commit}:${gitPath}`], {
+      encoding: "buffer",
+      maxBuffer: 256 * 1024 * 1024,
+    });
+    await writeFile(dest, stdout);
+    return dest;
   }
-  // https(재즈) — 사전 다운로드한 로컬 경로(원본 확장자)
-  return path.join(jazzDir, jazzDownloadName(track));
+
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      const res = await fetch(track.sourceUrl, { headers: { "User-Agent": USER_AGENT } });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const buf = Buffer.from(await res.arrayBuffer());
+      const expected = Number(res.headers.get("content-length") ?? 0);
+      if (expected && buf.length !== expected) throw new Error(`short read ${buf.length}/${expected}`);
+      await writeFile(dest, buf);
+      return dest;
+    } catch (err) {
+      if (attempt === 3) throw new Error(`다운로드 실패(${track.title}): ${String(err)}`);
+      await new Promise((r) => setTimeout(r, 3000 * attempt));
+    }
+  }
+  throw new Error("unreachable");
 }
 
 async function ffprobeDuration(file: string): Promise<number> {
@@ -95,81 +114,103 @@ async function ffprobeDuration(file: string): Promise<number> {
   return d;
 }
 
-/** 재즈 https 원본을 로컬로 받아둔다(재다운로드 방지). */
-async function downloadJazz(track: SourceTrack, jazzDir: string): Promise<void> {
-  const dest = path.join(jazzDir, jazzDownloadName(track));
-  if (existsSync(dest) && (await stat(dest)).size > 0) return;
-  const res = await fetch(track.sourceUrl);
-  if (!res.ok) throw new Error(`재즈 다운로드 실패(${track.title}): HTTP ${res.status}`);
-  const buf = Buffer.from(await res.arrayBuffer());
-  await writeFile(dest, buf);
-}
-
-/** 필터 프리픽스(트림 + 선택적 디노이즈) — pass1/pass2 공통. */
-function preFilters(basename: string): string {
-  const chain = [TRIM_FILTERS];
-  if (HISS_TRACKS.has(basename)) chain.push(DENOISE_FILTER);
+/** clip(선택) + 트림 + 선택적 디노이즈 — 측정/인코딩 공통 프리필터. */
+function preFilters(track: SourceTrack): string {
+  const chain: string[] = [];
+  if (track.clip) {
+    const parts = [];
+    if (track.clip.start !== undefined) parts.push(`start=${track.clip.start}`);
+    if (track.clip.end !== undefined) parts.push(`end=${track.clip.end}`);
+    chain.push(`atrim=${parts.join(":")},asetpts=PTS-STARTPTS`);
+  }
+  chain.push(TRIM_FILTERS);
+  if (HISS_TRACKS.has(track.file)) chain.push(DENOISE_FILTER);
   return chain.join(",");
 }
 
-/** 트림/디노이즈 적용 상태의 통합 라우드니스(LUFS) 측정. */
-async function measureLufs(input: string, pre: string): Promise<number> {
+interface Loudness {
+  lufs: number;
+  truePeak: number;
+}
+
+/** 프리필터 적용 상태의 통합 라우드니스·트루피크 측정. */
+async function measure(input: string, filters: string): Promise<Loudness> {
   const { stderr } = await execFileAsync(
     "ffmpeg",
     [
       "-hide_banner", "-nostats", "-i", input,
-      "-af", `${pre},loudnorm=I=${TARGET_LUFS}:TP=${TP_CEIL_DB}:print_format=json`,
+      "-af", `${filters},loudnorm=I=${TARGET_LUFS}:TP=${TP_CEIL_DB}:print_format=json`,
       "-f", "null", "-",
     ],
     { maxBuffer: 64 * 1024 * 1024 },
   );
   const m = stderr.match(/\{[^{}]*"input_i"[\s\S]*?\}/);
   if (!m) throw new Error(`loudnorm 측정 실패: ${input}`);
-  const inputI = parseFloat((JSON.parse(m[0]) as { input_i: string }).input_i);
-  if (!Number.isFinite(inputI)) throw new Error(`loudnorm 측정값 파싱 실패: ${input}`);
-  return inputI;
+  const j = JSON.parse(m[0]) as { input_i: string; input_tp: string };
+  const lufs = parseFloat(j.input_i);
+  const truePeak = parseFloat(j.input_tp);
+  if (!Number.isFinite(lufs) || !Number.isFinite(truePeak)) {
+    throw new Error(`loudnorm 측정값 파싱 실패: ${input}`);
+  }
+  return { lufs, truePeak };
+}
+
+interface Built {
+  file: string;
+  duration: number;
+  gain: number;
+  limited: number;
+  outLufs: number;
+  outTp: number;
+  md5: string;
 }
 
 /**
- * 단일 곡을 정규화 mp3 로 인코딩 후 실제 길이 반환.
- * 선형 게인(volume) + 트루피크 리미터(alimiter) — 목표 LUFS 까지 균일 비율로 올리되
- * 피크만 순간 제한. dynamic 압축이 없어 다이내믹 레인지·히스 비율을 보존한다.
+ * 단일 곡 정규화 → 320k MP3. 선형 게인으로 -18 LUFS 를 맞추되, 게인 후 트루피크가 캡을
+ * 넘는 만큼은 리미터가 처리한다(최대 MAX_LIMIT_DB). 그 이상 필요하면 게인을 낮춰
+ * 다이내믹 레인지를 보존한다(그 곡은 -18 보다 조용해진다 — 의도된 트레이드오프).
  */
-async function normalize(
-  track: SourceTrack,
-  input: string,
-  outFile: string,
-): Promise<number> {
-  if (existsSync(outFile) && (await stat(outFile)).size > 0) {
-    return ffprobeDuration(outFile);
+async function normalize(track: SourceTrack, input: string, outFile: string): Promise<Built> {
+  let gain = NaN; // 캐시된 산출물이면 측정을 생략한다(gain 미상)
+  let limited = 0;
+  if (!(existsSync(outFile) && (await stat(outFile)).size > 0)) {
+    const pre = preFilters(track);
+    const src = await measure(input, pre);
+    gain = TARGET_LUFS - src.lufs;
+    const over = src.truePeak + gain - TP_CEIL_DB; // 캡을 넘는 양(dB)
+    limited = Math.max(0, Math.min(over, MAX_LIMIT_DB));
+    if (over > MAX_LIMIT_DB) gain -= over - MAX_LIMIT_DB;
+    gain = Math.round(gain * 100) / 100;
+    const limit = Math.pow(10, TP_CEIL_DB / 20).toFixed(4); // alimiter 는 선형값만 받는다
+    await execFileAsync(
+      "ffmpeg",
+      [
+        "-y", "-i", input,
+        "-af",
+        `${pre},volume=${gain}dB,` +
+          `aresample=176400,alimiter=limit=${limit}:attack=5:release=80:level=false,aresample=44100`,
+        "-c:a", "libmp3lame",
+        "-b:a", MP3_BITRATE,
+        "-ar", "44100",
+        "-ac", "2",
+        "-vn",                 // 앨범아트(mjpeg/png) 스트림 제거
+        "-map_metadata", "-1", // ID3 제거
+        outFile,
+      ],
+      { maxBuffer: 64 * 1024 * 1024 },
+    );
   }
-  if (!existsSync(input)) throw new Error(`음원 없음: ${input}`);
-
-  const basename = outputBasename(track);
-  const pre = preFilters(basename);
-  const inputI = await measureLufs(input, pre);
-  const gain = Math.round((TARGET_LUFS - inputI) * 100) / 100;
-
-  await execFileAsync(
-    "ffmpeg",
-    [
-      "-y", "-i", input,
-      "-af", `${pre},volume=${gain}dB,alimiter=limit=${TP_CEIL_DB}dB`,
-      "-c:a", "libmp3lame",
-      "-q:a", VBR_QUALITY,   // VBR — 개별 곡이라 byte-offset seek 불필요
-      "-ar", "44100",
-      "-ac", "2",
-      "-vn",                 // 앨범아트(mjpeg/png) 스트림 제거
-      "-map_metadata", "-1", // ID3 제거
-      outFile,
-    ],
-    { maxBuffer: 64 * 1024 * 1024 },
-  );
-  const denoised = HISS_TRACKS.has(basename) ? " +디노이즈" : "";
-  process.stdout.write(
-    `    · ${track.title} — ${inputI.toFixed(1)} LUFS → gain ${gain >= 0 ? "+" : ""}${gain}dB${denoised}\n`,
-  );
-  return ffprobeDuration(outFile);
+  const out = await measure(outFile, "anull");
+  const md5 = createHash("md5").update(await readFile(outFile)).digest("hex");
+  return {
+    file: track.file,
+    duration: await ffprobeDuration(outFile),
+    gain,
+    limited,
+    outLufs: out.lufs,
+    outTp: out.truePeak,
+    md5,
+  };
 }
 
 async function mapLimit<T, R>(
@@ -196,13 +237,6 @@ interface ChannelBuild {
   tracks: SourceTrack[];
 }
 
-interface OutTrack {
-  title: string;
-  composer: string;
-  url: string;
-  duration: number;
-}
-
 async function main() {
   const channels: ChannelBuild[] = [
     { id: "piano", name: "피아노", emoji: "🎹", tracks: [] },
@@ -214,68 +248,79 @@ async function main() {
     if (!ch) throw new Error(`알 수 없는 채널: ${t.channel} (${t.id})`);
     ch.tracks.push(t);
   }
+  const files = MUSIC_TRACKS.map((t) => t.file);
+  if (new Set(files).size !== files.length) throw new Error("tracks.ts 에 중복 file 이 있다");
 
-  console.log("=== 개별 곡 정규화 빌드 (v4) ===");
+  console.log("=== 개별 곡 정규화 빌드 (v5: 출처 재다운로드 + 320k CBR) ===");
   console.log(channels.map((c) => `${c.name} ${c.tracks.length}곡`).join(" / "));
+  await mkdir(SRC_DIR, { recursive: true });
+  await mkdir(OUT_DIR, { recursive: true });
+  console.log(`작업 캐시: ${WORK_DIR}`);
 
-  // 인코딩 파라미터가 바뀌면 캐시 재사용 금지 → 파라미터 반영한 디렉터리명
-  const workDir = path.join(tmpdir(), "rt-music-v4-vbr2-l18-tp15");
-  const jazzDir = path.join(workDir, "jazz-src");
-  const outDir = path.join(workDir, "out");
-  await mkdir(jazzDir, { recursive: true });
-  await mkdir(outDir, { recursive: true });
-  console.log(`작업 캐시: ${workDir}`);
-
-  // 1) 재즈 원본 다운로드
-  const jazz = channels.find((c) => c.id === "jazz")!;
-  console.log(`\n[재즈] ${jazz.tracks.length}곡 다운로드...`);
-  await mapLimit(jazz.tracks, 6, async (t) => {
-    await downloadJazz(t, jazzDir);
-    process.stdout.write(`  ↓ ${outputBasename(t)}\n`);
+  // 1) 출처 확보
+  console.log(`\n[출처] ${MUSIC_TRACKS.length}곡 다운로드/추출...`);
+  await mapLimit(MUSIC_TRACKS, 4, async (t) => {
+    await fetchSource(t);
+    process.stdout.write(`  ↓ ${t.file}\n`);
   });
 
-  // 2) 곡별 정규화 → outDir
-  const built: OutTrack[][] = [];
+  // 2) 곡별 정규화 → OUT_DIR
+  const built = new Map<string, Built>();
   for (const ch of channels) {
     console.log(`\n[${ch.id}] ${ch.tracks.length}곡 정규화...`);
-    const outs = await mapLimit(ch.tracks, CONCURRENCY, async (track, i) => {
-      const basename = outputBasename(track);
-      const input = localInputPath(track, jazzDir);
-      const outFile = path.join(outDir, basename);
-      const duration = await normalize(track, input, outFile);
-      process.stdout.write(`  ✓ ${i + 1}/${ch.tracks.length} ${track.title}\n`);
-      return {
-        title: track.title,
-        composer: track.composer,
-        url: `/music/${basename}`,
-        duration: Math.round(duration * 1000) / 1000,
-        _basename: basename,
-      };
+    await mapLimit(ch.tracks, CONCURRENCY, async (track, i) => {
+      const input = await fetchSource(track);
+      const b = await normalize(track, input, path.join(OUT_DIR, track.file));
+      built.set(track.file, b);
+      const lim = b.limited > 0 ? ` lim ${b.limited.toFixed(1)}dB` : "";
+      const how = Number.isNaN(b.gain) ? "캐시" : `gain ${b.gain >= 0 ? "+" : ""}${b.gain}dB${lim}`;
+      process.stdout.write(
+        `  ✓ ${i + 1}/${ch.tracks.length} ${track.title} — ${how}` +
+          ` → ${b.outLufs.toFixed(1)} LUFS / ${b.outTp.toFixed(1)} dBTP · ${b.duration.toFixed(1)}s\n`,
+      );
     });
-    built.push(outs);
   }
 
-  // 3) 전 곡 성공 → public/music 덮어쓰기
+  // 3) 검증 — 트루피크·중복
+  const problems: string[] = [];
+  const byMd5 = new Map<string, string[]>();
+  for (const b of built.values()) {
+    if (b.outTp > VERIFY_TP_MAX) problems.push(`트루피크 초과 ${b.file}: ${b.outTp.toFixed(2)} dBTP`);
+    byMd5.set(b.md5, [...(byMd5.get(b.md5) ?? []), b.file]);
+  }
+  for (const [, names] of byMd5) {
+    if (names.length > 1) problems.push(`산출물 중복(같은 음원): ${names.join(" == ")}`);
+  }
+  if (problems.length) {
+    throw new Error(`검증 실패:\n  ${problems.join("\n  ")}`);
+  }
+
+  // 4) 전 곡 성공 → public/music 의 음악 파일 전량 교체(ambience-* 제외)
   const publicMusic = path.join(process.cwd(), "public", "music");
   await mkdir(publicMusic, { recursive: true });
-  console.log(`\n[배치] public/music 덮어쓰기...`);
-  for (let ci = 0; ci < channels.length; ci++) {
-    for (const t of built[ci]) {
-      const basename = (t as OutTrack & { _basename: string })._basename;
-      await copyFile(path.join(outDir, basename), path.join(publicMusic, basename));
+  console.log(`\n[배치] public/music 교체...`);
+  const keep = new Set(files);
+  for (const name of await readdir(publicMusic)) {
+    const p = path.join(publicMusic, name);
+    if ((await stat(p)).isDirectory()) continue;
+    if (name.startsWith("ambience-")) continue;
+    if (!keep.has(name)) {
+      await unlink(p);
+      process.stdout.write(`  - 삭제 ${name}\n`);
     }
   }
+  for (const f of files) await copyFile(path.join(OUT_DIR, f), path.join(publicMusic, f));
 
-  // 4) genres.ts 생성
-  const genreObjs = channels.map((ch, ci) => ({
+  // 5) genres.ts 생성
+  const genreObjs = channels.map((ch) => ({
     id: ch.id,
     name: ch.name,
     emoji: ch.emoji,
-    tracks: built[ci].map((t) => ({
+    tracks: ch.tracks.map((t) => ({
       title: t.title,
       composer: t.composer,
-      url: t.url,
-      duration: t.duration,
+      url: `/music/${t.file}`,
+      duration: Math.round(built.get(t.file)!.duration * 1000) / 1000,
     })),
   }));
 
@@ -287,8 +332,9 @@ async function main() {
   const outPath = path.join(process.cwd(), "lib", "music", "genres.ts");
   await writeFile(outPath, fileContent, "utf8");
 
+  const total = [...built.values()].reduce((s, b) => s + b.duration, 0);
   console.log(
-    `\n✓ ${outPath} 생성 (곡수: ${genreObjs.map((g) => g.tracks.length).join("/")})`,
+    `\n✓ ${outPath} 생성 (곡수: ${genreObjs.map((g) => g.tracks.length).join("/")}, 총 ${(total / 60).toFixed(0)}분)`,
   );
   console.log("\n=== 빌드 완료 ===");
 }
