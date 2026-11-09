@@ -66,7 +66,7 @@ export function MobileNav() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { isOpen, setIsOpen, title, description, requireLogin } = useLoginPrompt();
   const stampCapture = useStampCaptureStore();
-  const { session: activeSession, elapsedSeconds } = useReadingSession();
+  const { session: activeSession, elapsedSeconds, isPaused } = useReadingSession();
   const openEndSheet = useRecordSheetStore((s) => s.openEnd);
   const openStartSheet = useRecordSheetStore((s) => s.openStart);
 
@@ -220,6 +220,7 @@ export function MobileNav() {
                     <div className="-mt-2">
                       <RecordActivePill
                         elapsedSeconds={elapsedSeconds}
+                        paused={isPaused}
                         bookTitle={activeSession.book?.title}
                         coverImageUrl={activeSession.book?.cover_image_url}
                         variant="fab"

@@ -4,11 +4,12 @@ import { memo, useTransition, useState, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { BookOpen, Star, Loader2, PenLine, X, Square } from "lucide-react";
+import { BookOpen, Star, Loader2, PenLine, X, Pause, Play } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { toggleUserBookPin, setUserBookHomeHidden } from "@/app/actions/books";
 import { useRecordSheetStore } from "@/hooks/use-record-sheet";
+import { useSessionPauseControl } from "@/hooks/use-reading-session";
 
 interface PinnedBookCardProps {
   /** user_books.id */
@@ -27,8 +28,7 @@ interface PinnedBookCardProps {
   priority?: boolean;
   /**
    * 이 카드의 책에 진행 중 reading_logs 세션이 있는지.
-   * true 시 "독서" 버튼이 "멈춤" 모드(다른 색·펄스·Square 아이콘)로 변형되고
-   * 클릭 시 세션 종료 시트(openEnd)로 진입한다.
+   * true 시 "독서" 버튼이 "일시정지/재개" 토글로 변형된다 (REQ-0013).
    */
   isReadingActive?: boolean;
   /** 진행 중 세션 ID (isReadingActive=true 일 때 유효) */
@@ -45,9 +45,8 @@ interface PinnedBookCardProps {
  *     시간 측정 + 페이지 진행 세션 시작.
  *
  *   진행 중 모드 (isReadingActive=true):
- *     - 독서 버튼이 "멈춤"으로 변형 (rose 톤 + 펄스 + Square 아이콘)
- *     - 클릭 시 openEnd(activeSessionId, ...) 로 종료 시트 진입
- *     - 시작/멈춤 두 상태가 한눈에 시각적으로 구분됨
+ *     - 독서 버튼이 "일시정지"(rose + 펄스 + ⏸) ↔ "재개"(slate + ▶) 토글로 변형
+ *     - 종료·저장은 하단 가운데 버튼/헤더 pill → 저장 시트
  *
  * 기타:
  *   - 카드 본문(Link) → 책 상세
@@ -76,6 +75,10 @@ export const PinnedBookCard = memo(function PinnedBookCard({
   const [isHiding, startHideTransition] = useTransition();
   const openRecordStart = useRecordSheetStore((s) => s.openStart);
   const openRecordEnd = useRecordSheetStore((s) => s.openEnd);
+  const pauseControl = useSessionPauseControl();
+  // 서버 렌더 세션과 클라이언트 세션이 같은 세션일 때만 토글 (로딩 전엔 종료 시트로 폴백)
+  const canTogglePause = isReadingActive && !!activeSessionId && pauseControl.sessionId === activeSessionId;
+  const isPaused = canTogglePause && pauseControl.isPaused;
 
   const handleTogglePin = useCallback(
     (e: React.MouseEvent) => {
@@ -148,8 +151,11 @@ export const PinnedBookCard = memo(function PinnedBookCard({
         coverImageUrl,
         totalPages,
       };
-      if (isReadingActive && activeSessionId) {
-        // 멈춤 — 종료 시트 (페이지/메모/사진 입력 후 완료)
+      if (canTogglePause) {
+        // 일시정지 ↔ 재개
+        pauseControl.toggle();
+      } else if (isReadingActive && activeSessionId) {
+        // 클라이언트 세션 로딩 전 — 종료 시트 (페이지/메모/사진 입력 후 완료)
         openRecordEnd(activeSessionId, { book: bookPayload });
       } else {
         // 시작 — 시작 시트
@@ -158,6 +164,8 @@ export const PinnedBookCard = memo(function PinnedBookCard({
     },
     [
       pinDisabled,
+      canTogglePause,
+      pauseControl,
       isReadingActive,
       activeSessionId,
       openRecordStart,
@@ -263,30 +271,43 @@ export const PinnedBookCard = memo(function PinnedBookCard({
               <PenLine className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
               기록
             </button>
-            {/* 독서 버튼 — 진행 중이면 "멈춤"(rose + 펄스 + Square)으로 변형 */}
+            {/* 독서 버튼 — 진행 중이면 "일시정지"(rose + 펄스) ↔ "재개"(slate) 토글 */}
             <button
               type="button"
               onClick={handleReadingAction}
-              disabled={pinDisabled}
+              disabled={pinDisabled || (canTogglePause && pauseControl.isPauseToggling)}
               className={cn(
                 "relative inline-flex items-center justify-center gap-1 rounded-lg px-1.5 py-1.5 text-[11px] sm:text-xs font-semibold transition-colors",
-                isReadingActive
-                  ? "bg-rose-500 text-white hover:bg-rose-600 ring-2 ring-rose-300 dark:ring-rose-700"
-                  : "bg-forest-50 text-forest-700 hover:bg-forest-100 dark:bg-forest-900/30 dark:text-forest-300 dark:hover:bg-forest-900/50",
+                isPaused
+                  ? "bg-slate-500 text-white hover:bg-slate-600 ring-2 ring-slate-300 dark:ring-slate-700"
+                  : isReadingActive
+                    ? "bg-rose-500 text-white hover:bg-rose-600 ring-2 ring-rose-300 dark:ring-rose-700"
+                    : "bg-forest-50 text-forest-700 hover:bg-forest-100 dark:bg-forest-900/30 dark:text-forest-300 dark:hover:bg-forest-900/50",
                 pinDisabled && "opacity-50 cursor-not-allowed",
               )}
-              aria-label={isReadingActive ? `${title} 독서 멈춤` : `${title} 독서 시작`}
-              aria-pressed={isReadingActive}
+              aria-label={
+                isPaused
+                  ? `${title} 독서 재개`
+                  : isReadingActive
+                    ? `${title} 독서 일시정지`
+                    : `${title} 독서 시작`
+              }
+              aria-pressed={isReadingActive ? isPaused : undefined}
             >
-              {isReadingActive ? (
+              {isPaused ? (
+                <>
+                  <Play className="h-3 w-3 sm:h-3.5 sm:w-3.5 fill-current" />
+                  재개
+                </>
+              ) : isReadingActive ? (
                 <>
                   {/* 진행 중 펄스 인디케이터 */}
                   <span className="absolute -top-1 -right-1 flex h-2 w-2">
                     <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-rose-300 opacity-75" />
                     <span className="relative inline-flex h-2 w-2 rounded-full bg-rose-200" />
                   </span>
-                  <Square className="h-3 w-3 sm:h-3.5 sm:w-3.5 fill-current" />
-                  멈춤
+                  <Pause className="h-3 w-3 sm:h-3.5 sm:w-3.5 fill-current" />
+                  일시정지
                 </>
               ) : (
                 <>

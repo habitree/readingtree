@@ -67,6 +67,9 @@ export interface ReadingLog {
  */
 export interface ReadingLogActive extends ReadingLog {
   status: "in_progress";
+  // 일시정지 (REQ-0013) — migration-202611091200
+  paused_at: string | null;
+  paused_seconds: number;
   book?: {
     id: string;
     title: string;

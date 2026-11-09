@@ -25,7 +25,7 @@ interface Props {
 
 export function ActiveSessionIndicator({ variant = "pill", className }: Props) {
   const { user } = useAuth();
-  const { session, elapsedSeconds } = useReadingSession();
+  const { session, elapsedSeconds, isPaused } = useReadingSession();
   const openEnd = useRecordSheetStore((s) => s.openEnd);
 
   if (!user || !session) return null;
@@ -47,6 +47,7 @@ export function ActiveSessionIndicator({ variant = "pill", className }: Props) {
   return (
     <RecordActivePill
       elapsedSeconds={elapsedSeconds}
+      paused={isPaused}
       bookTitle={session.book?.title}
       coverImageUrl={session.book?.cover_image_url}
       variant={variant}

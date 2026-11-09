@@ -6,11 +6,12 @@
  */
 
 import { useState, useTransition } from "react";
-import { Loader2, Save, Trash2 } from "lucide-react";
+import { Loader2, Pause, Play, Save, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
 import { cancelActiveSession, endReadingSession } from "@/app/actions/sessions";
 import { broadcastSessionCancelled, broadcastSessionEnded, useReadingSession } from "@/hooks/use-reading-session";
 import { useRecordSheetStore, type RecordSheetBook } from "@/hooks/use-record-sheet";
@@ -30,7 +31,8 @@ interface Props {
 }
 
 export function RecordEndStep({ sessionId, selectedBook, prefillEndPage, onSavedRequestDetail }: Props) {
-  const { session, elapsedSeconds, broadcastEnd } = useReadingSession();
+  const { session, elapsedSeconds, broadcastEnd, isPaused, isPauseToggling, togglePause } =
+    useReadingSession();
   // derived state: 사용자 override가 있으면 그 값, 없으면 prefill/세션에서 자동 계산
   const [endPageOverride, setEndPageOverride] = useState<number | null>(null);
   const [memo, setMemo] = useState("");
@@ -148,27 +150,60 @@ export function RecordEndStep({ sessionId, selectedBook, prefillEndPage, onSaved
 
   return (
     <div className="space-y-5">
-      {/* 책·경과 시간 표시 */}
-      {selectedBook && (
-        <div className="flex items-center justify-between rounded-xl border border-emerald-100 bg-emerald-50/50 p-3 dark:border-emerald-900 dark:bg-emerald-950/30">
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold text-slate-900 dark:text-white">
-              {selectedBook.title}
-            </p>
-            {selectedBook.author && (
-              <p className="truncate text-xs text-slate-500 dark:text-slate-400">
-                {selectedBook.author}
+      {/* 책·경과 시간 + 일시정지/재개 (음악 플레이어식) */}
+      <div
+        className={cn(
+          "flex items-center gap-3 rounded-xl border p-3 transition-colors",
+          isPaused
+            ? "border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-900/60"
+            : "border-emerald-100 bg-emerald-50/50 dark:border-emerald-900 dark:bg-emerald-950/30",
+        )}
+      >
+        <div className="min-w-0 flex-1">
+          {selectedBook && (
+            <>
+              <p className="truncate text-sm font-semibold text-slate-900 dark:text-white">
+                {selectedBook.title}
               </p>
-            )}
-          </div>
-          <div className="text-right">
-            <p className="text-xs text-slate-500">경과</p>
-            <p className="text-lg font-semibold text-emerald-600 tabular-nums">
-              {String(elapsedMin).padStart(2, "0")}:{String(elapsedSec).padStart(2, "0")}
-            </p>
-          </div>
+              {selectedBook.author && (
+                <p className="truncate text-xs text-slate-500 dark:text-slate-400">
+                  {selectedBook.author}
+                </p>
+              )}
+            </>
+          )}
         </div>
-      )}
+        <div className="text-right">
+          <p className="text-xs text-slate-500">{isPaused ? "일시정지됨" : "경과"}</p>
+          <p
+            className={cn(
+              "text-lg font-semibold tabular-nums",
+              isPaused ? "animate-pulse text-slate-500" : "text-emerald-600",
+            )}
+          >
+            {String(elapsedMin).padStart(2, "0")}:{String(elapsedSec).padStart(2, "0")}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={togglePause}
+          disabled={!session || isPauseToggling || isPending || isCancelling}
+          className={cn(
+            "flex h-12 w-12 shrink-0 items-center justify-center rounded-full shadow-md transition-all active:scale-95 disabled:opacity-60",
+            isPaused
+              ? "bg-emerald-600 text-white hover:bg-emerald-700"
+              : "bg-white text-emerald-700 ring-1 ring-emerald-200 hover:bg-emerald-50 dark:bg-slate-900 dark:text-emerald-400 dark:ring-emerald-800",
+          )}
+          aria-label={isPaused ? "독서 재개" : "독서 일시정지"}
+          aria-pressed={isPaused}
+        >
+          {isPaused ? (
+            <Play className="ml-0.5 h-5 w-5 fill-current" aria-hidden="true" />
+          ) : (
+            <Pause className="h-5 w-5 fill-current" aria-hidden="true" />
+          )}
+        </button>
+      </div>
 
       {/* 끝 페이지 */}
       <RecordPageInput

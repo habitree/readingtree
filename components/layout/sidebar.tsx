@@ -17,7 +17,8 @@ import {
   Lightbulb,
   Stamp,
   BookOpen,
-  Square,
+  Pause,
+  Play,
   ChevronDown,
   type LucideIcon,
 } from "lucide-react";
@@ -102,10 +103,9 @@ export function Sidebar() {
   const openStampCapture = useStampCaptureStore((s) => s.open);
   const openStampWithBook = useStampCaptureStore((s) => s.openWithBook);
   const openRecordStart = useRecordSheetStore((s) => s.openStart);
-  const openRecordEnd = useRecordSheetStore((s) => s.openEnd);
 
-  // 진행 중 세션 — "독서" 항목이 "멈춤"으로 변형되는 트리거
-  const { session: activeSession } = useReadingSession();
+  // 진행 중 세션 — "독서" 항목이 "일시정지/재개" 토글로 변형되는 트리거
+  const { session: activeSession, isPaused, isPauseToggling, togglePause } = useReadingSession();
 
   // 이어읽기 책 (공용 훅 — visibilitychange 자동 갱신 포함)
   const { continueBook } = useContinueReading(user ?? null);
@@ -149,20 +149,10 @@ export function Sidebar() {
     router.push(bookId ? `/notes/new?bookId=${bookId}` : "/notes/new");
   }, [router, continueBook]);
 
-  // "독서" 항목 — 진행 중이면 종료 시트, 아니면 시작 시트
+  // "독서" 항목 — 진행 중이면 일시정지/재개 토글(종료는 헤더 pill → 저장 시트), 아니면 시작 시트
   const handleReadingAction = useCallback(() => {
     if (activeSession) {
-      const book: RecordSheetBook | null = activeSession.book
-        ? {
-            id: activeSession.user_book_id,
-            bookId: activeSession.book.id,
-            title: activeSession.book.title,
-            author: activeSession.book.author,
-            coverImageUrl: activeSession.book.cover_image_url,
-            totalPages: activeSession.book.total_pages,
-          }
-        : null;
-      openRecordEnd(activeSession.id, { book });
+      togglePause();
       return;
     }
     const book: RecordSheetBook | null = continueBook
@@ -176,7 +166,7 @@ export function Sidebar() {
         }
       : null;
     openRecordStart({ book });
-  }, [activeSession, continueBook, openRecordStart, openRecordEnd]);
+  }, [activeSession, continueBook, openRecordStart, togglePause]);
 
   const renderNavItem = useCallback((item: SidebarItem) => {
     const Icon = item.icon;
@@ -228,30 +218,36 @@ export function Sidebar() {
       );
     }
 
-    // "독서" — 진행 중이면 "멈춤"(rose+펄스), 아니면 시작(forest)
+    // "독서" — 진행 중이면 "일시정지"(rose+펄스) / 일시정지 중이면 "재개"(slate), 아니면 시작(forest)
     if (item.action === "readingStart") {
       const isActive = !!activeSession;
+      const isRunning = isActive && !isPaused;
       return (
         <Button
           key="readingStart"
           variant="ghost"
           className={cn(
             "w-full justify-start gap-3 h-11 relative transition-colors",
-            isActive
+            isRunning
               ? "bg-rose-500 text-white hover:bg-rose-600 hover:text-white ring-2 ring-rose-300 dark:ring-rose-700"
-              : "text-forest-700 dark:text-forest-400 hover:bg-forest-50 dark:hover:bg-forest-950/30",
+              : isActive
+                ? "bg-slate-500 text-white hover:bg-slate-600 hover:text-white ring-2 ring-slate-300 dark:ring-slate-700"
+                : "text-forest-700 dark:text-forest-400 hover:bg-forest-50 dark:hover:bg-forest-950/30",
           )}
           onClick={handleReadingAction}
-          aria-label={isActive ? "독서 멈춤" : "독서 시작"}
-          aria-pressed={isActive}
+          disabled={isActive && isPauseToggling}
+          aria-label={isRunning ? "독서 일시정지" : isActive ? "독서 재개" : "독서 시작"}
+          aria-pressed={isActive ? isPaused : undefined}
         >
-          {isActive ? (
-            <Square className="h-5 w-5 fill-current" aria-hidden="true" />
+          {isRunning ? (
+            <Pause className="h-5 w-5 fill-current" aria-hidden="true" />
+          ) : isActive ? (
+            <Play className="h-5 w-5 fill-current" aria-hidden="true" />
           ) : (
             <Icon className="h-5 w-5" aria-hidden="true" />
           )}
-          <span className="flex-1 text-left">{isActive ? "멈춤" : "독서"}</span>
-          {isActive && (
+          <span className="flex-1 text-left">{isRunning ? "일시정지" : isActive ? "재개" : "독서"}</span>
+          {isRunning && (
             <span className="relative flex h-2 w-2">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-rose-300 opacity-75" />
               <span className="relative inline-flex h-2 w-2 rounded-full bg-rose-200" />
@@ -296,7 +292,7 @@ export function Sidebar() {
         </Button>
       </Link>
     );
-  }, [pathname, user, handleQuickCapture, handleStampCapture, handleNoteWrite, handleReadingAction, activeSession]);
+  }, [pathname, user, handleQuickCapture, handleStampCapture, handleNoteWrite, handleReadingAction, activeSession, isPaused, isPauseToggling]);
 
   const visibleSecondaryItems = secondaryItems.filter(
     (item) => !item.adminOnly || isAdmin

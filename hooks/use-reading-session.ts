@@ -12,7 +12,9 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { create } from "zustand";
-import { getActiveSession } from "@/app/actions/sessions";
+import { toast } from "sonner";
+import { getActiveSession, setSessionPaused } from "@/app/actions/sessions";
+import { computeActiveSeconds } from "@/lib/utils/session-time";
 import type { ReadingLogActive } from "@/types/progress";
 
 const CHANNEL_NAME = "readtree-session";
@@ -27,18 +29,26 @@ const DEDUPE_TTL_MS = 10_000;
 // 세션 시작/종료 브로드캐스트·수동 refresh는 force로 TTL을 무시해 즉시 신선한 값을 가져온다.
 // =============================================================================
 
-let inflightFetch: Promise<ReadingLogActive | null> | null = null;
-let lastFetch: { at: number; value: ReadingLogActive | null } | null = null;
+interface SharedFetchResult {
+  value: ReadingLogActive | null;
+  /** 요청이 나간 시각 — 일시정지 낙관값보다 오래된 응답인지 판별 */
+  startedAt: number;
+}
 
-async function fetchActiveSessionShared(force = false): Promise<ReadingLogActive | null> {
+let inflightFetch: Promise<SharedFetchResult> | null = null;
+let lastFetch: { at: number; result: SharedFetchResult } | null = null;
+
+async function fetchActiveSessionShared(force = false): Promise<SharedFetchResult> {
   if (!force && lastFetch && Date.now() - lastFetch.at < DEDUPE_TTL_MS) {
-    return lastFetch.value;
+    return lastFetch.result;
   }
   if (inflightFetch) return inflightFetch;
+  const startedAt = Date.now();
   inflightFetch = getActiveSession()
     .then((value) => {
-      lastFetch = { at: Date.now(), value };
-      return value;
+      const result = { value, startedAt };
+      lastFetch = { at: Date.now(), result };
+      return result;
     })
     .finally(() => {
       inflightFetch = null;
@@ -56,6 +66,20 @@ interface ReadingSessionState {
   /** 시작 직전 생성한 멱등키 — 충돌 시 동일 키로 멱등 호출 */
   pendingClientSessionId: string | null;
   setPendingClientSessionId: (id: string | null) => void;
+  /**
+   * 일시정지 낙관값 — 탭 즉시 모든 소비자(시트·FAB·사이드바·카드)에 반영.
+   * confirmedAt 이후 시작된 서버 응답이 오면 제거된다.
+   */
+  pauseOverride: PauseOverride | null;
+  isPauseToggling: boolean;
+}
+
+interface PauseOverride {
+  sessionId: string;
+  paused_at: string | null;
+  paused_seconds: number;
+  /** 서버 확정 시각 (null = 요청 중) */
+  confirmedAt: number | null;
 }
 
 export const useReadingSessionStore = create<ReadingSessionState>((set) => ({
@@ -63,7 +87,76 @@ export const useReadingSessionStore = create<ReadingSessionState>((set) => ({
   setOptimisticSession: (s) => set({ optimisticSession: s }),
   pendingClientSessionId: null,
   setPendingClientSessionId: (id) => set({ pendingClientSessionId: id }),
+  pauseOverride: null,
+  isPauseToggling: false,
 }));
+
+/** 세션에 일시정지 낙관값을 덮어쓴다 */
+function applyPauseOverride(
+  s: ReadingLogActive | null,
+  override: PauseOverride | null,
+): ReadingLogActive | null {
+  if (!s || !override || override.sessionId !== s.id) return s;
+  return { ...s, paused_at: override.paused_at, paused_seconds: override.paused_seconds };
+}
+
+/**
+ * 일시정지 ↔ 재개 토글 (음악 플레이어식). 낙관 반영 → 서버 확정 → 다른 소비자/탭 동기화.
+ */
+export async function toggleSessionPause(
+  session: Pick<ReadingLogActive, "id" | "paused_at" | "paused_seconds">,
+): Promise<void> {
+  const store = useReadingSessionStore;
+  if (store.getState().isPauseToggling) return;
+
+  const wantPaused = !session.paused_at;
+  const now = Date.now();
+  store.setState({
+    isPauseToggling: true,
+    pauseOverride: {
+      sessionId: session.id,
+      paused_at: wantPaused ? new Date(now).toISOString() : null,
+      paused_seconds: wantPaused
+        ? session.paused_seconds
+        : session.paused_seconds +
+          Math.max(0, Math.floor((now - new Date(session.paused_at as string).getTime()) / 1000)),
+      confirmedAt: null,
+    },
+  });
+
+  try {
+    const result = await setSessionPaused(session.id, wantPaused);
+    store.setState({
+      pauseOverride: { sessionId: session.id, ...result, confirmedAt: Date.now() },
+    });
+    broadcastSessionUpdated(session.id);
+  } catch (err) {
+    store.setState({ pauseOverride: null });
+    toast.error(err instanceof Error ? err.message : "일시정지 처리에 실패했어요.");
+  } finally {
+    store.setState({ isPauseToggling: false });
+  }
+}
+
+/**
+ * 폴링 없이 store 만 구독하는 경량 일시정지 컨트롤 (그리드 카드 등 다수 렌더 위치용).
+ * 세션 데이터는 레이아웃 상주 useReadingSession 이 store 에 채운다.
+ */
+export function useSessionPauseControl() {
+  const optimisticSession = useReadingSessionStore((s) => s.optimisticSession);
+  const pauseOverride = useReadingSessionStore((s) => s.pauseOverride);
+  const session = applyPauseOverride(optimisticSession, pauseOverride);
+  const isPauseToggling = useReadingSessionStore((s) => s.isPauseToggling);
+  const toggle = useCallback(() => {
+    if (session) void toggleSessionPause(session);
+  }, [session]);
+  return {
+    sessionId: session?.id ?? null,
+    isPaused: !!session?.paused_at,
+    isPauseToggling,
+    toggle,
+  };
+}
 
 // =============================================================================
 // useReadingSession — 메인 훅
@@ -71,8 +164,12 @@ export const useReadingSessionStore = create<ReadingSessionState>((set) => ({
 
 interface UseReadingSessionResult {
   session: ReadingLogActive | null;
-  /** started_at 기준 라이브 카운트 */
+  /** 일시정지 시간을 뺀 라이브 카운트 (일시정지 중엔 멈춤) */
   elapsedSeconds: number;
+  isPaused: boolean;
+  isPauseToggling: boolean;
+  /** 일시정지 ↔ 재개 */
+  togglePause: () => void;
   /** 다른 탭에 종료 알림 + 로컬 캐시 클리어 */
   broadcastEnd: (sessionId: string) => void;
   /** 강제 재조회 */
@@ -81,7 +178,8 @@ interface UseReadingSessionResult {
 }
 
 export function useReadingSession(): UseReadingSessionResult {
-  const { optimisticSession, setOptimisticSession } = useReadingSessionStore();
+  const { optimisticSession, setOptimisticSession, pauseOverride, isPauseToggling } =
+    useReadingSessionStore();
   const [serverSession, setServerSession] = useState<ReadingLogActive | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const channelRef = useRef<BroadcastChannel | null>(null);
@@ -90,9 +188,14 @@ export function useReadingSession(): UseReadingSessionResult {
   const fetchSession = useCallback(
     async (force = false) => {
       try {
-        const s = await fetchActiveSessionShared(force);
+        const { value: s, startedAt } = await fetchActiveSessionShared(force);
         setServerSession(s);
         setOptimisticSession(s);
+        // 서버 확정 이후에 나간 응답이면 낙관값을 걷어내고 서버 값을 따른다
+        const override = useReadingSessionStore.getState().pauseOverride;
+        if (override?.confirmedAt && startedAt >= override.confirmedAt) {
+          useReadingSessionStore.setState({ pauseOverride: null });
+        }
       } catch {
         // 실패 시 기존 값 유지
       } finally {
@@ -134,7 +237,7 @@ export function useReadingSession(): UseReadingSessionResult {
         setOptimisticSession(null);
         setServerSession(null);
         void fetchSession(true);
-      } else if (msg?.type === "session-started") {
+      } else if (msg?.type === "session-started" || msg?.type === "session-updated") {
         void fetchSession(true);
       }
     };
@@ -145,8 +248,11 @@ export function useReadingSession(): UseReadingSessionResult {
     };
   }, [fetchSession, setOptimisticSession]);
 
-  const session = serverSession ?? optimisticSession ?? null;
-  const elapsedSeconds = useElapsedSeconds(session?.started_at ?? null);
+  const session = applyPauseOverride(serverSession ?? optimisticSession ?? null, pauseOverride);
+  const elapsedSeconds = useElapsedSeconds(session);
+  const togglePause = useCallback(() => {
+    if (session) void toggleSessionPause(session);
+  }, [session]);
 
   const broadcastEnd = useCallback(
     (sessionId: string) => {
@@ -163,6 +269,9 @@ export function useReadingSession(): UseReadingSessionResult {
   return {
     session,
     elapsedSeconds,
+    isPaused: !!session?.paused_at,
+    isPauseToggling,
+    togglePause,
     broadcastEnd,
     refresh,
     isLoading,
@@ -170,28 +279,23 @@ export function useReadingSession(): UseReadingSessionResult {
 }
 
 // =============================================================================
-// useElapsedSeconds — started_at 기준 라이브 카운트 (1초 tick)
+// useElapsedSeconds — 일시정지 제외 라이브 카운트 (1초 tick, 일시정지 중엔 tick 중단)
 // =============================================================================
 
-function useElapsedSeconds(startedAt: string | null): number {
+function useElapsedSeconds(session: ReadingLogActive | null): number {
   // derived state: setInterval은 tick을 증가시켜 리렌더만 트리거,
-  // 실제 elapsed는 매 렌더에서 startedAt 기준으로 계산.
+  // 실제 elapsed는 매 렌더에서 세션 시각 기준으로 계산.
   const [, setTick] = useState(0);
+  const startedAt = session?.started_at ?? null;
+  const isPaused = !!session?.paused_at;
 
   useEffect(() => {
-    if (!startedAt) return;
+    if (!startedAt || isPaused) return;
     const id = setInterval(() => setTick((t) => (t + 1) & 0xffff), 1000);
     return () => clearInterval(id);
-  }, [startedAt]);
+  }, [startedAt, isPaused]);
 
-  return computeElapsed(startedAt);
-}
-
-function computeElapsed(startedAt: string | null): number {
-  if (!startedAt) return 0;
-  const startedMs = new Date(startedAt).getTime();
-  if (Number.isNaN(startedMs)) return 0;
-  return Math.max(0, Math.floor((Date.now() - startedMs) / 1000));
+  return session ? computeActiveSeconds(session) : 0;
 }
 
 // =============================================================================
@@ -209,6 +313,14 @@ export function broadcastSessionEnded(sessionId: string): void {
   if (typeof BroadcastChannel === "undefined") return;
   const channel = new BroadcastChannel(CHANNEL_NAME);
   channel.postMessage({ type: "session-ended", sessionId });
+  channel.close();
+}
+
+/** 일시정지/재개 등 진행 중 세션 값 변경 — 같은 탭의 다른 소비자에도 전달됨 */
+export function broadcastSessionUpdated(sessionId: string): void {
+  if (typeof BroadcastChannel === "undefined") return;
+  const channel = new BroadcastChannel(CHANNEL_NAME);
+  channel.postMessage({ type: "session-updated", sessionId });
   channel.close();
 }
 

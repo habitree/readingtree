@@ -29,6 +29,7 @@ import { earnPoints } from "./points";
 import { updateBookProgress } from "./books/progress";
 import { getLastEndPage } from "./progress";
 import { recordRecordEvent } from "./tracking/records";
+import { computeActiveSeconds } from "@/lib/utils/session-time";
 
 const MEMO_MAX = 200;
 const BOOKMARK_TEXT_MAX = 200;
@@ -286,7 +287,7 @@ export async function endReadingSession(
   // 진행 중 세션 조회
   const { data: session, error: fetchError } = await supabase
     .from("reading_logs")
-    .select("id, user_id, user_book_id, started_at, start_page, status")
+    .select("id, user_id, user_book_id, started_at, start_page, status, paused_at, paused_seconds")
     .eq("id", input.session_id)
     .eq("user_id", currentUser.id)
     .maybeSingle();
@@ -299,9 +300,12 @@ export async function endReadingSession(
   }
 
   const startedAt = session.started_at ?? new Date().toISOString();
-  const startedAtMs = new Date(startedAt).getTime();
   const endedAt = new Date();
-  const durationSeconds = Math.max(0, Math.round((endedAt.getTime() - startedAtMs) / 1000));
+  // 일시정지 시간 제외 (일시정지 중 저장하면 paused_at 시점까지만 집계)
+  const durationSeconds = computeActiveSeconds(
+    { started_at: startedAt, paused_at: session.paused_at, paused_seconds: session.paused_seconds },
+    endedAt.getTime(),
+  );
 
   const startPage = session.start_page ?? 0;
   const endPage = Math.max(input.end_page, startPage);
@@ -363,6 +367,12 @@ export async function endReadingSession(
       image_urls: imageUrls,
       ended_at: endedAt.toISOString(),
       reading_duration_seconds: durationSeconds,
+      // 진행 중이던 일시정지 구간을 누적에 합쳐 닫는다
+      paused_at: null,
+      paused_seconds: Math.max(
+        0,
+        Math.floor((endedAt.getTime() - new Date(startedAt).getTime()) / 1000) - durationSeconds,
+      ),
       status: "completed",
       is_public: input.is_public ?? true,
     })
@@ -503,6 +513,9 @@ export async function getActiveSession(
     music_playlist_id: (row.music_playlist_id as string | null) ?? null,
     music_track_ids: ((row.music_track_ids as string[] | null) ?? []) as string[],
     music_started_at: (row.music_started_at as string | null) ?? null,
+    // 일시정지 (REQ-0013)
+    paused_at: (row.paused_at as string | null) ?? null,
+    paused_seconds: (row.paused_seconds as number | null) ?? 0,
     book: book
       ? {
           id: book.id,
@@ -537,7 +550,7 @@ export async function cancelActiveSession(
 
   const { data: session, error: fetchError } = await supabase
     .from("reading_logs")
-    .select("id, started_at, status")
+    .select("id, started_at, status, paused_at, paused_seconds")
     .eq("id", sessionId)
     .eq("user_id", currentUser.id)
     .maybeSingle();
@@ -549,8 +562,11 @@ export async function cancelActiveSession(
     return { deleted: false, abandoned: false };
   }
 
-  const startedAtMs = session.started_at ? new Date(session.started_at).getTime() : Date.now();
-  const elapsed = (Date.now() - startedAtMs) / 1000;
+  const elapsed = computeActiveSeconds({
+    started_at: session.started_at,
+    paused_at: session.paused_at,
+    paused_seconds: session.paused_seconds,
+  });
 
   if (elapsed < CANCEL_DELETE_THRESHOLD_S) {
     const { error: delError } = await supabase
@@ -587,6 +603,70 @@ export async function cancelActiveSession(
   });
 
   return { deleted: false, abandoned: true };
+}
+
+// =============================================================================
+// setSessionPaused — 진행 중 세션 일시정지/재개 (REQ-0013)
+// =============================================================================
+
+/**
+ * 진행 중 세션을 일시정지(paused=true) 또는 재개(paused=false).
+ *  - 목표 상태를 받으므로 멱등: 이미 그 상태면 현재 값만 반환.
+ *  - 재개 시 이번 일시정지 구간을 paused_seconds 에 누적하고 paused_at 을 비운다.
+ */
+export async function setSessionPaused(
+  sessionId: string,
+  paused: boolean,
+  user?: User | null,
+): Promise<{ paused_at: string | null; paused_seconds: number }> {
+  const currentUser = await resolveUser(user);
+  const supabase = await createServerSupabaseClient();
+
+  if (!isValidUUID(sessionId)) {
+    throw new Error("유효하지 않은 세션 ID입니다.");
+  }
+
+  const { data: session, error: fetchError } = await supabase
+    .from("reading_logs")
+    .select("id, status, paused_at, paused_seconds")
+    .eq("id", sessionId)
+    .eq("user_id", currentUser.id)
+    .maybeSingle();
+
+  if (fetchError || !session) {
+    throw new Error("세션을 찾을 수 없습니다.");
+  }
+  if (session.status !== "in_progress") {
+    throw new Error("진행 중인 기록이 아닙니다.");
+  }
+
+  const current = {
+    paused_at: (session.paused_at as string | null) ?? null,
+    paused_seconds: (session.paused_seconds as number | null) ?? 0,
+  };
+  if (paused === !!current.paused_at) return current;
+
+  const now = new Date();
+  const next = paused
+    ? { paused_at: now.toISOString(), paused_seconds: current.paused_seconds }
+    : {
+        paused_at: null,
+        paused_seconds:
+          current.paused_seconds +
+          Math.max(0, Math.floor((now.getTime() - new Date(current.paused_at as string).getTime()) / 1000)),
+      };
+
+  const { error: updateError } = await supabase
+    .from("reading_logs")
+    .update(next)
+    .eq("id", sessionId)
+    .eq("user_id", currentUser.id)
+    .eq("status", "in_progress");
+
+  if (updateError) {
+    throw new Error(sanitizeErrorMessage(updateError));
+  }
+  return next;
 }
 
 // =============================================================================

@@ -58,6 +58,7 @@ import {
   endReadingSession,
   cancelActiveSession,
   addNoteToSession,
+  setSessionPaused,
 } from "@/app/actions/sessions";
 
 // 테스트에서 호출 검증할 때 사용
@@ -324,5 +325,91 @@ describe("addNoteToSession — 자유 상세 (D3) 허용", () => {
         quote_content: "구절",
       }),
     ).rejects.toThrow("세션을 찾을 수 없습니다");
+  });
+});
+
+describe("일시정지 (REQ-0013) — 쉰 시간은 독서시간에서 제외", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    RESET_AUTH();
+  });
+
+  it("endReadingSession: 누적·진행 중 일시정지를 뺀 시간으로 저장하고 paused_at 을 닫는다", async () => {
+    const now = Date.now();
+    mockSupabase._chain.maybeSingle.mockResolvedValueOnce({
+      data: {
+        id: VALID_UUID_SESSION,
+        user_id: "user-1",
+        user_book_id: VALID_UUID_USER_BOOK,
+        started_at: new Date(now - 600_000).toISOString(), // 10분 전 시작
+        start_page: 100,
+        status: "in_progress",
+        paused_seconds: 120, // 이전 일시정지 2분
+        paused_at: new Date(now - 240_000).toISOString(), // 4분 전부터 일시정지 중
+      },
+      error: null,
+    });
+    mockSupabase._chain.single.mockResolvedValueOnce({
+      data: { id: VALID_UUID_SESSION, image_url: null, promoted_at: null },
+      error: null,
+    });
+
+    const result = await endReadingSession({ session_id: VALID_UUID_SESSION, end_page: 120 });
+
+    // 10분 − 2분 − 4분 = 4분
+    expect(result.durationSeconds).toBeGreaterThanOrEqual(239);
+    expect(result.durationSeconds).toBeLessThanOrEqual(240);
+    expect(mockSupabase._chain.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        reading_duration_seconds: result.durationSeconds,
+        paused_at: null,
+      }),
+    );
+  });
+
+  it("setSessionPaused(true): paused_at 을 현재 시각으로 기록", async () => {
+    mockSupabase._chain.maybeSingle.mockResolvedValueOnce({
+      data: { id: VALID_UUID_SESSION, status: "in_progress", paused_at: null, paused_seconds: 30 },
+      error: null,
+    });
+    const r = await setSessionPaused(VALID_UUID_SESSION, true);
+    expect(r.paused_at).not.toBeNull();
+    expect(r.paused_seconds).toBe(30);
+    expect(mockSupabase._chain.update).toHaveBeenCalledTimes(1);
+  });
+
+  it("setSessionPaused(false): 이번 일시정지 구간을 누적하고 paused_at 을 비움", async () => {
+    mockSupabase._chain.maybeSingle.mockResolvedValueOnce({
+      data: {
+        id: VALID_UUID_SESSION,
+        status: "in_progress",
+        paused_at: new Date(Date.now() - 90_000).toISOString(),
+        paused_seconds: 30,
+      },
+      error: null,
+    });
+    const r = await setSessionPaused(VALID_UUID_SESSION, false);
+    expect(r.paused_at).toBeNull();
+    expect(r.paused_seconds).toBeGreaterThanOrEqual(119);
+    expect(r.paused_seconds).toBeLessThanOrEqual(121);
+  });
+
+  it("이미 목표 상태면 UPDATE 없이 현재 값 반환 (멱등)", async () => {
+    const pausedAt = new Date().toISOString();
+    mockSupabase._chain.maybeSingle.mockResolvedValueOnce({
+      data: { id: VALID_UUID_SESSION, status: "in_progress", paused_at: pausedAt, paused_seconds: 0 },
+      error: null,
+    });
+    const r = await setSessionPaused(VALID_UUID_SESSION, true);
+    expect(r).toEqual({ paused_at: pausedAt, paused_seconds: 0 });
+    expect(mockSupabase._chain.update).not.toHaveBeenCalled();
+  });
+
+  it("종료된 세션은 거부", async () => {
+    mockSupabase._chain.maybeSingle.mockResolvedValueOnce({
+      data: { id: VALID_UUID_SESSION, status: "completed", paused_at: null, paused_seconds: 0 },
+      error: null,
+    });
+    await expect(setSessionPaused(VALID_UUID_SESSION, true)).rejects.toThrow("진행 중인 기록이 아닙니다");
   });
 });
