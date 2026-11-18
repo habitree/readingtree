@@ -7,6 +7,7 @@ const ALLOWED_DOMAINS = [
   "image.aladin.co.kr",
   "kakaocdn.net",
   "lh3.googleusercontent.com",
+  "books.google.com",
   "covers.openlibrary.org",
   "cover.nl.go.kr",
   "phinf.pstatic.net",

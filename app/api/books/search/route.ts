@@ -4,7 +4,7 @@ import { checkRateLimit } from "@/lib/middleware/rate-limit";
 
 /**
  * 책 검색 API Route
- * 알라딘 검색 API(0건이면 Google Books 폴백)를 통해 책을 검색합니다.
+ * lib/api/book-search (카카오 → 국립중앙도서관 → Google Books)로 책을 검색합니다.
  */
 export async function GET(request: Request) {
   // Rate limiting 체크 (분당 60회 제한)
