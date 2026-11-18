@@ -1511,6 +1511,17 @@ RLS 정책은 데이터베이스 레벨에서 접근 제어를 강제하므로, 
 
 ## 7. 변경 로그(Change Log)
 
+### 2026-11-18 (연간 독서 결산 테이블 추가 — REQ-0014)
+
+**추가된 테이블:**
+- `yearly_recaps`: 연간 독서결산 스냅샷. `monthly_recaps` 미러 구조(`month`·`ai_caption` 없음)
+  - `UNIQUE(user_id, year)`, `share_id`(공개 URL 토큰), `stats`/`highlights` JSONB, `is_public`, `share_version`, `generated_at`
+  - 12월 중에는 조회 시 재계산, 다음 해 1월 1일(KST) 이후 첫 조회에서 확정
+
+**RLS:** SELECT `is_public = true OR auth.uid() = user_id`, INSERT/UPDATE/DELETE `auth.uid() = user_id`
+
+**마이그레이션:** `migration-202611181000__yearly_recaps__create_table.sql`
+
 ### 2026-01-09 (서재 상하구조 개편)
 
 - **변경 내용**: 서재 기능을 상하 구조로 개편

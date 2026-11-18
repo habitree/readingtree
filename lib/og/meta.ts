@@ -9,6 +9,7 @@ export type ShareMetaKind =
   | "completion"
   | "report"
   | "recap"
+  | "yearly-recap"
   | "reading-time";
 
 const KIND_LABEL: Record<ShareMetaKind, string> = {
@@ -18,6 +19,7 @@ const KIND_LABEL: Record<ShareMetaKind, string> = {
   completion: "완독",
   report: "독서 리포트",
   recap: "월간 독서결산",
+  "yearly-recap": "연간 독서결산",
   "reading-time": "독서 시간",
 };
 

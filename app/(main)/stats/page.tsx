@@ -28,6 +28,7 @@ import { ReadingStats } from "@/components/persona/reading-stats";
 import { RecapSection } from "@/components/recap/recap-section";
 import { getRecapForView } from "@/app/actions/recap/generate";
 import { getMonthlyBooksList } from "@/app/actions/recap/books-list";
+import { YearlyRecapBanner } from "@/components/recap/yearly/yearly-recap-banner";
 
 export const metadata: Metadata = {
   title: "독서성향 | ReadTree",
@@ -96,6 +97,8 @@ export default async function StatsPage({
           message="샘플 독서 성향 데이터를 미리보고 있어요"
         />
       )}
+
+      <YearlyRecapBanner />
 
       {/* 월간 독서결산 섹션 */}
       {recapView && <RecapSection initialView={recapView} initialBooks={recapBooks} />}

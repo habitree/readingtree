@@ -19,6 +19,8 @@
  *   - 롤백이 필요하면 NEXT_PUBLIC_RECORD_V2=0 으로 즉시 폴백.
  */
 
+import { getKSTYearMonth } from "@/lib/utils/timezone";
+
 const FALSY = new Set(["0", "false", "no", "off"]);
 
 /**
@@ -57,4 +59,31 @@ export function isProgressInLogsEnabled(): boolean {
   const raw = process.env.NEXT_PUBLIC_PROGRESS_IN_LOGS;
   if (raw == null || raw.trim() === "") return true;
   return !FALSY.has(raw.trim().toLowerCase());
+}
+
+/**
+ * 연간 독서 결산(REQ-0014) 공개 여부.
+ * 지난 해는 항상 열려 있고, 올해는 KST 12월에만 열린다.
+ * 12월 이전 QA용 미리보기: NEXT_PUBLIC_YEARLY_RECAP_PREVIEW=1
+ */
+export function isYearlyRecapOpen(year: number): boolean {
+  const cur = getKSTYearMonth();
+  if (year < cur.year) return true;
+  if (year > cur.year) return false;
+  return cur.month === 12 || isYearlyRecapPreview();
+}
+
+/**
+ * 진입 배너에 띄울 결산 연도. 12월 → 올해, 1월 → 작년, 그 외 → null (미리보기면 올해).
+ */
+export function getYearlyRecapPromoYear(): number | null {
+  const cur = getKSTYearMonth();
+  if (cur.month === 12 || isYearlyRecapPreview()) return cur.year;
+  if (cur.month === 1) return cur.year - 1;
+  return null;
+}
+
+function isYearlyRecapPreview(): boolean {
+  const raw = process.env.NEXT_PUBLIC_YEARLY_RECAP_PREVIEW;
+  return raw != null && ["1", "true", "yes", "on"].includes(raw.trim().toLowerCase());
 }

@@ -2511,6 +2511,48 @@ export type Database = {
         }
         Relationships: []
       }
+      yearly_recaps: {
+        Row: {
+          created_at: string
+          generated_at: string
+          highlights: Json
+          id: string
+          is_public: boolean
+          share_id: string
+          share_version: number
+          stats: Json
+          updated_at: string
+          user_id: string
+          year: number
+        }
+        Insert: {
+          created_at?: string
+          generated_at?: string
+          highlights?: Json
+          id?: string
+          is_public?: boolean
+          share_id?: string
+          share_version?: number
+          stats?: Json
+          updated_at?: string
+          user_id: string
+          year: number
+        }
+        Update: {
+          created_at?: string
+          generated_at?: string
+          highlights?: Json
+          id?: string
+          is_public?: boolean
+          share_id?: string
+          share_version?: number
+          stats?: Json
+          updated_at?: string
+          user_id?: string
+          year?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

@@ -21,6 +21,7 @@ import {
 } from "@/lib/utils/timezone";
 import { computeReadingMetrics } from "@/lib/reading/metrics";
 import { isProgressInLogsEnabled } from "@/lib/feature-flags";
+import { buildPersonaTitle } from "@/lib/recap/persona-title";
 import type {
   RecapComputed,
   RecapNotesByType,
@@ -364,45 +365,6 @@ export async function computeRecapForUser(
 
 // ── 보조 함수 ────────────────────────────────────────────────────────────
 // 현재/최대 스트릭 계산은 `lib/utils/streak.ts`로 통합 (stats.ts와 단일 출처 공유).
-
-/** 규칙 기반 독서 페르소나 타이틀 */
-function buildPersonaTitle(input: {
-  totalNotes: number;
-  sessionCount: number;
-  totalReadingSeconds: number;
-  completedBooks: number;
-  notesByType: RecapNotesByType;
-  timeBuckets: { morning: number; afternoon: number; evening: number; night: number };
-}): string {
-  if (input.totalNotes < 3 && input.sessionCount < 3) return "이달의 독서가";
-
-  const hours = input.totalReadingSeconds / 3600;
-  let volume = "꾸준한";
-  if (hours >= 15 || input.completedBooks >= 5) volume = "몰입형";
-  else if (hours < 3 && input.completedBooks < 2) volume = "가벼운";
-
-  const tb = input.timeBuckets;
-  const maxTime = Math.max(tb.morning, tb.afternoon, tb.evening, tb.night);
-  let timeWord = "";
-  if (maxTime > 0) {
-    if (maxTime === tb.night) timeWord = "심야";
-    else if (maxTime === tb.morning) timeWord = "아침";
-    else if (maxTime === tb.evening) timeWord = "저녁";
-    else timeWord = "한낮";
-  }
-
-  const n = input.notesByType;
-  const visual = n.photo + n.transcription;
-  let styleNoun = "탐독가";
-  const maxStyle = Math.max(n.quote, n.memo, visual);
-  if (maxStyle > 0) {
-    if (maxStyle === n.quote) styleNoun = "문장 수집가";
-    else if (maxStyle === n.memo) styleNoun = "사색가";
-    else styleNoun = "기록가";
-  }
-
-  return [volume, timeWord, styleNoun].filter(Boolean).join(" ");
-}
 
 /** 그 달 달성 뱃지 */
 function buildBadges(input: {

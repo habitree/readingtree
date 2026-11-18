@@ -14,6 +14,7 @@ export type ShareKind =
   | "bookshelf"
   | "stamp"
   | "recap"
+  | "yearly_recap"
   | "reading_time";
 
 export type ShareContext = {

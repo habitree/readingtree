@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import DashboardContent from "@/components/dashboard/dashboard-content";
+import { YearlyRecapBanner } from "@/components/recap/yearly/yearly-recap-banner";
 
 export const metadata: Metadata = {
   title: "홈",
@@ -13,6 +14,9 @@ export const metadata: Metadata = {
 export default function HomePage() {
   return (
     <div className="container max-w-7xl mx-auto px-2 sm:px-4 py-4 sm:py-6 md:py-8">
+      <div className="mb-4 empty:hidden">
+        <YearlyRecapBanner />
+      </div>
       <DashboardContent />
     </div>
   );
