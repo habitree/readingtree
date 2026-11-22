@@ -13,6 +13,8 @@
  *      소장자료는 신간이 수개월 늦게 잡혀, 첫 페이지는 서지(ISBN 등록) API 로 신간을 보충한다
  *   3. Google Books — 해외 도서 보강
  *
+ * 표지는 소스와 무관하게, 비어 있으면 Google Books → 교보문고 순으로 ISBN 보충한다.
+ *
  * 반환 형태는 종전 네이버 클라이언트와 같은 모양을 유지해 호출부 변경을 최소화한다.
  */
 
@@ -51,6 +53,8 @@ const KAKAO_MAX_RESULTS = 50;
 const NL_MAX_RESULTS = 50;
 /** Google Books maxResults 상한 */
 const GOOGLE_MAX_RESULTS = 40;
+/** 서지 API 조회 건수 — 최신순 상위에서 제목 일치 건만 추려 쓰므로 UI 요청 건수와 분리한다 */
+const NL_SEOJI_PAGE_SIZE = 50;
 /** 서지 API 신간 보충 최대 건수 */
 const NL_SEOJI_MAX_FRESH = 3;
 /** 국중도 표지 이미지 호스트 (응답의 imageUrl 은 상대 경로) */
@@ -256,7 +260,7 @@ async function searchNl(
   // 첫 페이지에서만 서지(ISBN 등록) 정보로 신간을 보충한다 — 부가 기능이라 실패는 무시
   const [data, newBooks] = await Promise.all([
     fetchJson<NlSearchResponse>(url.toString(), { next: { revalidate: 3600 } }, "국립중앙도서관"),
-    start === 1 ? searchNlSeojiNewBooks(key, query, pageSize).catch(() => []) : Promise.resolve([]),
+    start === 1 ? searchNlSeojiNewBooks(key, query).catch(() => []) : Promise.resolve([]),
   ]);
   if (!Array.isArray(data.result) && newBooks.length === 0) return null;
 
@@ -276,7 +280,7 @@ async function searchNl(
   const fresh = newBooks.filter((it) => !holdingIsbns.has(it.isbn)).slice(0, NL_SEOJI_MAX_FRESH);
   const items = dedupeByIsbn([...fresh, ...holdings]).slice(0, pageSize);
 
-  await fillMissingCoversFromGoogle(items);
+  await fillMissingCovers(items);
 
   return {
     total: Number(data.total) || items.length,
@@ -297,14 +301,21 @@ function compact(text: string): string {
  * 소장자료 검색은 납본·정리 후에야 잡혀 신간이 수개월 늦게 나온다(예: 2026-09-30 출간
  * "트렌드 코리아 2027"이 11월에도 0건). 서지는 출판사의 ISBN 등록 시점에 생겨 신간이 있다.
  * 대신 문제집·오디오북·전자책 노이즈가 많아, 종이책이면서 제목이 검색어로 시작하는 것만 쓴다.
+ *
+ * 2026-11-22: 정렬 없이 UI 요청 건수만큼만 받아, "트렌드 코리아" 같은 상위어로 검색하면
+ * 2027 판이 응답 창 밖으로 밀려 끝내 0건이었다("트렌드 코리아 2027" 로 정확히 쳐야만 나왔다).
+ * form 으로 서버에서 종이책만 받고, 출간일 역순으로 고정 건수를 받아 신간이 항상 창 안에 들어오게 한다.
  */
-async function searchNlSeojiNewBooks(key: string, query: string, pageSize: number): Promise<BookSearchItem[]> {
+async function searchNlSeojiNewBooks(key: string, query: string): Promise<BookSearchItem[]> {
   const url = new URL("https://www.nl.go.kr/seoji/SearchApi.do");
   url.searchParams.append("cert_key", key);
   url.searchParams.append("result_style", "json");
   url.searchParams.append("page_no", "1");
-  url.searchParams.append("page_size", pageSize.toString());
+  url.searchParams.append("page_size", NL_SEOJI_PAGE_SIZE.toString());
   url.searchParams.append("title", query);
+  url.searchParams.append("form", "종이책");
+  url.searchParams.append("sort", "PUBLISH_PREDATE");
+  url.searchParams.append("order_by", "DESC");
 
   const data = await fetchJson<NlSeojiSearchResponse>(url.toString(), { next: { revalidate: 3600 } }, "국립중앙도서관 서지");
   const q = compact(query);
@@ -333,20 +344,43 @@ function googleBooksUrl(q: string, maxResults: number, startIndex: number): stri
   return url.toString();
 }
 
+/** 교보문고 표지 원본 — 없는 ISBN 에는 404 를 주어 존재 확인에 쓸 수 있다 */
+function kyoboCoverOrigin(isbn: string): string {
+  return `https://contents.kyobobook.co.kr/pdt/${isbn}.jpg`;
+}
+
+/** 교보문고 표지 변환본 — 목록용 폭. 없는 ISBN 에도 대체 이미지를 200 으로 주므로 존재 확인에는 못 쓴다 */
+function kyoboCoverThumb(isbn: string): string {
+  return `https://contents.kyobobook.co.kr/sih/fit-in/458x0/pdt/${isbn}.jpg`;
+}
+
+/** 교보문고에 그 ISBN 표지가 있으면 목록용 URL, 없으면 빈 문자열 */
+async function findKyoboCover(isbn: string): Promise<string> {
+  const res = await fetch(kyoboCoverOrigin(isbn), { method: "HEAD", next: { revalidate: 86400 } });
+  return res.ok ? kyoboCoverThumb(isbn) : "";
+}
+
 /**
- * 표지 없는 결과를 Google Books ISBN 조회로 보충한다(제자리 수정).
+ * 표지 없는 결과를 ISBN 으로 보충한다(제자리 수정). Google Books → 교보문고 순.
+ * 국중도 서지로 끌어온 신간은 표지 URL 이 비어 있는데 Google Books 에도 한국 신간은
+ * 없는 경우가 많아(예: "트렌드 코리아 2027") 교보문고를 뒤에 둔다.
  * 보충은 부가 기능이라 개별 실패는 무시한다. ISBN 단위로 하루 캐시해 쿼터를 아낀다.
  */
-async function fillMissingCoversFromGoogle(items: BookSearchItem[]): Promise<void> {
+async function fillMissingCovers(items: BookSearchItem[]): Promise<void> {
   const targets = items.filter((it) => !it.image && it.isbn);
   await Promise.allSettled(
     targets.map(async (it) => {
       const res = await fetch(googleBooksUrl(`isbn:${it.isbn}`, 1, 0), { next: { revalidate: 86400 } });
-      if (!res.ok) return;
-      const data = (await res.json()) as GoogleBooksSearchResponse;
-      const links = data.items?.[0]?.volumeInfo?.imageLinks;
-      const cover = normalizeGoogleCover(links?.thumbnail ?? links?.smallThumbnail);
-      if (cover) it.image = cover;
+      if (res.ok) {
+        const data = (await res.json()) as GoogleBooksSearchResponse;
+        const links = data.items?.[0]?.volumeInfo?.imageLinks;
+        const cover = normalizeGoogleCover(links?.thumbnail ?? links?.smallThumbnail);
+        if (cover) {
+          it.image = cover;
+          return;
+        }
+      }
+      it.image = await findKyoboCover(it.isbn);
     }),
   );
 }

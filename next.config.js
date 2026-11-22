@@ -56,6 +56,11 @@ const nextConfig = {
         hostname: 'cover.nl.go.kr',
       },
       {
+        // 책 검색 표지 보충 (국중도 신간·Google Books 에 표지가 없는 한국 도서)
+        protocol: 'https',
+        hostname: 'contents.kyobobook.co.kr',
+      },
+      {
         protocol: 'http',
         hostname: 'cover.nl.go.kr',
       },
