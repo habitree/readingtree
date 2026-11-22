@@ -1,6 +1,20 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Noto_Serif_KR, Noto_Sans_KR, Cormorant_Garamond } from "next/font/google";
 import Script from "next/script";
+// 서체는 npm 패키지로 셀프 호스팅한다. next/font/google 은 빌드 때 Google Fonts 응답에
+// 의존해, 응답 형식이 바뀌면 배포가 실패한다. 변수(--font-*)는 globals.css 에 있다.
+import "@fontsource-variable/inter/wght.css";
+import "@fontsource/noto-serif-kr/400.css";
+import "@fontsource/noto-serif-kr/700.css";
+import "@fontsource/noto-serif-kr/900.css";
+// Noto Sans KR·Cormorant: AI 독서 리포트(매거진형) 전용 서체
+import "@fontsource/noto-sans-kr/400.css";
+import "@fontsource/noto-sans-kr/500.css";
+import "@fontsource/noto-sans-kr/700.css";
+import "@fontsource/noto-sans-kr/900.css";
+import "@fontsource/cormorant-garamond/500.css";
+import "@fontsource/cormorant-garamond/500-italic.css";
+import "@fontsource/cormorant-garamond/600.css";
+import "@fontsource/cormorant-garamond/600-italic.css";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/contexts/auth-context";
@@ -10,28 +24,6 @@ import { getCachedCurrentUser, getCachedCurrentUserProfile } from "@/lib/cached"
 import { getAppUrl } from "@/lib/utils/url";
 
 const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
-
-const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
-const notoSerifKr = Noto_Serif_KR({
-  subsets: ["latin"],
-  weight: ["400", "700", "900"],
-  variable: "--font-noto-serif-kr",
-  display: "swap",
-});
-// AI 독서 리포트(매거진형) 전용 서체
-const notoSansKr = Noto_Sans_KR({
-  subsets: ["latin"],
-  weight: ["400", "500", "700", "900"],
-  variable: "--font-noto-sans-kr",
-  display: "swap",
-});
-const cormorant = Cormorant_Garamond({
-  subsets: ["latin"],
-  weight: ["500", "600"],
-  style: ["normal", "italic"],
-  variable: "--font-cormorant",
-  display: "swap",
-});
 
 export const metadata: Metadata = {
   metadataBase: new URL(getAppUrl()),
@@ -152,7 +144,7 @@ export default async function RootLayout({
           </Script>
         </head>
       )}
-      <body className={`${inter.variable} ${notoSerifKr.variable} ${notoSansKr.variable} ${cormorant.variable} font-sans`} suppressHydrationWarning>
+      <body className="font-sans" suppressHydrationWarning>
         <ThemeProvider
           attribute="class"
           defaultTheme="dark"
