@@ -11,6 +11,7 @@ const ALLOWED_DOMAINS = [
   "covers.openlibrary.org",
   "cover.nl.go.kr",
   "phinf.pstatic.net",
+  "contents.kyobobook.co.kr",
 ];
 
 function isDomainAllowed(url: string): boolean {

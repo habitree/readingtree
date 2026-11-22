@@ -57,6 +57,7 @@ describe("searchBooks 소스 체인", () => {
     fetchMock.mockImplementation(async (input) => {
       const url = String(input);
       if (url.includes("nl.go.kr")) return json(NL_RESULT);
+      if (url.includes("contents.kyobobook.co.kr")) return new Response(null, { status: 404 });
       if (url.includes("isbn%3A9788901272634")) {
         return json({ items: [{ volumeInfo: { imageLinks: { thumbnail: "http://books.google.com/books/content?id=x&zoom=1&edge=curl&source=gbs_api" } } }] });
       }
@@ -109,6 +110,82 @@ describe("searchBooks 소스 체인", () => {
     expect(res.items.map(transformBookItem)).toEqual([
       expect.objectContaining({ isbn: "9791124073483", title: "트렌드 코리아 2027", author: "김난도,전미영", publisher: "미래의창", published_date: "2026-09-30" }),
     ]);
+  });
+
+  it("Google Books 에 표지가 없으면 교보문고 ISBN 표지로 보충하고, 교보에도 없으면 비워 둔다", async () => {
+    const kyoboHeads: string[] = [];
+    fetchMock.mockImplementation(async (input, init) => {
+      const url = String(input);
+      if (url.includes("contents.kyobobook.co.kr")) {
+        kyoboHeads.push(`${init?.method} ${url}`);
+        // 9791124073483(트렌드 코리아 2027)만 교보에 표지가 있다
+        return url.includes("9791124073483") ? json({}) : new Response(null, { status: 404 });
+      }
+      if (url.includes("nl.go.kr/NL/search")) {
+        return json({
+          total: 2,
+          result: [
+            { titleInfo: "트렌드 코리아 2027", authorInfo: "지은이: 김난도", pubInfo: "미래의창", pubYearInfo: "20260930", isbn: "9791124073483", imageUrl: "" },
+            { titleInfo: "표지 없는 책", authorInfo: "아무개", pubInfo: "아무출판사", pubYearInfo: "2026", isbn: "9791111111117", imageUrl: "" },
+          ],
+        });
+      }
+      if (url.includes("seoji/SearchApi")) return json({ docs: [] });
+      return json({ totalItems: 0 }); // Google Books: 표지 없음
+    });
+
+    const res = await searchBooks({ query: "트렌드 코리아" });
+    const [withCover, withoutCover] = res.items.map(transformBookItem);
+    expect(withCover.cover_image_url).toBe("https://contents.kyobobook.co.kr/sih/fit-in/458x0/pdt/9791124073483.jpg");
+    expect(withoutCover.cover_image_url).toBeNull();
+    // 존재 확인은 대체 이미지를 주지 않는 원본 경로로, HEAD 로만 한다
+    expect(kyoboHeads).toEqual([
+      "HEAD https://contents.kyobobook.co.kr/pdt/9791124073483.jpg",
+      "HEAD https://contents.kyobobook.co.kr/pdt/9791111111117.jpg",
+    ]);
+  });
+
+  it("서지 API 는 종이책만, 출간일 역순으로, UI 요청 건수와 무관하게 넓게 받는다", async () => {
+    // 상위어("트렌드 코리아")로 검색해도 신간이 응답 창 안에 들어오게 하는 조건이다.
+    let seojiUrl = "";
+    fetchMock.mockImplementation(async (input) => {
+      const url = String(input);
+      if (url.includes("seoji/SearchApi")) {
+        seojiUrl = url;
+        return json({ docs: [] });
+      }
+      if (url.includes("nl.go.kr")) return json({ total: 0, result: [] });
+      return json({ totalItems: 0 });
+    });
+
+    await searchBooks({ query: "트렌드 코리아", display: 10 });
+
+    const params = new URL(seojiUrl).searchParams;
+    expect(params.get("title")).toBe("트렌드 코리아");
+    expect(params.get("form")).toBe("종이책");
+    expect(params.get("sort")).toBe("PUBLISH_PREDATE");
+    expect(params.get("order_by")).toBe("DESC");
+    expect(params.get("page_size")).toBe("50");
+  });
+
+  it("서지 API 의 출간 예정작(출간일이 미래)은 신간 보충에서 뺀다", async () => {
+    fetchMock.mockImplementation(async (input) => {
+      const url = String(input);
+      if (url.includes("seoji/SearchApi")) {
+        return json({
+          docs: [
+            { TITLE: "해리 포터와 마법사의 돌(드라마 에디션)", AUTHOR: "J.K. 롤링", PUBLISHER: "문학수첩", EA_ISBN: "9791173830747", FORM: "종이책", PUBLISH_PREDATE: "20991231" },
+            { TITLE: "해리 포터", AUTHOR: "J.K. 롤링", PUBLISHER: "문학수첩", EA_ISBN: "9791193790960", FORM: "종이책", REAL_PUBLISH_DATE: "20251014", PUBLISH_PREDATE: "20251014" },
+          ],
+        });
+      }
+      if (url.includes("nl.go.kr")) return json({ total: 0, result: [] });
+      return json({ totalItems: 0 });
+    });
+
+    const result = await searchBooks({ query: "해리 포터", display: 10 });
+
+    expect(result.items.map((it) => it.isbn)).toEqual(["9791193790960"]);
   });
 
   it("카카오 키가 있으면 카카오를 1순위로 쓴다", async () => {
