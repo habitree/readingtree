@@ -319,8 +319,11 @@ async function searchNlSeojiNewBooks(key: string, query: string): Promise<BookSe
 
   const data = await fetchJson<NlSeojiSearchResponse>(url.toString(), { next: { revalidate: 3600 } }, "국립중앙도서관 서지");
   const q = compact(query);
+  // 출간일 역순이라 ISBN 만 선등록된 출간 예정작이 맨 위로 온다 — 아직 읽을 수 없는 책이라 뺀다 (KST 기준)
+  const today = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10).replace(/-/g, "");
   return (data.docs ?? [])
     .filter((d) => d.FORM === "종이책" && d.EA_ISBN && compact(stripHtml(d.TITLE)).startsWith(q))
+    .filter((d) => (d.REAL_PUBLISH_DATE || d.PUBLISH_PREDATE || "").trim() <= today)
     .map((d) => ({
       title: stripHtml(d.TITLE),
       author: cleanNlAuthor(d.AUTHOR),

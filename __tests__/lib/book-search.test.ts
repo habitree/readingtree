@@ -168,6 +168,26 @@ describe("searchBooks 소스 체인", () => {
     expect(params.get("page_size")).toBe("50");
   });
 
+  it("서지 API 의 출간 예정작(출간일이 미래)은 신간 보충에서 뺀다", async () => {
+    fetchMock.mockImplementation(async (input) => {
+      const url = String(input);
+      if (url.includes("seoji/SearchApi")) {
+        return json({
+          docs: [
+            { TITLE: "해리 포터와 마법사의 돌(드라마 에디션)", AUTHOR: "J.K. 롤링", PUBLISHER: "문학수첩", EA_ISBN: "9791173830747", FORM: "종이책", PUBLISH_PREDATE: "20991231" },
+            { TITLE: "해리 포터", AUTHOR: "J.K. 롤링", PUBLISHER: "문학수첩", EA_ISBN: "9791193790960", FORM: "종이책", REAL_PUBLISH_DATE: "20251014", PUBLISH_PREDATE: "20251014" },
+          ],
+        });
+      }
+      if (url.includes("nl.go.kr")) return json({ total: 0, result: [] });
+      return json({ totalItems: 0 });
+    });
+
+    const result = await searchBooks({ query: "해리 포터", display: 10 });
+
+    expect(result.items.map((it) => it.isbn)).toEqual(["9791193790960"]);
+  });
+
   it("카카오 키가 있으면 카카오를 1순위로 쓴다", async () => {
     vi.stubEnv("KAKAO_REST_API_KEY", "kakao-key");
     fetchMock.mockImplementation(async (input, init) => {
